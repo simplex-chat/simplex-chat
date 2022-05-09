@@ -28,30 +28,19 @@ struct ChatHelp: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("To start a new chat")
+                Text("To make a new connection")
                     .font(.title2)
                     .fontWeight(.bold)
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
                     NewChatButton()
-                    Text("above, then:")
+                    Text("above, then choose:")
                 }
 
-                Text("**Add new contact**: to create your one-time QR Code for your contact.")
-                Text("**Scan QR code**: to connect to your contact who shows QR code to you.")
-            }
-            .padding(.top, 24)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("To connect via link")
-                    .font(.title2)
-                    .fontWeight(.bold)
-
-                Text("If you received SimpleX Chat invitation link you can open it in your browser:")
-
-                Text("💻 desktop: scan displayed QR code from the app, via **Scan QR code**.")
-                Text("📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app.")
+                Text("**Create link / QR code** for your contact to use.")
+                Text("**Paste received link** or open it in the browser and tap **Open in mobile app**.")
+                Text("**Scan QR code**: to connect to your contact in person or via video call.")
             }
             .padding(.top, 24)
         }

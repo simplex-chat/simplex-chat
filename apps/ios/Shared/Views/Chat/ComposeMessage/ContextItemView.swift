@@ -19,7 +19,7 @@ struct ContextItemView: View {
             Image(systemName: contextIcon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
+                .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
             contextText(contextItem).lineLimit(3)
             Spacer()

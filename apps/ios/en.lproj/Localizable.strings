@@ -7,3 +7,5 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Connecting to server… (error: %@)";
 
+/* No comment provided by engineer. */
+"**Add new contact**: to create your one-time QR Code for your contact." = "**Add new contact**: to create your one-time QR Code or link for your contact.";

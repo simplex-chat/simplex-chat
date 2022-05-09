@@ -17,6 +17,8 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 
+private var indent: CGFloat = 36
+
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
@@ -54,29 +56,19 @@ struct SettingsView: View {
                         UserAddress()
                             .navigationTitle("Your chat address")
                     } label: {
-                        HStack {
-                            Image(systemName: "qrcode")
-                                .padding(.trailing, 8)
-                            Text("Your SimpleX contact address")
-                        }
+                        settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
                 }
                 
                 Section("Settings") {
-                    HStack {
-                        Image(systemName: "link")
-                            .padding(.trailing, 8)
+                    settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
                     NavigationLink {
                         SMPServers()
                             .navigationTitle("Your SMP servers")
                     } label: {
-                        HStack {
-                            Image(systemName: "server.rack")
-                                .padding(.trailing, 4)
-                            Text("SMP servers")
-                        }
+                        settingsRow("server.rack") { Text("SMP servers") }
                     }
                 }
 
@@ -86,26 +78,23 @@ struct SettingsView: View {
                             .navigationTitle("Welcome \(user.displayName)!")
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
-                        HStack {
-                            Image(systemName: "questionmark.circle")
-                                .padding(.trailing, 8)
-                            Text("How to use SimpleX Chat")
-                        }
+                        settingsRow("questionmark") { Text("How to use it") }
+                    }
+                    NavigationLink {
+                        SimpleXInfo(onboarding: false)
+                            .navigationBarTitle("", displayMode: .inline)
+                            .frame(maxHeight: .infinity, alignment: .top)
+                    } label: {
+                        settingsRow("info") { Text("About SimpleX Chat") }
                     }
                     NavigationLink {
                         MarkdownHelp()
                             .navigationTitle("How to use markdown")
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
-                        HStack {
-                            Image(systemName: "textformat")
-                                .padding(.trailing, 4)
-                            Text("Markdown in messages")
-                        }
+                        settingsRow("textformat") { Text("Markdown in messages") }
                     }
-                    HStack {
-                        Image(systemName: "number")
-                            .padding(.trailing, 8)
+                    settingsRow("number") {
                         Button {
                             showSettings = false
                             DispatchQueue.main.async {
@@ -115,30 +104,21 @@ struct SettingsView: View {
                             Text("Chat with the developers")
                         }
                     }
-                    HStack {
-                        Image(systemName: "envelope")
-                            .padding(.trailing, 4)
-                        Text("[Send us email](mailto:chat@simplex.chat)")
-                    }
+                    settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
                 Section("Develop") {
                     NavigationLink {
                         TerminalView()
                     } label: {
-                        HStack {
-                            Image(systemName: "terminal")
-                                .frame(maxWidth: 24)
-                                .padding(.trailing, 8)
-                            Text("Chat console")
-                        }
+                        settingsRow("terminal") { Text("Chat console") }
                     }
-                    HStack {
+                    ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
-                            .padding(.trailing, 8)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
+                            .padding(.leading, indent)
                     }
 //                    if let token = chatModel.deviceToken {
 //                        HStack {
@@ -155,6 +135,13 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
+        }
+    }
+
+    private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            content().padding(.leading, indent)
         }
     }
 

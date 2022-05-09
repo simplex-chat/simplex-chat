@@ -264,13 +264,13 @@ struct ComposeView: View {
         case let .quotedItem(chatItem: quotedItem):
             ContextItemView(
                 contextItem: quotedItem,
-                contextIcon: "arrowshape.turn.up.left.circle",
+                contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
                 contextItem: editingItem,
-                contextIcon: "pencil.circle",
+                contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
         }

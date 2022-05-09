@@ -2,6 +2,7 @@ package chat.simplex.app.views.helpers
 
 import android.content.*
 import android.net.Uri
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -10,8 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
-import java.io.File
-import java.io.IOException
+import java.io.*
 
 fun shareText(cxt: Context, text: String) {
   val sendIntent: Intent = Intent().apply {
@@ -33,20 +33,16 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
-      if (destination != null) {
+      destination?.let {
         val filePath = getLoadedFilePath(cxt, ciFile)
         if (filePath != null) {
           val contentResolver = cxt.contentResolver
-          val file = File(filePath)
-          try {
-            val outputStream = contentResolver.openOutputStream(destination)
-            if (outputStream != null) {
-              outputStream.write(file.readBytes())
-              outputStream.close()
-              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
-            }
-          } catch (e: IOException) {
-            Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+          contentResolver.openOutputStream(destination)?.let { stream ->
+            val outputStream = BufferedOutputStream(stream)
+            val file = File(filePath)
+            outputStream.write(file.readBytes())
+            outputStream.close()
+            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
         } else {
           Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
@@ -54,3 +50,27 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
       }
     }
   )
+
+fun saveImage(cxt: Context, ciFile: CIFile?) {
+  val filePath = getLoadedFilePath(cxt, ciFile)
+  val fileName = ciFile?.fileName
+  if (filePath != null && fileName != null) {
+    val values = ContentValues()
+    values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+    values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+    values.put(MediaStore.MediaColumns.TITLE, fileName)
+    val uri = cxt.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+    uri?.let {
+      cxt.contentResolver.openOutputStream(uri)?.let { stream ->
+        val outputStream = BufferedOutputStream(stream)
+        val file = File(filePath)
+        outputStream.write(file.readBytes())
+        outputStream.close()
+        Toast.makeText(cxt, generalGetString(R.string.image_saved), Toast.LENGTH_SHORT).show()
+      }
+    }
+  } else {
+    Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
+  }
+}

@@ -50,24 +50,29 @@
         <target>%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(shared only with your contacts)" xml:space="preserve">
-        <source>(shared only with your contacts)</source>
-        <target>(отправляется только вашим контактам)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id=")" xml:space="preserve">
         <source>)</source>
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
-        <source>**Add new contact**: to create your one-time QR Code for your contact.</source>
+        <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
         <target>**Добавить новый контакт**: чтобы создать одноразовый QR код или ссылку для вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact who shows QR code to you." xml:space="preserve">
-        <source>**Scan QR code**: to connect to your contact who shows QR code to you.</source>
-        <target>**Сканировать QR код**: чтобы соединиться с вашим контактом (который показывает вам QR код).</target>
+      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
+        <source>**Create link / QR code** for your contact to use.</source>
+        <target>**Создать ссылку / QR код** для вашего контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
+        <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
+        <target>**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
+        <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
+        <target>**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
@@ -95,6 +100,16 @@
         <target>: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="About SimpleX" xml:space="preserve">
+        <source>About SimpleX</source>
+        <target>О SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="About SimpleX Chat" xml:space="preserve">
+        <source>About SimpleX Chat</source>
+        <target>Информация о SimpleX Chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
         <source>Accept</source>
         <target>Принять</target>
@@ -110,11 +125,6 @@
         <target>Принять запрос на соединение от %@?</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="Add contact" xml:space="preserve">
-        <source>Add contact</source>
-        <target>Добавить контакт</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add contact to start a new chat" xml:space="preserve">
         <source>Add contact to start a new chat</source>
         <target>Добавьте контакт, чтобы начать разговор</target>
@@ -123,6 +133,11 @@
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Already connected?" xml:space="preserve">
+        <source>Already connected?</source>
+        <target>Соединение уже установлено?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Answer" xml:space="preserve">
@@ -171,7 +186,7 @@
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
-        <source>Choose file</source>
+        <source>Choose file (new in v2.0)</source>
         <target>Выбрать файл (v2.0)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -213,6 +228,11 @@
       <trans-unit id="Connect via one-time link?" xml:space="preserve">
         <source>Connect via one-time link?</source>
         <target>Соединиться через одноразовую ссылку?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connect with the developers" xml:space="preserve">
+        <source>Connect with the developers</source>
+        <target>Соединиться с разработчиками</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -285,6 +305,11 @@
         <target>Создать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create 1-time link / QR code" xml:space="preserve">
+        <source>Create 1-time link / QR code</source>
+        <target>Создать ссылку / QR код</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create address" xml:space="preserve">
         <source>Create address</source>
         <target>Создать адрес</target>
@@ -295,14 +320,19 @@
         <target>Создать ссылку / QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create profile" xml:space="preserve">
-        <source>Create profile</source>
+      <trans-unit id="Create your profile" xml:space="preserve">
+        <source>Create your profile</source>
         <target>Создать профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
         <source>Currently maximum supported file size is %@.</source>
         <target>Максимальный размер файла - %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Decentralized" xml:space="preserve">
+        <source>Decentralized</source>
+        <target>Децентрализованный</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete" xml:space="preserve">
@@ -435,14 +465,24 @@
         <target>Помощь</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="How SimpleX works" xml:space="preserve">
+        <source>How SimpleX works</source>
+        <target>Как SimpleX работает</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="How it works" xml:space="preserve">
+        <source>How it works</source>
+        <target>Как это работает</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="How to" xml:space="preserve">
         <source>How to</source>
         <target>Инфо</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="How to use SimpleX Chat" xml:space="preserve">
-        <source>How to use SimpleX Chat</source>
-        <target>Как использовать SimpleX Chat</target>
+      <trans-unit id="How to use it" xml:space="preserve">
+        <source>How to use it</source>
+        <target>Как использовать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use markdown" xml:space="preserve">
@@ -450,19 +490,14 @@
         <target>Как форматировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
+        <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
+        <target>Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
         <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
         <target>Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel." xml:space="preserve">
-        <source>If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel.</source>
-        <target>Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка** или отправить ссылку через любой другой канал связи.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="If you received SimpleX Chat invitation link you can open it in your browser:" xml:space="preserve">
-        <source>If you received SimpleX Chat invitation link you can open it in your browser:</source>
-        <target>Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ignore" xml:space="preserve">
@@ -473,6 +508,16 @@
       <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>Image will be received when your contact is online, please wait or check later!</source>
         <target>Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Immune to spam and abuse" xml:space="preserve">
+        <source>Immune to spam and abuse</source>
+        <target>Защищен от спама</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="In person or via a video call – the most secure way to connect." xml:space="preserve">
+        <source>In person or via a video call – the most secure way to connect.</source>
+        <target>При встрече или в видеозвонке – самый безопасный способ установить соединение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming %@ call" xml:space="preserve">
@@ -495,14 +540,34 @@
         <target>Ошибка в ссылке контакта</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
+        <source>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</source>
+        <target>Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="It's secure to share - only one contact can use it." xml:space="preserve">
+        <source>It's secure to share - only one contact can use it.</source>
+        <target>Ей безопасно поделиться - только один контакт может использовать её.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Большой файл!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make a private connection" xml:space="preserve">
+        <source>Make a private connection</source>
+        <target>Создайте соединение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated.</source>
         <target>Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
+        <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
+        <target>Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -535,9 +600,29 @@
         <target>Уведомления выключены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="One-time invitation link" xml:space="preserve">
+        <source>One-time invitation link</source>
+        <target>Одноразовая ссылка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
+        <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
+        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
         <target>Открыть Настройки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
+        <source>Open-source protocol and code – anybody can run the servers.</source>
+        <target>Открытый протокол и код - кто угодно может запускать серверы.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
+        <source>Or open the link in the browser and tap **Open in mobile**.</source>
+        <target>Или откройте ссылку в браузере и нажмите **Open in mobile**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -550,9 +635,19 @@
         <target>Вставить полученную ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste the link you received" xml:space="preserve">
+        <source>Paste the link you received</source>
+        <target>Вставьте полученную ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
         <source>Paste the link you received into the box below to connect with your contact.</source>
-        <target>Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</target>
+        <target>Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
+        <source>People can connect to you only via the links you share.</source>
+        <target>С вами можно соединиться только через созданные вами ссылки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please check that you used the correct link or ask your contact to send you another one." xml:space="preserve">
@@ -565,6 +660,11 @@
         <target>Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy redefined" xml:space="preserve">
+        <source>Privacy redefined</source>
+        <target>Более конфиденциальный</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Profile image" xml:space="preserve">
         <source>Profile image</source>
         <target>Аватар</target>
@@ -573,6 +673,16 @@
       <trans-unit id="Read" xml:space="preserve">
         <source>Read</source>
         <target>Прочитано</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+        <source>Read more in our GitHub repository.</source>
+        <target>Узнайте больше из нашего GitHub репозитория.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
+        <source>Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme).</source>
+        <target>Узнайте больше из нашего [GitHub репозитория](https://github.com/simplex-chat/simplex-chat#readme).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
@@ -620,6 +730,11 @@
         <target>Сканировать QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Scan contact's QR code" xml:space="preserve">
+        <source>Scan contact's QR code</source>
+        <target>Сосканировать QR код контакта</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server connected" xml:space="preserve">
         <source>Server connected</source>
         <target>Установлено соединение с сервером</target>
@@ -645,12 +760,6 @@
         <target>Поделиться ссылкой</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show QR code to your contact&#10;to scan from the app" xml:space="preserve">
-        <source>Show QR code to your contact
-to scan from the app</source>
-        <target>Покажите QR код вашему контакту для сканирования в приложении</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Show pending connections" xml:space="preserve">
         <source>Show pending connections</source>
         <target>Показать ожидаемые соединения</target>
@@ -669,6 +778,11 @@ to scan from the app</source>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
         <source>Thank you for installing SimpleX Chat!</source>
         <target>Спасибо, что установили SimpleX Chat!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
+        <source>The 1st platform without any user identifiers – private by design.</source>
+        <target>Первая в мире платформа без идентификации пользователей.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -693,9 +807,14 @@ to scan from the app</source>
         <target>Контакт, которому вы отправили эту ссылку, не сможет соединиться!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The messaging and application platform 100% private by design!" xml:space="preserve">
-        <source>The messaging and application platform 100% private by design!</source>
-        <target>Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.</target>
+      <trans-unit id="The next generation of private messaging" xml:space="preserve">
+        <source>The next generation of private messaging</source>
+        <target>Новое поколение приватных сообщений</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
+        <source>The profile is only shared with your contacts.</source>
+        <target>Профиль отправляется только вашим контактам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -703,19 +822,29 @@ to scan from the app</source>
         <target>Отправитель не будет уведомлён</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To ask any questions and to receive SimpleX Chat updates." xml:space="preserve">
+        <source>To ask any questions and to receive SimpleX Chat updates.</source>
+        <target>Чтобы задать вопросы и получать уведомления о SimpleX Chat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
         <target>Чтобы задать вопросы и получать уведомления о новых версиях,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To connect via link" xml:space="preserve">
-        <source>To connect via link</source>
-        <target>Соединиться через ссылку</target>
+      <trans-unit id="To make a new connection" xml:space="preserve">
+        <source>To make a new connection</source>
+        <target>Чтобы соединиться</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To start a new chat" xml:space="preserve">
-        <source>To start a new chat</source>
-        <target>Начать новый разговор</target>
+      <trans-unit id="To make your first private connection, choose **one of the following**:" xml:space="preserve">
+        <source>To make your first private connection, choose **one of the following**:</source>
+        <target>Чтобы сделать ваше первое приватное соединение, выберите **одно из**:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
+        <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
+        <target>Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -787,7 +916,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
         <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
-        <target>Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
+        <target>Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -805,9 +934,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы можете форматировать сообщения:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control your chat!" xml:space="preserve">
-        <source>You control your chat!</source>
-        <target>Вы котролируете Ваш чат!</target>
+      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
+        <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
+        <target>Вы определяете через какие серверы вы **получаете сообщения**, ваши контакты - серверы, которые вы используете для отправки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You invited your contact" xml:space="preserve">
@@ -855,6 +984,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваши чаты</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact can scan it from the app" xml:space="preserve">
+        <source>Your contact can scan it from the app</source>
+        <target>Ваш контакт может сосканировать QR в приложении</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
@@ -876,12 +1010,12 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.</target>
+        <target>Ваш профиль будет отправлен вашему контакту.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile, contacts and messages (once delivered) are only stored locally on your device." xml:space="preserve">
-        <source>Your profile, contacts and messages (once delivered) are only stored locally on your device.</source>
-        <target>Ваш профиль, контакты и сообщения (после доставки) хранятся только на вашем устройстве.</target>
+      <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
+        <source>Your profile, contacts and delivered messages are stored on your device.</source>
+        <target>Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
@@ -904,9 +1038,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="above, then:" xml:space="preserve">
-        <source>above, then:</source>
-        <target>наверху, затем:</target>
+      <trans-unit id="above, then choose:" xml:space="preserve">
+        <source>above, then choose:</source>
+        <target>наверху, затем выберите:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted" xml:space="preserve">
@@ -982,7 +1116,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
         <source>invited to connect</source>
-        <target>приглашение соединиться</target>
+        <target>приглашение</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
@@ -998,6 +1132,11 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="no end-to-end encryption" xml:space="preserve">
         <source>no end-to-end encryption</source>
         <target>end-to-end шифрование не поддерживается</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="or" xml:space="preserve">
+        <source>or</source>
+        <target>или</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
@@ -1057,22 +1196,12 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>
-        <target>вы создали одноразовую ссылку</target>
+        <target>вы создали ссылку</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>~strike~</source>
         <target>\~зачеркнуть~</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="💻 desktop: scan displayed QR code from the app, via **Scan QR code**." xml:space="preserve">
-        <source>💻 desktop: scan displayed QR code from the app, via **Scan QR code**.</source>
-        <target>💻 на компьютере: сосканируйте QR код из приложения через **Сканировать QR код**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app." xml:space="preserve">
-        <source>📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app.</source>
-        <target>📱 на мобильном: намжите кнопку **Open in mobile app** на веб странице, затем нажмите **Соединиться** в приложении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>

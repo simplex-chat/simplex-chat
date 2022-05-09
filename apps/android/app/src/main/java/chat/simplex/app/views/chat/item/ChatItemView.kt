@@ -91,7 +91,11 @@ fun ChatItemView(
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
-                saveFileLauncher.launch(cItem.file?.fileName)
+                when (cItem.content.msgContent) {
+                  is MsgContent.MCImage -> saveImage(context, cItem.file)
+                  is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
+                  else -> {}
+                }
                 showMenu.value = false
               })
             }
