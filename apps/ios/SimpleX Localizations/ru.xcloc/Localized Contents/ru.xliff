@@ -557,7 +557,7 @@
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
         <source>Make a private connection</source>
-        <target>Создайте соединение</target>
+        <target>Добавьте контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
@@ -839,7 +839,7 @@
       </trans-unit>
       <trans-unit id="To make your first private connection, choose **one of the following**:" xml:space="preserve">
         <source>To make your first private connection, choose **one of the following**:</source>
-        <target>Чтобы сделать ваше первое приватное соединение, выберите **одно из**:</target>
+        <target>Чтобы добавить ваш первый контакт, выберите **одно из**:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">

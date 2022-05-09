@@ -393,7 +393,7 @@
 "Large file!" = "Большой файл!";
 
 /* No comment provided by engineer. */
-"Make a private connection" = "Создайте соединение";
+"Make a private connection" = "Добавьте контакт";
 
 /* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
@@ -585,7 +585,7 @@
 "To make a new connection" = "Чтобы соединиться";
 
 /* No comment provided by engineer. */
-"To make your first private connection, choose **one of the following**:" = "Чтобы сделать ваше первое приватное соединение, выберите **одно из**:";
+"To make your first private connection, choose **one of the following**:" = "Чтобы добавить ваш первый контакт, выберите **одно из**:";
 
 /* No comment provided by engineer. */
 "To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.";
