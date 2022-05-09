@@ -782,7 +782,7 @@
       </trans-unit>
       <trans-unit id="The 1st platform without any user identifiers – private by design." xml:space="preserve">
         <source>The 1st platform without any user identifiers – private by design.</source>
-        <target>Первая в мире платформа без идентификации пользователей.</target>
+        <target>Первая в мире платформа без идентификаторов пользователей.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
