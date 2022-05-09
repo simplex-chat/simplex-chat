@@ -232,7 +232,7 @@
       </trans-unit>
       <trans-unit id="Connect with the developers" xml:space="preserve">
         <source>Connect with the developers</source>
-        <target>Соединиться с девелоперами</target>
+        <target>Соединиться с разработчиками</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -512,12 +512,12 @@
       </trans-unit>
       <trans-unit id="Immune to spam and abuse" xml:space="preserve">
         <source>Immune to spam and abuse</source>
-        <target>Защищен от спама и атак</target>
+        <target>Защищен от спама</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="In person or via a video call – the most secure way to connect." xml:space="preserve">
         <source>In person or via a video call – the most secure way to connect.</source>
-        <target>При встрече или в видеозвонке - самое безопасное соединение.</target>
+        <target>При встрече или в видеозвонке – самый безопасный способ установить соединение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming %@ call" xml:space="preserve">
@@ -547,7 +547,7 @@
       </trans-unit>
       <trans-unit id="It's secure to share - only one contact can use it." xml:space="preserve">
         <source>It's secure to share - only one contact can use it.</source>
-        <target>Ей безопасно поделиться - только один контак может использовать её.</target>
+        <target>Ей безопасно поделиться - только один контакт может использовать её.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
@@ -567,7 +567,7 @@
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
-        <target>Много пользователей спросили: *как SimpleX может доставлять сообщения без идентификаторов пользователей?*</target>
+        <target>Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -607,7 +607,7 @@
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
         <source>Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.</source>
-        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые **отправляются с 2-х уровневым шифрованием**</target>
+        <target>Только пользовательские устройства хранят контакты, группы и сообщения, которые **отправляются с двухуровневым end-to-end шифрованием**</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
@@ -617,7 +617,7 @@
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
-        <target>Открытый протокол и код - кто угодно может хостить серверы.</target>
+        <target>Открытый протокол и код - кто угодно может запускать серверы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
