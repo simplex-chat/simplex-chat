@@ -43,23 +43,36 @@ fun SimpleXInfoLayout(
     Image(
       painter = painterResource(R.drawable.logo),
       contentDescription = stringResource(R.string.image_descr_simplex_logo),
-      modifier = Modifier.padding(vertical = 20.dp).fillMaxWidth(0.80f)
+      modifier = Modifier
+        .padding(vertical = 20.dp)
+        .fillMaxWidth(0.80f)
     )
+
+    Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 16.dp))
 
     InfoRow("🎭", R.string.privacy_redefined, R.string.first_platform_without_user_ids)
     InfoRow("📭", R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
     InfoRow("🤝", R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
 
-    Spacer(Modifier.fillMaxHeight().weight(1f))
+    Spacer(
+      Modifier
+        .fillMaxHeight()
+        .weight(1f))
 
     if (onboardingStage != null) {
       Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage)
       }
-      Spacer(Modifier.fillMaxHeight().weight(1f))
+      Spacer(
+        Modifier
+          .fillMaxHeight()
+          .weight(1f))
     }
 
-    Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+    Box(
+      Modifier
+        .fillMaxWidth()
+        .padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
       SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
         click = showModal { HowItWorks(user, onboardingStage) })
     }
@@ -68,11 +81,13 @@ fun SimpleXInfoLayout(
 
 @Composable
 private fun InfoRow(emoji: String, @StringRes titleId: Int, @StringRes textId: Int) {
-  Row(Modifier.padding(bottom = 16.dp), verticalAlignment = Alignment.Top) {
-    Text(emoji, fontSize = 36.sp, modifier = Modifier.width(60.dp).padding(end = 16.dp))
+  Row(Modifier.padding(bottom = 20.dp), verticalAlignment = Alignment.Top) {
+    Text(emoji, fontSize = 36.sp, modifier = Modifier
+      .width(60.dp)
+      .padding(end = 16.dp))
     Column(horizontalAlignment = Alignment.Start) {
-      Text(stringResource(titleId), fontWeight = FontWeight.Bold)
-      Text(stringResource(textId), lineHeight = 22.sp)
+      Text(stringResource(titleId), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h3, lineHeight = 24.sp)
+      Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.caption)
     }
   }
 }

@@ -46,6 +46,7 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
       Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.shared.closeModal() })
       }
+      Spacer(Modifier.fillMaxHeight().weight(1f))
     }
   }
 }
