@@ -22,23 +22,19 @@ struct SimpleXInfo: View {
                     .frame(width: g.size.width * 0.7)
                     .padding(.bottom, 8)
 
-                ScrollView {
-                    VStack(alignment: .leading) {
-                        Text("The next generation of private messaging")
-                            .font(.title)
-                            .padding(.bottom)
-                        infoRow("🎭", "Privacy redefined",
-                                "The 1st platform without any user identifiers – private by design.")
-                        infoRow("📭", "Immune to spam and abuse",
-                                "People can connect to you only via the links you share.")
-                        infoRow("🤝", "Decentralized",
-                                "Open-source protocol and code – anybody can run the servers.")
-                    }
+                VStack(alignment: .leading) {
+                    Text("The next generation of private messaging")
+                        .font(.title)
+                        .padding(.bottom)
+                    infoRow("🎭", "Privacy redefined",
+                            "The 1st platform without any user identifiers – private by design.")
+                    infoRow("📭", "Immune to spam and abuse",
+                            "People can connect to you only via the links you share.")
+                    infoRow("🤝", "Decentralized",
+                            "Open-source protocol and code – anybody can run the servers.")
                 }
-                .padding(.bottom)
 
                 Spacer()
-
                 if onboarding {
                     OnboardingActionButton()
                     Spacer()
