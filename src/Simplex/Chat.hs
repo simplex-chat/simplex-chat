@@ -254,7 +254,7 @@ processChatCommand = \case
             (fileSize, chSize) <- checkSndFile file
             let fileName = takeFileName file
                 fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
-            fileId <- withStore $ \st -> createSndGroupFileTransferV2 st userId gInfo file fileInvitation chSize
+            fileId <- withStore $ \st -> createSndGroupFileTransfer st userId gInfo file fileInvitation chSize
             let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
             pure $ Just (fileInvitation, ciFile)
         prepareMsg :: Maybe FileInvitation -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
@@ -838,37 +838,31 @@ toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, senderDisplayName, grpMemberId} filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
-    -- old file protocol
+    -- direct file protocol
     Just connReq ->
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fName
           withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
         Left e -> throwError e
-    -- new file protocol
+    -- group file protocol
     Nothing ->
       case grpMemberId of
-        Nothing -> do
-          ct <- withStore $ \st -> getContactByName st userId senderDisplayName
-          acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectContactMessage ct $ XFileAcptInv sharedMsgId fileInvConnReq fName
+        Nothing -> throwChatError $ CEFileInternal "group member not found for file transfer"
         Just memId -> do
           (GroupInfo {groupId}, GroupMember {activeConn}) <- withStore $ \st -> getGroupAndMember st user memId
           case activeConn of
-            Just conn ->
-              acceptFileV2 $ \sharedMsgId fileInvConnReq -> sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
-            _ -> throwChatError $ CEFileInternal "member connection not active" -- should not happen
-      where
-        acceptFileV2 :: (SharedMsgId -> ConnReqInvitation -> m SndMessage) -> m AChatItem
-        acceptFileV2 sendXFileAcptInv = do
-          sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
-          (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
-          filePath <- getRcvFilePath filePath_ fName
-          ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
-          void $ sendXFileAcptInv sharedMsgId fileInvConnReq
-          pure ci
+            Just conn -> do
+              sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
+              (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
+              filePath <- getRcvFilePath filePath_ fName
+              ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
+              void $ sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
+              pure ci
+            _ -> throwChatError $ CEFileInternal "member connection not active"
   where
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
@@ -1077,7 +1071,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XMsgDel sharedMsgId -> messageDelete ct sharedMsgId msg msgMeta
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
-              XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv
               XInfoProbe probe -> xInfoProbe ct probe
@@ -1238,7 +1231,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processSndFileConn :: ACommand 'Agent -> Connection -> SndFileTransfer -> m ()
     processSndFileConn agentMsg conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
-        -- old file protocol
+        -- SMP CONF for SndFileConnection happens for direct file protocol
+        -- when recipient of the file "joins" connection created by the sender
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -1275,7 +1269,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processRcvFileConn :: ACommand 'Agent -> Connection -> RcvFileTransfer -> m ()
     processRcvFileConn agentMsg conn ft@RcvFileTransfer {fileId, chunkSize} =
       case agentMsg of
-        -- new file protocol
+        -- SMP CONF for RcvFileConnection happens for group file protocol
+        -- when sender of the file "joins" connection created by the recipient
+        -- (sender doesn't create connections for all group members)
         CONF confId connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -1501,24 +1497,6 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
 
-    xFileAcptInv :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
-    xFileAcptInv Contact {contactId} sharedMsgId fileConnReq fName msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId contactId sharedMsgId
-      withStore (\st -> getFileTransfer st userId fileId) >>= \case
-        FTSnd FileTransferMeta {fileName, cancelled} _ ->
-          if not cancelled
-            then
-              if fName == fileName
-                then
-                  tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
-                    Right acId ->
-                      withStore $ \st -> createSndFileTransferV2Connection st userId fileId acId
-                    Left e -> throwError e
-                else messageError "x.file.acpt.inv: fileName is different from expected"
-            else pure () -- TODO send "file cancelled" message
-        _ -> messageError "x.file.acpt.inv: bad file direction"
-
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
     xFileAcptInvGroup GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
@@ -1531,10 +1509,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 then
                   tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
                     Right acId ->
-                      withStore $ \st -> createSndGroupFileTransferV2Connection st userId fileId acId m
+                      withStore $ \st -> createSndGroupFileTransferConnection st userId fileId acId m
                     Left e -> throwError e
                 else messageError "x.file.acpt.inv: fileName is different from expected"
-            else pure () -- TODO send "file cancelled" message
+            else pure ()
         _ -> messageError "x.file.acpt.inv: bad file direction"
 
     groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()

@@ -90,12 +90,9 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    createSndFileTransfer, -- old file protocol
-    createSndFileTransferV2,
-    createSndFileTransferV2Connection,
-    createSndGroupFileTransfer, -- old file protocol
-    createSndGroupFileTransferV2,
-    createSndGroupFileTransferV2Connection,
+    createSndFileTransfer,
+    createSndGroupFileTransfer,
+    createSndGroupFileTransferConnection,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -211,7 +208,6 @@ import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
-import System.FilePath (takeFileName)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query)]
@@ -1849,46 +1845,8 @@ createSndFileTransfer st userId Contact {contactId} filePath FileInvitation {fil
       (fileId, fileStatus, connId, currentTs, currentTs)
     pure fileId
 
-createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
-createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
-    insertedRowId db
-
-createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
-createSndFileTransferV2Connection st userId fileId acId =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    Connection {connId} <- createSndFileConnection_ db userId fileId acId
-    DB.execute
-      db
-      "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (fileId, FSAccepted, connId, currentTs, currentTs)
-
-createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
-createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
-  liftIO . withTransaction st $ \db -> do
-    let fileName = takeFileName filePath
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
-    fileId <- insertedRowId db
-    forM_ ms $ \(GroupMember {groupMemberId}, agentConnId, _) -> do
-      Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
-      DB.execute
-        db
-        "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-        (fileId, FSNew, connId, groupMemberId, currentTs, currentTs)
-    pure fileId
-
-createSndGroupFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
-createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
+createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndGroupFileTransfer st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -1897,8 +1855,8 @@ createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitati
       (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
-createSndGroupFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
-createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupMemberId} =
+createSndGroupFileTransferConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
+createSndGroupFileTransferConnection st userId fileId acId GroupMember {groupMemberId} =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     Connection {connId} <- createSndFileConnection_ db userId fileId acId

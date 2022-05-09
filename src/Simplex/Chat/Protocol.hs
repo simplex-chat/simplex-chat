@@ -114,8 +114,8 @@ data ChatMsgEvent
   | XMsgDel SharedMsgId
   | XMsgDeleted
   | XFile FileInvitation -- TODO discontinue
-  | XFileAcpt String -- old file protocol
-  | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
+  | XFileAcpt String -- direct file protocol
+  | XFileAcptInv SharedMsgId ConnReqInvitation String -- group file protocol
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
