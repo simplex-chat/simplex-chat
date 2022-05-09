@@ -429,9 +429,7 @@ getContactGroupNames st userId Contact {contactId} =
 
 deleteContact :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m ()
 deleteContact st userId Contact {contactId, localDisplayName} = do
-  liftIO $ putStrLn "in deleteContact, first liftIO . withTransaction st $ \\db -> do"
   liftIO . withTransaction st $ \db -> do
-    liftIO $ putStrLn "DB.execute DELETE FROM connections WHERE connection_id IN ..."
     DB.execute
       db
       [sql|
@@ -443,15 +441,11 @@ deleteContact st userId Contact {contactId, localDisplayName} = do
         )
       |]
       (userId, contactId)
-    liftIO $ putStrLn "DB.execute db \"DELETE FROM files WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
     DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  liftIO $ putStrLn "in deleteContact, second liftIO . withTransaction st $ \\db -> do"
+  -- in separate transaction to prevent crashes on android (race condition on integrity check?)
   liftIO . withTransaction st $ \db -> do
-    liftIO $ putStrLn "DB.execute db \"DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
     DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    liftIO $ putStrLn "DB.execute db \"DELETE FROM contacts WHERE user_id = ? AND contact_id = ?\" (userId, contactId)"
     DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-    liftIO $ putStrLn "DB.execute db \"DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?\" (userId, localDisplayName)"
     DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 updateUserProfile :: StoreMonad m => SQLiteStore -> User -> Profile -> m ()
