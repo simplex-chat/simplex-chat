@@ -19,6 +19,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.annotatedStringResource
 import chat.simplex.app.views.usersettings.HelpLayout
 import chat.simplex.app.views.usersettings.simplexTeamUri
@@ -46,7 +47,7 @@ fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = n
 
     if (onboardingStage != null) {
       Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
-        OnboardingActionButton(user, onboardingStage)
+        OnboardingActionButton(user, onboardingStage, onclick = { ModalManager.shared.closeModal() })
       }
     }
   }

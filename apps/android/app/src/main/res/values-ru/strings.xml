@@ -263,6 +263,7 @@
     <string name="display_name">Имя профиля</string>
     <string name="full_name_optional__prompt">Полное имя (не обязательно)</string>
     <string name="create_profile_button">Создать</string>
+    <string name="about_simplex">О SimpleX</string>
 
     <!-- markdown demo - MarkdownHelpView.kt -->
     <string name="how_to_use_markdown">Как форматировать</string>

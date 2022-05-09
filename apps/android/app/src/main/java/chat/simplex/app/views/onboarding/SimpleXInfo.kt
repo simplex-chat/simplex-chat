@@ -78,17 +78,25 @@ private fun InfoRow(emoji: String, @StringRes titleId: Int, @StringRes textId: I
 
 
 @Composable
-fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>) {
+fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
   if (user == null) {
-    ActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage)
+    ActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, onclick)
   } else {
-    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.Step3_MakeConnection, onboardingStage)
+    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.Step3_MakeConnection, onboardingStage, onclick)
   }
 }
 
 @Composable
-private fun ActionButton(@StringRes labelId: Int, onboarding: OnboardingStage?, onboardingStage: MutableState<OnboardingStage?>) {
-  SimpleButtonFrame(click = { onboardingStage.value = onboarding }) {
+private fun ActionButton(
+  @StringRes labelId: Int,
+  onboarding: OnboardingStage?,
+  onboardingStage: MutableState<OnboardingStage?>,
+  onclick: (() -> Unit)?
+) {
+  SimpleButtonFrame(click = {
+    onclick?.invoke()
+    onboardingStage.value = onboarding
+  }) {
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
     Icon(
       Icons.Outlined.ArrowForwardIos, "next stage", tint = MaterialTheme.colors.primary,

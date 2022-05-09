@@ -266,8 +266,9 @@
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Display Name</string>
-  <string name="full_name_optional__prompt">Full Name (Optional)</string>
+  <string name="full_name_optional__prompt">Full Name (optional)</string>
   <string name="create_profile_button">Create</string>
+  <string name="about_simplex">About SimpleX</string>
 
   <!-- markdown demo - MarkdownHelpView.kt -->
   <string name="how_to_use_markdown">How to use markdown</string>
