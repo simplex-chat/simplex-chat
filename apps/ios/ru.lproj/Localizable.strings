@@ -378,7 +378,7 @@
 "Invalid connection link" = "Ошибка в ссылке контакта";
 
 /* chat list item title */
-"invited to connect" = "приглашение соединиться";
+"invited to connect" = "приглашение";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
@@ -453,7 +453,7 @@
 "Paste the link you received" = "Вставьте полученную ссылку";
 
 /* No comment provided by engineer. */
-"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.";
+"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.";
 
 /* No comment provided by engineer. */
 "People can connect to you only via the links you share." = "С вами можно соединиться только через созданные вами ссылки.";
@@ -648,7 +648,7 @@
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
-"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
@@ -666,7 +666,7 @@
 "You invited your contact" = "Вы пригласили ваш контакт";
 
 /* chat list item description */
-"you shared one-time link" = "вы создали одноразовую ссылку";
+"you shared one-time link" = "вы создали ссылку";
 
 /* No comment provided by engineer. */
 "You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
@@ -699,7 +699,7 @@
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";
 
 /* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.";
+"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен вашему контакту.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.";

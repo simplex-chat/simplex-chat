@@ -642,7 +642,7 @@
       </trans-unit>
       <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
         <source>Paste the link you received into the box below to connect with your contact.</source>
-        <target>Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</target>
+        <target>Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
@@ -916,7 +916,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
         <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
-        <target>Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
+        <target>Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -1010,7 +1010,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.</target>
+        <target>Ваш профиль будет отправлен вашему контакту.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
@@ -1116,7 +1116,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
         <source>invited to connect</source>
-        <target>приглашение соединиться</target>
+        <target>приглашение</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
@@ -1196,7 +1196,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>
-        <target>вы создали одноразовую ссылку</target>
+        <target>вы создали ссылку</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
