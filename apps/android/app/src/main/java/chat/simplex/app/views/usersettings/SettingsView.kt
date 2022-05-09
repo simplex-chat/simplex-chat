@@ -26,7 +26,6 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.call.VideoCallView
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.onboarding.HowItWorks
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable

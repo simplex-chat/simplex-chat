@@ -17,10 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.work.*
-import chat.simplex.app.model.*
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
-import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
@@ -29,6 +29,7 @@ import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
 import java.util.concurrent.TimeUnit
+
 //import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
@@ -96,7 +97,6 @@ fun MainPage(chatModel: ChatModel) {
           SimpleXInfo(chatModel, onboarding = true)
         }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
-      onboarding == OnboardingStage.Step3_MakeConnection -> MakeConnection(chatModel)
     }
     ModalManager.shared.showInView()
     AlertManager.shared.showInView()

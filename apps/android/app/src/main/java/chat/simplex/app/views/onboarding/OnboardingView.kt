@@ -16,16 +16,7 @@ import kotlinx.coroutines.launch
 enum class OnboardingStage {
   Step1_SimpleXInfo,
   Step2_CreateProfile,
-  Step3_MakeConnection,
   OnboardingComplete
-}
-
-@Composable fun OnboardingView(chatModel: ChatModel, onboarding: OnboardingStage) {
-  when (onboarding) {
-    OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
-    OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
-    OnboardingStage.Step3_MakeConnection -> MakeConnection(chatModel)
-  }
 }
 
 @Composable

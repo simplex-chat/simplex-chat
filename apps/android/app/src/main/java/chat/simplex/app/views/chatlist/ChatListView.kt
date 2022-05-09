@@ -21,6 +21,7 @@ import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.newchat.NewChatSheet
+import chat.simplex.app.views.onboarding.MakeConnection
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -88,8 +89,7 @@ fun ChatListView(chatModel: ChatModel) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel)
         } else {
-          val user = chatModel.currentUser.value
-          Help(scaffoldCtrl, displayName = user?.profile?.displayName)
+          MakeConnection(chatModel)
         }
       }
       if (scaffoldCtrl.expanded.value) {

@@ -6,7 +6,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.ArrowForwardIos
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Alignment
@@ -17,9 +18,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.app.model.User
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
 
@@ -82,7 +83,7 @@ fun OnboardingActionButton(user: User?, onboardingStage: MutableState<Onboarding
   if (user == null) {
     ActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage, onclick)
   } else {
-    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.Step3_MakeConnection, onboardingStage, onclick)
+    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, onboardingStage, onclick)
   }
 }
 

@@ -16,13 +16,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.helpers.annotatedStringResource
-import chat.simplex.app.views.usersettings.HelpLayout
-import chat.simplex.app.views.usersettings.simplexTeamUri
 
 @Composable
 fun HowItWorks(user: User?, onboardingStage: MutableState<OnboardingStage?>? = null) {
