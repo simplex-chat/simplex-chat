@@ -169,6 +169,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.file.acpt.inv" $
     "{\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\",\"fileConnReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23MCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XFileAcptInv (SharedMsgId "\1\2\3\4") testConnReq "photo.jpg"
+  it "x.file.cancel" $
+    "{\"event\":\"x.file.cancel\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
+      #==# XFileCancel (SharedMsgId "\1\2\3\4")
   it "x.info" $
     "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
       #==# XInfo testProfile
