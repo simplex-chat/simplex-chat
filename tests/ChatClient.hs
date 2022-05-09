@@ -213,7 +213,9 @@ serverCfg =
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
-      certificateFile = "tests/fixtures/tls/server.crt"
+      certificateFile = "tests/fixtures/tls/server.crt",
+      logStatsInterval = Just 86400,
+      logStatsStartTime = 0
     }
 
 withSmpServer :: IO a -> IO a
