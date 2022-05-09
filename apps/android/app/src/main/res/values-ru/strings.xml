@@ -257,7 +257,8 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним ваши контакты и сообщения (после доставки) на серверах.</string>
     <string name="create_profile">Создать профиль</string>
-    <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.</string>
+    <string name="your_profile_is_stored_on_your_device">Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.</string>
+    <string name="profile_is_only_shared_with_your_contacts">Профиль отправляется только вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
     <string name="display_name">Имя профиля</string>
     <string name="full_name_optional__prompt">Полное имя (не обязательно)</string>

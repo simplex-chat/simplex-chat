@@ -18,6 +18,7 @@ import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -49,6 +50,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       chatModel.chats.addAll(chats)
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
+      chatModel.onboardingStage.value =
+        if (chatModel.chats.isEmpty()) OnboardingStage.Step3_MakeConnection
+        else OnboardingStage.OnboardingComplete
       Log.d(TAG, "started chat")
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -949,7 +953,9 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is InvalidConnReq -> "invalidConnReq"
     is ContactGroups -> "groupNames $groupNames"
+    is NoActiveUser -> "noActiveUser"
   }
+  @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
 }

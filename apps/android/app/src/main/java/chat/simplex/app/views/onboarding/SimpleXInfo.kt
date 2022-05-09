@@ -42,7 +42,7 @@ fun SimpleXInfoLayout(
     Image(
       painter = painterResource(R.drawable.logo),
       contentDescription = stringResource(R.string.image_descr_simplex_logo),
-      modifier = Modifier.padding(vertical = 15.dp).fillMaxWidth(0.80f)
+      modifier = Modifier.padding(vertical = 20.dp).fillMaxWidth(0.80f)
     )
 
     InfoRow("🎭", R.string.privacy_redefined, R.string.first_platform_without_user_ids)
@@ -59,9 +59,8 @@ fun SimpleXInfoLayout(
     }
 
     Box(Modifier.fillMaxWidth().padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
-      SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info) {
-        showModal { m -> HowItWorks(user, onboardingStage) }
-      }
+      SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
+        click = showModal { HowItWorks(user, onboardingStage) })
     }
   }
 }
@@ -81,16 +80,16 @@ private fun InfoRow(emoji: String, @StringRes titleId: Int, @StringRes textId: I
 @Composable
 fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>) {
   if (user == null) {
-    ActionButton(stringResource(R.string.create_your_profile), onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage)
+    ActionButton(R.string.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, onboardingStage)
   } else {
-    ActionButton(stringResource(R.string.make_private_connection), onboarding = OnboardingStage.Step3_MakeConnection, onboardingStage)
+    ActionButton(R.string.make_private_connection, onboarding = OnboardingStage.Step3_MakeConnection, onboardingStage)
   }
 }
 
 @Composable
-private fun ActionButton(label: String, onboarding: OnboardingStage?, onboardingStage: MutableState<OnboardingStage?>) {
+private fun ActionButton(@StringRes labelId: Int, onboarding: OnboardingStage?, onboardingStage: MutableState<OnboardingStage?>) {
   SimpleButtonFrame(click = { onboardingStage.value = onboarding }) {
-    Text(label, style = MaterialTheme.typography.caption, color = MaterialTheme.colors.primary)
+    Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
     Icon(
       Icons.Outlined.ArrowForwardIos, "next stage", tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(end = 8.dp)

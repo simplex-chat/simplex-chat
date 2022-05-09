@@ -262,7 +262,8 @@
   <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
   <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
   <string name="create_profile">Create profile</string>
-  <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Your profile is stored on your device and shared only with your contacts.</string>
+  <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
+  <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Display Name</string>
   <string name="full_name_optional__prompt">Full Name (Optional)</string>
