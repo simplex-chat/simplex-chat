@@ -617,7 +617,7 @@
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
-        <target>Открытый протокол и код - кто угодно может запускать серверы.</target>
+        <target>Открытый протокол и код - кто угодно может запустить сервер.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
