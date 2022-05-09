@@ -87,11 +87,19 @@ fun ChatItemView(
             copyText(cxt, cItem.content.text)
             showMenu.value = false
           })
-          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile) {
+          if ((cItem.content.msgContent is MsgContent.MCImage
+                || cItem.content.msgContent is MsgContent.MCFile)
+            && cItem.file != null
+            && cItem.file.loaded
+          ) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
-                saveFileLauncher.launch(cItem.file?.fileName)
+                when (cItem.content.msgContent) {
+                  is MsgContent.MCImage -> saveImage(context, cItem.file)
+                  is MsgContent.MCFile -> saveFileLauncher.launch(cItem.file?.fileName)
+                  else -> {}
+                }
                 showMenu.value = false
               })
             }
