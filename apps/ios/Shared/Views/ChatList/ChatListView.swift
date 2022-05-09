@@ -21,13 +21,9 @@ struct ChatListView: View {
     var body: some View {
         let v = NavigationView {
             List {
-                if chatModel.chats.isEmpty {
-                    ChatHelp(showSettings: $showSettings)
-                } else {
-                    ForEach(filteredChats()) { chat in
-                        ChatListNavLink(chat: chat, showCallView: $showCallView)
-                            .padding(.trailing, -16)
-                    }
+                ForEach(filteredChats()) { chat in
+                    ChatListNavLink(chat: chat, showCallView: $showCallView)
+                        .padding(.trailing, -16)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -36,15 +32,15 @@ struct ChatListView: View {
                     chatModel.popChat(chatId)
                 }
             }
-            .onChange(of: chatModel.appOpenUrl) { _ in
-                if let url = chatModel.appOpenUrl {
-                    chatModel.appOpenUrl = nil
-                    AlertManager.shared.showAlert(connectViaUrlAlert(url))
-                }
+            .onChange(of: chatModel.chats.isEmpty) { empty in
+                if !empty { return }
+                withAnimation { chatModel.onboardingStage = .step3_MakeConnection }
             }
+            .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onAppear() { connectViaUrl() }
             .offset(x: -8)
             .listStyle(.plain)
-            .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .navigationTitle("Your chats")
             .navigationBarTitleDisplayMode(chatModel.chats.count > 8 ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -99,29 +95,6 @@ struct ChatListView: View {
                 (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
-    }
-
-    private func connectViaUrlAlert(_ url: URL) -> Alert {
-        var path = url.path
-        logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
-        if (path == "/contact" || path == "/invitation") {
-            path.removeFirst()
-            let action: ConnReqType = path == "contact" ? .contact : .invitation
-            let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-            let title: LocalizedStringKey
-            if case .contact = action { title = "Connect via contact link?" }
-            else { title = "Connect via one-time link?" }
-            return Alert(
-                title: Text(title),
-                message: Text("Your profile will be sent to the contact that you received this link from"),
-                primaryButton: .default(Text("Connect")) {
-                    connectViaLink(link)
-                },
-                secondaryButton: .cancel()
-            )
-        } else {
-            return Alert(title: Text("Error: URL is invalid"))
-        }
     }
 
     private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
