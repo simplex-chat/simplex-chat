@@ -30,7 +30,7 @@ struct SimpleXInfo: View {
                 infoRow("📭", "Immune to spam and abuse",
                         "People can connect to you only via the links you share.")
                 infoRow("🤝", "Decentralized",
-                        "Open-source protocol – anybody can run the servers.")
+                        "Open-source protocol and code – anybody can run the servers.")
 
                 Spacer()
 

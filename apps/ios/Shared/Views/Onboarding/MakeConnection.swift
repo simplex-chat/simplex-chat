@@ -20,7 +20,7 @@ struct MakeConnection: View {
             if let user = m.currentUser {
                 Text("Welcome \(user.displayName)!")
                     .font(.largeTitle)
-                    .bold()
+                    .multilineTextAlignment(.leading)
                     .padding(.bottom, 8)
             } else {
                 Text("Make a private connection")
@@ -28,38 +28,42 @@ struct MakeConnection: View {
                     .padding(.bottom)
             }
 
-            Text("To make your first private connection, choose **one of the following**:")
-                .padding(.bottom)
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Text("To make your first private connection, choose **one of the following**:")
+                        .padding(.bottom)
 
-            actionRow(
-                icon: "qrcode",
-                title: "Create 1-time link / QR code",
-                text: "It's secure to share - only one contact can use it."
-            ) { addContactAction() }
+                    actionRow(
+                        icon: "qrcode",
+                        title: "Create 1-time link / QR code",
+                        text: "It's secure to share - only one contact can use it."
+                    ) { addContactAction() }
 
-            actionRow(
-                icon: "link",
-                title: "Paste the link you received",
-                text: "Or open the link in the browser and tap **Open in mobile**."
-            ) { actionSheet = .pasteLink }
+                    actionRow(
+                        icon: "link",
+                        title: "Paste the link you received",
+                        text: "Or open the link in the browser and tap **Open in mobile**."
+                    ) { actionSheet = .pasteLink }
 
-            actionRow(
-                icon: "qrcode.viewfinder",
-                title: "Scan contact's QR code",
-                text: "In person or via a video call – the most secure way to connect."
-            ) { actionSheet = .scanQRCode }
+                    actionRow(
+                        icon: "qrcode.viewfinder",
+                        title: "Scan contact's QR code",
+                        text: "In person or via a video call – the most secure way to connect."
+                    ) { actionSheet = .scanQRCode }
 
-            Text("or")
-                .padding(.bottom)
-                .frame(maxWidth: .infinity)
+                    Text("or")
+                        .padding(.bottom)
+                        .frame(maxWidth: .infinity)
 
-            actionRow(
-                icon: "number",
-                title: "Connect with the developers",
-                text: "To ask any questions and to receive SimpleX Chat updates."
-            ) {
-                DispatchQueue.main.async {
-                    UIApplication.shared.open(simplexTeamURL)
+                    actionRow(
+                        icon: "number",
+                        title: "Connect with the developers",
+                        text: "To ask any questions and to receive SimpleX Chat updates."
+                    ) {
+                        DispatchQueue.main.async {
+                            UIApplication.shared.open(simplexTeamURL)
+                        }
+                    }
                 }
             }
 
@@ -120,7 +124,9 @@ struct MakeConnection: View {
                     .padding(.top, 6)
             })
             VStack(alignment: .leading) {
-                Button(title, action: action).font(.headline)
+                Button(title, action: action)
+                    .font(.headline)
+                    .multilineTextAlignment(.leading)
                 Text(text)
             }
         }
