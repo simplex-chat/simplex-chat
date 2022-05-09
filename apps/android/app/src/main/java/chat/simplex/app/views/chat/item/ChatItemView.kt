@@ -118,7 +118,7 @@ fun ChatItemView(
 }
 
 @Composable
-private fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
+fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = MaterialTheme.colors.onBackground) {
   DropdownMenuItem(onClick) {
     Row {
       Text(
