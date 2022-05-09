@@ -98,11 +98,13 @@ struct ChatPreviewView: View {
                 .frame(maxHeight: 5)
                 .foregroundColor(.secondary)
         default:
-            Image(systemName: "ellipsis")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 10)
-                .foregroundColor(.secondary)
+            ProgressView().frame(width: 61, height: 61, alignment: .center)
+
+//            Image(systemName: "ellipsis")
+//                .resizable()
+//                .scaledToFit()
+//                .frame(maxWidth: 10)
+//                .foregroundColor(.secondary)
         }
     }
 }
