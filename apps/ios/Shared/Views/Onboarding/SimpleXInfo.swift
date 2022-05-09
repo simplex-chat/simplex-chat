@@ -20,17 +20,22 @@ struct SimpleXInfo: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: g.size.width * 0.7)
-                    .padding(.bottom)
-                Text("The next generation of private messaging")
-                    .font(.title)
-                    .padding(.bottom)
+                    .padding(.bottom, 8)
 
-                infoRow("🎭", "Privacy redefined",
-                        "The 1st platform without any user identifiers – private by design.")
-                infoRow("📭", "Immune to spam and abuse",
-                        "People can connect to you only via the links you share.")
-                infoRow("🤝", "Decentralized",
-                        "Open-source protocol and code – anybody can run the servers.")
+                ScrollView {
+                    VStack(alignment: .leading) {
+                        Text("The next generation of private messaging")
+                            .font(.title)
+                            .padding(.bottom)
+                        infoRow("🎭", "Privacy redefined",
+                                "The 1st platform without any user identifiers – private by design.")
+                        infoRow("📭", "Immune to spam and abuse",
+                                "People can connect to you only via the links you share.")
+                        infoRow("🤝", "Decentralized",
+                                "Open-source protocol and code – anybody can run the servers.")
+                    }
+                }
+                .padding(.bottom)
 
                 Spacer()
 
@@ -65,7 +70,7 @@ struct SimpleXInfo: View {
                 Text(text)
             }
         }
-        .padding(.bottom)
+        .padding(.bottom, 8)
     }
 }
 
@@ -92,6 +97,7 @@ struct OnboardingActionButton: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .padding(.bottom)
     }
 }
 

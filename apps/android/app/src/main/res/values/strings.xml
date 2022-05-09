@@ -99,6 +99,7 @@
   <string name="icon_descr_image_snd_complete">Image sent</string>
   <string name="waiting_for_image">Waiting for image</string>
   <string name="image_will_be_received_when_contact_is_online">Image will be received when your contact is online, please wait or check later!</string>
+  <string name="image_saved">Image saved to Gallery</string>
 
   <!-- Files - CIFileView.kt -->
   <string name="icon_descr_file">File</string>

@@ -114,24 +114,23 @@ struct MakeConnection: View {
     }
 
     private func actionRow(icon: String, title: LocalizedStringKey, text: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        HStack(alignment: .top, spacing: 20) {
-            Button(action: action, label: {
+        Button(action: action, label: {
+            HStack(alignment: .top, spacing: 20) {
                 Image(systemName: icon)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 30, height: 30)
-                    .padding(.leading, 6)
+                    .padding(.leading, 4)
                     .padding(.top, 6)
-            })
-            VStack(alignment: .leading) {
-                Button(action: action, label: {
-                    Text(title)
-                        .font(.headline)
-                        .multilineTextAlignment(.leading)
-                })
-                Text(text)
+                VStack(alignment: .leading) {
+                    Group {
+                        Text(title).font(.headline)
+                        Text(text).foregroundColor(.primary)
+                    }
+                    .multilineTextAlignment(.leading)
+                }
             }
-        }
+        })
         .padding(.bottom)
     }
 }
