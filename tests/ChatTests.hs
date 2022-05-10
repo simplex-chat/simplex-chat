@@ -1037,7 +1037,7 @@ testFileSndCancel =
       alice ##> "/fc 1"
       concurrentlyN_
         [ do
-            alice <## "cancelled sending file 1 (test_1MB.pdf) to bob"
+            alice <## "cancelled sending file 1 (test_1MB.pdf)"
             alice ##> "/fs 1"
             alice <## "sending file 1 (test_1MB.pdf) cancelled: bob"
             alice <## "file transfer cancelled",
