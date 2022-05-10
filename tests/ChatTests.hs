@@ -1141,7 +1141,7 @@ testGroupFileSndCancelBeforeTransfer =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice #> "/f #team ./tests/fixtures/test.txt"
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
