@@ -1202,6 +1202,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
+            XFileCancel sharedMsgId -> xFileCancelGroup gInfo sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
@@ -1490,12 +1491,20 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveG g
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
+    xFileCancel Contact {contactId} sharedMsgId msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId contactId sharedMsgId
       cancelFile user fileId
+      ft <- withStore (\st -> getRcvFileTransfer st userId fileId)
       toView $ CRRcvFileSndCancelled ft
-      toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+
+    xFileCancelGroup :: GroupInfo -> SharedMsgId -> MsgMeta -> m ()
+    xFileCancelGroup GroupInfo {groupId} sharedMsgId msgMeta = do
+      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
+      cancelFile user fileId
+      ft <- withStore (\st -> getRcvFileTransfer st userId fileId)
+      toView $ CRRcvFileSndCancelled ft
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
     xFileAcptInvGroup GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
