@@ -98,6 +98,7 @@ module Simplex.Chat.Store
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
+    getContactOrGroupIdByFileId,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -1865,11 +1866,11 @@ createSndGroupFileTransferConnection st userId fileId acId GroupMember {groupMem
       "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
-updateFileCancelled :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
-updateFileCancelled st userId fileId =
+updateFileCancelled :: MsgDirectionI d => MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
+updateFileCancelled st userId fileId ciFileStatus =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
+    DB.execute db "UPDATE files SET cancelled = 1, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
 updateCIFileStatus :: (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
 updateCIFileStatus st userId fileId ciFileStatus =
@@ -1894,7 +1895,7 @@ getSharedMsgIdByFileId st userId fileId =
         |]
         (userId, fileId)
 
-getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> m Int64
 getFileIdBySharedMsgId st userId contactId sharedMsgId =
   liftIOEither . withTransaction st $ \db ->
     firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
@@ -1908,7 +1909,7 @@ getFileIdBySharedMsgId st userId contactId sharedMsgId =
         |]
         (userId, contactId, sharedMsgId)
 
-getGroupFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getGroupFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> m Int64
 getGroupFileIdBySharedMsgId st userId groupId sharedMsgId =
   liftIOEither . withTransaction st $ \db ->
     firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
@@ -1921,6 +1922,23 @@ getGroupFileIdBySharedMsgId st userId groupId sharedMsgId =
           WHERE i.user_id = ? AND i.group_id = ? AND i.shared_msg_id = ?
         |]
         (userId, groupId, sharedMsgId)
+
+getContactOrGroupIdByFileId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (Either ContactId Int64)
+getContactOrGroupIdByFileId st userId fileId = do
+  r <- liftIO . withTransaction st $ \db -> do
+    DB.query
+      db
+      [sql|
+        SELECT contact_id, group_id
+        FROM files
+        WHERE user_id = ? AND file_id = ?
+        LIMIT 1
+      |]
+      (userId, fileId)
+  case r of
+    [(Just contactId, Nothing)] -> pure $ Left contactId
+    [(Nothing, Just groupId)] -> pure $ Right groupId
+    _ -> throwError $ SEInternalError "could not retrieve contact or group id by file id"
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
