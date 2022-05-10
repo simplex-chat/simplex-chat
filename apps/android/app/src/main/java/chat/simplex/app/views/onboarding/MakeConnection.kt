@@ -81,19 +81,19 @@ fun MakeConnectionLayout(
         modifier = Modifier.padding(bottom = 16.dp)
       )
       ActionRow(
-        Icons.Outlined.QrCode,
+        Icons.Outlined.AddLink,
         R.string.create_1_time_link_qr_code,
         R.string.it_s_secure_to_share__only_one_contact_can_use_it,
         createLink
       )
       ActionRow(
-        Icons.Outlined.Link,
+        Icons.Outlined.Article,
         R.string.paste_the_link_you_received,
         R.string.or_open_the_link_in_the_browser_and_tap_open_in_mobile,
         pasteLink
       )
       ActionRow(
-        Icons.Outlined.QrCodeScanner,
+        Icons.Outlined.QrCode,
         R.string.scan_contact_s_qr_code,
         R.string.in_person_or_via_a_video_call__the_most_secure_way_to_connect,
         scanCode
