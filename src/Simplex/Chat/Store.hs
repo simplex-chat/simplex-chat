@@ -2070,13 +2070,20 @@ getRcvFileTransfer_ db userId fileId =
                 FSAccepted -> ft name fileInv RFSAccepted fileInfo
                 FSConnected -> ft name fileInv RFSConnected fileInfo
                 FSComplete -> ft name fileInv RFSComplete fileInfo
-                FSCancelled -> ft name fileInv RFSCancelled fileInfo
+                FSCancelled -> cancelledFt name fileInv fileInfo
       where
         ft senderDisplayName fileInvitation rfs = \case
           (Just filePath, Just connId, Just agentConnId) ->
             let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
              in Right RcvFileTransfer {..}
           _ -> Left $ SERcvFileInvalid fileId
+        cancelledFt senderDisplayName fileInvitation = \case
+          (Just filePath, Just connId, Just agentConnId) ->
+            let fileStatus = RFSCancelled $ Just RcvFileInfo {filePath, connId, agentConnId}
+             in Right RcvFileTransfer {..}
+          _ ->
+            let fileStatus = RFSCancelled Nothing
+             in Right RcvFileTransfer {..}
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
