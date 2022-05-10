@@ -58,9 +58,11 @@ chatTests = do
   describe "sending and receiving files" $ do
     it "send and receive file" testFileTransfer
     it "send and receive a small file" testSmallFileTransfer
-    it "sender cancelled file transfer" testFileSndCancel
+    it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
+    it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
     it "send and receive file to group" testGroupFileTransfer
+    it "sender cancelled group file transfer before transfer" testGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
     it "send and receive message with file" testMessageWithFile
     it "send and receive image" testSendImage
@@ -1028,8 +1030,30 @@ testSmallFileTransfer =
       dest <- B.readFile "./tests/tmp/test.txt"
       dest `shouldBe` src
 
-testFileSndCancel :: IO ()
-testFileSndCancel =
+testFileSndCancelBeforeTransfer :: IO ()
+testFileSndCancelBeforeTransfer =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice #> "/f @bob ./tests/fixtures/test.txt"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice ##> "/fc 1"
+      concurrentlyN_
+        [ alice <## "cancelled sending file 1 (test.txt)",
+          bob <## "alice cancelled sending file 1 (test.txt)"
+        ]
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.txt) cancelled: bob"
+      alice <## "file transfer cancelled"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.txt) cancelled"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file cancelled: test.txt"
+
+testFileSndCancelDuringTransfer :: IO ()
+testFileSndCancelDuringTransfer =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
@@ -1111,6 +1135,34 @@ testGroupFileTransfer =
             cath <## "started receiving file 1 (test.jpg) from alice"
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
+
+testGroupFileSndCancelBeforeTransfer :: IO ()
+testGroupFileSndCancelBeforeTransfer =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+        ]
+      alice ##> "/fc 1"
+      concurrentlyN_
+        [ alice <## "cancelled sending file 1 (test.txt)",
+          bob <## "alice cancelled sending file 1 (test.txt)",
+          cath <## "alice cancelled sending file 1 (test.txt)"
+        ]
+      alice ##> "/fs 1"
+      alice <## "sending file 1 (test.txt): no file transfers, file transfer cancelled"
+      bob ##> "/fs 1"
+      bob <## "receiving file 1 (test.txt) cancelled"
+      bob ##> "/fr 1 ./tests/tmp"
+      bob <## "file cancelled: test.txt"
 
 testMessageWithFile :: IO ()
 testMessageWithFile =

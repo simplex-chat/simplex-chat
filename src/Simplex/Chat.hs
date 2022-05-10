@@ -835,7 +835,9 @@ toFSFilePath f =
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
 acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, grpMemberId} filePath_ = do
-  unless (fileStatus == RFSNew) . throwChatError $ CEFileAlreadyReceiving fName
+  unless (fileStatus == RFSNew) $ case fileStatus of
+    RFSCancelled _ -> throwChatError $ CEFileCancelled fName
+    _ -> throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
     -- direct file protocol
     Just connReq ->
