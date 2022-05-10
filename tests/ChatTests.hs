@@ -1145,10 +1145,10 @@ testGroupFileSndCancelBeforeTransfer =
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
-            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
             bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
           do
-            cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
             cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
         ]
       alice ##> "/fc 1"
