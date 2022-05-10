@@ -128,8 +128,8 @@ class ChatModel(val controller: ChatController) {
     val res: Boolean
     if (i >= 0) {
       chat = chats[i]
-      val pItem = chat.chatItems.last()
-      if (pItem.id == cItem.id) {
+      val pItem = chat.chatItems.lastOrNull()
+      if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
       }
       res = false
@@ -158,8 +158,8 @@ class ChatModel(val controller: ChatController) {
     val chat: Chat
     if (i >= 0) {
       chat = chats[i]
-      val pItem = chat.chatItems.last()
-      if (pItem.id == cItem.id) {
+      val pItem = chat.chatItems.lastOrNull()
+      if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
       }
     }
@@ -180,17 +180,17 @@ class ChatModel(val controller: ChatController) {
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew) {
-          chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+          chatItems[i] = item.withStatus(CIStatus.RcvRead())
         }
         i += 1
       }
       val chat = chats[chatIdx]
+      val pItem  = chat.chatItems.lastOrNull()
       chats[chatIdx] = chat.copy(
-        chatItems = chatItems,
+        chatItems = if (pItem == null) arrayListOf() else arrayListOf(pItem.withStatus(CIStatus.RcvRead())),
         chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
       )
     }
-
   }
 
 //  func popChat(_ id: String) {
@@ -669,6 +669,8 @@ data class ChatItem (
       is CIContent.RcvCall -> true
       else -> false
     }
+
+  fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
 
   companion object {
     fun getSampleData(
