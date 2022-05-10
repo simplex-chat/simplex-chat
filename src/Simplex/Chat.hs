@@ -1508,16 +1508,22 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> messageError "x.file.cancel: bad file direction"
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancelGroup GroupInfo {groupId} _m sharedMsgId msgMeta = do
+    xFileCancelGroup GroupInfo {groupId} GroupMember {memberId} sharedMsgId msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
-      withStore (\st -> getFileTransfer st userId fileId) >>= \case
-        FTRcv ft@RcvFileTransfer {cancelled} ->
-          -- TODO check message is sent by the same member as file (sameMemberId)
-          unless cancelled $ do
-            void $ cancelFile user fileId
-            toView $ CRRcvFileSndCancelled ft
-        _ -> messageError "x.file.cancel: bad file direction"
+      CChatItem msgDir ChatItem {chatDir} <- withStore $ \st -> getGroupChatItemBySharedMsgId st user groupId sharedMsgId
+      case (msgDir, chatDir) of
+        (SMDRcv, CIGroupRcv m) -> do
+          if sameMemberId memberId m
+            then
+              withStore (\st -> getFileTransfer st userId fileId) >>= \case
+                FTRcv ft@RcvFileTransfer {cancelled} -> do
+                  unless cancelled $ do
+                    void $ cancelFile user fileId
+                    toView $ CRRcvFileSndCancelled ft
+                _ -> messageError "x.file.cancel: bad file direction"
+            else messageError "x.file.cancel: group member attempted to cancel file of another member"
+        (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
     xFileAcptInvGroup GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
