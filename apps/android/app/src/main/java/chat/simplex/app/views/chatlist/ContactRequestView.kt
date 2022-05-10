@@ -10,7 +10,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.*
+import chat.simplex.app.model.ChatInfo
+import chat.simplex.app.model.getTimestampText
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.ChatInfoImage
 

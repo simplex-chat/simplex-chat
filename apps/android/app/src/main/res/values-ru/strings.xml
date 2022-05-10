@@ -214,7 +214,8 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
-    <string name="how_to_use_simplex_chat">Как использовать <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+    <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
     <string name="chat_with_the_founder">Соединиться с разработчиками</string>
@@ -256,11 +257,13 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним ваши контакты и сообщения (после доставки) на серверах.</string>
     <string name="create_profile">Создать профиль</string>
-    <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.</string>
+    <string name="your_profile_is_stored_on_your_device">Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.</string>
+    <string name="profile_is_only_shared_with_your_contacts">Профиль отправляется только вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
     <string name="display_name">Имя профиля</string>
     <string name="full_name_optional__prompt">Полное имя (не обязательно)</string>
     <string name="create_profile_button">Создать</string>
+    <string name="about_simplex">О SimpleX</string>
 
     <!-- markdown demo - MarkdownHelpView.kt -->
     <string name="how_to_use_markdown">Как форматировать</string>
@@ -293,4 +296,37 @@
     <string name="callstate_received_answer">получен ответ…</string>
     <string name="callstate_connecting">соединяется…</string>
     <string name="callstate_connected">соединено</string>
+
+    <!-- SimpleXInfo -->
+    <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
+    <string name="privacy_redefined">Более конфиденциальный</string>
+    <string name="first_platform_without_user_ids">Первая в мире платформа без идентификаторов пользователей.</string>
+    <string name="immune_to_spam_and_abuse">Защищен от спама</string>
+    <string name="people_can_connect_only_via_links_you_share">С вами можно соединиться только через созданные вами ссылки.</string>
+    <string name="decentralized">Децентрализованный</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Открытый протокол и код - кто угодно может запустить сервер.</string>
+    <string name="create_your_profile">Создать профиль</string>
+    <string name="make_private_connection">Добавьте контакт</string>
+    <string name="how_it_works">Как это работает</string>
+
+    <!-- How SimpleX Works -->
+    <string name="how_simplex_works">Как <xliff:g id="appName">SimpleX</xliff:g> работает</string>
+    <string name="many_people_asked_how_can_it_deliver">Много пользователей спросили: <i>как <xliff:g id="appName">SimpleX</xliff:g> доставляет сообщения без идентификаторов пользователей?</i></string>
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, <xliff:g id="appName">SimpleX</xliff:g> использует ID для очередей сообщений, разные для каждого контакта.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Вы определяете через какие серверы вы <b>получаете сообщения</b>, ваши контакты - серверы, которые вы используете для отправки.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются <b>с двухуровневым end-to-end шифрованием</b>.</string>
+    <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
+    <string name="read_more_in_github_with_link">Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.</string>
+
+    <!-- MakeConnection -->
+    <string name="to_make_your_first_private_connection_choose">Чтобы добавить ваш первый контакт, выберите <b>одно из</b>:</string>
+    <string name="create_1_time_link_qr_code">Создать ссылку / QR код</string>
+    <string name="it_s_secure_to_share__only_one_contact_can_use_it">Ей безопасно поделиться - только один контакт может использовать её.</string>
+    <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
+    <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Или откройте ссылку в браузере и нажмите <b>Open in mobile</b>.</string>
+    <string name="scan_contact_s_qr_code">Сосканировать QR код контакта</string>
+    <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">При встрече или в видеозвонке – самый безопасный способ установить соединение</string>
+    <string name="or">или</string>
+    <string name="connect_with_the_developers">Соединиться с разработчиками</string>
+    <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 </resources>

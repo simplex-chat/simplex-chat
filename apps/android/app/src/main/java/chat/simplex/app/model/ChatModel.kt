@@ -12,6 +12,7 @@ import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -20,6 +21,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 class ChatModel(val controller: ChatController) {
+  val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
   val userCreated = mutableStateOf<Boolean?>(null)
   val chats = mutableStateListOf<Chat>()

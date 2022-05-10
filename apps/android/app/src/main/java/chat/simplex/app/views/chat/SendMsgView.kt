@@ -23,8 +23,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.*
+import chat.simplex.app.model.ChatItem
+import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun SendMsgView(

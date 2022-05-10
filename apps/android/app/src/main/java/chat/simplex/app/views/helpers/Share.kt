@@ -11,7 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.core.content.ContextCompat
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
-import java.io.*
+import java.io.BufferedOutputStream
+import java.io.File
 
 fun shareText(cxt: Context, text: String) {
   val sendIntent: Intent = Intent().apply {
