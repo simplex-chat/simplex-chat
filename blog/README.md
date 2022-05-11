@@ -1,5 +1,7 @@
 # Blog
 
+May 11, 2022 [Sending images and files in mobile apps](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220511-simplex-chat-v2-images-files)
+
 Apr 04, 2022 [Instant notifications for SimpleX Chat mobile apps](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220404-simplex-chat-instant-notifications.md)
 
 Mar 08, 2022 [Mobile apps for iOS and Android released!](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220308-simplex-chat-mobile-apps.md)
