@@ -652,7 +652,7 @@ processChatCommand = \case
         ChatErrorAgent (CONN DUPLICATE) -> pure $ CRRcvFileAcceptedSndCancelled ft
         e -> throwError e
   CancelFile fileId -> withUser $ \user@User {userId} ->
-    withChatLock . procCmd $ do
+    withChatLock . procCmd $
       withStore (\st -> getFileTransfer st user fileId) >>= \case
         FTSnd ftm@FileTransferMeta {cancelled} fts -> do
           unless cancelled $ do
