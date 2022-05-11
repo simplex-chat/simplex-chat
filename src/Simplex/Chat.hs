@@ -764,8 +764,15 @@ processChatCommand = \case
     cancelFiles user files = forM_ files $ \ (fileId, AFS dir status) ->
       unless (ciFileEnded status) $
         case dir of
-          SMDSnd -> void $ cancelSndFile user fileId
-          SMDRcv -> void $ cancelRcvFile user fileId
+          SMDSnd -> do
+            (FileTransferMeta {cancelled}, fts) <- withStore (\st -> getSndFileTransfer st user fileId)
+            unless cancelled $ do
+              withStore $ \st -> updateFileCancelled st user fileId CIFSSndCancelled
+              forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+          SMDRcv -> do
+            ft@RcvFileTransfer {cancelled} <- withStore (\st -> getRcvFileTransfer st user fileId)
+            unless cancelled $
+              cancelRcvFileTransfer user ft
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \User {userId} -> do
       ct <- withStore $ \st -> getContact st userId ctId
@@ -1859,21 +1866,6 @@ isFileActive :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handl
 isFileActive fileId files = do
   fs <- asks files
   isJust . M.lookup fileId <$> readTVarIO fs
-
-cancelSndFile :: ChatMonad m => User -> Int64 -> m Bool
-cancelSndFile user fileId = do
-  (FileTransferMeta {cancelled}, fts) <- withStore (\st -> getSndFileTransfer st user fileId)
-  unless cancelled $ do
-    withStore $ \st -> updateFileCancelled st user fileId CIFSSndCancelled
-    forM_ fts $ \ft' -> cancelSndFileTransfer ft'
-  pure cancelled
-
-cancelRcvFile :: ChatMonad m => User -> Int64 -> m Bool
-cancelRcvFile user fileId = do
-  ft@RcvFileTransfer {cancelled} <- withStore (\st -> getRcvFileTransfer st user fileId)
-  unless cancelled $
-    cancelRcvFileTransfer user ft
-  pure cancelled
 
 cancelRcvFileTransfer :: ChatMonad m => User -> RcvFileTransfer -> m ()
 cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus} = do
