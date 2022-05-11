@@ -2067,7 +2067,7 @@ getRcvFileTransfer_ db userId fileId =
             Nothing -> Left $ SERcvFileInvalid fileId
             Just name ->
               case fileStatus' of
-                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, cancelled, grpMemberId}
+                FSNew -> ft name fileInv RFSNew
                 FSAccepted -> ft name fileInv . RFSAccepted =<< rfi fileInfo
                 FSConnected -> ft name fileInv . RFSConnected =<< rfi fileInfo
                 FSComplete -> ft name fileInv . RFSComplete =<< rfi fileInfo
