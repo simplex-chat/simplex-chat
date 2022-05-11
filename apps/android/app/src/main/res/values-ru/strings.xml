@@ -56,6 +56,8 @@
     <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
+    <string name="turn_off_battery_optimization">Для его использования нужно отключить оптимизацию энергопотребления Android. Иначе сервис не заработает.</string>
+    <string name="turning_off_background_service">Оптимизация энергопотребления <b>все еще активна</b>, выключаю сервис. Можете включить его повторно через Настройки.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>

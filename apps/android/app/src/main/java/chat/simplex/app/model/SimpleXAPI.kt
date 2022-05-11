@@ -1,9 +1,14 @@
 package chat.simplex.app.model
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
-import android.content.Context
-import android.content.SharedPreferences
+import android.app.Application
+import android.content.*
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -526,36 +531,104 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     chatModel.updateNetworkStatus(contact.id, Chat.NetworkStatus.Error(err))
   }
 
-  fun showBackgroundServiceNotice() {
-    if (!getBackgroundServiceNoticeShown()) {
-      AlertManager.shared.showAlert {
-        AlertDialog(
-          onDismissRequest = AlertManager.shared::hideAlert,
-          title = {
-            Row {
-              Icon(
-                Icons.Outlined.Bolt,
-                contentDescription = stringResource(R.string.icon_descr_instant_notifications),
-              )
-              Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
-            }
-          },
-          text = {
-            Column {
-              Text(
-                annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
-                Modifier.padding(bottom = 8.dp)
-              )
-              Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
-            }
-          },
-          confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
-          }
-        )
+  fun showBackgroundServiceNoticeIfNeeded() {
+    when {
+      !getRunServiceInBackground() || (getBackgroundServiceNoticeShown() && isIgnoringBatteryOptimizations(appContext)) -> return
+      isIgnoringBatteryOptimizations(appContext) -> showBackgroundServiceNotice()
+      !getBackgroundServiceNoticeShown() -> showIgnoreOptimizationDialog()
+      else -> {
+        showDisablingServiceNotice()
+
+        setRunServiceInBackground(false)
+        chatModel.runServiceInBackground.value = false
       }
-      setBackgroundServiceNoticeShown()
     }
+
+    setBackgroundServiceNoticeShown(true)
+  }
+
+  private fun showBackgroundServiceNotice() = AlertManager.shared.showAlert {
+    AlertDialog(
+      onDismissRequest = AlertManager.shared::hideAlert,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            Modifier.padding(bottom = 8.dp)
+          )
+          Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
+        }
+      },
+      confirmButton = {
+        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+      }
+    )
+  }
+
+  private fun showIgnoreOptimizationDialog() = AlertManager.shared.showAlert {
+    val ignoreOptimization = {
+      askAboutIgnoringBatteryOptimization(appContext)
+      AlertManager.shared.hideAlert()
+    }
+    AlertDialog(
+      onDismissRequest = ignoreOptimization,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            Modifier.padding(bottom = 8.dp)
+          )
+          Text(annotatedStringResource(R.string.turn_off_battery_optimization))
+        }
+      },
+      confirmButton = {
+        Button(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
+      }
+    )
+  }
+
+  private fun showDisablingServiceNotice() = AlertManager.shared.showAlert {
+    AlertDialog(
+      onDismissRequest = AlertManager.shared::hideAlert,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.turning_off_background_service),
+            Modifier.padding(bottom = 8.dp)
+          )
+        }
+      },
+      confirmButton = {
+        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+      }
+    )
   }
 
   fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -572,12 +645,30 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
       .apply()
 
-  fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+  private fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
 
-  fun setBackgroundServiceNoticeShown() =
+  fun setBackgroundServiceNoticeShown(shown: Boolean) =
     sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, true)
+      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, shown)
       .apply()
+
+  fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
+    return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || powerManager.isIgnoringBatteryOptimizations(context.packageName)
+  }
+
+  private fun askAboutIgnoringBatteryOptimization(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+    Intent().apply {
+      @SuppressLint("BatteryLife")
+      action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+      data = Uri.parse("package:${context.packageName}")
+      // This flag is needed when you start a new activity from non-Activity context
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      context.startActivity(this)
+    }
+  }
 
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
