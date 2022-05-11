@@ -1897,15 +1897,19 @@ testNegotiateCall =
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
-    alice <## "ok"
-    alice <## "message updated"
+    alice
+      <### [ "ok",
+             "message updated"
+           ]
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
     bob <## "call answer from alice"
     bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
-    alice <## "ok"
-    alice <## "message updated"
+    alice
+      <### [ "ok",
+             "message updated"
+           ]
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: in progress (00:00)")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
