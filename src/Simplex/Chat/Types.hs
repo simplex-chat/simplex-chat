@@ -549,7 +549,7 @@ data RcvFileStatus
   | RFSAccepted RcvFileInfo
   | RFSConnected RcvFileInfo
   | RFSComplete RcvFileInfo
-  | RFSCancelled RcvFileInfo
+  | RFSCancelled (Maybe RcvFileInfo)
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileStatus where

@@ -114,8 +114,9 @@ data ChatMsgEvent
   | XMsgDel SharedMsgId
   | XMsgDeleted
   | XFile FileInvitation -- TODO discontinue
-  | XFileAcpt String -- old file protocol
-  | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
+  | XFileAcpt String -- direct file protocol
+  | XFileAcptInv SharedMsgId ConnReqInvitation String -- group file protocol
+  | XFileCancel SharedMsgId
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
@@ -295,6 +296,7 @@ data CMEventTag
   | XFile_
   | XFileAcpt_
   | XFileAcptInv_
+  | XFileCancel_
   | XInfo_
   | XContact_
   | XGrpInv_
@@ -330,6 +332,7 @@ instance StrEncoding CMEventTag where
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
+    XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
     XGrpInv_ -> "x.grp.inv"
@@ -362,6 +365,7 @@ instance StrEncoding CMEventTag where
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
     "x.file.acpt.inv" -> Right XFileAcptInv_
+    "x.file.cancel" -> Right XFileCancel_
     "x.info" -> Right XInfo_
     "x.contact" -> Right XContact_
     "x.grp.inv" -> Right XGrpInv_
@@ -397,6 +401,7 @@ toCMEventTag = \case
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
+  XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
@@ -450,6 +455,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
+      XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
@@ -490,6 +496,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
+      XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]

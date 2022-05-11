@@ -335,6 +335,7 @@ data ChatErrorType
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
   | CEFileAlreadyReceiving {message :: String}
+  | CEFileCancelled {message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
   | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}

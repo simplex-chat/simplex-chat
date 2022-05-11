@@ -620,7 +620,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSAccepted _ -> "just started"
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
-      RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
+      RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
+      RFSCancelled Nothing -> "cancelled"
 
 listRecipients :: [SndFileTransfer] -> StyledString
 listRecipients = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
@@ -652,6 +653,7 @@ viewChatError = \case
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
     CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
