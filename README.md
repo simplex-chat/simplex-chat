@@ -114,9 +114,9 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - ✅ Haskell chat bot templates.
 - ✅ v2.0 - supporting images and files in mobile apps.
 - 🏗 End-to-end encrypted audio and video calls via the mobile apps.
+- 🏗 Automatic chat history deletion.
 - 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- Automatic chat history deletion.
 - Groups support for mobile apps.
 - Chat database portability and encryption.
 - Web widgets for custom interactivity in the chats.
