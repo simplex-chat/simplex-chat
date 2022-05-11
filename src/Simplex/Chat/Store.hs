@@ -2199,22 +2199,20 @@ getFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
-    fileTransfer [(Nothing, Nothing)] = runExceptT $ do
-      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
-      pure FTSnd {fileTransferMeta, sndFileTransfers = []}
-    fileTransfer ((Just _, Nothing) : _) = runExceptT $ do
-      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
-      sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
-      pure FTSnd {fileTransferMeta, sndFileTransfers}
     fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
-    fileTransfer _ = pure . Left $ SEFileNotFound fileId
+    fileTransfer _ = runExceptT $ do
+      (ftm, fts) <- ExceptT $ getSndFileTransfer_ db userId fileId
+      pure $ FTSnd {fileTransferMeta = ftm, sndFileTransfers = fts}
 
 getSndFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (FileTransferMeta, [SndFileTransfer])
 getSndFileTransfer st User {userId} fileId =
-  liftIOEither . withTransaction st $ \db -> runExceptT $ do
-    fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
-    sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
-    pure (fileTransferMeta, sndFileTransfers)
+  liftIOEither . withTransaction st $ \db -> getSndFileTransfer_ db userId fileId
+
+getSndFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (FileTransferMeta, [SndFileTransfer]))
+getSndFileTransfer_ db userId fileId = runExceptT $ do
+  fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+  sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
+  pure (fileTransferMeta, sndFileTransfers)
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
 getSndFileTransfers_ db userId fileId =
@@ -2234,7 +2232,7 @@ getSndFileTransfers_ db userId fileId =
       (userId, fileId)
   where
     sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
-    sndFileTransfers [] = Left $ SESndFileNotFound fileId
+    sndFileTransfers [] = Right []
     sndFileTransfers fts = mapM sndFileTransfer fts
     sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of

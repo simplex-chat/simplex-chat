@@ -1041,7 +1041,7 @@ testFileSndCancelBeforeTransfer =
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
       alice ##> "/fc 1"
       concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.txt)",
+        [ alice <## "cancelled sending file 1 (test.txt) to bob",
           bob <## "alice cancelled sending file 1 (test.txt)"
         ]
       alice ##> "/fs 1"
@@ -1061,7 +1061,7 @@ testFileSndCancelDuringTransfer =
       alice ##> "/fc 1"
       concurrentlyN_
         [ do
-            alice <## "cancelled sending file 1 (test_1MB.pdf)"
+            alice <## "cancelled sending file 1 (test_1MB.pdf) to bob"
             alice ##> "/fs 1"
             alice <## "sending file 1 (test_1MB.pdf) cancelled: bob"
             alice <## "file transfer cancelled",

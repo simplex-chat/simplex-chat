@@ -761,14 +761,11 @@ processChatCommand = \case
           removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user files = mapM_ maybeCancelFile files
-      where
-        maybeCancelFile :: (Int64, ACIFileStatus) -> m ()
-        maybeCancelFile (fileId, AFS dir status)
-          | ciFileEnded status = case dir of
-            SMDSnd -> void $ cancelSndFile user fileId
-            SMDRcv -> void $ cancelRcvFile user fileId
-          | otherwise = pure ()
+    cancelFiles user files = forM_ files $ \ (fileId, AFS dir status) ->
+      unless (ciFileEnded status) $
+        case dir of
+          SMDSnd -> void $ cancelSndFile user fileId
+          SMDRcv -> void $ cancelRcvFile user fileId
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \User {userId} -> do
       ct <- withStore $ \st -> getContact st userId ctId
