@@ -20,7 +20,7 @@ Many people asked: _if SimpleX has no user identifiers, how can it deliver messa
 
 To deliver mesages, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts. In the current version of the protocol each queue is used until the contact is deleted. Later this year we plan to add queue rotation to the client protocol, so that even conversations don't have long term identifiers visible to the network. This design prevents leaking any users metadata on the application level.
 
-You define through which server(s) you use **to receive** the messages, your contacts – the servers you use **to send** the messages to them. It means that every conversation is likely to use two different servers - one for each message direction.
+You define which server(s) to use **to receive** the messages, your contacts – the servers you use **to send** the messages to them. It means that every conversation is likely to use two different servers - one for each message direction.
 
 Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**.
 
