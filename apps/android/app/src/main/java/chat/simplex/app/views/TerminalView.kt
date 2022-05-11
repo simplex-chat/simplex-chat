@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.ComposeState
 import chat.simplex.app.views.chat.SendMsgView
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -25,32 +26,42 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
+  val composeState = remember { mutableStateOf(ComposeState()) }
   BackHandler(onBack = close)
-  TerminalLayout(chatModel.terminalItems, close) { cmd ->
-    withApi {
-      // show "in progress"
-      chatModel.controller.sendCmd(CC.Console(cmd))
-      // hide "in progress"
-    }
-  }
+  TerminalLayout(
+    chatModel.terminalItems,
+    composeState,
+    sendCommand = {
+      withApi {
+        // show "in progress"
+        chatModel.controller.sendCmd(CC.Console(composeState.value.message))
+        // hide "in progress"
+      }
+    },
+    close
+  )
 }
 
 @Composable
-fun TerminalLayout(terminalItems: List<TerminalItem>, close: () -> Unit, sendCommand: (String) -> Unit) {
-  var msg = remember { mutableStateOf("") }
+fun TerminalLayout(
+  terminalItems: List<TerminalItem>,
+  composeState: MutableState<ComposeState>,
+  sendCommand: () -> Unit,
+  close: () -> Unit
+) {
+  val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
+  val textStyle = remember { mutableStateOf(smallFont) }
+
+  fun onMessageChange(s: String) {
+    composeState.value = composeState.value.copy(message = s)
+  }
+
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(
-            msg = msg,
-            linkPreview = remember { mutableStateOf(null) },
-            cancelledLinks = remember { mutableSetOf() },
-            parseMarkdown = { null },
-            sendMessage = sendCommand,
-            sendEnabled = msg.value.isNotEmpty()
-          )
+          SendMsgView(composeState, sendCommand, ::onMessageChange, textStyle)
         }
       },
       modifier = Modifier.navigationBarsWithImePadding()
@@ -108,8 +119,9 @@ fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
       terminalItems = TerminalItem.sampleData,
-      close = {},
-      sendCommand = {}
+      composeState = remember { mutableStateOf(ComposeState()) },
+      sendCommand = {},
+      close = {}
     )
   }
 }

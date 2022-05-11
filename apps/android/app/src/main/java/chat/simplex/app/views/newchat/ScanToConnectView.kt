@@ -19,7 +19,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ConnectContactView(chatModel: ChatModel, close: () -> Unit) {
+fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   ConnectContactLayout(
     qrCodeScanner = {

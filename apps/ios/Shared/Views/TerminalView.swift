@@ -14,11 +14,8 @@ private let maxItemSize: Int = 50000
 
 struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var inProgress: Bool = false
-    @State var message: String = ""
+    @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
-    @State var editing: Bool = false
-    @State var sendEnabled: Bool = false
 
     var body: some View {
         VStack {
@@ -64,21 +61,15 @@ struct TerminalView: View {
                 Spacer()
 
                 SendMessageView(
+                    composeState: $composeState,
                     sendMessage: sendMessage,
-                    inProgress: inProgress,
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editing,
-                    sendEnabled: $sendEnabled
+                    keyboardVisible: $keyboardVisible
                 )
                 .padding(.horizontal, 12)
             }
         }
         .navigationViewStyle(.stack)
         .navigationTitle("Chat console")
-        .onChange(of: message) { _ in
-            sendEnabled = !message.isEmpty
-        }
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
@@ -89,15 +80,16 @@ struct TerminalView: View {
         }
     }
     
-    func sendMessage(_ cmdStr: String) {
-        let cmd = ChatCommand.string(cmdStr)
+    func sendMessage() {
+        let cmd = ChatCommand.string(composeState.message)
         DispatchQueue.global().async {
             Task {
-                inProgress = true
+                composeState.inProgress = true
                 _ = await chatSendCmd(cmd)
-                inProgress = false
+                composeState.inProgress = false
             }
         }
+        composeState = ComposeState()
     }
 }
 

@@ -29,10 +29,11 @@ import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
-import Simplex.Messaging.Agent.Store.SQLite (fromTextField_)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (fromTextField_)
 import Simplex.Messaging.Util ((<$?>))
 
 data ConnectionEntity
@@ -113,8 +114,9 @@ data ChatMsgEvent
   | XMsgDel SharedMsgId
   | XMsgDeleted
   | XFile FileInvitation -- TODO discontinue
-  | XFileAcpt String -- old file protocol
-  | XFileAcptInv SharedMsgId ConnReqInvitation String -- new file protocol
+  | XFileAcpt String -- direct file protocol
+  | XFileAcptInv SharedMsgId ConnReqInvitation String -- group file protocol
+  | XFileCancel SharedMsgId
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
@@ -132,6 +134,11 @@ data ChatMsgEvent
   | XInfoProbe Probe
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
+  | XCallInv CallId CallInvitation
+  | XCallOffer CallId CallOffer
+  | XCallAnswer CallId CallAnswer
+  | XCallExtra CallId CallExtraInfo
+  | XCallEnd CallId
   | XOk
   | XUnknown {event :: Text, params :: J.Object}
   deriving (Eq, Show)
@@ -148,18 +155,20 @@ cmToQuotedMsg = \case
   XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
   _ -> Nothing
 
-data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCUnknown_ Text
+data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCFile_ | MCUnknown_ Text
 
 instance StrEncoding MsgContentTag where
   strEncode = \case
     MCText_ -> "text"
     MCLink_ -> "link"
     MCImage_ -> "image"
+    MCFile_ -> "file"
     MCUnknown_ t -> encodeUtf8 t
   strDecode = \case
     "text" -> Right MCText_
     "link" -> Right MCLink_
     "image" -> Right MCImage_
+    "file" -> Right MCFile_
     t -> Right . MCUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -196,6 +205,7 @@ data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
   | MCImage {text :: Text, image :: ImageData}
+  | MCFile Text
   | MCUnknown {tag :: Text, text :: Text, json :: J.Object}
   deriving (Eq, Show)
 
@@ -204,6 +214,7 @@ msgContentText = \case
   MCText t -> t
   MCLink {text} -> text
   MCImage {text} -> text
+  MCFile t -> t
   MCUnknown {text} -> text
 
 msgContentTag :: MsgContent -> MsgContentTag
@@ -211,6 +222,7 @@ msgContentTag = \case
   MCText _ -> MCText_
   MCLink {} -> MCLink_
   MCImage {} -> MCImage_
+  MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
 data ExtMsgContent = ExtMsgContent MsgContent (Maybe FileInvitation)
@@ -236,6 +248,7 @@ instance FromJSON MsgContent where
         text <- v .: "text"
         image <- v .: "image"
         pure MCImage {image, text}
+      MCFile_ -> MCFile <$> v .: "text"
       MCUnknown_ tag -> do
         text <- fromMaybe unknownMsgType <$> v .:? "text"
         pure MCUnknown {tag, text, json = v}
@@ -261,11 +274,13 @@ instance ToJSON MsgContent where
     MCText t -> J.object ["type" .= MCText_, "text" .= t]
     MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
     MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
   toEncoding = \case
     MCUnknown {json} -> JE.value $ J.Object json
     MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
     MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
     MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
 
 instance ToField MsgContent where
   toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
@@ -281,6 +296,7 @@ data CMEventTag
   | XFile_
   | XFileAcpt_
   | XFileAcptInv_
+  | XFileCancel_
   | XInfo_
   | XContact_
   | XGrpInv_
@@ -298,6 +314,11 @@ data CMEventTag
   | XInfoProbe_
   | XInfoProbeCheck_
   | XInfoProbeOk_
+  | XCallInv_
+  | XCallOffer_
+  | XCallAnswer_
+  | XCallExtra_
+  | XCallEnd_
   | XOk_
   | XUnknown_ Text
   deriving (Eq, Show)
@@ -311,6 +332,7 @@ instance StrEncoding CMEventTag where
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
+    XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
     XGrpInv_ -> "x.grp.inv"
@@ -328,6 +350,11 @@ instance StrEncoding CMEventTag where
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
+    XCallInv_ -> "x.call.inv"
+    XCallOffer_ -> "x.call.offer"
+    XCallAnswer_ -> "x.call.answer"
+    XCallExtra_ -> "x.call.extra"
+    XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
   strDecode = \case
@@ -338,6 +365,7 @@ instance StrEncoding CMEventTag where
     "x.file" -> Right XFile_
     "x.file.acpt" -> Right XFileAcpt_
     "x.file.acpt.inv" -> Right XFileAcptInv_
+    "x.file.cancel" -> Right XFileCancel_
     "x.info" -> Right XInfo_
     "x.contact" -> Right XContact_
     "x.grp.inv" -> Right XGrpInv_
@@ -355,6 +383,11 @@ instance StrEncoding CMEventTag where
     "x.info.probe" -> Right XInfoProbe_
     "x.info.probe.check" -> Right XInfoProbeCheck_
     "x.info.probe.ok" -> Right XInfoProbeOk_
+    "x.call.inv" -> Right XCallInv_
+    "x.call.offer" -> Right XCallOffer_
+    "x.call.answer" -> Right XCallAnswer_
+    "x.call.extra" -> Right XCallExtra_
+    "x.call.end" -> Right XCallEnd_
     "x.ok" -> Right XOk_
     t -> Right . XUnknown_ $ safeDecodeUtf8 t
   strP = strDecode <$?> A.takeTill (== ' ')
@@ -368,6 +401,7 @@ toCMEventTag = \case
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
+  XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
@@ -385,6 +419,11 @@ toCMEventTag = \case
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
+  XCallInv _ _ -> XCallInv_
+  XCallOffer _ _ -> XCallOffer_
+  XCallAnswer _ _ -> XCallAnswer_
+  XCallExtra _ _ -> XCallExtra_
+  XCallEnd _ -> XCallEnd_
   XOk -> XOk_
   XUnknown t _ -> XUnknown_ t
 
@@ -416,6 +455,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
+      XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
@@ -433,6 +473,11 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
+      XCallInv_ -> XCallInv <$> p "callId" <*> p "invitation"
+      XCallOffer_ -> XCallOffer <$> p "callId" <*> p "offer"
+      XCallAnswer_ -> XCallAnswer <$> p "callId" <*> p "answer"
+      XCallExtra_ -> XCallExtra <$> p "callId" <*> p "extra"
+      XCallEnd_ -> XCallEnd <$> p "callId"
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
 
@@ -451,6 +496,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
+      XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
@@ -468,6 +514,11 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
+      XCallInv callId inv -> o ["callId" .= callId, "invitation" .= inv]
+      XCallOffer callId offer -> o ["callId" .= callId, "offer" .= offer]
+      XCallAnswer callId answer -> o ["callId" .= callId, "answer" .= answer]
+      XCallExtra callId extra -> o ["callId" .= callId, "extra" .= extra]
+      XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
 

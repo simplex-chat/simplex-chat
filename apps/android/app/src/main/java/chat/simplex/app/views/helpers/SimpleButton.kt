@@ -3,6 +3,7 @@ package chat.simplex.app.ui.theme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Share
@@ -18,14 +19,24 @@ import androidx.compose.ui.unit.dp
 fun SimpleButton(text: String, icon: ImageVector,
                  color: Color = MaterialTheme.colors.primary,
                  click: () -> Unit) {
-  Row(
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.clickable { click() }
-  ) {
-    Icon(icon, text, tint = color,
-      modifier = Modifier.padding(horizontal = 10.dp)
+  SimpleButtonFrame(click) {
+    Icon(
+      icon, text, tint = color,
+      modifier = Modifier.padding(end = 8.dp)
     )
-    Text(text, style = MaterialTheme.typography.caption,  color = color)
+    Text(text, style = MaterialTheme.typography.caption, color = color)
+  }
+}
+
+@Composable
+fun SimpleButtonFrame(click: () -> Unit, content: @Composable () -> Unit) {
+  Surface(shape = RoundedCornerShape(20.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      modifier = Modifier
+        .clickable { click() }
+        .padding(8.dp)
+    ) { content() }
   }
 }
 

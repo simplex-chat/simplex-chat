@@ -17,19 +17,9 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         let unread = chat.chatStats.unreadCount
         return HStack(spacing: 8) {
-            ZStack(alignment: .bottomLeading) {
-                ChatInfoImage(chat: chat)
-                    .frame(width: 63, height: 63)
-                if case .direct = chat.chatInfo,
-                   chat.serverInfo.networkStatus == .connected {
-                    Image(systemName: "circle.fill")
-                        .resizable()
-                        .foregroundColor(colorScheme == .dark ? darkGreen : .green)
-                        .frame(width: 5, height: 5)
-                        .padding([.bottom, .leading], 1)
-                }
-            }
-            .padding(.leading, 4)
+            ChatInfoImage(chat: chat)
+                .frame(width: 63, height: 63)
+                .padding(.leading, 4)
 
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
@@ -39,7 +29,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    (cItem?.timestampText ?? timestampText(chat.chatInfo.createdAt))
+                    (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.createdAt))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
@@ -49,10 +39,10 @@ struct ChatPreviewView: View {
                 .padding(.top, 4)
                 .padding(.horizontal, 8)
 
-                if let cItem = cItem {
-                    ZStack(alignment: .topTrailing) {
+                ZStack(alignment: .topTrailing) {
+                    if let cItem = cItem {
                         (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
-                            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                             .padding(.leading, 8)
                             .padding(.trailing, 36)
                             .padding(.bottom, 4)
@@ -65,15 +55,21 @@ struct ChatPreviewView: View {
                                 .background(Color.accentColor)
                                 .cornerRadius(10)
                         }
+                    } else if case let .direct(contact) = chat.chatInfo, !contact.ready {
+                        Text("Connecting...")
+                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                            .padding([.leading, .trailing], 8)
+                            .padding(.bottom, 4)
                     }
-                    .padding(.trailing, 8)
+                    if case .direct = chat.chatInfo {
+                        chatStatusImage()
+                            .padding(.top, 24)
+                            .padding(.bottom, 4)
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
-                else if case let .direct(contact) = chat.chatInfo, !contact.ready {
-                    Text("Connecting...")
-                        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-                        .padding([.leading, .trailing], 8)
-                        .padding(.bottom, 4)
-                }
+
+                .padding(.trailing, 8)
             }
         }
     }
@@ -91,6 +87,20 @@ struct ChatPreviewView: View {
         default: return Text("")
         }
     }
+
+    @ViewBuilder private func chatStatusImage() -> some View {
+        switch chat.serverInfo.networkStatus {
+        case .connected: EmptyView()
+        case .error:
+            Image(systemName: "exclamationmark.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 17, height: 17)
+                .foregroundColor(.secondary)
+        default:
+            ProgressView()
+        }
+    }
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {
@@ -103,6 +113,17 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)]
+            ))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)],
+                chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
+            ))
+            ChatPreviewView(chat: Chat(
+                chatInfo: ChatInfo.sampleData.direct,
+                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent)],
+                chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0),
+                serverInfo: Chat.ServerInfo(networkStatus: .error("status"))
             ))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,

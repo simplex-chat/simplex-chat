@@ -4,9 +4,13 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Typeface
+import android.net.Uri
+import android.os.FileUtils
+import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
+import android.util.Log
 import android.view.ViewTreeObserver
 import androidx.annotation.StringRes
 import androidx.compose.runtime.*
@@ -24,6 +28,11 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
 import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.log2
+import kotlin.math.pow
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
   GlobalScope.launch { withContext(Dispatchers.Main, action) }
@@ -57,9 +66,11 @@ fun getKeyboardState(): State<KeyboardState> {
 
   return keyboardState
 }
+
 // Resource to annotated string from
 // https://stackoverflow.com/questions/68549248/android-jetpack-compose-how-to-show-styled-text-from-string-resources
 fun generalGetString(id: Int): String {
+  // prefer stringResource in Composable items to retain preview abilities
   return SimplexApp.context.getString(id)
 }
 
@@ -199,17 +210,25 @@ private fun spannableStringToAnnotatedString(
   }
 }
 
+// maximum image file size to be auto-accepted
+const val MAX_IMAGE_SIZE: Long = 236700
+const val MAX_FILE_SIZE: Long = 8000000
+
 fun getFilesDirectory(context: Context): String {
   return context.filesDir.toString()
 }
 
 fun getAppFilesDirectory(context: Context): String {
-  return getFilesDirectory(context) + "/app_files"
+  return "${getFilesDirectory(context)}/app_files"
 }
 
-fun getStoredFilePath(context: Context, file: CIFile?): String? {
-  return if (file?.filePath != null && file.stored) {
-    val filePath = getAppFilesDirectory(context) + "/" + file.filePath
+fun getAppFilePath(context: Context, fileName: String): String {
+  return "${getAppFilesDirectory(context)}/$fileName"
+}
+
+fun getLoadedFilePath(context: Context, file: CIFile?): String? {
+  return if (file?.filePath != null && file.loaded) {
+    val filePath = getAppFilePath(context, file.filePath)
     if (File(filePath).exists()) filePath else null
   } else {
     null
@@ -217,8 +236,8 @@ fun getStoredFilePath(context: Context, file: CIFile?): String? {
 }
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-fun getStoredImage(context: Context, file: CIFile?): Bitmap? {
-  val filePath = getStoredFilePath(context, file)
+fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
+  val filePath = getLoadedFilePath(context, file)
   return if (filePath != null) {
     try {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
@@ -233,4 +252,94 @@ fun getStoredImage(context: Context, file: CIFile?): Bitmap? {
   } else {
     null
   }
+}
+
+fun getFileName(context: Context, uri: Uri): String? {
+  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+    cursor.moveToFirst()
+    cursor.getString(nameIndex)
+  }
+}
+
+fun getFileSize(context: Context, uri: Uri): Long? {
+  return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+    cursor.moveToFirst()
+    cursor.getLong(sizeIndex)
+  }
+}
+
+fun saveImage(context: Context, image: Bitmap): String? {
+  return try {
+    val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
+    val file = File(getAppFilePath(context, fileToSave))
+    val output = FileOutputStream(file)
+    dataResized.writeTo(output)
+    output.flush()
+    output.close()
+    fileToSave
+  } catch (e: Exception) {
+    Log.e(chat.simplex.app.TAG, "Util.kt saveImage error: ${e.message}")
+    null
+  }
+}
+
+fun saveFileFromUri(context: Context, uri: Uri): String? {
+  return try {
+    val inputStream = context.contentResolver.openInputStream(uri)
+    val fileToSave = getFileName(context, uri)
+    if (inputStream != null && fileToSave != null) {
+      val destFileName = uniqueCombine(context, fileToSave)
+      val destFile = File(getAppFilePath(context, destFileName))
+      FileUtils.copy(inputStream, FileOutputStream(destFile))
+      destFileName
+    } else {
+      Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri null inputStream")
+      null
+    }
+  } catch (e: Exception) {
+    Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri error: ${e.message}")
+    null
+  }
+}
+
+fun uniqueCombine(context: Context, fileName: String): String {
+  fun tryCombine(fileName: String, n: Int): String {
+    val name = File(fileName).nameWithoutExtension
+    val ext = File(fileName).extension
+    val suffix = if (n == 0) "" else "_$n"
+    val f = "$name$suffix.$ext"
+    return if (File(getAppFilePath(context, f)).exists()) tryCombine(fileName, n + 1) else f
+  }
+  return tryCombine(fileName, 0)
+}
+
+fun formatBytes(bytes: Long): String {
+  if (bytes == 0.toLong()) {
+    return "0 bytes"
+  }
+  val bytesDouble = bytes.toDouble()
+  val k = 1000.toDouble()
+  val units = arrayOf("bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+  val i = kotlin.math.floor(log2(bytesDouble) / log2(k))
+  val size = bytesDouble / k.pow(i)
+  val unit = units[i.toInt()]
+
+  return if (i <= 1) {
+    String.format("%.0f %s", size, unit)
+  } else {
+    String.format("%.2f %s", size, unit)
+  }
+}
+
+fun removeFile(context: Context, fileName: String): Boolean {
+  val file = File(getAppFilePath(context, fileName))
+  val fileDeleted = file.delete()
+  if (!fileDeleted) {
+    Log.e(chat.simplex.app.TAG, "Util.kt removeFile error")
+  }
+  return fileDeleted
 }

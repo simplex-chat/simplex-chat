@@ -1,6 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
@@ -12,7 +13,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
-import Data.List (dropWhileEnd)
+import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import Network.Socket
@@ -29,7 +30,7 @@ import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
-import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
 import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
@@ -80,10 +81,22 @@ cfg =
       testView = True
     }
 
-virtualSimplexChat :: FilePath -> Profile -> IO TestCC
-virtualSimplexChat dbFilePrefix profile = do
+createTestChat :: String -> Profile -> IO TestCC
+createTestChat dbPrefix profile = do
+  let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
+  startTestChat_ st dbFilePrefix user
+
+startTestChat :: String -> IO TestCC
+startTestChat dbPrefix = do
+  let dbFilePrefix = testDBPrefix <> dbPrefix
+  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  Just user <- find activeUser <$> getUsers st
+  startTestChat_ st dbFilePrefix user
+
+startTestChat_ :: SQLiteStore -> FilePath -> User -> IO TestCC
+startTestChat_ st dbFilePrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
@@ -91,6 +104,18 @@ virtualSimplexChat dbFilePrefix profile = do
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
+
+stopTestChat :: TestCC -> IO ()
+stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
+  stopChatController cc
+  uninterruptibleCancel termAsync
+  uninterruptibleCancel chatAsync
+
+withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChat dbPrefix profile = bracket (createTestChat dbPrefix profile) (\cc -> cc <// 100000 >> stopTestChat cc)
+
+withTestChat :: String -> (TestCC -> IO a) -> IO a
+withTestChat dbPrefix = bracket (startTestChat dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -119,18 +144,18 @@ withTmpFiles :: IO () -> IO ()
 withTmpFiles =
   bracket_
     (createDirectoryIfMissing False "tests/tmp")
-    (removeDirectoryRecursive "tests/tmp")
+    (removePathForcibly "tests/tmp")
 
 testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
 testChatN ps test = withTmpFiles $ do
-  let envs = zip ps $ map ((testDBPrefix <>) . show) [(1 :: Int) ..]
-  tcs <- getTestCCs envs []
+  tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
+  concurrentlyN_ $ map stopTestChat tcs
   where
-    getTestCCs :: [(Profile, FilePath)] -> [TestCC] -> IO [TestCC]
+    getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> virtualSimplexChat db p <*> getTestCCs envs' tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat (show db) p <*> getTestCCs envs' tcs
 
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -179,13 +204,18 @@ serverCfg =
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
       serverTbqSize = 1,
-      msgQueueQuota = 4,
+      msgQueueQuota = 16,
       queueIdBytes = 12,
       msgIdBytes = 6,
-      storeLog = Nothing,
+      storeLogFile = Nothing,
+      allowNewQueues = True,
+      messageExpiration = Just defaultMessageExpiration,
+      inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
-      certificateFile = "tests/fixtures/tls/server.crt"
+      certificateFile = "tests/fixtures/tls/server.crt",
+      logStatsInterval = Just 86400,
+      logStatsStartTime = 0
     }
 
 withSmpServer :: IO a -> IO a

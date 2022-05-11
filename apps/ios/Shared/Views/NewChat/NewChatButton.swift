@@ -8,36 +8,41 @@
 
 import SwiftUI
 
+enum NewChatAction: Identifiable {
+    case createLink
+    case pasteLink
+    case scanQRCode
+
+    var id: NewChatAction { get { self } }
+}
+
 struct NewChatButton: View {
     @State private var showAddChat = false
-    @State private var addContact = false
-    @State private var connReqInvitation: String = ""
-    @State private var connectContact = false
-    @State private var createGroup = false
+    @State private var connReq: String = ""
+    @State private var actionSheet: NewChatAction?
 
     var body: some View {
         Button { showAddChat = true } label: {
             Image(systemName: "person.crop.circle.badge.plus")
         }
-        .confirmationDialog("Start new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Add contact") { addContactAction() }
-            Button("Scan QR code") { connectContact = true }
-            Button("Create group") { createGroup = true }
-                .disabled(true)
+        .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
+            Button("Create link / QR code") { addContactAction() }
+            Button("Paste received link") { actionSheet = .pasteLink }
+            Button("Scan QR code") { actionSheet = .scanQRCode }
         }
-        .sheet(isPresented: $addContact, content: {
-            AddContactView(connReqInvitation: connReqInvitation)
-        })
-        .sheet(isPresented: $connectContact, content: {
-            connectContactSheet()
-        })
-        .sheet(isPresented: $createGroup, content: { CreateGroupView() })
+        .sheet(item: $actionSheet) { sheet in
+            switch sheet {
+            case .createLink: AddContactView(connReqInvitation: connReq)
+            case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
+            case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
+            }
+        }
     }
 
     func addContactAction() {
         do {
-            connReqInvitation = try apiAddContact()
-            addContact = true
+            connReq = try apiAddContact()
+            actionSheet = .createLink
         } catch {
             DispatchQueue.global().async {
                 connectionErrorAlert(error)
@@ -45,33 +50,35 @@ struct NewChatButton: View {
             logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
-    
-    func addContactSheet() -> some View {
-        AddContactView(connReqInvitation: connReqInvitation)
-    }
-
-    func connectContactSheet() -> some View {
-        ConnectContactView(completed: { err in
-            connectContact = false
-            DispatchQueue.global().async {
-                switch (err) {
-                case let .success(ok):
-                    if ok { connectionReqSentAlert(.invitation) }
-                case let .failure(error):
-                    connectionErrorAlert(error)
-                }
-            }
-        })
-    }
-
-    func connectionErrorAlert(_ error: Error) {
-        AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(error.localizedDescription)")
-    }
 }
 
 enum ConnReqType: Equatable {
     case contact
     case invitation
+}
+
+func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<NewChatAction?>? = nil) {
+    Task {
+        do {
+            let res = try await apiConnect(connReq: connectionLink)
+            DispatchQueue.main.async {
+                openedSheet?.wrappedValue = nil
+                if let connReqType = res {
+                    connectionReqSentAlert(connReqType)
+                }
+            }
+        } catch {
+            logger.error("connectViaLink apiConnect error: \(responseError(error))")
+            DispatchQueue.main.async {
+                openedSheet?.wrappedValue = nil
+                connectionErrorAlert(error)
+            }
+        }
+    }
+}
+
+func connectionErrorAlert(_ error: Error) {
+    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(responseError(error))")
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {

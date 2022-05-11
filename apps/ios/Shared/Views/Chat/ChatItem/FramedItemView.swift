@@ -27,12 +27,7 @@ struct FramedItemView: View {
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
-                    if let imgWidth = imgWidth, imgWidth < maxWidth {
-                        ciQuoteView(qi)
-                            .frame(maxWidth: imgWidth, alignment: .leading)
-                    } else {
-                        ciQuoteView(qi)
-                    }
+                    ciQuoteView(qi)
                 }
 
                 if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
@@ -58,12 +53,13 @@ struct FramedItemView: View {
                                 value: .white
                             )
                         } else {
-                            let v = ciMsgContentView (chatItem, showMember)
-                            if let imgWidth = imgWidth, imgWidth < maxWidth {
-                                v.frame(maxWidth: imgWidth, alignment: .leading)
-                            } else {
-                                v
-                            }
+                            ciMsgContentView (chatItem, showMember)
+                        }
+                    case let .file(text):
+                        CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
+                            .overlay(DetermineWidth())
+                        if text != "" {
+                            ciMsgContentView (chatItem, showMember)
                         }
                     case let .link(_, preview):
                         CILinkView(linkPreview: preview)
@@ -100,8 +96,8 @@ struct FramedItemView: View {
         )
     }
 
-    private func ciQuoteView(_ qi: CIQuote) -> some View {
-        ZStack(alignment: .topTrailing) {
+    @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
+        let v = ZStack(alignment: .topTrailing) {
             if case let .image(_, image) = qi.content,
                let data = Data(base64Encoded: dropImagePrefix(image)),
                let uiImage = UIImage(data: data) {
@@ -112,6 +108,16 @@ struct FramedItemView: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 68, height: 68)
                     .clipped()
+            } else if case .file = qi.content {
+                ciQuotedMsgView(qi)
+                    .padding(.trailing, 20).frame(minWidth: msgWidth, alignment: .leading)
+                Image(systemName: "doc.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                    .padding(.top, 6)
+                    .padding(.trailing, 4)
             } else {
                 ciQuotedMsgView(qi)
             }
@@ -123,6 +129,33 @@ struct FramedItemView: View {
             ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
             : Color(uiColor: .quaternarySystemFill)
         )
+
+        if let imgWidth = imgWidth, imgWidth < maxWidth {
+            v.frame(maxWidth: imgWidth, alignment: .leading)
+        } else {
+            v
+        }
+    }
+
+    @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
+        let v = MsgContentView(
+            content: ci.content,
+            formattedText: ci.formattedText,
+            sender: showMember ? ci.memberDisplayName : nil,
+            metaText: ci.timestampText,
+            edited: ci.meta.itemEdited
+        )
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .overlay(DetermineWidth())
+        .frame(minWidth: 0, alignment: .leading)
+        .textSelection(.enabled)
+
+        if let imgWidth = imgWidth, imgWidth < maxWidth {
+            v.frame(maxWidth: imgWidth, alignment: .leading)
+        } else {
+            v
+        }
     }
 }
 
@@ -136,27 +169,12 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
     MsgContentView(
         content: qi,
-        sender: qi.sender
+        sender: qi.getSender(ChatModel.shared.currentUser)
     )
     .lineLimit(3)
     .font(.subheadline)
     .padding(.vertical, 6)
     .padding(.horizontal, 12)
-}
-
-private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
-    MsgContentView(
-        content: ci.content,
-        formattedText: ci.formattedText,
-        sender: showMember ? ci.memberDisplayName : nil,
-        metaText: ci.timestampText,
-        edited: ci.meta.itemEdited
-    )
-    .padding(.vertical, 6)
-    .padding(.horizontal, 12)
-    .overlay(DetermineWidth())
-    .frame(minWidth: 0, alignment: .leading)
-    .textSelection(.enabled)
 }
 
 func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {

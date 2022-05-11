@@ -10,17 +10,15 @@ import SwiftUI
 
 struct ContactRequestView: View {
     var contactRequest: UserContactRequest
+    @ObservedObject var chat: Chat
 
     var body: some View {
         return HStack(spacing: 8) {
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
+            ChatInfoImage(chat: chat)
                 .frame(width: 63, height: 63)
-                .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .top) {
-                    Text(ChatInfo.contactRequest(contactRequest: contactRequest).chatViewName)
+                    Text(contactRequest.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.blue)
@@ -28,7 +26,7 @@ struct ContactRequestView: View {
                         .padding(.top, 4)
                         .frame(maxHeight: .infinity, alignment: .topLeading)
                     Spacer()
-                    timestampText(contactRequest.createdAt)
+                    formatTimestampText(contactRequest.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
                         .padding(.top, 4)
@@ -47,7 +45,7 @@ struct ContactRequestView: View {
 
 struct ContactRequestView_Previews: PreviewProvider {
     static var previews: some View {
-        ContactRequestView(contactRequest: UserContactRequest.sampleData)
+        ContactRequestView(contactRequest: UserContactRequest.sampleData, chat: Chat(chatInfo: ChatInfo.sampleData.contactRequest , chatItems: []))
             .previewLayout(.fixed(width: 360, height: 80))
     }
 }

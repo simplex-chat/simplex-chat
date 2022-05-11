@@ -9,13 +9,10 @@
 import SwiftUI
 
 struct SendMessageView: View {
-    var sendMessage: (String) -> Void
-    var inProgress: Bool = false
-    @Binding var message: String
+    @Binding var composeState: ComposeState
+    var sendMessage: () -> Void
     @Namespace var namespace
     @FocusState.Binding var keyboardVisible: Bool
-    @Binding var editing: Bool
-    @Binding var sendEnabled: Bool
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
     var maxHeight: CGFloat = 360
@@ -25,15 +22,15 @@ struct SendMessageView: View {
         ZStack {
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
-                    Text(message)
+                    Text(composeState.message)
+                        .lineLimit(10)
                         .font(teFont)
                         .foregroundColor(.clear)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
                         .matchedGeometryEffect(id: "te", in: namespace)
                         .background(GeometryReader(content: updateHeight))
-                    TextEditor(text: $message)
-                        .onSubmit(submit)
+                    TextEditor(text: $composeState.message)
                         .focused($keyboardVisible)
                         .font(teFont)
                         .textInputAutocapitalization(.sentences)
@@ -42,18 +39,18 @@ struct SendMessageView: View {
                         .frame(height: teHeight)
                 }
 
-                if (inProgress) {
+                if (composeState.inProgress) {
                     ProgressView()
                         .scaleEffect(1.4)
                         .frame(width: 31, height: 31, alignment: .center)
                         .padding([.bottom, .trailing], 3)
                 } else {
-                    Button(action: submit) {
-                        Image(systemName: editing ? "checkmark.circle.fill" : "arrow.up.circle.fill")
+                    Button(action: { sendMessage() }) {
+                        Image(systemName: composeState.editing() ? "checkmark.circle.fill" : "arrow.up.circle.fill")
                             .resizable()
                             .foregroundColor(.accentColor)
                     }
-                    .disabled(!sendEnabled)
+                    .disabled(!composeState.sendEnabled())
                     .frame(width: 29, height: 29)
                     .padding([.bottom, .trailing], 4)
                 }
@@ -66,16 +63,11 @@ struct SendMessageView: View {
         .padding(.vertical, 8)
     }
 
-    func submit() {
-        sendMessage(message)
-        message = ""
-    }
-
     func updateHeight(_ g: GeometryProxy) -> Color {
         DispatchQueue.main.async {
             teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            teFont = isShortEmoji(message)
-                ? message.count < 4
+            teFont = isShortEmoji(composeState.message)
+            ? composeState.message.count < 4
                     ? largeEmojiFont
                     : mediumEmojiFont
                 : .body
@@ -86,34 +78,29 @@ struct SendMessageView: View {
 
 struct SendMessageView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var message: String = ""
+        @State var composeStateNew = ComposeState()
+        let ci = ChatItem.getSample(1, .directSnd, .now, "hello")
+        @State var composeStateEditing = ComposeState(editingItem: ci)
         @FocusState var keyboardVisible: Bool
-        @State var editingOff: Bool = false
-        @State var editingOn: Bool = true
         @State var sendEnabled: Bool = true
-        @State var item: ChatItem? = ChatItem.getSample(1, .directSnd, .now, "hello")
 
         return Group {
             VStack {
                 Text("")
                 Spacer(minLength: 0)
                 SendMessageView(
-                    sendMessage: { print ($0) },
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editingOff,
-                    sendEnabled: $sendEnabled
+                    composeState: $composeStateNew,
+                    sendMessage: {},
+                    keyboardVisible: $keyboardVisible
                 )
             }
             VStack {
                 Text("")
                 Spacer(minLength: 0)
                 SendMessageView(
-                    sendMessage: { print ($0) },
-                    message: $message,
-                    keyboardVisible: $keyboardVisible,
-                    editing: $editingOn,
-                    sendEnabled: $sendEnabled
+                    composeState: $composeStateEditing,
+                    sendMessage: {},
+                    keyboardVisible: $keyboardVisible
                 )
             }
         }

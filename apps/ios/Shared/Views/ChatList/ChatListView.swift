@@ -13,19 +13,17 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @State private var showCallView = false
+    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
 
     var user: User
 
     var body: some View {
         let v = NavigationView {
             List {
-                if chatModel.chats.isEmpty {
-                    ChatHelp(showSettings: $showSettings)
-                } else {
-                    ForEach(filteredChats()) { chat in
-                        ChatListNavLink(chat: chat)
-                            .padding(.trailing, -16)
-                    }
+                ForEach(filteredChats()) { chat in
+                    ChatListNavLink(chat: chat, showCallView: $showCallView)
+                        .padding(.trailing, -16)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -34,15 +32,15 @@ struct ChatListView: View {
                     chatModel.popChat(chatId)
                 }
             }
-            .onChange(of: chatModel.appOpenUrl) { _ in
-                if let url = chatModel.appOpenUrl {
-                    chatModel.appOpenUrl = nil
-                    AlertManager.shared.showAlert(connectViaUrlAlert(url))
-                }
+            .onChange(of: chatModel.chats.isEmpty) { empty in
+                if !empty { return }
+                withAnimation { chatModel.onboardingStage = .step3_MakeConnection }
             }
+            .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onAppear() { connectViaUrl() }
             .offset(x: -8)
             .listStyle(.plain)
-            .navigationTitle(chatModel.chats.isEmpty ? "Welcome \(user.displayName)!" : "Your chats")
+            .navigationTitle("Your chats")
             .navigationBarTitleDisplayMode(chatModel.chats.count > 8 ? .inline : .large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -50,6 +48,29 @@ struct ChatListView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NewChatButton()
+                }
+            }
+            .fullScreenCover(isPresented: $showCallView) {
+                ActiveCallView(showCallView: $showCallView)
+            }
+            .onChange(of: showCallView) { _ in
+                if (showCallView) { return }
+                if let call = chatModel.activeCall {
+                    Task {
+                        do {
+                            try await apiEndCall(call.contact)
+                        } catch {
+                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
+                        }
+                    }
+                }
+                chatModel.callCommand = .end
+            }
+            .onChange(of: chatModel.activeCallInvitation) { _ in
+                if let contactRef = chatModel.activeCallInvitation,
+                   case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
+                   let invitation = chatModel.callInvitations.removeValue(forKey: contactRef.id) {
+                    answerCallAlert(contact, invitation)
                 }
             }
         }
@@ -64,43 +85,39 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == ""
+        return s == "" && pendingConnections
             ? chatModel.chats
-            : chatModel.chats.filter { $0.chatInfo.chatViewName.localizedLowercase.contains(s) }
+            : s == ""
+            ? chatModel.chats.filter {
+                pendingConnections || $0.chatInfo.chatType != .contactConnection
+            }
+            : chatModel.chats.filter {
+                (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
+                $0.chatInfo.chatViewName.localizedLowercase.contains(s)
+            }
     }
 
-    private func connectViaUrlAlert(_ url: URL) -> Alert {
-        var path = url.path
-        logger.debug("ChatListView.connectViaUrlAlert path: \(path)")
-        if (path == "/contact" || path == "/invitation") {
-            path.removeFirst()
-            let action: ConnReqType = path == "contact" ? .contact : .invitation
-            let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-            let title: LocalizedStringKey
-            if case .contact = action { title = "Connect via contact link?" }
-            else { title = "Connect via invitation link?" }
-            return Alert(
-                title: Text(title),
-                message: Text("Your profile will be sent to the contact that you received this link from"),
-                primaryButton: .default(Text("Connect")) {
+    private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
+        AlertManager.shared.showAlert(Alert(
+            title: Text("Incoming call"),
+            primaryButton: .default(Text("Answer")) {
+                if chatModel.activeCallInvitation == nil {
                     DispatchQueue.main.async {
-                        Task {
-                            do {
-                                let ok = try await apiConnect(connReq: link)
-                                if ok { connectionReqSentAlert(action) }
-                            } catch {
-                                let err = error.localizedDescription
-                                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(err)")
-                                logger.debug("ChatListView.connectViaUrlAlert: apiConnect error: \(err)")
-                            }
-                        }
+                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
                     }
-                },
-                secondaryButton: .cancel()
-            )
-        } else {
-            return Alert(title: Text("Error: URL is invalid"))
-        }
+                } else {
+                    chatModel.activeCallInvitation = nil
+                    chatModel.activeCall = Call(
+                        contact: contact,
+                        callState: .invitationReceived,
+                        localMedia: invitation.peerMedia
+                    )
+                    showCallView = true
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                }
+            },
+            secondaryButton: .cancel()
+        ))
     }
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,12 +61,12 @@ fun UserAddressLayout(
     verticalArrangement = Arrangement.Top
   ) {
     Text(
-      generalGetString(R.string.your_chat_address),
+      stringResource(R.string.your_chat_address),
       Modifier.padding(bottom = 16.dp),
       style = MaterialTheme.typography.h1,
     )
     Text(
-      generalGetString(R.string.you_can_share_your_address_anybody_will_be_able_to_connect),
+      stringResource(R.string.you_can_share_your_address_anybody_will_be_able_to_connect),
       Modifier.padding(bottom = 12.dp),
       lineHeight = 22.sp
     )
@@ -76,11 +77,11 @@ fun UserAddressLayout(
     ) {
       if (userAddress == null) {
         Text(
-          generalGetString(R.string.if_you_delete_address_you_wont_lose_contacts),
+          stringResource(R.string.if_you_delete_address_you_wont_lose_contacts),
           Modifier.padding(bottom = 12.dp),
           lineHeight = 22.sp
         )
-        SimpleButton(generalGetString(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
+        SimpleButton(stringResource(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
         QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
@@ -89,11 +90,11 @@ fun UserAddressLayout(
           modifier = Modifier.padding(vertical = 10.dp)
         ) {
           SimpleButton(
-            generalGetString(R.string.share_link),
+            stringResource(R.string.share_link),
             icon = Icons.Outlined.Share,
             click = { share(userAddress) })
           SimpleButton(
-            generalGetString(R.string.delete_address),
+            stringResource(R.string.delete_address),
             icon = Icons.Outlined.Delete,
             color = Color.Red,
             click = deleteAddress

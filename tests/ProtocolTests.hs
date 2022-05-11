@@ -15,7 +15,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (smpClientVRange)
+import Simplex.Messaging.Protocol (ProtocolServer (..), smpClientVRange)
 import Test.Hspec
 
 protocolTests :: Spec
@@ -23,7 +23,7 @@ protocolTests = decodeChatMessageTest
 
 srv :: SMPServer
 srv =
-  SMPServer
+  ProtocolServer
     { host = "smp.simplex.im",
       port = "5223",
       keyHash = C.KeyHash "\215m\248\251"
@@ -103,7 +103,7 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgNew (MCSimple (ExtMsgContent (MCImage "here's an image" $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=") Nothing))
   it "x.msg.new chat message " $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      ##==## (ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing))))
+      ##==## ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (ExtMsgContent (MCText "hello") Nothing)))
   it "x.msg.new quote" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
@@ -123,9 +123,12 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.msg.new forward" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
       ##==## ChatMessage (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing))
-  it "x.msg.new simple with file" $
+  it "x.msg.new simple text with file" $
     "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XMsgNew (MCSimple (ExtMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileConnReq = Nothing})))
+  it "x.msg.new simple file with file" $
+    "{\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"\",\"type\":\"file\"},\"file\":{\"fileSize\":12345,\"fileName\":\"file.txt\"}}}"
+      #==# XMsgNew (MCSimple (ExtMsgContent (MCFile "") (Just FileInvitation {fileName = "file.txt", fileSize = 12345, fileConnReq = Nothing})))
   it "x.msg.new quote with file" $
     "{\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       ##==## ChatMessage
@@ -166,6 +169,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   it "x.file.acpt.inv" $
     "{\"event\":\"x.file.acpt.inv\",\"params\":{\"msgId\":\"AQIDBA==\",\"fileName\":\"photo.jpg\",\"fileConnReq\":\"https://simplex.chat/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23MCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%3D&e2e=v%3D1%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D\"}}"
       #==# XFileAcptInv (SharedMsgId "\1\2\3\4") testConnReq "photo.jpg"
+  it "x.file.cancel" $
+    "{\"event\":\"x.file.cancel\",\"params\":{\"msgId\":\"AQIDBA==\"}}"
+      #==# XFileCancel (SharedMsgId "\1\2\3\4")
   it "x.info" $
     "{\"event\":\"x.info\",\"params\":{\"profile\":{\"fullName\":\"Alice\",\"displayName\":\"alice\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
       #==# XInfo testProfile
