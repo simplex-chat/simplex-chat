@@ -33,7 +33,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
@@ -57,6 +57,7 @@ data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
+    defaultServers :: InitialAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
