@@ -4,9 +4,9 @@
 
 ## New in version 2.0 - sending images and files privately
 
-To send image and files SimpleX Chat uses privacy-preserving system components, both in iOS and Android apps. We do not ask for permission to access the whole catalogue of files, as, for example, Signal and Telegram do.
+To send image and files SimpleX Chat uses privacy-preserving system components, both in iOS and Android apps. We do not ask for permission to access multiple or selected files, as, for example, Signal and Telegram do - it compromises either privacy or convenience.
 
-How does it work? The gallery and files are accessed from a system provided dialogue that runs in a separate process and provides a temporary URI to access only one file selected by the user, only until the app is restarted.
+How does it work? The gallery and files are accessed from a system provided dialogue that runs in a separate process, and provides a temporary URI to access only one file selected by the user, only until the app is restarted.
 
 To make file and images work for mobile apps we made a breaking change in SimpleX Chat core. The current version can exchange files with the previous version 1.6 of the terminal app, but not with the previous version.
 
