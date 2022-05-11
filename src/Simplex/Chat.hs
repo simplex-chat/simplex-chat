@@ -670,8 +670,7 @@ processChatCommand = \case
           ci <- withStore $ \st -> getChatItemByFileId st user fileId
           pure $ CRSndGroupFileCancelled ci ftm fts
         FTRcv ftr@RcvFileTransfer {cancelled} -> do
-          unless cancelled $
-            cancelRcvFileTransfer user ftr
+          unless cancelled $ cancelRcvFileTransfer user ftr
           pure $ CRRcvFileCancelled ftr
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\user -> withStore $ \st -> getFileTransferProgress st user fileId)
@@ -765,12 +764,10 @@ processChatCommand = \case
         case dir of
           SMDSnd -> do
             (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\st -> getSndFileTransfer st user fileId)
-            unless cancelled $
-              cancelSndFile user ftm fts
+            unless cancelled $ cancelSndFile user ftm fts
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\st -> getRcvFileTransfer st user fileId)
-            unless cancelled $
-              cancelRcvFileTransfer user ft
+            unless cancelled $ cancelRcvFileTransfer user ft
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \User {userId} -> do
       ct <- withStore $ \st -> getContact st userId ctId
@@ -1524,7 +1521,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
       (FileTransferMeta {fileName, cancelled}, _) <- withStore (\st -> getSndFileTransfer st user fileId)
-      unless cancelled $ do
+      unless cancelled $
         if fName == fileName
           then
             tryError (withAgent $ \a -> joinConnection a fileConnReq . directMessage $ XOk) >>= \case
