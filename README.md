@@ -63,11 +63,11 @@ If you are considering developing with SimpleX platform please get in touch for 
 
 ## News and updates
 
-[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md). We would really appreciate any feedback on the design we are implementing.
+[May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
+
+[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md)
 
 [Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
-
-[Feb 14, 2022. SimpleX Chat: join our public beta for iOS](./blog/20220214-simplex-chat-ios-public-beta.md)
 
 [All updates](./blog)
 
