@@ -8,7 +8,7 @@ To send image and files SimpleX Chat uses privacy-preserving system components, 
 
 How does it work? The gallery and files are accessed from a system provided dialogue that runs in a separate process, and provides a temporary URI to access only one file selected by the user, only until the app is restarted.
 
-To make file and images work for mobile apps we made a breaking change in SimpleX Chat core. The current version can exchange files with the previous version 1.6 of the terminal app, but not with the previous version.
+To make file and images work for mobile apps we made a breaking change in SimpleX Chat core. The current version can exchange files with the previous version 1.6 of the terminal app, but not with the version before that.
 
 In the mobile app, to send and receive files both devices must have version 2.0 installed - so please check it with your contacts. Receiving images works in the previous version, so even if your contacts did not yet upgrade the app, they should be able to receive the images.
 
