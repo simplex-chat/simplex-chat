@@ -63,7 +63,7 @@ If you are considering developing with SimpleX platform please get in touch for 
 
 ## News and updates
 
-[May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files)
+[May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
 
 [Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md)
 

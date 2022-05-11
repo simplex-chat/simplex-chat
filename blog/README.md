@@ -1,6 +1,6 @@
 # Blog
 
-May 11, 2022 [Sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files)
+May 11, 2022 [Sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files.md)
 
 Apr 04, 2022 [Instant notifications for SimpleX Chat mobile apps](./20220404-simplex-chat-instant-notifications.md)
 
@@ -16,4 +16,4 @@ Sep 14, 2021. [SimpleX Chat v0.4 released: open-source chat that uses privacy-pr
 
 May 12, 2021. [SimpleX Chat Prototype!](./20210512-simplex-chat-terminal-ui.md)
 
-Oct 22, 2020. [SimpleX Chat](./20201022-simplex-chat)
+Oct 22, 2020. [SimpleX Chat](./20201022-simplex-chat.md)
