@@ -86,6 +86,7 @@ defaultChatConfig =
           },
       dbPoolSize = 1,
       yesToMigrations = False,
+      defaultServers = InitialAgentServers {smp = _defaultSMPServers, ntf = _defaultNtfServers},
       tbqSize = 64,
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
@@ -93,30 +94,29 @@ defaultChatConfig =
       testView = False
     }
 
-defaultSMPServers :: NonEmpty SMPServer
-defaultSMPServers =
+_defaultSMPServers :: NonEmpty SMPServer
+_defaultSMPServers =
   L.fromList
     [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
       "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
       "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
     ]
 
-defaultNtfServers :: [NtfServer]
-defaultNtfServers = ["smp://ZH1Dkt2_EQRbxUUyjLlcUjg1KAhBrqfvE0xfn7Ki0Zg=@ntf1.simplex.im"]
+_defaultNtfServers :: [NtfServer]
+_defaultNtfServers = ["smp://ZH1Dkt2_EQRbxUUyjLlcUjg1KAhBrqfvE0xfn7Ki0Zg=@ntf1.simplex.im"]
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} ChatOpts {dbFilePrefix, smpServers, logConnections} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, logConnections} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections}
       sendNotification = fromMaybe (const $ pure ()) sendToast
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
-  initialSMPServers <- resolveServers
-  let servers = InitialAgentServers {smp = initialSMPServers, ntf = defaultNtfServers}
+  servers <- resolveServers defaultServers
   smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
@@ -130,12 +130,14 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize} Ch
   filesFolder <- newTVarIO Nothing
   pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder}
   where
-    resolveServers :: IO (NonEmpty SMPServer)
-    resolveServers = case user of
-      Nothing -> pure $ if null smpServers then defaultSMPServers else L.fromList smpServers
-      Just usr -> do
-        userSmpServers <- getSMPServers chatStore usr
-        pure . fromMaybe defaultSMPServers . nonEmpty $ if null smpServers then userSmpServers else smpServers
+    resolveServers :: InitialAgentServers -> IO InitialAgentServers
+    resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
+      Just smpServers' -> pure ss {smp = smpServers'}
+      _ -> case user of
+        Just usr -> do
+          userSmpServers <- getSMPServers chatStore usr
+          pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
+        _ -> pure ss
 
 runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 runChatController = race_ notificationSubscriber . agentSubscriber
@@ -482,6 +484,7 @@ processChatCommand = \case
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
+    ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
   ChatHelp section -> pure $ CRChatHelp section
@@ -759,7 +762,7 @@ processChatCommand = \case
           removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
             removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
     cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user files = forM_ files $ \ (fileId, AFS dir status) ->
+    cancelFiles user files = forM_ files $ \(fileId, AFS dir status) ->
       unless (ciFileEnded status) $
         case dir of
           SMDSnd -> do
