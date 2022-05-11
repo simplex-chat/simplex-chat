@@ -112,7 +112,7 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - ✅ Mobile apps v1 for Android and iOS.
 - ✅ Private instant notifications for Android using background service.
 - ✅ Haskell chat bot templates.
-- ✅ v2.0 - supporting images and files.
+- ✅ v2.0 - supporting images and files in mobile apps.
 - 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
 - Groups support for mobile apps.
