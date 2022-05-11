@@ -656,8 +656,7 @@ processChatCommand = \case
       withStore (\st -> getFileTransfer st user fileId) >>= \case
         FTSnd ftm@FileTransferMeta {cancelled} fts -> do
           unless cancelled $ do
-            withStore $ \st -> updateFileCancelled st user fileId CIFSSndCancelled
-            forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+            cancelSndFile user ftm fts
             sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
             void $
               withStore (\st -> getChatRefByFileId st user fileId) >>= \case
@@ -765,10 +764,9 @@ processChatCommand = \case
       unless (ciFileEnded status) $
         case dir of
           SMDSnd -> do
-            (FileTransferMeta {cancelled}, fts) <- withStore (\st -> getSndFileTransfer st user fileId)
-            unless cancelled $ do
-              withStore $ \st -> updateFileCancelled st user fileId CIFSSndCancelled
-              forM_ fts $ \ft' -> cancelSndFileTransfer ft'
+            (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\st -> getSndFileTransfer st user fileId)
+            unless cancelled $
+              cancelSndFile user ftm fts
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\st -> getRcvFileTransfer st user fileId)
             unless cancelled $
@@ -1880,6 +1878,11 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, fileStatus} = do
     RFSConnected RcvFileInfo {agentConnId = AgentConnId acId} ->
       withAgent (`deleteConnection` acId)
     _ -> pure ()
+
+cancelSndFile :: ChatMonad m => User -> FileTransferMeta -> [SndFileTransfer] -> m ()
+cancelSndFile user FileTransferMeta {fileId} fts = do
+  withStore $ \st -> updateFileCancelled st user fileId CIFSSndCancelled
+  forM_ fts $ \ft' -> cancelSndFileTransfer ft'
 
 cancelSndFileTransfer :: ChatMonad m => SndFileTransfer -> m ()
 cancelSndFileTransfer ft@SndFileTransfer {agentConnId = AgentConnId acId, fileStatus} =
