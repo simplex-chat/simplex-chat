@@ -2068,23 +2068,17 @@ getRcvFileTransfer_ db userId fileId =
             Just name ->
               case fileStatus' of
                 FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, cancelled, grpMemberId}
-                FSAccepted -> ft name fileInv RFSAccepted fileInfo
-                FSConnected -> ft name fileInv RFSConnected fileInfo
-                FSComplete -> ft name fileInv RFSComplete fileInfo
-                FSCancelled -> cancelledFt name fileInv fileInfo
+                FSAccepted -> ft name fileInv . RFSAccepted =<< rfi fileInfo
+                FSConnected -> ft name fileInv . RFSConnected =<< rfi fileInfo
+                FSComplete -> ft name fileInv . RFSComplete =<< rfi fileInfo
+                FSCancelled -> ft name fileInv . RFSCancelled $ rfi_ fileInfo
       where
-        ft senderDisplayName fileInvitation rfs = \case
-          (Just filePath, Just connId, Just agentConnId) ->
-            let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
-             in Right RcvFileTransfer {..}
-          _ -> Left $ SERcvFileInvalid fileId
-        cancelledFt senderDisplayName fileInvitation = \case
-          (Just filePath, Just connId, Just agentConnId) ->
-            let fileStatus = RFSCancelled $ Just RcvFileInfo {filePath, connId, agentConnId}
-             in Right RcvFileTransfer {..}
-          _ ->
-            let fileStatus = RFSCancelled Nothing
-             in Right RcvFileTransfer {..}
+        ft senderDisplayName fileInvitation fileStatus =
+          Right RcvFileTransfer {fileId, fileInvitation, fileStatus, senderDisplayName, chunkSize, cancelled, grpMemberId}
+        rfi fileInfo = maybe (Left $ SERcvFileInvalid fileId) Right $ rfi_ fileInfo
+        rfi_ = \case
+          (Just filePath, Just connId, Just agentConnId) -> Just RcvFileInfo {filePath, connId, agentConnId}
+          _ -> Nothing
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
