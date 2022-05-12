@@ -21,9 +21,13 @@ const initialPlainTextRequired = {
 function defaultCallConfig(encodedInsertableStreams) {
     return {
         peerConnectionConfig: {
-            iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
+            iceServers: [
+                { urls: "stun:stun.simplex.chat:5349" },
+                { urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z" },
+            ],
             iceCandidatePoolSize: 10,
             encodedInsertableStreams,
+            iceTransportPolicy: "relay",
         },
         iceCandidates: {
             delay: 2000,
@@ -135,13 +139,13 @@ async function processCommand(body) {
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
-                    // resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
-                    resp = {
-                        type: "offer",
-                        offer: JSON.stringify(offer),
-                        iceCandidates: await activeCall.iceCandidates,
-                        capabilities: { encryption },
-                    };
+                    resp = { type: "accept", offer: JSON.stringify(offer), iceCandidates: await activeCall.iceCandidates, media, aesKey };
+                    // resp = {
+                    //   type: "offer",
+                    //   offer: JSON.stringify(offer),
+                    //   iceCandidates: await activeCall.iceCandidates,
+                    //   capabilities: {encryption},
+                    // }
                 }
                 break;
             case "accept":
@@ -227,7 +231,7 @@ async function processCommand(body) {
     catch (e) {
         resp = { type: "error", message: e.message };
     }
-    const apiResp = { corrId, resp, command };
+    const apiResp = { corrId, resp };
     sendMessageToNative(apiResp);
     return apiResp;
 }
