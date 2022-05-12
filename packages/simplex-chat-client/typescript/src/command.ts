@@ -1,6 +1,7 @@
-type ChatCommand =
+export type ChatCommand =
   | ShowActiveUser
   | CreateActiveUser
+  | StartChat
   | SetFilesFolder
   | APIGetChats
   | APIGetChat
@@ -26,6 +27,7 @@ type ChatCommand =
 type ChatCommandTag =
   | "showActiveUser"
   | "createActiveUser"
+  | "startChat"
   | "setFilesFolder"
   | "apiGetChats"
   | "apiGetChat"
@@ -48,36 +50,40 @@ type ChatCommandTag =
   | "showMyAddress"
   | "addressAutoAccept"
 
-interface CC {
+interface IChatCommand {
   type: ChatCommandTag
 }
 
-interface ShowActiveUser extends CC {
+export interface ShowActiveUser extends IChatCommand {
   type: "showActiveUser"
 }
 
-interface CreateActiveUser extends CC {
+export interface CreateActiveUser extends IChatCommand {
   type: "createActiveUser"
   profile: Profile
 }
 
-interface SetFilesFolder extends CC {
+export interface StartChat extends IChatCommand {
+  type: "startChat"
+}
+
+export interface SetFilesFolder extends IChatCommand {
   type: "setFilesFolder"
   filePath: string
 }
 
-interface APIGetChats extends CC {
+export interface APIGetChats extends IChatCommand {
   type: "apiGetChats"
 }
 
-interface APIGetChat extends CC {
+export interface APIGetChat extends IChatCommand {
   type: "apiGetChat"
   chatType: ChatType
   chatId: number
   pagination: ChatPagination
 }
 
-interface APISendMessage extends CC {
+export interface APISendMessage extends IChatCommand {
   type: "apiSendMessage"
   chatType: ChatType
   chatId: number
@@ -86,7 +92,7 @@ interface APISendMessage extends CC {
   msgContent: MsgContent
 }
 
-interface APIUpdateChatItem extends CC {
+export interface APIUpdateChatItem extends IChatCommand {
   type: "apiUpdateChatItem"
   chatType: ChatType
   chatId: number
@@ -94,7 +100,7 @@ interface APIUpdateChatItem extends CC {
   msgContent: MsgContent
 }
 
-interface APIDeleteChatItem extends CC {
+export interface APIDeleteChatItem extends IChatCommand {
   type: "apiDeleteChatItem"
   chatType: ChatType
   chatId: number
@@ -102,7 +108,7 @@ interface APIDeleteChatItem extends CC {
   deleteMode: DeleteMode
 }
 
-interface APIChatRead extends CC {
+export interface APIChatRead extends IChatCommand {
   type: "apiChatRead"
   chatType: ChatType
   chatId: number
@@ -110,72 +116,72 @@ interface APIChatRead extends CC {
   toItem: ChatItemId
 }
 
-interface APIDeleteChat extends CC {
+export interface APIDeleteChat extends IChatCommand {
   type: "apiDeleteChat"
   chatType: ChatType
   chatId: number
 }
 
-interface APIAcceptContact extends CC {
+export interface APIAcceptContact extends IChatCommand {
   type: "apiAcceptContact"
   contactReqId: number
 }
 
-interface APIRejectContact extends CC {
+export interface APIRejectContact extends IChatCommand {
   type: "apiRejectContact"
   contactReqId: number
 }
 
-interface APIUpdateProfile extends CC {
+export interface APIUpdateProfile extends IChatCommand {
   type: "apiUpdateProfile"
   profile: Profile
 }
 
-interface APIParseMarkdown extends CC {
+export interface APIParseMarkdown extends IChatCommand {
   type: "apiParseMarkdown"
   text: string
 }
 
-interface GetUserSMPServers extends CC {
+export interface GetUserSMPServers extends IChatCommand {
   type: "getUserSMPServers"
 }
 
-interface SetUserSMPServers extends CC {
+export interface SetUserSMPServers extends IChatCommand {
   type: "setUserSMPServers"
   servers: [string]
 }
 
-interface AddContact extends CC {
+export interface AddContact extends IChatCommand {
   type: "addContact"
 }
 
-interface Connect extends CC {
+export interface Connect extends IChatCommand {
   type: "connect"
   connReq: string
 }
 
-interface ConnectSimplex extends CC {
+export interface ConnectSimplex extends IChatCommand {
   type: "connectSimplex"
 }
 
-interface CreateMyAddress extends CC {
+export interface CreateMyAddress extends IChatCommand {
   type: "createMyAddress"
 }
 
-interface DeleteMyAddress extends CC {
+export interface DeleteMyAddress extends IChatCommand {
   type: "deleteMyAddress"
 }
 
-interface ShowMyAddress extends CC {
+export interface ShowMyAddress extends IChatCommand {
   type: "showMyAddress"
 }
 
-interface AddressAutoAccept extends CC {
+export interface AddressAutoAccept extends IChatCommand {
   type: "addressAutoAccept"
   enable: boolean
 }
 
-interface Profile {
+export interface Profile {
   displayName: string
   fullName: string // can be empty string
   image?: string
@@ -196,7 +202,7 @@ type ChatItemId = number
 
 type MsgContentTag = "text" | "link" | "images"
 
-type MsgContent = MCText | MCUnknown
+export type MsgContent = MCText | MCUnknown
 
 interface MC {
   type: MsgContentTag
@@ -217,12 +223,14 @@ enum DeleteMode {
   DMInternal = "internal",
 }
 
-function cmdString(cmd: ChatCommand): string {
+export function cmdString(cmd: ChatCommand): string {
   switch (cmd.type) {
     case "showActiveUser":
       return "/u"
     case "createActiveUser":
       return `/u ${JSON.stringify(cmd.profile)}`
+    case "startChat":
+      return "/_start"
     case "setFilesFolder":
       return `/_files_folder ${cmd.filePath}`
     case "apiGetChats":
@@ -279,7 +287,7 @@ function tagged<T>(tag: string, x?: T): string {
   return x ? ` ${tag}=${x}` : ""
 }
 
-type ChatResponse =
+export type ChatResponse =
   | CRActiveUser
   | CRChatStarted
   | CRChatRunning
@@ -375,226 +383,226 @@ interface CR {
   type: ChatResponseTag
 }
 
-interface CRActiveUser extends CR {
+export interface CRActiveUser extends CR {
   type: "activeUser"
   user: User
 }
 
-interface CRChatStarted extends CR {
+export interface CRChatStarted extends CR {
   type: "chatStarted"
 }
 
-interface CRChatRunning extends CR {
+export interface CRChatRunning extends CR {
   type: "chatRunning"
 }
 
-interface CRApiChats extends CR {
+export interface CRApiChats extends CR {
   type: "apiChats"
   chats: Chat[]
 }
 
-interface CRApiChat extends CR {
+export interface CRApiChat extends CR {
   type: "apiChat"
   chats: Chat
 }
 
-interface CRApiParsedMarkdown extends CR {
+export interface CRApiParsedMarkdown extends CR {
   type: "apiParsedMarkdown"
   formattedText?: FormattedText[]
 }
 
-interface CRUserSMPServers extends CR {
+export interface CRUserSMPServers extends CR {
   type: "userSMPServers"
   smpServers: string[]
 }
 
-interface CRNewChatItem extends CR {
+export interface CRNewChatItem extends CR {
   type: "newChatItem"
   chatItem: AChatItem
 }
 
-interface CRChatItemStatusUpdated extends CR {
+export interface CRChatItemStatusUpdated extends CR {
   type: "chatItemStatusUpdated"
   chatItem: AChatItem
 }
 
-interface CRChatItemUpdated extends CR {
+export interface CRChatItemUpdated extends CR {
   type: "chatItemUpdated"
   chatItem: AChatItem
 }
 
-interface CRChatItemDeleted extends CR {
+export interface CRChatItemDeleted extends CR {
   type: "chatItemDeleted"
   deletedChatItem: AChatItem
   toChatItem: AChatItem
 }
 
-interface CRMsgIntegrityError extends CR {
+export interface CRMsgIntegrityError extends CR {
   type: "msgIntegrityError"
   msgError: MsgErrorType
 }
 
-interface CRCmdOk extends CR {
+export interface CRCmdOk extends CR {
   type: "cmdOk"
 }
 
-interface CRUserContactLink extends CR {
+export interface CRUserContactLink extends CR {
   type: "userContactLink"
   connReqContact: string
   autoAccept: boolean
 }
 
-interface CRUserContactLinkUpdated extends CR {
+export interface CRUserContactLinkUpdated extends CR {
   type: "userContactLinkUpdated"
   connReqContact: string
   autoAccept: boolean
 }
 
-interface CRContactRequestRejected extends CR {
+export interface CRContactRequestRejected extends CR {
   type: "contactRequestRejected"
   contactRequest: UserContactRequest
 }
 
-interface CRUserProfile extends CR {
+export interface CRUserProfile extends CR {
   type: "userProfile"
   profile: Profile
 }
 
-interface CRUserProfileNoChange extends CR {
+export interface CRUserProfileNoChange extends CR {
   type: "userProfileNoChange"
 }
 
-interface CRUserProfileUpdated extends CR {
+export interface CRUserProfileUpdated extends CR {
   type: "userProfileUpdated"
   fromProfile: Profile
   toProfile: Profile
 }
 
-interface CRInvitation extends CR {
+export interface CRInvitation extends CR {
   type: "invitation"
   connReqInvitation: string
 }
 
-interface CRSentConfirmation extends CR {
+export interface CRSentConfirmation extends CR {
   type: "sentConfirmation"
 }
 
-interface CRSentInvitation extends CR {
+export interface CRSentInvitation extends CR {
   type: "sentInvitation"
 }
 
-interface CRContactUpdated extends CR {
+export interface CRContactUpdated extends CR {
   type: "contactUpdated"
   fromContact: Contact
   toContact: Contact
 }
 
-interface CRContactDeleted extends CR {
+export interface CRContactDeleted extends CR {
   type: "contactDeleted"
   contact: Contact
 }
 
-interface CRUserContactLinkCreated extends CR {
+export interface CRUserContactLinkCreated extends CR {
   type: "userContactLinkCreated"
   connReqContact: string
 }
 
-interface CRUserContactLinkDeleted extends CR {
+export interface CRUserContactLinkDeleted extends CR {
   type: "userContactLinkDeleted"
 }
 
-interface CRReceivedContactRequest extends CR {
+export interface CRReceivedContactRequest extends CR {
   type: "receivedContactRequest"
   contactRequest: UserContactRequest
 }
 
-interface CRAcceptingContactRequest extends CR {
+export interface CRAcceptingContactRequest extends CR {
   type: "acceptingContactRequest"
   contact: Contact
 }
 
-interface CRContactAlreadyExists extends CR {
+export interface CRContactAlreadyExists extends CR {
   type: "contactAlreadyExists"
   contact: Contact
 }
 
-interface CRContactRequestAlreadyAccepted extends CR {
+export interface CRContactRequestAlreadyAccepted extends CR {
   type: "contactRequestAlreadyAccepted"
   contact: Contact
 }
 
-interface CRContactConnecting extends CR {
+export interface CRContactConnecting extends CR {
   type: "contactConnecting"
   contact: Contact
 }
 
-interface CRContactConnected extends CR {
+export interface CRContactConnected extends CR {
   type: "contactConnected"
   contact: Contact
 }
 
-interface CRContactAnotherClient extends CR {
+export interface CRContactAnotherClient extends CR {
   type: "contactAnotherClient"
   contact: Contact
 }
 
-interface CRContactDisconnected extends CR {
+export interface CRContactDisconnected extends CR {
   type: "contactDisconnected"
   contact: Contact
 }
 
-interface CRContactSubscribed extends CR {
+export interface CRContactSubscribed extends CR {
   type: "contactSubscribed"
   contact: Contact
 }
 
-interface CRContactSubError extends CR {
+export interface CRContactSubError extends CR {
   type: "contactSubError"
   contact: Contact
   chatError: ChatError
 }
 
-interface CRContactSubSummary extends CR {
+export interface CRContactSubSummary extends CR {
   type: "contactSubSummary"
   contactSubscriptions: ContactSubStatus[]
 }
 
-interface CRGroupEmpty extends CR {
+export interface CRGroupEmpty extends CR {
   type: "groupEmpty"
   groupInfo: GroupInfo
 }
 
-interface CRPendingSubSummary extends CR {
+export interface CRPendingSubSummary extends CR {
   type: "pendingSubSummary"
   pendingSubStatus: PendingSubStatus[]
 }
 
-interface CRUserContactLinkSubscribed extends CR {
+export interface CRUserContactLinkSubscribed extends CR {
   type: "userContactLinkSubscribed"
 }
 
-interface CRUserContactLinkSubError extends CR {
+export interface CRUserContactLinkSubError extends CR {
   type: "userContactLinkSubError"
   chatError: ChatError
 }
 
-interface CRMessageError extends CR {
+export interface CRMessageError extends CR {
   type: "messageError"
   severity: string
   errorMessage: string
 }
 
-interface CRChatCmdError extends CR {
+export interface CRChatCmdError extends CR {
   type: "chatCmdError"
   chatError: ChatError
 }
 
-interface CRChatError extends CR {
+export interface CRChatError extends CR {
   type: "chatError"
   chatError: ChatError
 }
 
-interface User {
+export interface User {
   userId: number
   userContactId: number
   localDisplayName: string
@@ -723,7 +731,7 @@ interface CIMeta {
   editable: boolean
 }
 
-type CIContent = CISndMsgContent | CIRcvMsgContent | CISndDeleted | CIRcvDeleted | CISndFileInvitation | CIRcvFileInvitation
+export type CIContent = CISndMsgContent | CIRcvMsgContent | CISndDeleted | CIRcvDeleted | CISndFileInvitation | CIRcvFileInvitation
 
 interface ICIContent {
   type: "sndMsgContent" | "rcvMsgContent" | "sndDeleted" | "rcvDeleted" | "sndFileInvitation" | "rcvFileInvitation"
@@ -816,7 +824,30 @@ interface FormattedText {}
 
 interface MsgErrorType {}
 
-interface ChatError {}
+type ChatError = ChatErrorChat | ChatErrorAgent | ChatErrorStore
+
+interface ChatErrorChat {
+  type: "error"
+  errorType: ChatErrorType
+}
+
+interface ChatErrorAgent {
+  type: "errorAgent"
+}
+
+interface ChatErrorStore {
+  type: "errorStore"
+}
+
+type ChatErrorType = CENoActiveUser | CEActiveUserExists
+
+interface CENoActiveUser {
+  type: "noActiveUser"
+}
+
+interface CEActiveUserExists {
+  type: "activeUserExists"
+}
 
 interface ContactSubStatus {}
 

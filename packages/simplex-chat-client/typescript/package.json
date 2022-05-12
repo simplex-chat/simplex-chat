@@ -22,6 +22,9 @@
     "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
   "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-client/typescript#readme",
+  "dependencies": {
+    "isomorphic-ws": "^4.0.1"
+  },
   "devDependencies": {
     "@types/node": "^17.0.24",
     "husky": "^7.0.4",

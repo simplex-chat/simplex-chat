@@ -3,7 +3,7 @@
   "compilerOptions": {
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2018"],
+    "lib": ["ES2018", "DOM"],
     "module": "CommonJS",
     "moduleResolution": "Node",
     "noFallthroughCasesInSwitch": true,
