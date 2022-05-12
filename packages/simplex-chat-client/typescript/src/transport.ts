@@ -79,12 +79,12 @@ export interface ChatServer {
   readonly port?: string
 }
 
-export interface APICommand {
+export interface ChatSrvRequest {
   corrId: number
-  command: ChatCommand
+  cmd: string
 }
 
-export interface APIResponse {
+export interface ChatSrvResponse {
   corrId?: number
   resp: ChatResponse
 }
@@ -95,7 +95,7 @@ export class ChatResponseError extends Error {
   }
 }
 
-export class ChatTransport extends Transport<APICommand, APIResponse | ChatResponseError> {
+export class ChatTransport extends Transport<ChatSrvRequest, ChatSrvResponse | ChatResponseError> {
   private constructor(private readonly ws: WSTransport, readonly timeout: number, qSize: number) {
     super(qSize)
   }
@@ -111,7 +111,7 @@ export class ChatTransport extends Transport<APICommand, APIResponse | ChatRespo
     await this.ws.close()
   }
 
-  async write(cmd: APICommand): Promise<void> {
+  async write(cmd: ChatSrvRequest): Promise<void> {
     return this.ws.write(JSON.stringify(cmd))
   }
 }
@@ -125,7 +125,7 @@ async function processWSQueue(c: ChatTransport, ws: WSTransport): Promise<void> 
       await c.queue.enqueue(new ChatResponseError("websocket data is not a string"))
       continue
     }
-    let resp: APIResponse | ChatResponseError
+    let resp: ChatSrvResponse | ChatResponseError
     try {
       const data = JSON.parse(str)
       if (typeof data?.resp?.type == "string") {

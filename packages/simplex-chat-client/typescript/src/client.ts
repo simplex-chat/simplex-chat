@@ -1,7 +1,7 @@
 // import * as SMP from "./protocol"
 // import {SMPCommand, SMPError, Party, Client} from "./protocol"
 import {ABQueue} from "./queue"
-import {ChatTransport, ChatServer, APICommand, APIResponse, ChatResponseError, noop} from "./transport"
+import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, noop} from "./transport"
 import {ChatCommand, ChatResponse} from "./command"
 import * as C from "./command"
 
@@ -47,7 +47,7 @@ export class ChatClient {
 
     async function runClient(): Promise<void> {
       for await (const t of transport) {
-        const apiResp: APIResponse | ChatResponseError = t instanceof Promise ? await t : t
+        const apiResp: ChatSrvResponse | ChatResponseError = t instanceof Promise ? await t : t
         if (apiResp instanceof ChatResponseError) {
           console.log("chat response error: ", apiResp)
         } else {
@@ -76,7 +76,7 @@ export class ChatClient {
 
   sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
     const corrId = ++this.clientCorrId
-    const t: APICommand = {corrId, command}
+    const t: ChatSrvRequest = {corrId, cmd: C.cmdString(command)}
     this.transport.write(t).then(noop, noop)
     return new Promise((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))
   }

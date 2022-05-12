@@ -84,7 +84,7 @@ chatOpts appDir defaultDbFileName = do
       parseServerPort
       ( long "chat-server-port"
           <> short 'p'
-          <> metavar "COMMAND"
+          <> metavar "PORT"
           <> help "Run chat server on specified port"
           <> value Nothing
       )
