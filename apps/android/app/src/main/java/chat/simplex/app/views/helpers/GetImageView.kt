@@ -128,16 +128,16 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   }
 }
 
-class GetGalleryContent: ActivityResultContracts.GetContent() {
-  override fun createIntent(context: Context, input: String): Intent {
-    super.createIntent(context, input)
-    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-  }
-}
+//class GetGalleryContent: ActivityResultContracts.GetContent() {
+//  override fun createIntent(context: Context, input: String): Intent {
+//    super.createIntent(context, input)
+//    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+//  }
+//}
 
-@Composable
-fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
-  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
+//@Composable
+//fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+//  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
@@ -160,7 +160,7 @@ fun GetImageBottomSheet(
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val galleryLauncher = rememberGalleryLauncher { uri: Uri? ->
+  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)

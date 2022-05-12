@@ -7,7 +7,8 @@ import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
@@ -24,7 +25,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 sealed class ComposePreview {
   object NoPreview: ComposePreview()
@@ -183,6 +185,7 @@ fun ComposeView(
 
   fun clearState() {
     composeState.value = ComposeState()
+    textStyle.value = smallFont
     chosenImage.value = null
     chosenFile.value = null
     linkUrl.value = null

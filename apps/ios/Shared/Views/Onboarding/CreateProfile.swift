@@ -16,66 +16,64 @@ struct CreateProfile: View {
     @FocusState private var focusFullName
 
     var body: some View {
-        GeometryReader { g in
-            VStack(alignment: .leading) {
-                Text("Create your profile")
-                    .font(.largeTitle)
-                    .padding(.bottom, 4)
-                Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .padding(.bottom, 4)
-                Text("The profile is only shared with your contacts.")
-                    .padding(.bottom)
-                ZStack(alignment: .topLeading) {
-                    if !validDisplayName(displayName) {
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .padding(.top, 4)
-                    }
-                    textField("Display name", text: $displayName)
-                        .focused($focusDisplayName)
-                        .submitLabel(.next)
-                        .onSubmit {
-                            if canCreateProfile() { focusFullName = true }
-                            else { focusDisplayName = true }
-                        }
+        VStack(alignment: .leading) {
+            Text("Create your profile")
+                .font(.largeTitle)
+                .padding(.bottom, 4)
+            Text("Your profile, contacts and delivered messages are stored on your device.")
+                .padding(.bottom, 4)
+            Text("The profile is only shared with your contacts.")
+                .padding(.bottom)
+            ZStack(alignment: .topLeading) {
+                if !validDisplayName(displayName) {
+                    Image(systemName: "exclamationmark.circle")
+                        .foregroundColor(.red)
+                        .padding(.top, 4)
                 }
-                textField("Full name (optional)", text: $fullName)
-                    .focused($focusFullName)
-                    .submitLabel(.go)
+                textField("Display name", text: $displayName)
+                    .focused($focusDisplayName)
+                    .submitLabel(.next)
                     .onSubmit {
-                        if canCreateProfile() { createProfile() }
-                        else { focusFullName = true }
+                        if canCreateProfile() { focusFullName = true }
+                        else { focusDisplayName = true }
                     }
+            }
+            textField("Full name (optional)", text: $fullName)
+                .focused($focusFullName)
+                .submitLabel(.go)
+                .onSubmit {
+                    if canCreateProfile() { createProfile() }
+                    else { focusFullName = true }
+                }
+
+            Spacer()
+
+            HStack {
+                Button {
+                    hideKeyboard()
+                    withAnimation { m.onboardingStage = .step1_SimpleXInfo }
+                } label: {
+                    HStack {
+                        Image(systemName: "lessthan")
+                        Text("About SimpleX")
+                    }
+                }
 
                 Spacer()
 
                 HStack {
                     Button {
-                        hideKeyboard()
-                        withAnimation { m.onboardingStage = .step1_SimpleXInfo }
+                        createProfile()
                     } label: {
-                        HStack {
-                            Image(systemName: "lessthan")
-                            Text("About SimpleX")
-                        }
+                        Text("Create")
+                        Image(systemName: "greaterthan")
                     }
-
-                    Spacer()
-
-                    HStack {
-                        Button {
-                            createProfile()
-                        } label: {
-                            Text("Create")
-                            Image(systemName: "greaterthan")
-                        }
-                        .disabled(!canCreateProfile())
-                    }
+                    .disabled(!canCreateProfile())
                 }
             }
-            .onAppear() {
-                focusDisplayName = true
-            }
+        }
+        .onAppear() {
+            focusDisplayName = true
         }
         .padding()
     }

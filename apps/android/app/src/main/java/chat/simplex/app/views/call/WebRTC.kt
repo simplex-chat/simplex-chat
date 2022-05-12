@@ -1,7 +1,7 @@
 package chat.simplex.app.views.call
 
 import chat.simplex.app.R
-import chat.simplex.app.model.*
+import chat.simplex.app.model.Contact
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

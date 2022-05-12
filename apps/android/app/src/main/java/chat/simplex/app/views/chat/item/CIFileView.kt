@@ -132,7 +132,7 @@ fun CIFileView(
               fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
           CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
           CIFileStatus.RcvTransfer -> progressIndicator()
-          CIFileStatus.RcvComplete -> fileIcon(innerIcon = Icons.Outlined.ArrowDownward)
+          CIFileStatus.RcvComplete -> fileIcon()
           CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
         }
       } else {

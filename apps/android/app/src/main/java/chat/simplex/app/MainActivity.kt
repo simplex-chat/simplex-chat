@@ -9,25 +9,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.work.*
-import chat.simplex.app.model.*
+import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
-import chat.simplex.app.views.WelcomeView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
+import chat.simplex.app.views.onboarding.*
 import java.util.concurrent.TimeUnit
+
 //import kotlinx.serialization.decodeFromString
 
 class MainActivity: ComponentActivity() {
@@ -83,12 +85,18 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 @Composable
 fun MainPage(chatModel: ChatModel) {
   Box {
-    when (chatModel.userCreated.value) {
-      null -> SplashView()
-      false -> WelcomeView(chatModel)
-      true ->
+    val onboarding = chatModel.onboardingStage.value
+    val userCreated = chatModel.userCreated.value
+    when {
+      onboarding == null || userCreated == null -> SplashView()
+      onboarding == OnboardingStage.OnboardingComplete && userCreated ->
         if (chatModel.chatId.value == null) ChatListView(chatModel)
         else ChatView(chatModel)
+      onboarding == OnboardingStage.Step1_SimpleXInfo ->
+        Box(Modifier.padding(horizontal = 20.dp)) {
+          SimpleXInfo(chatModel, onboarding = true)
+        }
+      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
     }
     ModalManager.shared.showInView()
     AlertManager.shared.showInView()

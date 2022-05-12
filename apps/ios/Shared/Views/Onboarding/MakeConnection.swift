@@ -34,13 +34,13 @@ struct MakeConnection: View {
                         .padding(.bottom)
 
                     actionRow(
-                        icon: "qrcode",
+                        icon: "link.badge.plus",
                         title: "Create 1-time link / QR code",
                         text: "It's secure to share - only one contact can use it."
                     ) { addContactAction() }
 
                     actionRow(
-                        icon: "link",
+                        icon: "doc.plaintext",
                         title: "Paste the link you received",
                         text: "Or open the link in the browser and tap **Open in mobile**."
                     ) { actionSheet = .pasteLink }

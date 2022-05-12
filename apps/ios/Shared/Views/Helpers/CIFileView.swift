@@ -102,7 +102,7 @@ struct CIFileView: View {
                 }
             case .rcvAccepted: fileIcon("doc.fill", innerIcon: "ellipsis", innerIconSize: 12)
             case .rcvTransfer: ProgressView().frame(width: 30, height: 30)
-            case .rcvComplete: fileIcon("arrow.down.doc.fill", innerIconSize: 10)
+            case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             }
         } else {

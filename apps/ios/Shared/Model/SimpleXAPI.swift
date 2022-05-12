@@ -133,10 +133,13 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
     throw r
 }
 
-func apiStartChat() throws {
+func apiStartChat() throws -> Bool {
     let r = chatSendCmdSync(.startChat)
-    if case .chatStarted = r { return }
-    throw r
+    switch r {
+    case .chatStarted: return true
+    case .chatRunning: return false
+    default: throw r
+    }
 }
 
 func apiSetFilesFolder(filesFolder: String) throws {
@@ -453,15 +456,18 @@ func startChat() {
     logger.debug("startChat")
     do {
         let m = ChatModel.shared
-        try apiStartChat()
-        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-        m.userAddress = try apiGetUserAddress()
-        m.userSMPServers = try getUserSMPServers()
-        m.chats = try apiGetChats()
-        withAnimation {
-            m.onboardingStage = m.chats.isEmpty
-                                ? .step3_MakeConnection
-                                : .onboardingComplete
+        // TODO set file folder once, before chat is started
+        let justStarted = try apiStartChat()
+        if justStarted {
+            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            m.userAddress = try apiGetUserAddress()
+            m.userSMPServers = try getUserSMPServers()
+            m.chats = try apiGetChats()
+            withAnimation {
+                m.onboardingStage = m.chats.isEmpty
+                                    ? .step3_MakeConnection
+                                    : .onboardingComplete
+            }
         }
         ChatReceiver.shared.start()
     } catch {

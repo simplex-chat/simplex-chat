@@ -75,7 +75,7 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
         ActionButton(
           stringResource(R.string.create_one_time_link),
           stringResource(R.string.to_share_with_your_contact),
-          Icons.Outlined.PersonAdd,
+          Icons.Outlined.AddLink,
           click = addContact
         )
       }
@@ -86,7 +86,7 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
         ActionButton(
           stringResource(R.string.paste_received_link),
           stringResource(R.string.paste_received_link_from_clipboard),
-          Icons.Outlined.Link,
+          Icons.Outlined.Article,
           click = pasteLink
         )
       }

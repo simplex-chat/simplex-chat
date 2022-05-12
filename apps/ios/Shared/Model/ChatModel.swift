@@ -276,10 +276,11 @@ final class Chat: ObservableObject, Identifiable {
         self.chatStats = cData.chatStats
     }
 
-    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats()) {
+    init(chatInfo: ChatInfo, chatItems: [ChatItem] = [], chatStats: ChatStats = ChatStats(), serverInfo: ServerInfo = ServerInfo(networkStatus: .unknown)) {
         self.chatInfo = chatInfo
         self.chatItems = chatItems
         self.chatStats = chatStats
+        self.serverInfo = serverInfo
     }
 
     var id: ChatId { get { chatInfo.id } }

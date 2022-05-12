@@ -19,19 +19,24 @@ import androidx.compose.ui.unit.dp
 fun SimpleButton(text: String, icon: ImageVector,
                  color: Color = MaterialTheme.colors.primary,
                  click: () -> Unit) {
+  SimpleButtonFrame(click) {
+    Icon(
+      icon, text, tint = color,
+      modifier = Modifier.padding(end = 8.dp)
+    )
+    Text(text, style = MaterialTheme.typography.caption, color = color)
+  }
+}
+
+@Composable
+fun SimpleButtonFrame(click: () -> Unit, content: @Composable () -> Unit) {
   Surface(shape = RoundedCornerShape(20.dp)) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = Modifier
         .clickable { click() }
         .padding(8.dp)
-    ) {
-      Icon(
-        icon, text, tint = color,
-        modifier = Modifier.padding(end = 8.dp)
-      )
-      Text(text, style = MaterialTheme.typography.caption, color = color)
-    }
+    ) { content() }
   }
 }
 

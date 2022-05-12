@@ -90,17 +90,15 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    createSndFileTransfer, -- old file protocol
-    createSndFileTransferV2,
-    createSndFileTransferV2Connection,
-    createSndGroupFileTransfer, -- old file protocol
-    createSndGroupFileTransferV2,
-    createSndGroupFileTransferV2Connection,
+    createSndFileTransfer,
+    createSndGroupFileTransfer,
+    createSndGroupFileTransferConnection,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
+    getChatRefByFileId,
     updateSndFileStatus,
     createSndFileChunk,
     updateSndFileChunkMsg,
@@ -117,6 +115,7 @@ module Simplex.Chat.Store
     updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
+    getSndFileTransfer,
     getContactFiles,
     createNewSndMessage,
     createSndMsgDelivery,
@@ -211,7 +210,6 @@ import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
 import Simplex.Messaging.Util (liftIOEither, (<$$>))
-import System.FilePath (takeFileName)
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query)]
@@ -1849,46 +1847,8 @@ createSndFileTransfer st userId Contact {contactId} filePath FileInvitation {fil
       (fileId, fileStatus, connId, currentTs, currentTs)
     pure fileId
 
-createSndFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> m Int64
-createSndFileTransferV2 st userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
-    insertedRowId db
-
-createSndFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> m ()
-createSndFileTransferV2Connection st userId fileId acId =
-  liftIO . withTransaction st $ \db -> do
-    currentTs <- getCurrentTime
-    Connection {connId} <- createSndFileConnection_ db userId fileId acId
-    DB.execute
-      db
-      "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (fileId, FSAccepted, connId, currentTs, currentTs)
-
-createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> [(GroupMember, ConnId, FileInvitation)] -> FilePath -> Integer -> Integer -> m Int64
-createSndGroupFileTransfer st userId GroupInfo {groupId} ms filePath fileSize chunkSize =
-  liftIO . withTransaction st $ \db -> do
-    let fileName = takeFileName filePath
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO files (user_id, group_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
-    fileId <- insertedRowId db
-    forM_ ms $ \(GroupMember {groupMemberId}, agentConnId, _) -> do
-      Connection {connId} <- createSndFileConnection_ db userId fileId agentConnId
-      DB.execute
-        db
-        "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-        (fileId, FSNew, connId, groupMemberId, currentTs, currentTs)
-    pure fileId
-
-createSndGroupFileTransferV2 :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
-createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
+createSndGroupFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> m Int64
+createSndGroupFileTransfer st userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -1897,8 +1857,8 @@ createSndGroupFileTransferV2 st userId GroupInfo {groupId} filePath FileInvitati
       (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
     insertedRowId db
 
-createSndGroupFileTransferV2Connection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
-createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupMemberId} =
+createSndGroupFileTransferConnection :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> ConnId -> GroupMember -> m ()
+createSndGroupFileTransferConnection st userId fileId acId GroupMember {groupMemberId} =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     Connection {connId} <- createSndFileConnection_ db userId fileId acId
@@ -1907,18 +1867,18 @@ createSndGroupFileTransferV2Connection st userId fileId acId GroupMember {groupM
       "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
       (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
-updateFileCancelled :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m ()
-updateFileCancelled st userId fileId =
+updateFileCancelled :: MsgDirectionI d => MonadUnliftIO m => SQLiteStore -> User -> Int64 -> CIFileStatus d -> m ()
+updateFileCancelled st User {userId} fileId ciFileStatus =
   liftIO . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
-    DB.execute db "UPDATE files SET cancelled = 1, updated_at = ? WHERE user_id = ? AND file_id = ?" (currentTs, userId, fileId)
+    DB.execute db "UPDATE files SET cancelled = 1, ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
-updateCIFileStatus :: (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> UserId -> Int64 -> CIFileStatus d -> m ()
-updateCIFileStatus st userId fileId ciFileStatus =
-  liftIO . withTransaction st $ \db -> updateCIFileStatus_ db userId fileId ciFileStatus
+updateCIFileStatus :: (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> User -> Int64 -> CIFileStatus d -> m ()
+updateCIFileStatus st user fileId ciFileStatus =
+  liftIO . withTransaction st $ \db -> updateCIFileStatus_ db user fileId ciFileStatus
 
-updateCIFileStatus_ :: MsgDirectionI d => DB.Connection -> UserId -> Int64 -> CIFileStatus d -> IO ()
-updateCIFileStatus_ db userId fileId ciFileStatus = do
+updateCIFileStatus_ :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
+updateCIFileStatus_ db User {userId} fileId ciFileStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE files SET ci_file_status = ?, updated_at = ? WHERE user_id = ? AND file_id = ?" (ciFileStatus, currentTs, userId, fileId)
 
@@ -1936,7 +1896,7 @@ getSharedMsgIdByFileId st userId fileId =
         |]
         (userId, fileId)
 
-getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> m Int64
 getFileIdBySharedMsgId st userId contactId sharedMsgId =
   liftIOEither . withTransaction st $ \db ->
     firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
@@ -1950,7 +1910,7 @@ getFileIdBySharedMsgId st userId contactId sharedMsgId =
         |]
         (userId, contactId, sharedMsgId)
 
-getGroupFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> Int64 -> UserId -> SharedMsgId -> m Int64
+getGroupFileIdBySharedMsgId :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> SharedMsgId -> m Int64
 getGroupFileIdBySharedMsgId st userId groupId sharedMsgId =
   liftIOEither . withTransaction st $ \db ->
     firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
@@ -1963,6 +1923,23 @@ getGroupFileIdBySharedMsgId st userId groupId sharedMsgId =
           WHERE i.user_id = ? AND i.group_id = ? AND i.shared_msg_id = ?
         |]
         (userId, groupId, sharedMsgId)
+
+getChatRefByFileId :: StoreMonad m => SQLiteStore -> User -> Int64 -> m ChatRef
+getChatRefByFileId st User {userId} fileId = do
+  r <- liftIO . withTransaction st $ \db -> do
+    DB.query
+      db
+      [sql|
+        SELECT contact_id, group_id
+        FROM files
+        WHERE user_id = ? AND file_id = ?
+        LIMIT 1
+      |]
+      (userId, fileId)
+  case r of
+    [(Just contactId, Nothing)] -> pure $ ChatRef CTDirect contactId
+    [(Nothing, Just groupId)] -> pure $ ChatRef CTGroup groupId
+    _ -> throwError $ SEInternalError "could not retrieve chat ref by file id"
 
 createSndFileConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> IO Connection
 createSndFileConnection_ db userId fileId agentConnId = do
@@ -2048,8 +2025,8 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, fileSize, chunkSize, CIFSRcvInvitation, currentTs, currentTs)
     fileId <- insertedRowId db
     DB.execute
       db
@@ -2057,8 +2034,8 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
       (fileId, FSNew, fileConnReq, groupMemberId, currentTs, currentTs)
     pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
-getRcvFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m RcvFileTransfer
-getRcvFileTransfer st userId fileId =
+getRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> m RcvFileTransfer
+getRcvFileTransfer st User {userId} fileId =
   liftIOEither . withTransaction st $ \db ->
     getRcvFileTransfer_ db userId fileId
 
@@ -2090,22 +2067,23 @@ getRcvFileTransfer_ db userId fileId =
             Nothing -> Left $ SERcvFileInvalid fileId
             Just name ->
               case fileStatus' of
-                FSNew -> Right RcvFileTransfer {fileId, fileInvitation = fileInv, fileStatus = RFSNew, senderDisplayName = name, chunkSize, cancelled, grpMemberId}
-                FSAccepted -> ft name fileInv RFSAccepted fileInfo
-                FSConnected -> ft name fileInv RFSConnected fileInfo
-                FSComplete -> ft name fileInv RFSComplete fileInfo
-                FSCancelled -> ft name fileInv RFSCancelled fileInfo
+                FSNew -> ft name fileInv RFSNew
+                FSAccepted -> ft name fileInv . RFSAccepted =<< rfi fileInfo
+                FSConnected -> ft name fileInv . RFSConnected =<< rfi fileInfo
+                FSComplete -> ft name fileInv . RFSComplete =<< rfi fileInfo
+                FSCancelled -> ft name fileInv . RFSCancelled $ rfi_ fileInfo
       where
-        ft senderDisplayName fileInvitation rfs = \case
-          (Just filePath, Just connId, Just agentConnId) ->
-            let fileStatus = rfs RcvFileInfo {filePath, connId, agentConnId}
-             in Right RcvFileTransfer {..}
-          _ -> Left $ SERcvFileInvalid fileId
+        ft senderDisplayName fileInvitation fileStatus =
+          Right RcvFileTransfer {fileId, fileInvitation, fileStatus, senderDisplayName, chunkSize, cancelled, grpMemberId}
+        rfi fileInfo = maybe (Left $ SERcvFileInvalid fileId) Right $ rfi_ fileInfo
+        rfi_ = \case
+          (Just filePath, Just connId, Just agentConnId) -> Just RcvFileInfo {filePath, connId, agentConnId}
+          _ -> Nothing
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
-acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> FilePath -> m AChatItem
-acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
+acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> ConnStatus -> FilePath -> m AChatItem
+acceptRcvFileTransfer st user@User {userId} fileId agentConnId connStatus filePath =
   liftIOEither . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -2119,7 +2097,7 @@ acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
     DB.execute
       db
       "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (agentConnId, ConnJoined, ConnRcvFile, fileId, userId, currentTs, currentTs)
+      (agentConnId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
     getChatItemByFileId_ db user fileId
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()
@@ -2185,13 +2163,13 @@ updateFileTransferChatItemId st fileId ciId =
     currentTs <- getCurrentTime
     DB.execute db "UPDATE files SET chat_item_id = ?, updated_at = ? WHERE file_id = ?" (ciId, currentTs, fileId)
 
-getFileTransfer :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m FileTransfer
-getFileTransfer st userId fileId =
+getFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> m FileTransfer
+getFileTransfer st User {userId} fileId =
   liftIOEither . withTransaction st $ \db ->
     getFileTransfer_ db userId fileId
 
-getFileTransferProgress :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m (FileTransfer, [Integer])
-getFileTransferProgress st userId fileId =
+getFileTransferProgress :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (FileTransfer, [Integer])
+getFileTransferProgress st User {userId} fileId =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     ft <- ExceptT $ getFileTransfer_ db userId fileId
     liftIO $
@@ -2215,15 +2193,20 @@ getFileTransfer_ db userId fileId =
       (userId, fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> IO (Either StoreError FileTransfer)
-    fileTransfer [(Nothing, Nothing)] = runExceptT $ do
-      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
-      pure FTSnd {fileTransferMeta, sndFileTransfers = []}
-    fileTransfer ((Just _, Nothing) : _) = runExceptT $ do
-      fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
-      sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
-      pure FTSnd {fileTransferMeta, sndFileTransfers}
     fileTransfer [(Nothing, Just _)] = FTRcv <$$> getRcvFileTransfer_ db userId fileId
-    fileTransfer _ = pure . Left $ SEFileNotFound fileId
+    fileTransfer _ = runExceptT $ do
+      (ftm, fts) <- ExceptT $ getSndFileTransfer_ db userId fileId
+      pure $ FTSnd {fileTransferMeta = ftm, sndFileTransfers = fts}
+
+getSndFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> m (FileTransferMeta, [SndFileTransfer])
+getSndFileTransfer st User {userId} fileId =
+  liftIOEither . withTransaction st $ \db -> getSndFileTransfer_ db userId fileId
+
+getSndFileTransfer_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError (FileTransferMeta, [SndFileTransfer]))
+getSndFileTransfer_ db userId fileId = runExceptT $ do
+  fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+  sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
+  pure (fileTransferMeta, sndFileTransfers)
 
 getSndFileTransfers_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError [SndFileTransfer])
 getSndFileTransfers_ db userId fileId =
@@ -2243,7 +2226,7 @@ getSndFileTransfers_ db userId fileId =
       (userId, fileId)
   where
     sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
-    sndFileTransfers [] = Left $ SESndFileNotFound fileId
+    sndFileTransfers [] = Right []
     sndFileTransfers fts = mapM sndFileTransfer fts
     sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
@@ -3564,12 +3547,12 @@ getChatItemIdByFileId_ db userId fileId =
       (userId, fileId)
 
 updateDirectCIFileStatus :: forall d m. (MsgDirectionI d, StoreMonad m) => SQLiteStore -> User -> Int64 -> CIFileStatus d -> m AChatItem
-updateDirectCIFileStatus st user@User {userId} fileId fileStatus =
+updateDirectCIFileStatus st user fileId fileStatus =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     aci@(AChatItem cType d cInfo ci) <- ExceptT $ getChatItemByFileId_ db user fileId
     case (cType, testEquality d $ msgDirection @d) of
       (SCTDirect, Just Refl) -> do
-        liftIO $ updateCIFileStatus_ db userId fileId fileStatus
+        liftIO $ updateCIFileStatus_ db user fileId fileStatus
         pure $ AChatItem SCTDirect d cInfo $ updateFileStatus ci fileStatus
       _ -> pure aci
 

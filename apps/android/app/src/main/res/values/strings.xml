@@ -219,7 +219,8 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
-  <string name="how_to_use_simplex_chat">How to use <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+  <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+  <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Connect to the developers</string>
@@ -261,11 +262,13 @@
   <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">The messaging and application platform protecting your privacy and security.</string>
   <string name="we_do_not_store_contacts_or_messages_on_servers">We don\'t store any of your contacts or messages (once delivered) on the servers.</string>
   <string name="create_profile">Create profile</string>
-  <string name="your_profile_is_stored_on_your_decide_and_shared_only_with_your_contacts">Your profile is stored on your device and shared only with your contacts.</string>
+  <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
+  <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
   <string name="display_name">Display Name</string>
-  <string name="full_name_optional__prompt">Full Name (Optional)</string>
+  <string name="full_name_optional__prompt">Full Name (optional)</string>
   <string name="create_profile_button">Create</string>
+  <string name="about_simplex">About SimpleX</string>
 
   <!-- markdown demo - MarkdownHelpView.kt -->
   <string name="how_to_use_markdown">How to use markdown</string>
@@ -294,4 +297,37 @@
   <string name="callstate_received_answer">received answer…</string>
   <string name="callstate_connecting">connecting…</string>
   <string name="callstate_connected">connected</string>
+
+  <!-- SimpleXInfo -->
+  <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
+  <string name="privacy_redefined">Privacy redefined</string>
+  <string name="first_platform_without_user_ids">The 1st platform without any user identifiers – private by design.</string>
+  <string name="immune_to_spam_and_abuse">Immune to spam and abuse</string>
+  <string name="people_can_connect_only_via_links_you_share">People can connect to you only via the links you share.</string>
+  <string name="decentralized">Decentralized</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol and code – anybody can run the servers.</string>
+  <string name="create_your_profile">Create your profile</string>
+  <string name="make_private_connection">Make a private connection</string>
+  <string name="how_it_works">How it works</string>
+
+  <!-- How SimpleX Works -->
+  <string name="how_simplex_works">How <xliff:g id="appName">SimpleX</xliff:g> works</string>
+  <string name="many_people_asked_how_can_it_deliver">Many people asked: <i>if <xliff:g id="appName">SimpleX</xliff:g> has no user identifiers, how can it deliver messages?</i></string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">To protect privacy, instead of user IDs used by all other platforms, <xliff:g id="appName">SimpleX</xliff:g> has identifiers for message queues, separate for each of your contacts.</string>
+  <string name="you_control_servers_to_receive_your_contacts_to_send">You control through which server(s) <b>to receive</b> the messages, your contacts – the servers you use to message them.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.</string>
+  <string name="read_more_in_github">Read more in our GitHub repository.</string>
+  <string name="read_more_in_github_with_link">Read more in our <font color="#0088ff">GitHub repository</font>.</string>
+
+  <!-- MakeConnection -->
+  <string name="to_make_your_first_private_connection_choose">To make your first private connection, choose <b>one of the following</b>:</string>
+  <string name="create_1_time_link_qr_code">Create 1-time link / QR code</string>
+  <string name="it_s_secure_to_share__only_one_contact_can_use_it">It\'s secure to share - only one contact can use it.</string>
+  <string name="paste_the_link_you_received">Paste the link you received</string>
+  <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Or open the link in the browser and tap <b>Open in mobile</b>.</string>
+  <string name="scan_contact_s_qr_code">Scan contact\'s QR code</string>
+  <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">In person or via a video call – the most secure way to connect.</string>
+  <string name="or">or</string>
+  <string name="connect_with_the_developers">Connect with the developers</string>
+  <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">To ask any questions and to receive <xliff:g id="appNameFull">SimpleX Chat</xliff:g> updates.</string>
 </resources>

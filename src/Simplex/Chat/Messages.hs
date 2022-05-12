@@ -311,6 +311,18 @@ data CIFileStatus (d :: MsgDirection) where
 
 deriving instance Show (CIFileStatus d)
 
+ciFileEnded :: CIFileStatus d -> Bool
+ciFileEnded = \case
+  CIFSSndStored -> False
+  CIFSSndTransfer -> False
+  CIFSSndCancelled -> True
+  CIFSSndComplete -> True
+  CIFSRcvInvitation -> False
+  CIFSRcvAccepted -> False
+  CIFSRcvTransfer -> False
+  CIFSRcvCancelled -> True
+  CIFSRcvComplete -> True
+
 instance MsgDirectionI d => ToJSON (CIFileStatus d) where
   toJSON = strToJSON
   toEncoding = strToJEncoding

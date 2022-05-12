@@ -36,7 +36,7 @@ struct PasteToConnectView: View {
                     Button {
                         connectionLink = UIPasteboard.general.string ?? ""
                     } label: {
-                        Label("Paste", systemImage: "doc.on.clipboard")
+                        Label("Paste", systemImage: "doc.plaintext")
                     }
                 } else {
                     Button {

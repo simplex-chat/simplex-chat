@@ -26,6 +26,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.call.VideoCallView
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
 fun SettingsView(chatModel: ChatModel) {
@@ -109,6 +110,15 @@ fun SettingsLayout(
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(stringResource(R.string.how_to_use_simplex_chat))
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView(showModal { SimpleXInfo(it, onboarding = false) }) {
+        Icon(
+          Icons.Outlined.Info,
+          contentDescription = stringResource(R.string.icon_descr_help),
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(R.string.about_simplex_chat))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView(showModal { MarkdownHelpView() }) {
