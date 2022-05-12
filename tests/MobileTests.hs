@@ -53,10 +53,10 @@ testChatApiNoUser = withTmpFiles $ do
 
 testChatApi :: IO ()
 testChatApi = withTmpFiles $ do
-  let f = chatStoreFile testDBPrefix
+  let f = chatStoreFile $ testDBPrefix <> "1"
   st <- createStore f 1 True
   Right _ <- runExceptT $ createUser st aliceProfile True
-  cc <- chatInit testDBPrefix
+  cc <- chatInit $ testDBPrefix <> "1"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted

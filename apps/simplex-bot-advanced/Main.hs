@@ -11,12 +11,12 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad.Reader
 import qualified Data.Text as T
-import Simplex.Chat
 import Simplex.Chat.Bot
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
+import Simplex.Chat.Terminal (terminalChatConfig)
 import Simplex.Chat.Types
 import System.Directory (getAppUserDataDirectory)
 import Text.Read
@@ -24,7 +24,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore defaultChatConfig opts Nothing mySquaringBot
+  simplexChatCore terminalChatConfig opts Nothing mySquaringBot
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do

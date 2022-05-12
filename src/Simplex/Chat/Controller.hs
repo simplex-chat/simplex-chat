@@ -14,7 +14,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -22,20 +22,25 @@ import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId)
+import Simplex.Messaging.TMap (TMap)
 import System.IO (Handle)
 import UnliftIO.STM
 
@@ -52,6 +57,7 @@ data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
     dbPoolSize :: Int,
     yesToMigrations :: Bool,
+    defaultServers :: InitialAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
@@ -77,6 +83,7 @@ data ChatController = ChatController
     chatLock :: TMVar (),
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
+    currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
@@ -92,19 +99,31 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | ResubscribeAllConnections
   | SetFilesFolder FilePath
-  | APIGetChats
-  | APIGetChat ChatType Int64 ChatPagination
-  | APISendMessage ChatType Int64 (Maybe FilePath) (Maybe ChatItemId) MsgContent
-  | APISendMessageQuote ChatType Int64 ChatItemId MsgContent -- TODO discontinue
-  | APIUpdateChatItem ChatType Int64 ChatItemId MsgContent
-  | APIDeleteChatItem ChatType Int64 ChatItemId CIDeleteMode
-  | APIChatRead ChatType Int64 (ChatItemId, ChatItemId)
-  | APIDeleteChat ChatType Int64
+  | APIGetChats {pendingConnections :: Bool}
+  | APIGetChat ChatRef ChatPagination
+  | APIGetChatItems Int
+  | APISendMessage ChatRef ComposedMessage
+  | APIUpdateChatItem ChatRef ChatItemId MsgContent
+  | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
+  | APIChatRead ChatRef (ChatItemId, ChatItemId)
+  | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
+  | APISendCallInvitation ContactId CallType
+  | APIRejectCall ContactId
+  | APISendCallOffer ContactId WebRTCCallOffer
+  | APISendCallAnswer ContactId WebRTCSession
+  | APISendCallExtraInfo ContactId WebRTCExtraInfo
+  | APIEndCall ContactId
+  | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
+  | APIRegisterToken DeviceToken
+  | APIVerifyToken DeviceToken ByteString C.CbNonce
+  | APIIntervalNofication DeviceToken Word16
+  | APIDeleteToken DeviceToken
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -120,11 +139,11 @@ data ChatCommand
   | AddressAutoAccept Bool
   | AcceptContact ContactName
   | RejectContact ContactName
-  | SendMessage ContactName ByteString
+  | SendMessage ChatName ByteString
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: ByteString, message :: ByteString}
   | SendMessageBroadcast ByteString
-  | DeleteMessage ContactName ByteString
-  | EditMessage {contactName :: ContactName, editedMsg :: ByteString, message :: ByteString}
+  | DeleteMessage ChatName ByteString
+  | EditMessage {chatName :: ChatName, editedMsg :: ByteString, message :: ByteString}
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
@@ -134,14 +153,9 @@ data ChatCommand
   | DeleteGroup GroupName
   | ListMembers GroupName
   | ListGroups
-  | SendGroupMessage GroupName ByteString
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
-  | DeleteGroupMessage GroupName ByteString
-  | EditGroupMessage {groupName :: ContactName, editedMsg :: ByteString, message :: ByteString}
-  | SendFile ContactName FilePath
-  | SendFileInv ContactName FilePath
-  | SendGroupFile GroupName FilePath
-  | SendGroupFileInv GroupName FilePath
+  | LastMessages (Maybe ChatName) Int
+  | SendFile ChatName FilePath
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -158,6 +172,7 @@ data ChatResponse
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
+  | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNewChatItem {chatItem :: AChatItem}
@@ -198,23 +213,23 @@ data ChatResponse
   | CRContactRequestAlreadyAccepted {contact :: Contact}
   | CRLeftMemberUser {groupInfo :: GroupInfo}
   | CRGroupDeletedUser {groupInfo :: GroupInfo}
-  | CRRcvFileAccepted {fileTransfer :: RcvFileTransfer, filePath :: FilePath}
+  | CRRcvFileAccepted {chatItem :: AChatItem}
   | CRRcvFileAcceptedSndCancelled {rcvFileTransfer :: RcvFileTransfer}
-  | CRRcvFileStart {rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileStart {chatItem :: AChatItem}
   | CRRcvFileComplete {chatItem :: AChatItem}
   | CRRcvFileCancelled {rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {rcvFileTransfer :: RcvFileTransfer}
-  | CRSndFileStart {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileComplete {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndFileRcvCancelled {sndFileTransfer :: SndFileTransfer}
-  | CRSndGroupFileCancelled {fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
+  | CRSndFileStart {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileComplete {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
+  | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
   | CRContactAnotherClient {contact :: Contact}
-  | CRContactDisconnected {contact :: Contact}
-  | CRContactSubscribed {contact :: Contact}
+  | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
+  | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
@@ -235,8 +250,16 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
+  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key}
+  | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
+  | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
+  | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
+  | CRCallEnded {contact :: Contact}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
+  | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNewContactConnection {connection :: PendingContactConnection}
+  | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
@@ -275,6 +298,13 @@ instance ToJSON PendingSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data ComposedMessage = ComposedMessage
+  { filePath :: Maybe FilePath,
+    quotedItemId :: Maybe ChatItemId,
+    msgContent :: MsgContent
+  }
+  deriving (Show, Generic, FromJSON)
+
 data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType}
@@ -306,6 +336,7 @@ data ChatErrorType
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
   | CEFileAlreadyReceiving {message :: String}
+  | CEFileCancelled {message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
   | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
@@ -315,6 +346,10 @@ data ChatErrorType
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete
+  | CEHasCurrentCall
+  | CENoCurrentCall
+  | CECallContact {contactId :: Int64}
+  | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)

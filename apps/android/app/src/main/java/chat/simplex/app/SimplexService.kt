@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
 import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -65,7 +66,9 @@ class SimplexService: Service() {
     withApi {
       try {
         val user = chatController.apiGetActiveUser()
-        if (user != null) {
+        if (user == null) {
+          chatController.chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+        } else {
           Log.w(TAG, "Starting foreground service")
           chatController.startChat(user)
           chatController.startReceiver()

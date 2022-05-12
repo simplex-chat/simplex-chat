@@ -9,52 +9,43 @@
 import SwiftUI
 import CodeScanner
 
-struct ConnectContactView: View {
-    var completed: ((Result<Bool, Error>) -> Void)
+struct ScanToConnectView: View {
+    @Binding var openedSheet: NewChatAction?
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text("Scan QR code")
                 .font(.title)
-                .padding(.bottom)
+                .padding(.vertical)
             Text("Your chat profile will be sent to your contact")
-                .font(.title2)
-                .multilineTextAlignment(.center)
-                .padding()
+                .padding(.bottom)
             ZStack {
                 CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .border(.gray)
             }
-            .padding(12)
+            .padding(.bottom)
             Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                .padding(.bottom)
         }
+        .padding()
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            Task {
-                do {
-                    let ok = try await apiConnect(connReq: r.string)
-                    completed(.success(ok))
-                } catch {
-                    logger.error("ConnectContactView.processQRCode apiConnect error: \(error.localizedDescription)")
-                    completed(.failure(error))
-                }
-            }
+            Task { connectViaLink(r.string, $openedSheet) }
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
-            completed(.failure(e))
+            openedSheet = nil
         }
     }
 }
 
 struct ConnectContactView_Previews: PreviewProvider {
     static var previews: some View {
-        return ConnectContactView(completed: {_ in })
+        @State var openedSheet: NewChatAction? = nil
+        return ScanToConnectView(openedSheet: $openedSheet)
     }
 }

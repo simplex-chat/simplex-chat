@@ -12,6 +12,7 @@ let logger = Logger()
 
 @main
 struct SimpleXApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
     @Environment(\.scenePhase) var scenePhase
 
@@ -33,6 +34,8 @@ struct SimpleXApp: App {
                     initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
+                    logger.debug("scenePhase \(String(describing: scenePhase))")
+                    setAppState(phase)
                     if phase == .background {
                         BGManager.shared.schedule()
                     }

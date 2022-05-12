@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -9,12 +10,12 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,8 +24,10 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.isValidDisplayName
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -33,7 +36,7 @@ import kotlinx.coroutines.launch
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
-    var editProfile = remember { mutableStateOf(false) }
+    val editProfile = remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(user.profile) }
     UserProfileLayout(
       close = close,
@@ -64,6 +67,7 @@ fun UserProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
+  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
   val profileImage = remember { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
@@ -75,9 +79,12 @@ fun UserProfileLayout(
       scrimColor = Color.Black.copy(alpha = 0.12F),
       modifier = Modifier.navigationBarsWithImePadding(),
       sheetContent = {
-        GetImageBottomSheet(profileImage, hideBottomSheet = {
-          scope.launch { bottomSheetModalState.hide() }
-        })
+        GetImageBottomSheet(
+          chosenImage,
+          onImageChange = { bitmap -> profileImage.value = resizeImageToStrSize(cropToSquare(bitmap), maxDataSize = 12500) },
+          hideBottomSheet = {
+            scope.launch { bottomSheetModalState.hide() }
+          })
       },
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
@@ -90,13 +97,13 @@ fun UserProfileLayout(
           horizontalAlignment = Alignment.Start
         ) {
           Text(
-            generalGetString(R.string.your_chat_profile),
+            stringResource(R.string.your_chat_profile),
             Modifier.padding(bottom = 24.dp),
             style = MaterialTheme.typography.h1,
             color = MaterialTheme.colors.onBackground
           )
           Text(
-            generalGetString(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
+            stringResource(R.string.your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it),
             Modifier.padding(bottom = 24.dp),
             color = MaterialTheme.colors.onBackground,
             lineHeight = 22.sp
@@ -122,19 +129,37 @@ fun UserProfileLayout(
                   }
                 }
               }
-              ProfileNameTextField(displayName)
+              Box {
+                if (!isValidDisplayName(displayName.value)) {
+                  Icon(Icons.Outlined.Info, tint = Color.Red, contentDescription = stringResource(R.string.display_name_cannot_contain_whitespace))
+                }
+                ProfileNameTextField(displayName)
+              }
               ProfileNameTextField(fullName)
               Row {
-                TextButton(generalGetString(R.string.cancel_verb)) {
+                TextButton(stringResource(R.string.cancel_verb)) {
                   displayName.value = profile.displayName
                   fullName.value = profile.fullName
                   profileImage.value = profile.image
                   editProfile.value = false
                 }
                 Spacer(Modifier.padding(horizontal = 8.dp))
-                TextButton(generalGetString(R.string.save_and_notify_contacts)) {
-                  saveProfile(displayName.value, fullName.value, profileImage.value)
+                val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+                val saveModifier: Modifier
+                val saveColor: Color
+                if (enabled) {
+                  saveModifier = Modifier
+                    .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
+                  saveColor = MaterialTheme.colors.primary
+                } else {
+                  saveModifier = Modifier
+                  saveColor = HighOrLowlight
                 }
+                Text(
+                  stringResource(R.string.save_and_notify_contacts),
+                  modifier = saveModifier,
+                  color = saveColor
+                )
               }
             }
           } else {
@@ -155,9 +180,9 @@ fun UserProfileLayout(
                   }
                 }
               }
-              ProfileNameRow(generalGetString(R.string.display_name__field), profile.displayName)
-              ProfileNameRow(generalGetString(R.string.full_name__field), profile.fullName)
-              TextButton(generalGetString(R.string.edit_verb)) { editProfile.value = true }
+              ProfileNameRow(stringResource(R.string.display_name__field), profile.displayName)
+              ProfileNameRow(stringResource(R.string.full_name__field), profile.fullName)
+              TextButton(stringResource(R.string.edit_verb)) { editProfile.value = true }
             }
           }
           if (savedKeyboardState != keyboardState) {
@@ -181,6 +206,7 @@ private fun ProfileNameTextField(name: MutableState<String>) {
     onValueChange = { name.value = it },
     modifier = Modifier
       .padding(bottom = 24.dp)
+      .padding(start = 28.dp)
       .fillMaxWidth(),
     textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
     keyboardOptions = KeyboardOptions(
@@ -224,7 +250,7 @@ fun EditImageButton(click: () -> Unit) {
   ) {
     Icon(
       Icons.Outlined.PhotoCamera,
-      contentDescription = generalGetString(R.string.edit_image),
+      contentDescription = stringResource(R.string.edit_image),
       tint = MaterialTheme.colors.primary,
       modifier = Modifier.size(36.dp)
     )
@@ -236,7 +262,7 @@ fun DeleteImageButton(click: () -> Unit) {
   IconButton(onClick = click) {
     Icon(
       Icons.Outlined.Close,
-      contentDescription = generalGetString(R.string.delete_image),
+      contentDescription = stringResource(R.string.delete_image),
       tint = MaterialTheme.colors.primary,
     )
   }
@@ -273,7 +299,7 @@ fun PreviewUserProfileLayoutEditOn() {
       close = {},
       profile = Profile.sampleData,
       editProfile = remember { mutableStateOf(true) },
-      saveProfile = {_, _, _ ->}
+      saveProfile = { _, _, _ -> }
     )
   }
 }

@@ -45,11 +45,19 @@ struct UserProfile: View {
                 .frame(maxWidth: .infinity, alignment: .center)
 
                 VStack(alignment: .leading) {
-                    profileNameTextEdit("Display name", $profile.displayName)
+                    ZStack(alignment: .leading) {
+                        if !validDisplayName(profile.displayName) {
+                            Image(systemName: "exclamationmark.circle")
+                                .foregroundColor(.red)
+                                .padding(.bottom, 10)
+                        }
+                        profileNameTextEdit("Display name", $profile.displayName)
+                    }
                     profileNameTextEdit("Full name (optional)", $profile.fullName)
                     HStack(spacing: 20) {
                         Button("Cancel") { editProfile = false }
                         Button("Save (and notify contacts)") { saveProfile() }
+                            .disabled(profile.displayName == "" || !validDisplayName(profile.displayName))
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -99,7 +107,7 @@ struct UserProfile: View {
         }
         .onChange(of: chosenImage) { image in
             if let image = image {
-                profile.image = resizeImageToDataSize(cropToSquare(image), maxDataSize: 12500)
+                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
             } else {
                 profile.image = nil
             }
@@ -111,6 +119,7 @@ struct UserProfile: View {
             .textInputAutocapitalization(.never)
             .disableAutocorrection(true)
             .padding(.bottom)
+            .padding(.leading, 28)
     }
 
     func profileNameView(_ label: String, _ name: String) -> some View {

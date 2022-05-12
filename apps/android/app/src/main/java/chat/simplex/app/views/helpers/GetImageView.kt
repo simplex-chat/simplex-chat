@@ -18,12 +18,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Collections
-import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -36,8 +37,7 @@ import kotlin.math.min
 import kotlin.math.sqrt
 
 // Inspired by https://github.com/MakeItEasyDev/Jetpack-Compose-Capture-Image-Or-Choose-from-Gallery
-
-private fun cropToSquare(image: Bitmap): Bitmap {
+fun cropToSquare(image: Bitmap): Bitmap {
   var xOffset = 0
   var yOffset = 0
   val side = min(image.height, image.width)
@@ -49,27 +49,45 @@ private fun cropToSquare(image: Bitmap): Bitmap {
   return Bitmap.createBitmap(image, xOffset, yOffset, side, side)
 }
 
-fun resizeImageToDataSize(image: Bitmap, maxDataSize: Int): String {
+fun resizeImageToStrSize(image: Bitmap, maxDataSize: Long): String {
   var img = image
-  var str = compressImage(img)
+  var str = compressImageStr(img)
   while (str.length > maxDataSize) {
     val ratio = sqrt(str.length.toDouble() / maxDataSize.toDouble())
     val clippedRatio = min(ratio, 2.0)
     val width = (img.width.toDouble() / clippedRatio).toInt()
     val height = img.height * width / img.width
     img = Bitmap.createScaledBitmap(img, width, height, true)
-    str = compressImage(img)
+    str = compressImageStr(img)
   }
   return str
 }
 
-private fun compressImage(bitmap: Bitmap): String {
-  val stream = ByteArrayOutputStream()
-  bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-  return "data:image/jpg;base64," + Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+private fun compressImageStr(bitmap: Bitmap): String {
+  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap).toByteArray(), Base64.NO_WRAP)
 }
 
-fun base64ToBitmap(base64ImageString: String) : Bitmap {
+fun resizeImageToDataSize(image: Bitmap, maxDataSize: Long): ByteArrayOutputStream {
+  var img = image
+  var stream = compressImageData(img)
+  while (stream.size() > maxDataSize) {
+    val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
+    val clippedRatio = min(ratio, 2.0)
+    val width = (img.width.toDouble() / clippedRatio).toInt()
+    val height = img.height * width / img.width
+    img = Bitmap.createScaledBitmap(img, width, height, true)
+    stream = compressImageData(img)
+  }
+  return stream
+}
+
+private fun compressImageData(bitmap: Bitmap): ByteArrayOutputStream {
+  val stream = ByteArrayOutputStream()
+  bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+  return stream
+}
+
+fun base64ToBitmap(base64ImageString: String): Bitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
@@ -77,7 +95,7 @@ fun base64ToBitmap(base64ImageString: String) : Bitmap {
   return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }
 
-class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
+class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   private var uri: Uri? = null
   private var tmpFile: File? = null
   lateinit var externalContext: Context
@@ -103,16 +121,23 @@ class CustomTakePicturePreview : ActivityResultContract<Void?, Bitmap?>() {
       tmpFile?.delete()
       bitmap
     } else {
-      Log.e( TAG, "Getting image from camera cancelled or failed.")
+      Log.e(TAG, "Getting image from camera cancelled or failed.")
       tmpFile?.delete()
       null
     }
   }
 }
 
-@Composable
-fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
-  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+//class GetGalleryContent: ActivityResultContracts.GetContent() {
+//  override fun createIntent(context: Context, input: String): Intent {
+//    super.createIntent(context, input)
+//    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+//  }
+//}
+
+//@Composable
+//fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+//  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
 
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
@@ -123,32 +148,52 @@ fun rememberPermissionLauncher(cb: (Boolean) -> Unit): ManagedActivityResultLaun
   rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestPermission(), cb)
 
 @Composable
+fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
+
+@Composable
 fun GetImageBottomSheet(
-  profileImageStr: MutableState<String?>,
+  imageBitmap: MutableState<Bitmap?>,
+  onImageChange: (Bitmap) -> Unit,
+  fileUri: MutableState<Uri?>? = null,
+  onFileChange: ((Uri) -> Unit)? = null,
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
-  val isCameraSelected = remember { mutableStateOf (false) }
-
-  val galleryLauncher = rememberGalleryLauncher { uri: Uri? ->
+  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
+      imageBitmap.value = bitmap
+      onImageChange(bitmap)
     }
   }
-
   val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-    if (bitmap != null) profileImageStr.value = resizeImageToDataSize(cropToSquare(bitmap), maxDataSize = 12500)
+    if (bitmap != null) {
+      imageBitmap.value = bitmap
+      onImageChange(bitmap)
+    }
   }
-
   val permissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
-      if (isCameraSelected.value) cameraLauncher.launch(null)
-      else galleryLauncher.launch("image/*")
+      cameraLauncher.launch(null)
       hideBottomSheet()
     } else {
-      Toast.makeText(context, generalGetString(R.string.toast_camera_permission_denied), Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
+    }
+  }
+  val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
+    if (uri != null && fileUri != null && onFileChange != null) {
+      val fileSize = getFileSize(context, uri)
+      if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+        fileUri.value = uri
+        onFileChange(uri)
+      } else {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.large_file),
+          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+        )
+      }
     }
   }
 
@@ -166,28 +211,25 @@ fun GetImageBottomSheet(
         .padding(horizontal = 8.dp, vertical = 30.dp),
       horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-      ActionButton(null, generalGetString(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
+      ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
         when (PackageManager.PERMISSION_GRANTED) {
           ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
             cameraLauncher.launch(null)
             hideBottomSheet()
           }
           else -> {
-            isCameraSelected.value = true
             permissionLauncher.launch(Manifest.permission.CAMERA)
           }
         }
       }
-      ActionButton(null, generalGetString(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-        when (PackageManager.PERMISSION_GRANTED) {
-          ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-            galleryLauncher.launch("image/*")
-            hideBottomSheet()
-          }
-          else -> {
-            isCameraSelected.value = false
-            permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-          }
+      ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+        galleryLauncher.launch("image/*")
+        hideBottomSheet()
+      }
+      if (fileUri != null && onFileChange != null) {
+        ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
+          filesLauncher.launch("*/*")
+          hideBottomSheet()
         }
       }
     }

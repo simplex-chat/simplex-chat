@@ -31,6 +31,7 @@ import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
@@ -49,6 +50,7 @@ responseToView testView = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -90,28 +92,27 @@ responseToView testView = \case
   CRUserDeletedMember g m -> [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser g -> [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser g -> [ttyGroup' g <> ": you deleted the group"]
-  CRRcvFileAccepted RcvFileTransfer {fileId, senderDisplayName = c} filePath ->
-    ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+  CRRcvFileAccepted ci -> savingFile' ci
   CRRcvFileAcceptedSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndGroupFileCancelled ftm fts -> viewSndGroupFileCancelled ftm fts
+  CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
-  CRRcvFileStart ft -> receivingFile_ "started" ft
+  CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
-  CRSndFileStart ft -> sendingFile_ "started" ft
-  CRSndFileComplete ft -> sendingFile_ "completed" ft
-  CRSndFileCancelled ft -> sendingFile_ "cancelled" ft
-  CRSndFileRcvCancelled ft@SndFileTransfer {recipientDisplayName = c} ->
+  CRSndFileStart _ ft -> sendingFile_ "started" ft
+  CRSndFileComplete _ ft -> sendingFile_ "completed" ft
+  CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
+  CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
-  CRContactDisconnected c -> [ttyContact' c <> ": disconnected from server (messages will be queued)"]
-  CRContactSubscribed c -> [ttyContact' c <> ": connected to server"]
+  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> smpServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed srv cs -> [plain $ "server connected " <> smpServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
@@ -138,18 +139,27 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
+  CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
+  CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
+  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
+  CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
+  CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
+  CRNewContactConnection _ -> []
+  CRContactConnectionDeleted PendingContactConnection {pccConnId} -> ["connection :" <> sShow pccConnId <> " deleted"]
+  CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
     testViewChats :: [AChat] -> [StyledString]
     testViewChats chats = [sShow $ map toChatView chats]
       where
-        toChatView :: AChat -> (Text, Text)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName}) items _)) = ("@" <> localDisplayName, toCIPreview items)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items)
-        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items)
+        toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items, Just $ connStatus activeConn)
+        toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items, Nothing)
+        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just $ pccConnStatus)
         toCIPreview :: [CChatItem c] -> Text
         toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
         toCIPreview _ = ""
@@ -169,6 +179,10 @@ responseToView testView = \case
               _ -> Nothing
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
+    smpServer :: SMPServer -> String
+    smpServer SMP.ProtocolServer {host, port} = B.unpack . strEncode $ SrvLoc host port
+    contactList :: [ContactRef] -> String
+    contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
@@ -176,11 +190,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromContact' c
     where
@@ -189,30 +205,28 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
+      CISndCall {} -> []
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
+      CIRcvCall {} -> []
       where
         from = ttyFromGroup' g m
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
   where
-    sndMsg to quote mc = case (msgContentText mc, file) of
-      ("", Just _) -> []
-      _ -> viewSentMessage to quote mc meta
-    withSndFile to l = case file of
-      -- TODO pass CIFile
-      Just CIFile {fileId, filePath = Just fPath} -> l <> viewSentFileInvitation to fileId fPath meta
-      _ -> l
-    rcvMsg from quote mc = case (msgContentText mc, file) of
-      ("", Just _) -> []
-      _ -> viewReceivedMessage from quote mc meta
-    withRcvFile from l = case file of
-      Just f -> l <> viewReceivedFileInvitation from f meta
-      _ -> l
+    withSndFile = withFile viewSentFileInvitation
+    withRcvFile = withFile viewReceivedFileInvitation
+    withFile view dir l = maybe l (\f -> l <> view dir f meta) file
+    sndMsg = msg viewSentMessage
+    rcvMsg = msg viewReceivedMessage
+    msg view dir quote mc = case (msgContentText mc, file, quote) of
+      ("", Just _, []) -> []
+      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
+      _ -> view dir quote mc meta
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
@@ -476,8 +490,10 @@ viewSentMessage to quote mc = sentWithTime_ (prependFirst to $ quote <> prependF
 viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
 
-viewSentFileInvitation :: StyledString -> FileTransferId -> FilePath -> CIMeta d -> [StyledString]
-viewSentFileInvitation to fId fPath = sentWithTime_ $ ttySentFile to fId fPath
+viewSentFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
+viewSentFileInvitation to CIFile {fileId, filePath} = case filePath of
+  Just fPath -> sentWithTime_ $ ttySentFile to fileId fPath
+  _ -> const []
 
 sentWithTime_ :: [StyledString] -> CIMeta d -> [StyledString]
 sentWithTime_ styledMsg CIMeta {localItemTs} =
@@ -548,6 +564,15 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
+savingFile' :: AChatItem -> [StyledString]
+savingFile' (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIDirectRcv}) =
+  ["saving file " <> sShow fileId <> " from " <> ttyContact c <> " to " <> plain filePath]
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}, chatDir = CIGroupRcv GroupMember {localDisplayName = m}}) =
+  ["saving file " <> sShow fileId <> " from " <> ttyContact m <> " to " <> plain filePath]
+savingFile' (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, filePath = Just filePath}}) =
+  ["saving file " <> sShow fileId <> " to " <> plain filePath]
+savingFile' _ = ["saving file"] -- shouldn't happen
+
 receivingFile_' :: StyledString -> AChatItem -> [StyledString]
 receivingFile_' status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
   [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact c]
@@ -595,7 +620,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSAccepted _ -> "just started"
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
-      RFSCancelled RcvFileInfo {filePath} -> "cancelled, received part path: " <> plain filePath
+      RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
+      RFSCancelled Nothing -> "cancelled"
 
 listRecipients :: [SndFileTransfer] -> StyledString
 listRecipients = mconcat . intersperse ", " . map (ttyContact . recipientDisplayName)
@@ -627,6 +653,7 @@ viewChatError = \case
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
     CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]
     CEFileWrite f e -> ["cannot write file " <> plain f, sShow e]
@@ -636,6 +663,10 @@ viewChatError = \case
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
+    CEHasCurrentCall -> ["call already in progress"]
+    CENoCurrentCall -> ["no call in progress"]
+    CECallContact _ -> []
+    CECallState _ -> []
     CEAgentVersion -> ["unsupported agent version"]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
@@ -656,7 +687,10 @@ viewChatError = \case
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorAgent err -> case err of
-    SMP SMP.AUTH -> ["error: this connection is deleted"]
+    SMP SMP.AUTH ->
+      [ "error: connection authorization failed - this could happen if connection was deleted,\
+        \ secured with different credentials, or due to a bug - please re-create the connection"
+      ]
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]

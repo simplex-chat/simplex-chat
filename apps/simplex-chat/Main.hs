@@ -4,7 +4,6 @@ module Main where
 
 import Control.Concurrent (threadDelay)
 import Server
-import Simplex.Chat
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
@@ -20,12 +19,12 @@ main = do
   if null chatCmd
     then case chatServerPort of
       Just chatPort ->
-        simplexChatServer defaultChatServerConfig {chatPort} defaultChatConfig opts
+        simplexChatServer defaultChatServerConfig {chatPort} terminalChatConfig opts
       _ -> do
         welcome opts
         t <- withTerminal pure
-        simplexChatTerminal defaultChatConfig opts t
-    else simplexChatCore defaultChatConfig opts Nothing $ \_ cc -> do
+        simplexChatTerminal terminalChatConfig opts t
+    else simplexChatCore terminalChatConfig opts Nothing $ \_ cc -> do
       r <- sendChatCmd cc chatCmd
       putStrLn $ serializeChatResponse r
       threadDelay $ chatCmdDelay opts * 1000000

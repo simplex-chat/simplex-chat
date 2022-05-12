@@ -18,18 +18,6 @@ struct SettingsButton: View {
         }
         .sheet(isPresented: $showSettings, content: {
             SettingsView(showSettings: $showSettings)
-                .onAppear {
-                    Task {
-                        do {
-                            let userAddress = try await apiGetUserAddress()
-                            DispatchQueue.main.async {
-                                chatModel.userAddress = userAddress
-                            }
-                        } catch {
-                            logger.error("SettingsButton apiGetUserAddress error: \(error.localizedDescription)")
-                        }
-                    }
-                }
         })
     }
 }

@@ -3,8 +3,6 @@ package chat.simplex.app.views.usersettings
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -12,11 +10,10 @@ import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +29,7 @@ fun SMPServersView(chatModel: ChatModel) {
   if (userSMPServers != null) {
     var isUserSMPServers by remember { mutableStateOf(userSMPServers.isNotEmpty()) }
     var editSMPServers by remember { mutableStateOf(!isUserSMPServers) }
-    var userSMPServersStr by remember { mutableStateOf(if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else "") }
+    var userSMPServersStr = remember { mutableStateOf(if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else "") }
     fun saveSMPServers(smpServers: List<String>) {
       withApi {
         val r = chatModel.controller.setUserSMPServers(smpServers = smpServers)
@@ -66,23 +63,22 @@ fun SMPServersView(chatModel: ChatModel) {
                 onConfirm = {
                   saveSMPServers(listOf())
                   isUserSMPServers = false
-                  userSMPServersStr = ""
+                  userSMPServersStr.value = ""
                 }
               )
             } else {
               isUserSMPServers = false
-              userSMPServersStr = ""
+              userSMPServersStr.value = ""
             }
           }
         }
       },
-      editUserSMPServersStr = { userSMPServersStr = it },
       cancelEdit = {
         val userSMPServers = chatModel.userSMPServers.value
         if (userSMPServers != null) {
           isUserSMPServers = userSMPServers.isNotEmpty()
           editSMPServers = !isUserSMPServers
-          userSMPServersStr = if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else ""
+          userSMPServersStr.value = if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else ""
         }
       },
       saveSMPServers = { saveSMPServers(it) },
@@ -95,9 +91,8 @@ fun SMPServersView(chatModel: ChatModel) {
 fun SMPServersLayout(
   isUserSMPServers: Boolean,
   editSMPServers: Boolean,
-  userSMPServersStr: String,
+  userSMPServersStr: MutableState<String>,
   isUserSMPServersOnOff: (Boolean) -> Unit,
-  editUserSMPServersStr: (String) -> Unit,
   cancelEdit: () -> Unit,
   saveSMPServers: (List<String>) -> Unit,
   editOn: () -> Unit,
@@ -108,14 +103,14 @@ fun SMPServersLayout(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
-      generalGetString(R.string.your_SMP_servers),
+      stringResource(R.string.your_SMP_servers),
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
     Row(
       verticalAlignment = Alignment.CenterVertically
     ) {
-      Text(generalGetString(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
+      Text(stringResource(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
       Switch(
         checked = isUserSMPServers,
         onCheckedChange = isUserSMPServersOnOff,
@@ -127,43 +122,11 @@ fun SMPServersLayout(
     }
 
     if (!isUserSMPServers) {
-      Text(generalGetString(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
+      Text(stringResource(R.string.using_simplex_chat_servers), lineHeight = 22.sp)
     } else {
-      Text(generalGetString(R.string.enter_one_SMP_server_per_line))
+      Text(stringResource(R.string.enter_one_SMP_server_per_line))
       if (editSMPServers) {
-        BasicTextField(
-          value = userSMPServersStr,
-          onValueChange = editUserSMPServersStr,
-          textStyle = TextStyle(
-            fontFamily = FontFamily.Monospace, fontSize = 14.sp,
-            color = MaterialTheme.colors.onBackground
-          ),
-          keyboardOptions = KeyboardOptions.Default.copy(
-            capitalization = KeyboardCapitalization.None,
-            autoCorrect = false
-          ),
-          modifier = Modifier.height(160.dp),
-          cursorBrush = SolidColor(HighOrLowlight),
-          decorationBox = { innerTextField ->
-            Surface(
-              shape = RoundedCornerShape(10.dp),
-              border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
-            ) {
-              Row(
-                Modifier.background(MaterialTheme.colors.background),
-                verticalAlignment = Alignment.Top
-              ) {
-                Box(
-                  Modifier
-                    .weight(1f)
-                    .padding(vertical = 5.dp, horizontal = 7.dp)
-                ) {
-                  innerTextField()
-                }
-              }
-            }
-          }
-        )
+        TextEditor(Modifier.height(160.dp), text = userSMPServersStr)
 
         Row(
           Modifier.fillMaxWidth(),
@@ -173,17 +136,17 @@ fun SMPServersLayout(
           Column(horizontalAlignment = Alignment.Start) {
             Row {
               Text(
-                generalGetString(R.string.cancel_verb),
+                stringResource(R.string.cancel_verb),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier
                   .clickable(onClick = cancelEdit)
               )
               Spacer(Modifier.padding(horizontal = 8.dp))
               Text(
-                generalGetString(R.string.save_servers_button),
+                stringResource(R.string.save_servers_button),
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.clickable(onClick = {
-                  val servers = userSMPServersStr.split("\n")
+                  val servers = userSMPServersStr.value.split("\n")
                   saveSMPServers(servers)
                 })
               )
@@ -205,7 +168,7 @@ fun SMPServersLayout(
             Modifier.verticalScroll(rememberScrollState())
           ) {
             Text(
-              userSMPServersStr,
+              userSMPServersStr.value,
               Modifier
                 .padding(vertical = 5.dp, horizontal = 7.dp),
               style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp),
@@ -219,7 +182,7 @@ fun SMPServersLayout(
         ) {
           Column(horizontalAlignment = Alignment.Start) {
             Text(
-              generalGetString(R.string.edit_verb),
+              stringResource(R.string.edit_verb),
               color = MaterialTheme.colors.primary,
               modifier = Modifier
                 .clickable(onClick = editOn)
@@ -241,9 +204,9 @@ fun howToButton() {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.clickable { uriHandler.openUri("https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent") }
   ) {
-    Text(generalGetString(R.string.how_to), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.how_to), color = MaterialTheme.colors.primary)
     Icon(
-      Icons.Outlined.OpenInNew, generalGetString(R.string.how_to), tint = MaterialTheme.colors.primary,
+      Icons.Outlined.OpenInNew, stringResource(R.string.how_to), tint = MaterialTheme.colors.primary,
       modifier = Modifier.padding(horizontal = 5.dp)
     )
   }
@@ -256,9 +219,8 @@ fun PreviewSMPServersLayoutDefaultServers() {
     SMPServersLayout(
       isUserSMPServers = false,
       editSMPServers = true,
-      userSMPServersStr = "",
+      userSMPServersStr = remember { mutableStateOf("") },
       isUserSMPServersOnOff = {},
-      editUserSMPServersStr = {},
       cancelEdit = {},
       saveSMPServers = {},
       editOn = {},
@@ -273,9 +235,8 @@ fun PreviewSMPServersLayoutUserServersEditOn() {
     SMPServersLayout(
       isUserSMPServers = true,
       editSMPServers = true,
-      userSMPServersStr = "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im\nsmp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im",
+      userSMPServersStr = remember { mutableStateOf("smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im\nsmp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im") },
       isUserSMPServersOnOff = {},
-      editUserSMPServersStr = {},
       cancelEdit = {},
       saveSMPServers = {},
       editOn = {},
@@ -290,9 +251,8 @@ fun PreviewSMPServersLayoutUserServersEditOff() {
     SMPServersLayout(
       isUserSMPServers = true,
       editSMPServers = false,
-      userSMPServersStr = "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im\nsmp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im",
+      userSMPServersStr = remember { mutableStateOf("smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im\nsmp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im") },
       isUserSMPServersOnOff = {},
-      editUserSMPServersStr = {},
       cancelEdit = {},
       saveSMPServers = {},
       editOn = {},

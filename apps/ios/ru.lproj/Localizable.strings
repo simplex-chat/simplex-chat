@@ -23,9 +23,6 @@
 "!1 colored!" = "!1 цвет!";
 
 /* No comment provided by engineer. */
-"(shared only with your contacts)" = "(отправляется только вашим контактам)";
-
-/* No comment provided by engineer. */
 ")" = ")";
 
 /* No comment provided by engineer. */
@@ -35,7 +32,13 @@
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Добавить новый контакт**: чтобы создать одноразовый QR код или ссылку для вашего контакта.";
 
 /* No comment provided by engineer. */
-"**Scan QR code**: to connect to your contact who shows QR code to you." = "**Сканировать QR код**: чтобы соединиться с вашим контактом (который показывает вам QR код).";
+"**Create link / QR code** for your contact to use." = "**Создать ссылку / QR код** для вашего контакта.";
+
+/* No comment provided by engineer. */
+"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.";
+
+/* No comment provided by engineer. */
+"**Scan QR code**: to connect to your contact in person or via video call." = "**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*жирный*";
@@ -62,16 +65,16 @@
 "~strike~" = "\\~зачеркнуть~";
 
 /* No comment provided by engineer. */
-"💻 desktop: scan displayed QR code from the app, via **Scan QR code**." = "💻 на компьютере: сосканируйте QR код из приложения через **Сканировать QR код**.";
-
-/* No comment provided by engineer. */
-"📱 mobile: tap **Open in mobile app**, then tap **Connect** in the app." = "📱 на мобильном: намжите кнопку **Open in mobile app** на веб странице, затем нажмите **Соединиться** в приложении.";
-
-/* No comment provided by engineer. */
 "6" = "6";
 
 /* No comment provided by engineer. */
-"above, then:" = "наверху, затем:";
+"About SimpleX" = "О SimpleX";
+
+/* No comment provided by engineer. */
+"About SimpleX Chat" = "Информация о SimpleX Chat";
+
+/* No comment provided by engineer. */
+"above, then choose:" = "наверху, затем выберите:";
 
 /* accept contact request via notification */
 "Accept" = "Принять";
@@ -82,14 +85,32 @@
 /* notification body */
 "Accept contact request from %@?" = "Принять запрос на соединение от %@?";
 
+/* call status */
+"accepted" = "принятый звонок";
+
 /* No comment provided by engineer. */
-"Add contact" = "Добавить контакт";
+"Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
+"Already connected?" = "Соединение уже установлено?";
+
+/* accept incoming call via notification */
+"Answer" = "Ответить";
+
+/* No comment provided by engineer. */
+"Attach" = "Прикрепить";
+
+/* No comment provided by engineer. */
 "bold" = "жирный";
+
+/* No comment provided by engineer. */
+"Call already ended!" = "Звонок уже завершен!";
+
+/* call status */
+"calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
 "Cancel" = "Отменить";
@@ -104,7 +125,19 @@
 "Chats" = "Назад";
 
 /* No comment provided by engineer. */
+"Check messages" = "Проверять сообщения";
+
+/* notification */
+"Checking new messages..." = "Проверяются новые сообщения...";
+
+/* No comment provided by engineer. */
+"Choose file" = "Выбрать файл (v2.0)";
+
+/* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
+
+/* No comment provided by engineer. */
+"Clear" = "Очистить";
 
 /* No comment provided by engineer. */
 "colored" = "цвет";
@@ -119,13 +152,22 @@
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
-"connect to SimpleX Chat developers." = "соединиться с разработчиками.";
+"connect to SimpleX Chat developers." = "соединитесь с разработчиками.";
 
 /* No comment provided by engineer. */
 "Connect via contact link?" = "Соединиться через ссылку-контакт?";
 
 /* No comment provided by engineer. */
-"Connect via invitation link?" = "Соединиться через ссылку-приглашение?";
+"Connect via link" = "Соединиться через ссылку";
+
+/* No comment provided by engineer. */
+"Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
+
+/* No comment provided by engineer. */
+"Connect with the developers" = "Соединиться с разработчиками";
+
+/* No comment provided by engineer. */
+"connected" = "соединение установлено";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";
@@ -133,11 +175,21 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
+/* call status
+   chat list item title */
+"connecting…" = "соединяется…";
+
 /* No comment provided by engineer. */
 "Connecting..." = "Устанавливается соединение…";
 
 /* No comment provided by engineer. */
 "Connection error" = "Ошибка соединения";
+
+/* No comment provided by engineer. */
+"Connection error (AUTH)" = "Ошибка соединения (AUTH)";
+
+/* chat list item title (it should not be shown */
+"connection established" = "соединение установлено";
 
 /* No comment provided by engineer. */
 "Connection request" = "Запрос на соединение";
@@ -147,6 +199,9 @@
 
 /* No comment provided by engineer. */
 "Connection timeout" = "Превышено время соединения";
+
+/* connection information */
+"connection:%@" = "connection:%@";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -158,19 +213,31 @@
 "Contact is connected" = "Соединение с контактом установлено";
 
 /* No comment provided by engineer. */
+"Contact is not connected yet!" = "Соединение еще не установлено!";
+
+/* No comment provided by engineer. */
 "Copy" = "Скопировать";
 
 /* No comment provided by engineer. */
 "Create" = "Создать";
 
 /* No comment provided by engineer. */
+"Create 1-time link / QR code" = "Создать ссылку / QR код";
+
+/* No comment provided by engineer. */
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
-"Create group" = "Создать группу";
+"Create link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Create profile" = "Создать профиль";
+"Create your profile" = "Создать профиль";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Максимальный размер файла - %@.";
+
+/* No comment provided by engineer. */
+"Decentralized" = "Децентрализованный";
 
 /* No comment provided by engineer. */
 "Delete" = "Удалить";
@@ -185,7 +252,13 @@
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
+"Delete Contact" = "Удалить контакт";
+
+/* No comment provided by engineer. */
 "Delete contact?" = "Удалить контакт?";
+
+/* No comment provided by engineer. */
+"Delete for everyone" = "Удалить для всех";
 
 /* No comment provided by engineer. */
 "Delete for me" = "Удалить для меня";
@@ -195,6 +268,12 @@
 
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
+
+/* No comment provided by engineer. */
+"Delete pending connection" = "Удалить соединение";
+
+/* No comment provided by engineer. */
+"Delete pending connection?" = "Удалить ожидаемое соединение?";
 
 /* deleted chat item */
 "deleted" = "удалено";
@@ -209,7 +288,25 @@
 "Edit" = "Редактировать";
 
 /* No comment provided by engineer. */
+"Enable notifications? (BETA)" = "Включить уведомления? (БЕТА)";
+
+/* No comment provided by engineer. */
+"end-to-end encrypted" = "end-to-end зашифрованный звонок";
+
+/* call status */
+"ended %02d:%02d" = "звонок завершён %1$d:%2$d";
+
+/* No comment provided by engineer. */
 "Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
+
+/* call status */
+"error" = "ошибка соединения";
+
+/* No comment provided by engineer. */
+"Error deleting token" = "Ошибка удаления токена";
+
+/* No comment provided by engineer. */
+"Error registering token" = "Ошибка регистрации токена";
 
 /* No comment provided by engineer. */
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
@@ -221,6 +318,9 @@
 "Error: URL is invalid" = "Ошибка: неверная ссылка";
 
 /* No comment provided by engineer. */
+"File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
 "Full name (optional)" = "Полное имя (не обязательно)";
 
 /* No comment provided by engineer. */
@@ -230,22 +330,46 @@
 "Help" = "Помощь";
 
 /* No comment provided by engineer. */
-"How to" = "Информация";
+"How it works" = "Как это работает";
+
+/* No comment provided by engineer. */
+"How SimpleX works" = "Как SimpleX работает";
+
+/* No comment provided by engineer. */
+"How to" = "Инфо";
+
+/* No comment provided by engineer. */
+"How to use it" = "Как использовать";
 
 /* No comment provided by engineer. */
 "How to use markdown" = "Как форматировать";
 
 /* No comment provided by engineer. */
-"How to use SimpleX Chat" = "Как использовать SimpleX Chat";
+"If you can't meet in person, **show QR code in the video call**, or share the link." = "Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.";
 
-/* No comment provided by engineer. */
-"If you cannot meet in person, you can **show QR code in the video call**, or you can share the invitation link via any other channel." = "Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка** или отправить ссылку через любой другой канал связи.";
+/* ignore incoming call via notification */
+"Ignore" = "Не отвечать";
 
 /* No comment provided by engineer. */
-"If you received SimpleX Chat invitation link you can open it in your browser:" = "Если вы получили ссылку с приглашением из SimpleX Chat, вы можете открыть её в браузере:";
+"Image will be received when your contact is online, please wait or check later!" = "Изображение будет принято, когда ваш контакт будет в сети, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"Immune to spam and abuse" = "Защищен от спама";
+
+/* No comment provided by engineer. */
+"In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке – самый безопасный способ установить соединение";
+
+/* call status */
+"in progress" = "активный звонок";
+
+/* notification body */
+"Incoming %@ call" = "Входящий звонок";
+
+/* notification */
+"Incoming call" = "Входящий звонок";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
@@ -253,11 +377,29 @@
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ошибка в ссылке контакта";
 
+/* chat list item title */
+"invited to connect" = "приглашение";
+
+/* No comment provided by engineer. */
+"It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
+
+/* No comment provided by engineer. */
+"It's secure to share - only one contact can use it." = "Ей безопасно поделиться - только один контакт может использовать её.";
+
 /* No comment provided by engineer. */
 "italic" = "курсив";
 
 /* No comment provided by engineer. */
+"Large file!" = "Большой файл!";
+
+/* No comment provided by engineer. */
+"Make a private connection" = "Добавьте контакт";
+
+/* No comment provided by engineer. */
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
+
+/* No comment provided by engineer. */
+"Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
@@ -265,20 +407,56 @@
 /* No comment provided by engineer. */
 "Message delivery error" = "Ошибка доставки сообщения";
 
+/* call status */
+"missed" = "пропущенный звонок";
+
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с вами.";
 
 /* notification */
 "New contact request" = "Новый запрос на соединение";
 
-/* notifications */
+/* notification */
 "New message" = "Новое сообщение";
+
+/* No comment provided by engineer. */
+"no end-to-end encryption" = "end-to-end шифрование не поддерживается";
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Уведомления выключены";
 
 /* No comment provided by engineer. */
+"One-time invitation link" = "Одноразовая ссылка";
+
+/* No comment provided by engineer. */
+"Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**";
+
+/* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
+
+/* No comment provided by engineer. */
+"Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
+
+/* No comment provided by engineer. */
+"or" = "или";
+
+/* No comment provided by engineer. */
+"Or open the link in the browser and tap **Open in mobile**." = "Или откройте ссылку в браузере и нажмите **Open in mobile**.";
+
+/* No comment provided by engineer. */
+"Paste" = "Вставить";
+
+/* No comment provided by engineer. */
+"Paste received link" = "Вставить полученную ссылку";
+
+/* No comment provided by engineer. */
+"Paste the link you received" = "Вставьте полученную ссылку";
+
+/* No comment provided by engineer. */
+"Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.";
+
+/* No comment provided by engineer. */
+"People can connect to you only via the links you share." = "С вами можно соединиться только через созданные вами ссылки.";
 
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
@@ -287,13 +465,22 @@
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
+"Privacy redefined" = "Более конфиденциальный";
+
+/* No comment provided by engineer. */
 "Profile image" = "Аватар";
 
 /* No comment provided by engineer. */
 "Read" = "Прочитано";
 
-/* to be removed */
-"receiving files is not supported yet" = "получение файлов не поддерживается";
+/* No comment provided by engineer. */
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Узнайте больше из нашего [GitHub репозитория](https://github.com/simplex-chat/simplex-chat#readme).";
+
+/* No comment provided by engineer. */
+"Read more in our GitHub repository." = "Узнайте больше из нашего GitHub репозитория.";
+
+/* No comment provided by engineer. */
+"received answer…" = "получен ответ…";
 
 /* No comment provided by engineer. */
 "Reject" = "Отклонить";
@@ -303,6 +490,9 @@
 
 /* No comment provided by engineer. */
 "Reject contact request" = "Отклонить запрос";
+
+/* call status */
+"rejected" = "отклоненный звонок";
 
 /* No comment provided by engineer. */
 "Reply" = "Ответить";
@@ -317,13 +507,13 @@
 "Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
 
 /* No comment provided by engineer. */
+"Scan contact's QR code" = "Сосканировать QR код контакта";
+
+/* No comment provided by engineer. */
 "Scan QR code" = "Сканировать QR код";
 
 /* No comment provided by engineer. */
 "secret" = "секрет";
-
-/* to be removed */
-"sending files is not supported yet" = "отправка файлов не поддерживается";
 
 /* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
@@ -341,13 +531,13 @@
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
-"Show QR code to your contact\nto scan from the app" = "Покажите QR код вашему контакту для сканирования в приложении";
+"Show pending connections" = "Показать ожидаемые соединения";
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
 
 /* No comment provided by engineer. */
-"Start new chat" = "Начать новый разговор";
+"starting…" = "инициализация…";
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
@@ -359,25 +549,46 @@
 "Tap button " = "Нажмите кнопку";
 
 /* No comment provided by engineer. */
-"Thank you for installing SimpleX Chat!" = "Спасибо, что Вы установили SimpleX Chat!";
+"Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
+
+/* No comment provided by engineer. */
+"The 1st platform without any user identifiers – private by design." = "Первая в мире платформа без идентификаторов пользователей.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
 
 /* No comment provided by engineer. */
-"The messaging and application platform 100% private by design!" = "Платформа для сообщений и приложений, которая защищает вашу личную информацию и безопасность.";
+"The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." = "Приложение может получать скрытые уведомления каждые 20 минут чтобы проверить новые сообщения.\n*Обратите внимание*: если вы подтвердите, токен вашего устройства будет послан на сервер SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
+
+/* No comment provided by engineer. */
+"The contact you shared this link with will NOT be able to connect!" = "Контакт, которому вы отправили эту ссылку, не сможет соединиться!";
+
+/* No comment provided by engineer. */
+"The next generation of private messaging" = "Новое поколение приватных сообщений";
+
+/* No comment provided by engineer. */
+"The profile is only shared with your contacts." = "Профиль отправляется только вашим контактам.";
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
-"To ask any questions and to receive updates:" = "Задать вопросы и получать уведомления о новых версиях:";
+"To ask any questions and to receive SimpleX Chat updates." = "Чтобы задать вопросы и получать уведомления о SimpleX Chat.";
 
 /* No comment provided by engineer. */
-"To connect via link" = "Соединиться через ссылку";
+"To ask any questions and to receive updates:" = "Чтобы задать вопросы и получать уведомления о новых версиях,";
 
 /* No comment provided by engineer. */
-"To start a new chat" = "Начать новый разговор";
+"To make a new connection" = "Чтобы соединиться";
+
+/* No comment provided by engineer. */
+"To make your first private connection, choose **one of the following**:" = "Чтобы добавить ваш первый контакт, выберите **одно из**:";
+
+/* No comment provided by engineer. */
+"To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." = "Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
@@ -389,6 +600,9 @@
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
 
 /* No comment provided by engineer. */
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.";
+
+/* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
 
 /* No comment provided by engineer. */
@@ -396,6 +610,24 @@
 
 /* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
+
+/* chat list item description */
+"via contact address link" = "через ссылку-контакт";
+
+/* chat list item description */
+"via one-time link" = "через одноразовую ссылку";
+
+/* No comment provided by engineer. */
+"waiting for answer…" = "ожидается ответ…";
+
+/* No comment provided by engineer. */
+"waiting for confirmation…" = "ожидается подтверждение…";
+
+/* No comment provided by engineer. */
+"Waiting for file" = "Ожидается прием файла";
+
+/* No comment provided by engineer. */
+"Waiting for image" = "Ожидается прием изображения";
 
 /* No comment provided by engineer. */
 "wants to connect to you!" = "хочет соединиться с вами!";
@@ -407,10 +639,16 @@
 "You" = "Вы";
 
 /* No comment provided by engineer. */
+"You accepted connection" = "Вы приняли приглашение соединиться";
+
+/* No comment provided by engineer. */
 "You are already connected to %@ via this link." = "Вы уже соединены с %@ через эту ссылку.";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получается сообщения от этого контакта.";
+"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
+
+/* No comment provided by engineer. */
+"You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
 
 /* notification body */
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
@@ -422,7 +660,13 @@
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
 
 /* No comment provided by engineer. */
-"You control your chat!" = "Вы котролируете Ваш чат!";
+"You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Вы определяете через какие серверы вы **получаете сообщения**, ваши контакты - серверы, которые вы используете для отправки.";
+
+/* No comment provided by engineer. */
+"You invited your contact" = "Вы пригласили ваш контакт";
+
+/* chat list item description */
+"you shared one-time link" = "вы создали ссылку";
 
 /* No comment provided by engineer. */
 "You will be connected when your connection request is accepted, please wait or check later!" = "Соединение будет установлено, когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!";
@@ -443,13 +687,22 @@
 "Your chats" = "Ваши чаты";
 
 /* No comment provided by engineer. */
+"Your contact can scan it from the app" = "Ваш контакт может сосканировать QR в приложении";
+
+/* No comment provided by engineer. */
+"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
+
+/* No comment provided by engineer. */
+"Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
+
+/* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";
 
 /* No comment provided by engineer. */
-"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен контакту, от которого вы получили эту ссылку.";
+"Your profile will be sent to the contact that you received this link from" = "Ваш профиль будет отправлен вашему контакту.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and messages (once delivered) are only stored locally on your device." = "Ваш профиль, контакты и сообщения (после доставки) хранятся только на вашем устройстве.";
+"Your profile, contacts and delivered messages are stored on your device." = "Ваш профиль, контакты и доставленные сообщения хранятся на вашем устройстве.";
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";

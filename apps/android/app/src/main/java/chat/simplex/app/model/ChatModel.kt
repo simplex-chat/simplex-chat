@@ -10,7 +10,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.SecretColor
 import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -19,23 +21,30 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 
 class ChatModel(val controller: ChatController) {
-  var currentUser = mutableStateOf<User?>(null)
-  var userCreated = mutableStateOf<Boolean?>(null)
-  var chats = mutableStateListOf<Chat>()
-  var chatId = mutableStateOf<String?>(null)
-  var chatItems = mutableStateListOf<ChatItem>()
+  val onboardingStage = mutableStateOf<OnboardingStage?>(null)
+  val currentUser = mutableStateOf<User?>(null)
+  val userCreated = mutableStateOf<Boolean?>(null)
+  val chats = mutableStateListOf<Chat>()
+  val chatId = mutableStateOf<String?>(null)
+  val chatItems = mutableStateListOf<ChatItem>()
 
   var connReqInvitation: String? = null
-  var terminalItems = mutableStateListOf<TerminalItem>()
-  var userAddress = mutableStateOf<String?>(null)
-  var userSMPServers = mutableStateOf<(List<String>)?>(null)
+  val terminalItems = mutableStateListOf<TerminalItem>()
+  val userAddress = mutableStateOf<String?>(null)
+  val userSMPServers = mutableStateOf<(List<String>)?>(null)
 
   // set when app opened from external intent
-  var clearOverlays = mutableStateOf<Boolean>(false)
+  val clearOverlays = mutableStateOf<Boolean>(false)
 
   // set when app is opened via contact or invitation URI
-  var appOpenUrl = mutableStateOf<Uri?>(null)
-  var runServiceInBackground = mutableStateOf(true)
+  val appOpenUrl = mutableStateOf<Uri?>(null)
+  val runServiceInBackground = mutableStateOf(true)
+
+  // current WebRTC call
+  val callInvitations = mutableStateMapOf<String, CallInvitation>()
+  val activeCallInvitation = mutableStateOf<ContactRef?>(null)
+  val activeCall = mutableStateOf<Call?>(null)
+  val callCommand = mutableStateOf<WCallCommand?>(null)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -54,17 +63,20 @@ class ChatModel(val controller: ChatController) {
     if (i >= 0) chats[i] = chats[i].copy(chatInfo = cInfo)
   }
 
-  fun updateContact(contact: Contact) {
-    val cInfo = ChatInfo.Direct(contact)
-    if (hasChat(contact.id)) {
+  fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
+
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
+
+  private fun updateChat(cInfo: ChatInfo) {
+    if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
     } else {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
   }
 
-  fun updateNetworkStatus(contact: Contact, status: Chat.NetworkStatus) {
-    val i = getChatIndex(contact.id)
+  fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
+    val i = getChatIndex(id)
     if (i >= 0) {
       val chat = chats[i]
       chats[i] = chat.copy(serverInfo = chat.serverInfo.copy(networkStatus = status))
@@ -116,8 +128,8 @@ class ChatModel(val controller: ChatController) {
     val res: Boolean
     if (i >= 0) {
       chat = chats[i]
-      val pItem = chat.chatItems.last()
-      if (pItem.id == cItem.id) {
+      val pItem = chat.chatItems.lastOrNull()
+      if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
       }
       res = false
@@ -146,8 +158,8 @@ class ChatModel(val controller: ChatController) {
     val chat: Chat
     if (i >= 0) {
       chat = chats[i]
-      val pItem = chat.chatItems.last()
-      if (pItem.id == cItem.id) {
+      val pItem = chat.chatItems.lastOrNull()
+      if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
       }
     }
@@ -168,17 +180,17 @@ class ChatModel(val controller: ChatController) {
       while (i < chatItems.count()) {
         val item = chatItems[i]
         if (item.meta.itemStatus is CIStatus.RcvNew) {
-          chatItems[i] = item.copy(meta=item.meta.copy(itemStatus = CIStatus.RcvRead()))
+          chatItems[i] = item.withStatus(CIStatus.RcvRead())
         }
         i += 1
       }
       val chat = chats[chatIdx]
+      val pItem  = chat.chatItems.lastOrNull()
       chats[chatIdx] = chat.copy(
-        chatItems = chatItems,
+        chatItems = if (pItem == null) arrayListOf() else arrayListOf(pItem.withStatus(CIStatus.RcvRead())),
         chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
       )
     }
-
   }
 
 //  func popChat(_ id: String) {
@@ -200,14 +212,8 @@ class ChatModel(val controller: ChatController) {
 enum class ChatType(val type: String) {
   Direct("@"),
   Group("#"),
-  ContactRequest("<@");
-
-  val chatTypeName: String get () =
-    when (this) {
-      Direct -> "contact"
-      Group -> "group"
-      ContactRequest -> "contact request"
-    }
+  ContactRequest("<@"),
+  ContactConnection(":");
 }
 
 @Serializable
@@ -343,6 +349,24 @@ sealed class ChatInfo: SomeChat, NamedChat {
       val sampleData = ContactRequest(UserContactRequest.sampleData)
     }
   }
+
+  @Serializable @SerialName("contactConnection")
+  class ContactConnection(val contactConnection: PendingContactConnection): ChatInfo() {
+    override val chatType get() = ChatType.ContactConnection
+    override val localDisplayName get() = contactConnection.localDisplayName
+    override val id get() = contactConnection.id
+    override val apiId get() = contactConnection.apiId
+    override val ready get() = contactConnection.ready
+    override val createdAt get() = contactConnection.createdAt
+    override val displayName get() = contactConnection.displayName
+    override val fullName get() = contactConnection.fullName
+    override val image get() = contactConnection.image
+
+    companion object {
+      fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): ContactConnection =
+        ContactConnection(PendingContactConnection.getSampleData(status, viaContactUri))
+    }
+  }
 }
 
 @Serializable
@@ -357,7 +381,7 @@ class Contact(
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
-  override val ready get() = activeConn.connStatus == "ready" || activeConn.connStatus == "snd-ready"
+  override val ready get() = activeConn.connStatus == ConnStatus.Ready
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -374,15 +398,24 @@ class Contact(
 }
 
 @Serializable
+class ContactRef(
+  val contactId: Long,
+  var localDisplayName: String
+) {
+  val id: ChatId get() = "@$contactId"
+}
+
+@Serializable
 class ContactSubStatus(
   val contact: Contact,
   val contactError: ChatError? = null
 )
 
 @Serializable
-class Connection(val connStatus: String) {
+class Connection(val connId: Long, val connStatus: ConnStatus) {
+  val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connStatus = "ready")
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
   }
 }
 
@@ -491,7 +524,8 @@ class UserContactRequest (
   val contactRequestId: Long,
   override val localDisplayName: String,
   val profile: Profile,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
@@ -506,8 +540,82 @@ class UserContactRequest (
       contactRequestId = 1,
       localDisplayName = "alice",
       profile = Profile.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
+  }
+}
+
+@Serializable
+class PendingContactConnection(
+  val pccConnId: Long,
+  val pccAgentConnId: String,
+  val pccConnStatus: ConnStatus,
+  val viaContactUri: Boolean,
+  override val createdAt: Instant,
+  val updatedAt: Instant
+): SomeChat, NamedChat {
+  override val chatType get() = ChatType.ContactConnection
+  override val id get () = ":$pccConnId"
+  override val apiId get() = pccConnId
+  override val ready get() = false
+  override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
+  override val displayName: String get() {
+    val initiated = pccConnStatus.initiated
+    return if (initiated == null) {
+      // this should not be in the chat list
+      generalGetString(R.string.display_name_connection_established)
+    } else {
+      generalGetString(
+        if (initiated && !viaContactUri) R.string.display_name_invited_to_connect
+        else R.string.display_name_connecting
+      )
+    }
+  }
+  override val fullName get() = ""
+  override val image get() = null
+  val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
+
+  val description: String get() {
+    val initiated = pccConnStatus.initiated
+    return if (initiated == null) "" else generalGetString(
+      if (initiated && !viaContactUri) R.string.description_you_shared_one_time_link
+      else if (viaContactUri ) R.string.description_via_contact_address_link
+      else R.string.description_via_one_time_link
+    )
+  }
+
+  companion object {
+    fun getSampleData(status: ConnStatus = ConnStatus.New, viaContactUri: Boolean = false): PendingContactConnection =
+      PendingContactConnection(
+        pccConnId = 1,
+        pccAgentConnId = "abcd",
+        pccConnStatus = status,
+        viaContactUri = viaContactUri,
+        createdAt = Clock.System.now(),
+        updatedAt = Clock.System.now()
+      )
+  }
+}
+
+@Serializable
+enum class ConnStatus {
+  @SerialName("new") New,
+  @SerialName("joined") Joined,
+  @SerialName("requested") Requested,
+  @SerialName("accepted") Accepted,
+  @SerialName("snd-ready") SndReady,
+  @SerialName("ready") Ready,
+  @SerialName("deleted") Deleted;
+
+  val initiated: Boolean? get() = when (this) {
+    New -> true
+    Joined -> false
+    Requested -> true
+    Accepted -> true
+    SndReady -> false
+    Ready -> null
+    Deleted -> null
   }
 }
 
@@ -523,10 +631,18 @@ data class ChatItem (
   val meta: CIMeta,
   val content: CIContent,
   val formattedText: List<FormattedText>? = null,
-  val quotedItem: CIQuote? = null
+  val quotedItem: CIQuote? = null,
+  val file: CIFile? = null
 ) {
   val id: Long get() = meta.itemId
   val timestampText: String get() = meta.timestampText
+
+  val text: String get() =
+    when {
+      content.text == "" && file != null -> file.fileName
+      else -> content.text
+    }
+
   val isRcvNew: Boolean get() = meta.itemStatus is CIStatus.RcvNew
 
   val memberDisplayName: String? get() =
@@ -547,6 +663,15 @@ data class ChatItem (
       else -> false
     }
 
+  val isCall: Boolean get() =
+    when (content) {
+      is CIContent.SndCall -> true
+      is CIContent.RcvCall -> true
+      else -> false
+    }
+
+  fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
+
   companion object {
     fun getSampleData(
       id: Long = 1,
@@ -555,6 +680,7 @@ data class ChatItem (
       text: String = "hello\nthere",
       status: CIStatus = CIStatus.SndNew(),
       quotedItem: CIQuote? = null,
+      file: CIFile? = null,
       itemDeleted: Boolean = false,
       itemEdited: Boolean = false,
       editable: Boolean = true
@@ -563,7 +689,23 @@ data class ChatItem (
         chatDir = dir,
         meta = CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
         content = CIContent.SndMsgContent(msgContent = MsgContent.MCText(text)),
-        quotedItem = quotedItem
+        quotedItem = quotedItem,
+        file = file
+      )
+
+    fun getFileMsgContentSample(
+      id: Long = 1,
+      text: String = "",
+      fileName: String = "test.txt",
+      fileSize: Long = 100,
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
+    ) =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(id, Clock.System.now(), text, CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvMsgContent(msgContent = MsgContent.MCFile(text)),
+        quotedItem = null,
+        file = CIFile.getSample(fileName = fileName, fileSize = fileSize, fileStatus = fileStatus)
       )
 
     fun getDeletedContentSampleData(
@@ -575,35 +717,26 @@ data class ChatItem (
     ) =
       ChatItem(
         chatDir = dir,
-        meta = CIMeta.getSample(id, ts, text, status, false, false, false),
+        meta = CIMeta.getSample(id, ts, text, status, itemDeleted = false, itemEdited = false, editable = false),
         content = CIContent.RcvDeleted(deleteMode = CIDeleteMode.cidmBroadcast),
-        quotedItem = null
+        quotedItem = null,
+        file = null
       )
   }
 }
 
 @Serializable
 sealed class CIDirection {
-  abstract val sent: Boolean
+  @Serializable @SerialName("directSnd") class DirectSnd: CIDirection()
+  @Serializable @SerialName("directRcv") class DirectRcv: CIDirection()
+  @Serializable @SerialName("groupSnd") class GroupSnd: CIDirection()
+  @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember): CIDirection()
 
-  @Serializable @SerialName("directSnd")
-  class DirectSnd: CIDirection() {
-    override val sent get() = true
-  }
-
-  @Serializable @SerialName("directRcv")
-  class DirectRcv: CIDirection() {
-    override val sent get() = false
-  }
-
-  @Serializable @SerialName("groupSnd")
-  class GroupSnd: CIDirection() {
-    override val sent get() = true
-  }
-
-  @Serializable @SerialName("groupRcv")
-  class GroupRcv(val groupMember: GroupMember): CIDirection() {
-    override val sent get() = false
+  val sent: Boolean get() = when(this) {
+    is DirectSnd -> true
+    is DirectRcv -> false
+    is GroupSnd -> true
+    is GroupRcv -> false
   }
 }
 
@@ -650,23 +783,12 @@ fun getTimestampText(t: Instant): String {
 
 @Serializable
 sealed class CIStatus {
-  @Serializable @SerialName("sndNew")
-  class SndNew: CIStatus()
-
-  @Serializable @SerialName("sndSent")
-  class SndSent: CIStatus()
-
-  @Serializable @SerialName("sndErrorAuth")
-  class SndErrorAuth: CIStatus()
-
-  @Serializable @SerialName("sndError")
-  class SndError(val agentError: AgentErrorType): CIStatus()
-
-  @Serializable @SerialName("rcvNew")
-  class RcvNew: CIStatus()
-
-  @Serializable @SerialName("rcvRead")
-  class RcvRead: CIStatus()
+  @Serializable @SerialName("sndNew") class SndNew: CIStatus()
+  @Serializable @SerialName("sndSent") class SndSent: CIStatus()
+  @Serializable @SerialName("sndErrorAuth") class SndErrorAuth: CIStatus()
+  @Serializable @SerialName("sndError") class SndError(val agentError: AgentErrorType): CIStatus()
+  @Serializable @SerialName("rcvNew") class RcvNew: CIStatus()
+  @Serializable @SerialName("rcvRead") class RcvRead: CIStatus()
 }
 
 @Serializable
@@ -681,41 +803,22 @@ interface ItemContent {
 
 @Serializable
 sealed class CIContent: ItemContent {
-  abstract override val text: String
   abstract val msgContent: MsgContent?
 
-  @Serializable @SerialName("sndMsgContent")
-  class SndMsgContent(override val msgContent: MsgContent): CIContent() {
-    override val text get() = msgContent.text
-  }
+  @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
+  @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
+  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
 
-  @Serializable @SerialName("rcvMsgContent")
-  class RcvMsgContent(override val msgContent: MsgContent): CIContent() {
-    override val text get() = msgContent.text
-  }
-
-  @Serializable @SerialName("sndDeleted")
-  class SndDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = generalGetString(R.string.deleted_description)
-    override val msgContent get() = null
-  }
-
-  @Serializable @SerialName("rcvDeleted")
-  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() {
-    override val text get() = generalGetString(R.string.deleted_description)
-    override val msgContent get() = null
-  }
-
-  @Serializable @SerialName("sndFileInvitation")
-  class SndFileInvitation(val fileId: Long, val filePath: String): CIContent() {
-    override val text get() = generalGetString(R.string.sending_files_not_yet_supported)
-    override val msgContent get() = null
-  }
-
-  @Serializable @SerialName("rcvFileInvitation")
-  class RcvFileInvitation(val rcvFileTransfer: RcvFileTransfer): CIContent() {
-    override val text get() = generalGetString(R.string.receiving_files_not_yet_supported)
-    override val msgContent get() = null
+  override val text: String get() = when(this) {
+    is SndMsgContent -> msgContent.text
+    is RcvMsgContent -> msgContent.text
+    is SndDeleted -> generalGetString(R.string.deleted_description)
+    is RcvDeleted -> generalGetString(R.string.deleted_description)
+    is SndCall -> status.text(duration)
+    is RcvCall -> status.text(duration)
   }
 }
 
@@ -744,29 +847,72 @@ class CIQuote (
   }
 }
 
+@Serializable
+class CIFile(
+  val fileId: Long,
+  val fileName: String,
+  val fileSize: Long,
+  val filePath: String? = null,
+  val fileStatus: CIFileStatus
+) {
+  val loaded: Boolean = when (fileStatus) {
+    CIFileStatus.SndStored -> true
+    CIFileStatus.SndTransfer -> true
+    CIFileStatus.SndComplete -> true
+    CIFileStatus.SndCancelled -> true
+    CIFileStatus.RcvInvitation -> false
+    CIFileStatus.RcvAccepted -> false
+    CIFileStatus.RcvTransfer -> false
+    CIFileStatus.RcvCancelled -> false
+    CIFileStatus.RcvComplete -> true
+  }
+
+  companion object {
+    fun getSample(
+      fileId: Long = 1,
+      fileName: String = "test.txt",
+      fileSize: Long = 100,
+      filePath: String? = "test.txt",
+      fileStatus: CIFileStatus = CIFileStatus.RcvComplete
+    ): CIFile =
+      CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, filePath = filePath, fileStatus = fileStatus)
+  }
+}
+
+@Serializable
+enum class CIFileStatus {
+  @SerialName("snd_stored") SndStored,
+  @SerialName("snd_transfer") SndTransfer,
+  @SerialName("snd_complete") SndComplete,
+  @SerialName("snd_cancelled") SndCancelled,
+  @SerialName("rcv_invitation") RcvInvitation,
+  @SerialName("rcv_accepted") RcvAccepted,
+  @SerialName("rcv_transfer") RcvTransfer,
+  @SerialName("rcv_complete") RcvComplete,
+  @SerialName("rcv_cancelled") RcvCancelled;
+}
+
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")
 @Serializable(with = MsgContentSerializer::class)
 sealed class MsgContent {
   abstract val text: String
 
-  @Serializable(with = MsgContentSerializer::class)
-  class MCText(override val text: String): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
-
-  @Serializable(with = MsgContentSerializer::class)
-  class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCText(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCLink(override val text: String, val preview: LinkPreview): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCImage(override val text: String, val image: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
+  @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
   val cmdString: String get() = when (this) {
     is MCText -> "text $text"
     is MCLink -> "json ${json.encodeToString(this)}"
+    is MCImage -> "json ${json.encodeToString(this)}"
+    is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {
-  @OptIn(InternalSerializationApi::class)
   override val descriptor: SerialDescriptor = buildSerialDescriptor("MsgContent", PolymorphicKind.SEALED) {
     element("MCText", buildClassSerialDescriptor("MCText") {
       element<String>("text")
@@ -774,6 +920,13 @@ object MsgContentSerializer : KSerializer<MsgContent> {
     element("MCLink", buildClassSerialDescriptor("MCLink") {
       element<String>("text")
       element<String>("preview")
+    })
+    element("MCImage", buildClassSerialDescriptor("MCImage") {
+      element<String>("text")
+      element<String>("image")
+    })
+    element("MCFile", buildClassSerialDescriptor("MCFile") {
+      element<String>("text")
     })
     element("MCUnknown", buildClassSerialDescriptor("MCUnknown"))
   }
@@ -791,6 +944,11 @@ object MsgContentSerializer : KSerializer<MsgContent> {
             val preview = Json.decodeFromString<LinkPreview>(json["preview"].toString())
             MsgContent.MCLink(text, preview)
           }
+          "image" -> {
+            val image = json["image"]?.jsonPrimitive?.content ?: "unknown message format"
+            MsgContent.MCImage(text, image)
+          }
+          "file" -> MsgContent.MCFile(text)
           else -> MsgContent.MCUnknown(t, text, json)
         }
       } else {
@@ -814,6 +972,17 @@ object MsgContentSerializer : KSerializer<MsgContent> {
           put("type", "link")
           put("text", value.text)
           put("preview", json.encodeToJsonElement(value.preview))
+        }
+      is MsgContent.MCImage ->
+        buildJsonObject {
+          put("type", "image")
+          put("text", value.text)
+          put("image", value.image)
+        }
+      is MsgContent.MCFile ->
+        buildJsonObject {
+          put("type", "file")
+          put("text", value.text)
         }
       is MsgContent.MCUnknown -> value.json
     }
@@ -884,4 +1053,32 @@ enum class FormatColor(val color: String) {
 }
 
 @Serializable
-class RcvFileTransfer
+class SndFileTransfer() {}
+
+@Serializable
+class FileTransferMeta() {}
+
+@Serializable
+enum class CICallStatus {
+  @SerialName("pending") Pending,
+  @SerialName("missed") Missed,
+  @SerialName("rejected") Rejected,
+  @SerialName("accepted") Accepted,
+  @SerialName("negotiated") Negotiated,
+  @SerialName("progress") Progress,
+  @SerialName("ended") Ended,
+  @SerialName("error") Error;
+
+  fun text(sec: Int): String = when (this) {
+    Pending -> generalGetString(R.string.callstatus_calling)
+    Missed -> generalGetString(R.string.callstatus_missed)
+    Rejected -> generalGetString(R.string.callstatus_rejected)
+    Accepted -> generalGetString(R.string.callstatus_accepted)
+    Negotiated -> generalGetString(R.string.callstatus_connecting)
+    Progress -> generalGetString(R.string.callstatus_in_progress)
+    Ended -> String.format(generalGetString(R.string.callstatus_ended), duration(sec))
+    Error -> generalGetString(R.string.callstatus_error)
+  }
+
+  fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+}
