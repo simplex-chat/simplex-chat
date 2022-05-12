@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
@@ -143,9 +144,22 @@ fun UserProfileLayout(
                   editProfile.value = false
                 }
                 Spacer(Modifier.padding(horizontal = 8.dp))
-                TextButton(stringResource(R.string.save_and_notify_contacts)) {
-                  saveProfile(displayName.value, fullName.value, profileImage.value)
+                val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+                val saveModifier: Modifier
+                val saveColor: Color
+                if (enabled) {
+                  saveModifier = Modifier
+                    .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
+                  saveColor = MaterialTheme.colors.primary
+                } else {
+                  saveModifier = Modifier
+                  saveColor = HighOrLowlight
                 }
+                Text(
+                  stringResource(R.string.save_and_notify_contacts),
+                  modifier = saveModifier,
+                  color = saveColor
+                )
               }
             }
           } else {
