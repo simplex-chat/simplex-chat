@@ -35,6 +35,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       withApi {
         // show "in progress"
         chatModel.controller.sendCmd(CC.Console(composeState.value.message))
+        composeState.value = ComposeState()
         // hide "in progress"
       }
     },
