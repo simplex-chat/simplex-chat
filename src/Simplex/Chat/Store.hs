@@ -2025,8 +2025,8 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, fileSize, chunkSize, CIFSRcvInvitation, currentTs, currentTs)
     fileId <- insertedRowId db
     DB.execute
       db
@@ -2082,8 +2082,8 @@ getRcvFileTransfer_ db userId fileId =
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
-acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> FilePath -> m AChatItem
-acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
+acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> ConnStatus -> FilePath -> m AChatItem
+acceptRcvFileTransfer st user@User {userId} fileId agentConnId connStatus filePath =
   liftIOEither . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -2097,7 +2097,7 @@ acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
     DB.execute
       db
       "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (agentConnId, ConnJoined, ConnRcvFile, fileId, userId, currentTs, currentTs)
+      (agentConnId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
     getChatItemByFileId_ db user fileId
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()

@@ -842,7 +842,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
+          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId ConnJoined filePath
         Left e -> throwError e
     -- group file protocol
     Nothing ->
@@ -855,7 +855,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
               (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
               filePath <- getRcvFilePath filePath_ fName
-              ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
+              ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId ConnNew filePath
               void $ sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
               pure ci
             _ -> throwChatError $ CEFileInternal "member connection not active"
@@ -1836,16 +1836,18 @@ parseFileChunk msg =
 appendFileChunk :: ChatMonad m => RcvFileTransfer -> Integer -> ByteString -> m ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus} chunkNo chunk =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> do
-      fsFilePath <- toFSFilePath filePath
-      append_ filePath fsFilePath
+    RFSConnected RcvFileInfo {filePath} -> append_ filePath
+    -- sometimes update of file transfer status to FSConnected
+    -- doesn't complete in time before MSG with first file chunk
+    RFSAccepted RcvFileInfo {filePath} -> append_ filePath
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
-    append_ fPath fPathUsed = do
-      h <- getFileHandle fileId fPathUsed rcvFiles AppendMode
+    append_ filePath = do
+      fsFilePath <- toFSFilePath filePath
+      h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
       E.try (liftIO $ B.hPut h chunk >> hFlush h) >>= \case
-        Left (e :: E.SomeException) -> throwChatError . CEFileWrite fPath $ show e
+        Left (e :: E.SomeException) -> throwChatError . CEFileWrite fsFilePath $ show e
         Right () -> withStore $ \st -> updatedRcvFileChunkStored st ft chunkNo
 
 getFileHandle :: ChatMonad m => Int64 -> FilePath -> (ChatController -> TVar (Map Int64 Handle)) -> IOMode -> m Handle
