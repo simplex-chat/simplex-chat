@@ -10,8 +10,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +24,10 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
+import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.isValidDisplayName
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.launch
@@ -128,7 +129,12 @@ fun UserProfileLayout(
                   }
                 }
               }
-              ProfileNameTextField(displayName)
+              Box {
+                if (!isValidDisplayName(displayName.value)) {
+                  Icon(Icons.Outlined.Info, tint = Color.Red, contentDescription = stringResource(R.string.display_name_cannot_contain_whitespace))
+                }
+                ProfileNameTextField(displayName)
+              }
               ProfileNameTextField(fullName)
               Row {
                 TextButton(stringResource(R.string.cancel_verb)) {
@@ -138,9 +144,22 @@ fun UserProfileLayout(
                   editProfile.value = false
                 }
                 Spacer(Modifier.padding(horizontal = 8.dp))
-                TextButton(stringResource(R.string.save_and_notify_contacts)) {
-                  saveProfile(displayName.value, fullName.value, profileImage.value)
+                val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+                val saveModifier: Modifier
+                val saveColor: Color
+                if (enabled) {
+                  saveModifier = Modifier
+                    .clickable { saveProfile(displayName.value, fullName.value, profileImage.value) }
+                  saveColor = MaterialTheme.colors.primary
+                } else {
+                  saveModifier = Modifier
+                  saveColor = HighOrLowlight
                 }
+                Text(
+                  stringResource(R.string.save_and_notify_contacts),
+                  modifier = saveModifier,
+                  color = saveColor
+                )
               }
             }
           } else {
@@ -187,6 +206,7 @@ private fun ProfileNameTextField(name: MutableState<String>) {
     onValueChange = { name.value = it },
     modifier = Modifier
       .padding(bottom = 24.dp)
+      .padding(start = 28.dp)
       .fillMaxWidth(),
     textStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground),
     keyboardOptions = KeyboardOptions(
