@@ -842,7 +842,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       tryError (withAgent $ \a -> joinConnection a connReq . directMessage $ XFileAcpt fName) >>= \case
         Right agentConnId -> do
           filePath <- getRcvFilePath filePath_ fName
-          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
+          withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId ConnJoined filePath
         Left e -> throwError e
     -- group file protocol
     Nothing ->
@@ -855,7 +855,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               sharedMsgId <- withStore $ \st -> getSharedMsgIdByFileId st userId fileId
               (agentConnId, fileInvConnReq) <- withAgent (`createConnection` SCMInvitation)
               filePath <- getRcvFilePath filePath_ fName
-              ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId filePath
+              ci <- withStore $ \st -> acceptRcvFileTransfer st user fileId agentConnId ConnNew filePath
               void $ sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
               pure ci
             _ -> throwChatError $ CEFileInternal "member connection not active"
