@@ -1337,8 +1337,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
         profileContactRequest invId p xContactId_ = do
           withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xContactId_) >>= \case
-            Left contact -> toView $ CRContactRequestAlreadyAccepted contact
-            Right cReq@UserContactRequest {localDisplayName} -> do
+            CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
+            CORRequest cReq@UserContactRequest {localDisplayName} -> do
               (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
               if autoAccept
                 then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
