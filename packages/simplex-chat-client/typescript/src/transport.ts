@@ -37,7 +37,7 @@ export class WSTransport extends Transport<WSData, WSData> {
   static connect(url: string, timeout: number, qSize: number): Promise<WSTransport> {
     const sock = new WebSocket(url)
     const t = new WSTransport(sock, timeout, qSize)
-    sock.onmessage = async ({data}: MessageEvent) => await t.queue.enqueue(data)
+    sock.onmessage = async ({data}: MessageEvent<WSData>) => await t.queue.enqueue(data)
     sock.onclose = async () => await t.queue.close()
     sock.onerror = () => sock.close()
     return withTimeout(timeout, () => new Promise((r) => (sock.onopen = () => r(t))))
@@ -94,6 +94,11 @@ export interface ChatSrvResponse {
   resp: ChatResponse
 }
 
+interface ParsedChatSrvResponse {
+  corrId?: string
+  resp?: ChatResponse
+}
+
 export class ChatResponseError extends Error {
   constructor(public message: string, public data?: string) {
     super(message)
@@ -126,16 +131,16 @@ export function noop(): void {}
 
 async function processWSQueue(c: ChatTransport, ws: WSTransport): Promise<void> {
   for await (const data of ws) {
-    const str = data instanceof Promise ? await data : data
+    const str = (data instanceof Promise ? await data : data) as WSData
     if (typeof str != "string") {
       await c.queue.enqueue(new ChatResponseError("websocket data is not a string"))
       continue
     }
     let resp: ChatSrvResponse | ChatResponseError
     try {
-      const data = JSON.parse(str)
-      if (typeof data?.resp?.type == "string") {
-        resp = data
+      const json = JSON.parse(str) as ParsedChatSrvResponse | undefined
+      if (typeof json?.resp?.type == "string") {
+        resp = json as ChatSrvResponse
       } else {
         resp = new ChatResponseError("invalid response format", str)
       }

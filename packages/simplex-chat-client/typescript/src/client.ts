@@ -19,6 +19,11 @@ export class ChatCommandError extends Error {
   }
 }
 
+export enum ConnReqType {
+  Invitation = "invitation",
+  Contact = "contact",
+}
+
 export class ChatClient {
   private _connected = true
   private clientCorrId = 0
@@ -46,7 +51,7 @@ export class ChatClient {
 
     async function runClient(): Promise<void> {
       for await (const t of transport) {
-        const apiResp: ChatSrvResponse | ChatResponseError = t instanceof Promise ? await t : t
+        const apiResp = (t instanceof Promise ? await t : t) as ChatSrvResponse | ChatResponseError
         if (apiResp instanceof ChatResponseError) {
           console.log("chat response error: ", apiResp)
         } else {
@@ -55,7 +60,7 @@ export class ChatClient {
             const req = c.sentCommands.get(corrId)
             if (req) {
               c.sentCommands.delete(corrId)
-              if (resp.type == "chatCmdError") {
+              if (resp.type === "chatCmdError") {
                 req.reject(resp)
               } else {
                 req.resolve(resp)
@@ -85,28 +90,30 @@ export class ChatClient {
     await this.client
   }
 
-  async getActiveUser(): Promise<C.User | undefined> {
+  async apiGetActiveUser(): Promise<C.User | undefined> {
     const r = await this.sendChatCommand({type: "showActiveUser"})
     switch (r.type) {
       case "activeUser":
         return r.user
       case "chatCmdError":
-        if (r.chatError.type == "error" && r.chatError.errorType.type == "noActiveUser") return undefined
+        if (r.chatError.type === "error" && r.chatError.errorType.type === "noActiveUser") return undefined
         throw new ChatCommandError("unexpected response error", r)
       default:
         throw new ChatCommandError("unexpected response", r)
     }
   }
 
-  async createActiveUser(profile: C.Profile): Promise<C.User> {
+  async apiCreateActiveUser(profile: C.Profile): Promise<C.User> {
     const r = await this.sendChatCommand({type: "createActiveUser", profile})
-    if (r.type == "activeUser") return r.user
+    if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
 
   async apiStartChat(): Promise<void> {
     const r = await this.sendChatCommand({type: "startChat"})
-    if (r.type != "chatStarted") throw new ChatCommandError("unexpected response", r)
+    if (r.type !== "chatStarted" && r.type !== "chatRunning") {
+      throw new ChatCommandError("unexpected response", r)
+    }
   }
 
   // func apiGetChats() throws -> [Chat] {
@@ -121,35 +128,15 @@ export class ChatClient {
   //     throw r
   // }
 
-  // async sendMessage(type: ChatType, id: number, msg: C.MsgContent)
+  async apiSendMessage(chatType: C.ChatType, chatId: number, message: C.ComposedMessage): Promise<C.AChatItem> {
+    const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
+    if (r.type === "newChatItem") return r.chatItem
+    throw new ChatCommandError("unexpected response", r)
+  }
 
-  // func apiSendMessage(type: ChatType, id: Int64, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
-  //     let chatModel = ChatModel.shared
-  //     let cmd: ChatCommand
-  //     if let itemId = quotedItemId {
-  //         cmd = .apiSendMessageQuote(type: type, id: id, itemId: itemId, msg: msg)
-  //     } else {
-  //         cmd = .apiSendMessage(type: type, id: id, msg: msg)
-  //     }
-  //     let r: ChatResponse
-  //     if type == .direct {
-  //         var cItem: ChatItem!
-  //         let endTask = beginBGTask({ if cItem != nil { chatModel.messageDelivery.removeValue(forKey: cItem.id) } })
-  //         r = await chatSendCmd(cmd, bgTask: false)
-  //         if case let .newChatItem(aChatItem) = r {
-  //             cItem = aChatItem.chatItem
-  //             chatModel.messageDelivery[cItem.id] = endTask
-  //             return cItem
-  //         }
-  //         endTask()
-  //     } else {
-  //         r = await chatSendCmd(cmd, bgDelay: msgDelay)
-  //         if case let .newChatItem(aChatItem) = r {
-  //             return aChatItem.chatItem
-  //         }
-  //     }
-  //     throw r
-  // }
+  apiSendTextMessage(chatType: C.ChatType, chatId: number, text: string): Promise<C.AChatItem> {
+    return this.apiSendMessage(chatType, chatId, {msgContent: {type: "text", text}})
+  }
 
   // func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent) async throws -> ChatItem {
   //   let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg), bgDelay: msgDelay)
@@ -175,11 +162,23 @@ export class ChatClient {
   //     throw r
   // }
 
-  // func apiAddContact() throws -> String {
-  //     let r = chatSendCmdSync(.addContact, bgTask: false)
-  //     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
-  //     throw r
-  // }
+  async apiCreateLink(): Promise<string> {
+    const r = await this.sendChatCommand({type: "addContact"})
+    if (r.type === "invitation") return r.connReqInvitation
+    throw new ChatCommandError("unexpected response", r)
+  }
+
+  async apiConnect(connReq: string): Promise<ConnReqType> {
+    const r = await this.sendChatCommand({type: "connect", connReq})
+    switch (r.type) {
+      case "sentConfirmation":
+        return ConnReqType.Invitation
+      case "sentInvitation":
+        return ConnReqType.Contact
+      default:
+        throw new ChatCommandError("connection error", r)
+    }
+  }
 
   // func apiConnect(connReq: String) async throws -> Bool {
   //     let r = await chatSendCmd(.connect(connReq: connReq))

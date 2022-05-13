@@ -19,6 +19,6 @@
     "strict": true,
     "strictNullChecks": true,
     "target": "ES2018",
-    "types": ["node"]
+    "types": ["node", "jest"]
   }
 }

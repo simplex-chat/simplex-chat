@@ -87,8 +87,12 @@ export interface APISendMessage extends IChatCommand {
   type: "apiSendMessage"
   chatType: ChatType
   chatId: number
-  filePath?: number
-  quotedItem?: ChatItemId
+  message: ComposedMessage
+}
+
+export interface ComposedMessage {
+  filePath?: string
+  quotedItemId?: number
   msgContent: MsgContent
 }
 
@@ -187,7 +191,7 @@ export interface Profile {
   image?: string
 }
 
-enum ChatType {
+export enum ChatType {
   CTDirect = "@",
   CTGroup = "#",
   CTContactRequest = "<@",
@@ -238,9 +242,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "apiGetChat":
       return `/_get chat ${cmd.chatType}${cmd.chatId}${paginationStr(cmd.pagination)}`
     case "apiSendMessage":
-      return `/_send ${cmd.chatType}${cmd.chatId}${tagged("file", cmd.filePath)}${tagged("quoted", cmd.quotedItem)} json ${JSON.stringify(
-        cmd.msgContent
-      )}`
+      return `/_send ${cmd.chatType}${cmd.chatId} json ${JSON.stringify(cmd.message)}`
     case "apiUpdateChatItem":
       return `/_update item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} json ${JSON.stringify(cmd.msgContent)}`
     case "apiDeleteChatItem":
@@ -281,10 +283,6 @@ export function cmdString(cmd: ChatCommand): string {
 function paginationStr(cp: ChatPagination): string {
   const base = "after" in cp ? ` after=${cp.after}` : "before" in cp ? ` before=${cp.before}` : ""
   return base + ` count=${cp.count}`
-}
-
-function tagged<T>(tag: string, x?: T): string {
-  return x ? ` ${tag}=${x}` : ""
 }
 
 export type ChatResponse =
@@ -610,13 +608,13 @@ export interface User {
   activeUser: boolean
 }
 
-interface Chat {
+export interface Chat {
   chatInfo: ChatInfo
   chatItems: [ChatItem]
   chatStats: ChatStats
 }
 
-type ChatInfo = CInfoDirect | CInfoGroup | CInfoContactRequest
+export type ChatInfo = CInfoDirect | CInfoGroup | CInfoContactRequest
 
 interface IChatInfo {
   type: ChatType
@@ -637,7 +635,7 @@ interface CInfoContactRequest extends IChatInfo {
   contactRequest: UserContactRequest
 }
 
-interface Contact {
+export interface Contact {
   contactId: number
   localDisplayName: string
   profile: Profile
@@ -646,7 +644,7 @@ interface Contact {
   createdAt: Date
 }
 
-interface GroupInfo {
+export interface GroupInfo {
   groupId: number
   localDisplayName: string
   groupProfile: GroupProfile
@@ -654,13 +652,13 @@ interface GroupInfo {
   createdAt: Date
 }
 
-interface GroupProfile {
+export interface GroupProfile {
   displayName: string
   fullName: string
   image?: string // web-compatible data/base64 string for the image
 }
 
-interface GroupMember {
+export interface GroupMember {
   groupMemberId: number
   memberId: string
   // memberRole: GroupMemberRole
@@ -673,7 +671,7 @@ interface GroupMember {
   activeConn?: Connection
 }
 
-interface UserContactRequest {
+export interface UserContactRequest {
   contactRequestId: number
   localDisplayName: string
   profile: Profile
@@ -684,12 +682,12 @@ interface Connection {
   connId: number
 }
 
-interface AChatItem {
+export interface AChatItem {
   chatInfo: ChatInfo
   chatItem: ChatItem
 }
 
-interface ChatItem {
+export interface ChatItem {
   chatDir: CIDirection
   meta: CIMeta
   content: CIContent
@@ -697,7 +695,7 @@ interface ChatItem {
   quotedItem?: CIQuote
 }
 
-type CIDirection = CIDirectSnd | CIDirectRcv | CIGroupSnd | CIGroupRcv
+export type CIDirection = CIDirectSnd | CIDirectRcv | CIGroupSnd | CIGroupRcv
 
 interface ICIDirection {
   type: "directSnd" | "directRcv" | "groupSnd" | "groupRcv"
@@ -720,7 +718,7 @@ interface CIGroupRcv extends ICIDirection {
   groupMember: GroupMember
 }
 
-interface CIMeta {
+export interface CIMeta {
   itemId: number
   itemTs: Date
   itemText: string
@@ -768,19 +766,19 @@ interface CIRcvFileInvitation extends ICIContent {
   rcvFileTransfer: RcvFileTransfer
 }
 
-enum CIDeleteMode {
+export enum CIDeleteMode {
   Broadcast = "broadcast",
   Internal = "internal",
 }
 
 interface RcvFileTransfer {}
 
-interface ChatStats {
+export interface ChatStats {
   unreadCount: number
   minUnreadItemId: number
 }
 
-interface CIQuote {
+export interface CIQuote {
   chatDir?: CIDirection
   itemId?: number
   sharedMsgId?: string
@@ -789,7 +787,7 @@ interface CIQuote {
   formattedText?: FormattedText[]
 }
 
-type CIStatus = CISndNew | CISndSent | CISndErrorAuth | CISndError | CIRcvNew | CIRcvRead
+export type CIStatus = CISndNew | CISndSent | CISndErrorAuth | CISndError | CIRcvNew | CIRcvRead
 
 interface ICIStatus {
   type: "sndNew" | "sndSent" | "sndErrorAuth" | "sndError" | "rcvNew" | "rcvRead"
@@ -824,7 +822,7 @@ interface FormattedText {}
 
 interface MsgErrorType {}
 
-type ChatError = ChatErrorChat | ChatErrorAgent | ChatErrorStore
+export type ChatError = ChatErrorChat | ChatErrorAgent | ChatErrorStore
 
 interface ChatErrorChat {
   type: "error"

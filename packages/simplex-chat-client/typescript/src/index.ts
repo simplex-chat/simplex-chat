@@ -1,2 +1,2 @@
-import "./browser_globals"
+import "./websocket"
 export {ChatClient} from "./client"
