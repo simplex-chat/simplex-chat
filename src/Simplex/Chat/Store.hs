@@ -742,8 +742,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
         then do
           updateContactRequest_ currentTs displayName
           getContactRequest_ db userId cReqId
-        else do
-          join <$> updateWithNewName currentTs
+        else join <$> updateWithNewName currentTs
       where
         updateWithNewName currentTs = withLocalDisplayName db userId displayName $ \ldn -> do
           updateContactRequest_ currentTs ldn
