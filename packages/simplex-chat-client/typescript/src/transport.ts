@@ -1,5 +1,5 @@
 import {ABQueue, NextIter} from "./queue"
-import {ChatCommand, ChatResponse} from "./command"
+import {ChatResponse} from "./command"
 
 export class TransportError extends Error {}
 
@@ -79,13 +79,18 @@ export interface ChatServer {
   readonly port?: string
 }
 
+export const localServer: ChatServer = {
+  host: "localhost",
+  port: "5225",
+}
+
 export interface ChatSrvRequest {
-  corrId: number
+  corrId: string
   cmd: string
 }
 
 export interface ChatSrvResponse {
-  corrId?: number
+  corrId?: string
   resp: ChatResponse
 }
 
@@ -100,8 +105,9 @@ export class ChatTransport extends Transport<ChatSrvRequest, ChatSrvResponse | C
     super(qSize)
   }
 
-  static async connect(srv: ChatServer, timeout: number, qSize: number): Promise<ChatTransport> {
-    const ws = await WSTransport.connect(`ws://${srv.host}:${srv.port || "80"}`, timeout, qSize)
+  static async connect(srv: ChatServer | string, timeout: number, qSize: number): Promise<ChatTransport> {
+    const uri = typeof srv == "string" ? srv : `ws://${srv.host}:${srv.port || "5225"}`
+    const ws = await WSTransport.connect(uri, timeout, qSize)
     const c = new ChatTransport(ws, timeout, qSize)
     processWSQueue(c, ws).then(noop, noop)
     return c

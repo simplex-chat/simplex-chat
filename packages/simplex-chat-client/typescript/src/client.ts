@@ -1,18 +1,11 @@
-// import * as SMP from "./protocol"
-// import {SMPCommand, SMPError, Party, Client} from "./protocol"
 import {ABQueue} from "./queue"
-import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, noop} from "./transport"
+import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, localServer, noop} from "./transport"
 import {ChatCommand, ChatResponse} from "./command"
 import * as C from "./command"
 
 export interface ChatClientConfig {
   readonly qSize: number
   readonly tcpTimeout: number
-}
-
-export const defaultChatClientConfig: ChatClientConfig = {
-  qSize: 16,
-  tcpTimeout: 4000,
 }
 
 export interface Request {
@@ -29,18 +22,24 @@ export class ChatCommandError extends Error {
 export class ChatClient {
   private _connected = true
   private clientCorrId = 0
-  private readonly sentCommands = new Map<number, Request>()
+  private readonly sentCommands = new Map<string, Request>()
+
+  static defaultConfig: ChatClientConfig = {
+    qSize: 16,
+    tcpTimeout: 4000,
+  }
 
   private constructor(
-    readonly server: ChatServer,
+    readonly server: ChatServer | string,
     readonly config: ChatClientConfig,
     readonly msgQ: ABQueue<ChatResponse>,
     readonly client: Promise<void>,
     private readonly transport: ChatTransport
   ) {}
 
-  static async create(server: ChatServer, cfg: ChatClientConfig, msgQ: ABQueue<ChatResponse>): Promise<ChatClient> {
+  static async create(server: ChatServer | string = localServer, cfg: ChatClientConfig = ChatClient.defaultConfig): Promise<ChatClient> {
     const transport = await ChatTransport.connect(server, cfg.tcpTimeout, cfg.qSize)
+    const msgQ = new ABQueue<ChatResponse>(cfg.qSize)
     const client = runClient().then(noop, noop)
     const c = new ChatClient(server, cfg, msgQ, client, transport)
     return c
@@ -75,7 +74,7 @@ export class ChatClient {
   }
 
   sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
-    const corrId = ++this.clientCorrId
+    const corrId = `${++this.clientCorrId}`
     const t: ChatSrvRequest = {corrId, cmd: C.cmdString(command)}
     this.transport.write(t).then(noop, noop)
     return new Promise((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))

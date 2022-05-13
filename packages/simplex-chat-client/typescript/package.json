@@ -2,9 +2,15 @@
   "name": "simplex-chat-client",
   "version": "0.0.1",
   "description": "SimpleX Chat client",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "prettier --write --ignore-unknown . && tsc && ./copy && npm run bundle",
+    "bundle": "rollup dist/index-web.js --file dist/index.bundle.js --format umd --name simplex"
   },
   "repository": {
     "type": "git",
@@ -30,6 +36,7 @@
     "husky": "^7.0.4",
     "lint-staged": "^12.3.8",
     "prettier": "^2.6.2",
+    "rollup": "^2.72.1",
     "typescript": "^4.6.3"
   },
   "lint-staged": {

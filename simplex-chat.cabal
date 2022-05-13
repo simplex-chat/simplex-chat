@@ -194,6 +194,7 @@ executable simplex-chat
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , websockets ==0.12.*
   default-language: Haskell2010
 
 test-suite simplex-chat-test
