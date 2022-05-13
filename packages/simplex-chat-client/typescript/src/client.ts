@@ -3,7 +3,7 @@ import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponse
 import {ChatCommand, ChatType} from "./command"
 import {ChatResponse} from "./response"
 import * as CC from "./command"
-import * as C from "./response"
+import * as CR from "./response"
 
 export interface ChatClientConfig {
   readonly qSize: number
@@ -12,7 +12,7 @@ export interface ChatClientConfig {
 
 export interface Request {
   readonly resolve: (resp: ChatResponse) => void
-  readonly reject: (err?: ChatResponseError | C.CRChatCmdError) => void
+  readonly reject: (err?: ChatResponseError | CR.CRChatCmdError) => void
 }
 
 export class ChatCommandError extends Error {
@@ -62,11 +62,7 @@ export class ChatClient {
             const req = c.sentCommands.get(corrId)
             if (req) {
               c.sentCommands.delete(corrId)
-              if (resp.type === "chatCmdError") {
-                req.reject(resp)
-              } else {
-                req.resolve(resp)
-              }
+              req.resolve(resp)
             } else {
               // TODO send error to errQ?
               console.log("no command sent for chat response: ", apiResp)
@@ -96,7 +92,7 @@ export class ChatClient {
     await this.client
   }
 
-  async apiGetActiveUser(): Promise<C.User | undefined> {
+  async apiGetActiveUser(): Promise<CR.User | undefined> {
     const r = await this.sendChatCommand({type: "showActiveUser"})
     switch (r.type) {
       case "activeUser":
@@ -109,7 +105,7 @@ export class ChatClient {
     }
   }
 
-  async apiCreateActiveUser(profile: CC.Profile): Promise<C.User> {
+  async apiCreateActiveUser(profile: CC.Profile): Promise<CR.User> {
     const r = await this.sendChatCommand({type: "createActiveUser", profile})
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
@@ -122,35 +118,35 @@ export class ChatClient {
     }
   }
 
-  async apiGetChats(): Promise<C.Chat[]> {
+  async apiGetChats(): Promise<CR.Chat[]> {
     const r = await this.sendChatCommand({type: "apiGetChats"})
     if (r.type === "apiChats") return r.chats
     throw new ChatCommandError("error loading chats", r)
   }
 
-  async apiGetChat(chatType: ChatType, chatId: number, pagination: CC.ChatPagination = {count: 100}): Promise<C.Chat> {
+  async apiGetChat(chatType: ChatType, chatId: number, pagination: CC.ChatPagination = {count: 100}): Promise<CR.Chat> {
     const r = await this.sendChatCommand({type: "apiGetChat", chatType, chatId, pagination})
     if (r.type === "apiChat") return r.chat
     throw new ChatCommandError("error loading chat", r)
   }
 
-  async apiSendMessage(chatType: ChatType, chatId: number, message: CC.ComposedMessage): Promise<C.AChatItem> {
+  async apiSendMessage(chatType: ChatType, chatId: number, message: CC.ComposedMessage): Promise<CR.AChatItem> {
     const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
     if (r.type === "newChatItem") return r.chatItem
     throw new ChatCommandError("unexpected response", r)
   }
 
-  apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<C.AChatItem> {
+  apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<CR.AChatItem> {
     return this.apiSendMessage(chatType, chatId, {msgContent: {type: "text", text}})
   }
 
-  async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: CC.ChatItemId, msgContent: CC.MsgContent): Promise<C.ChatItem> {
+  async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: CC.ChatItemId, msgContent: CC.MsgContent): Promise<CR.ChatItem> {
     const r = await this.sendChatCommand({type: "apiUpdateChatItem", chatType, chatId, chatItemId, msgContent})
     if (r.type === "chatItemUpdated") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
-  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: CC.DeleteMode): Promise<C.ChatItem> {
+  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: CC.DeleteMode): Promise<CR.ChatItem> {
     const r = await this.sendChatCommand({type: "apiDeleteChatItem", chatType, chatId, chatItemId, deleteMode})
     if (r.type === "chatItemDeleted") return r.toChatItem.chatItem
     throw new ChatCommandError("error deleting chat item", r)
@@ -209,91 +205,52 @@ export class ChatClient {
   //     throw r
   // }
 
-  // func apiCreateUserAddress() async throws -> String {
-  //     let r = await chatSendCmd(.createMyAddress)
-  //     if case let .userContactLinkCreated(connReq) = r { return connReq }
-  //     throw r
-  // }
+  async apiCreateUserAddress(): Promise<string> {
+    const r = await this.sendChatCommand({type: "createMyAddress"})
+    if (r.type === "userContactLinkCreated") return r.connReqContact
+    throw new ChatCommandError("error creating user address", r)
+  }
 
-  // func apiDeleteUserAddress() async throws {
-  //     let r = await chatSendCmd(.deleteMyAddress)
-  //     if case .userContactLinkDeleted = r { return }
-  //     throw r
-  // }
+  async apiDeleteUserAddress(): Promise<void> {
+    const r = await this.sendChatCommand({type: "deleteMyAddress"})
+    if (r.type === "userContactLinkDeleted") return
+    throw new ChatCommandError("error deleting user address", r)
+  }
 
-  // func apiGetUserAddress() async throws -> String? {
-  //     let r = await chatSendCmd(.showMyAddress)
-  //     switch r {
-  //     case let .userContactLink(connReq):
-  //         return connReq
-  //     case .chatCmdError(chatError: .errorStore(storeError: .userContactLinkNotFound)):
-  //         return nil
-  //     default: throw r
-  //     }
-  // }
+  async apiGetUserAddress(): Promise<string | undefined> {
+    const r = await this.sendChatCommand({type: "showMyAddress"})
+    switch (r.type) {
+      case "userContactLink":
+        return r.connReqContact
+      default:
+        console.log((r as CR.CRChatCmdError).chatError)
+        if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
+          return undefined
+        }
+        throw new ChatCommandError("error loading user address", r)
+    }
+  }
 
-  // func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact {
-  //     let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
-  //     if case let .acceptingContactRequest(contact) = r { return contact }
-  //     throw r
-  // }
+  async apiAcceptContactRequest(contactReqId: number): Promise<CR.Contact> {
+    const r = await this.sendChatCommand({type: "apiAcceptContact", contactReqId})
+    if (r.type === "acceptingContactRequest") return r.contact
+    throw new ChatCommandError("error accepting contact request", r)
+  }
 
-  // func apiRejectContactRequest(contactReqId: Int64) async throws {
-  //     let r = await chatSendCmd(.apiRejectContact(contactReqId: contactReqId))
-  //     if case .contactRequestRejected = r { return }
-  //     throw r
-  // }
+  async apiRejectContactRequest(contactReqId: number): Promise<void> {
+    const r = await this.sendChatCommand({type: "apiRejectContact", contactReqId})
+    if (r.type === "contactRequestRejected") return
+    throw new ChatCommandError("error rejecting contact request", r)
+  }
 
-  // func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
-  //     let r = await chatSendCmd(.apiChatRead(type: type, id: id, itemRange: itemRange))
-  //     if case .cmdOk = r { return }
-  //     throw r
-  // }
+  apiChatRead(chatType: ChatType, chatId: number, itemRange?: CC.ItemRange): Promise<void> {
+    return this.okChatCommand({type: "apiChatRead", chatType, chatId, itemRange})
+  }
 
-  // func acceptContactRequest(_ contactRequest: UserContactRequest) async {
-  //     do {
-  //         let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId)
-  //         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-  //         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
-  //     } catch let error {
-  //         logger.error("acceptContactRequest error: \(error.localizedDescription)")
-  //     }
-  // }
-
-  // func rejectContactRequest(_ contactRequest: UserContactRequest) async {
-  //     do {
-  //         try await apiRejectContactRequest(contactReqId: contactRequest.apiId)
-  //         DispatchQueue.main.async { ChatModel.shared.removeChat(contactRequest.id) }
-  //     } catch let error {
-  //         logger.error("rejectContactRequest: \(error.localizedDescription)")
-  //     }
-  // }
-
-  // func markChatRead(_ chat: Chat) async {
-  //     do {
-  //         let minItemId = chat.chatStats.minUnreadItemId
-  //         let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
-  //         let cInfo = chat.chatInfo
-  //         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-  //         DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
-  //     } catch {
-  //         logger.error("markChatRead apiChatRead error: \(error.localizedDescription)")
-  //     }
-  // }
-
-  // func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
-  //     do {
-  //         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-  //         DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
-  //     } catch {
-  //         logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
-  //     }
-  // }
-
-  // private async okChatCommand(command: ChatCommand): Promise<void> {
-  //   const resp = await this.sendChatCommand(command)
-  //   if (resp.type !== "cmdOk") throw new ChatCommandError("unexpected response", resp)
-  // }
+  private async okChatCommand(command: ChatCommand): Promise<void> {
+    const r = await this.sendChatCommand(command)
+    if (r.type !== "cmdOk") throw new ChatCommandError(`${command.type} command error`, r)
+  }
 
   get connected(): boolean {
     return this._connected

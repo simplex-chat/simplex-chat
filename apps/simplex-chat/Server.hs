@@ -13,7 +13,6 @@ import Control.Monad.Reader
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics (Generic)
 import Network.Socket
@@ -23,7 +22,6 @@ import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Options
-import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Transport.Server (runTCPServer)
 import Simplex.Messaging.Util (raceAny_)
 import UnliftIO.Exception
@@ -91,7 +89,7 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
       s <- WS.receiveData ws
       case J.decodeStrict' s of
         Just ChatSrvRequest {corrId, cmd} -> do
-          putStrLn $ "received command " <> show corrId <> " : " <> T.unpack (safeDecodeUtf8 s)
+          putStrLn $ "received command " <> show corrId <> " : " <> show cmd
           case parseChatCommand $ encodeUtf8 cmd of
             Right command -> atomically $ writeTBQueue rcvQ (corrId, command)
             Left e -> sendError (Just corrId) e

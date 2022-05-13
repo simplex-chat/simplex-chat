@@ -1,4 +1,4 @@
-import {ChatType, ChatItemId, MsgContent, DeleteMode, Profile} from "./command"
+import {ChatItemId, MsgContent, DeleteMode, Profile} from "./command"
 
 export type ChatResponse =
   | CRActiveUser
@@ -331,22 +331,28 @@ export interface Chat {
 
 export type ChatInfo = CInfoDirect | CInfoGroup | CInfoContactRequest
 
+export enum ChatInfoType {
+  Direct = "direct",
+  Group = "group",
+  ContactRequest = "contactRequest",
+}
+
 interface IChatInfo {
-  type: ChatType
+  type: ChatInfoType
 }
 
 interface CInfoDirect extends IChatInfo {
-  type: ChatType.CTDirect
+  type: ChatInfoType.Direct
   contact: Contact
 }
 
 interface CInfoGroup extends IChatInfo {
-  type: ChatType.CTGroup
+  type: ChatInfoType.Group
   groupInfo: GroupInfo
 }
 
 interface CInfoContactRequest extends IChatInfo {
-  type: ChatType.CTContactRequest
+  type: ChatInfoType.ContactRequest
   contactRequest: UserContactRequest
 }
 
@@ -481,6 +487,17 @@ interface CIRcvFileInvitation extends ICIContent {
   rcvFileTransfer: RcvFileTransfer
 }
 
+export function ciContentText(content: CIContent): string | undefined {
+  switch (content.type) {
+    case "sndMsgContent":
+      return content.msgContent.text
+    case "rcvMsgContent":
+      return content.msgContent.text
+    default:
+      return undefined
+  }
+}
+
 interface RcvFileTransfer {}
 
 export interface ChatStats {
@@ -541,10 +558,12 @@ interface ChatErrorChat {
 
 interface ChatErrorAgent {
   type: "errorAgent"
+  agentError: AgentErrorType
 }
 
 interface ChatErrorStore {
   type: "errorStore"
+  storeError: StoreErrorType
 }
 
 type ChatErrorType = CENoActiveUser | CEActiveUserExists
@@ -561,4 +580,12 @@ interface ContactSubStatus {}
 
 interface PendingSubStatus {}
 
-interface AgentErrorType {}
+interface AgentErrorType {
+  type: string
+  [x: string]: any
+}
+
+interface StoreErrorType {
+  type: string
+  [x: string]: any
+}

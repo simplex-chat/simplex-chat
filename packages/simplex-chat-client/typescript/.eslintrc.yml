@@ -68,3 +68,4 @@ rules:
   "@typescript-eslint/no-unnecessary-condition": [error, allowConstantLoopConditions: true]
   "@typescript-eslint/no-var-requires": off
   "@typescript-eslint/restrict-template-expressions": off
+  "@typescript-eslint/no-explicit-any": off

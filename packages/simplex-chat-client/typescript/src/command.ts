@@ -116,6 +116,10 @@ export interface APIChatRead extends IChatCommand {
   type: "apiChatRead"
   chatType: ChatType
   chatId: number
+  itemRange?: ItemRange
+}
+
+export interface ItemRange {
   fromItem: ChatItemId
   toItem: ChatItemId
 }
@@ -192,9 +196,9 @@ export interface Profile {
 }
 
 export enum ChatType {
-  CTDirect = "@",
-  CTGroup = "#",
-  CTContactRequest = "<@",
+  Direct = "@",
+  Group = "#",
+  ContactRequest = "<@",
 }
 
 export type ChatPagination =
@@ -247,8 +251,10 @@ export function cmdString(cmd: ChatCommand): string {
       return `/_update item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} json ${JSON.stringify(cmd.msgContent)}`
     case "apiDeleteChatItem":
       return `/_delete item ${cmd.chatType}${cmd.chatId} ${cmd.chatItemId} ${cmd.deleteMode}`
-    case "apiChatRead":
-      return `/_read chat ${cmd.chatType}${cmd.chatId} from=${cmd.fromItem} to=${cmd.toItem}`
+    case "apiChatRead": {
+      const itemRange = cmd.itemRange ? ` from=${cmd.itemRange.fromItem} to=${cmd.itemRange.toItem}` : ""
+      return `/_read chat ${cmd.chatType}${cmd.chatId}${itemRange}`
+    }
     case "apiDeleteChat":
       return `/_delete ${cmd.chatType}${cmd.chatId}`
     case "apiAcceptContact":
