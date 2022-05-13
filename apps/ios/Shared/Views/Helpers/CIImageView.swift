@@ -23,9 +23,14 @@ struct CIImageView: View {
                 .fullScreenCover(isPresented: $showFullScreenImage) {
                     ZStack {
                         Color.black.edgesIgnoringSafeArea(.all)
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFit()
+                        ZoomableScrollView {
+                            ZStack {
+                                Color.black.edgesIgnoringSafeArea(.all)
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFit()
+                            }
+                        }
                     }
                     .onTapGesture { showFullScreenImage = false }
                     .gesture(
