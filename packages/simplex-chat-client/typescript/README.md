@@ -6,24 +6,7 @@
 npm i simplex-chat
 ```
 
-```javascript
-const ChatClient = require("simplex-chat").ChatClient
-const chat = await ChatClient.create("ws://localhost:5225")
-await processMessages(chat)
-const user = await chat.apiGetActiveUser()
-
-async function processMessages(chat) {
-  for await (const m of chat.msgQ) {
-    const msg = m instanceof Promise ? await m : m
-    switch (msg.type) {
-      case "newChatItem": // do something
-        return
-      default:
-        console.log(msg)
-    }
-  }
-}
-```
+See example of chat bot in [squaring-bot.js](./examples/squaring-bot.js)
 
 ## Documentation
 
