@@ -3562,29 +3562,49 @@ toChatItemRef = \case
   (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
-updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
-updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
+updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> Maybe (ChatItemId, ChatItemId) -> m ()
+updateDirectChatItemsRead st contactId itemsRange_ = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db ->
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
-      |]
-      (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+    case itemsRange_ of
+      Just (fromItemId, toItemId) ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+      _ ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE contact_id = ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, contactId, CISRcvNew)
 
-updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
-updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
+updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> Maybe (ChatItemId, ChatItemId) -> m ()
+updateGroupChatItemsRead st groupId itemsRange_ = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db ->
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
-      |]
-      (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+    case itemsRange_ of
+      Just (fromItemId, toItemId) ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+      _ ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE group_id = ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, groupId, CISRcvNew)
 
 type ChatStatsRow = (Int, ChatItemId)
 

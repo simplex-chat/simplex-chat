@@ -152,6 +152,8 @@ testAddContact =
       -- read messages
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
+      alice #$> ("/_read chat @2", id, "ok")
+      bob #$> ("/_read chat @2", id, "ok")
 
 testDirectMessageQuotedReply :: IO ()
 testDirectMessageQuotedReply =
