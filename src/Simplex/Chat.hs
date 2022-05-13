@@ -185,7 +185,10 @@ processChatCommand = \case
     user <- withStore $ \st -> createUser st p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  StartChat -> withUser' $ \user ->
+  SetActiveUser _userName -> pure CRCmdOk
+  APISetActiveUser _userId -> pure CRCmdOk
+  ListUsers -> CRUsersList <$> withStore (liftIO . getUsers)
+  StartChat _allUsers -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> startChatController user $> CRChatStarted
@@ -2111,9 +2114,12 @@ withStore action =
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
+  "/users" $> ListUsers
+    <|> ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
     <|> ("/user" <|> "/u") $> ShowActiveUser
-    <|> "/_start" $> StartChat
+    <|> ("/set user " <|> "/su ") *> (SetActiveUser <$> displayName)
+    <|> "/_set user " *> (APISetActiveUser <$> A.decimal)
+    <|> "/_start" *> (StartChat <$> (" all" $> True <|> pure False))
     <|> "/_resubscribe all" $> ResubscribeAllConnections
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))

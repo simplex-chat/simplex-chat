@@ -98,7 +98,10 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
-  | StartChat
+  | SetActiveUser ContactName
+  | APISetActiveUser Int64
+  | ListUsers
+  | StartChat {allUsers :: Bool}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
@@ -168,6 +171,7 @@ data ChatCommand
 
 data ChatResponse
   = CRActiveUser {user :: User}
+  | CRUsersList {users :: [User]}
   | CRChatStarted
   | CRChatRunning
   | CRApiChats {chats :: [AChat]}

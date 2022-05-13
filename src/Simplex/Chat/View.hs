@@ -43,6 +43,7 @@ serializeChatResponse = unlines . map unStyle . responseToView False
 responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
+  CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
   CRChatRunning -> []
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
@@ -424,6 +425,11 @@ viewUserProfile Profile {displayName, fullName} =
     "(the updated profile will be sent to all your contacts)"
   ]
 
+viewUsersList :: [User] -> [StyledString]
+viewUsersList =
+  let ldn = T.toLower . (localDisplayName :: User -> ContactName)
+   in map ttyFullUser . sortOn ldn
+
 viewSMPServers :: [SMPServer] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
   if testView
@@ -700,6 +706,10 @@ ttyContact = styled $ colored Green
 
 ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
+
+ttyFullUser :: User -> StyledString
+ttyFullUser User {localDisplayName, profile = Profile {fullName}} =
+  ttyFullName localDisplayName fullName
 
 ttyFullContact :: Contact -> StyledString
 ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
