@@ -385,6 +385,9 @@ testGroup =
       alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
       bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
       cath #$> ("/_read chat #1 from=1 to=100", id, "ok")
+      alice #$> ("/_read chat #1", id, "ok")
+      bob #$> ("/_read chat #1", id, "ok")
+      cath #$> ("/_read chat #1", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
