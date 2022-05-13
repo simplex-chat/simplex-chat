@@ -92,7 +92,7 @@ export interface APISendMessage extends IChatCommand {
 
 export interface ComposedMessage {
   filePath?: string
-  quotedItemId?: number
+  quotedItemId?: ChatItemId
   msgContent: MsgContent
 }
 
@@ -197,12 +197,12 @@ export enum ChatType {
   CTContactRequest = "<@",
 }
 
-type ChatPagination =
+export type ChatPagination =
   | {count: number} // count from the last item in case neither after nor before specified
   | {count: number; after: ChatItemId}
   | {count: number; before: ChatItemId}
 
-type ChatItemId = number
+export type ChatItemId = number
 
 type MsgContentTag = "text" | "link" | "images"
 
@@ -222,9 +222,9 @@ interface MCUnknown {
   text?: string
 }
 
-enum DeleteMode {
-  DMBroadcast = "broadcast",
-  DMInternal = "internal",
+export enum DeleteMode {
+  Broadcast = "broadcast",
+  Internal = "internal",
 }
 
 export function cmdString(cmd: ChatCommand): string {
@@ -401,7 +401,7 @@ export interface CRApiChats extends CR {
 
 export interface CRApiChat extends CR {
   type: "apiChat"
-  chats: Chat
+  chat: Chat
 }
 
 export interface CRApiParsedMarkdown extends CR {
@@ -719,7 +719,7 @@ interface CIGroupRcv extends ICIDirection {
 }
 
 export interface CIMeta {
-  itemId: number
+  itemId: ChatItemId
   itemTs: Date
   itemText: string
   itemStatus: CIStatus
@@ -747,12 +747,12 @@ interface CIRcvMsgContent extends ICIContent {
 
 interface CISndDeleted extends ICIContent {
   type: "sndDeleted"
-  deleteMode: CIDeleteMode
+  deleteMode: DeleteMode
 }
 
 interface CIRcvDeleted extends ICIContent {
   type: "rcvDeleted"
-  deleteMode: CIDeleteMode
+  deleteMode: DeleteMode
 }
 
 interface CISndFileInvitation extends ICIContent {
@@ -764,11 +764,6 @@ interface CISndFileInvitation extends ICIContent {
 interface CIRcvFileInvitation extends ICIContent {
   type: "rcvFileInvitation"
   rcvFileTransfer: RcvFileTransfer
-}
-
-export enum CIDeleteMode {
-  Broadcast = "broadcast",
-  Internal = "internal",
 }
 
 interface RcvFileTransfer {}

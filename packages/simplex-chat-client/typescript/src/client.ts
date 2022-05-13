@@ -1,6 +1,6 @@
 import {ABQueue} from "./queue"
 import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, localServer, noop} from "./transport"
-import {ChatCommand, ChatResponse} from "./command"
+import {ChatCommand, ChatResponse, ChatType} from "./command"
 import * as C from "./command"
 
 export interface ChatClientConfig {
@@ -112,43 +112,43 @@ export class ChatClient {
   async apiStartChat(): Promise<void> {
     const r = await this.sendChatCommand({type: "startChat"})
     if (r.type !== "chatStarted" && r.type !== "chatRunning") {
-      throw new ChatCommandError("unexpected response", r)
+      throw new ChatCommandError("error starting chat", r)
     }
   }
 
-  // func apiGetChats() throws -> [Chat] {
-  //     let r = chatSendCmdSync(.apiGetChats)
-  //     if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
-  //     throw r
-  // }
+  async apiGetChats(): Promise<C.Chat[]> {
+    const r = await this.sendChatCommand({type: "apiGetChats"})
+    if (r.type === "apiChats") return r.chats
+    throw new ChatCommandError("error loading chats", r)
+  }
 
-  // func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-  //     let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
-  //     if case let .apiChat(chat) = r { return Chat.init(chat) }
-  //     throw r
-  // }
+  async apiGetChat(chatType: ChatType, chatId: number, pagination: C.ChatPagination = {count: 100}): Promise<C.Chat> {
+    const r = await this.sendChatCommand({type: "apiGetChat", chatType, chatId, pagination})
+    if (r.type === "apiChat") return r.chat
+    throw new ChatCommandError("error loading chat", r)
+  }
 
-  async apiSendMessage(chatType: C.ChatType, chatId: number, message: C.ComposedMessage): Promise<C.AChatItem> {
+  async apiSendMessage(chatType: ChatType, chatId: number, message: C.ComposedMessage): Promise<C.AChatItem> {
     const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
     if (r.type === "newChatItem") return r.chatItem
     throw new ChatCommandError("unexpected response", r)
   }
 
-  apiSendTextMessage(chatType: C.ChatType, chatId: number, text: string): Promise<C.AChatItem> {
+  apiSendTextMessage(chatType: ChatType, chatId: number, text: string): Promise<C.AChatItem> {
     return this.apiSendMessage(chatType, chatId, {msgContent: {type: "text", text}})
   }
 
-  // func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent) async throws -> ChatItem {
-  //   let r = await chatSendCmd(.apiUpdateChatItem(type: type, id: id, itemId: itemId, msg: msg), bgDelay: msgDelay)
-  //   if case let .chatItemUpdated(aChatItem) = r { return aChatItem.chatItem }
-  //   throw r
-  // }
+  async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: C.ChatItemId, msgContent: C.MsgContent): Promise<C.ChatItem> {
+    const r = await this.sendChatCommand({type: "apiUpdateChatItem", chatType, chatId, chatItemId, msgContent})
+    if (r.type === "chatItemUpdated") return r.chatItem.chatItem
+    throw new ChatCommandError("error updating chat item", r)
+  }
 
-  // func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> ChatItem {
-  //     let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
-  //     if case let .chatItemDeleted(_, toChatItem) = r { return toChatItem.chatItem }
-  //     throw r
-  // }
+  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: C.DeleteMode): Promise<C.ChatItem> {
+    const r = await this.sendChatCommand({type: "apiDeleteChatItem", chatType, chatId, chatItemId, deleteMode})
+    if (r.type === "chatItemDeleted") return r.toChatItem.chatItem
+    throw new ChatCommandError("error deleting chat item", r)
+  }
 
   // func getUserSMPServers() throws -> [String] {
   //     let r = chatSendCmdSync(.getUserSMPServers)
@@ -165,7 +165,7 @@ export class ChatClient {
   async apiCreateLink(): Promise<string> {
     const r = await this.sendChatCommand({type: "addContact"})
     if (r.type === "invitation") return r.connReqInvitation
-    throw new ChatCommandError("unexpected response", r)
+    throw new ChatCommandError("error creating link", r)
   }
 
   async apiConnect(connReq: string): Promise<ConnReqType> {
@@ -214,11 +214,10 @@ export class ChatClient {
   //     }
   // }
 
-  // func apiDeleteChat(type: ChatType, id: Int64) async throws {
-  //     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
-  //     if case .contactDeleted = r { return }
-  //     throw r
-  // }
+  async apiDeleteChat(chatType: ChatType, chatId: number): Promise<void> {
+    let r = await this.sendChatCommand({type: "apiDeleteChat", chatType, chatId})
+    if (r.type !== "contactDeleted") throw new ChatCommandError("error deleting chat", r)
+  }
 
   // func apiUpdateProfile(profile: Profile) async throws -> Profile? {
   //     let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
