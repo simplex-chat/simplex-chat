@@ -223,7 +223,6 @@ export class ChatClient {
       case "userContactLink":
         return r.connReqContact
       default:
-        console.log((r as CR.CRChatCmdError).chatError)
         if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
           return undefined
         }
