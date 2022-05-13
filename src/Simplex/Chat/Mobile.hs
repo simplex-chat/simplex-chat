@@ -53,7 +53,8 @@ mobileChatOpts =
       logConnections = False,
       logAgent = False,
       chatCmd = "",
-      chatCmdDelay = 3
+      chatCmdDelay = 3,
+      chatServerPort = Nothing
     }
 
 defaultMobileConfig :: ChatConfig
