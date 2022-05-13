@@ -9,3 +9,15 @@
 
 /* No comment provided by engineer. */
 "**Add new contact**: to create your one-time QR Code for your contact." = "**Add new contact**: to create your one-time QR Code or link for your contact.";
+
+/* No comment provided by engineer. */
+"*bold*" = "\\*bold*";
+
+/* No comment provided by engineer. */
+"_italic_" = "\\_italic_";
+
+/* No comment provided by engineer. */
+"~strike~" = "\\~strike~";
+
+/* No comment provided by engineer. */
+"`a + b`" = "\\`a + b`";
