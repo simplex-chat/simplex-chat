@@ -659,27 +659,30 @@ updateUserContactLinkAutoAccept st userId autoAccept = do
         |]
         (autoAccept, userId)
 
-createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m (Either Contact UserContactRequest)
+createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m ContactOrRequest
 createOrUpdateContactRequest st userId userContactLinkId invId profile xContactId_ =
   liftIOEither . withTransaction st $ \db ->
     createOrUpdateContactRequest_ db userId userContactLinkId invId profile xContactId_
 
-createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError (Either Contact UserContactRequest))
+createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError ContactOrRequest)
 createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName, image} xContactId_ =
   maybeM getContact' xContactId_ >>= \case
-    Just contact -> pure . Right $ Left contact
-    Nothing -> Right <$$> createOrUpdate_
+    Just contact -> pure . Right $ CORContact contact
+    Nothing -> CORRequest <$$> createOrUpdate_
   where
     maybeM = maybe (pure Nothing)
     createOrUpdate_ :: IO (Either StoreError UserContactRequest)
-    createOrUpdate_ =
-      maybeM getContactRequest' xContactId_ >>= \case
-        Nothing -> createContactRequest
-        Just cr -> updateContactRequest cr
-    createContactRequest :: IO (Either StoreError UserContactRequest)
+    createOrUpdate_ = runExceptT $ do
+      cReqId <-
+        ExceptT $
+          maybeM getContactRequest' xContactId_ >>= \case
+            Nothing -> createContactRequest
+            Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
+      ExceptT $ getContactRequest_ db userId cReqId
+    createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do
       currentTs <- getCurrentTime
-      join <$> withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
+      withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
       where
         createContactRequest_ currentTs ldn = do
           DB.execute
@@ -695,8 +698,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
               VALUES (?,?,?,?,?,?,?,?)
             |]
             (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xContactId_)
-          contactRequestId <- insertedRowId db
-          getContactRequest_ db userId contactRequestId
+          insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
       fmap toContact . listToMaybe
@@ -734,20 +736,16 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
             LIMIT 1
           |]
           (userId, xContactId)
-    updateContactRequest :: UserContactRequest -> IO (Either StoreError UserContactRequest)
+    updateContactRequest :: UserContactRequest -> IO (Either StoreError ())
     updateContactRequest UserContactRequest {contactRequestId = cReqId, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       updateProfile currentTs
       if displayName == oldDisplayName
-        then do
-          DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, currentTs, userId, cReqId)
-          getContactRequest_ db userId cReqId
-        else join <$> updateWithNewName currentTs
-      where
-        updateWithNewName currentTs = withLocalDisplayName db userId displayName $ \ldn -> do
+        then Right <$> DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, currentTs, userId, cReqId)
+        else withLocalDisplayName db userId displayName $ \ldn -> do
           DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, ldn, currentTs, userId, cReqId)
           DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
-          getContactRequest_ db userId cReqId
+      where
         updateProfile currentTs =
           DB.execute
             db
