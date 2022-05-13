@@ -675,8 +675,8 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
     createOrUpdate_ =
       maybeM getContactRequest' xContactId_ >>= \case
         Nothing -> createContactRequest
-        Just UserContactRequest {contactRequestId, profile = oldProfile} ->
-          updateContactRequest contactRequestId oldProfile
+        Just UserContactRequest {contactRequestId, localDisplayName = oldDisplayName} ->
+          updateContactRequest contactRequestId oldDisplayName
     createContactRequest :: IO (Either StoreError UserContactRequest)
     createContactRequest = do
       currentTs <- getCurrentTime
@@ -686,7 +686,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           DB.execute
             db
             "INSERT INTO contact_profiles (display_name, full_name, image, created_at, updated_at) VALUES (?,?,?,?,?)"
-            (displayName, fullName, image, currentTs, currentTs)
+            (ldn, fullName, image, currentTs, currentTs)
           profileId <- insertedRowId db
           DB.execute
             db
@@ -735,13 +735,20 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
             LIMIT 1
           |]
           (userId, xContactId)
-    updateContactRequest :: Int64 -> Profile -> IO (Either StoreError UserContactRequest)
-    updateContactRequest cReqId Profile {displayName = oldDisplayName} = do
+    updateContactRequest :: Int64 -> ContactName -> IO (Either StoreError UserContactRequest)
+    updateContactRequest cReqId oldDisplayName = do
       currentTs <- liftIO getCurrentTime
       if displayName == oldDisplayName
-        then updateContactRequest_ currentTs displayName
-        else join <$> withLocalDisplayName db userId displayName (updateContactRequest_ currentTs)
+        then do
+          updateContactRequest_ currentTs displayName
+          getContactRequest_ db userId cReqId
+        else do
+          join <$> updateWithNewName currentTs
       where
+        updateWithNewName currentTs = withLocalDisplayName db userId displayName $ \ldn -> do
+          updateContactRequest_ currentTs ldn
+          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldDisplayName, userId)
+          getContactRequest_ db userId cReqId
         updateContactRequest_ updatedAt ldn = do
           DB.execute
             db
@@ -770,7 +777,6 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
                 AND contact_request_id = ?
             |]
             (invId, ldn, updatedAt, userId, cReqId)
-          getContactRequest_ db userId cReqId
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
