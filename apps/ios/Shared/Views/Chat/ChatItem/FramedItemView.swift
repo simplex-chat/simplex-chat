@@ -169,6 +169,7 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
     MsgContentView(
         content: qi,
+        formattedText: qi.formattedText,
         sender: qi.getSender(ChatModel.shared.currentUser)
     )
     .lineLimit(3)
