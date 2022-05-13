@@ -22,7 +22,7 @@ struct ContextItemView: View {
                 .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
             MsgContentView(
-                content: contextItem.content,
+                text: contextItem.text,
                 formattedText: contextItem.formattedText,
                 sender: contextItem.memberDisplayName
             )
