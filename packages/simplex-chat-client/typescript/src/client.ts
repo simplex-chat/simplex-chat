@@ -1,7 +1,9 @@
 import {ABQueue} from "./queue"
 import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, localServer, noop} from "./transport"
-import {ChatCommand, ChatResponse, ChatType} from "./command"
-import * as C from "./command"
+import {ChatCommand, ChatType} from "./command"
+import {ChatResponse} from "./response"
+import * as CC from "./command"
+import * as C from "./response"
 
 export interface ChatClientConfig {
   readonly qSize: number
@@ -78,11 +80,15 @@ export class ChatClient {
     }
   }
 
-  sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
+  sendChatCmdStr(cmd: string): Promise<ChatResponse> {
     const corrId = `${++this.clientCorrId}`
-    const t: ChatSrvRequest = {corrId, cmd: C.cmdString(command)}
+    const t: ChatSrvRequest = {corrId, cmd}
     this.transport.write(t).then(noop, noop)
     return new Promise((resolve, reject) => this.sentCommands.set(corrId, {resolve, reject}))
+  }
+
+  sendChatCommand(command: ChatCommand): Promise<ChatResponse> {
+    return this.sendChatCmdStr(CC.cmdString(command))
   }
 
   async disconnect(): Promise<void> {
@@ -103,7 +109,7 @@ export class ChatClient {
     }
   }
 
-  async apiCreateActiveUser(profile: C.Profile): Promise<C.User> {
+  async apiCreateActiveUser(profile: CC.Profile): Promise<C.User> {
     const r = await this.sendChatCommand({type: "createActiveUser", profile})
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
@@ -122,13 +128,13 @@ export class ChatClient {
     throw new ChatCommandError("error loading chats", r)
   }
 
-  async apiGetChat(chatType: ChatType, chatId: number, pagination: C.ChatPagination = {count: 100}): Promise<C.Chat> {
+  async apiGetChat(chatType: ChatType, chatId: number, pagination: CC.ChatPagination = {count: 100}): Promise<C.Chat> {
     const r = await this.sendChatCommand({type: "apiGetChat", chatType, chatId, pagination})
     if (r.type === "apiChat") return r.chat
     throw new ChatCommandError("error loading chat", r)
   }
 
-  async apiSendMessage(chatType: ChatType, chatId: number, message: C.ComposedMessage): Promise<C.AChatItem> {
+  async apiSendMessage(chatType: ChatType, chatId: number, message: CC.ComposedMessage): Promise<C.AChatItem> {
     const r = await this.sendChatCommand({type: "apiSendMessage", chatType, chatId, message})
     if (r.type === "newChatItem") return r.chatItem
     throw new ChatCommandError("unexpected response", r)
@@ -138,13 +144,13 @@ export class ChatClient {
     return this.apiSendMessage(chatType, chatId, {msgContent: {type: "text", text}})
   }
 
-  async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: C.ChatItemId, msgContent: C.MsgContent): Promise<C.ChatItem> {
+  async apiUpdateChatItem(chatType: ChatType, chatId: number, chatItemId: CC.ChatItemId, msgContent: CC.MsgContent): Promise<C.ChatItem> {
     const r = await this.sendChatCommand({type: "apiUpdateChatItem", chatType, chatId, chatItemId, msgContent})
     if (r.type === "chatItemUpdated") return r.chatItem.chatItem
     throw new ChatCommandError("error updating chat item", r)
   }
 
-  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: C.DeleteMode): Promise<C.ChatItem> {
+  async apiDeleteChatItem(chatType: ChatType, chatId: number, chatItemId: number, deleteMode: CC.DeleteMode): Promise<C.ChatItem> {
     const r = await this.sendChatCommand({type: "apiDeleteChatItem", chatType, chatId, chatItemId, deleteMode})
     if (r.type === "chatItemDeleted") return r.toChatItem.chatItem
     throw new ChatCommandError("error deleting chat item", r)
@@ -180,53 +186,22 @@ export class ChatClient {
     }
   }
 
-  // func apiConnect(connReq: String) async throws -> Bool {
-  //     let r = await chatSendCmd(.connect(connReq: connReq))
-  //     let am = AlertManager.shared
-  //     switch r {
-  //     case .sentConfirmation: return true
-  //     case .sentInvitation: return true
-  //     case let .contactAlreadyExists(contact):
-  //         am.showAlertMsg(
-  //             title: "Contact already exists",
-  //             message: "You are already connected to \(contact.displayName) via this link."
-  //         )
-  //         return false
-  //     case .chatCmdError(.error(.invalidConnReq)):
-  //         am.showAlertMsg(
-  //             title: "Invalid connection link",
-  //             message: "Please check that you used the correct link or ask your contact to send you another one."
-  //         )
-  //         return false
-  //     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-  //         am.showAlertMsg(
-  //             title: "Connection timeout",
-  //             message: "Please check your network connection and try again."
-  //         )
-  //         return false
-  //     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-  //         am.showAlertMsg(
-  //             title: "Connection error",
-  //             message: "Please check your network connection and try again."
-  //         )
-  //         return false
-  //     default: throw r
-  //     }
-  // }
-
   async apiDeleteChat(chatType: ChatType, chatId: number): Promise<void> {
-    let r = await this.sendChatCommand({type: "apiDeleteChat", chatType, chatId})
+    const r = await this.sendChatCommand({type: "apiDeleteChat", chatType, chatId})
     if (r.type !== "contactDeleted") throw new ChatCommandError("error deleting chat", r)
   }
 
-  // func apiUpdateProfile(profile: Profile) async throws -> Profile? {
-  //     let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
-  //     switch r {
-  //     case .userProfileNoChange: return nil
-  //     case let .userProfileUpdated(_, toProfile): return toProfile
-  //     default: throw r
-  //     }
-  // }
+  async apiUpdateProfile(profile: CC.Profile): Promise<CC.Profile | undefined> {
+    const r = await this.sendChatCommand({type: "apiUpdateProfile", profile})
+    switch (r.type) {
+      case "userProfileNoChange":
+        return undefined
+      case "userProfileUpdated":
+        return r.toProfile
+      default:
+        throw new ChatCommandError("error updating profile", r)
+    }
+  }
 
   // func apiParseMarkdown(text: String) throws -> [FormattedText]? {
   //     let r = chatSendCmdSync(.apiParseMarkdown(text: text))
@@ -313,51 +288,6 @@ export class ChatClient {
   //     } catch {
   //         logger.error("markChatItemRead apiChatRead error: \(error.localizedDescription)")
   //     }
-  // }
-
-  // async createSMPQueue(rcvKey: SignKey, rcvPubKey: PublicKey<KeyType.Verify>): Promise<SMP.IDS> {
-  //   const pubKeyStr = new Uint8Array(await C.encodePubKey(rcvPubKey))
-  //   const resp = await this.sendSMPCommand(rcvKey, B.empty, SMP.cNEW(pubKeyStr))
-  //   if (resp.cmd === "IDS") return resp
-  //   throw new Error("unexpected response")
-  // }
-
-  // subscribeSMPQueue(rcvKey: SignKey, queueId: Uint8Array): Promise<void> {
-  //   return this.msgSMPCommand(rcvKey, queueId, SMP.cSUB())
-  // }
-
-  // async secureSMPQueue(rcvKey: SignKey, queueId: Uint8Array, sndPubKey: PublicKey<KeyType.Verify>): Promise<void> {
-  //   const pubKeyStr = new Uint8Array(await C.encodePubKey(sndPubKey))
-  //   return this.okSMPCommand(rcvKey, queueId, SMP.cKEY(pubKeyStr))
-  // }
-
-  // async sendSMPMessage(sndKey: SignKey | undefined, queueId: Uint8Array, msg: Uint8Array): Promise<void> {
-  //   const resp = await this.sendSMPCommand(sndKey, queueId, SMP.cSEND(msg))
-  //   if (resp.cmd !== "OK") throw new Error("unexpected response")
-  // }
-
-  // ackSMPMessage(rcvKey: SignKey, queueId: Uint8Array): Promise<void> {
-  //   return this.msgSMPCommand(rcvKey, queueId, SMP.cACK())
-  // }
-
-  // suspendSMPQueue(rcvKey: SignKey, queueId: Uint8Array): Promise<void> {
-  //   return this.okSMPCommand(rcvKey, queueId, SMP.cOFF())
-  // }
-
-  // deleteSMPQueue(rcvKey: SignKey, queueId: Uint8Array): Promise<void> {
-  //   return this.okSMPCommand(rcvKey, queueId, SMP.cDEL())
-  // }
-
-  // private async msgSMPCommand(rcvKey: SignKey, queueId: Uint8Array, command: SMPCommand<Client>): Promise<void> {
-  //   const resp = await this.sendSMPCommand(rcvKey, queueId, command)
-  //   switch (resp.cmd) {
-  //     case "OK":
-  //       return
-  //     case "MSG":
-  //       return this.msgQ.enqueue({server: this.server, queueId, command: resp})
-  //     default:
-  //       throw new Error("unexpected response")
-  //   }
   // }
 
   // private async okChatCommand(command: ChatCommand): Promise<void> {

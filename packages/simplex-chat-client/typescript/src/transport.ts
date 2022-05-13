@@ -1,5 +1,5 @@
 import {ABQueue, NextIter} from "./queue"
-import {ChatResponse} from "./command"
+import {ChatResponse} from "./response"
 
 export class TransportError extends Error {}
 
