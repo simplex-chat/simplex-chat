@@ -735,7 +735,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           |]
           (userId, xContactId)
     updateContactRequest :: UserContactRequest -> IO (Either StoreError UserContactRequest)
-    updateContactRequest UserContactRequest {contactRequestId = cReqId, localDisplayName, profile = Profile {displayName = oldDisplayName}} = do
+    updateContactRequest UserContactRequest {contactRequestId = cReqId, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       updateProfile currentTs
       if displayName == oldDisplayName
@@ -746,7 +746,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
       where
         updateWithNewName currentTs = withLocalDisplayName db userId displayName $ \ldn -> do
           DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, ldn, currentTs, userId, cReqId)
-          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
           getContactRequest_ db userId cReqId
         updateProfile currentTs =
           DB.execute
