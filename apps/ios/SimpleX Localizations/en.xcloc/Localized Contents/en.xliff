@@ -77,7 +77,7 @@
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
         <source>*bold*</source>
-        <target>*bold*</target>
+        <target>\*bold*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve">
@@ -1030,12 +1030,12 @@ SimpleX servers cannot see your profile.</target>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
         <source>_italic_</source>
-        <target>_italic_</target>
+        <target>\_italic_</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="`a + b`" xml:space="preserve">
         <source>`a + b`</source>
-        <target>`a + b`</target>
+        <target>\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve">
@@ -1201,7 +1201,7 @@ SimpleX servers cannot see your profile.</target>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>~strike~</source>
-        <target>~strike~</target>
+        <target>\~strike~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
