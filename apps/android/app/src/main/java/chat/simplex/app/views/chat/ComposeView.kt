@@ -185,6 +185,7 @@ fun ComposeView(
 
   fun clearState() {
     composeState.value = ComposeState()
+    textStyle.value = smallFont
     chosenImage.value = null
     chosenFile.value = null
     linkUrl.value = null
