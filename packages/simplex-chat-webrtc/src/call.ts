@@ -261,6 +261,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   }
 }
 
+// var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
 
 async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
@@ -287,13 +288,19 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
           // for debugging, returning the command for callee to use
-          resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await activeCall.iceCandidates, media, aesKey}
           // resp = {
-          //   type: "offer",
+          //   type: "accept",
           //   offer: JSON.stringify(offer),
           //   iceCandidates: await activeCall.iceCandidates,
-          //   capabilities: {encryption},
+          //   media,
+          //   aesKey,
           // }
+          resp = {
+            type: "offer",
+            offer: JSON.stringify(offer),
+            iceCandidates: await activeCall.iceCandidates,
+            capabilities: {encryption},
+          }
         }
         break
       case "accept":
@@ -369,7 +376,8 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
   } catch (e) {
     resp = {type: "error", message: (e as Error).message}
   }
-  const apiResp = {corrId, resp}
+  const apiResp = {corrId, resp, command}
+  // const apiResp = {corrId, resp}
   sendMessageToNative(apiResp)
   return apiResp
 }
