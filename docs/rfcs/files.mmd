@@ -1,0 +1,129 @@
+sequenceDiagram
+  participant AU as Alice's<br>chat UI
+  participant AC as Alice's<br>chat core
+  participant AA as Alice's<br>agent
+  participant BA as Bob's<br>agent
+  participant BC as Bob's<br>chat
+  participant BU as Bob's<br>chat UI
+
+  note over AU, AA: Alice's app
+  note over BA, BU: Bob's app
+
+  note over AU, BU: Direct file transfer handshake
+
+  note over AU: Send message with file
+  AU ->> AC: APISendMessage with filePath
+  AC ->> AA: createConnection
+  AA ->> AC: connId, fileConnReq
+  note left of AC: createSndFileTransfer<br>files.ci_file_status = CIFSSndStored<br>snd_files.file_status = FSNew<br>connections.conn_type = ConnSndFile<br>connections.conn_status = ConnNew
+  AC ->> BC: XMsgNew with FileInvitation, fileConnReq = fileConnReq
+  note right of BC: createRcvFileTransfer<br>files.ci_file_status = CIFSRcvInvitation<br>rcv_files.file_status = FSNew<br>rcv_files.file_queue_info = fileConnReq
+  BC ->> BU: CRNewChatItem
+  note over BU: Accept file
+  BU ->> BC: ReceiveFile
+  BC ->> BA: joinConnection with ConnInfo = XFileAcpt
+  BA ->> BC: connId
+  note right of BC: acceptRcvFileTransfer<br>files.ci_file_status = CIFSRcvAccepted<br>rcv_files.file_status = FSAccepted<br>connections.conn_type = ConnRcvFile<br>connections.conn_status = ConnJoined
+  BA ->> AC: CONF with XFileAcpt
+  note left of AC: snd_files.file_status = FSAccepted
+  AC ->> AA: allowConnection
+  note left of AC: connections.conn_status = ConnAccepted
+  note over AA, BA: ...<br>Connection handshake<br>...
+  par Alice connected
+    AA ->> AC: CON
+    note left of AC: connections.conn_status = ConnReady<br>snd_files.file_status = FSConnected<br>files.ci_file_status = CIFSSndTransfer
+    AC ->> AU: CRSndFileStart
+    note over AC: sendFileChunk
+  and Bob Connected
+    BA ->> BC: CON
+    note right of BC: connections.conn_status = ConnReady<br>rcv_files.file_status = FSConnected<br>files.ci_file_status = CIFSRcvTransfer
+    BC ->> BU: CRRcvFileStart
+  end
+
+  note over AU, BU: Group file transfer handshake
+
+  note over AU: Send message with file
+  AU ->> AC: APISendMessage with filePath
+  note left of AC: createSndGroupFileTransfer<br>files.ci_file_status = CIFSSndStored
+  AC ->> BC: XMsgNew with FileInvitation, fileConnReq = Nothing
+  note right of BC: createRcvGroupFileTransfer<br>files.ci_file_status = CIFSRcvInvitation<br>rcv_files.file_status = FSNew<br>rcv_files.file_queue_info = NULL
+  BC ->> BU: CRNewChatItem
+  note over BU: Accept file
+  BU ->> BC: ReceiveFile
+  BC ->> BA: createConnection
+  BA ->> BC: connId, fileInvConnReq
+  note right of BC: acceptRcvFileTransfer<br>files.ci_file_status = CIFSRcvAccepted<br>rcv_files.file_status = FSAccepted<br>connections.conn_type = ConnRcvFile<br>connections.conn_status = ConnNew
+  BC ->> AC: XFileAcptInv sharedMsgId fileInvConnReq
+  AC ->> AA: joinConnection with ConnInfo = XOk
+  AA ->> AC: connId
+  note left of AC: createSndGroupFileTransferConnection<br>connections.conn_type = ConnSndFile<br>connections.conn_status = ConnNew<br>snd_files.file_status = FSAccepted
+  AA ->> BC: CONF with XOk
+  BC ->> BA: allowConnection
+  note right of BC: connections.conn_status = ConnAccepted
+  note over AA, BA: ...<br>Connection handshake<br>...
+  par Alice connected
+    AA ->> AC: CON
+    note left of AC: connections.conn_status = ConnReady<br>snd_files.file_status = FSConnected<br>files.ci_file_status = CIFSSndTransfer
+    AC ->> AU: CRSndFileStart
+    note over AC: sendFileChunk
+  and Bob Connected
+    BA ->> BC: CON
+    note right of BC: connections.conn_status = ConnReady<br>rcv_files.file_status = FSConnected<br>files.ci_file_status = CIFSRcvTransfer
+    BC ->> BU: CRRcvFileStart
+  end
+
+  note over AU, BU: File transfer
+
+  loop while createSndFileChunk returns chunkNo
+    AC ->> BC: FileChunk
+    AA ->> AC: SENT
+    note over BC: appendFileChunk
+  end
+  opt receiver cancelled file transfer
+    note over BU: Cancel file
+    BU ->> BC: CancelFile
+    note right of BC: files.cancelled = true<br>files.ci_file_status = CIFSRcvCancelled<br>rcv_files.file_status = FSCancelled<br>deleteRcvFileChunks
+    BC ->> BA: deleteConnection
+    BC ->> BU: CRRcvFileSndCancelled
+    note over AA, BA: connection is deleted
+    AC ->> BA: FileChunk
+    BA ->> AA: MERR AUTH
+    AA ->> AC: MERR
+    note over AC: cancelSndFileTransfer
+    alt AUTH
+      AC ->> AU: CRSndFileRcvCancelled
+    else other error, possibly not due to cancel
+      AC ->> AU: CEFileSend
+    end
+  end
+  AC ->> BC: Final FileChunk
+  note left of AC: snd_files.file_status = FSComplete<br>deleteSndFileChunks<br>files.ci_file_status = CIFSSndComplete
+  AC ->> AU: CRSndFileComplete
+  AC ->> AA: deleteConnection
+  note over BC: appendFileChunk
+  note right of BC: rcv_files.file_status = FSComplete<br>files.ci_file_status = CIFSRcvComplete<br>deleteRcvFileChunks
+  BC ->> BU: CRRcvFileComplete
+  BC ->> BA: deleteConnection
+
+  note over AU, BU: Sender cancels file transfer
+
+  note over AU: Cancel file
+  AU ->> AC: CancelFile
+  note left of AC: files.cancelled = true<br>files.ci_file_status = CIFSSndCancelled<br>snd_files.file_status = FSCancelled<br>deleteSndFileChunks
+  AC ->> BA: FileChunkCancel (over file connection)
+  note left of AC: deleteConnection
+  AC ->> BA: XFileCancel (over direct/group connection)
+  AC ->> AU: CRSndGroupFileCancelled
+  par FileChunkCancel
+    BA ->> BC: FileChunkCancel
+    note over BC: Cancel file (if it wasn't already cancelled)
+    note right of BC: files.cancelled = true<br>files.ci_file_status = CIFSRcvCancelled<br>rcv_files.file_status = FSCancelled<br>deleteRcvFileChunks
+    BC ->> BA: deleteConnection
+    BC ->> BU: CRRcvFileSndCancelled
+  and XFileCancel
+    BA ->> BC: XFileCancel
+    note over BC: Cancel file (if it wasn't already cancelled)
+    note right of BC: files.cancelled = true<br>files.ci_file_status = CIFSRcvCancelled<br>rcv_files.file_status = FSCancelled<br>deleteRcvFileChunks
+    BC ->> BA: deleteConnection
+    BC ->> BU: CRRcvFileSndCancelled
+  end

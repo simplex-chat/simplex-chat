@@ -659,28 +659,30 @@ updateUserContactLinkAutoAccept st userId autoAccept = do
         |]
         (autoAccept, userId)
 
-createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m (Either Contact UserContactRequest)
+createOrUpdateContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> m ContactOrRequest
 createOrUpdateContactRequest st userId userContactLinkId invId profile xContactId_ =
   liftIOEither . withTransaction st $ \db ->
     createOrUpdateContactRequest_ db userId userContactLinkId invId profile xContactId_
 
-createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError (Either Contact UserContactRequest))
+createOrUpdateContactRequest_ :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> IO (Either StoreError ContactOrRequest)
 createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {displayName, fullName, image} xContactId_ =
   maybeM getContact' xContactId_ >>= \case
-    Just contact -> pure . Right $ Left contact
-    Nothing -> Right <$$> createOrUpdate_
+    Just contact -> pure . Right $ CORContact contact
+    Nothing -> CORRequest <$$> createOrUpdate_
   where
     maybeM = maybe (pure Nothing)
     createOrUpdate_ :: IO (Either StoreError UserContactRequest)
-    createOrUpdate_ =
-      maybeM getContactRequest' xContactId_ >>= \case
-        Nothing -> createContactRequest
-        Just UserContactRequest {contactRequestId, profile = oldProfile} ->
-          updateContactRequest contactRequestId oldProfile
-    createContactRequest :: IO (Either StoreError UserContactRequest)
+    createOrUpdate_ = runExceptT $ do
+      cReqId <-
+        ExceptT $
+          maybeM getContactRequest' xContactId_ >>= \case
+            Nothing -> createContactRequest
+            Just cr -> updateContactRequest cr $> Right (contactRequestId (cr :: UserContactRequest))
+      ExceptT $ getContactRequest_ db userId cReqId
+    createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do
       currentTs <- getCurrentTime
-      join <$> withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
+      withLocalDisplayName db userId displayName (createContactRequest_ currentTs)
       where
         createContactRequest_ currentTs ldn = do
           DB.execute
@@ -696,8 +698,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
               VALUES (?,?,?,?,?,?,?,?)
             |]
             (userContactLinkId, invId, profileId, ldn, userId, currentTs, currentTs, xContactId_)
-          contactRequestId <- insertedRowId db
-          getContactRequest_ db userId contactRequestId
+          insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
       fmap toContact . listToMaybe
@@ -735,14 +736,17 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
             LIMIT 1
           |]
           (userId, xContactId)
-    updateContactRequest :: Int64 -> Profile -> IO (Either StoreError UserContactRequest)
-    updateContactRequest cReqId Profile {displayName = oldDisplayName} = do
+    updateContactRequest :: UserContactRequest -> IO (Either StoreError ())
+    updateContactRequest UserContactRequest {contactRequestId = cReqId, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
+      updateProfile currentTs
       if displayName == oldDisplayName
-        then updateContactRequest_ currentTs displayName
-        else join <$> withLocalDisplayName db userId displayName (updateContactRequest_ currentTs)
+        then Right <$> DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, currentTs, userId, cReqId)
+        else withLocalDisplayName db userId displayName $ \ldn -> do
+          DB.execute db "UPDATE contact_requests SET agent_invitation_id = ?, local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_request_id = ?" (invId, ldn, currentTs, userId, cReqId)
+          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (oldLdn, userId)
       where
-        updateContactRequest_ updatedAt ldn = do
+        updateProfile currentTs =
           DB.execute
             db
             [sql|
@@ -758,19 +762,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
                   AND contact_request_id = ?
               )
             |]
-            (ldn, fullName, image, updatedAt, userId, cReqId)
-          DB.execute
-            db
-            [sql|
-              UPDATE contact_requests
-              SET agent_invitation_id = ?,
-                  local_display_name = ?,
-                  updated_at = ?
-              WHERE user_id = ?
-                AND contact_request_id = ?
-            |]
-            (invId, ldn, updatedAt, userId, cReqId)
-          getContactRequest_ db userId cReqId
+            (displayName, fullName, image, currentTs, userId, cReqId)
 
 getContactRequest :: StoreMonad m => SQLiteStore -> UserId -> Int64 -> m UserContactRequest
 getContactRequest st userId contactRequestId =
@@ -2025,8 +2017,8 @@ createRcvGroupFileTransfer st userId GroupMember {groupId, groupMemberId, localD
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (userId, groupId, fileName, fileSize, chunkSize, currentTs, currentTs)
+      "INSERT INTO files (user_id, group_id, file_name, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+      (userId, groupId, fileName, fileSize, chunkSize, CIFSRcvInvitation, currentTs, currentTs)
     fileId <- insertedRowId db
     DB.execute
       db
@@ -2082,8 +2074,8 @@ getRcvFileTransfer_ db userId fileId =
         cancelled = fromMaybe False cancelled_
     rcvFileTransfer _ = Left $ SERcvFileNotFound fileId
 
-acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> FilePath -> m AChatItem
-acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
+acceptRcvFileTransfer :: StoreMonad m => SQLiteStore -> User -> Int64 -> ConnId -> ConnStatus -> FilePath -> m AChatItem
+acceptRcvFileTransfer st user@User {userId} fileId agentConnId connStatus filePath =
   liftIOEither . withTransaction st $ \db -> do
     currentTs <- getCurrentTime
     DB.execute
@@ -2097,7 +2089,7 @@ acceptRcvFileTransfer st user@User {userId} fileId agentConnId filePath =
     DB.execute
       db
       "INSERT INTO connections (agent_conn_id, conn_status, conn_type, rcv_file_id, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (agentConnId, ConnJoined, ConnRcvFile, fileId, userId, currentTs, currentTs)
+      (agentConnId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
     getChatItemByFileId_ db user fileId
 
 updateRcvFileStatus :: MonadUnliftIO m => SQLiteStore -> RcvFileTransfer -> FileStatus -> m ()
@@ -3562,29 +3554,49 @@ toChatItemRef = \case
   (itemId, Nothing, Just groupId) -> Right (itemId, ChatRef CTGroup groupId)
   (itemId, _, _) -> Left $ SEBadChatItem itemId
 
-updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
-updateDirectChatItemsRead st contactId (fromItemId, toItemId) = do
+updateDirectChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> Maybe (ChatItemId, ChatItemId) -> m ()
+updateDirectChatItemsRead st contactId itemsRange_ = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db ->
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
-      |]
-      (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+    case itemsRange_ of
+      Just (fromItemId, toItemId) ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE contact_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, contactId, fromItemId, toItemId, CISRcvNew)
+      _ ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE contact_id = ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, contactId, CISRcvNew)
 
-updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> (ChatItemId, ChatItemId) -> m ()
-updateGroupChatItemsRead st groupId (fromItemId, toItemId) = do
+updateGroupChatItemsRead :: (StoreMonad m) => SQLiteStore -> Int64 -> Maybe (ChatItemId, ChatItemId) -> m ()
+updateGroupChatItemsRead st groupId itemsRange_ = do
   currentTs <- liftIO getCurrentTime
   liftIO . withTransaction st $ \db ->
-    DB.execute
-      db
-      [sql|
-        UPDATE chat_items SET item_status = ?, updated_at = ?
-        WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
-      |]
-      (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+    case itemsRange_ of
+      Just (fromItemId, toItemId) ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE group_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, groupId, fromItemId, toItemId, CISRcvNew)
+      _ ->
+        DB.execute
+          db
+          [sql|
+            UPDATE chat_items SET item_status = ?, updated_at = ?
+            WHERE group_id = ? AND item_status = ?
+          |]
+          (CISRcvRead, currentTs, groupId, CISRcvNew)
 
 type ChatStatsRow = (Int, ChatItemId)
 
