@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat.startActivityForResult
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
@@ -533,32 +534,30 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
 
   fun showBackgroundServiceNoticeIfNeeded() {
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
-    if (getBackgroundServiceNoticeShown()) {
-      if (!isIgnoringBatteryOptimizations(appContext) && getRunServiceInBackground()) {
-        showBGServiceNoticeIgnoreOptimization()
-      }
-    } else {
+    if (!getBackgroundServiceNoticeShown()) {
+      // the branch for the new users who has never seen service notice
       if (isIgnoringBatteryOptimizations(appContext)) {
         showBGServiceNotice()
       } else {
         showBGServiceNoticeIgnoreOptimization()
       }
+      // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
+      setBackgroundServiceNoticeShown(true)
+      setBackgroundServiceBatteryNoticeShown(true)
+    } else if (!isIgnoringBatteryOptimizations(appContext) && getRunServiceInBackground()) {
+      // the branch for users who have app installed, and have seen the service notice,
+      // but the battery optimization for the app is on (Android 12) AND the service is running
+      if (getBackgroundServiceBatteryNoticeShown()) {
+        // users have been presented with battery notice before - they did not allow ignoring optimizitions -> disable service
+        showDisablingServiceNotice()
+        setRunServiceInBackground(false)
+        chatModel.runServiceInBackground.value = false
+      } else {
+        // show battery optimization notice
+        showBGServiceNoticeIgnoreOptimization()
+        setBackgroundServiceBatteryNoticeShown(true)
+      }
     }
-
-
-//    when {
-//      !getRunServiceInBackground() || (getBackgroundServiceNoticeShown() && isIgnoringBatteryOptimizations(appContext)) -> return
-//      isIgnoringBatteryOptimizations(appContext) -> showBGServiceNotice()
-//      !getBackgroundServiceNoticeShown() -> showBGServiceNoticeIgnoreOptimization()
-//      else -> {
-//        showDisablingServiceNotice()
-//
-//        setRunServiceInBackground(false)
-//        chatModel.runServiceInBackground.value = false
-//      }
-//    }
-
-    setBackgroundServiceNoticeShown(true)
   }
 
   private fun showBGServiceNotice() = AlertManager.shared.showAlert {
@@ -628,7 +627,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             Icons.Outlined.Bolt,
             contentDescription = stringResource(R.string.icon_descr_instant_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+          Text(stringResource(R.string.private_instant_notifications_disabled), fontWeight = FontWeight.Bold)
         }
       },
       text = {
@@ -666,6 +665,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, shown)
       .apply()
 
+  private fun getBackgroundServiceBatteryNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
+
+  fun setBackgroundServiceBatteryNoticeShown(shown: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, shown)
+      .apply()
+
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
@@ -690,6 +696,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
+    private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
   }
 }
 

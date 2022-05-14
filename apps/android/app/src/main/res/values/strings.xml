@@ -54,10 +54,11 @@
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="private_instant_notifications">Private instant notifications!</string>
+  <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
-  <string name="turn_off_battery_optimization">In order to use it you need to disable Android battery optimization on the next screen. Otherwise, the service will be disabled.</string>
-  <string name="turning_off_background_service">Battery optimization <b>is still active</b>, turning off the service. You can re-enable it via settings.</string>
+  <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
+  <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>

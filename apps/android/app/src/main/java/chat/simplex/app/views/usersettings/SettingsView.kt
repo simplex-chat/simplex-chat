@@ -37,9 +37,9 @@ fun SettingsView(chatModel: ChatModel) {
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = { on ->
         chatModel.controller.setRunServiceInBackground(on)
-        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext))
+        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
           chatModel.controller.setBackgroundServiceNoticeShown(false)
-        
+        }
         chatModel.controller.showBackgroundServiceNoticeIfNeeded()
         chatModel.runServiceInBackground.value = on
       },
