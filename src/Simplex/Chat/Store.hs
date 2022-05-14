@@ -559,8 +559,8 @@ createUserContactLink st userId agentConnId cReq =
     userContactLinkId <- insertedRowId db
     Right () <$ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing 0 currentTs
 
-getUserContactLinkConnections :: StoreMonad m => SQLiteStore -> UserId -> m [Connection]
-getUserContactLinkConnections st userId =
+getUserContactLinkConnections :: StoreMonad m => SQLiteStore -> User -> m [Connection]
+getUserContactLinkConnections st User {userId} =
   liftIOEither . withTransaction st $ \db ->
     connections
       <$> DB.queryNamed
@@ -579,8 +579,8 @@ getUserContactLinkConnections st userId =
     connections [] = Left SEUserContactLinkNotFound
     connections rows = Right $ map toConnection rows
 
-deleteUserContactLink :: MonadUnliftIO m => SQLiteStore -> UserId -> m ()
-deleteUserContactLink st userId =
+deleteUserContactLink :: MonadUnliftIO m => SQLiteStore -> User -> m ()
+deleteUserContactLink st User {userId} =
   liftIO . withTransaction st $ \db -> do
     DB.execute
       db

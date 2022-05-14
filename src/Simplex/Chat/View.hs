@@ -428,7 +428,8 @@ viewUserProfile Profile {displayName, fullName} =
 viewUsersList :: [User] -> [StyledString]
 viewUsersList =
   let ldn = T.toLower . (localDisplayName :: User -> ContactName)
-   in map ttyFullUser . sortOn ldn
+      active u = if activeUser u then "* " else "  "
+   in map (\u -> active u <> ttyFullUser u) . sortOn ldn
 
 viewSMPServers :: [SMPServer] -> Bool -> [StyledString]
 viewSMPServers smpServers testView =
@@ -708,7 +709,7 @@ ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
 ttyFullUser :: User -> StyledString
-ttyFullUser User {localDisplayName, profile = Profile {fullName}} =
+ttyFullUser User {activeUser, localDisplayName, profile = Profile {fullName}} =
   ttyFullName localDisplayName fullName
 
 ttyFullContact :: Contact -> StyledString

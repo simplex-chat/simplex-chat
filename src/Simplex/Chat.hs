@@ -515,12 +515,12 @@ processChatCommand = \case
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
     withStore $ \st -> createUserContactLink st userId connId cReq
     pure $ CRUserContactLinkCreated cReq
-  DeleteMyAddress -> withUser $ \User {userId} -> withChatLock $ do
-    conns <- withStore $ \st -> getUserContactLinkConnections st userId
+  DeleteMyAddress -> withUser $ \user -> withChatLock $ do
+    conns <- withStore $ \st -> getUserContactLinkConnections st user
     procCmd $ do
       withAgent $ \a -> forM_ conns $ \conn ->
         deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
-      withStore $ \st -> deleteUserContactLink st userId
+      withStore $ \st -> deleteUserContactLink st user
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
     uncurry CRUserContactLink <$> withStore (`getUserContactLink` userId)
@@ -922,7 +922,7 @@ subscribeUserConnections ::
   (forall m'. ChatMonad m' => AgentClient -> ConnId -> ExceptT AgentErrorType m' ()) ->
   User ->
   m ()
-subscribeUserConnections agentSubscribe user@User {userId} = do
+subscribeUserConnections agentSubscribe user = do
   n <- asks $ subscriptionConcurrency . config
   ce <- asks $ subscriptionEvents . config
   void . runExceptT $ do
@@ -989,7 +989,7 @@ subscribeUserConnections agentSubscribe user@User {userId} = do
         PendingSubStatus acId <$> ((subscribe cId $> Nothing) `catchError` (pure . Just))
       toView $ CRPendingSubSummary summary
     subscribeUserContactLink n = do
-      cs <- withStore (`getUserContactLinkConnections` userId)
+      cs <- withStore (`getUserContactLinkConnections` user)
       (subscribeConns n cs >> toView CRUserContactLinkSubscribed)
         `catchError` (toView . CRUserContactLinkSubError)
     subscribe cId = withAgent (`agentSubscribe` cId)
