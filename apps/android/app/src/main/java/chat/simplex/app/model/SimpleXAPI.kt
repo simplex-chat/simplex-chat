@@ -532,22 +532,36 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   }
 
   fun showBackgroundServiceNoticeIfNeeded() {
-    when {
-      !getRunServiceInBackground() || (getBackgroundServiceNoticeShown() && isIgnoringBatteryOptimizations(appContext)) -> return
-      isIgnoringBatteryOptimizations(appContext) -> showBackgroundServiceNotice()
-      !getBackgroundServiceNoticeShown() -> showIgnoreOptimizationDialog()
-      else -> {
-        showDisablingServiceNotice()
-
-        setRunServiceInBackground(false)
-        chatModel.runServiceInBackground.value = false
+    Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
+    if (getBackgroundServiceNoticeShown()) {
+      if (!isIgnoringBatteryOptimizations(appContext) && getRunServiceInBackground()) {
+        showBGServiceNoticeIgnoreOptimization()
+      }
+    } else {
+      if (isIgnoringBatteryOptimizations(appContext)) {
+        showBGServiceNotice()
+      } else {
+        showBGServiceNoticeIgnoreOptimization()
       }
     }
+
+
+//    when {
+//      !getRunServiceInBackground() || (getBackgroundServiceNoticeShown() && isIgnoringBatteryOptimizations(appContext)) -> return
+//      isIgnoringBatteryOptimizations(appContext) -> showBGServiceNotice()
+//      !getBackgroundServiceNoticeShown() -> showBGServiceNoticeIgnoreOptimization()
+//      else -> {
+//        showDisablingServiceNotice()
+//
+//        setRunServiceInBackground(false)
+//        chatModel.runServiceInBackground.value = false
+//      }
+//    }
 
     setBackgroundServiceNoticeShown(true)
   }
 
-  private fun showBackgroundServiceNotice() = AlertManager.shared.showAlert {
+  private fun showBGServiceNotice() = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
@@ -574,10 +588,10 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     )
   }
 
-  private fun showIgnoreOptimizationDialog() = AlertManager.shared.showAlert {
+  private fun showBGServiceNoticeIgnoreOptimization() = AlertManager.shared.showAlert {
     val ignoreOptimization = {
-      askAboutIgnoringBatteryOptimization(appContext)
       AlertManager.shared.hideAlert()
+      askAboutIgnoringBatteryOptimization(appContext)
     }
     AlertDialog(
       onDismissRequest = ignoreOptimization,
@@ -653,8 +667,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .apply()
 
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
-    return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
   }
 
   private fun askAboutIgnoringBatteryOptimization(context: Context) {
