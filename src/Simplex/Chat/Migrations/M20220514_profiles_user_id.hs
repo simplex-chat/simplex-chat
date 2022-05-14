@@ -9,8 +9,18 @@ m20220514_profiles_user_id :: Query
 m20220514_profiles_user_id =
   [sql|
 ALTER TABLE contact_profiles ADD COLUMN user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE;
-UPDATE contact_profiles SET user_id = 1;
+UPDATE contact_profiles SET user_id = (
+  SELECT user_id
+  FROM users
+  WHERE active_user = 1
+  LIMIT 1
+);
 
 ALTER TABLE group_profiles ADD COLUMN user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE;
-UPDATE group_profiles SET user_id = 1;
+UPDATE group_profiles SET user_id = (
+  SELECT user_id
+  FROM users
+  WHERE active_user = 1
+  LIMIT 1
+);
 |]
