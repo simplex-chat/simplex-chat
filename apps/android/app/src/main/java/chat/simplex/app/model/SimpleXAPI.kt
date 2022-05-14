@@ -579,11 +579,19 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, true)
       .apply()
 
+  fun getShowRecentAppScreen(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SHOW_RECENT_APP_SCREEN, false)
+
+  fun setShowRecentAppScreen(show: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_SHOW_RECENT_APP_SCREEN, show)
+      .apply()
+
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
+    private const val SHARED_PREFS_SHOW_RECENT_APP_SCREEN = "ShowRecentAppScreen"
   }
 }
 

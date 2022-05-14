@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -15,7 +16,7 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
@@ -32,12 +33,14 @@ import java.util.concurrent.TimeUnit
 
 //import kotlinx.serialization.decodeFromString
 
-class MainActivity: ComponentActivity() {
+class MainActivity: ComponentActivity() { // , LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+//    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+//    getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE)
 //    testJson()
     setContent {
       SimpleXTheme {
@@ -52,6 +55,16 @@ class MainActivity: ComponentActivity() {
     }
     schedulePeriodicServiceRestartWorker()
   }
+
+//  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+//    Log.d(TAG, "MainActivity.onStateChanged: $event")
+//    when (event) {
+//      Lifecycle.Event.ON_STOP ->
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+//      Lifecycle.Event.ON_START ->
+//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+//    }
+//  }
 
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
