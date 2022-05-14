@@ -37,6 +37,7 @@ library
       Simplex.Chat.Migrations.M20220304_msg_quotes
       Simplex.Chat.Migrations.M20220321_chat_item_edited
       Simplex.Chat.Migrations.M20220404_files_status_fields
+      Simplex.Chat.Migrations.M20220514_profiles_user_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol

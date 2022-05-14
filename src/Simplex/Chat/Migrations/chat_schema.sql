@@ -8,7 +8,7 @@ CREATE TABLE contact_profiles ( -- remote user profile
   display_name TEXT NOT NULL, -- contact name set by remote user (not unique), this name must not contain spaces
   full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with contact profile properties
-, created_at TEXT CHECK (created_at NOT NULL), updated_at TEXT CHECK (updated_at NOT NULL), image TEXT);
+, created_at TEXT CHECK (created_at NOT NULL), updated_at TEXT CHECK (updated_at NOT NULL), image TEXT, user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE);
 CREATE INDEX contact_profiles_index ON contact_profiles (display_name, full_name);
 CREATE TABLE users (
   user_id INTEGER PRIMARY KEY,
@@ -79,7 +79,7 @@ CREATE TABLE group_profiles ( -- shared group profiles
   display_name TEXT NOT NULL, -- this name must not contain spaces
   full_name TEXT NOT NULL,
   properties TEXT NOT NULL DEFAULT '{}' -- JSON with user or contact profile
-, created_at TEXT CHECK (created_at NOT NULL), updated_at TEXT CHECK (updated_at NOT NULL), image TEXT);
+, created_at TEXT CHECK (created_at NOT NULL), updated_at TEXT CHECK (updated_at NOT NULL), image TEXT, user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE);
 CREATE TABLE groups (
   group_id INTEGER PRIMARY KEY, -- local group ID
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
