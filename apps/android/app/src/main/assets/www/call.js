@@ -27,7 +27,7 @@ function defaultCallConfig(encodedInsertableStreams) {
             ],
             iceCandidatePoolSize: 10,
             encodedInsertableStreams,
-            iceTransportPolicy: "relay",
+            // iceTransportPolicy: "relay",
         },
         iceCandidates: {
             delay: 2000,
@@ -78,14 +78,14 @@ async function initializeCall(config, mediaType, aesKey) {
             if (delay)
                 clearTimeout(delay);
             resolved = true;
-            const iceCandidates = candidates.map((c) => JSON.stringify(c));
+            const iceCandidates = serialize(candidates);
             candidates = [];
             resolve(iceCandidates);
         }
         function sendIceCandidates() {
             if (candidates.length === 0)
                 return;
-            const iceCandidates = candidates.map((c) => JSON.stringify(c));
+            const iceCandidates = serialize(candidates);
             candidates = [];
             sendMessageToNative({ resp: { type: "ice", iceCandidates } });
         }
@@ -115,6 +115,12 @@ async function initializeCall(config, mediaType, aesKey) {
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
+function serialize(x) {
+    return LZString.compressToBase64(JSON.stringify(x));
+}
+function parse(s) {
+    return JSON.parse(LZString.decompressFromBase64(s));
+}
 async function processCommand(body) {
     const { corrId, command } = body;
     const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
@@ -143,14 +149,14 @@ async function processCommand(body) {
                     // for debugging, returning the command for callee to use
                     // resp = {
                     //   type: "accept",
-                    //   offer: JSON.stringify(offer),
+                    //   offer: serialize(offer),
                     //   iceCandidates: await activeCall.iceCandidates,
                     //   media,
                     //   aesKey,
                     // }
                     resp = {
                         type: "offer",
-                        offer: JSON.stringify(offer),
+                        offer: serialize(offer),
                         iceCandidates: await activeCall.iceCandidates,
                         capabilities: { encryption },
                     };
@@ -164,8 +170,8 @@ async function processCommand(body) {
                     resp = { type: "error", message: "accept: encryption is not supported" };
                 }
                 else {
-                    const offer = JSON.parse(command.offer);
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    const offer = parse(command.offer);
+                    const remoteIceCandidates = parse(command.iceCandidates);
                     activeCall = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey);
                     const pc = activeCall.connection;
                     await pc.setRemoteDescription(new RTCSessionDescription(offer));
@@ -175,7 +181,7 @@ async function processCommand(body) {
                     // same as command for caller to use
                     resp = {
                         type: "answer",
-                        answer: JSON.stringify(answer),
+                        answer: serialize(answer),
                         iceCandidates: await activeCall.iceCandidates,
                     };
                 }
@@ -191,8 +197,8 @@ async function processCommand(body) {
                     resp = { type: "error", message: "answer: remote description already set" };
                 }
                 else {
-                    const answer = JSON.parse(command.answer);
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    const answer = parse(command.answer);
+                    const remoteIceCandidates = parse(command.iceCandidates);
                     await pc.setRemoteDescription(new RTCSessionDescription(answer));
                     addIceCandidates(pc, remoteIceCandidates);
                     resp = { type: "ok" };
@@ -200,7 +206,7 @@ async function processCommand(body) {
                 break;
             case "ice":
                 if (pc) {
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
+                    const remoteIceCandidates = parse(command.iceCandidates);
                     addIceCandidates(pc, remoteIceCandidates);
                     resp = { type: "ok" };
                 }
@@ -239,8 +245,6 @@ async function processCommand(body) {
     catch (e) {
         resp = { type: "error", message: e.message };
     }
-    // for debugging, returning the command for callee to use
-    // const apiResp = {corrId, resp}
     const apiResp = { corrId, resp, command };
     sendMessageToNative(apiResp);
     return apiResp;

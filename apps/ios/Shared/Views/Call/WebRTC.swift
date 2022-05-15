@@ -106,9 +106,9 @@ struct WVAPIMessage: Equatable, Decodable {
 enum WCallCommand: Equatable, Encodable, Decodable {
     case capabilities
     case start(media: CallMediaType, aesKey: String? = nil)
-    case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
-    case answer(answer: String, iceCandidates: [String])
-    case ice(iceCandidates: [String])
+    case accept(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil)
+    case answer(answer: String, iceCandidates: String)
+    case ice(iceCandidates: String)
     case media(media: CallMediaType, enable: Bool)
     case end
 
@@ -179,16 +179,16 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             self = .start(media: media, aesKey: aesKey)
         case "accept":
             let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
             self = .accept(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey)
         case "answer":
             let answer = try container.decode(String.self, forKey: CodingKeys.answer)
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             self = .answer(answer: answer, iceCandidates: iceCandidates)
         case "ice":
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             self = .ice(iceCandidates: iceCandidates)
         case "media":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
@@ -205,11 +205,11 @@ enum WCallCommand: Equatable, Encodable, Decodable {
 
 enum WCallResponse: Equatable, Decodable {
     case capabilities(capabilities: CallCapabilities)
-    case offer(offer: String, iceCandidates: [String], capabilities: CallCapabilities)
+    case offer(offer: String, iceCandidates: String, capabilities: CallCapabilities)
     // TODO remove accept, it is needed for debugging
 //    case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
-    case answer(answer: String, iceCandidates: [String])
-    case ice(iceCandidates: [String])
+    case answer(answer: String, iceCandidates: String)
+    case ice(iceCandidates: String)
     case connection(state: ConnectionState)
     case ended
     case ok
@@ -256,15 +256,15 @@ enum WCallResponse: Equatable, Decodable {
                 self = .capabilities(capabilities: capabilities)
             case "offer":
                 let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 let capabilities = try container.decode(CallCapabilities.self, forKey: CodingKeys.capabilities)
                 self = .offer(offer: offer, iceCandidates: iceCandidates, capabilities: capabilities)
             case "answer":
                 let answer = try container.decode(String.self, forKey: CodingKeys.answer)
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 self = .answer(answer: answer, iceCandidates: iceCandidates)
             case "ice":
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 self = .ice(iceCandidates: iceCandidates)
             case "connection":
                 let state = try container.decode(ConnectionState.self, forKey: CodingKeys.state)

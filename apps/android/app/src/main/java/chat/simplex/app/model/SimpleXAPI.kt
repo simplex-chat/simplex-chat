@@ -332,20 +332,20 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallOffer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>, media: CallMediaType, capabilities: CallCapabilities): Boolean {
+  suspend fun apiSendCallOffer(contact: Contact, rtcSession: String, rtcIceCandidates: String, media: CallMediaType, capabilities: CallCapabilities): Boolean {
     val webRtcSession = WebRTCSession(rtcSession, rtcIceCandidates)
     val callOffer = WebRTCCallOffer(CallType(media, capabilities), webRtcSession)
     val r = sendCmd(CC.ApiSendCallOffer(contact, callOffer))
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallAnswer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>): Boolean {
+  suspend fun apiSendCallAnswer(contact: Contact, rtcSession: String, rtcIceCandidates: String): Boolean {
     val answer = WebRTCSession(rtcSession, rtcIceCandidates)
     val r = sendCmd(CC.ApiSendCallAnswer(contact, answer))
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(contact: Contact, rtcIceCandidates: List<String>): Boolean {
+  suspend fun apiSendCallExtraInfo(contact: Contact, rtcIceCandidates: String): Boolean {
     val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
     val r = sendCmd(CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r is CR.CmdOk

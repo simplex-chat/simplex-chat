@@ -15,11 +15,11 @@ struct WebRTCCallOffer: Encodable {
 
 struct WebRTCSession: Codable {
     var rtcSession: String
-    var rtcIceCandidates: [String]
+    var rtcIceCandidates: String
 }
 
 struct WebRTCExtraInfo: Codable {
-    var rtcIceCandidates: [String]
+    var rtcIceCandidates: String
 }
 
 struct CallInvitation {

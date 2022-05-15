@@ -1870,7 +1870,7 @@ testWebRTCSession :: WebRTCSession
 testWebRTCSession =
   WebRTCSession
     { rtcSession = "{}",
-      rtcIceCandidates = [""]
+      rtcIceCandidates = "[]"
     }
 
 testWebRTCCallOffer :: WebRTCCallOffer

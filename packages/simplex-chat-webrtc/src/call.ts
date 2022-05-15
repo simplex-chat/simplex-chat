@@ -59,7 +59,7 @@ interface WCEndCall extends IWCallCommand {
 interface WCAcceptOffer extends IWCallCommand {
   type: "accept"
   offer: string // JSON string for RTCSessionDescriptionInit
-  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  iceCandidates: string // JSON strings for RTCIceCandidateInit
   media: CallMediaType
   aesKey?: string
 }
@@ -67,19 +67,19 @@ interface WCAcceptOffer extends IWCallCommand {
 interface WCallOffer extends IWCallResponse {
   type: "offer"
   offer: string // JSON string for RTCSessionDescriptionInit
-  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  iceCandidates: string // JSON strings for RTCIceCandidateInit[]
   capabilities: CallCapabilities
 }
 
 interface WCallAnswer extends IWCallCommand, IWCallResponse {
   type: "answer"
   answer: string // JSON string for RTCSessionDescriptionInit
-  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  iceCandidates: string // JSON strings for RTCIceCandidateInit[]
 }
 
 interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
   type: "ice"
-  iceCandidates: string[] // JSON strings for RTCIceCandidateInit
+  iceCandidates: string // JSON strings for RTCIceCandidateInit[]
 }
 
 interface WCEnableMedia extends IWCallCommand {
@@ -151,7 +151,7 @@ const initialPlainTextRequired = {
 
 interface Call {
   connection: RTCPeerConnection
-  iceCandidates: Promise<string[]> // JSON strings for RTCIceCandidate
+  iceCandidates: Promise<string> // JSON strings for RTCIceCandidate
   localMedia: CallMediaType
   localStream: MediaStream
 }
@@ -174,7 +174,7 @@ function defaultCallConfig(encodedInsertableStreams: boolean): CallConfig {
       ],
       iceCandidatePoolSize: 10,
       encodedInsertableStreams,
-      iceTransportPolicy: "relay",
+      // iceTransportPolicy: "relay",
     },
     iceCandidates: {
       delay: 2000,
@@ -190,7 +190,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType))
   await setUpMediaStreams(conn, localStream, remoteStream, aesKey)
   conn.addEventListener("connectionstatechange", connectionStateChange)
-  const iceCandidates = new Promise<string[]>((resolve, _) => {
+  const iceCandidates = new Promise<string>((resolve, _) => {
     let candidates: RTCIceCandidate[] = []
     let resolved = false
     let extrasInterval: number | undefined
@@ -224,14 +224,14 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
     function resolveIceCandidates() {
       if (delay) clearTimeout(delay)
       resolved = true
-      const iceCandidates = candidates.map((c) => JSON.stringify(c))
+      const iceCandidates = serialize(candidates)
       candidates = []
       resolve(iceCandidates)
     }
 
     function sendIceCandidates() {
       if (candidates.length === 0) return
-      const iceCandidates = candidates.map((c) => JSON.stringify(c))
+      const iceCandidates = serialize(candidates)
       candidates = []
       sendMessageToNative({resp: {type: "ice", iceCandidates}})
     }
@@ -265,6 +265,14 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
 
+function serialize<T>(x: T): string {
+  return LZString.compressToBase64(JSON.stringify(x))
+}
+
+function parse<T>(s: string): T {
+  return JSON.parse(LZString.decompressFromBase64(s)!)
+}
+
 async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
   const {corrId, command} = body
   const pc = activeCall?.connection
@@ -291,14 +299,14 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
           // for debugging, returning the command for callee to use
           // resp = {
           //   type: "accept",
-          //   offer: JSON.stringify(offer),
+          //   offer: serialize(offer),
           //   iceCandidates: await activeCall.iceCandidates,
           //   media,
           //   aesKey,
           // }
           resp = {
             type: "offer",
-            offer: JSON.stringify(offer),
+            offer: serialize(offer),
             iceCandidates: await activeCall.iceCandidates,
             capabilities: {encryption},
           }
@@ -310,8 +318,8 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
         } else if (!supportsInsertableStreams() && command.aesKey) {
           resp = {type: "error", message: "accept: encryption is not supported"}
         } else {
-          const offer = JSON.parse(command.offer)
-          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          const offer: RTCSessionDescriptionInit = parse(command.offer)
+          const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
           activeCall = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey)
           const pc = activeCall.connection
           await pc.setRemoteDescription(new RTCSessionDescription(offer))
@@ -321,7 +329,7 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
           // same as command for caller to use
           resp = {
             type: "answer",
-            answer: JSON.stringify(answer),
+            answer: serialize(answer),
             iceCandidates: await activeCall.iceCandidates,
           }
         }
@@ -334,8 +342,8 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
         } else if (pc.currentRemoteDescription) {
           resp = {type: "error", message: "answer: remote description already set"}
         } else {
-          const answer = JSON.parse(command.answer)
-          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          const answer: RTCSessionDescriptionInit = parse(command.answer)
+          const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
           await pc.setRemoteDescription(new RTCSessionDescription(answer))
           addIceCandidates(pc, remoteIceCandidates)
           resp = {type: "ok"}
@@ -343,7 +351,7 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
         break
       case "ice":
         if (pc) {
-          const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c))
+          const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
           addIceCandidates(pc, remoteIceCandidates)
           resp = {type: "ok"}
         } else {
@@ -377,8 +385,6 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
   } catch (e) {
     resp = {type: "error", message: (e as Error).message}
   }
-  // for debugging, returning the command for callee to use
-  // const apiResp = {corrId, resp}
   const apiResp = {corrId, resp, command}
   sendMessageToNative(apiResp)
   return apiResp

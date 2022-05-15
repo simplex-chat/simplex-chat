@@ -44,8 +44,8 @@ fun VideoCallView(close: () -> Unit) {
       .fillMaxSize()
   ) {
     WebRTCView(callCommand) { resp ->
-//      for debugging
-//      commandText.value = resp
+      // for debugging
+      // commandText.value = resp
       commandText.value = json.encodeToString(resp)
     }
 
@@ -80,6 +80,8 @@ fun VideoCallView(close: () -> Unit) {
 }
 
 @Composable
+// for debugging
+// fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (String) -> Unit) {
 fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   lateinit var wv: WebView
   val permissionsState = rememberMultiplePermissionsState(
@@ -158,8 +160,8 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
         }
       ) {
         wv = it
-//        for debugging
-//        wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
+        // for debugging
+        // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
         wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
       }
     }
@@ -169,14 +171,14 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
 }
 
 // for debugging
-//class WebRTCInterface(private val onResponse: (String) -> Unit) {
+// class WebRTCInterface(private val onResponse: (String) -> Unit) {
 class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
   @JavascriptInterface
   fun postMessage(message: String) {
     Log.d(TAG, "WebRTCInterface.postMessage")
     try {
-//       for debugging
-//       onResponse(message)
+      // for debugging
+      // onResponse(message)
       onResponse(json.decodeFromString(message))
     } catch (e: Error) {
       Log.e(TAG, "failed parsing WebView message: $message")
