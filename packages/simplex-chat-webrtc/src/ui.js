@@ -1,4 +1,5 @@
 ;(async function run() {
+  const START_E2EE_CALL_BTN = "start-e2ee-call"
   const START_CALL_BTN = "start-call"
   const URL_FOR_PEER = "url-for-peer"
   const COPY_URL_FOR_PEER_BTN = "copy-url-for-peer"
@@ -14,19 +15,15 @@
   const chatCommandForPeer = document.getElementById(CHAT_COMMAND_FOR_PEER)
   const commandToProcess = document.getElementById(COMMAND_TO_PROCESS)
   const processCommandButton = document.getElementById(PROCESS_COMMAND_BTN)
-  const startCallButton = document.getElementById(START_CALL_BTN)
-  startCallButton.onclick = async () => {
-    const {resp} = await processCommand({command: {type: "capabilities"}})
-    let aesKey
-    if (resp?.capabilities?.encryption) {
-      const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
-      const keyBytes = await crypto.subtle.exportKey("raw", key)
-      aesKey = decodeAscii(encodeBase64(new Uint8Array(keyBytes)))
-      console.log("aesKey", aesKey)
-    }
-    sendCommand({command: {type: "start", media: "video", aesKey}})
-    startCallButton.style.display = "none"
+  const startE2EECallButton = document.getElementById(START_E2EE_CALL_BTN)
+  const {resp} = await processCommand({command: {type: "capabilities"}})
+  if (resp?.capabilities?.encryption) {
+    startE2EECallButton.onclick = startCall(true)
+  } else {
+    startE2EECallButton.style.display = "none"
   }
+  const startCallButton = document.getElementById(START_CALL_BTN)
+  startCallButton.onclick = startCall()
   const copyUrlButton = document.getElementById(COPY_URL_FOR_PEER_BTN)
   copyUrlButton.onclick = () => {
     navigator.clipboard.writeText(urlForPeer.innerText)
@@ -45,8 +42,23 @@
   const parsed = new URLSearchParams(document.location.hash.substring(1))
   let apiCallStr = parsed.get("command")
   if (apiCallStr) {
+    startE2EECallButton.style.display = "none"
     startCallButton.style.display = "none"
     await sendCommand(JSON.parse(decodeURIComponent(apiCallStr)))
+  }
+
+  function startCall(encryption) {
+    return async () => {
+      let aesKey
+      if (encryption) {
+        const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
+        const keyBytes = await crypto.subtle.exportKey("raw", key)
+        aesKey = decodeAscii(encodeBase64(new Uint8Array(keyBytes)))
+      }
+      sendCommand({command: {type: "start", media: "video", aesKey}})
+      startE2EECallButton.style.display = "none"
+      startCallButton.style.display = "none"
+    }
   }
 
   async function sendCommand(apiCall) {
