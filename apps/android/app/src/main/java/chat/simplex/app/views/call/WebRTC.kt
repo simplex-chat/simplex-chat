@@ -75,16 +75,16 @@ sealed class WCallResponse {
 @Serializable class CallInvitation(val peerMedia: CallMediaType?, val sharedKey: String?)
 @Serializable class CallCapabilities(val encryption: Boolean)
 
-enum class WebRTCCallStatus(val status: String) {
-  Connected("connected"),
-  Disconnected("disconnected"),
-  Failed("failed")
+enum class WebRTCCallStatus {
+  @SerialName("connected") Connected,
+  @SerialName("disconnected") Disconnected,
+  @SerialName("failed") Failed
 }
 
 @Serializable
-enum class CallMediaType(val media: String) {
-  Video("video"),
-  Audio("audio")
+enum class CallMediaType {
+  @SerialName("video") Video,
+  @SerialName("audio") Audio
 }
 
 @Serializable

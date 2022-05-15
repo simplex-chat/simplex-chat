@@ -261,6 +261,7 @@ async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesK
   }
 }
 
+// for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
 
@@ -376,8 +377,9 @@ async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
   } catch (e) {
     resp = {type: "error", message: (e as Error).message}
   }
-  const apiResp = {corrId, resp, command}
+  // for debugging, returning the command for callee to use
   // const apiResp = {corrId, resp}
+  const apiResp = {corrId, resp, command}
   sendMessageToNative(apiResp)
   return apiResp
 }

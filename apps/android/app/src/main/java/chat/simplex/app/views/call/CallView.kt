@@ -1,7 +1,6 @@
 package chat.simplex.app.views.call
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.util.Log
@@ -24,16 +23,65 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import chat.simplex.app.TAG
+import chat.simplex.app.model.json
 import chat.simplex.app.views.helpers.TextEditor
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun VideoCallView(close: () -> Unit) {
+  val callCommand = remember { mutableStateOf<WCallCommand?>(null)}
+  val commandText = remember { mutableStateOf("{\"command\": {\"type\": \"start\", \"media\": \"video\", \"aesKey\": \"FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U=\"}}") } //, aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
+  val clipboard = ContextCompat.getSystemService(LocalContext.current, ClipboardManager::class.java)
+
   BackHandler(onBack = close)
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(12.dp),
+    modifier = Modifier
+      .background(MaterialTheme.colors.background)
+      .fillMaxSize()
+  ) {
+    WebRTCView(callCommand) { resp ->
+//      for debugging
+//      commandText.value = resp
+      commandText.value = json.encodeToString(resp)
+    }
+
+    TextEditor(Modifier.height(180.dp), text = commandText)
+
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(bottom = 6.dp),
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Button(onClick = {
+        val clip: ClipData = ClipData.newPlainText("js command", commandText.value)
+        clipboard?.setPrimaryClip(clip)
+      }) { Text("Copy") }
+      Button(onClick = {
+        try {
+          val apiCall: WVAPICall = json.decodeFromString(commandText.value)
+          commandText.value = ""
+          println("sending: ${commandText.value}")
+          callCommand.value = apiCall.command
+        } catch(e: Error) {
+          println("error parsing command: ${commandText.value}")
+          println(e)
+        }
+      }) { Text("Send") }
+      Button(onClick = {
+        commandText.value = ""
+      }) { Text("Clear") }
+    }
+  }
+}
+
+@Composable
+fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   lateinit var wv: WebView
-  val context = LocalContext.current
-  val clipboard = ContextCompat.getSystemService(context, ClipboardManager::class.java)
   val permissionsState = rememberMultiplePermissionsState(
     permissions = listOf(
       Manifest.permission.CAMERA,
@@ -42,6 +90,10 @@ fun VideoCallView(close: () -> Unit) {
       Manifest.permission.INTERNET
     )
   )
+  fun processCommand(cmd: WCallCommand) {
+    val apiCall = WVAPICall(command = cmd)
+    wv.evaluateJavascript("processCommand(${json.encodeToString(apiCall)})", null)
+  }
   val lifecycleOwner = LocalLifecycleOwner.current
   DisposableEffect(lifecycleOwner) {
     val observer = LifecycleEventObserver { _, event ->
@@ -52,96 +104,82 @@ fun VideoCallView(close: () -> Unit) {
     lifecycleOwner.lifecycle.addObserver(observer)
 
     onDispose {
-      wv.evaluateJavascript("endCall()", null)
+      processCommand(WCallCommand.End())
       lifecycleOwner.lifecycle.removeObserver(observer)
     }
   }
-  val localContext = LocalContext.current
-  val commandToShow = remember { mutableStateOf("processCommand({command: {type: 'start', media: 'video'}})") } //, aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
+  LaunchedEffect(callCommand.value) {
+    val cmd = callCommand.value
+    if (cmd != null) {
+      callCommand.value = null
+      processCommand(cmd)
+    }
+  }
+
   val assetLoader = WebViewAssetLoader.Builder()
-    .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(localContext))
+    .addPathHandler("/assets/www/", WebViewAssetLoader.AssetsPathHandler(LocalContext.current))
     .build()
 
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(12.dp),
-    modifier = Modifier
-      .background(MaterialTheme.colors.background)
-      .fillMaxSize()
-  ) {
-    if (permissionsState.allPermissionsGranted) {
-      Box(
-        Modifier
-          .fillMaxWidth()
-          .aspectRatio(ratio = 1F)
-      ) {
-        AndroidView(
-          factory = { AndroidViewContext ->
-            WebView(AndroidViewContext).apply {
-              layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-              )
-              this.webChromeClient = object: WebChromeClient() {
-                override fun onPermissionRequest(request: PermissionRequest) {
-                  if (request.origin.toString().startsWith("file:/")) {
-                    request.grant(request.resources)
-                  } else {
-                    Log.d(TAG, "Permission request from webview denied.")
-                    request.deny()
-                  }
-                }
-
-                override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                  val rtnValue = super.onConsoleMessage(consoleMessage)
-                  val msg = consoleMessage?.message() as String
-                  if (msg.startsWith("{")) {
-                    commandToShow.value = "processCommand($msg)"
-                  }
-                  return rtnValue
-                }
-              }
-              this.webViewClient = LocalContentWebViewClient(assetLoader)
-              this.clearHistory()
-              this.clearCache(true)
-//              this.addJavascriptInterface(JavascriptInterface(), "Android")
-              val webViewSettings = this.settings
-              webViewSettings.allowFileAccess = true
-              webViewSettings.allowContentAccess = true
-              webViewSettings.javaScriptEnabled = true
-              webViewSettings.mediaPlaybackRequiresUserGesture = false
-              webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-              this.loadUrl("file:android_asset/www/call.html")
-            }
-          }
-        ) {
-          wv = it
-        }
-      }
-    } else {
-      Text("NEED PERMISSIONS")
-    }
-
-    TextEditor(Modifier.height(180.dp), text = commandToShow)
-
-    Row(
+  if (permissionsState.allPermissionsGranted) {
+    Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = 6.dp),
-      horizontalArrangement = Arrangement.SpaceBetween
+        .aspectRatio(ratio = 1F)
     ) {
-      Button( onClick = {
-        val clip: ClipData = ClipData.newPlainText("js command", commandToShow.value)
-        clipboard?.setPrimaryClip(clip)
-      }) {Text("Copy")}
-      Button( onClick = {
-        println("sending: ${commandToShow.value}")
-        wv.evaluateJavascript(commandToShow.value, null)
-        commandToShow.value = ""
-      }) {Text("Send")}
-      Button( onClick = {
-        commandToShow.value = ""
-      }) {Text("Clear")}
+      AndroidView(
+        factory = { AndroidViewContext ->
+          WebView(AndroidViewContext).apply {
+            layoutParams = ViewGroup.LayoutParams(
+              ViewGroup.LayoutParams.MATCH_PARENT,
+              ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            this.webChromeClient = object: WebChromeClient() {
+              override fun onPermissionRequest(request: PermissionRequest) {
+                if (request.origin.toString().startsWith("file:/")) {
+                  request.grant(request.resources)
+                } else {
+                  Log.d(TAG, "Permission request from webview denied.")
+                  request.deny()
+                }
+              }
+            }
+            this.webViewClient = LocalContentWebViewClient(assetLoader)
+            this.clearHistory()
+            this.clearCache(true)
+            this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
+            val webViewSettings = this.settings
+            webViewSettings.allowFileAccess = true
+            webViewSettings.allowContentAccess = true
+            webViewSettings.javaScriptEnabled = true
+            webViewSettings.mediaPlaybackRequiresUserGesture = false
+            webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+            this.loadUrl("file:android_asset/www/call.html")
+          }
+        }
+      ) {
+        wv = it
+//        for debugging
+//        wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
+        wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
+      }
+    }
+  } else {
+    Text("NEED PERMISSIONS")
+  }
+}
+
+// for debugging
+//class WebRTCInterface(private val onResponse: (String) -> Unit) {
+class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
+  @JavascriptInterface
+  fun postMessage(message: String) {
+    Log.d(TAG, "WebRTCInterface.postMessage")
+    try {
+//       for debugging
+//       onResponse(message)
+      onResponse(json.decodeFromString(message))
+    } catch (e: Error) {
+      Log.e(TAG, "failed parsing WebView message: $message")
     }
   }
 }
