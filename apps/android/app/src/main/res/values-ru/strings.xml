@@ -57,7 +57,7 @@
     <string name="private_instant_notifications_disabled">Приватные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
-    <string name="turn_off_battery_optimization">Для их использования, пожалуйста отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в слеующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turn_off_battery_optimization">Для использования приватных уведомлений, пожалуйста отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в слеующем диалоге. Иначе уведомления будут выключены.</string>
     <string name="turning_off_background_service">Оптимизация батареи включена, поэтому приватные уведомления выключены. Вы можете снова включить их через Настройки.</string>
 
     <!-- SimpleX Chat foreground Service -->
