@@ -2488,8 +2488,8 @@ createNewSndChatItem st user chatDirection SndMessage {msgId, sharedMsgId} ciCon
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: MonadUnliftIO m => SQLiteStore -> User -> ChatDirection c 'MDRcv -> RcvMessage -> CIContent 'MDRcv -> UTCTime -> UTCTime -> m (ChatItemId, Maybe (CIQuote c))
-createNewRcvChatItem st user chatDirection RcvMessage {msgId, chatMsgEvent, sharedMsgId_} ciContent itemTs createdAt =
+createNewRcvChatItem :: MonadUnliftIO m => SQLiteStore -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> UTCTime -> UTCTime -> m (ChatItemId, Maybe (CIQuote c))
+createNewRcvChatItem st user chatDirection RcvMessage {msgId, chatMsgEvent} sharedMsgId_ ciContent itemTs createdAt =
   liftIO . withTransaction st $ \db -> do
     ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow itemTs createdAt
     quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg

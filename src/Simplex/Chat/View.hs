@@ -53,9 +53,8 @@ responseToView testView = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
-  CRChatItemUpdatedNotFound _ -> []
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
-  CRChatItemDeletedNotFound _ -> []
+  CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFromContactDeleted c <> "[couldn't find message, perhaps it has been deleted locally]"]
   CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []

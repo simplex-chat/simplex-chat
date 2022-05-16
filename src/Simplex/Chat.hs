@@ -1437,11 +1437,18 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         pure $ Just ciFile
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       updateRcvChatItem `catchError` \e ->
         case e of
-          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemUpdatedNotFound sMsgId
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            ci@ChatItem {formattedText} <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing
+            toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+            showMsgToast (c <> "> ") mc formattedText
+            setActive $ ActiveC c
           _ -> throwError e
       where
         updateRcvChatItem = do
@@ -1455,7 +1462,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       deleteRcvChatItem `catchError` \e ->
         case e of
-          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound sMsgId
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound ct sMsgId
           _ -> throwError e
       where
         deleteRcvChatItem = do
@@ -2021,9 +2028,12 @@ saveSndChatItem user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem =
   liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
-saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} MsgMeta {broker = (_, brokerTs)} content ciFile = do
+saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} = saveRcvChatItem' user cd msg sharedMsgId_
+
+saveRcvChatItem' :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
+saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} content ciFile = do
   createdAt <- liftIO getCurrentTime
-  (ciId, quotedItem) <- withStore $ \st -> createNewRcvChatItem st user cd msg content brokerTs createdAt
+  (ciId, quotedItem) <- withStore $ \st -> createNewRcvChatItem st user cd msg sharedMsgId_ content brokerTs createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore $ \st -> updateFileTransferChatItemId st fileId ciId
   liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt
 

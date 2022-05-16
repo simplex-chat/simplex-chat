@@ -179,9 +179,8 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
-  | CRChatItemUpdatedNotFound {sharedMsgId :: SharedMsgId}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
-  | CRChatItemDeletedNotFound {sharedMsgId :: SharedMsgId}
+  | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
