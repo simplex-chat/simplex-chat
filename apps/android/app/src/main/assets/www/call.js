@@ -11,6 +11,11 @@ var CallMediaType;
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
+var TransformOperation;
+(function (TransformOperation) {
+    TransformOperation["Encrypt"] = "encrypt";
+    TransformOperation["Decrypt"] = "decrypt";
+})(TransformOperation || (TransformOperation = {}));
 ;
 (function () {
     let activeCall;
@@ -260,9 +265,8 @@ const callCrypto = callCryptoFunction();
         if (aesKey) {
             key = await callCrypto.decodeAesKey(aesKey);
             if (useWorker) {
-                worker = new Worker(URL.createObjectURL(new Blob([`const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`], {
-                    type: "text/javascript",
-                })));
+                const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
+                worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
             }
         }
         for (const track of localStream.getTracks()) {
@@ -271,49 +275,14 @@ const callCrypto = callCryptoFunction();
         if (aesKey && key) {
             console.log("set up encryption for sending");
             for (const sender of pc.getSenders()) {
-                if (worker && "RTCRtpScriptTransform" in window) {
-                    console.log("set up encryption for sending with worker & RTCRtpScriptTransform");
-                    sender.transform = new RTCRtpScriptTransform(worker, { operation: "encrypt", aesKey });
-                }
-                else if ("createEncodedStreams" in sender) {
-                    const { readable, writable } = sender.createEncodedStreams();
-                    if (worker) {
-                        console.log("set up encryption for sending with worker");
-                        worker.postMessage({ operation: "encrypt", readable, writable, aesKey }, [readable, writable]);
-                    }
-                    else {
-                        console.log("set up encryption for sending without worker");
-                        readable.pipeThrough(new TransformStream({ transform: callCrypto.encryptFrame(key) })).pipeTo(writable);
-                    }
-                }
-                else {
-                    console.log("no encryption");
-                }
+                setupPeerTransform(TransformOperation.Encrypt, sender, worker, aesKey, key);
             }
         }
         // Pull tracks from remote stream as they arrive add them to remoteStream video
         pc.ontrack = (event) => {
             if (aesKey && key) {
-                const receiver = event.receiver;
                 console.log("set up decryption for receiving");
-                if (worker && "RTCRtpScriptTransform" in window) {
-                    console.log("set up encryption for receiving with worker & RTCRtpScriptTransform");
-                    receiver.transform = new RTCRtpScriptTransform(worker, { operation: "decrypt", aesKey });
-                }
-                else if ("createEncodedStreams" in receiver) {
-                    const { readable, writable } = receiver.createEncodedStreams();
-                    if (worker) {
-                        console.log("set up encryption for receiving with worker");
-                        worker.postMessage({ operation: "decrypt", readable, writable, aesKey }, [readable, writable]);
-                    }
-                    else {
-                        console.log("set up encryption for receiving without worker");
-                        readable.pipeThrough(new TransformStream({ transform: callCrypto.decryptFrame(key) })).pipeTo(writable);
-                    }
-                }
-                else {
-                    console.log("no encryption");
-                }
+                setupPeerTransform(TransformOperation.Decrypt, event.receiver, worker, aesKey, key);
             }
             remoteStream.addTrack(event.track);
         };
@@ -346,6 +315,27 @@ const callCrypto = callCryptoFunction();
         // setupVideoElement(videos.remote)
         videos.local.srcObject = localStream;
         videos.remote.srcObject = remoteStream;
+    }
+    function setupPeerTransform(operation, peer, worker, aesKey, key) {
+        if (worker && "RTCRtpScriptTransform" in window) {
+            console.log(`${operation} with worker & RTCRtpScriptTransform`);
+            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey });
+        }
+        else if ("createEncodedStreams" in peer) {
+            const { readable, writable } = peer.createEncodedStreams();
+            if (worker) {
+                console.log(`${operation} with worker`);
+                worker.postMessage({ operation, readable, writable, aesKey }, [readable, writable]);
+            }
+            else {
+                console.log(`${operation} without worker`);
+                const transform = callCrypto.transformFrame[operation](key);
+                readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
+            }
+        }
+        else {
+            console.log(`no ${operation}`);
+        }
     }
     function callMediaConstraints(mediaType) {
         switch (mediaType) {
@@ -518,7 +508,14 @@ function callCryptoFunction() {
         }
         return bytes;
     }
-    return { encryptFrame, decryptFrame, decodeAesKey, encodeAscii, decodeAscii, encodeBase64, decodeBase64 };
+    return {
+        transformFrame: { encrypt: encryptFrame, decrypt: decryptFrame },
+        decodeAesKey,
+        encodeAscii,
+        decodeAscii,
+        encodeBase64,
+        decodeBase64,
+    };
 }
 // If the worker is used for decryption, this function code (as string) is used to load the worker via Blob
 // We have to use worker optionally, as it crashes in Android web view, regardless of how it is loaded
@@ -537,9 +534,8 @@ function workerFunction() {
     }
     async function setupTransform({ operation, aesKey, readable, writable }) {
         const key = await callCrypto.decodeAesKey(aesKey);
-        const transform = operation === "encrypt" ? callCrypto.encryptFrame(key) : callCrypto.decryptFrame(key);
-        const transformStream = new TransformStream({ transform });
-        readable.pipeThrough(transformStream).pipeTo(writable);
+        const transform = callCrypto.transformFrame[operation](key);
+        readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
     }
 }
 //# sourceMappingURL=call.js.map

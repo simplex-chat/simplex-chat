@@ -130,6 +130,11 @@ declare var RTCRtpScriptTransform: {
   new (worker: Worker, options?: any): RTCRtpScriptTransform
 }
 
+enum TransformOperation {
+  Encrypt = "encrypt",
+  Decrypt = "decrypt",
+}
+
 interface RTCRtpScriptTransform {}
 
 ;(function () {
@@ -416,13 +421,8 @@ interface RTCRtpScriptTransform {}
     if (aesKey) {
       key = await callCrypto.decodeAesKey(aesKey)
       if (useWorker) {
-        worker = new Worker(
-          URL.createObjectURL(
-            new Blob([`const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`], {
-              type: "text/javascript",
-            })
-          )
-        )
+        const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`
+        worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
       }
     }
 
@@ -433,44 +433,15 @@ interface RTCRtpScriptTransform {}
     if (aesKey && key) {
       console.log("set up encryption for sending")
       for (const sender of pc.getSenders() as RTCRtpSenderWithEncryption[]) {
-        if (worker && "RTCRtpScriptTransform" in window) {
-          console.log("set up encryption for sending with worker & RTCRtpScriptTransform")
-          sender.transform = new RTCRtpScriptTransform(worker, {operation: "encrypt", aesKey})
-        } else if ("createEncodedStreams" in sender) {
-          const {readable, writable} = sender.createEncodedStreams()
-          if (worker) {
-            console.log("set up encryption for sending with worker")
-            worker.postMessage({operation: "encrypt", readable, writable, aesKey}, [readable, writable] as unknown as Transferable[])
-          } else {
-            console.log("set up encryption for sending without worker")
-            readable.pipeThrough(new TransformStream({transform: callCrypto.encryptFrame(key)})).pipeTo(writable)
-          }
-        } else {
-          console.log("no encryption")
-        }
+        setupPeerTransform(TransformOperation.Encrypt, sender, worker, aesKey, key)
       }
     }
 
     // Pull tracks from remote stream as they arrive add them to remoteStream video
     pc.ontrack = (event) => {
       if (aesKey && key) {
-        const receiver = event.receiver as RTCRtpReceiverWithEncryption
         console.log("set up decryption for receiving")
-        if (worker && "RTCRtpScriptTransform" in window) {
-          console.log("set up encryption for receiving with worker & RTCRtpScriptTransform")
-          receiver.transform = new RTCRtpScriptTransform(worker, {operation: "decrypt", aesKey})
-        } else if ("createEncodedStreams" in receiver) {
-          const {readable, writable} = receiver.createEncodedStreams()
-          if (worker) {
-            console.log("set up encryption for receiving with worker")
-            worker.postMessage({operation: "decrypt", readable, writable, aesKey}, [readable, writable] as unknown as Transferable[])
-          } else {
-            console.log("set up encryption for receiving without worker")
-            readable.pipeThrough(new TransformStream({transform: callCrypto.decryptFrame(key)})).pipeTo(writable)
-          }
-        } else {
-          console.log("no encryption")
-        }
+        setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, worker, aesKey, key)
       }
       remoteStream.addTrack(event.track)
     }
@@ -504,6 +475,31 @@ interface RTCRtpScriptTransform {}
     // setupVideoElement(videos.remote)
     videos.local.srcObject = localStream
     videos.remote.srcObject = remoteStream
+  }
+
+  function setupPeerTransform(
+    operation: TransformOperation,
+    peer: RTCRtpReceiverWithEncryption | RTCRtpSenderWithEncryption,
+    worker: Worker | undefined,
+    aesKey: string,
+    key: CryptoKey
+  ) {
+    if (worker && "RTCRtpScriptTransform" in window) {
+      console.log(`${operation} with worker & RTCRtpScriptTransform`)
+      peer.transform = new RTCRtpScriptTransform(worker, {operation, aesKey})
+    } else if ("createEncodedStreams" in peer) {
+      const {readable, writable} = peer.createEncodedStreams()
+      if (worker) {
+        console.log(`${operation} with worker`)
+        worker.postMessage({operation, readable, writable, aesKey}, [readable, writable] as unknown as Transferable[])
+      } else {
+        console.log(`${operation} without worker`)
+        const transform = callCrypto.transformFrame[operation](key)
+        readable.pipeThrough(new TransformStream({transform})).pipeTo(writable)
+      }
+    } else {
+      console.log(`no ${operation}`)
+    }
   }
 
   function callMediaConstraints(mediaType: CallMediaType): MediaStreamConstraints {
@@ -566,9 +562,10 @@ interface RTCRtpScriptTransform {}
   }
 })()
 
+type TransformFrameFunc = (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
+
 interface CallCrypto {
-  encryptFrame: (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
-  decryptFrame: (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
+  transformFrame: {[x in TransformOperation]: TransformFrameFunc}
   decodeAesKey: (aesKey: string) => Promise<CryptoKey>
   encodeAscii: (s: string) => Uint8Array
   decodeAscii: (a: Uint8Array) => string
@@ -717,7 +714,14 @@ function callCryptoFunction(): CallCrypto {
     return bytes
   }
 
-  return {encryptFrame, decryptFrame, decodeAesKey, encodeAscii, decodeAscii, encodeBase64, decodeBase64}
+  return {
+    transformFrame: {encrypt: encryptFrame, decrypt: decryptFrame},
+    decodeAesKey,
+    encodeAscii,
+    decodeAscii,
+    encodeBase64,
+    decodeBase64,
+  }
 }
 
 // If the worker is used for decryption, this function code (as string) is used to load the worker via Blob
@@ -728,13 +732,11 @@ function workerFunction() {
   }
 
   interface Transform {
-    operation: Operation
+    operation: TransformOperation
     readable: ReadableStream<RTCEncodedVideoFrame>
     writable: WritableStream<RTCEncodedVideoFrame>
     aesKey: string
   }
-
-  type Operation = "encrypt" | "decrypt"
 
   // encryption with createEncodedStreams support
   self.addEventListener("message", async ({data}: WorkerMessage) => {
@@ -752,8 +754,7 @@ function workerFunction() {
 
   async function setupTransform({operation, aesKey, readable, writable}: Transform): Promise<void> {
     const key = await callCrypto.decodeAesKey(aesKey)
-    const transform = operation === "encrypt" ? callCrypto.encryptFrame(key) : callCrypto.decryptFrame(key)
-    const transformStream = new TransformStream<RTCEncodedVideoFrame, RTCEncodedVideoFrame>({transform})
-    readable.pipeThrough(transformStream).pipeTo(writable)
+    const transform = callCrypto.transformFrame[operation](key)
+    readable.pipeThrough(new TransformStream({transform})).pipeTo(writable)
   }
 }
