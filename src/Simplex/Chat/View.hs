@@ -85,6 +85,7 @@ responseToView testView = \case
   CRSentConfirmation -> ["confirmation sent!"]
   CRSentInvitation -> ["connection request sent!"]
   CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
+  CRChatCleared _ -> ["chat cleared"]
   CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists c -> [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]

@@ -117,6 +117,8 @@ module Simplex.Chat.Store
     getFileTransferProgress,
     getSndFileTransfer,
     getContactFiles,
+    getContactChatItemIdsAndFiles,
+    getGroupChatItemIdsAndFiles,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -2291,6 +2293,40 @@ getContactFiles st userId Contact {contactId} =
         WHERE i.user_id = ? AND i.contact_id = ?
       |]
       (userId, contactId)
+
+getContactChatItemIdsAndFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactId -> m [(ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))]
+getContactChatItemIdsAndFiles st userId contactId =
+  liftIO . withTransaction st $ \db ->
+    map toItemIdAndFileData
+      <$> DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+          FROM chat_items i
+          LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+          WHERE i.user_id = ? AND i.contact_id = ?
+        |]
+        (userId, contactId)
+
+getGroupChatItemIdsAndFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))]
+getGroupChatItemIdsAndFiles st userId groupId =
+  liftIO . withTransaction st $ \db ->
+    map toItemIdAndFileData
+      <$> DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+          FROM chat_items i
+          LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+          WHERE i.user_id = ? AND i.group_id = ?
+        |]
+        (userId, groupId)
+
+toItemIdAndFileData :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))
+toItemIdAndFileData (chatItemId, fileId_, fileStatus_, filePath) =
+  case (fileId_, fileStatus_) of
+    (Just fileId, Just fileStatus) -> (chatItemId, Just (fileId, fileStatus, filePath))
+    _ -> (chatItemId, Nothing)
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =

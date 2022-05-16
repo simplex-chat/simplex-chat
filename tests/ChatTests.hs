@@ -130,6 +130,11 @@ testAddContact =
       alice <## "no contact bob_1"
       alice @@@ [("@bob", "hi")]
       bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
+      -- test clearing chat
+      alice #$> ("/_clear chat @2", id, "chat cleared")
+      alice #$> ("/_get chat @2 count=100", chat, [])
+      bob #$> ("/_clear chat @2", id, "chat cleared")
+      bob #$> ("/_get chat @2 count=100", chat, [])
   where
     chatsEmpty alice bob = do
       alice @@@ [("@bob", "")]
@@ -379,6 +384,13 @@ testGroup =
       cath ##> "#team hello"
       cath <## "you are no longer a member of the group"
       bob <##> cath
+      -- test clearing chat
+      alice #$> ("/_clear chat #1", id, "chat cleared")
+      alice #$> ("/_get chat #1 count=100", chat, [])
+      bob #$> ("/_clear chat #1", id, "chat cleared")
+      bob #$> ("/_get chat #1 count=100", chat, [])
+      cath #$> ("/_clear chat #1", id, "chat cleared")
+      cath #$> ("/_get chat #1 count=100", chat, [])
   where
     getReadChats alice bob cath = do
       alice @@@ [("#team", "hey team"), ("@cath", ""), ("@bob", "")]

@@ -343,7 +343,7 @@ processChatCommand = \case
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
-    -- TODO for group integrity and pending messages group items and messages are updated as deleted, maybe a different workaround is needed
+    -- TODO for group integrity and pending messages, group items and messages are set to "deleted"; maybe a different workaround is needed
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -366,9 +366,8 @@ processChatCommand = \case
       deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> m ()
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
-          cancelFiles user [(fileId, AFS msgDirection fileStatus)]
-          withFilesFolder $ \filesFolder ->
-            deleteFiles filesFolder [filePath]
+          cancelFile user fileId (AFS msgDirection fileStatus)
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -382,9 +381,9 @@ processChatCommand = \case
           files <- withStore $ \st -> getContactFiles st userId ct
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
-            cancelFiles user (map (\(fId, fStatus, _) -> (fId, fStatus)) files)
-            withFilesFolder $ \filesFolder ->
-              deleteFiles filesFolder (map (\(_, _, fPath) -> fPath) files)
+            forM_ files $ \(fId, fStatus, filePath) -> do
+              cancelFile user fId fStatus
+              withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -398,9 +397,25 @@ processChatCommand = \case
       pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
-    CTDirect -> pure $ chatCmdError "not implemented"
-    CTGroup -> pure $ chatCmdError "not implemented"
+  APIClearChat cRef@(ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
+      ct <- withStore $ \st -> getContact st userId chatId
+      ciIdsAndFilesData <- withStore $ \st -> getContactChatItemIdsAndFiles st userId chatId
+      forM_ ciIdsAndFilesData $ \(itemId, fileData_) -> do
+        forM_ fileData_ $ \(fId, fStatus, filePath) -> do
+          cancelFile user fId fStatus
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+        void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
+      pure $ CRChatCleared cRef
+    CTGroup -> do
+      Group gInfo _ <- withStore $ \st -> getGroup st user chatId
+      ciIdsAndFilesData <- withStore $ \st -> getGroupChatItemIdsAndFiles st userId chatId
+      forM_ ciIdsAndFilesData $ \(itemId, fileData_) -> do
+        forM_ fileData_ $ \(fId, fStatus, filePath) -> do
+          cancelFile user fId fStatus
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+        void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+      pure $ CRChatCleared cRef
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
@@ -760,15 +775,14 @@ processChatCommand = \case
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-    deleteFiles :: FilePath -> [Maybe FilePath] -> m ()
-    deleteFiles filesFolder filePaths =
-      forM_ filePaths $ \filePath_ ->
-        forM_ filePath_ $ \filePath -> do
-          let fsFilePath = filesFolder <> "/" <> filePath
-          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-            removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-    cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user files = forM_ files $ \(fileId, AFS dir status) ->
+    deleteFile :: FilePath -> Maybe FilePath -> m ()
+    deleteFile filesFolder filePath_ =
+      forM_ filePath_ $ \filePath -> do
+        let fsFilePath = filesFolder <> "/" <> filePath
+        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    cancelFile :: User -> Int64 -> ACIFileStatus -> m ()
+    cancelFile user fileId (AFS dir status) =
       unless (ciFileEnded status) $
         case dir of
           SMDSnd -> do
@@ -2141,6 +2155,7 @@ chatCommandP =
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
     <|> "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal))))
     <|> "/_delete " *> (APIDeleteChat <$> chatRefP)
+    <|> "/_clear chat " *> (APIClearChat <$> chatRefP)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
