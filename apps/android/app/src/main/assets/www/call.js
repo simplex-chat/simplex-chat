@@ -11,6 +11,7 @@ var CallMediaType;
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
+;
 (function () {
     let activeCall;
     function defaultCallConfig(encodedInsertableStreams) {
@@ -129,12 +130,12 @@ const callCrypto = callCryptoFunction();
                     if (activeCall) {
                         resp = { type: "error", message: "start: call already started" };
                     }
-                    else if (!supportsInsertableStreams() && command.aesKey) {
+                    else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
                         resp = { type: "error", message: "start: encryption is not supported" };
                     }
                     else {
-                        const encryption = supportsInsertableStreams();
                         const { media, useWorker } = command;
+                        const encryption = supportsInsertableStreams(useWorker);
                         const aesKey = encryption ? command.aesKey : undefined;
                         activeCall = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, aesKey, useWorker);
                         const pc = activeCall.connection;
@@ -160,7 +161,7 @@ const callCrypto = callCryptoFunction();
                     if (activeCall) {
                         resp = { type: "error", message: "accept: call already started" };
                     }
-                    else if (!supportsInsertableStreams() && command.aesKey) {
+                    else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
                         resp = { type: "error", message: "accept: encryption is not supported" };
                     }
                     else {
@@ -270,33 +271,54 @@ const callCrypto = callCryptoFunction();
         if (aesKey && key) {
             console.log("set up encryption for sending");
             for (const sender of pc.getSenders()) {
-                const { readable, writable } = sender.createEncodedStreams();
-                if (worker) {
-                    console.log("set up encryption for sending with worker");
-                    worker.postMessage({ operation: "encrypt", readable, writable, aesKey }, [readable, writable]);
+                if (worker && "RTCRtpScriptTransform" in window) {
+                    console.log("set up encryption for sending with worker & RTCRtpScriptTransform");
+                    sender.transform = new RTCRtpScriptTransform(worker, { operation: "encrypt", aesKey });
+                }
+                else if ("createEncodedStreams" in sender) {
+                    const { readable, writable } = sender.createEncodedStreams();
+                    if (worker) {
+                        console.log("set up encryption for sending with worker");
+                        worker.postMessage({ operation: "encrypt", readable, writable, aesKey }, [readable, writable]);
+                    }
+                    else {
+                        console.log("set up encryption for sending without worker");
+                        readable.pipeThrough(new TransformStream({ transform: callCrypto.encryptFrame(key) })).pipeTo(writable);
+                    }
                 }
                 else {
-                    console.log("set up encryption for sending without worker");
-                    readable.pipeThrough(new TransformStream({ transform: callCrypto.encryptFrame(key) })).pipeTo(writable);
+                    console.log("no encryption");
                 }
             }
         }
         // Pull tracks from remote stream as they arrive add them to remoteStream video
         pc.ontrack = (event) => {
             if (aesKey && key) {
+                const receiver = event.receiver;
                 console.log("set up decryption for receiving");
-                const { readable, writable } = event.receiver.createEncodedStreams();
-                if (worker) {
-                    console.log("set up encryption for sending with worker");
-                    worker.postMessage({ operation: "decrypt", readable, writable, aesKey }, [readable, writable]);
+                if (worker && "RTCRtpScriptTransform" in window) {
+                    console.log("set up encryption for receiving with worker & RTCRtpScriptTransform");
+                    receiver.transform = new RTCRtpScriptTransform(worker, { operation: "decrypt", aesKey });
+                }
+                else if ("createEncodedStreams" in receiver) {
+                    const { readable, writable } = receiver.createEncodedStreams();
+                    if (worker) {
+                        console.log("set up encryption for receiving with worker");
+                        worker.postMessage({ operation: "decrypt", readable, writable, aesKey }, [readable, writable]);
+                    }
+                    else {
+                        console.log("set up encryption for receiving without worker");
+                        readable.pipeThrough(new TransformStream({ transform: callCrypto.decryptFrame(key) })).pipeTo(writable);
+                    }
                 }
                 else {
-                    console.log("set up encryption for sending without worker");
-                    readable.pipeThrough(new TransformStream({ transform: callCrypto.decryptFrame(key) })).pipeTo(writable);
+                    console.log("no encryption");
                 }
             }
-            for (const track of event.streams[0].getTracks()) {
-                remoteStream.addTrack(track);
+            for (const stream of event.streams) {
+                for (const track of stream.getTracks()) {
+                    remoteStream.addTrack(track);
+                }
             }
         };
         // We assume VP8 encoding in the decode/encode stages to get the initial
@@ -505,12 +527,23 @@ function callCryptoFunction() {
 // If the worker is used for decryption, this function code (as string) is used to load the worker via Blob
 // We have to use worker optionally, as it crashes in Android web view, regardless of how it is loaded
 function workerFunction() {
-    onmessage = async (event) => {
-        const { operation, readable, writable, aesKey } = event.data;
+    // encryption with createEncodedStreams support
+    self.addEventListener("message", async ({ data }) => {
+        setupTransform(data);
+    });
+    // encryption using RTCRtpScriptTransform.
+    if ("RTCTransformEvent" in self) {
+        self.addEventListener("rtctransform", async ({ transformer }) => {
+            const { operation, aesKey } = transformer.options;
+            const { readable, writable } = transformer;
+            setupTransform({ operation, aesKey, readable, writable });
+        });
+    }
+    async function setupTransform({ operation, aesKey, readable, writable }) {
         const key = await callCrypto.decodeAesKey(aesKey);
         const transform = operation === "encrypt" ? callCrypto.encryptFrame(key) : callCrypto.decryptFrame(key);
         const transformStream = new TransformStream({ transform });
         readable.pipeThrough(transformStream).pipeTo(writable);
-    };
+    }
 }
 //# sourceMappingURL=call.js.map

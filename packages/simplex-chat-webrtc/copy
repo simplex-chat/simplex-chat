@@ -11,5 +11,4 @@ cp ./src/ui.js ./dist/ui.js
 cp ./src/call.html ../../apps/android/app/src/main/assets/www/call.html
 cp ./src/style.css ../../apps/android/app/src/main/assets/www/style.css
 cp ./dist/call.js ../../apps/android/app/src/main/assets/www/call.js
-cp ./dist/worker.js ../../apps/android/app/src/main/assets/www/worker.js
 cp ./node_modules/lz-string/libs/lz-string.min.js ../../apps/android/app/src/main/assets/www/lz-string.min.js

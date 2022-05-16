@@ -624,7 +624,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             // TODO check encryption is compatible
             withCall(contact) { call in
                 m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
-                m.callCommand = .accept(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
+                m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in
