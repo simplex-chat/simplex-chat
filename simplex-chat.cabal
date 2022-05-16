@@ -70,6 +70,7 @@ library
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , http-types ==0.12.*
     , mtl ==2.2.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -106,6 +107,7 @@ executable simplex-bot
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , http-types ==0.12.*
     , mtl ==2.2.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -143,6 +145,7 @@ executable simplex-bot-advanced
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , http-types ==0.12.*
     , mtl ==2.2.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -181,6 +184,7 @@ executable simplex-chat
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , http-types ==0.12.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
@@ -228,6 +232,7 @@ test-suite simplex-chat-test
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , hspec ==2.7.*
+    , http-types ==0.12.*
     , mtl ==2.2.*
     , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
