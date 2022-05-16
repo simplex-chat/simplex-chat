@@ -37,6 +37,10 @@ fun SettingsView(chatModel: ChatModel) {
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = { on ->
         chatModel.controller.setRunServiceInBackground(on)
+        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+          chatModel.controller.setBackgroundServiceNoticeShown(false)
+        }
+        chatModel.controller.showBackgroundServiceNoticeIfNeeded()
         chatModel.runServiceInBackground.value = on
       },
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
