@@ -408,7 +408,7 @@ processChatCommand = \case
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
       pure $ CRChatCleared cRef
     CTGroup -> do
-      Group gInfo _ <- withStore $ \st -> getGroup st user chatId
+      gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFilesData <- withStore $ \st -> getGroupChatItemIdsAndFiles st userId chatId
       forM_ ciIdsAndFilesData $ \(itemId, fileData_) -> do
         forM_ fileData_ $ \(fId, fStatus, filePath) -> do
