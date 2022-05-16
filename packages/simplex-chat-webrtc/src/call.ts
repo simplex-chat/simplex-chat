@@ -740,7 +740,7 @@ function workerFunction() {
 
   // encryption with createEncodedStreams support
   self.addEventListener("message", async ({data}: WorkerMessage) => {
-    setupTransform(data)
+    await setupTransform(data)
   })
 
   // encryption using RTCRtpScriptTransform.
@@ -748,7 +748,7 @@ function workerFunction() {
     self.addEventListener("rtctransform", async ({transformer}: any) => {
       const {operation, aesKey} = transformer.options
       const {readable, writable} = transformer
-      setupTransform({operation, aesKey, readable, writable})
+      await setupTransform({operation, aesKey, readable, writable})
     })
   }
 

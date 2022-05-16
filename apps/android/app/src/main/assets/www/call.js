@@ -522,14 +522,14 @@ function callCryptoFunction() {
 function workerFunction() {
     // encryption with createEncodedStreams support
     self.addEventListener("message", async ({ data }) => {
-        setupTransform(data);
+        await setupTransform(data);
     });
     // encryption using RTCRtpScriptTransform.
     if ("RTCTransformEvent" in self) {
         self.addEventListener("rtctransform", async ({ transformer }) => {
             const { operation, aesKey } = transformer.options;
             const { readable, writable } = transformer;
-            setupTransform({ operation, aesKey, readable, writable });
+            await setupTransform({ operation, aesKey, readable, writable });
         });
     }
     async function setupTransform({ operation, aesKey, readable, writable }) {
