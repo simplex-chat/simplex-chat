@@ -16,7 +16,7 @@
   const commandToProcess = document.getElementById(COMMAND_TO_PROCESS)
   const processCommandButton = document.getElementById(PROCESS_COMMAND_BTN)
   const startE2EECallButton = document.getElementById(START_E2EE_CALL_BTN)
-  const {resp} = await processCommand({command: {type: "capabilities"}})
+  const {resp} = await processCommand({command: {type: "capabilities", useWorker: true}})
   if (resp?.capabilities?.encryption) {
     startE2EECallButton.onclick = startCall(true)
   } else {
@@ -33,7 +33,8 @@
   const copyDataButton = document.getElementById(COPY_DATA_FOR_PEER_BTN)
   copyDataButton.onclick = () => {
     navigator.clipboard.writeText(dataForPeer.innerText)
-    passDataToPeerText.style.display = ""
+    commandToProcess.style.display = ""
+    processCommandButton.style.display = ""
   }
   processCommandButton.onclick = () => {
     sendCommand(JSON.parse(commandToProcess.value))
@@ -53,9 +54,9 @@
       if (encryption) {
         const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
         const keyBytes = await crypto.subtle.exportKey("raw", key)
-        aesKey = decodeAscii(encodeBase64(new Uint8Array(keyBytes)))
+        aesKey = callCrypto.decodeAscii(callCrypto.encodeBase64(new Uint8Array(keyBytes)))
       }
-      sendCommand({command: {type: "start", media: "video", aesKey}})
+      sendCommand({command: {type: "start", media: "video", aesKey, useWorker: true}})
       startE2EECallButton.style.display = "none"
       startCallButton.style.display = "none"
     }
@@ -72,14 +73,15 @@
           const {media, aesKey} = command
           const {offer, iceCandidates, capabilities} = resp
           const peerWCommand = {
-            command: {type: "accept", offer, iceCandidates, media, aesKey: capabilities.encryption ? aesKey : undefined},
+            command: {type: "offer", offer, iceCandidates, media, aesKey: capabilities.encryption ? aesKey : undefined, useWorker: true},
           }
           const url = new URL(document.location)
           parsed.set("command", encodeURIComponent(JSON.stringify(peerWCommand)))
           url.hash = parsed.toString()
           urlForPeer.innerText = url.toString()
+          dataForPeer.innerText = JSON.stringify(peerWCommand)
           copyUrlButton.style.display = ""
-          copyDataButton.style.display = "none"
+          copyDataButton.style.display = ""
 
           // const webRTCCallOffer = {callType: {media, capabilities}, rtcSession: {rtcSession: offer, rtcIceCandidates: iceCandidates}}
           // const peerChatCommand = `/_call @${parsed.contact} offer ${JSON.stringify(webRTCCallOffer)}`

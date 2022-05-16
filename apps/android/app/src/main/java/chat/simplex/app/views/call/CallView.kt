@@ -32,7 +32,7 @@ import kotlinx.serialization.encodeToString
 @Composable
 fun VideoCallView(close: () -> Unit) {
   val callCommand = remember { mutableStateOf<WCallCommand?>(null)}
-  val commandText = remember { mutableStateOf("{\"command\": {\"type\": \"start\", \"media\": \"video\", \"aesKey\": \"FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U=\"}}") } //, aesKey: 'FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U='})") }
+  val commandText = remember { mutableStateOf("{\"command\": {\"type\": \"start\", \"media\": \"video\", \"aesKey\": \"FwW+t6UbnwHoapYOfN4mUBUuqR7UtvYWxW16iBqM29U=\"}}") }
   val clipboard = ContextCompat.getSystemService(LocalContext.current, ClipboardManager::class.java)
 
   BackHandler(onBack = close)
@@ -154,6 +154,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
             webViewSettings.allowContentAccess = true
             webViewSettings.javaScriptEnabled = true
             webViewSettings.mediaPlaybackRequiresUserGesture = false
+            webViewSettings.allowFileAccessFromFileURLs = true;
             webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
             this.loadUrl("file:android_asset/www/call.html")
           }

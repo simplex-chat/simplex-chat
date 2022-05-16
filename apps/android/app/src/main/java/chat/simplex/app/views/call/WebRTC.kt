@@ -40,7 +40,7 @@ enum class CallState {
 }
 
 @Serializable class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
-@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand?)
+@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand? = null)
 
 @Serializable
 sealed class WCallCommand {
