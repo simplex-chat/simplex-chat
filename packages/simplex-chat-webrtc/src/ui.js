@@ -1,6 +1,6 @@
 ;(async function run() {
-  const START_E2EE_CALL_BTN = "start-e2ee-call"
-  const START_CALL_BTN = "start-call"
+  // const START_E2EE_CALL_BTN = "start-e2ee-call"
+  // const START_CALL_BTN = "start-call"
   const URL_FOR_PEER = "url-for-peer"
   // const COPY_URL_FOR_PEER_BTN = "copy-url-for-peer"
   const DATA_FOR_PEER = "data-for-peer"
@@ -16,15 +16,15 @@
   const simplexChatCommand = document.getElementById(SIMPLEX_CHAT_COMMAND)
   const commandToProcess = document.getElementById(COMMAND_TO_PROCESS)
   const processCommandButton = document.getElementById(PROCESS_COMMAND_BTN)
-  const startE2EECallButton = document.getElementById(START_E2EE_CALL_BTN)
-  const {resp} = await processCommand({command: {type: "capabilities", useWorker: true}})
-  if (resp?.capabilities?.encryption) {
-    startE2EECallButton.onclick = startCall(true)
-  } else {
-    startE2EECallButton.style.display = "none"
-  }
-  const startCallButton = document.getElementById(START_CALL_BTN)
-  startCallButton.onclick = startCall()
+  // const startE2EECallButton = document.getElementById(START_E2EE_CALL_BTN)
+  // const {resp} = await processCommand({command: {type: "capabilities", useWorker: true}})
+  // if (resp?.capabilities?.encryption) {
+  //   startE2EECallButton.onclick = startCall(true)
+  // } else {
+  //   startE2EECallButton.style.display = "none"
+  // }
+  // const startCallButton = document.getElementById(START_CALL_BTN)
+  // startCallButton.onclick = startCall()
   // const copyUrlButton = document.getElementById(COPY_URL_FOR_PEER_BTN)
   // copyUrlButton.onclick = () => {
   //   navigator.clipboard.writeText(urlForPeer.innerText)
@@ -40,8 +40,10 @@
   const copySimplexChatCommandButton = document.getElementById(COPY_SIMPLEX_CHAT_COMMAND_BTN)
   copySimplexChatCommandButton.onclick = () => {
     navigator.clipboard.writeText(simplexChatCommand.innerText)
-    commandToProcess.style.display = ""
-    processCommandButton.style.display = ""
+    if (simplexChatCommand.innerText.startsWith("/_call offer")) {
+      commandToProcess.style.display = ""
+      processCommandButton.style.display = ""
+    }
   }
   processCommandButton.onclick = () => {
     sendCommand(JSON.parse(commandToProcess.value))
@@ -50,24 +52,24 @@
   const parsed = new URLSearchParams(document.location.hash.substring(1))
   let commandStr = parsed.get("command")
   if (commandStr) {
-    startE2EECallButton.style.display = "none"
-    startCallButton.style.display = "none"
+    // startE2EECallButton.style.display = "none"
+    // startCallButton.style.display = "none"
     await sendCommand(JSON.parse(decodeURIComponent(commandStr)))
   }
 
-  function startCall(encryption) {
-    return async () => {
-      let aesKey
-      if (encryption) {
-        const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
-        const keyBytes = await crypto.subtle.exportKey("raw", key)
-        aesKey = callCrypto.decodeAscii(callCrypto.encodeBase64url(new Uint8Array(keyBytes)))
-      }
-      sendCommand({type: "start", media: "video", aesKey, useWorker: true})
-      startE2EECallButton.style.display = "none"
-      startCallButton.style.display = "none"
-    }
-  }
+  // function startCall(encryption) {
+  //   return async () => {
+  //     let aesKey
+  //     if (encryption) {
+  //       const key = await crypto.subtle.generateKey({name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
+  //       const keyBytes = await crypto.subtle.exportKey("raw", key)
+  //       aesKey = callCrypto.decodeAscii(callCrypto.encodeBase64url(new Uint8Array(keyBytes)))
+  //     }
+  //     startE2EECallButton.style.display = "none"
+  //     startCallButton.style.display = "none"
+  //     await sendCommand({type: "start", media: "video", aesKey, useWorker: true})
+  //   }
+  // }
 
   async function sendCommand(command) {
     try {
