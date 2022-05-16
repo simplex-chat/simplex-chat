@@ -133,6 +133,7 @@ data ChatCommand
   | Connect (Maybe AConnectionRequestUri)
   | ConnectSimplex
   | DeleteContact ContactName
+  | ClearContact ContactName
   | ListContacts
   | CreateMyAddress
   | DeleteMyAddress
@@ -152,6 +153,7 @@ data ChatCommand
   | MemberRole GroupName ContactName GroupMemberRole
   | LeaveGroup GroupName
   | DeleteGroup GroupName
+  | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}

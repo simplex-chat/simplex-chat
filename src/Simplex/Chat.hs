@@ -529,6 +529,9 @@ processChatCommand = \case
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
+  ClearContact cName -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand $ APIClearChat (ChatRef CTDirect contactId)
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore (`getUserContacts` user)
   CreateMyAddress -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
@@ -651,6 +654,9 @@ processChatCommand = \case
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
+  ClearGroup gName -> withUser $ \user -> do
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
   ListMembers gName -> CRGroupMembers <$> withUser (\user -> withStore (\st -> getGroupByName st user gName))
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
@@ -2196,6 +2202,7 @@ chatCommandP =
     <|> ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName)
     <|> ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
+    <|> "/clear #" *> (ClearGroup <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
@@ -2204,6 +2211,7 @@ chatCommandP =
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
     <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
+    <|> ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName)
     <|> (SendMessage <$> chatNameP <* A.space <*> A.takeByteString)
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
