@@ -126,7 +126,7 @@ struct ChatView: View {
                 localMedia: media
             )
             showCallView = true
-            chatModel.callCommand = .capabilities
+            chatModel.callCommand = .capabilities(useWorker: true)
         } label: {
             Image(systemName: imageName)
         }

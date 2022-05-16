@@ -40,15 +40,15 @@ enum class CallState {
 }
 
 @Serializable class WVAPICall(val corrId: Int? = null, val command: WCallCommand)
-@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand?)
+@Serializable class WVAPIMessage(val corrId: Int? = null, val resp: WCallResponse, val command: WCallCommand? = null)
 
 @Serializable
 sealed class WCallCommand {
   @Serializable @SerialName("capabilities") class Capabilities(): WCallCommand()
   @Serializable @SerialName("start") class Start(val media: CallMediaType, val aesKey: String? = null): WCallCommand()
-  @Serializable @SerialName("accept") class Accept(val offer: String, val iceCandidates: List<String>, val media: CallMediaType, val aesKey: String? = null): WCallCommand()
-  @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: List<String>): WCallCommand()
-  @Serializable @SerialName("ice") class Ice(val iceCandidates: List<String>): WCallCommand()
+  @Serializable @SerialName("offer") class Accept(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null): WCallCommand()
+  @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: String): WCallCommand()
+  @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("media") class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
   @Serializable @SerialName("end") class End(): WCallCommand()
 }
@@ -56,11 +56,11 @@ sealed class WCallCommand {
 @Serializable
 sealed class WCallResponse {
   @Serializable @SerialName("capabilities") class Capabilities(val capabilities: CallCapabilities): WCallResponse()
-  @Serializable @SerialName("offer") class Offer(val offer: String, val iceCandidates: List<String>): WCallResponse()
+  @Serializable @SerialName("offer") class Offer(val offer: String, val iceCandidates: String): WCallResponse()
   // TODO remove accept, it is needed for debugging
-  @Serializable @SerialName("accept") class Accept(val offer: String, val iceCandidates: List<String>, val media: CallMediaType, val aesKey: String? = null): WCallResponse()
-  @Serializable @SerialName("answer") class Answer(val answer: String, val iceCandidates: List<String>): WCallResponse()
-  @Serializable @SerialName("ice") class Ice(val iceCandidates: List<String>): WCallResponse()
+  @Serializable @SerialName("accept") class Accept(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null): WCallResponse()
+  @Serializable @SerialName("answer") class Answer(val answer: String, val iceCandidates: String): WCallResponse()
+  @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallResponse()
   @Serializable @SerialName("connection") class Connection(val state: ConnectionState): WCallResponse()
   @Serializable @SerialName("ended") class Ended(): WCallResponse()
   @Serializable @SerialName("ok") class Ok(): WCallResponse()
@@ -69,22 +69,23 @@ sealed class WCallResponse {
 }
 
 @Serializable class WebRTCCallOffer(val callType: CallType, val rtcSession: WebRTCSession)
-@Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: List<String>)
-@Serializable class WebRTCExtraInfo(val rtcIceCandidates: List<String>)
+@Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
+@Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
 @Serializable class CallInvitation(val peerMedia: CallMediaType?, val sharedKey: String?)
 @Serializable class CallCapabilities(val encryption: Boolean)
 
-enum class WebRTCCallStatus(val status: String) {
-  Connected("connected"),
-  Disconnected("disconnected"),
-  Failed("failed")
+@Serializable
+enum class WebRTCCallStatus {
+  @SerialName("connected") Connected,
+  @SerialName("disconnected") Disconnected,
+  @SerialName("failed") Failed
 }
 
 @Serializable
-enum class CallMediaType(val media: String) {
-  Video("video"),
-  Audio("audio")
+enum class CallMediaType {
+  @SerialName("video") Video,
+  @SerialName("audio") Audio
 }
 
 @Serializable

@@ -177,8 +177,8 @@ instance ToJSON CallExtraInfo where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCSession = WebRTCSession
-  { rtcSession :: Text,
-    rtcIceCandidates :: [Text]
+  { rtcSession :: Text, -- LZW compressed JSON encoding of offer or answer
+    rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -187,7 +187,7 @@ instance ToJSON WebRTCSession where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCExtraInfo = WebRTCExtraInfo
-  { rtcIceCandidates :: [Text]
+  { rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
   deriving (Eq, Show, Generic, FromJSON)
 

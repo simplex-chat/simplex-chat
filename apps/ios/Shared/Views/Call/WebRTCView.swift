@@ -31,6 +31,7 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         didReceive message: WKScriptMessage
     ) {
         logger.debug("WebRTCCoordinator.userContentController")
+        logger.debug("\(String(describing: message.body as? String))")
         if let msgStr = message.body as? String,
            let msg: WVAPIMessage = decodeJSON(msgStr) {
             webViewMsg.wrappedValue = msg
@@ -90,74 +91,76 @@ struct WebRTCView: UIViewRepresentable {
     }
 }
 
-//struct CallViewDebug: View {
-//    @State private var coordinator: WebRTCCoordinator? = nil
-//    @State private var commandStr = ""
-//    @State private var webViewReady: Bool = false
-//    @State private var webViewMsg: WVAPIMessage? = nil
-//    @FocusState private var keyboardVisible: Bool
-//
-//    var body: some View {
-//        VStack(spacing: 30) {
-//            WebRTCView(coordinator: $coordinator, webViewReady: $webViewReady, webViewMsg: $webViewMsg).frame(maxHeight: 260)
-//                .onChange(of: webViewMsg) { _ in
-//                    if let resp = webViewMsg {
-//                        commandStr = encodeJSON(resp)
-//                    }
-//                }
-//            TextEditor(text: $commandStr)
-//                .focused($keyboardVisible)
-//                .disableAutocorrection(true)
-//                .textInputAutocapitalization(.never)
-//                .padding(.horizontal, 5)
-//                .padding(.top, 2)
-//                .frame(height: 112)
-//                .overlay(
-//                    RoundedRectangle(cornerRadius: 10)
-//                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-//                )
-//            HStack(spacing: 20) {
-//                Button("Copy") {
-//                    UIPasteboard.general.string = commandStr
-//                }
-//                Button("Paste") {
-//                    commandStr = UIPasteboard.general.string ?? ""
-//                }
-//                Button("Clear") {
-//                    commandStr = ""
-//                }
-//                Button("Send") {
-//                    if let c = coordinator,
-//                       let command: WCallCommand = decodeJSON(commandStr) {
-//                        c.sendCommand(command: command)
-//                    }
-//                }
-//            }
-//            HStack(spacing: 20) {
-//                Button("Capabilities") {
-//
-//                }
-//                Button("Start") {
-//                    if let c = coordinator {
-//                        c.sendCommand(command: .start(media: .video))
-//                    }
-//                }
-//                Button("Accept") {
-//
-//                }
-//                Button("Answer") {
-//
-//                }
-//                Button("ICE") {
-//
-//                }
-//                Button("End") {
-//
-//                }
-//            }
-//        }
-//    }
-//}
+struct CallViewDebug: View {
+    @State private var coordinator: WebRTCCoordinator? = nil
+    @State private var commandStr = ""
+    @State private var webViewReady: Bool = false
+    @State private var webViewMsg: WVAPIMessage? = nil
+    @FocusState private var keyboardVisible: Bool
+
+    var body: some View {
+        VStack(spacing: 30) {
+            WebRTCView(coordinator: $coordinator, webViewReady: $webViewReady, webViewMsg: $webViewMsg).frame(maxHeight: 260)
+                .onChange(of: webViewMsg) { _ in
+                    if let resp = webViewMsg {
+                        commandStr = encodeJSON(resp)
+                    }
+                }
+            TextEditor(text: $commandStr)
+                .focused($keyboardVisible)
+                .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                .padding(.horizontal, 5)
+                .padding(.top, 2)
+                .frame(height: 112)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+                )
+            HStack(spacing: 20) {
+                Button("Copy") {
+                    UIPasteboard.general.string = commandStr
+                }
+                Button("Paste") {
+                    commandStr = UIPasteboard.general.string ?? ""
+                }
+                Button("Clear") {
+                    commandStr = ""
+                }
+                Button("Send") {
+                    if let c = coordinator,
+                       let command: WCallCommand = decodeJSON(commandStr) {
+                        c.sendCommand(command: command)
+                    }
+                }
+            }
+            HStack(spacing: 20) {
+                Button("Capabilities") {
+                    if let c = coordinator {
+                        c.sendCommand(command: .capabilities(useWorker: true))
+                    }
+                }
+                Button("Start") {
+                    if let c = coordinator {
+                        c.sendCommand(command: .start(media: .video))
+                    }
+                }
+                Button("Accept") {
+
+                }
+                Button("Answer") {
+
+                }
+                Button("ICE") {
+
+                }
+                Button("End") {
+
+                }
+            }
+        }
+    }
+}
 //
 //struct CallViewDebug_Previews: PreviewProvider {
 //    static var previews: some View {
