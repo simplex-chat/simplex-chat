@@ -625,7 +625,6 @@ function callCryptoFunction(): CallCrypto {
 
   function decodeAesKey(aesKey: string): Promise<CryptoKey> {
     const keyData = callCrypto.decodeBase64url(callCrypto.encodeAscii(aesKey))
-    console.log("keyData", keyData)
     return crypto.subtle.importKey("raw", keyData!, {name: "AES-GCM", length: 256}, true, ["encrypt", "decrypt"])
   }
 
