@@ -366,6 +366,13 @@ instance StrEncoding ACIFileStatus where
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
 
+-- to conveniently read file data from db
+data CIFileInfo = CIFileInfo
+  { fileId :: Int64,
+    fileStatus :: ACIFileStatus,
+    filePath :: Maybe FilePath
+  }
+
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
   CISSndSent :: CIStatus 'MDSnd

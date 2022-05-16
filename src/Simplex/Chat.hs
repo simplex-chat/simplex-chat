@@ -366,8 +366,9 @@ processChatCommand = \case
       deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> m ()
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
-          cancelFile user fileId (AFS msgDirection fileStatus)
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+          let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -378,12 +379,12 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
-          files <- withStore $ \st -> getContactFiles st userId ct
+          filesInfo <- withStore $ \st -> getContactFileInfo st userId ct
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
-            forM_ files $ \(fId, fStatus, filePath) -> do
-              cancelFile user fId fStatus
-              withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+            forM_ filesInfo $ \fileInfo -> do
+              cancelFile user fileInfo
+              withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -400,20 +401,20 @@ processChatCommand = \case
   APIClearChat cRef@(ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
-      ciIdsAndFilesData <- withStore $ \st -> getContactChatItemIdsAndFiles st userId chatId
-      forM_ ciIdsAndFilesData $ \(itemId, fileData_) -> do
-        forM_ fileData_ $ \(fId, fStatus, filePath) -> do
-          cancelFile user fId fStatus
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+      ciIdsAndFileInfo <- withStore $ \st -> getContactChatItemIdsAndFileInfo st userId chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
+        forM_ fileInfo_ $ \fileInfo -> do
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
       pure $ CRChatCleared cRef
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
-      ciIdsAndFilesData <- withStore $ \st -> getGroupChatItemIdsAndFiles st userId chatId
-      forM_ ciIdsAndFilesData $ \(itemId, fileData_) -> do
-        forM_ fileData_ $ \(fId, fStatus, filePath) -> do
-          cancelFile user fId fStatus
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder filePath
+      ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
+        forM_ fileInfo_ $ \fileInfo -> do
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
       pure $ CRChatCleared cRef
     CTContactConnection -> pure $ chatCmdError "not supported"
@@ -775,14 +776,14 @@ processChatCommand = \case
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-    deleteFile :: FilePath -> Maybe FilePath -> m ()
-    deleteFile filesFolder filePath_ =
-      forM_ filePath_ $ \filePath -> do
-        let fsFilePath = filesFolder <> "/" <> filePath
+    deleteFile :: FilePath -> CIFileInfo -> m ()
+    deleteFile filesFolder CIFileInfo {filePath} =
+      forM_ filePath $ \fPath -> do
+        let fsFilePath = filesFolder <> "/" <> fPath
         removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
           removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-    cancelFile :: User -> Int64 -> ACIFileStatus -> m ()
-    cancelFile user fileId (AFS dir status) =
+    cancelFile :: User -> CIFileInfo -> m ()
+    cancelFile user CIFileInfo {fileId, fileStatus = (AFS dir status)} =
       unless (ciFileEnded status) $
         case dir of
           SMDSnd -> do

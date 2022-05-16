@@ -116,9 +116,9 @@ module Simplex.Chat.Store
     getFileTransfer,
     getFileTransferProgress,
     getSndFileTransfer,
-    getContactFiles,
-    getContactChatItemIdsAndFiles,
-    getGroupChatItemIdsAndFiles,
+    getContactFileInfo,
+    getContactChatItemIdsAndFileInfo,
+    getGroupChatItemIdsAndFileInfo,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -2281,23 +2281,27 @@ getFileTransferMeta_ db userId fileId =
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
       FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
 
-getContactFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [(Int64, ACIFileStatus, Maybe FilePath)]
-getContactFiles st userId Contact {contactId} =
+getContactFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> m [CIFileInfo]
+getContactFileInfo st userId Contact {contactId} =
   liftIO . withTransaction st $ \db ->
-    DB.query
-      db
-      [sql|
+    map toFileInfo
+      <$> DB.query
+        db
+        [sql|
         SELECT f.file_id, f.ci_file_status, f.file_path
         FROM chat_items i
         JOIN files f ON f.chat_item_id = i.chat_item_id
         WHERE i.user_id = ? AND i.contact_id = ?
       |]
-      (userId, contactId)
+        (userId, contactId)
 
-getContactChatItemIdsAndFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactId -> m [(ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))]
-getContactChatItemIdsAndFiles st userId contactId =
+toFileInfo :: (Int64, ACIFileStatus, Maybe FilePath) -> CIFileInfo
+toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
+
+getContactChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactId -> m [(ChatItemId, Maybe CIFileInfo)]
+getContactChatItemIdsAndFileInfo st userId contactId =
   liftIO . withTransaction st $ \db ->
-    map toItemIdAndFileData
+    map toItemIdAndFileInfo
       <$> DB.query
         db
         [sql|
@@ -2308,10 +2312,10 @@ getContactChatItemIdsAndFiles st userId contactId =
         |]
         (userId, contactId)
 
-getGroupChatItemIdsAndFiles :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))]
-getGroupChatItemIdsAndFiles st userId groupId =
+getGroupChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Maybe CIFileInfo)]
+getGroupChatItemIdsAndFileInfo st userId groupId =
   liftIO . withTransaction st $ \db ->
-    map toItemIdAndFileData
+    map toItemIdAndFileInfo
       <$> DB.query
         db
         [sql|
@@ -2322,10 +2326,10 @@ getGroupChatItemIdsAndFiles st userId groupId =
         |]
         (userId, groupId)
 
-toItemIdAndFileData :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe (Int64, ACIFileStatus, Maybe FilePath))
-toItemIdAndFileData (chatItemId, fileId_, fileStatus_, filePath) =
+toItemIdAndFileInfo :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
+toItemIdAndFileInfo (chatItemId, fileId_, fileStatus_, filePath) =
   case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, Just (fileId, fileStatus, filePath))
+    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
     _ -> (chatItemId, Nothing)
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
