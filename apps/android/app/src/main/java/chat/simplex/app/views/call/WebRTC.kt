@@ -46,7 +46,7 @@ enum class CallState {
 sealed class WCallCommand {
   @Serializable @SerialName("capabilities") class Capabilities(): WCallCommand()
   @Serializable @SerialName("start") class Start(val media: CallMediaType, val aesKey: String? = null): WCallCommand()
-  @Serializable @SerialName("accept") class Accept(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null): WCallCommand()
+  @Serializable @SerialName("offer") class Accept(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null): WCallCommand()
   @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("media") class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()

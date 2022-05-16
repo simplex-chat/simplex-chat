@@ -450,6 +450,7 @@ interface RTCRtpScriptTransform {}
         }
       }
     }
+
     // Pull tracks from remote stream as they arrive add them to remoteStream video
     pc.ontrack = (event) => {
       if (aesKey && key) {
@@ -471,11 +472,7 @@ interface RTCRtpScriptTransform {}
           console.log("no encryption")
         }
       }
-      for (const stream of event.streams) {
-        for (const track of stream.getTracks()) {
-          remoteStream.addTrack(track)
-        }
-      }
+      remoteStream.addTrack(event.track)
     }
     // We assume VP8 encoding in the decode/encode stages to get the initial
     // bytes to pass as plaintext so we enforce that here.
