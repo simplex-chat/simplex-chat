@@ -109,6 +109,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIDeleteChat ChatRef
+  | APIClearChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
@@ -178,7 +179,9 @@ data ChatResponse
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
+  | CRChatItemUpdatedNotFound {sharedMsgId :: SharedMsgId}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRChatItemDeletedNotFound {sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}

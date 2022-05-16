@@ -334,15 +334,16 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
           deleteCIFile user file
-          toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
+          toCi <- withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          void $ sendDirectContactMessage ct (XMsgDel itemSharedMId)
           deleteCIFile user file
-          toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
+          toCi <- withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMBroadcast
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
+    -- TODO for group integrity and pending messages group items and messages are updated as deleted, maybe a different workaround is needed
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -396,6 +397,11 @@ processChatCommand = \case
       withStore $ \st -> deletePendingContactConnection st userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
+    CTContactRequest -> pure $ chatCmdError "not supported"
+  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> pure $ chatCmdError "not implemented"
+    CTGroup -> pure $ chatCmdError "not implemented"
+    CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \st -> getContactRequest st userId connReqId
@@ -1418,21 +1424,32 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
-      case msgDir of
-        SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) $ Just msgId
-        SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
+      updateRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemUpdatedNotFound sMsgId
+          _ -> throwError e
+      where
+        updateRcvChatItem = do
+          CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+          case msgDir of
+            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) $ Just msgId
+            SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
     messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
-      case msgDir of
-        SMDRcv -> do
-          -- TODO allow to locally delete items that were broadcast deleted by sender
-          toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
-          toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
-        SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
+      deleteRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound sMsgId
+          _ -> throwError e
+      where
+        deleteRcvChatItem = do
+          CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+          case msgDir of
+            SMDRcv -> do
+              toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
+              toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
+            SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg msgMeta = do

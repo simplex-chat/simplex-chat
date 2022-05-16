@@ -53,7 +53,9 @@ responseToView testView = \case
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
+  CRChatItemUpdatedNotFound _ -> []
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRChatItemDeletedNotFound _ -> []
   CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -254,14 +256,12 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem 
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIDirectSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIGroupSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   _ -> []
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
