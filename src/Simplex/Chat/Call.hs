@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Call where
@@ -98,6 +99,9 @@ data CallType = CallType
 
 defaultCallType :: CallType
 defaultCallType = CallType CMVideo $ CallCapabilities {encryption = True}
+
+encryptedCall :: CallType -> Bool
+encryptedCall CallType {capabilities = CallCapabilities {encryption}} = encryption
 
 instance ToJSON CallType where toEncoding = J.genericToEncoding J.defaultOptions
 

@@ -646,7 +646,7 @@ fileProgress chunksNum chunkSize fileSize =
 
 viewCallInvitation :: Contact -> CallType -> Maybe C.Key -> [StyledString]
 viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
-  [ ttyContact' ct <> " wants to connect with you via WebRTC " <> callMediaStr callType <> " call " <> encryptedCall callType,
+  [ ttyContact' ct <> " wants to connect with you via WebRTC " <> callMediaStr callType <> " call " <> encryptedCallText callType,
     "To accept the call, please open the link below in your browser" <> supporedBrowsers callType,
     "",
     "https://simplex.chat/call#" <> plain queryString
@@ -662,7 +662,7 @@ viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
 
 viewCallOffer :: Contact -> CallType -> WebRTCSession -> Maybe C.Key -> [StyledString]
 viewCallOffer ct@Contact {contactId} callType@CallType {media} WebRTCSession {rtcSession = offer, rtcIceCandidates = iceCandidates} sharedKey =
-  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call " <> encryptedCall callType,
+  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call " <> encryptedCallText callType,
     "To connect, please open the link below in your browser" <> supporedBrowsers callType,
     "",
     "https://simplex.chat/call#" <> plain queryString
@@ -689,13 +689,14 @@ callMediaStr CallType {media} = case media of
   CMVideo -> "video"
   CMAudio -> "audio"
 
-encryptedCall :: CallType -> StyledString
-encryptedCall CallType {capabilities = CallCapabilities {encryption}} =
-  if encryption then "(e2e encrypted)" else "(not e2e encrypted)"
+encryptedCallText :: CallType -> StyledString
+encryptedCallText callType
+  | encryptedCall callType = "(e2e encrypted)"
+  | otherwise = "(not e2e encrypted)"
 
 supporedBrowsers :: CallType -> StyledString
-supporedBrowsers CallType {capabilities = CallCapabilities {encryption}}
-  | encryption = " (only Chrome and Safari support e2e encryption for WebRTC, Safari requires enabling WebRTC insertable streams)"
+supporedBrowsers callType
+  | encryptedCall callType = " (only Chrome and Safari support e2e encryption for WebRTC, Safari may require enabling WebRTC insertable streams)"
   | otherwise = ""
 
 data WCallCommand
