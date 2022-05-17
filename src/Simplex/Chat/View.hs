@@ -54,6 +54,7 @@ responseToView testView = \case
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -83,6 +84,7 @@ responseToView testView = \case
   CRSentConfirmation -> ["confirmation sent!"]
   CRSentInvitation -> ["connection request sent!"]
   CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
+  CRChatCleared chatInfo -> viewChatCleared chatInfo
   CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists c -> [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
@@ -254,14 +256,12 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem 
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIDirectSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIGroupSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   _ -> []
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
@@ -314,6 +314,12 @@ viewConnReqInvitation cReq =
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+viewChatCleared :: AChatInfo -> [StyledString]
+viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
+  DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
+  GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
+  _ -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
