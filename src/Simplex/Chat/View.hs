@@ -317,8 +317,8 @@ viewConnReqInvitation cReq =
 
 viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
-  DirectChat ct -> ["conversation with " <> ttyContact' ct <> " is cleared"]
-  GroupChat gi -> ["conversation in group " <> ttyGroup' gi <> " is cleared"]
+  DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
+  GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
   _ -> []
 
 viewContactsList :: [Contact] -> [StyledString]

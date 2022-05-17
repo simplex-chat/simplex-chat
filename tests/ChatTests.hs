@@ -131,9 +131,9 @@ testAddContact =
       alice @@@ [("@bob", "hi")]
       bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
       -- test clearing chat
-      alice #$> ("/clear bob", id, "conversation with bob is cleared")
+      alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice #$> ("/_get chat @2 count=100", chat, [])
-      bob #$> ("/clear alice", id, "conversation with alice is cleared")
+      bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
       bob #$> ("/_get chat @2 count=100", chat, [])
   where
     chatsEmpty alice bob = do
@@ -395,11 +395,11 @@ testGroup =
       cath <## "you are no longer a member of the group"
       bob <##> cath
       -- test clearing chat
-      alice #$> ("/clear #team", id, "conversation in group #team is cleared")
+      alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
       alice #$> ("/_get chat #1 count=100", chat, [])
-      bob #$> ("/clear #team", id, "conversation in group #team is cleared")
+      bob #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
       bob #$> ("/_get chat #1 count=100", chat, [])
-      cath #$> ("/clear #team", id, "conversation in group #team is cleared")
+      cath #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
       cath #$> ("/_get chat #1 count=100", chat, [])
   where
     getReadChats alice bob cath = do
