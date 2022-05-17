@@ -172,6 +172,20 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun clearChat(cInfo: ChatInfo) {
+    // clear preview
+    val i = getChatIndex(cInfo.id)
+    val chat: Chat
+    if (i >= 0) {
+      chat = chats[i]
+      chats[i] = chat.copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats())
+    }
+    // clear current chat
+    if (chatId.value == cInfo.id) {
+      chatItems.clear()
+    }
+  }
+
   fun markChatItemsRead(cInfo: ChatInfo) {
     val chatIdx = getChatIndex(cInfo.id)
     // update current chat
