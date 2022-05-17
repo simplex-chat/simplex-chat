@@ -45,11 +45,8 @@ data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
 data ChatName = ChatName ChatType Text
   deriving (Show)
 
-data ChatRef = ChatRef
-  { chatType :: ChatType,
-    chatId :: Int64
-  }
-  deriving (Show, Generic, ToJSON)
+data ChatRef = ChatRef ChatType Int64
+  deriving (Show)
 
 instance ToJSON ChatType where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
@@ -84,6 +81,14 @@ jsonChatInfo = \case
   GroupChat g -> JCInfoGroup g
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
+
+data AChatInfo = forall c. AChatInfo (SChatType c) (ChatInfo c)
+
+deriving instance Show AChatInfo
+
+instance ToJSON AChatInfo where
+  toJSON (AChatInfo _ c) = J.toJSON c
+  toEncoding (AChatInfo _ c) = J.toEncoding c
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,

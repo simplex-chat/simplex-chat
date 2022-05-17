@@ -84,7 +84,7 @@ responseToView testView = \case
   CRSentConfirmation -> ["confirmation sent!"]
   CRSentInvitation -> ["connection request sent!"]
   CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
-  CRChatCleared _ -> ["chat cleared"]
+  CRChatCleared chatInfo -> viewChatCleared chatInfo
   CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists c -> [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
@@ -314,6 +314,12 @@ viewConnReqInvitation cReq =
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+viewChatCleared :: AChatInfo -> [StyledString]
+viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
+  DirectChat ct -> ["conversation with " <> ttyContact' ct <> " is cleared"]
+  GroupChat gi -> ["conversation in group " <> ttyGroup' gi <> " is cleared"]
+  _ -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =

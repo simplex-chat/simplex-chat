@@ -209,7 +209,7 @@ data ChatResponse
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
-  | CRChatCleared {chatRef :: ChatRef}
+  | CRChatCleared {chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}

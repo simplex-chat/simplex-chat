@@ -398,7 +398,7 @@ processChatCommand = \case
       pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIClearChat cRef@(ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
       ciIdsAndFileInfo <- withStore $ \st -> getContactChatItemIdsAndFileInfo st userId chatId
@@ -407,7 +407,7 @@ processChatCommand = \case
           cancelFile user fileInfo
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
-      pure $ CRChatCleared cRef
+      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct))
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
@@ -416,7 +416,7 @@ processChatCommand = \case
           cancelFile user fileInfo
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
-      pure $ CRChatCleared cRef
+      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
