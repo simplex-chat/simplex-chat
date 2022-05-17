@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -10,8 +11,10 @@
 
 module Simplex.Chat.View where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -21,7 +24,10 @@ import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
+import GHC.Generics (Generic)
+import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
+import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Markdown
@@ -31,8 +37,10 @@ import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
@@ -141,9 +149,9 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
-  CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
-  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
+  CRCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
+  CRCallOffer {contact, callType, offer, sharedKey} -> viewCallOffer contact callType offer sharedKey
+  CRCallAnswer {contact, answer} -> viewCallAnswer contact answer
   CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
   CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
@@ -635,6 +643,70 @@ listRecipients = mconcat . intersperse ", " . map (ttyContact . recipientDisplay
 fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
   sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
+
+viewCallInvitation :: Contact -> CallType -> Maybe C.Key -> [StyledString]
+viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
+  [ ttyContact' ct <> " wants to connect with you via WebRTC " <> callMediaStr callType <> " call " <> encryptedCall callType,
+    "To accept the call, please open the link below in your browser" <> supporedBrowsers callType,
+    "",
+    "https://simplex.chat/call#" <> plain queryString
+  ]
+  where
+    aesKey = B.unpack . strEncode . C.unKey <$> sharedKey
+    queryString =
+      Q.renderSimpleQuery
+        False
+        [ ("command", LB.toStrict . J.encode $ WCCallStart {media, aesKey, useWorker = True}),
+          ("contact_id", B.pack $ show contactId)
+        ]
+
+viewCallOffer :: Contact -> CallType -> WebRTCSession -> Maybe C.Key -> [StyledString]
+viewCallOffer ct@Contact {contactId} callType@CallType {media} WebRTCSession {rtcSession = offer, rtcIceCandidates = iceCandidates} sharedKey =
+  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call " <> encryptedCall callType,
+    "To connect, please open the link below in your browser" <> supporedBrowsers callType,
+    "",
+    "https://simplex.chat/call#" <> plain queryString
+  ]
+  where
+    aesKey = B.unpack . strEncode . C.unKey <$> sharedKey
+    queryString =
+      Q.renderSimpleQuery
+        False
+        [ ("command", LB.toStrict . J.encode $ WCCallOffer {offer, iceCandidates, media, aesKey, useWorker = True}),
+          ("contact_id", B.pack $ show contactId)
+        ]
+
+viewCallAnswer :: Contact -> WebRTCSession -> [StyledString]
+viewCallAnswer ct WebRTCSession {rtcSession = answer, rtcIceCandidates = iceCandidates} =
+  [ ttyContact' ct <> " continued the WebRTC call",
+    "To connect, please paste the data below in your browser window you opened earlier and click Connect button",
+    "",
+    plain . LB.toStrict . J.encode $ WCCallAnswer {answer, iceCandidates}
+  ]
+
+callMediaStr :: CallType -> StyledString
+callMediaStr CallType {media} = case media of
+  CMVideo -> "video"
+  CMAudio -> "audio"
+
+encryptedCall :: CallType -> StyledString
+encryptedCall CallType {capabilities = CallCapabilities {encryption}} =
+  if encryption then "(e2e encrypted)" else "(not e2e encrypted)"
+
+supporedBrowsers :: CallType -> StyledString
+supporedBrowsers CallType {capabilities = CallCapabilities {encryption}}
+  | encryption = " (only Chrome and Safari support e2e encryption for WebRTC, Safari requires enabling WebRTC insertable streams)"
+  | otherwise = ""
+
+data WCallCommand
+  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
+  deriving (Generic)
+
+instance ToJSON WCallCommand where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
 
 viewChatError :: ChatError -> [StyledString]
 viewChatError = \case

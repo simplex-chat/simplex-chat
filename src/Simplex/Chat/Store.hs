@@ -2312,25 +2312,31 @@ getContactChatItemIdsAndFileInfo st userId contactId =
         |]
         (userId, contactId)
 
-getGroupChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Maybe CIFileInfo)]
+toItemIdAndFileInfo :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
+toItemIdAndFileInfo (chatItemId, fileId_, fileStatus_, filePath) =
+  case (fileId_, fileStatus_) of
+    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, Nothing)
+
+getGroupChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Bool, Maybe CIFileInfo)]
 getGroupChatItemIdsAndFileInfo st userId groupId =
   liftIO . withTransaction st $ \db ->
-    map toItemIdAndFileInfo
+    map toItemIdDeletedAndFileInfo
       <$> DB.query
         db
         [sql|
-          SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+          SELECT i.chat_item_id, i.item_deleted, f.file_id, f.ci_file_status, f.file_path
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.group_id = ?
         |]
         (userId, groupId)
 
-toItemIdAndFileInfo :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
-toItemIdAndFileInfo (chatItemId, fileId_, fileStatus_, filePath) =
+toItemIdDeletedAndFileInfo :: (ChatItemId, Bool, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Bool, Maybe CIFileInfo)
+toItemIdDeletedAndFileInfo (chatItemId, itemDeleted, fileId_, fileStatus_, filePath) =
   case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
-    _ -> (chatItemId, Nothing)
+    (Just fileId, Just fileStatus) -> (chatItemId, itemDeleted, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, itemDeleted, Nothing)
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
@@ -2658,7 +2664,7 @@ getDirectChatPreviews_ db User {userId} = do
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ?
+          WHERE item_status = ? AND item_deleted != 1
           GROUP BY contact_id
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
@@ -2732,7 +2738,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE item_status = ?
+          WHERE item_status = ? AND item_deleted != 1
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
@@ -3452,6 +3458,7 @@ deleteGroupChatItemInternal st user gInfo itemId =
     currentTs <- liftIO getCurrentTime
     ci <- deleteGroupChatItem_ db user gInfo itemId CIDMInternal True currentTs
     setChatItemMessagesDeleted_ db itemId
+    DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
     pure ci
 
 deleteGroupChatItemRcvBroadcast :: StoreMonad m => SQLiteStore -> User -> GroupInfo -> ChatItemId -> MessageId -> m AChatItem
@@ -3463,6 +3470,7 @@ deleteGroupChatItemSndBroadcast st user gInfo itemId msgId =
   liftIOEither . withTransaction st $ \db -> do
     ci <- deleteGroupChatItemBroadcast_ db user gInfo itemId True msgId
     setChatItemMessagesDeleted_ db itemId
+    DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
     pure ci
 
 deleteGroupChatItemBroadcast_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Bool -> MessageId -> IO (Either StoreError AChatItem)

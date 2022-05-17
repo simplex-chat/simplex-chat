@@ -30,6 +30,7 @@ enum ChatCommand {
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
+    case apiClearChat(type: ChatType, id: Int64)
     case apiUpdateProfile(profile: Profile)
     case apiParseMarkdown(text: String)
     case createMyAddress
@@ -72,6 +73,7 @@ enum ChatCommand {
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
+            case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case let .apiParseMarkdown(text): return "/_parse \(text)"
             case .createMyAddress: return "/address"
@@ -114,6 +116,7 @@ enum ChatCommand {
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
+            case .apiClearChat: return "apiClearChat"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiParseMarkdown: return "apiParseMarkdown"
             case .createMyAddress: return "createMyAddress"
@@ -161,6 +164,7 @@ enum ChatResponse: Decodable, Error {
     case sentInvitation
     case contactAlreadyExists(contact: Contact)
     case contactDeleted(contact: Contact)
+    case chatCleared(chatInfo: ChatInfo)
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case apiParsedMarkdown(formattedText: [FormattedText]?)
@@ -222,6 +226,7 @@ enum ChatResponse: Decodable, Error {
             case .sentInvitation: return "sentInvitation"
             case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactDeleted: return "contactDeleted"
+            case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
             case .apiParsedMarkdown: return "apiParsedMarkdown"
@@ -284,6 +289,7 @@ enum ChatResponse: Decodable, Error {
             case .sentInvitation: return noDetails
             case let .contactAlreadyExists(contact): return String(describing: contact)
             case let .contactDeleted(contact): return String(describing: contact)
+            case let .chatCleared(chatInfo): return String(describing: chatInfo)
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
             case let .apiParsedMarkdown(formattedText): return String(describing: formattedText)

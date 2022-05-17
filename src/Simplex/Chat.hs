@@ -411,11 +411,12 @@ processChatCommand = \case
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
-        forM_ fileInfo_ $ \fileInfo -> do
-          cancelFile user fileInfo
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-        void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+      forM_ ciIdsAndFileInfo $ \(itemId, itemDeleted, fileInfo_) ->
+        unless itemDeleted $ do
+          forM_ fileInfo_ $ \fileInfo -> do
+            cancelFile user fileInfo
+            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+          void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -445,6 +446,9 @@ processChatCommand = \case
       forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       pure CRCmdOk
+  SendCallInvitation cName callType -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand $ APISendCallInvitation contactId callType
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
@@ -2176,6 +2180,7 @@ chatCommandP =
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
+    <|> ("/call @" <|> "/call ") *> (SendCallInvitation <$> displayName <*> pure defaultCallType)
     <|> "/_call reject @" *> (APIRejectCall <$> A.decimal)
     <|> "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP)
     <|> "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP)

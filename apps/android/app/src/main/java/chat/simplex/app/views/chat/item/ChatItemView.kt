@@ -100,12 +100,28 @@ fun ChatItemView(
               })
             }
           }
-          if (cItem.chatDir.sent && cItem.meta.editable) {
+          if (cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem)
               showMenu.value = false
             })
           }
+          ItemAction(
+            stringResource(R.string.delete_verb),
+            Icons.Outlined.Delete,
+            onClick = {
+              showMenu.value = false
+              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+            },
+            color = Color.Red
+          )
+        }
+      } else if (cItem.isDeletedContent) {
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
           ItemAction(
             stringResource(R.string.delete_verb),
             Icons.Outlined.Delete,

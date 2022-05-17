@@ -9,6 +9,7 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
+import Control.Monad (forM_)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -1912,6 +1913,9 @@ testWebRTCCallOffer =
 serialize :: ToJSON a => a -> String
 serialize = B.unpack . LB.toStrict . J.encode
 
+repeatM_ :: Int -> IO a -> IO ()
+repeatM_ n a = forM_ [1 .. n] $ const a
+
 testNegotiateCall :: IO ()
 testNegotiateCall =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
@@ -1920,13 +1924,15 @@ testNegotiateCall =
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: calling...")])
-    bob <## "call invitation from alice"
+    bob <## "alice wants to connect with you via WebRTC video call (e2e encrypted)"
+    repeatM_ 3 $ getTermLine bob
     bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: calling...")])
     -- bob accepts call by sending WebRTC offer
     bob ##> ("/_call offer @2 " <> serialize testWebRTCCallOffer)
     bob <## "ok"
     bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: accepted")])
-    alice <## "call offer from bob"
+    alice <## "bob accepted your WebRTC video call (e2e encrypted)"
+    repeatM_ 3 $ getTermLine alice
     alice <## "message updated" -- call chat item updated
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: accepted")])
     -- alice confirms call by sending WebRTC answer
@@ -1936,7 +1942,8 @@ testNegotiateCall =
              "message updated"
            ]
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: connecting...")])
-    bob <## "call answer from alice"
+    bob <## "alice continued the WebRTC call"
+    repeatM_ 3 $ getTermLine bob
     bob #$> ("/_get chat @2 count=100", chat, [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"

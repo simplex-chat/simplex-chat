@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,22 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
             if (r) {
               chatModel.removeChat(cInfo.id)
               chatModel.chatId.value = null
+            }
+          }
+        }
+      )
+    },
+    clearChat = {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(R.string.clear_chat_question),
+        text = generalGetString(R.string.clear_chat_warning),
+        confirmText = generalGetString(R.string.clear_verb),
+        onConfirm = {
+          val cInfo = chat.chatInfo
+          withApi {
+            val r = chatModel.controller.apiClearChat(cInfo.chatType, cInfo.apiId)
+            if (r) {
+              chatModel.clearChat(cInfo)
             }
           }
         }
@@ -159,14 +176,22 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit, deleteContact: () -> Unit) {
+fun ChatListNavLinkLayout(
+  chat: Chat,
+  click: () -> Unit,
+  deleteContact: () -> Unit,
+  clearChat: () -> Unit
+) {
   val showMenu = remember { mutableStateOf(false) }
   Surface(
     modifier = Modifier
       .fillMaxWidth()
       .combinedClickable(
         onClick = click,
-        onLongClick = { if (chat.chatInfo is ChatInfo.Direct) showMenu.value = true }
+        onLongClick = {
+          if (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+            showMenu.value = true
+        }
       )
       .height(88.dp)
   ) {
@@ -185,21 +210,32 @@ fun ChatListNavLinkLayout(chat: Chat, click: () -> Unit, deleteContact: () -> Un
         is ChatInfo.ContactConnection -> ContactConnectionView(chat.chatInfo.contactConnection)
       }
     }
-    if (chat.chatInfo is ChatInfo.Direct) {
+    Box(Modifier.padding(horizontal = 16.dp)) {
       DropdownMenu(
         expanded = showMenu.value,
         onDismissRequest = { showMenu.value = false },
         Modifier.width(220.dp)
       ) {
-        ItemAction(
-          stringResource(R.string.delete_verb),
-          Icons.Outlined.Delete,
-          onClick = {
-            deleteContact()
-            showMenu.value = false
-          },
-          color = Color.Red
-        )
+        if (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+          ItemAction(
+            stringResource(R.string.clear_verb),
+            Icons.Outlined.Restore,
+            onClick = {
+              clearChat()
+              showMenu.value = false
+            }
+          )
+        if (chat.chatInfo is ChatInfo.Direct) {
+          ItemAction(
+            stringResource(R.string.delete_verb),
+            Icons.Outlined.Delete,
+            onClick = {
+              deleteContact()
+              showMenu.value = false
+            },
+            color = Color.Red
+          )
+        }
       }
     }
   }
@@ -229,7 +265,8 @@ fun PreviewChatListNavLinkDirect() {
         chatStats = Chat.ChatStats()
       ),
       click = {},
-      deleteContact = {}
+      deleteContact = {},
+      clearChat = {}
     )
   }
 }
@@ -257,7 +294,8 @@ fun PreviewChatListNavLinkGroup() {
         chatStats = Chat.ChatStats()
       ),
       click = {},
-      deleteContact = {}
+      deleteContact = {},
+      clearChat = {}
     )
   }
 }
@@ -278,7 +316,8 @@ fun PreviewChatListNavLinkContactRequest() {
         chatStats = Chat.ChatStats()
       ),
       click = {},
-      deleteContact = {}
+      deleteContact = {},
+      clearChat = {}
     )
   }
 }
