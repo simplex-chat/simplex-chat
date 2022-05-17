@@ -656,7 +656,7 @@ viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
 
 viewCallOffer :: Contact -> CallType -> WebRTCSession -> Maybe C.Key -> [StyledString]
 viewCallOffer ct@Contact {contactId} callType@CallType {media} WebRTCSession {rtcSession = offer, rtcIceCandidates = iceCandidates} sharedKey =
-  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call (" <> encryptedCall callType <> ")",
+  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call " <> encryptedCall callType,
     "To connect, please open the link below in your browser" <> supporedBrowsers callType,
     "",
     "https://simplex.chat/call#" <> plain queryString
@@ -672,7 +672,7 @@ viewCallOffer ct@Contact {contactId} callType@CallType {media} WebRTCSession {rt
 
 viewCallAnswer :: Contact -> WebRTCSession -> [StyledString]
 viewCallAnswer ct WebRTCSession {rtcSession = answer, rtcIceCandidates = iceCandidates} =
-  [ ttyContact' ct <> " started the WebRTC call",
+  [ ttyContact' ct <> " continued the WebRTC call",
     "To connect, please paste the data below in your browser window you opened earlier and click Connect button",
     "",
     plain . LB.toStrict . J.encode $ WCCallAnswer {answer, iceCandidates}
