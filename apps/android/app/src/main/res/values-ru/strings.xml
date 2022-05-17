@@ -168,6 +168,11 @@
     <string name="accept_contact_button">Принять</string>
     <string name="reject_contact_button">Отклонить</string>
 
+    <!-- Clear Chat - ChatListNavLinkView.kt -->
+    <string name="clear_chat_question">Очистить чат?</string>
+    <string name="clear_chat_warning">Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</string>
+    <string name="clear_verb">Очистить</string>
+
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
     <string name="you_accepted_connection">Вы приняли приглашение соединиться</string>

@@ -411,11 +411,12 @@ processChatCommand = \case
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
-        forM_ fileInfo_ $ \fileInfo -> do
-          cancelFile user fileInfo
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-        void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+      forM_ ciIdsAndFileInfo $ \(itemId, itemDeleted, fileInfo_) ->
+        unless itemDeleted $ do
+          forM_ fileInfo_ $ \fileInfo -> do
+            cancelFile user fileInfo
+            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+          void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
