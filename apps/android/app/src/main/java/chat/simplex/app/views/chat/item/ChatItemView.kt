@@ -65,35 +65,29 @@ fun ChatItemView(
       } else if (cItem.isCall) {
         FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
       }
-      if (cItem.isMsgContent || cItem.isDeletedContent) {
+      if (cItem.isMsgContent) {
         DropdownMenu(
           expanded = showMenu.value,
           onDismissRequest = { showMenu.value = false },
           Modifier.width(220.dp)
         ) {
-          if (cItem.isMsgContent) {
-            ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
-              if (composeState.value.editing) {
-                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
-              } else {
-                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-              }
-              showMenu.value = false
-            })
-          }
-          if (cItem.isMsgContent) {
-            ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
-              shareText(cxt, cItem.content.text)
-              showMenu.value = false
-            })
-          }
-          if (cItem.isMsgContent) {
-            ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
-              copyText(cxt, cItem.content.text)
-              showMenu.value = false
-            })
-          }
-          if (cItem.isMsgContent && (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile)) {
+          ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
+            if (composeState.value.editing) {
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
+            } else {
+              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            }
+            showMenu.value = false
+          })
+          ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
+            shareText(cxt, cItem.content.text)
+            showMenu.value = false
+          })
+          ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {
+            copyText(cxt, cItem.content.text)
+            showMenu.value = false
+          })
+          if (cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCFile) {
             val filePath = getLoadedFilePath(context, cItem.file)
             if (filePath != null) {
               ItemAction(stringResource(R.string.save_verb), Icons.Outlined.SaveAlt, onClick = {
@@ -106,23 +100,37 @@ fun ChatItemView(
               })
             }
           }
-          if (cItem.isMsgContent && cItem.meta.editable) {
+          if (cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem)
               showMenu.value = false
             })
           }
-          if (cItem.isMsgContent || cItem.isDeletedContent) {
-            ItemAction(
-              stringResource(R.string.delete_verb),
-              Icons.Outlined.Delete,
-              onClick = {
-                showMenu.value = false
-                deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
-              },
-              color = Color.Red
-            )
-          }
+          ItemAction(
+            stringResource(R.string.delete_verb),
+            Icons.Outlined.Delete,
+            onClick = {
+              showMenu.value = false
+              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+            },
+            color = Color.Red
+          )
+        }
+      } else if (cItem.isDeletedContent) {
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
+          ItemAction(
+            stringResource(R.string.delete_verb),
+            Icons.Outlined.Delete,
+            onClick = {
+              showMenu.value = false
+              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+            },
+            color = Color.Red
+          )
         }
       }
     }
