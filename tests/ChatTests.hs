@@ -300,7 +300,7 @@ testDirectMessageDelete =
 
       -- bob: deletes msg id 3 (that alice deleted locally)
       bob #$> ("/_delete item @2 3 broadcast", id, "message deleted")
-      alice <## "bob> [deleted - original message not found, possibly deleted locally]"
+      alice <## "bob> [deleted - original message not found]"
 
       alice @@@ [("@bob", "do you receive my messages?")]
       alice #$> ("/_get chat @2 count=100", chat', [((0, "do you receive my messages?"), Just (1, "hello 🙂"))])
