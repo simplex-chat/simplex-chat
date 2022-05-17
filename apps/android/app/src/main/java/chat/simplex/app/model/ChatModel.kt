@@ -175,7 +175,6 @@ class ChatModel(val controller: ChatController) {
   fun clearChat(cInfo: ChatInfo) {
     // clear preview
     val i = getChatIndex(cInfo.id)
-    val chat: Chat
     if (i >= 0) {
       chats[i] = chats[i]?.copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats())
     }
