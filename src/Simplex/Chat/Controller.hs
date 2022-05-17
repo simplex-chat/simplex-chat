@@ -109,6 +109,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIDeleteChat ChatRef
+  | APIClearChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
@@ -133,6 +134,7 @@ data ChatCommand
   | Connect (Maybe AConnectionRequestUri)
   | ConnectSimplex
   | DeleteContact ContactName
+  | ClearContact ContactName
   | ListContacts
   | CreateMyAddress
   | DeleteMyAddress
@@ -152,6 +154,7 @@ data ChatCommand
   | MemberRole GroupName ContactName GroupMemberRole
   | LeaveGroup GroupName
   | DeleteGroup GroupName
+  | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
@@ -180,6 +183,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
@@ -206,6 +210,7 @@ data ChatResponse
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
+  | CRChatCleared {chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
