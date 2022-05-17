@@ -286,6 +286,22 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     throw r
 }
 
+func apiClearChat(type: ChatType, id: Int64) async throws {
+    let r = await chatSendCmd(.apiClearChat(type: type, id: id), bgTask: false)
+    if case .chatCleared = r { return }
+    throw r
+}
+
+func clearChat(_ chat: Chat) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiClearChat(type: cInfo.chatType, id: cInfo.apiId)
+        DispatchQueue.main.async { ChatModel.shared.clearChat(cInfo) }
+    } catch {
+        logger.error("clearChat apiClearChat error: \(responseError(error))")
+    }
+}
+
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
     switch r {

@@ -178,9 +178,12 @@ struct ChatView: View {
                     Button(role: .destructive) {
                         showDeleteMessage = true
                         deletingItem = ci
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
+                    } label: { Label("Delete", systemImage: "trash") }
+                } else if ci.isDeletedContent() {
+                    Button(role: .destructive) {
+                        showDeleteMessage = true
+                        deletingItem = ci
+                    } label: { Label("Delete", systemImage: "trash") }
                 }
             }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {

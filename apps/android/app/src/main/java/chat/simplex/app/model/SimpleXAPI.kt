@@ -274,6 +274,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
+  suspend fun apiClearChat(type: ChatType, id: Long): Boolean {
+    val r = sendCmd(CC.ApiClearChat(type, id))
+    if (r is CR.ChatCleared) return true
+    Log.e(TAG, "apiClearChat bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
     val r = sendCmd(CC.ApiUpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
@@ -783,6 +790,7 @@ sealed class CC {
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
+  class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
   class CreateMyAddress: CC()
@@ -816,6 +824,7 @@ sealed class CC {
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
+    is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
     is CreateMyAddress -> "/address"
@@ -850,6 +859,7 @@ sealed class CC {
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
+    is ApiClearChat -> "apiClearChat"
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is CreateMyAddress -> "createMyAddress"
@@ -921,6 +931,7 @@ sealed class CR {
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
+  @Serializable @SerialName("chatCleared") class ChatCleared(val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
@@ -978,6 +989,7 @@ sealed class CR {
     is SentInvitation -> "sentInvitation"
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactDeleted -> "contactDeleted"
+    is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
@@ -1036,6 +1048,7 @@ sealed class CR {
     is SentInvitation -> noDetails()
     is ContactAlreadyExists -> json.encodeToString(contact)
     is ContactDeleted -> json.encodeToString(contact)
+    is ChatCleared -> json.encodeToString(chatInfo)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ParsedMarkdown -> json.encodeToString(formattedText)
