@@ -65,6 +65,9 @@ struct ChatListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .swipeActions(edge: .trailing) {
+            clearChatButton()
+        }
         .frame(height: 80)
 
         if contact.ready {
@@ -96,6 +99,9 @@ struct ChatListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .swipeActions(edge: .trailing) {
+            clearChatButton()
+        }
         .frame(height: 80)
     }
 
@@ -106,6 +112,15 @@ struct ChatListNavLink: View {
             Label("Read", systemImage: "checkmark")
         }
         .tint(Color.accentColor)
+    }
+
+    private func clearChatButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(clearChatAlert())
+        } label: {
+            Label("Clear", systemImage: "gobackward")
+        }
+        .tint(Color.orange)
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
@@ -168,6 +183,17 @@ struct ChatListNavLink: View {
                         logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(responseError(error))")
                     }
                 }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func clearChatAlert() -> Alert {
+        Alert(
+            title: Text("Clear chat?"),
+            message: Text("All messages will be deleted - this cannot be undone! This is a local action, messages will be deleted ONLY for you."),
+            primaryButton: .destructive(Text("Clear")) {
+                Task { await clearChat(chat) }
             },
             secondaryButton: .cancel()
         )

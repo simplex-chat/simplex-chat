@@ -185,6 +185,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func clearChat(_ cInfo: ChatInfo) {
+        // clear preview
+        if let chat = getChat(cInfo.id) {
+            chat.chatItems = []
+            chat.chatStats = ChatStats()
+        }
+        // clear current chat
+        if chatId == cInfo.id {
+            chatItems = []
+        }
+    }
+
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update preview
         if let i = getChatIndex(cInfo.id) {
