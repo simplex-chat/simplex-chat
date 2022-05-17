@@ -334,15 +334,16 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
           deleteCIFile user file
-          toCi <- withStore $ \st -> deleteDirectChatItemInternal st userId ct itemId
+          toCi <- withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          SndMessage {msgId} <- sendDirectContactMessage ct (XMsgDel itemSharedMId)
+          void $ sendDirectContactMessage ct (XMsgDel itemSharedMId)
           deleteCIFile user file
-          toCi <- withStore $ \st -> deleteDirectChatItemSndBroadcast st userId ct itemId msgId
+          toCi <- withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMBroadcast
           setActive $ ActiveC c
           pure $ CRChatItemDeleted (AChatItem SCTDirect msgDir (DirectChat ct) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
+    -- TODO for group integrity and pending messages, group items and messages are set to "deleted"; maybe a different workaround is needed
     CTGroup -> do
       Group gInfo@GroupInfo {localDisplayName = gName, membership} ms <- withStore $ \st -> getGroup st user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
@@ -365,9 +366,9 @@ processChatCommand = \case
       deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> m ()
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
-          cancelFiles user [(fileId, AFS msgDirection fileStatus)]
-          withFilesFolder $ \filesFolder ->
-            deleteFiles filesFolder [filePath]
+          let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore (\st -> updateDirectChatItemsRead st chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore (\st -> updateGroupChatItemsRead st chatId fromToIds) $> CRCmdOk
@@ -378,12 +379,12 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \st -> getContact st userId chatId
       withStore (\st -> getContactGroupNames st userId ct) >>= \case
         [] -> do
-          files <- withStore $ \st -> getContactFiles st userId ct
+          filesInfo <- withStore $ \st -> getContactFileInfo st userId ct
           conns <- withStore $ \st -> getContactConnections st userId ct
           withChatLock . procCmd $ do
-            cancelFiles user (map (\(fId, fStatus, _) -> (fId, fStatus)) files)
-            withFilesFolder $ \filesFolder ->
-              deleteFiles filesFolder (map (\(_, _, fPath) -> fPath) files)
+            forM_ filesInfo $ \fileInfo -> do
+              cancelFile user fileInfo
+              withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
             withStore $ \st -> deleteContact st userId ct
@@ -396,6 +397,27 @@ processChatCommand = \case
       withStore $ \st -> deletePendingContactConnection st userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> pure $ chatCmdError "not implemented"
+    CTContactRequest -> pure $ chatCmdError "not supported"
+  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
+      ct <- withStore $ \st -> getContact st userId chatId
+      ciIdsAndFileInfo <- withStore $ \st -> getContactChatItemIdsAndFileInfo st userId chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
+        forM_ fileInfo_ $ \fileInfo -> do
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+        void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
+      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct))
+    CTGroup -> do
+      gInfo <- withStore $ \st -> getGroupInfo st user chatId
+      ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
+        forM_ fileInfo_ $ \fileInfo -> do
+          cancelFile user fileInfo
+          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+        void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
+    CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \st -> getContactRequest st userId connReqId
@@ -507,6 +529,9 @@ processChatCommand = \case
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \st -> getContactIdByName st userId cName
     processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
+  ClearContact cName -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand $ APIClearChat (ChatRef CTDirect contactId)
   ListContacts -> withUser $ \user -> CRContactsList <$> withStore (`getUserContacts` user)
   CreateMyAddress -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     (connId, cReq) <- withAgent (`createConnection` SCMContact)
@@ -629,6 +654,9 @@ processChatCommand = \case
       mapM_ deleteMemberConnection members
       withStore $ \st -> deleteGroup st user g
       pure $ CRGroupDeletedUser gInfo
+  ClearGroup gName -> withUser $ \user -> do
+    groupId <- withStore $ \st -> getGroupIdByName st user gName
+    processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
   ListMembers gName -> CRGroupMembers <$> withUser (\user -> withStore (\st -> getGroupByName st user gName))
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore (`getUserGroupDetails` user))
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
@@ -754,15 +782,14 @@ processChatCommand = \case
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-    deleteFiles :: FilePath -> [Maybe FilePath] -> m ()
-    deleteFiles filesFolder filePaths =
-      forM_ filePaths $ \filePath_ ->
-        forM_ filePath_ $ \filePath -> do
-          let fsFilePath = filesFolder <> "/" <> filePath
-          removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-            removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-    cancelFiles :: User -> [(Int64, ACIFileStatus)] -> m ()
-    cancelFiles user files = forM_ files $ \(fileId, AFS dir status) ->
+    deleteFile :: FilePath -> CIFileInfo -> m ()
+    deleteFile filesFolder CIFileInfo {filePath} =
+      forM_ filePath $ \fPath -> do
+        let fsFilePath = filesFolder <> "/" <> fPath
+        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    cancelFile :: User -> CIFileInfo -> m ()
+    cancelFile user CIFileInfo {fileId, fileStatus = (AFS dir status)} =
       unless (ciFileEnded status) $
         case dir of
           SMDSnd -> do
@@ -1337,8 +1364,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         profileContactRequest :: InvitationId -> Profile -> Maybe XContactId -> m ()
         profileContactRequest invId p xContactId_ = do
           withStore (\st -> createOrUpdateContactRequest st userId userContactLinkId invId p xContactId_) >>= \case
-            Left contact -> toView $ CRContactRequestAlreadyAccepted contact
-            Right cReq@UserContactRequest {localDisplayName} -> do
+            CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
+            CORRequest cReq@UserContactRequest {localDisplayName} -> do
               (_, autoAccept) <- withStore $ \st -> getUserContactLink st userId
               if autoAccept
                 then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
@@ -1416,23 +1443,41 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         pure $ Just ciFile
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
-    messageUpdate ct@Contact {contactId} sharedMsgId mc RcvMessage {msgId} msgMeta = do
+    messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
-      case msgDir of
-        SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) $ Just msgId
-        SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
+      updateRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            ci@ChatItem {formattedText} <- saveRcvChatItem' user (CDDirectRcv ct) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing
+            toView . CRChatItemUpdated $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+            showMsgToast (c <> "> ") mc formattedText
+            setActive $ ActiveC c
+          _ -> throwError e
+      where
+        updateRcvChatItem = do
+          CChatItem msgDir ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+          case msgDir of
+            SMDRcv -> updateDirectChatItemView userId ct itemId (ACIContent SMDRcv $ CIRcvMsgContent mc) $ Just msgId
+            SMDSnd -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
     messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
-      case msgDir of
-        SMDRcv -> do
-          -- TODO allow to locally delete items that were broadcast deleted by sender
-          toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
-          toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
-        SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
+      deleteRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound ct sMsgId
+          _ -> throwError e
+      where
+        deleteRcvChatItem = do
+          CChatItem msgDir deletedItem@ChatItem {meta = CIMeta {itemId}} <- withStore $ \st -> getDirectChatItemBySharedMsgId st userId contactId sharedMsgId
+          case msgDir of
+            SMDRcv -> do
+              toCi <- withStore $ \st -> deleteDirectChatItemRcvBroadcast st userId ct itemId msgId
+              toView $ CRChatItemDeleted (AChatItem SCTDirect SMDRcv (DirectChat ct) deletedItem) toCi
+            SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo m@GroupMember {localDisplayName = c} mc msg msgMeta = do
@@ -1989,9 +2034,12 @@ saveSndChatItem user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem =
   liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) createdAt createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
-saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} MsgMeta {broker = (_, brokerTs)} content ciFile = do
+saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} = saveRcvChatItem' user cd msg sharedMsgId_
+
+saveRcvChatItem' :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> MsgMeta -> CIContent 'MDRcv -> Maybe (CIFile 'MDRcv) -> m (ChatItem c 'MDRcv)
+saveRcvChatItem' user cd msg sharedMsgId_ MsgMeta {broker = (_, brokerTs)} content ciFile = do
   createdAt <- liftIO getCurrentTime
-  (ciId, quotedItem) <- withStore $ \st -> createNewRcvChatItem st user cd msg content brokerTs createdAt
+  (ciId, quotedItem) <- withStore $ \st -> createNewRcvChatItem st user cd msg sharedMsgId_ content brokerTs createdAt
   forM_ ciFile $ \CIFile {fileId} -> withStore $ \st -> updateFileTransferChatItemId st fileId ciId
   liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ brokerTs createdAt
 
@@ -2122,8 +2170,9 @@ chatCommandP =
     <|> "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP)))
     <|> "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
     <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
-    <|> "/_read chat " *> (APIChatRead <$> chatRefP <* A.space <*> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))
+    <|> "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal))))
     <|> "/_delete " *> (APIDeleteChat <$> chatRefP)
+    <|> "/_clear chat " *> (APIClearChat <$> chatRefP)
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
@@ -2153,6 +2202,9 @@ chatCommandP =
     <|> ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName)
     <|> ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName)
     <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
+    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
+    <|> "/clear #" *> (ClearGroup <$> displayName)
+    <|> ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName)
     <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
     <|> ("/groups" <|> "/gs") $> ListGroups
     <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
@@ -2160,7 +2212,6 @@ chatCommandP =
     <|> ("/contacts" <|> "/cs") $> ListContacts
     <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
     <|> ("/connect" <|> "/c") $> AddContact
-    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
     <|> (SendMessage <$> chatNameP <* A.space <*> A.takeByteString)
     <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
     <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)

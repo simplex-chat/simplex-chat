@@ -146,7 +146,7 @@ Once you have started the chat, you will be prompted to specify your "display na
 The diagram below shows how to connect and message a contact:
 
 <div align="center">
-  <img align="center" src="images/how-to-use-simplex.svg">
+  <img align="center" src="../images/how-to-use-simplex.svg">
 </div>
 
 Once you've set up your local profile, enter `/c` (for `/connect`) to create a new connection and generate an invitation. Send this invitation to your contact via any other channel.
@@ -165,7 +165,7 @@ Use `/help` in chat to see the list of available commands.
 
 To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`. You can then send messages to the group by entering `#<group> <message>`. Use `/help groups` for other commands.
 
-![simplex-chat](./images/groups.gif)
+![simplex-chat](../images/groups.gif)
 
 > **Please note**: the groups are not stored on any server, they are maintained as a list of members in the app database to whom the messages will be sent.
 
@@ -173,7 +173,7 @@ To create a group use `/g <group>`, then add contacts to it with `/a <group> <na
 
 You can send a file to your contact with `/f @<contact> <file_path>` - the recipient will have to accept it before it is sent. Use `/help files` for other commands.
 
-![simplex-chat](./images/files.gif)
+![simplex-chat](../images/files.gif)
 
 You can send files to a group with `/f #<group> <file_path>`.
 
@@ -187,7 +187,7 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 
 Use `/help address` for other commands.
 
-![simplex-chat](./images/user-addresses.gif)
+![simplex-chat](../images/user-addresses.gif)
 
 ### Access chat history
 

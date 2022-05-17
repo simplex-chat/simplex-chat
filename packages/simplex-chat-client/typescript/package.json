@@ -1,0 +1,61 @@
+{
+  "name": "simplex-chat",
+  "version": "0.1.0",
+  "description": "SimpleX Chat client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "test": "npm run prettier:check && npm run eslint && jest --coverage",
+    "build": "npm run prettier:write && npm run eslint && tsc && ./copy && npm run bundle",
+    "bundle": "rollup dist/index-web.js --file dist/index.bundle.js --format umd --name simplex",
+    "eslint": "eslint --ext .ts ./src/**/*.ts",
+    "prettier:write": "prettier --write './**/*.{json,yaml,js,ts}'",
+    "prettier:check": "prettier --list-different './**/*.{json,yaml,js,ts}'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+  },
+  "keywords": [
+    "messenger",
+    "chat",
+    "privacy",
+    "security"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-client/typescript#readme",
+  "dependencies": {
+    "isomorphic-ws": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.5.1",
+    "@types/node": "^17.0.24",
+    "@typescript-eslint/eslint-plugin": "^5.23.0",
+    "@typescript-eslint/parser": "^5.23.0",
+    "eslint": "^8.15.0",
+    "eslint-config-prettier": "^8.5.0",
+    "husky": "^7.0.4",
+    "jest": "^28.1.0",
+    "lint-staged": "^12.3.8",
+    "prettier": "^2.6.2",
+    "rollup": "^2.72.1",
+    "ts-jest": "^28.0.2",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  }
+}

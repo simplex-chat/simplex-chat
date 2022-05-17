@@ -21,7 +21,12 @@ struct ContextItemView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
                 .foregroundColor(.secondary)
-            contextText(contextItem).lineLimit(3)
+            MsgContentView(
+                text: contextItem.text,
+                formattedText: contextItem.formattedText,
+                sender: contextItem.memberDisplayName
+            )
+            .lineLimit(3)
             Spacer()
             Button {
                 withAnimation {
@@ -36,14 +41,6 @@ struct ContextItemView: View {
         .frame(maxWidth: .infinity)
         .background(chatItemFrameColor(contextItem, colorScheme))
         .padding(.top, 8)
-    }
-    
-    func contextText(_ cxtItem: ChatItem) -> some View {
-        if let s = cxtItem.memberDisplayName {
-            return (Text(s).fontWeight(.medium) + Text(": \(cxtItem.text)"))
-        } else {
-            return Text(cxtItem.text)
-        }
     }
 }
 

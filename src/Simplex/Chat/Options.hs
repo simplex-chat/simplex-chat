@@ -24,7 +24,8 @@ data ChatOpts = ChatOpts
     logConnections :: Bool,
     logAgent :: Bool,
     chatCmd :: String,
-    chatCmdDelay :: Int
+    chatCmdDelay :: Int,
+    chatServerPort :: Maybe String
   }
 
 chatOpts :: FilePath -> FilePath -> Parser ChatOpts
@@ -78,12 +79,27 @@ chatOpts appDir defaultDbFileName = do
           <> value 3
           <> showDefault
       )
-  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay}
+  chatServerPort <-
+    option
+      parseServerPort
+      ( long "chat-server-port"
+          <> short 'p'
+          <> metavar "PORT"
+          <> help "Run chat server on specified port"
+          <> value Nothing
+      )
+  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort}
   where
     defaultDbFilePath = combine appDir defaultDbFileName
 
 parseSMPServers :: ReadM [SMPServer]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
+
+parseServerPort :: ReadM (Maybe String)
+parseServerPort = eitherReader $ parseAll serverPortP . B.pack
+
+serverPortP :: A.Parser (Maybe String)
+serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 smpServersP :: A.Parser [SMPServer]
 smpServersP = strP `A.sepBy1` A.char ','

@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 2.0.0
+version: 2.0.1
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -48,6 +48,8 @@ executables:
     main: Main.hs
     dependencies:
       - simplex-chat
+      - network == 3.1.*
+      - websockets == 0.12.*
     ghc-options:
       - -threaded
 

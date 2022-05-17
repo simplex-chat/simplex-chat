@@ -37,6 +37,10 @@ fun SettingsView(chatModel: ChatModel) {
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = { on ->
         chatModel.controller.setRunServiceInBackground(on)
+        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+          chatModel.controller.setBackgroundServiceNoticeShown(false)
+        }
+        chatModel.controller.showBackgroundServiceNoticeIfNeeded()
         chatModel.runServiceInBackground.value = on
       },
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
@@ -204,8 +208,8 @@ fun SettingsLayout(
         Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-//      SettingsSectionView(showVideoChatPrototype) {
-      SettingsSectionView() {
+      SettingsSectionView(showVideoChatPrototype) {
+//      SettingsSectionView() {
         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }

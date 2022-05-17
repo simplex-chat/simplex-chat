@@ -382,18 +382,18 @@ func apiRejectCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiRejectCall(contact: contact))
 }
 
-func apiSendCallOffer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: [String], media: CallMediaType, capabilities: CallCapabilities) async throws {
+func apiSendCallOffer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: String, media: CallMediaType, capabilities: CallCapabilities) async throws {
     let webRtcSession = WebRTCSession(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
     let callOffer = WebRTCCallOffer(callType: CallType(media: media, capabilities: capabilities), rtcSession: webRtcSession)
     try await sendCommandOkResp(.apiSendCallOffer(contact: contact, callOffer: callOffer))
 }
 
-func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: [String]) async throws {
+func apiSendCallAnswer(_ contact: Contact, _ rtcSession: String, _ rtcIceCandidates: String) async throws {
     let answer = WebRTCSession(rtcSession: rtcSession, rtcIceCandidates: rtcIceCandidates)
     try await sendCommandOkResp(.apiSendCallAnswer(contact: contact, answer: answer))
 }
 
-func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: [String]) async throws {
+func apiSendCallExtraInfo(_ contact: Contact, _ rtcIceCandidates: String) async throws {
     let extraInfo = WebRTCExtraInfo(rtcIceCandidates: rtcIceCandidates)
     try await sendCommandOkResp(.apiSendCallExtraInfo(contact: contact, extraInfo: extraInfo))
 }
@@ -624,7 +624,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             // TODO check encryption is compatible
             withCall(contact) { call in
                 m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
-                m.callCommand = .accept(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
+                m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey)
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in

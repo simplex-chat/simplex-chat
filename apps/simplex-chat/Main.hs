@@ -3,6 +3,7 @@
 module Main where
 
 import Control.Concurrent (threadDelay)
+import Server
 import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
@@ -14,12 +15,15 @@ import System.Terminal (withTerminal)
 main :: IO ()
 main = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {chatCmd} <- getChatOpts appDir "simplex_v1"
+  opts@ChatOpts {chatCmd, chatServerPort} <- getChatOpts appDir "simplex_v1"
   if null chatCmd
-    then do
-      welcome opts
-      t <- withTerminal pure
-      simplexChatTerminal terminalChatConfig opts t
+    then case chatServerPort of
+      Just chatPort ->
+        simplexChatServer defaultChatServerConfig {chatPort} terminalChatConfig opts
+      _ -> do
+        welcome opts
+        t <- withTerminal pure
+        simplexChatTerminal terminalChatConfig opts t
     else simplexChatCore terminalChatConfig opts Nothing $ \_ cc -> do
       r <- sendChatCmd cc chatCmd
       putStrLn $ serializeChatResponse r
