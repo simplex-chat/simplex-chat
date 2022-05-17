@@ -3458,7 +3458,7 @@ deleteGroupChatItemInternal st user gInfo itemId =
     currentTs <- liftIO getCurrentTime
     ci <- deleteGroupChatItem_ db user gInfo itemId CIDMInternal True currentTs
     setChatItemMessagesDeleted_ db itemId
-    -- TODO delete file
+    DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
     pure ci
 
 deleteGroupChatItemRcvBroadcast :: StoreMonad m => SQLiteStore -> User -> GroupInfo -> ChatItemId -> MessageId -> m AChatItem
@@ -3470,6 +3470,7 @@ deleteGroupChatItemSndBroadcast st user gInfo itemId msgId =
   liftIOEither . withTransaction st $ \db -> do
     ci <- deleteGroupChatItemBroadcast_ db user gInfo itemId True msgId
     setChatItemMessagesDeleted_ db itemId
+    DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
     pure ci
 
 deleteGroupChatItemBroadcast_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Bool -> MessageId -> IO (Either StoreError AChatItem)
