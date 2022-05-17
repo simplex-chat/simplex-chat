@@ -96,6 +96,9 @@ data CallType = CallType
   }
   deriving (Eq, Show, Generic, FromJSON)
 
+defaultCallType :: CallType
+defaultCallType = CallType CMVideo $ CallCapabilities {encryption = True}
+
 instance ToJSON CallType where toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | * Types for chat protocol

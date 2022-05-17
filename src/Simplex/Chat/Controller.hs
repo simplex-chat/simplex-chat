@@ -113,6 +113,7 @@ data ChatCommand
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
+  | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
   | APISendCallOffer ContactId WebRTCCallOffer
   | APISendCallAnswer ContactId WebRTCSession

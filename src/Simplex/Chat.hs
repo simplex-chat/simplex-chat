@@ -445,6 +445,9 @@ processChatCommand = \case
       forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       pure CRCmdOk
+  SendCallInvitation cName callType -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \st -> getContactIdByName st userId cName
+    processChatCommand $ APISendCallInvitation contactId callType
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
@@ -2176,6 +2179,7 @@ chatCommandP =
     <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
     <|> "/_reject " *> (APIRejectContact <$> A.decimal)
     <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
+    <|> ("/call @" <|> "/call ") *> (SendCallInvitation <$> displayName <*> pure defaultCallType)
     <|> "/_call reject @" *> (APIRejectCall <$> A.decimal)
     <|> "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP)
     <|> "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP)

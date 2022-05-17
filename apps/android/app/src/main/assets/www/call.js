@@ -431,8 +431,9 @@ function callCryptoFunction() {
         };
     }
     function decodeAesKey(aesKey) {
-        const keyData = callCrypto.decodeBase64(callCrypto.encodeAscii(aesKey));
-        return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+        const keyData = callCrypto.decodeBase64url(callCrypto.encodeAscii(aesKey));
+        console.log("keyData", keyData);
+        return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
     }
     function concatN(...bs) {
         const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0));
@@ -445,9 +446,9 @@ function callCryptoFunction() {
     function randomIV() {
         return crypto.getRandomValues(new Uint8Array(IV_LENGTH));
     }
-    const base64chars = new Uint8Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").map((c) => c.charCodeAt(0)));
-    const base64lookup = new Array(256);
-    base64chars.forEach((c, i) => (base64lookup[c] = i));
+    const base64urlChars = new Uint8Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".split("").map((c) => c.charCodeAt(0)));
+    const base64urlLookup = new Array(256);
+    base64urlChars.forEach((c, i) => (base64urlLookup[c] = i));
     const char_equal = "=".charCodeAt(0);
     function encodeAscii(s) {
         const a = new Uint8Array(s.length);
@@ -462,16 +463,16 @@ function callCryptoFunction() {
             s += String.fromCharCode(a[i]);
         return s;
     }
-    function encodeBase64(a) {
+    function encodeBase64url(a) {
         const len = a.length;
         const b64len = Math.ceil(len / 3) * 4;
         const b64 = new Uint8Array(b64len);
         let j = 0;
         for (let i = 0; i < len; i += 3) {
-            b64[j++] = base64chars[a[i] >> 2];
-            b64[j++] = base64chars[((a[i] & 3) << 4) | (a[i + 1] >> 4)];
-            b64[j++] = base64chars[((a[i + 1] & 15) << 2) | (a[i + 2] >> 6)];
-            b64[j++] = base64chars[a[i + 2] & 63];
+            b64[j++] = base64urlChars[a[i] >> 2];
+            b64[j++] = base64urlChars[((a[i] & 3) << 4) | (a[i + 1] >> 4)];
+            b64[j++] = base64urlChars[((a[i + 1] & 15) << 2) | (a[i + 2] >> 6)];
+            b64[j++] = base64urlChars[a[i + 2] & 63];
         }
         if (len % 3)
             b64[b64len - 1] = char_equal;
@@ -479,7 +480,7 @@ function callCryptoFunction() {
             b64[b64len - 2] = char_equal;
         return b64;
     }
-    function decodeBase64(b64) {
+    function decodeBase64url(b64) {
         let len = b64.length;
         if (len % 4)
             return;
@@ -496,10 +497,10 @@ function callCryptoFunction() {
         let i = 0;
         let pos = 0;
         while (i < len) {
-            const enc1 = base64lookup[b64[i++]];
-            const enc2 = i < len ? base64lookup[b64[i++]] : 0;
-            const enc3 = i < len ? base64lookup[b64[i++]] : 0;
-            const enc4 = i < len ? base64lookup[b64[i++]] : 0;
+            const enc1 = base64urlLookup[b64[i++]];
+            const enc2 = i < len ? base64urlLookup[b64[i++]] : 0;
+            const enc3 = i < len ? base64urlLookup[b64[i++]] : 0;
+            const enc4 = i < len ? base64urlLookup[b64[i++]] : 0;
             if (enc1 === undefined || enc2 === undefined || enc3 === undefined || enc4 === undefined)
                 return;
             bytes[pos++] = (enc1 << 2) | (enc2 >> 4);
@@ -513,8 +514,8 @@ function callCryptoFunction() {
         decodeAesKey,
         encodeAscii,
         decodeAscii,
-        encodeBase64,
-        decodeBase64,
+        encodeBase64url,
+        decodeBase64url,
     };
 }
 // If the worker is used for decryption, this function code (as string) is used to load the worker via Blob

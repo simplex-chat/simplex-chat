@@ -1,17 +1,30 @@
 {
-  "name": "simplex-chat-webrtc",
-  "version": "0.0.1",
-  "description": "WebRTC call in browser and webview",
+  "name": "@simplex-chat/webrtc",
+  "version": "0.0.2",
+  "description": "WebRTC call in browser and webview for SimpleX Chat clients",
   "main": "dist/call.js",
+  "types": "dist/call.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "prettier --write --ignore-unknown . && tsc && ./copy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
   },
   "keywords": [
     "SimpleX",
     "WebRTC"
   ],
-  "author": "",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-webrtc#readme",
+  "author": "SimpleX Chat",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
     "@types/lz-string": "^1.3.34",
