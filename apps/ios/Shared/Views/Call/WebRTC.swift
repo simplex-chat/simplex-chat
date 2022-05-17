@@ -149,7 +149,7 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             try container.encode(aesKey, forKey: .aesKey)
             try container.encode(useWorker, forKey: .useWorker)
         case let .offer(offer, iceCandidates, media, aesKey, useWorker):
-            try container.encode("accept", forKey: .type)
+            try container.encode("offer", forKey: .type)
             try container.encode(offer, forKey: .offer)
             try container.encode(iceCandidates, forKey: .iceCandidates)
             try container.encode(media, forKey: .media)
@@ -213,8 +213,6 @@ enum WCallCommand: Equatable, Encodable, Decodable {
 enum WCallResponse: Equatable, Decodable {
     case capabilities(capabilities: CallCapabilities)
     case offer(offer: String, iceCandidates: String, capabilities: CallCapabilities)
-    // TODO remove accept, it is needed for debugging
-//    case offer(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
     case answer(answer: String, iceCandidates: String)
     case ice(iceCandidates: String)
     case connection(state: ConnectionState)

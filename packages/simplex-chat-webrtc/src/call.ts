@@ -137,12 +137,12 @@ enum TransformOperation {
 
 interface RTCRtpScriptTransform {}
 
-;(function () {
-  interface WVAPICall {
-    corrId?: number
-    command: WCallCommand
-  }
+interface WVAPICall {
+  corrId?: number
+  command: WCallCommand
+}
 
+const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
     createEncodedStreams: () => TransformStream
     transform: RTCRtpScriptTransform
@@ -180,7 +180,7 @@ interface RTCRtpScriptTransform {}
       peerConnectionConfig: {
         iceServers: [
           {urls: "stun:stun.simplex.chat:5349"},
-          // {urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+          {urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z"},
         ],
         iceCandidatePoolSize: 10,
         encodedInsertableStreams,
@@ -279,8 +279,6 @@ interface RTCRtpScriptTransform {}
     return JSON.parse(LZString.decompressFromBase64(s)!)
   }
 
-  Object.defineProperty(window, "processCommand", {value: processCommand})
-
   async function processCommand(body: WVAPICall): Promise<WVApiMessage> {
     const {corrId, command} = body
     const pc = activeCall?.connection
@@ -295,8 +293,6 @@ interface RTCRtpScriptTransform {}
           console.log("starting call")
           if (activeCall) {
             resp = {type: "error", message: "start: call already started"}
-          } else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
-            resp = {type: "error", message: "start: encryption is not supported"}
           } else {
             const {media, useWorker} = command
             const encryption = supportsInsertableStreams(useWorker)
@@ -560,6 +556,8 @@ interface RTCRtpScriptTransform {}
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks) t.enabled = enable
   }
+
+  return processCommand
 })()
 
 type TransformFrameFunc = (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>

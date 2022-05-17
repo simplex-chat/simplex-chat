@@ -113,7 +113,7 @@ struct ChatListView: View {
                         localMedia: invitation.peerMedia
                     )
                     showCallView = true
-                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
                 }
             },
             secondaryButton: .cancel()

@@ -362,15 +362,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return r is CR.CmdOk
   }
 
-  suspend fun apiCallStatus(contact: Contact, status: String): Boolean {
-    try {
-      val callStatus = WebRTCCallStatus.valueOf(status)
-      val r = sendCmd(CC.ApiCallStatus(contact, callStatus))
-      return r is CR.CmdOk
-    } catch (e: Error) {
-      Log.d(TAG,"apiCallStatus: call status $status not used")
-      return false
-    }
+  suspend fun apiCallStatus(contact: Contact, status: WebRTCCallStatus): Boolean {
+    val r = sendCmd(CC.ApiCallStatus(contact, status))
+    return r is CR.CmdOk
   }
 
   suspend fun apiChatRead(type: ChatType, id: Long, range: CC.ItemRange): Boolean {
@@ -497,8 +491,80 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           removeFile(appContext, fileName)
         }
       }
+      is CR.CallInvitation -> {
+        val invitation = CallInvitation(r.callType.media, r.sharedKey)
+        chatModel.callInvitations[r.contact.id] = invitation
+        if (chatModel.activeCallInvitation.value == null) {
+          chatModel.activeCallInvitation.value = ContactRef(r.contact.apiId, r.contact.localDisplayName)
+        }
+        ntfManager.notifyCallInvitation(r.contact, invitation)
+        val encryptionText = if (r.sharedKey == null) "without e2e encryption" else "with e2e encryption"
+        AlertManager.shared.showAlertDialog(
+          title = "Incoming call",
+          text = "${r.contact.displayName} wants to start ${r.callType.media} call with you (${encryptionText})",
+          confirmText = "Answer", // generalGetString(R.string.answer),
+          onConfirm = {
+            Log.e(TAG, "showAlertDialog onConfirm ${chatModel.activeCallInvitation.value}")
+            if (chatModel.activeCallInvitation.value == null) {
+              AlertManager.shared.hideAlert()
+              AlertManager.shared.showAlertMsg("Call already ended!")
+            } else {
+              Log.e(TAG, "showAlertDialog onConfirm has activeCallInvitation ${chatModel.activeCallInvitation.value}")
+              chatModel.activeCallInvitation.value = null
+              chatModel.activeCall.value = Call(
+                contact = r.contact,
+                callState = CallState.InvitationReceived,
+                localMedia = invitation.peerMedia
+              )
+              chatModel.callCommand.value = WCallCommand.Start(invitation.peerMedia, invitation.sharedKey)
+              Log.e(TAG, "showAlertDialog onConfirm ${chatModel.callCommand.value}")
+              chatModel.showCallView.value = true
+            }
+          },
+          onDismiss = {
+            chatModel.activeCallInvitation == null
+          }
+        )
+      }
+      is CR.CallOffer -> {
+        // TODO askConfirmation?
+        // TODO check encryption is compatible
+        withCall(r, r.contact) { call ->
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
+          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey)
+        }
+      }
+      is CR.CallAnswer -> {
+        withCall(r, r.contact) { call ->
+          chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+          chatModel.callCommand.value = WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
+        }
+      }
+      is CR.CallExtraInfo -> {
+        withCall(r, r.contact) { call ->
+          chatModel.callCommand.value = WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
+        }
+      }
+      is CR.CallEnded -> {
+        withCall(r, r.contact) { call ->
+          chatModel.callCommand.value = WCallCommand.End()
+          chatModel.activeCall.value = null
+          chatModel.activeCallInvitation.value = null
+          chatModel.callCommand.value = null
+          chatModel.showCallView.value = false
+        }
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
+    val call = chatModel.activeCall?.value
+    if (call != null && call.contact.apiId == contact.apiId) {
+      perform(call)
+    } else {
+      Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
   }
 
@@ -887,8 +953,8 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String?): CR()
-  @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String?, val askConfirmation: Boolean): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null): CR()
+  @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val contact: Contact): CR()

@@ -24,7 +24,6 @@ import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
-import chat.simplex.app.views.call.VideoCallView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
@@ -45,8 +44,8 @@ fun SettingsView(chatModel: ChatModel) {
       },
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
-      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
-      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> VideoCallView(close) } },
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
+//      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
   }
 }
@@ -62,7 +61,7 @@ fun SettingsLayout(
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-  showVideoChatPrototype: () -> Unit
+//  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
   Surface(
@@ -208,8 +207,8 @@ fun SettingsLayout(
         Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
       }
       Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showVideoChatPrototype) {
-//      SettingsSectionView() {
+//      SettingsSectionView(showVideoChatPrototype) {
+      SettingsSectionView() {
         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }
@@ -246,7 +245,7 @@ fun PreviewSettingsLayout() {
       showModal = {{}},
       showCustomModal = {{}},
       showTerminal = {},
-      showVideoChatPrototype = {}
+//      showVideoChatPrototype = {}
     )
   }
 }
