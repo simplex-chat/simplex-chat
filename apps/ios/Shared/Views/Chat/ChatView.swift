@@ -146,8 +146,6 @@ struct ChatView: View {
                             }
                         }
                     } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-                }
-                if ci.isMsgContent() {
                     Button {
                         var shareItems: [Any] = [ci.content.text]
                         if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
@@ -155,8 +153,6 @@ struct ChatView: View {
                         }
                         showShareSheet(items: shareItems)
                     } label: { Label("Share", systemImage: "square.and.arrow.up") }
-                }
-                if ci.isMsgContent() {
                     Button {
                         if case let .image(text, _) = ci.content.msgContent,
                            text == "",
@@ -166,29 +162,28 @@ struct ChatView: View {
                             UIPasteboard.general.string = ci.content.text
                         }
                     } label: { Label("Copy", systemImage: "doc.on.doc") }
-                }
-                if ci.isMsgContent(),
-                   case .image = ci.content.msgContent,
-                   let image = getLoadedImage(ci.file) {
-                    Button {
-                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                    } label: { Label("Save", systemImage: "square.and.arrow.down") }
-                }
-                if ci.isMsgContent(),
-                   ci.meta.editable {
+                    if case .image = ci.content.msgContent,
+                       let image = getLoadedImage(ci.file) {
+                        Button {
+                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                        } label: { Label("Save", systemImage: "square.and.arrow.down") }
+                    }
+                    if ci.meta.editable {
                         Button {
                             withAnimation {
                                 composeState = ComposeState(editingItem: ci)
                             }
                         } label: { Label("Edit", systemImage: "square.and.pencil") }
                     }
-                if ci.isMsgContent() || ci.isDeletedContent() {
                     Button(role: .destructive) {
                         showDeleteMessage = true
                         deletingItem = ci
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
+                    } label: { Label("Delete", systemImage: "trash") }
+                } else if ci.isDeletedContent() {
+                    Button(role: .destructive) {
+                        showDeleteMessage = true
+                        deletingItem = ci
+                    } label: { Label("Delete", systemImage: "trash") }
                 }
             }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {

@@ -54,6 +54,9 @@ struct ChatListNavLink: View {
                 markReadButton()
             }
         }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            clearChatButton()
+        }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
@@ -64,9 +67,6 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .swipeActions(edge: .trailing) {
-            clearChatButton()
         }
         .frame(height: 80)
 
@@ -93,14 +93,14 @@ struct ChatListNavLink: View {
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            clearChatButton()
+        }
+        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        }
-        .swipeActions(edge: .trailing) {
-            clearChatButton()
         }
         .frame(height: 80)
     }
@@ -191,7 +191,7 @@ struct ChatListNavLink: View {
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear chat?"),
-            message: Text("All messages will be deleted - this cannot be undone! This is a local action, messages will be deleted ONLY for you."),
+            message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
             primaryButton: .destructive(Text("Clear")) {
                 Task { await clearChat(chat) }
             },

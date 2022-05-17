@@ -171,7 +171,7 @@
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>
-  <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! This is a local action, messages will be deleted ONLY for you.</string>
+  <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
   <string name="clear_verb">Clear</string>
 
   <!-- Pending contact connection alert dialogues -->
