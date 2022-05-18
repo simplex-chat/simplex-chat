@@ -310,15 +310,15 @@ fun ComposeView(
   }
 
   fun sendMessage() {
-    withApi {
-      composeState.value = composeState.value.copy(inProgress = true)
-      val cInfo = chat.chatInfo
-      val cs = composeState.value
-      when (val contextItem = cs.contextItem) {
-        is ComposeContextItem.EditingItem -> {
-          val ei = contextItem.chatItem
-          val oldMsgContent = ei.content.msgContent
-          if (oldMsgContent != null) {
+    composeState.value = composeState.value.copy(inProgress = true)
+    val cInfo = chat.chatInfo
+    val cs = composeState.value
+    when (val contextItem = cs.contextItem) {
+      is ComposeContextItem.EditingItem -> {
+        val ei = contextItem.chatItem
+        val oldMsgContent = ei.content.msgContent
+        if (oldMsgContent != null) {
+          withApi {
             val updatedItem = chatModel.controller.apiUpdateChatItem(
               type = cInfo.chatType,
               id = cInfo.apiId,
@@ -328,37 +328,39 @@ fun ComposeView(
             if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
           }
         }
-        else -> {
-          var mc: MsgContent? = null
-          var file: String? = null
-          when (val preview = cs.preview) {
-            ComposePreview.NoPreview -> mc = MsgContent.MCText(cs.message)
-            is ComposePreview.CLinkPreview -> mc = checkLinkPreview()
-            is ComposePreview.ImagePreview -> {
-              val chosenImageVal = chosenImage.value
-              if (chosenImageVal != null) {
-                file = saveImage(context, chosenImageVal)
-                if (file != null) {
-                  mc = MsgContent.MCImage(cs.message, preview.image)
-                }
-              }
-            }
-            is ComposePreview.FilePreview -> {
-              val chosenFileVal = chosenFile.value
-              if (chosenFileVal != null) {
-                file = saveFileFromUri(context, chosenFileVal)
-                if (file != null) {
-                  mc = MsgContent.MCFile(cs.message)
-                }
+      }
+      else -> {
+        var mc: MsgContent? = null
+        var file: String? = null
+        when (val preview = cs.preview) {
+          ComposePreview.NoPreview -> mc = MsgContent.MCText(cs.message)
+          is ComposePreview.CLinkPreview -> mc = checkLinkPreview()
+          is ComposePreview.ImagePreview -> {
+            val chosenImageVal = chosenImage.value
+            if (chosenImageVal != null) {
+              file = saveImage(context, chosenImageVal)
+              if (file != null) {
+                mc = MsgContent.MCImage(cs.message, preview.image)
               }
             }
           }
-          val quotedItemId: Long? = when (contextItem) {
-            is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
-            else -> null
+          is ComposePreview.FilePreview -> {
+            val chosenFileVal = chosenFile.value
+            if (chosenFileVal != null) {
+              file = saveFileFromUri(context, chosenFileVal)
+              if (file != null) {
+                mc = MsgContent.MCFile(cs.message)
+              }
+            }
           }
+        }
+        val quotedItemId: Long? = when (contextItem) {
+          is ComposeContextItem.QuotedItem -> contextItem.chatItem.id
+          else -> null
+        }
 
-          if (mc != null) {
+        if (mc != null) {
+          withApi {
             val aChatItem = chatModel.controller.apiSendMessage(
               type = cInfo.chatType,
               id = cInfo.apiId,
@@ -370,8 +372,8 @@ fun ComposeView(
           }
         }
       }
-      clearState()
     }
+    clearState()
   }
 
   fun onMessageChange(s: String) {
