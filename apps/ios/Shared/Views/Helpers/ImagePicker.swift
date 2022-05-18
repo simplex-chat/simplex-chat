@@ -9,11 +9,6 @@
 import SwiftUI
 import PhotosUI
 
-enum ImageSource {
-    case imageLibrary
-    case camera
-}
-
 struct LibraryImagePicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
     @Binding var image: UIImage?
