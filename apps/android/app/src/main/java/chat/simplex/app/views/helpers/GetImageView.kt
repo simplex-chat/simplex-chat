@@ -103,9 +103,8 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
     externalContext = context
-    tmpFile = File.createTempFile("image", ".bmp", SimplexApp.context.filesDir)
+    tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
-    Log.e(TAG, "####################################### in createIntent uri: $uri")
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)
   }
@@ -116,7 +115,6 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   ): SynchronousResult<Bitmap?>? = null
 
   override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
-    Log.e(TAG, "####################################### in parseResult resultCode: $resultCode, uri: $uri")
     return if (resultCode == Activity.RESULT_OK && uri != null) {
       val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -129,18 +127,15 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     }
   }
 }
-
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
 //  override fun createIntent(context: Context, input: String): Intent {
 //    super.createIntent(context, input)
 //    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
 //  }
 //}
-
 //@Composable
 //fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
-
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
   rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)
@@ -204,7 +199,7 @@ fun GetImageBottomSheet(
       .fillMaxWidth()
       .wrapContentHeight()
       .onFocusChanged { focusState ->
-//        if (!focusState.hasFocus) hideBottomSheet()
+        if (!focusState.hasFocus) hideBottomSheet()
       }
   ) {
     Row(

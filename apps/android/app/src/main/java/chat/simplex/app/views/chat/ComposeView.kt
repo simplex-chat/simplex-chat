@@ -13,12 +13,9 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
-import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -32,7 +29,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -44,7 +40,6 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.newchat.ActionButton
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -134,25 +129,14 @@ fun ComposeView(
   // attachments
   val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
-//  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-//    if (bitmap != null) {
-//      chosenImage.value = bitmap
-//      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-//      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-//    }
-//  }
   val photoUri = remember { mutableStateOf<Uri?>(null) }
   val photoTmpFile = remember { mutableStateOf<File?>(null) }
 
-  class CustomTakePicturePreview2: ActivityResultContract<Void?, Bitmap?>() {
-//    lateinit var externalContext: Context
-
+  class ComposeTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     @CallSuper
     override fun createIntent(context: Context, input: Void?): Intent {
-//      externalContext = context
       photoTmpFile.value = File.createTempFile("image", ".bmp", SimplexApp.context.filesDir)
       photoUri.value = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", photoTmpFile.value!!)
-//      Log.e(TAG, "####################################### in createIntent uri: $uri")
       return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
         .putExtra(MediaStore.EXTRA_OUTPUT, photoUri.value)
     }
@@ -165,15 +149,10 @@ fun ComposeView(
     override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
       val photoUriVal = photoUri.value
       val photoTmpFileVal = photoTmpFile.value
-      Log.e(TAG, "####################################### in parseResult resultCode: $resultCode, uri: $photoUriVal, tmpFile: $photoTmpFileVal")
       return if (resultCode == Activity.RESULT_OK && photoUriVal != null && photoTmpFileVal != null) {
-        Log.e(TAG, "####################################### 1")
         val source = ImageDecoder.createSource(SimplexApp.context.contentResolver, photoUriVal)
-        Log.e(TAG, "####################################### 2")
         val bitmap = ImageDecoder.decodeBitmap(source)
-        Log.e(TAG, "####################################### 3")
         photoTmpFileVal.delete()
-        Log.e(TAG, "####################################### 4")
         bitmap
       } else {
         Log.e(TAG, "Getting image from camera cancelled or failed.")
@@ -183,23 +162,13 @@ fun ComposeView(
     }
   }
 
-  val cameraLauncher = rememberLauncherForActivityResult(contract = CustomTakePicturePreview2()) { bitmap: Bitmap? ->
+  val cameraLauncher = rememberLauncherForActivityResult(contract = ComposeTakePicturePreview()) { bitmap: Bitmap? ->
     if (bitmap != null) {
       chosenImage.value = bitmap
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
     }
   }
-
-//  val cameraLauncher = rememberLauncherForActivityResult(
-//    contract = ActivityResultContracts.TakePicturePreview()
-//  ) { bitmap: Bitmap? ->
-//    if (bitmap != null) {
-//      chosenImage.value = bitmap
-//      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-//      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-//    }
-//  }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
       cameraLauncher.launch(null)
