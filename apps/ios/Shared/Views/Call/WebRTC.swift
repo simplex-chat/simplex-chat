@@ -70,11 +70,7 @@ class Call: Equatable {
         )
     }
 
-    var encrypted: Bool {
-        logger.debug("Call encrypted: localCapabilities \(String(describing: self.localCapabilities))")
-        logger.debug("Call encrypted: sharedKey \(String(describing: self.sharedKey))")
-        return (localCapabilities?.encryption ?? false) && sharedKey != nil
-    }
+    var encrypted: Bool { get { (localCapabilities?.encryption ?? false) && sharedKey != nil } }
 }
 
 enum CallState {

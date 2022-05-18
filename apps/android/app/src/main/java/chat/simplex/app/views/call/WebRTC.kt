@@ -72,14 +72,14 @@ sealed class WCallResponse {
 @Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
 @Serializable class CallInvitation(val peerMedia: CallMediaType, val sharedKey: String?) {
-  val callTypeText: String get() = when(peerMedia) {
-    CallMediaType.Video -> generalGetString(if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call)
-    CallMediaType.Audio -> generalGetString(if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call)
-  }
-  val callTitle: String get() = when(peerMedia) {
-    CallMediaType.Video -> generalGetString(R.string.incoming_video_call)
-    CallMediaType.Audio -> generalGetString(R.string.incoming_audio_call)
-  }
+  val callTypeText: String get() = generalGetString(when(peerMedia) {
+    CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
+    CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
+  })
+  val callTitle: String get() = generalGetString(when(peerMedia) {
+    CallMediaType.Video -> R.string.incoming_video_call
+    CallMediaType.Audio -> R.string.incoming_audio_call
+  })
 }
 @Serializable class CallCapabilities(val encryption: Boolean)
 @Serializable class ConnectionInfo(val localCandidate: RTCIceCandidate?, val remoteCandidate: RTCIceCandidate)
