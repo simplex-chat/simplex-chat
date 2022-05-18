@@ -15,6 +15,7 @@ type WCallResponse =
   | WCallAnswer
   | WCallIceCandidates
   | WRConnection
+  | WRCallConnected
   | WRCallEnded
   | WROk
   | WRError
@@ -22,7 +23,7 @@ type WCallResponse =
 
 type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "end"
 
-type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "ended" | "ok" | "error"
+type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
@@ -47,6 +48,8 @@ interface WCStartCall extends IWCallCommand {
   media: CallMediaType
   aesKey?: string
   useWorker?: boolean
+  iceServers?: RTCIceServer[]
+  relay?: boolean
 }
 
 interface WCEndCall extends IWCallCommand {
@@ -60,6 +63,8 @@ interface WCAcceptOffer extends IWCallCommand {
   media: CallMediaType
   aesKey?: string
   useWorker?: boolean
+  iceServers?: RTCIceServer[]
+  relay?: boolean
 }
 
 interface WCallOffer extends IWCallResponse {
@@ -105,6 +110,11 @@ interface WRConnection extends IWCallResponse {
   }
 }
 
+interface WRCallConnected extends IWCallResponse {
+  type: "connected"
+  connectionInfo: ConnectionInfo
+}
+
 interface WRCallEnded extends IWCallResponse {
   type: "ended"
 }
@@ -116,6 +126,12 @@ interface WROk extends IWCallResponse {
 interface WRError extends IWCallResponse {
   type: "error"
   message: string
+}
+
+interface ConnectionInfo {
+  iceCandidatePair: RTCIceCandidatePairStats
+  localCandidate?: RTCIceCandidate
+  remoteCandidate?: RTCIceCandidate
 }
 
 // for debugging
@@ -175,16 +191,18 @@ const processCommand = (function () {
 
   let activeCall: Call | undefined
 
-  function defaultCallConfig(encodedInsertableStreams: boolean): CallConfig {
+  const defaultIceServers: RTCIceServer[] = [
+    {urls: ["stun:stun.simplex.chat:5349"]},
+    {urls: ["turn:turn.simplex.chat:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+  ]
+
+  function getCallConfig(encodedInsertableStreams: boolean, iceServers?: RTCIceServer[], relay?: boolean): CallConfig {
     return {
       peerConnectionConfig: {
-        iceServers: [
-          {urls: "stun:stun.simplex.chat:5349"},
-          {urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z"},
-        ],
+        iceServers: iceServers ?? defaultIceServers,
         iceCandidatePoolSize: 10,
         encodedInsertableStreams,
-        // iceTransportPolicy: "relay",
+        iceTransportPolicy: relay ? "relay" : "all",
       },
       iceCandidates: {
         delay: 2000,
@@ -249,7 +267,7 @@ const processCommand = (function () {
 
     return {connection: conn, iceCandidates, localMedia: mediaType, localStream}
 
-    function connectionStateChange() {
+    async function connectionStateChange() {
       sendMessageToNative({
         resp: {
           type: "connection",
@@ -263,10 +281,28 @@ const processCommand = (function () {
       })
       if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
         conn.removeEventListener("connectionstatechange", connectionStateChange)
-        sendMessageToNative({resp: {type: "ended"}})
         conn.close()
         activeCall = undefined
         resetVideoElements()
+        setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
+      } else if (conn.connectionState == "connected") {
+        const stats = (await conn.getStats()) as Map<string, any>
+        for (const stat of stats.values()) {
+          const {type, state} = stat
+          if (type === "candidate-pair" && state === "succeeded") {
+            const iceCandidatePair = stat as RTCIceCandidatePairStats
+            const resp: WRCallConnected = {
+              type: "connected",
+              connectionInfo: {
+                iceCandidatePair,
+                localCandidate: stats.get(iceCandidatePair.localCandidateId),
+                remoteCandidate: stats.get(iceCandidatePair.remoteCandidateId),
+              },
+            }
+            setTimeout(() => sendMessageToNative({resp}), 0)
+            break
+          }
+        }
       }
     }
   }
@@ -292,12 +328,13 @@ const processCommand = (function () {
         case "start":
           console.log("starting call")
           if (activeCall) {
+            // TODO cancel current call
             resp = {type: "error", message: "start: call already started"}
           } else {
-            const {media, useWorker} = command
+            const {media, useWorker, iceServers, relay} = command
             const encryption = supportsInsertableStreams(useWorker)
             const aesKey = encryption ? command.aesKey : undefined
-            activeCall = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, aesKey, useWorker)
+            activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker)
             const pc = activeCall.connection
             const offer = await pc.createOffer()
             await pc.setLocalDescription(offer)
@@ -306,8 +343,12 @@ const processCommand = (function () {
             //   type: "offer",
             //   offer: serialize(offer),
             //   iceCandidates: await activeCall.iceCandidates,
+            //   capabilities: {encryption},
             //   media,
+            //   iceServers,
+            //   relay,
             //   aesKey,
+            //   useWorker,
             // }
             resp = {
               type: "offer",
@@ -325,8 +366,8 @@ const processCommand = (function () {
           } else {
             const offer: RTCSessionDescriptionInit = parse(command.offer)
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-            const {media, aesKey, useWorker} = command
-            activeCall = await initializeCall(defaultCallConfig(!!aesKey), media, aesKey, useWorker)
+            const {media, aesKey, useWorker, iceServers, relay} = command
+            activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, useWorker)
             const pc = activeCall.connection
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
             const answer = await pc.createAnswer()
@@ -439,7 +480,11 @@ const processCommand = (function () {
         console.log("set up decryption for receiving")
         setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, worker, aesKey, key)
       }
-      remoteStream.addTrack(event.track)
+      for (const stream of event.streams) {
+        for (const track of stream.getTracks()) {
+          remoteStream.addTrack(track)
+        }
+      }
     }
     // We assume VP8 encoding in the decode/encode stages to get the initial
     // bytes to pass as plaintext so we enforce that here.

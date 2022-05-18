@@ -337,4 +337,16 @@
     <string name="or">или</string>
     <string name="connect_with_the_developers">Соединиться с разработчиками</string>
     <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+
+    <!-- Call -->
+    <string name="incoming_video_call">Incoming video call</string>
+    <string name="incoming_audio_call">Incoming audio call</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> wants to connect with you via </string>
+    <string name="video_call_no_encryption">video call (not e2e encrypted)</string>
+    <string name="encrypted_video_call">e2e encrypted video call</string>
+    <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
+    <string name="encrypted_audio_call">e2e encrypted audio call</string>
+    <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call, your IP address might be visible to your contact, unless you connect via relay.</string>
+    <string name="answer">Answer</string>
+    <string name="call_already_ended">Call already ended!</string>
 </resources>

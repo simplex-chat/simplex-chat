@@ -31,12 +31,14 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         didReceive message: WKScriptMessage
     ) {
         logger.debug("WebRTCCoordinator.userContentController")
-        logger.debug("\(String(describing: message.body as? String))")
         if let msgStr = message.body as? String,
            let msg: WVAPIMessage = decodeJSON(msgStr) {
             webViewMsg.wrappedValue = msg
+            if case .invalid = msg.resp {
+                logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
+            }
         } else {
-            logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
+            logger.error("WebRTCCoordinator.userContentController: message parsing error \(String(describing: message.body))")
         }
     }
 

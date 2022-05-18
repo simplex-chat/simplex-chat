@@ -8,6 +8,7 @@
 
 import Foundation
 import UserNotifications
+import SwiftUI
 
 let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
@@ -50,10 +51,13 @@ func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutable
 }
 
 func createCallInvitationNtf(_ contact: Contact, _ invitation: CallInvitation) -> UNMutableNotificationContent {
-    createNotification(
+    let text = invitation.peerMedia == .video
+                ? NSLocalizedString("Incoming video call", comment: "notification")
+                : NSLocalizedString("Incoming audio call", comment: "notification")
+    return createNotification(
         categoryIdentifier: ntfCategoryCallInvitation,
         title: "\(contact.chatViewName):",
-        body: String.localizedStringWithFormat(NSLocalizedString("Incoming %@ call", comment: "notification body"), invitation.peerMedia.rawValue),
+        body: text,
         targetContentIdentifier: nil,
         userInfo: ["chatId": contact.id]
     )

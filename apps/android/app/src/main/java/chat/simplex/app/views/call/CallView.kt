@@ -35,7 +35,7 @@ import kotlinx.serialization.encodeToString
 @Composable
 fun ActiveCallView(chatModel: ChatModel) {
   val endCall = {
-    Log.e(TAG, "ActiveCallView: endCall")
+    Log.d(TAG, "ActiveCallView: endCall")
     chatModel.activeCall.value = null
     chatModel.activeCallInvitation.value = null
     chatModel.callCommand.value = null
@@ -44,10 +44,10 @@ fun ActiveCallView(chatModel: ChatModel) {
   BackHandler(onBack = endCall)
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
-      Log.e(TAG, "received from WebRTCView: $apiMsg")
+      Log.d(TAG, "received from WebRTCView: $apiMsg")
       val call = chatModel.activeCall.value
       if (call != null) {
-        Log.e(TAG, "has active call $call")
+        Log.d(TAG, "has active call $call")
         when (val r = apiMsg.resp) {
           is WCallResponse.Capabilities -> withApi {
             val callType = CallType(call.localMedia, r.capabilities)
@@ -75,6 +75,9 @@ fun ActiveCallView(chatModel: ChatModel) {
             } catch (e: Error) {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
+          is WCallResponse.Connected -> {
+            chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
+          }
           is WCallResponse.Ended -> endCall()
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Media -> {
@@ -178,7 +181,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
     lifecycleOwner.lifecycle.addObserver(observer)
     onDispose {
       val wv = webView.value
-      if (wv != null) processCommand(wv, WCallCommand.End())
+      if (wv != null) processCommand(wv, WCallCommand.End)
       lifecycleOwner.lifecycle.removeObserver(observer)
     }
   }
@@ -228,7 +231,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
           }
         }
       ) { wv ->
-        Log.e(TAG, "WebRTCView: webview ready")
+        Log.d(TAG, "WebRTCView: webview ready")
         // for debugging
         // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
         withApi {
