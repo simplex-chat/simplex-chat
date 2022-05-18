@@ -21,6 +21,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
+import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
@@ -90,7 +91,8 @@ fun MainPage(chatModel: ChatModel) {
     when {
       onboarding == null || userCreated == null -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated ->
-        if (chatModel.chatId.value == null) ChatListView(chatModel)
+        if (chatModel.showCallView.value) ActiveCallView(chatModel)
+        else if (chatModel.chatId.value == null) ChatListView(chatModel)
         else ChatView(chatModel)
       onboarding == OnboardingStage.Step1_SimpleXInfo ->
         Box(Modifier.padding(horizontal = 20.dp)) {

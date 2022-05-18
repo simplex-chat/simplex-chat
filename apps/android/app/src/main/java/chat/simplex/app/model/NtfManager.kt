@@ -7,6 +7,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
+import chat.simplex.app.views.call.CallInvitation
+import chat.simplex.app.views.call.CallMediaType
 import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context) {
@@ -56,7 +58,7 @@ class NtfManager(val context: Context) {
       .setSmallIcon(R.drawable.ntf_icon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setContentIntent(getMsgPendingIntent(cInfo))
+      .setContentIntent(getMsgPendingIntent(cInfo.id))
       .setSilent(recentNotification)
       .build()
 
@@ -73,6 +75,37 @@ class NtfManager(val context: Context) {
       // using cInfo.id only shows one notification per chat and updates it when the message arrives
       notify(cInfo.id.hashCode(), notification)
       notify(0, summary)
+    }
+  }
+
+  fun notifyCallInvitation(contact: Contact, invitation: CallInvitation) {
+    Log.d(TAG, "notifyCallInvitationReceived ${contact.id}")
+
+    val notification = NotificationCompat.Builder(context, MessageChannel)
+      .setContentTitle(contact.displayName)
+      .setContentText("Incoming ${invitation.peerMedia} call (${if (invitation.sharedKey == null) "not e2e encrypted" else "e2e encrypted"})")
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
+      .setAutoCancel(true)
+      .setContentIntent(getMsgPendingIntent(contact.id))
+      .setSilent(false)
+      .build()
+
+//    val summary = NotificationCompat.Builder(context, MessageChannel)
+//      .setSmallIcon(R.drawable.ntf_icon)
+//      .setColor(0x88FFFF)
+//      .setGroup(MessageGroup)
+//      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+//      .setGroupSummary(true)
+//      .setContentIntent(getSummaryNtfIntent())
+//      .build()
+
+    with(NotificationManagerCompat.from(context)) {
+      notify(0, notification)
+//      notify(0, summary)
     }
   }
 
@@ -93,12 +126,12 @@ class NtfManager(val context: Context) {
     }
   }
 
-  private fun getMsgPendingIntent(cInfo: ChatInfo) : PendingIntent{
-    Log.d(TAG, "getMsgPendingIntent ${cInfo.id}")
+  private fun getMsgPendingIntent(chatId: String) : PendingIntent{
+    Log.d(TAG, "getMsgPendingIntent $chatId")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
     val intent = Intent(context, MainActivity::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-      .putExtra("chatId", cInfo.id)
+      .putExtra("chatId", chatId)
       .setAction(OpenChatAction)
     return TaskStackBuilder.create(context).run {
       addNextIntentWithParentStack(intent)
