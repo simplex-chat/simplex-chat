@@ -1,8 +1,6 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -28,7 +26,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.SimplexApp.Companion.context
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -46,6 +43,9 @@ fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
   val composeState = remember { mutableStateOf(ComposeState()) }
+  val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+  val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+  val scope = rememberCoroutineScope()
 
   if (chat == null || user == null) {
     chatModel.chatId.value = null
@@ -71,7 +71,15 @@ fun ChatView(chatModel: ChatModel) {
       user,
       chat,
       composeState,
-      composeView = { ComposeView(chatModel, chat, composeState) },
+      composeView = {
+        ComposeView(
+          chatModel, chat, composeState, attachmentOption,
+          showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+        )
+      },
+      attachmentOption,
+      scope,
+      attachmentBottomSheetState,
       chatModel.chatItems,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
@@ -121,6 +129,9 @@ fun ChatLayout(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
+  attachmentOption: MutableState<AttachmentOption?>,
+  scope: CoroutineScope,
+  attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
   back: () -> Unit,
   info: () -> Unit,
@@ -135,13 +146,26 @@ fun ChatLayout(
       .background(MaterialTheme.colors.background)
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Scaffold(
-        topBar = { ChatInfoToolbar(chat, back, info, startCall) },
-        bottomBar = composeView,
-        modifier = Modifier.navigationBarsWithImePadding()
-      ) { contentPadding ->
-        Box(Modifier.padding(contentPadding)) {
-          ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
+      ModalBottomSheetLayout(
+        scrimColor = Color.Black.copy(alpha = 0.12F),
+        modifier = Modifier.navigationBarsWithImePadding(),
+        sheetContent = {
+          ChooseAttachmentView(
+            attachmentOption,
+            hide = { scope.launch { attachmentBottomSheetState.hide() } }
+          )
+        },
+        sheetState = attachmentBottomSheetState,
+        sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+      ) {
+        Scaffold(
+          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
+          bottomBar = composeView,
+          modifier = Modifier.navigationBarsWithImePadding()
+        ) { contentPadding ->
+          Box(Modifier.padding(contentPadding)) {
+            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
+          }
         }
       }
     }
@@ -341,6 +365,9 @@ fun PreviewChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
+      scope = rememberCoroutineScope(),
+      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},
@@ -383,6 +410,9 @@ fun PreviewGroupChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
+      scope = rememberCoroutineScope(),
+      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},

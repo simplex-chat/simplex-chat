@@ -120,7 +120,9 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
 fun ComposeView(
   chatModel: ChatModel,
   chat: Chat,
-  composeState: MutableState<ComposeState>
+  composeState: MutableState<ComposeState>,
+  attachmentOption: MutableState<AttachmentOption?>,
+  showChooseAttachment: () -> Unit
 ) {
   val context = LocalContext.current
   val linkUrl = remember { mutableStateOf<String?>(null) }
@@ -130,7 +132,6 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
-  val showChooseAttachment = remember { mutableStateOf(false) }
   val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
 //  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
@@ -230,6 +231,31 @@ fun ComposeView(
           String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
         )
       }
+    }
+  }
+
+  LaunchedEffect(attachmentOption.value) {
+    when (attachmentOption.value) {
+      AttachmentOption.TakePhoto -> {
+        when (PackageManager.PERMISSION_GRANTED) {
+          ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+            cameraLauncher.launch(null)
+          }
+          else -> {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+          }
+        }
+        attachmentOption.value = null
+      }
+      AttachmentOption.PickImage -> {
+        galleryLauncher.launch("image/*")
+        attachmentOption.value = null
+      }
+      AttachmentOption.PickFile -> {
+        filesLauncher.launch("*/*")
+        attachmentOption.value = null
+      }
+      else -> {}
     }
   }
 
@@ -463,7 +489,7 @@ fun ComposeView(
             .clip(CircleShape)
             .clickable {
               if (attachEnabled) {
-                showChooseAttachment.value = true
+                showChooseAttachment()
               }
             }
         )
@@ -477,43 +503,6 @@ fun ComposeView(
         ::onMessageChange,
         textStyle
       )
-    }
-    if (showChooseAttachment.value) {
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight()
-          .onFocusChanged { focusState ->
-//        if (!focusState.hasFocus) hideBottomSheet()
-          }
-      ) {
-        Row(
-          Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 30.dp),
-          horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-          ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
-            when (PackageManager.PERMISSION_GRANTED) {
-              ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
-                cameraLauncher.launch(null)
-              }
-              else -> {
-                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-              }
-            }
-            showChooseAttachment.value = false
-          }
-          ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
-            galleryLauncher.launch("image/*")
-            showChooseAttachment.value = false
-          }
-          ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
-            filesLauncher.launch("*/*")
-            showChooseAttachment.value = false
-          }
-        }
-      }
     }
   }
 }
