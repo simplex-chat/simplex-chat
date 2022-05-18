@@ -14,7 +14,7 @@ struct UserProfile: View {
     @State private var editProfile = false
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var imageSource: ImageSource = .imageLibrary
+    @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
 
     var body: some View {
@@ -87,22 +87,21 @@ struct UserProfile: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .confirmationDialog("Profile image", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
-                imageSource = .camera
-                showImagePicker = true
+                showTakePhoto = true
             }
             Button("Choose from library") {
-                imageSource = .imageLibrary
                 showImagePicker = true
             }
         }
-        .sheet(isPresented: $showImagePicker) {
-            switch imageSource {
-            case .imageLibrary:
-                LibraryImagePicker(image: $chosenImage) {
-                    didSelectItem in showImagePicker = false
-                }
-            case .camera:
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
                 CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) {
+                didSelectItem in showImagePicker = false
             }
         }
         .onChange(of: chosenImage) { image in
