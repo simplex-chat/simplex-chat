@@ -16,15 +16,14 @@ var TransformOperation;
     TransformOperation["Encrypt"] = "encrypt";
     TransformOperation["Decrypt"] = "decrypt";
 })(TransformOperation || (TransformOperation = {}));
-;
-(function () {
+const processCommand = (function () {
     let activeCall;
     function defaultCallConfig(encodedInsertableStreams) {
         return {
             peerConnectionConfig: {
                 iceServers: [
                     { urls: "stun:stun.simplex.chat:5349" },
-                    // {urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+                    { urls: "turn:turn.simplex.chat:5349", username: "private", credential: "yleob6AVkiNI87hpR94Z" },
                 ],
                 iceCandidatePoolSize: 10,
                 encodedInsertableStreams,
@@ -119,7 +118,6 @@ var TransformOperation;
     function parse(s) {
         return JSON.parse(LZString.decompressFromBase64(s));
     }
-    Object.defineProperty(window, "processCommand", { value: processCommand });
     async function processCommand(body) {
         const { corrId, command } = body;
         const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
@@ -134,9 +132,6 @@ var TransformOperation;
                     console.log("starting call");
                     if (activeCall) {
                         resp = { type: "error", message: "start: call already started" };
-                    }
-                    else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
-                        resp = { type: "error", message: "start: encryption is not supported" };
                     }
                     else {
                         const { media, useWorker } = command;
@@ -386,6 +381,7 @@ var TransformOperation;
         for (const t of tracks)
             t.enabled = enable;
     }
+    return processCommand;
 })();
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
 function callCryptoFunction() {
@@ -432,7 +428,6 @@ function callCryptoFunction() {
     }
     function decodeAesKey(aesKey) {
         const keyData = callCrypto.decodeBase64url(callCrypto.encodeAscii(aesKey));
-        console.log("keyData", keyData);
         return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
     }
     function concatN(...bs) {

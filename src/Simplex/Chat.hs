@@ -430,13 +430,13 @@ processChatCommand = \case
           `E.finally` deleteContactRequest st userId connReqId
     withAgent $ \a -> rejectContact a connId invId
     pure $ CRContactRequestRejected cReq
-  APISendCallInvitation contactId callType@CallType {capabilities = CallCapabilities {encryption}} -> withUser $ \user@User {userId} -> do
+  APISendCallInvitation contactId callType -> withUser $ \user@User {userId} -> do
     -- party initiating call
     ct <- withStore $ \st -> getContact st userId contactId
     calls <- asks currentCalls
     withChatLock $ do
       callId <- CallId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
-      dhKeyPair <- if encryption then Just <$> liftIO C.generateKeyPair' else pure Nothing
+      dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
           callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
       msg@SndMessage {msgId} <- sendDirectContactMessage ct (XCallInv callId invitation)
@@ -460,8 +460,8 @@ processChatCommand = \case
     -- party accepting call
     withCurrentCall contactId $ \userId ct call@Call {callId, chatItemId, callState} -> case callState of
       CallInvitationReceived {peerCallType, localDhPubKey, sharedKey} -> do
-        -- TODO check that call type matches peerCallType
-        let offer = CallOffer {callType, rtcSession, callDhPubKey = localDhPubKey}
+        let callDhPubKey = if encryptedCall callType then localDhPubKey else Nothing
+            offer = CallOffer {callType, rtcSession, callDhPubKey}
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
@@ -1630,8 +1630,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
     xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg@RcvMessage {msgId} msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      let CallType {capabilities = CallCapabilities {encryption}} = callType
-      dhKeyPair <- if encryption then Just <$> liftIO C.generateKeyPair' else pure Nothing
+      dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       ci <- saveCallItem CISCallPending
       let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
           callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
@@ -1655,8 +1654,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           CallInvitationSent {localCallType, localDhPrivKey} -> do
             let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> localDhPrivKey)
                 callState' = CallOfferReceived {localCallType, peerCallType = callType, peerCallSession = rtcSession, sharedKey}
-            -- TODO decide if should askConfirmation
-            toView CRCallOffer {contact = ct, callType, offer = rtcSession, sharedKey, askConfirmation = False}
+                askConfirmation = encryptedCall localCallType && not (encryptedCall callType)
+            toView CRCallOffer {contact = ct, callType, offer = rtcSession, sharedKey, askConfirmation}
             pure (Just call {callState = callState'}, Just . ACIContent SMDSnd $ CISndCall CISCallAccepted 0)
           _ -> do
             msgCallStateError "x.call.offer" call

@@ -12,7 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBackIos
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,6 +32,7 @@ import chat.simplex.app.SimplexApp.Companion.context
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
@@ -117,6 +118,14 @@ fun ChatView(chatModel: ChatModel) {
             chatModel.upsertChatItem(cInfo, cItem)
           }
         }
+      },
+      startCall = { media ->
+        val cInfo = chat.chatInfo
+        if (cInfo is ChatInfo.Direct) {
+          chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+          chatModel.showCallView.value = true
+          chatModel.callCommand.value = WCallCommand.Capabilities()
+        }
       }
     )
   }
@@ -137,7 +146,8 @@ fun ChatLayout(
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  startCall: (CallMediaType) -> Unit
 ) {
   fun onImageChange(bitmap: Bitmap) {
     val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
@@ -173,7 +183,7 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
@@ -187,7 +197,7 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
+fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
   Column {
     Box(
       Modifier
@@ -204,6 +214,16 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
           tint = MaterialTheme.colors.primary,
           modifier = Modifier.padding(10.dp)
         )
+      }
+      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+        IconButton(onClick = { startCall(CallMediaType.Video) }) {
+          Icon(
+            Icons.Outlined.Videocam,
+            "video call",
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(10.dp)
+          )
+        }
       }
       Row(
         Modifier
@@ -378,7 +398,8 @@ fun PreviewChatLayout() {
       info = {},
       openDirectChat = {},
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      startCall = {}
     )
   }
 }
@@ -423,7 +444,8 @@ fun PreviewGroupChatLayout() {
       info = {},
       openDirectChat = {},
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      startCall = {}
     )
   }
 }
