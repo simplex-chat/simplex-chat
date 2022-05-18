@@ -439,11 +439,11 @@ processChatCommand = \case
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
           callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
-      msg@SndMessage {msgId} <- sendDirectContactMessage ct (XCallInv callId invitation)
+      msg <- sendDirectContactMessage ct (XCallInv callId invitation)
       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0) Nothing Nothing
       let call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState}
       call_ <- atomically $ TM.lookupInsert contactId call' calls
-      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
+      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected Nothing
       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       pure CRCmdOk
   SendCallInvitation cName callType -> withUser $ \User {userId} -> do
@@ -1628,7 +1628,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
-    xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg@RcvMessage {msgId} msgMeta = do
+    xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg msgMeta = do
       checkIntegrity msgMeta $ toView . CRMsgIntegrityError
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       ci <- saveCallItem CISCallPending
@@ -1640,7 +1640,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- (and replace it in ChatController)
       -- practically, this should not happen
       call_ <- atomically (TM.lookupInsert contactId call' calls)
-      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
+      forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected Nothing
       toView $ CRCallInvitation ct callType sharedKey
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       where
