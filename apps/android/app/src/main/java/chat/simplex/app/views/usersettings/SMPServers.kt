@@ -29,7 +29,7 @@ fun SMPServersView(chatModel: ChatModel) {
   if (userSMPServers != null) {
     var isUserSMPServers by remember { mutableStateOf(userSMPServers.isNotEmpty()) }
     var editSMPServers by remember { mutableStateOf(!isUserSMPServers) }
-    var userSMPServersStr = remember { mutableStateOf(if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else "") }
+    val userSMPServersStr = remember { mutableStateOf(if (isUserSMPServers) userSMPServers.joinToString(separator = "\n") else "") }
     fun saveSMPServers(smpServers: List<String>) {
       withApi {
         val r = chatModel.controller.setUserSMPServers(smpServers = smpServers)

@@ -105,6 +105,7 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     externalContext = context
     tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
+    Log.e(TAG, "####################################### in createIntent uri: $uri")
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
       .putExtra(MediaStore.EXTRA_OUTPUT, uri)
   }
@@ -115,6 +116,7 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   ): SynchronousResult<Bitmap?>? = null
 
   override fun parseResult(resultCode: Int, intent: Intent?): Bitmap? {
+    Log.e(TAG, "####################################### in parseResult resultCode: $resultCode, uri: $uri")
     return if (resultCode == Activity.RESULT_OK && uri != null) {
       val source = ImageDecoder.createSource(externalContext.contentResolver, uri!!)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -202,7 +204,7 @@ fun GetImageBottomSheet(
       .fillMaxWidth()
       .wrapContentHeight()
       .onFocusChanged { focusState ->
-        if (!focusState.hasFocus) hideBottomSheet()
+//        if (!focusState.hasFocus) hideBottomSheet()
       }
   ) {
     Row(

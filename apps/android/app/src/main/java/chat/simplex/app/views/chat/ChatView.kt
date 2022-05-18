@@ -46,10 +46,6 @@ fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
   val composeState = remember { mutableStateOf(ComposeState()) }
-  val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
-  val scope = rememberCoroutineScope()
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val chosenFile = remember { mutableStateOf<Uri?>(null) }
 
   if (chat == null || user == null) {
     chatModel.chatId.value = null
@@ -75,19 +71,7 @@ fun ChatView(chatModel: ChatModel) {
       user,
       chat,
       composeState,
-      composeView = {
-        ComposeView(
-          chatModel,
-          chat,
-          composeState,
-          chosenImage,
-          chosenFile,
-          showAttachmentBottomSheet = { scope.launch { attachmentBottomSheetState.show() } })
-      },
-      chosenImage,
-      chosenFile,
-      scope,
-      attachmentBottomSheetState,
+      composeView = { ComposeView(chatModel, chat, composeState) },
       chatModel.chatItems,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
@@ -137,10 +121,6 @@ fun ChatLayout(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
-  chosenImage: MutableState<Bitmap?>,
-  chosenFile: MutableState<Uri?>,
-  scope: CoroutineScope,
-  attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
   back: () -> Unit,
   info: () -> Unit,
@@ -149,47 +129,19 @@ fun ChatLayout(
   receiveFile: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit
 ) {
-  fun onImageChange(bitmap: Bitmap) {
-    val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-    composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-  }
-  fun onFileChange(uri: Uri) {
-    val fileName = getFileName(context, uri)
-    if (fileName != null) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(fileName))
-    }
-  }
-
   Surface(
     Modifier
       .fillMaxWidth()
       .background(MaterialTheme.colors.background)
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      ModalBottomSheetLayout(
-        scrimColor = Color.Black.copy(alpha = 0.12F),
-        modifier = Modifier.navigationBarsWithImePadding(),
-        sheetContent = {
-          GetImageBottomSheet(
-            chosenImage,
-            ::onImageChange,
-            chosenFile,
-            ::onFileChange,
-            hideBottomSheet = {
-              scope.launch { attachmentBottomSheetState.hide() }
-            })
-        },
-        sheetState = attachmentBottomSheetState,
-        sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-      ) {
-        Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
-          bottomBar = composeView,
-          modifier = Modifier.navigationBarsWithImePadding()
-        ) { contentPadding ->
-          Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
-          }
+      Scaffold(
+        topBar = { ChatInfoToolbar(chat, back, info, startCall) },
+        bottomBar = composeView,
+        modifier = Modifier.navigationBarsWithImePadding()
+      ) { contentPadding ->
+        Box(Modifier.padding(contentPadding)) {
+          ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
         }
       }
     }
@@ -389,10 +341,6 @@ fun PreviewChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
-      chosenFile = remember { mutableStateOf(null) },
-      chosenImage = remember { mutableStateOf(null) },
-      scope = rememberCoroutineScope(),
-      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},
@@ -435,10 +383,6 @@ fun PreviewGroupChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
-      chosenImage = remember { mutableStateOf(null) },
-      chosenFile = remember { mutableStateOf(null) },
-      scope = rememberCoroutineScope(),
-      attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
       back = {},
       info = {},

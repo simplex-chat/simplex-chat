@@ -2,8 +2,14 @@ package chat.simplex.app.views.chat
 
 import ComposeFileView
 import ComposeImageView
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -12,21 +18,24 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.Reply
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
+import chat.simplex.app.views.newchat.ActionButton
+import kotlinx.coroutines.*
 
 sealed class ComposePreview {
   object NoPreview: ComposePreview()
@@ -100,10 +109,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
 fun ComposeView(
   chatModel: ChatModel,
   chat: Chat,
-  composeState: MutableState<ComposeState>,
-  chosenImage: MutableState<Bitmap?>,
-  chosenFile: MutableState<Uri?>,
-  showAttachmentBottomSheet: () -> Unit
+  composeState: MutableState<ComposeState>
 ) {
   val context = LocalContext.current
   val linkUrl = remember { mutableStateOf<String?>(null) }
@@ -112,6 +118,58 @@ fun ComposeView(
   val cancelledLinks = remember { mutableSetOf<String>() }
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
+  // attachments
+  val showChooseAttachment = remember { mutableStateOf(false) }
+  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
+  val chosenFile = remember { mutableStateOf<Uri?>(null) }
+//  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
+//    if (bitmap != null) {
+//      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+//      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+//    }
+//  }
+  val cameraLauncher = rememberLauncherForActivityResult(
+    contract = ActivityResultContracts.TakePicturePreview()
+  ) { bitmap: Bitmap? ->
+    if (bitmap != null) {
+      chosenImage.value = bitmap
+      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+    }
+  }
+  val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
+    if (isGranted) {
+      cameraLauncher.launch(null)
+    } else {
+      Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
+    }
+  }
+  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+    if (uri != null) {
+      val source = ImageDecoder.createSource(context.contentResolver, uri)
+      val bitmap = ImageDecoder.decodeBitmap(source)
+      chosenImage.value = bitmap
+      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+    }
+  }
+  val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
+    if (uri != null) {
+      val fileSize = getFileSize(context, uri)
+      if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+        val fileName = getFileName(SimplexApp.context, uri)
+        if (fileName != null) {
+          chosenFile.value = uri
+          composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(fileName))
+        }
+      } else {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.large_file),
+          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+        )
+      }
+    }
+  }
 
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
@@ -343,7 +401,7 @@ fun ComposeView(
             .clip(CircleShape)
             .clickable {
               if (attachEnabled) {
-                showAttachmentBottomSheet()
+                showChooseAttachment.value = true
               }
             }
         )
@@ -357,6 +415,43 @@ fun ComposeView(
         ::onMessageChange,
         textStyle
       )
+    }
+    if (showChooseAttachment.value) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight()
+          .onFocusChanged { focusState ->
+//        if (!focusState.hasFocus) hideBottomSheet()
+          }
+      ) {
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 30.dp),
+          horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+          ActionButton(null, stringResource(R.string.use_camera_button), icon = Icons.Outlined.PhotoCamera) {
+            when (PackageManager.PERMISSION_GRANTED) {
+              ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+                cameraLauncher.launch(null)
+              }
+              else -> {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+              }
+            }
+            showChooseAttachment.value = false
+          }
+          ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
+            galleryLauncher.launch("image/*")
+            showChooseAttachment.value = false
+          }
+          ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
+            filesLauncher.launch("*/*")
+            showChooseAttachment.value = false
+          }
+        }
+      }
     }
   }
 }
