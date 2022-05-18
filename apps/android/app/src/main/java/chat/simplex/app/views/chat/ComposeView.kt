@@ -122,21 +122,22 @@ fun ComposeView(
   val showChooseAttachment = remember { mutableStateOf(false) }
   val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
-//  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
-//    if (bitmap != null) {
-//      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-//      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-//    }
-//  }
-  val cameraLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.TakePicturePreview()
-  ) { bitmap: Bitmap? ->
+  val cameraLauncher = rememberCameraLauncher { bitmap: Bitmap? ->
     if (bitmap != null) {
       chosenImage.value = bitmap
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
     }
   }
+//  val cameraLauncher = rememberLauncherForActivityResult(
+//    contract = ActivityResultContracts.TakePicturePreview()
+//  ) { bitmap: Bitmap? ->
+//    if (bitmap != null) {
+//      chosenImage.value = bitmap
+//      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+//      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+//    }
+//  }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
     if (isGranted) {
       cameraLauncher.launch(null)
