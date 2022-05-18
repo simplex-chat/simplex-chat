@@ -64,6 +64,8 @@ struct ActiveCallView: View {
                         m.activeCall = call.copy(callState: .connected)
                     }
                     try await apiCallStatus(call.contact, state.connectionState)
+                case let .connected(connectionInfo):
+                    m.activeCall = call.copy(callState: .connected, connectionInfo: connectionInfo)
                 case .ended:
                     m.activeCall = nil
                     m.activeCallInvitation = nil

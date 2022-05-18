@@ -124,7 +124,7 @@ fun ChatView(chatModel: ChatModel) {
         if (cInfo is ChatInfo.Direct) {
           chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
           chatModel.showCallView.value = true
-          chatModel.callCommand.value = WCallCommand.Capabilities()
+          chatModel.callCommand.value = WCallCommand.Capabilities
         }
       }
     )

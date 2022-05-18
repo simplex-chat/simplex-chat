@@ -98,8 +98,12 @@ struct ChatListView: View {
     }
 
     private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
-        AlertManager.shared.showAlert(Alert(
-            title: Text("Incoming call"),
+        return AlertManager.shared.showAlert(Alert(
+            title: Text(invitation.callTitle),
+            message: Text(contact.profile.displayName).bold() +
+                Text(" wants to connect with you via ") +
+                Text(invitation.callTypeText) +
+                Text("\nIf you accept this call, your IP address might be visible to your contact, unless you connect via relay."),
             primaryButton: .default(Text("Answer")) {
                 if chatModel.activeCallInvitation == nil {
                     DispatchQueue.main.async {
@@ -110,7 +114,8 @@ struct ChatListView: View {
                     chatModel.activeCall = Call(
                         contact: contact,
                         callState: .invitationReceived,
-                        localMedia: invitation.peerMedia
+                        localMedia: invitation.peerMedia,
+                        sharedKey: invitation.sharedKey
                     )
                     showCallView = true
                     chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
