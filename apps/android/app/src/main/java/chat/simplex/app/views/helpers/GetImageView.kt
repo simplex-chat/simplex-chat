@@ -103,7 +103,7 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
   @CallSuper
   override fun createIntent(context: Context, input: Void?): Intent {
     externalContext = context
-    tmpFile = File.createTempFile("image", ".bmp", context.filesDir)
+    tmpFile = File.createTempFile("image", ".bmp", SimplexApp.context.filesDir)
     uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", tmpFile!!)
     Log.e(TAG, "####################################### in createIntent uri: $uri")
     return Intent(MediaStore.ACTION_IMAGE_CAPTURE)
