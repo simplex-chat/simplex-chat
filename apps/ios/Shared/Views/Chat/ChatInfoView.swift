@@ -13,8 +13,15 @@ struct ChatInfoView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
-    @State var showDeleteAlert = false
+    @State var alert: ChatInfoViewAlert? = nil
     @State var deletingContact: Contact?
+
+    enum ChatInfoViewAlert: Identifiable {
+        case deleteContactAlert
+        case clearChatAlert
+
+        var id: ChatInfoViewAlert { get { self } }
+    }
 
     var body: some View {
         VStack{
@@ -27,8 +34,8 @@ struct ChatInfoView: View {
             Text(chat.chatInfo.fullName).font(.title)
                 .padding(.bottom)
 
-            if case let .direct(contact) = chat.chatInfo {
-                VStack {
+            VStack {
+                if case let .direct(contact) = chat.chatInfo {
                     HStack {
                         serverImage()
                         Text(chat.serverInfo.networkStatus.statusString)
@@ -41,18 +48,39 @@ struct ChatInfoView: View {
                         .padding(.vertical, 8)
 
                     Spacer()
+                    Button() {
+                        alert = .clearChatAlert
+                    } label: {
+                        Label("Clear conversation", systemImage: "gobackward")
+                    }
+                    .tint(Color.orange)
                     Button(role: .destructive) {
                         deletingContact = contact
-                        showDeleteAlert = true
+                        alert = .deleteContactAlert
                     } label: {
                         Label("Delete contact", systemImage: "trash")
                     }
                     .padding()
                 }
+                else if case .group = chat.chatInfo {
+                    Spacer()
+                    Button() {
+                        alert = .clearChatAlert
+                    } label: {
+                        Label("Clear conversation", systemImage: "gobackward")
+                    }
+                    .tint(Color.orange)
+                    .padding()
+                }
             }
+            .alert(item: $alert) { alertItem in
+                switch(alertItem) {
+                case .deleteContactAlert: return deleteContactAlert(deletingContact!)
+                case .clearChatAlert: return clearChatAlert()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .alert(isPresented: $showDeleteAlert) { deleteContactAlert(deletingContact!) }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     func serverImage() -> some View {
@@ -75,6 +103,22 @@ struct ChatInfoView: View {
                         }
                     } catch let error {
                         logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func clearChatAlert() -> Alert {
+        Alert(
+            title: Text("Clear conversation?"),
+            message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            primaryButton: .destructive(Text("Clear")) {
+                Task {
+                    await clearChat(chat)
+                    DispatchQueue.main.async {
+                        showChatInfo = false
                     }
                 }
             },

@@ -170,9 +170,10 @@
   <string name="reject_contact_button">Reject</string>
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
-  <string name="clear_chat_question">Clear chat?</string>
+  <string name="clear_chat_question">Clear conversation?</string>
   <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
   <string name="clear_verb">Clear</string>
+  <string name="clear_chat_button">Clear conversation</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_your_contact">You invited your contact</string>
