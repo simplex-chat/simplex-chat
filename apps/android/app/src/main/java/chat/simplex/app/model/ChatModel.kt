@@ -269,6 +269,7 @@ interface SomeChat {
   val apiId: Long
   val ready: Boolean
   val createdAt: Instant
+  val updatedAt: Instant
 }
 
 @Serializable
@@ -320,6 +321,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val createdAt get() = contact.createdAt
+    override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
     override val image get() = contact.image
@@ -337,6 +339,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val createdAt get() = groupInfo.createdAt
+    override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
     override val image get() = groupInfo.image
@@ -354,6 +357,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val createdAt get() = contactRequest.createdAt
+    override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
     override val image get() = contactRequest.image
@@ -371,6 +375,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val createdAt get() = contactConnection.createdAt
+    override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
     override val fullName get() = contactConnection.fullName
     override val image get() = contactConnection.image
@@ -389,7 +394,8 @@ class Contact(
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -405,7 +411,8 @@ class Contact(
       localDisplayName = "alice",
       profile = Profile.sampleData,
       activeConn = Connection.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
   }
 }
@@ -451,7 +458,8 @@ class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -466,7 +474,8 @@ class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
   }
 }
@@ -538,7 +547,7 @@ class UserContactRequest (
   override val localDisplayName: String,
   val profile: Profile,
   override val createdAt: Instant,
-  val updatedAt: Instant
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
@@ -566,7 +575,7 @@ class PendingContactConnection(
   val pccConnStatus: ConnStatus,
   val viaContactUri: Boolean,
   override val createdAt: Instant,
-  val updatedAt: Instant
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactConnection
   override val id get () = ":$pccConnId"
