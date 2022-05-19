@@ -13,9 +13,15 @@ struct ChatInfoView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
-    @State var showDeleteAlert = false
+    @State var alert: ChatInfoViewAlert? = nil
     @State var deletingContact: Contact?
-    @State var showClearAlert = false
+
+    enum ChatInfoViewAlert: Identifiable {
+        case deleteContactAlert
+        case clearChatAlert
+
+        var id: ChatInfoViewAlert { get { self } }
+    }
 
     var body: some View {
         VStack{
@@ -43,31 +49,34 @@ struct ChatInfoView: View {
 
                     Spacer()
                     Button() {
-                        showClearAlert = true
+                        alert = .clearChatAlert
                     } label: {
                         Label("Clear conversation", systemImage: "gobackward")
                     }
                     .tint(Color.orange)
-                    .alert(isPresented: $showClearAlert) { clearChatAlert() }
                     Button(role: .destructive) {
                         deletingContact = contact
-                        showDeleteAlert = true
+                        alert = .deleteContactAlert
                     } label: {
                         Label("Delete contact", systemImage: "trash")
                     }
                     .padding()
-                    .alert(isPresented: $showDeleteAlert) { deleteContactAlert(deletingContact!) }
                 }
                 else if case .group = chat.chatInfo {
                     Spacer()
                     Button() {
-                        showClearAlert = true
+                        alert = .clearChatAlert
                     } label: {
                         Label("Clear chat", systemImage: "gobackward")
                     }
                     .tint(Color.orange)
                     .padding()
-                    .alert(isPresented: $showClearAlert) { clearChatAlert() }
+                }
+            }
+            .alert(item: $alert) { alertItem in
+                switch(alertItem) {
+                case .deleteContactAlert: return deleteContactAlert(deletingContact!)
+                case .clearChatAlert: return clearChatAlert()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
