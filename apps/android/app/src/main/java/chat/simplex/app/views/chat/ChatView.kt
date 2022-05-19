@@ -87,7 +87,7 @@ fun ChatView(chatModel: ChatModel) {
         val c = chatModel.chats.firstOrNull {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
         }
-        if (c != null) withApi { openChat(chatModel, c.chatInfo) }
+        if (c != null) withApi { openChat(c.chatInfo, chatModel) }
       },
       deleteMessage = { itemId, mode ->
         withApi {
