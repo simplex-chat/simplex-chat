@@ -513,7 +513,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           onConfirm = {
             if (chatModel.activeCallInvitation.value == null) {
               AlertManager.shared.hideAlert()
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
+              withApi { AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended)) }
             } else {
               chatModel.activeCallInvitation.value = null
               chatModel.activeCall.value = Call(
@@ -546,18 +546,20 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         }
       }
       is CR.CallExtraInfo -> {
-        withCall(r, r.contact) { call ->
+        withCall(r, r.contact) { _ ->
           chatModel.callCommand.value = WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
         }
       }
       is CR.CallEnded -> {
-        withCall(r, r.contact) { call ->
+        withCall(r, r.contact) { _ ->
           chatModel.callCommand.value = WCallCommand.End
-          chatModel.activeCall.value = null
-          chatModel.activeCallInvitation.value = null
-          chatModel.callCommand.value = null
-          chatModel.showCallView.value = false
+          withApi {
+            chatModel.activeCall.value = null
+            chatModel.callCommand.value = null
+          }
         }
+        chatModel.activeCallInvitation.value = null
+        chatModel.showCallView.value = false
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
@@ -836,7 +838,7 @@ sealed class CC {
     is ApiSendCallAnswer -> "/_call answer @${contact.apiId} ${json.encodeToString(answer)}"
     is ApiSendCallExtraInfo -> "/_call extra @${contact.apiId} ${json.encodeToString(extraInfo)}"
     is ApiEndCall -> "/_call end @${contact.apiId}"
-    is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus}"
+    is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ReceiveFile -> "/freceive $fileId"
   }

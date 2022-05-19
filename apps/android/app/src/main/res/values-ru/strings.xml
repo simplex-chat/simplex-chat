@@ -295,7 +295,7 @@
     <string name="callstatus_accepted">принятый звонок</string>
     <string name="callstatus_connecting">соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
-    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s!</xliff:g></string>
+    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">ошибка соединения</string>
 
     <!-- CallState -->
@@ -347,15 +347,19 @@
     <string name="encrypted_video_call">e2e encrypted video call</string>
     <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
     <string name="encrypted_audio_call">e2e encrypted audio call</string>
-    <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call, your IP address might be visible to your contact, unless you connect via relay.</string>
+    <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call and you don\'t use relay, your IP address might be visible to your contact.</string>
     <string name="answer">Answer</string>
     <string name="call_already_ended">Call already ended!</string>
+    <string name="icon_descr_video_call">video call</string>
+    <string name="icon_descr_audio_call">audio call</string>
 
     <!-- Call overlay -->
     <string name="status_e2e_encrypted">e2e encrypted</string>
     <string name="status_no_e2e_encryption">no e2e encryption</string>
     <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
     <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+    <string name="call_connection_peer_to_peer">peer-to-peer</string>
+    <string name="call_connection_via_relay">via relay</string>
     <string name="icon_descr_hang_up">Hang up</string>
     <string name="icon_descr_video_off">Video off</string>
     <string name="icon_descr_video_on">Video on</string>

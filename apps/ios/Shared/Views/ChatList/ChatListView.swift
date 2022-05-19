@@ -103,7 +103,7 @@ struct ChatListView: View {
             message: Text(contact.profile.displayName).bold() +
                 Text(" wants to connect with you via ") +
                 Text(invitation.callTypeText) +
-                Text("\nIf you accept this call, your IP address might be visible to your contact, unless you connect via relay."),
+                Text("\nIf you accept this call and you don't use relay, your IP address might be visible to your contact."),
             primaryButton: .default(Text("Answer")) {
                 if chatModel.activeCallInvitation == nil {
                     DispatchQueue.main.async {

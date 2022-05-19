@@ -96,7 +96,16 @@ sealed class WCallResponse {
   })
 }
 @Serializable class CallCapabilities(val encryption: Boolean)
-@Serializable class ConnectionInfo(val localCandidate: RTCIceCandidate?, val remoteCandidate: RTCIceCandidate)
+@Serializable class ConnectionInfo(val localCandidate: RTCIceCandidate?, val remoteCandidate: RTCIceCandidate) {
+  val text: String @Composable get() = when {
+    localCandidate?.candidateType == RTCIceCandidateType.Host && remoteCandidate?.candidateType == RTCIceCandidateType.Host ->
+      stringResource(R.string.call_connection_peer_to_peer)
+    localCandidate?.candidateType == RTCIceCandidateType.Relay && remoteCandidate?.candidateType == RTCIceCandidateType.Relay ->
+      stringResource(R.string.call_connection_via_relay)
+    else ->
+      "${localCandidate?.candidateType?.value ?: "unknown"} / ${remoteCandidate?.candidateType?.value ?: "unknown"}"
+  }
+}
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 @Serializable class RTCIceCandidate(val candidateType: RTCIceCandidateType?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
@@ -104,19 +113,19 @@ sealed class WCallResponse {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
 @Serializable
-enum class RTCIceCandidateType {
-  @SerialName("host") Host,
-  @SerialName("srflx") ServerReflexive,
-  @SerialName("prflx") PeerReflexive,
-  @SerialName("relay") Relay
+enum class RTCIceCandidateType(val value: String) {
+  @SerialName("host") Host("host"),
+  @SerialName("srflx") ServerReflexive("srflx"),
+  @SerialName("prflx") PeerReflexive("prflx"),
+  @SerialName("relay") Relay("relay")
 }
 
 @Serializable
-enum class WebRTCCallStatus {
-  @SerialName("connected") Connected,
-  @SerialName("connecting") Connecting,
-  @SerialName("disconnected") Disconnected,
-  @SerialName("failed") Failed
+enum class WebRTCCallStatus(val value: String) {
+  @SerialName("connected") Connected("connected"),
+  @SerialName("connecting") Connecting("connecting"),
+  @SerialName("disconnected") Disconnected("disconnected"),
+  @SerialName("failed") Failed("failed")
 }
 
 @Serializable
