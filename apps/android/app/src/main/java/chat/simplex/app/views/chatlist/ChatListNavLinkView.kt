@@ -5,8 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,38 +36,22 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
       }
     },
-    deleteContact = {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(R.string.delete_contact__question),
-        text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
-        confirmText = generalGetString(R.string.delete_verb),
-        onConfirm = {
-          val cInfo = chat.chatInfo
-          withApi {
-            val r = chatModel.controller.apiDeleteChat(cInfo.chatType, cInfo.apiId)
-            if (r) {
-              chatModel.removeChat(cInfo.id)
-              chatModel.chatId.value = null
-            }
-          }
-        }
-      )
+    deleteContact = { if (chat.chatInfo is ChatInfo.Direct) deleteContactDialog(chat.chatInfo, chatModel) },
+    clearChat = { clearChatDialog(chat.chatInfo, chatModel) },
+    deleteContactConnection = {
+      if (chat.chatInfo is ChatInfo.ContactConnection) {
+        deleteContactConnectionAlert(chat.chatInfo.contactConnection, chatModel)
+      }
     },
-    clearChat = {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(R.string.clear_chat_question),
-        text = generalGetString(R.string.clear_chat_warning),
-        confirmText = generalGetString(R.string.clear_verb),
-        onConfirm = {
-          val cInfo = chat.chatInfo
-          withApi {
-            val r = chatModel.controller.apiClearChat(cInfo.chatType, cInfo.apiId)
-            if (r) {
-              chatModel.clearChat(cInfo)
-            }
-          }
-        }
-      )
+    acceptContactRequest = {
+      if (chat.chatInfo is ChatInfo.ContactRequest) {
+        acceptContactRequest(chat.chatInfo, chatModel)
+      }
+    },
+    rejectContactRequest = {
+      if (chat.chatInfo is ChatInfo.ContactRequest) {
+        rejectContactRequest(chat.chatInfo, chatModel)
+      }
     },
   )
 }
@@ -82,27 +65,64 @@ suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
   }
 }
 
+fun deleteContactDialog(contact: ChatInfo.Direct, chatModel: ChatModel) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.delete_contact__question),
+    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
+    confirmText = generalGetString(R.string.delete_verb),
+    onConfirm = {
+      withApi {
+        val r = chatModel.controller.apiDeleteChat(contact.chatType, contact.apiId)
+        if (r) {
+          chatModel.removeChat(contact.id)
+          chatModel.chatId.value = null
+        }
+      }
+    }
+  )
+}
+
+fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.clear_chat_question),
+    text = generalGetString(R.string.clear_chat_warning),
+    confirmText = generalGetString(R.string.clear_verb),
+    onConfirm = {
+      withApi {
+        val r = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
+        if (r) {
+          chatModel.clearChat(chatInfo)
+        }
+      }
+    }
+  )
+}
+
+fun acceptContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+  withApi {
+    val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
+    if (contact != null) {
+      val chat = Chat(ChatInfo.Direct(contact), listOf())
+      chatModel.replaceChat(contactRequest.id, chat)
+    }
+  }
+}
+
+fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+  withApi {
+    chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
+    chatModel.removeChat(contactRequest.id)
+  }
+}
+
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.accept_connection_request__question),
     text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
     confirmText = generalGetString(R.string.accept_contact_button),
-    onConfirm = {
-      withApi {
-        val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
-        if (contact != null) {
-          val chat = Chat(ChatInfo.Direct(contact), listOf())
-          chatModel.replaceChat(contactRequest.id, chat)
-        }
-      }
-    },
+    onConfirm = { acceptContactRequest(contactRequest, chatModel) },
     dismissText = generalGetString(R.string.reject_contact_button),
-    onDismiss = {
-      withApi {
-        chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
-        chatModel.removeChat(contactRequest.id)
-      }
-    }
+    onDismiss = { rejectContactRequest(contactRequest, chatModel) }
   )
 }
 
@@ -180,7 +200,10 @@ fun ChatListNavLinkLayout(
   chat: Chat,
   click: () -> Unit,
   deleteContact: () -> Unit,
-  clearChat: () -> Unit
+  clearChat: () -> Unit,
+  deleteContactConnection: () -> Unit,
+  acceptContactRequest: () -> Unit,
+  rejectContactRequest: () -> Unit
 ) {
   val showMenu = remember { mutableStateOf(false) }
   Surface(
@@ -188,10 +211,7 @@ fun ChatListNavLinkLayout(
       .fillMaxWidth()
       .combinedClickable(
         onClick = click,
-        onLongClick = {
-          if (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-            showMenu.value = true
-        }
+        onLongClick = { showMenu.value = true }
       )
       .height(88.dp)
   ) {
@@ -210,33 +230,94 @@ fun ChatListNavLinkLayout(
         is ChatInfo.ContactConnection -> ContactConnectionView(chat.chatInfo.contactConnection)
       }
     }
-    Box(Modifier.padding(horizontal = 16.dp)) {
-      DropdownMenu(
-        expanded = showMenu.value,
-        onDismissRequest = { showMenu.value = false },
-        Modifier.width(220.dp)
-      ) {
-        if (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-          ItemAction(
-            stringResource(R.string.clear_verb),
-            Icons.Outlined.Restore,
-            onClick = {
-              clearChat()
-              showMenu.value = false
-            }
-          )
-        if (chat.chatInfo is ChatInfo.Direct) {
-          ItemAction(
-            stringResource(R.string.delete_verb),
-            Icons.Outlined.Delete,
-            onClick = {
-              deleteContact()
-              showMenu.value = false
-            },
-            color = Color.Red
-          )
+    when (chat.chatInfo) {
+      is ChatInfo.Direct ->
+        Box(Modifier.padding(horizontal = 16.dp)) {
+          DropdownMenu(
+            expanded = showMenu.value,
+            onDismissRequest = { showMenu.value = false },
+            Modifier.width(220.dp)
+          ) {
+            ItemAction(
+              stringResource(R.string.clear_verb),
+              Icons.Outlined.Restore,
+              onClick = {
+                clearChat()
+                showMenu.value = false
+              }
+            )
+            ItemAction(
+              stringResource(R.string.delete_verb),
+              Icons.Outlined.Delete,
+              onClick = {
+                deleteContact()
+                showMenu.value = false
+              },
+              color = Color.Red
+            )
+          }
         }
-      }
+      is ChatInfo.Group ->
+        Box(Modifier.padding(horizontal = 16.dp)) {
+          DropdownMenu(
+            expanded = showMenu.value,
+            onDismissRequest = { showMenu.value = false },
+            Modifier.width(220.dp)
+          ) {
+            ItemAction(
+              stringResource(R.string.clear_verb),
+              Icons.Outlined.Restore,
+              onClick = {
+                clearChat()
+                showMenu.value = false
+              }
+            )
+          }
+        }
+      is ChatInfo.ContactRequest ->
+        Box(Modifier.padding(horizontal = 16.dp)) {
+          DropdownMenu(
+            expanded = showMenu.value,
+            onDismissRequest = { showMenu.value = false },
+            Modifier.width(220.dp)
+          ) {
+            ItemAction(
+              stringResource(R.string.accept_contact_button),
+              Icons.Outlined.Check,
+              onClick = {
+                acceptContactRequest()
+                showMenu.value = false
+              }
+            )
+            ItemAction(
+              stringResource(R.string.reject_contact_button),
+              Icons.Outlined.Close,
+              onClick = {
+                rejectContactRequest()
+                showMenu.value = false
+              },
+              color = Color.Red
+            )
+          }
+        }
+      is ChatInfo.ContactConnection ->
+        Box(Modifier.padding(horizontal = 16.dp)) {
+          DropdownMenu(
+            expanded = showMenu.value,
+            onDismissRequest = { showMenu.value = false },
+            Modifier.width(220.dp)
+          ) {
+            ItemAction(
+              stringResource(R.string.delete_verb),
+              Icons.Outlined.Delete,
+              onClick = {
+                deleteContactConnection()
+                showMenu.value = false
+              },
+              color = Color.Red
+            )
+          }
+        }
     }
   }
   Divider(Modifier.padding(horizontal = 8.dp))
@@ -266,7 +347,10 @@ fun PreviewChatListNavLinkDirect() {
       ),
       click = {},
       deleteContact = {},
-      clearChat = {}
+      clearChat = {},
+      deleteContactConnection = {},
+      acceptContactRequest = {},
+      rejectContactRequest = {}
     )
   }
 }
@@ -295,7 +379,10 @@ fun PreviewChatListNavLinkGroup() {
       ),
       click = {},
       deleteContact = {},
-      clearChat = {}
+      clearChat = {},
+      deleteContactConnection = {},
+      acceptContactRequest = {},
+      rejectContactRequest = {}
     )
   }
 }
@@ -317,7 +404,10 @@ fun PreviewChatListNavLinkContactRequest() {
       ),
       click = {},
       deleteContact = {},
-      clearChat = {}
+      clearChat = {},
+      deleteContactConnection = {},
+      acceptContactRequest = {},
+      rejectContactRequest = {}
     )
   }
 }

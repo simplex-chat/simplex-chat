@@ -152,8 +152,6 @@ fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLaunche
 fun GetImageBottomSheet(
   imageBitmap: MutableState<Bitmap?>,
   onImageChange: (Bitmap) -> Unit,
-  fileUri: MutableState<Uri?>? = null,
-  onFileChange: ((Uri) -> Unit)? = null,
   hideBottomSheet: () -> Unit
 ) {
   val context = LocalContext.current
@@ -177,20 +175,6 @@ fun GetImageBottomSheet(
       hideBottomSheet()
     } else {
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
-    }
-  }
-  val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
-    if (uri != null && fileUri != null && onFileChange != null) {
-      val fileSize = getFileSize(context, uri)
-      if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
-        fileUri.value = uri
-        onFileChange(uri)
-      } else {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.large_file),
-          String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
-        )
-      }
     }
   }
 
@@ -222,12 +206,6 @@ fun GetImageBottomSheet(
       ActionButton(null, stringResource(R.string.from_gallery_button), icon = Icons.Outlined.Collections) {
         galleryLauncher.launch("image/*")
         hideBottomSheet()
-      }
-      if (fileUri != null && onFileChange != null) {
-        ActionButton(null, stringResource(R.string.choose_file), icon = Icons.Outlined.InsertDriveFile) {
-          filesLauncher.launch("*/*")
-          hideBottomSheet()
-        }
       }
     }
   }
