@@ -127,18 +127,15 @@ class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {
     }
   }
 }
-
 //class GetGalleryContent: ActivityResultContracts.GetContent() {
 //  override fun createIntent(context: Context, input: String): Intent {
 //    super.createIntent(context, input)
 //    return Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
 //  }
 //}
-
 //@Composable
 //fun rememberGalleryLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLauncher<String, Uri?> =
 //  rememberLauncherForActivityResult(contract = GetGalleryContent(), cb)
-
 @Composable
 fun rememberCameraLauncher(cb: (Bitmap?) -> Unit): ManagedActivityResultLauncher<Void?, Bitmap?> =
   rememberLauncherForActivityResult(contract = CustomTakePicturePreview(), cb)

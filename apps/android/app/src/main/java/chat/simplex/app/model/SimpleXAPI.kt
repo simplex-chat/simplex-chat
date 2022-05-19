@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -505,26 +506,23 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           chatModel.activeCallInvitation.value = ContactRef(r.contact.apiId, r.contact.localDisplayName)
         }
         ntfManager.notifyCallInvitation(r.contact, invitation)
-        val encryptionText = if (r.sharedKey == null) "without e2e encryption" else "with e2e encryption"
         AlertManager.shared.showAlertDialog(
-          title = "Incoming call",
-          text = "${r.contact.displayName} wants to start ${r.callType.media} call with you (${encryptionText})",
-          confirmText = "Answer", // generalGetString(R.string.answer),
+          title = invitation.callTitle,
+          text =  String.format(generalGetString(R.string.contact_wants_to_connect_via_call), r.contact.displayName) + " " +  invitation.callTypeText + ".\n" + generalGetString(R.string.if_you_accept_this_call_your_ip_address_visible),
+          confirmText = generalGetString(R.string.answer),
           onConfirm = {
-            Log.e(TAG, "showAlertDialog onConfirm ${chatModel.activeCallInvitation.value}")
             if (chatModel.activeCallInvitation.value == null) {
               AlertManager.shared.hideAlert()
-              AlertManager.shared.showAlertMsg("Call already ended!")
+              AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
             } else {
-              Log.e(TAG, "showAlertDialog onConfirm has activeCallInvitation ${chatModel.activeCallInvitation.value}")
               chatModel.activeCallInvitation.value = null
               chatModel.activeCall.value = Call(
                 contact = r.contact,
                 callState = CallState.InvitationReceived,
-                localMedia = invitation.peerMedia
+                localMedia = invitation.peerMedia,
+                sharedKey = invitation.sharedKey
               )
-              chatModel.callCommand.value = WCallCommand.Start(invitation.peerMedia, invitation.sharedKey)
-              Log.e(TAG, "showAlertDialog onConfirm ${chatModel.callCommand.value}")
+              chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
               chatModel.showCallView.value = true
             }
           },
@@ -554,7 +552,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       }
       is CR.CallEnded -> {
         withCall(r, r.contact) { call ->
-          chatModel.callCommand.value = WCallCommand.End()
+          chatModel.callCommand.value = WCallCommand.End
           chatModel.activeCall.value = null
           chatModel.activeCallInvitation.value = null
           chatModel.callCommand.value = null
