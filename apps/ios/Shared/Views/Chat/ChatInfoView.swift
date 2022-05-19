@@ -67,7 +67,7 @@ struct ChatInfoView: View {
                     Button() {
                         alert = .clearChatAlert
                     } label: {
-                        Label("Clear chat", systemImage: "gobackward")
+                        Label("Clear conversation", systemImage: "gobackward")
                     }
                     .tint(Color.orange)
                     .padding()
