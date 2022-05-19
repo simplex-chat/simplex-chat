@@ -169,9 +169,10 @@
     <string name="reject_contact_button">Отклонить</string>
 
     <!-- Clear Chat - ChatListNavLinkView.kt -->
-    <string name="clear_chat_question">Очистить чат?</string>
+    <string name="clear_chat_question">Очистить разговор?</string>
     <string name="clear_chat_warning">Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</string>
     <string name="clear_verb">Очистить</string>
+    <string name="clear_chat_button">Очистить разговор</string>
 
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
@@ -349,4 +350,16 @@
     <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call, your IP address might be visible to your contact, unless you connect via relay.</string>
     <string name="answer">Answer</string>
     <string name="call_already_ended">Call already ended!</string>
+
+    <!-- Call overlay -->
+    <string name="status_e2e_encrypted">e2e encrypted</string>
+    <string name="status_no_e2e_encryption">no e2e encryption</string>
+    <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
+    <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+    <string name="icon_descr_hang_up">Hang up</string>
+    <string name="icon_descr_video_off">Video off</string>
+    <string name="icon_descr_video_on">Video on</string>
+    <string name="icon_descr_audio_off">Audio off</string>
+    <string name="icon_descr_audio_on">Audio on</string>
+    <string name="icon_descr_flip_camera">Flip camera</string>
 </resources>

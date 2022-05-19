@@ -55,12 +55,18 @@ enum CallMediaType: String, Codable, Equatable {
     case audio = "audio"
 }
 
+enum VideoCamera: String, Codable, Equatable {
+    case user = "user"
+    case environment = "environment"
+}
+
 struct CallCapabilities: Codable, Equatable {
     var encryption: Bool
 }
 
 enum WebRTCCallStatus: String, Encodable {
     case connected = "connected"
+    case connecting = "connecting"
     case disconnected = "disconnected"
     case failed = "failed"
 }

@@ -401,22 +401,28 @@ processChatCommand = \case
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \st -> getContact st userId chatId
-      ciIdsAndFileInfo <- withStore $ \st -> getContactChatItemIdsAndFileInfo st userId chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, fileInfo_) -> do
+      ciIdsAndFileInfo <- withStore $ \st -> getContactChatItemIdsAndFileInfo st user chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, _, fileInfo_) -> do
         forM_ fileInfo_ $ \fileInfo -> do
           cancelFile user fileInfo
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
+      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
+      forM_ latestItem $ \(_, latestItemTs, _) ->
+        withStore $ \st -> updateContactTs st user ct latestItemTs
       pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct))
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
-      ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st userId chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, itemDeleted, fileInfo_) ->
+      ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st user chatId
+      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
         unless itemDeleted $ do
           forM_ fileInfo_ $ \fileInfo -> do
             cancelFile user fileInfo
             withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
           void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
+      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
+      forM_ latestItem $ \(_, latestItemTs, _, _) ->
+        withStore $ \st -> updateGroupTs st user gInfo latestItemTs
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"

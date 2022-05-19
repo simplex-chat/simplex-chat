@@ -22,6 +22,7 @@ class Call: Equatable {
     var sharedKey: String?
     var audioEnabled: Bool
     var videoEnabled: Bool
+    var localCamera: VideoCamera
     var connectionInfo: ConnectionInfo?
 
     init(
@@ -33,6 +34,7 @@ class Call: Equatable {
         sharedKey: String? = nil,
         audioEnabled: Bool? = nil,
         videoEnabled: Bool? = nil,
+        localCamera: VideoCamera = .user,
         connectionInfo: ConnectionInfo? = nil
     ) {
         self.contact = contact
@@ -43,6 +45,7 @@ class Call: Equatable {
         self.sharedKey = sharedKey
         self.audioEnabled = audioEnabled ?? true
         self.videoEnabled = videoEnabled ?? (localMedia == .video)
+        self.localCamera = localCamera
         self.connectionInfo = connectionInfo
     }
 
@@ -55,6 +58,7 @@ class Call: Equatable {
         sharedKey: String? = nil,
         audioEnabled: Bool? = nil,
         videoEnabled: Bool? = nil,
+        localCamera: VideoCamera? = nil,
         connectionInfo: ConnectionInfo? = nil
     ) -> Call {
         Call (
@@ -66,11 +70,24 @@ class Call: Equatable {
             sharedKey: sharedKey ?? self.sharedKey,
             audioEnabled: audioEnabled ?? self.audioEnabled,
             videoEnabled: videoEnabled ?? self.videoEnabled,
+            localCamera: localCamera ?? self.localCamera,
             connectionInfo: connectionInfo ?? self.connectionInfo
         )
     }
 
-    var encrypted: Bool { get { (localCapabilities?.encryption ?? false) && sharedKey != nil } }
+    var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
+    var localEncrypted: Bool { get { localCapabilities?.encryption ?? false } }
+    var encryptionStatus: LocalizedStringKey {
+        get {
+            switch callState {
+            case .waitCapabilities: return ""
+            case .invitationSent: return localEncrypted ? "e2e encrypted" : "no e2e encryption"
+            case .invitationReceived: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
+            default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted" 
+            }
+        }
+    }
+    var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
 }
 
 enum CallState {
@@ -113,11 +130,13 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     case answer(answer: String, iceCandidates: String)
     case ice(iceCandidates: String)
     case media(media: CallMediaType, enable: Bool)
+    case camera(camera: VideoCamera)
     case end
 
     enum CodingKeys: String, CodingKey {
         case type
         case media
+        case camera
         case aesKey
         case useWorker
         case offer
@@ -137,6 +156,7 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             case .answer: return "answer"
             case .ice: return "ice"
             case .media: return "media"
+            case .camera: return "camera"
             case .end: return "end"
             }
         }
@@ -175,6 +195,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             try container.encode("media", forKey: .type)
             try container.encode(media, forKey: .media)
             try container.encode(enable, forKey: .enable)
+        case let .camera(camera):
+            try container.encode("camera", forKey: .type)
+            try container.encode(camera, forKey: .camera)
         case .end:
             try container.encode("end", forKey: .type)
         }
@@ -214,6 +237,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
             self = .media(media: media, enable: enable)
+        case "camera":
+            let camera = try container.decode(VideoCamera.self, forKey: CodingKeys.camera)
+            self = .camera(camera: camera)
         case "end":
             self = .end
         default:

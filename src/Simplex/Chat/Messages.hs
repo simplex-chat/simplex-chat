@@ -60,6 +60,13 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+chatInfoUpdatedAt :: ChatInfo c -> UTCTime
+chatInfoUpdatedAt = \case
+  DirectChat Contact {updatedAt} -> updatedAt
+  GroupChat GroupInfo {updatedAt} -> updatedAt
+  ContactRequest UserContactRequest {updatedAt} -> updatedAt
+  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
+
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
