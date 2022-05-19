@@ -3,18 +3,31 @@ package chat.simplex.app.views.call
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.os.Build
+import android.service.controls.templates.ControlButton
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.magnifier
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -22,11 +35,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.app.R
 import chat.simplex.app.TAG
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.json
-import chat.simplex.app.views.helpers.TextEditor
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.ChatInfoLayout
+import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
@@ -67,7 +81,7 @@ fun ActiveCallView(chatModel: ChatModel) {
           }
           is WCallResponse.Connection ->
             try {
-              val callStatus = WebRTCCallStatus.valueOf(r.state.connectionState)
+              val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
                 chatModel.activeCall.value = call.copy(callState = CallState.Connected)
               }
@@ -86,6 +100,7 @@ fun ActiveCallView(chatModel: ChatModel) {
                 CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
               }
             }
+            is WCallCommand.Camera -> chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
             is WCallCommand.End -> endCall()
             else -> {}
           }
@@ -95,13 +110,108 @@ fun ActiveCallView(chatModel: ChatModel) {
         }
       }
     }
-    ActiveCallOverlay()
+    val call = chatModel.activeCall.value
+    if (call != null)  ActiveCallOverlay(call, chatModel, endCall)
   }
 }
 
 @Composable
-fun ActiveCallOverlay() {
+private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, endCall: () -> Unit) {
+  ActiveCallOverlayLayout(
+    call = call,
+    dismiss = {
+      chatModel.callCommand.value = WCallCommand.End
+      withApi {
+        chatModel.controller.apiEndCall(call.contact)
+        endCall()
+      }
+    },
+    toggleAudio = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled) },
+    toggleVideo = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled) },
+    flipCamera = { chatModel.callCommand.value = WCallCommand.Camera(call.localCamera.flipped) }
+  )
+}
 
+@Composable
+private fun ActiveCallOverlayLayout(
+  call: Call,
+  dismiss: () -> Unit,
+  toggleAudio: () -> Unit,
+  toggleVideo: () -> Unit,
+  flipCamera: () -> Unit
+) {
+  Column(Modifier.padding(16.dp)) {
+    when (call.peerMedia ?: call.localMedia) {
+      CallMediaType.Video -> {
+        CallInfoView(call, alignment = Alignment.Start)
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+          ToggleAudioButton(call, toggleAudio)
+          Spacer(Modifier.size(40.dp))
+          IconButton(onClick = dismiss) {
+            Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+          }
+          ControlButton(call, Icons.Filled.FlipCameraAndroid, R.string.icon_descr_flip_camera, flipCamera)
+          if (call.videoEnabled) {
+            ControlButton(call, Icons.Filled.Videocam, R.string.icon_descr_video_off, toggleVideo)
+          } else {
+            ControlButton(call, Icons.Outlined.VideocamOff, R.string.icon_descr_video_on, toggleVideo)
+          }
+        }
+      }
+      CallMediaType.Audio -> {
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Column(
+          Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center
+        ) {
+          ProfileImage(size = 192.dp, image = call.contact.profile.image)
+          CallInfoView(call, alignment = Alignment.CenterHorizontally)
+        }
+        Spacer(Modifier.fillMaxHeight().weight(1f))
+        Box(Modifier.fillMaxWidth().padding(bottom = 48.dp), contentAlignment = Alignment.CenterStart) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            IconButton(onClick = dismiss) {
+              Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
+            }
+          }
+          Box(Modifier.padding(start = 32.dp)) {
+            ToggleAudioButton(call, toggleAudio)
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun ControlButton(call: Call, icon: ImageVector, @StringRes iconText: Int, action: () -> Unit) {
+  if (call.hasMedia) {
+    IconButton(onClick = action) {
+      Icon(icon, stringResource(iconText), tint = Color.White, modifier = Modifier.size(40.dp))
+    }
+  } else {
+    Spacer(Modifier.size(40.dp))
+  }
+}
+
+@Composable
+private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
+  if (call.audioEnabled) {
+    ControlButton(call, Icons.Outlined.Mic, R.string.icon_descr_video_off, toggleAudio)
+  } else {
+    ControlButton(call, Icons.Outlined.MicOff, R.string.icon_descr_audio_on, toggleAudio)
+  }
+}
+
+@Composable
+private fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
+  Column(horizontalAlignment = alignment) {
+    Text(call.contact.chatViewName, color = Color.White, style = MaterialTheme.typography.body2)
+    Text(call.callState.text, color = Color.White, style = MaterialTheme.typography.body2)
+    Text(call.encryptionStatus, color = Color.White, style = MaterialTheme.typography.body2)
+  }
 }
 
 //@Composable
@@ -268,5 +378,43 @@ private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoa
     request: WebResourceRequest
   ): WebResourceResponse? {
     return assetLoader.shouldInterceptRequest(request.url)
+  }
+}
+
+@Preview
+@Composable
+fun PreviewActiveCallOverlayVideo() {
+  SimpleXTheme {
+    ActiveCallOverlayLayout(
+      call = Call(
+        contact = Contact.sampleData,
+        callState = CallState.Negotiated,
+        localMedia = CallMediaType.Video,
+        peerMedia = CallMediaType.Video
+      ),
+      dismiss = {},
+      toggleAudio = {},
+      toggleVideo = {},
+      flipCamera = {}
+    )
+  }
+}
+
+@Preview
+@Composable
+fun PreviewActiveCallOverlayAudio() {
+  SimpleXTheme {
+    ActiveCallOverlayLayout(
+      call = Call(
+        contact = Contact.sampleData,
+        callState = CallState.Negotiated,
+        localMedia = CallMediaType.Audio,
+        peerMedia = CallMediaType.Audio
+      ),
+      dismiss = {},
+      toggleAudio = {},
+      toggleVideo = {},
+      flipCamera = {}
+    )
   }
 }

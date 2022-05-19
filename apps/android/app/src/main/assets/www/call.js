@@ -6,6 +6,11 @@ var CallMediaType;
     CallMediaType["Audio"] = "audio";
     CallMediaType["Video"] = "video";
 })(CallMediaType || (CallMediaType = {}));
+var VideoCamera;
+(function (VideoCamera) {
+    VideoCamera["User"] = "user";
+    VideoCamera["Environment"] = "environment";
+})(VideoCamera || (VideoCamera = {}));
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
@@ -16,8 +21,8 @@ var TransformOperation;
     TransformOperation["Encrypt"] = "encrypt";
     TransformOperation["Decrypt"] = "decrypt";
 })(TransformOperation || (TransformOperation = {}));
+let activeCall;
 const processCommand = (function () {
-    let activeCall;
     const defaultIceServers = [
         { urls: ["stun:stun.simplex.chat:5349"] },
         { urls: ["turn:turn.simplex.chat:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
@@ -31,19 +36,14 @@ const processCommand = (function () {
                 iceTransportPolicy: relay ? "relay" : "all",
             },
             iceCandidates: {
-                delay: 2000,
+                delay: 3000,
                 extrasInterval: 2000,
                 extrasTimeout: 8000,
             },
         };
     }
-    async function initializeCall(config, mediaType, aesKey, useWorker) {
-        const conn = new RTCPeerConnection(config.peerConnectionConfig);
-        const remoteStream = new MediaStream();
-        const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType));
-        await setUpMediaStreams(conn, localStream, remoteStream, aesKey, useWorker);
-        conn.addEventListener("connectionstatechange", connectionStateChange);
-        const iceCandidates = new Promise((resolve, _) => {
+    function getIceCandidates(conn, config) {
+        return new Promise((resolve, _) => {
             let candidates = [];
             let resolved = false;
             let extrasInterval;
@@ -91,28 +91,36 @@ const processCommand = (function () {
                 sendMessageToNative({ resp: { type: "ice", iceCandidates } });
             }
         });
-        return { connection: conn, iceCandidates, localMedia: mediaType, localStream };
+    }
+    async function initializeCall(config, mediaType, aesKey, useWorker) {
+        const pc = new RTCPeerConnection(config.peerConnectionConfig);
+        const remoteStream = new MediaStream();
+        const localCamera = VideoCamera.User;
+        const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera));
+        const iceCandidates = getIceCandidates(pc, config);
+        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
+        await setupMediaStreams(call);
+        pc.addEventListener("connectionstatechange", connectionStateChange);
+        return call;
         async function connectionStateChange() {
             sendMessageToNative({
                 resp: {
                     type: "connection",
                     state: {
-                        connectionState: conn.connectionState,
-                        iceConnectionState: conn.iceConnectionState,
-                        iceGatheringState: conn.iceGatheringState,
-                        signalingState: conn.signalingState,
+                        connectionState: pc.connectionState,
+                        iceConnectionState: pc.iceConnectionState,
+                        iceGatheringState: pc.iceGatheringState,
+                        signalingState: pc.signalingState,
                     },
                 },
             });
-            if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
-                conn.removeEventListener("connectionstatechange", connectionStateChange);
-                conn.close();
-                activeCall = undefined;
-                resetVideoElements();
+            if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+                pc.removeEventListener("connectionstatechange", connectionStateChange);
+                endCall();
                 setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
             }
-            else if (conn.connectionState == "connected") {
-                const stats = (await conn.getStats());
+            else if (pc.connectionState == "connected") {
+                const stats = (await pc.getStats());
                 for (const stat of stats.values()) {
                     const { type, state } = stat;
                     if (type === "candidate-pair" && state === "succeeded") {
@@ -148,40 +156,37 @@ const processCommand = (function () {
                     const encryption = supportsInsertableStreams(command.useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
-                case "start":
+                case "start": {
                     console.log("starting call");
-                    if (activeCall) {
-                        // TODO cancel current call
-                        resp = { type: "error", message: "start: call already started" };
-                    }
-                    else {
-                        const { media, useWorker, iceServers, relay } = command;
-                        const encryption = supportsInsertableStreams(useWorker);
-                        const aesKey = encryption ? command.aesKey : undefined;
-                        activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker);
-                        const pc = activeCall.connection;
-                        const offer = await pc.createOffer();
-                        await pc.setLocalDescription(offer);
-                        // for debugging, returning the command for callee to use
-                        // resp = {
-                        //   type: "offer",
-                        //   offer: serialize(offer),
-                        //   iceCandidates: await activeCall.iceCandidates,
-                        //   capabilities: {encryption},
-                        //   media,
-                        //   iceServers,
-                        //   relay,
-                        //   aesKey,
-                        //   useWorker,
-                        // }
-                        resp = {
-                            type: "offer",
-                            offer: serialize(offer),
-                            iceCandidates: await activeCall.iceCandidates,
-                            capabilities: { encryption },
-                        };
-                    }
+                    if (activeCall)
+                        endCall();
+                    const { media, useWorker, iceServers, relay } = command;
+                    const encryption = supportsInsertableStreams(useWorker);
+                    const aesKey = encryption ? command.aesKey : undefined;
+                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker);
+                    const pc = activeCall.connection;
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    // for debugging, returning the command for callee to use
+                    // resp = {
+                    //   type: "offer",
+                    //   offer: serialize(offer),
+                    //   iceCandidates: await activeCall.iceCandidates,
+                    //   capabilities: {encryption},
+                    //   media,
+                    //   iceServers,
+                    //   relay,
+                    //   aesKey,
+                    //   useWorker,
+                    // }
+                    resp = {
+                        type: "offer",
+                        offer: serialize(offer),
+                        iceCandidates: await activeCall.iceCandidates,
+                        capabilities: { encryption },
+                    };
                     break;
+                }
                 case "offer":
                     if (activeCall) {
                         resp = { type: "error", message: "accept: call already started" };
@@ -247,16 +252,28 @@ const processCommand = (function () {
                         resp = { type: "ok" };
                     }
                     break;
-                case "end":
-                    if (pc) {
-                        pc.close();
-                        activeCall = undefined;
-                        resetVideoElements();
-                        resp = { type: "ok" };
+                case "camera":
+                    if (!activeCall || !pc) {
+                        resp = { type: "error", message: "camera: call not started" };
+                    }
+                    else if (activeCall.localMedia == CallMediaType.Audio) {
+                        resp = { type: "error", message: "camera: no video" };
                     }
                     else {
-                        resp = { type: "error", message: "end: call not started" };
+                        try {
+                            if (command.camera != activeCall.localCamera) {
+                                await replaceCamera(activeCall, command.camera);
+                            }
+                            resp = { type: "ok" };
+                        }
+                        catch (e) {
+                            resp = { type: "error", message: `camera: ${e.message}` };
+                        }
                     }
+                    break;
+                case "end":
+                    endCall();
+                    resp = { type: "ok" };
                     break;
                 default:
                     resp = { type: "error", message: "unknown command" };
@@ -270,46 +287,77 @@ const processCommand = (function () {
         sendMessageToNative(apiResp);
         return apiResp;
     }
+    function endCall() {
+        var _a;
+        try {
+            (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection) === null || _a === void 0 ? void 0 : _a.close();
+        }
+        catch (e) {
+            console.log(e);
+        }
+        activeCall = undefined;
+        resetVideoElements();
+    }
     function addIceCandidates(conn, iceCandidates) {
         for (const c of iceCandidates) {
             conn.addIceCandidate(new RTCIceCandidate(c));
         }
     }
-    async function setUpMediaStreams(pc, localStream, remoteStream, aesKey, useWorker) {
-        var _a;
+    async function setupMediaStreams(call) {
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
-        let key;
-        let worker;
-        if (aesKey) {
-            key = await callCrypto.decodeAesKey(aesKey);
-            if (useWorker) {
+        await setupEncryptionWorker(call);
+        setupLocalStream(call);
+        setupRemoteStream(call);
+        setupCodecPreferences(call);
+        // setupVideoElement(videos.local)
+        // setupVideoElement(videos.remote)
+        videos.local.srcObject = call.localStream;
+        videos.remote.srcObject = call.remoteStream;
+    }
+    async function setupEncryptionWorker(call) {
+        if (call.aesKey) {
+            if (!call.key)
+                call.key = await callCrypto.decodeAesKey(call.aesKey);
+            if (call.useWorker && !call.worker) {
                 const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
-                worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
+                call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
             }
         }
+    }
+    function setupLocalStream(call) {
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        const pc = call.connection;
+        let { localStream } = call;
         for (const track of localStream.getTracks()) {
             pc.addTrack(track, localStream);
         }
-        if (aesKey && key) {
+        if (call.aesKey && call.key) {
             console.log("set up encryption for sending");
             for (const sender of pc.getSenders()) {
-                setupPeerTransform(TransformOperation.Encrypt, sender, worker, aesKey, key);
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key);
             }
         }
+    }
+    function setupRemoteStream(call) {
         // Pull tracks from remote stream as they arrive add them to remoteStream video
+        const pc = call.connection;
         pc.ontrack = (event) => {
-            if (aesKey && key) {
+            if (call.aesKey && call.key) {
                 console.log("set up decryption for receiving");
-                setupPeerTransform(TransformOperation.Decrypt, event.receiver, worker, aesKey, key);
+                setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
             }
             for (const stream of event.streams) {
                 for (const track of stream.getTracks()) {
-                    remoteStream.addTrack(track);
+                    call.remoteStream.addTrack(track);
                 }
             }
         };
+    }
+    function setupCodecPreferences(call) {
         // We assume VP8 encoding in the decode/encode stages to get the initial
         // bytes to pass as plaintext so we enforce that here.
         // VP8 is supported by all supports of webrtc.
@@ -322,6 +370,7 @@ const processCommand = (function () {
         // which is 10 bytes for key frames and 3 bytes for delta frames.
         // For opus (where encodedFrame.type is not set) this is the TOC byte from
         //   https://tools.ietf.org/html/rfc6716#section-3.1
+        var _a;
         const capabilities = RTCRtpSender.getCapabilities("video");
         if (capabilities) {
             const { codecs } = capabilities;
@@ -329,16 +378,33 @@ const processCommand = (function () {
             const selectedCodec = codecs[selectedCodecIndex];
             codecs.splice(selectedCodecIndex, 1);
             codecs.unshift(selectedCodec);
-            for (const t of pc.getTransceivers()) {
+            for (const t of call.connection.getTransceivers()) {
                 if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video") {
                     t.setCodecPreferences(codecs);
                 }
             }
         }
-        // setupVideoElement(videos.local)
-        // setupVideoElement(videos.remote)
+    }
+    async function replaceCamera(call, camera) {
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        const pc = call.connection;
+        for (const t of call.localStream.getTracks())
+            t.stop();
+        call.localCamera = camera;
+        const constraints = callMediaConstraints(call.localMedia, camera);
+        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        replaceTracks(pc, localStream.getVideoTracks());
+        replaceTracks(pc, localStream.getAudioTracks());
+        call.localStream = localStream;
         videos.local.srcObject = localStream;
-        videos.remote.srcObject = remoteStream;
+    }
+    function replaceTracks(pc, tracks) {
+        const sender = pc.getSenders().find((s) => { var _a; return ((_a = s.track) === null || _a === void 0 ? void 0 : _a.kind) === tracks[0].kind; });
+        if (sender)
+            for (const t of tracks)
+                sender.replaceTrack(t);
     }
     function setupPeerTransform(operation, peer, worker, aesKey, key) {
         if (worker && "RTCRtpScriptTransform" in window) {
@@ -361,7 +427,7 @@ const processCommand = (function () {
             console.log(`no ${operation}`);
         }
     }
-    function callMediaConstraints(mediaType) {
+    function callMediaConstraints(mediaType, facingMode) {
         switch (mediaType) {
             case CallMediaType.Audio:
                 return { audio: true, video: false };
@@ -376,6 +442,7 @@ const processCommand = (function () {
                             max: 1280,
                         },
                         aspectRatio: 1.33,
+                        facingMode,
                     },
                 };
         }

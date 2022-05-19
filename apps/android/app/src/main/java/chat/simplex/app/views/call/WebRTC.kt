@@ -1,5 +1,7 @@
 package chat.simplex.app.views.call
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.Contact
 import chat.simplex.app.views.helpers.generalGetString
@@ -15,9 +17,20 @@ data class Call(
   val sharedKey: String? = null,
   val audioEnabled: Boolean = true,
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
+  var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null
 ) {
-  val encrypted: Boolean get() = (localCapabilities?.encryption ?: false) && sharedKey != null
+  val encrypted: Boolean get() = localEncrypted && sharedKey != null
+  val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
+
+  val encryptionStatus: String @Composable get() = when(callState) {
+    CallState.WaitCapabilities -> ""
+    CallState.InvitationSent -> stringResource(if (localEncrypted) R.string.status_e2e_encrypted else R.string.status_no_e2e_encryption)
+    CallState.InvitationReceived -> stringResource(if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_contact_has_e2e_encryption)
+    else -> stringResource(if (!localEncrypted) R.string.status_no_e2e_encryption else if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_e2e_encrypted)
+  }
+
+  val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
 }
 
 enum class CallState {
@@ -29,14 +42,14 @@ enum class CallState {
   Negotiated,
   Connected;
 
-  val text: String get() = when(this) {
-    WaitCapabilities -> generalGetString(R.string.callstate_starting)
-    InvitationSent -> generalGetString(R.string.callstate_waiting_for_answer)
-    InvitationReceived -> generalGetString(R.string.callstate_starting)
-    OfferSent -> generalGetString(R.string.callstate_waiting_for_confirmation)
-    OfferReceived -> generalGetString(R.string.callstate_received_answer)
-    Negotiated -> generalGetString(R.string.callstate_connecting)
-    Connected -> generalGetString(R.string.callstate_connected)
+  val text: String @Composable get() = when(this) {
+    WaitCapabilities -> stringResource(R.string.callstate_starting)
+    InvitationSent -> stringResource(R.string.callstate_waiting_for_answer)
+    InvitationReceived -> stringResource(R.string.callstate_starting)
+    OfferSent -> stringResource(R.string.callstate_waiting_for_confirmation)
+    OfferReceived -> stringResource(R.string.callstate_received_answer)
+    Negotiated -> stringResource(R.string.callstate_connecting)
+    Connected -> stringResource(R.string.callstate_connected)
   }
 }
 
@@ -51,6 +64,7 @@ sealed class WCallCommand {
   @Serializable @SerialName("answer") class Answer (val answer: String, val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("ice") class Ice(val iceCandidates: String): WCallCommand()
   @Serializable @SerialName("media") class Media(val media: CallMediaType, val enable: Boolean): WCallCommand()
+  @Serializable @SerialName("camera") class Camera(val camera: VideoCamera): WCallCommand()
   @Serializable @SerialName("end") object End: WCallCommand()
 }
 
@@ -100,6 +114,7 @@ enum class RTCIceCandidateType {
 @Serializable
 enum class WebRTCCallStatus {
   @SerialName("connected") Connected,
+  @SerialName("connecting") Connecting,
   @SerialName("disconnected") Disconnected,
   @SerialName("failed") Failed
 }
@@ -108,6 +123,13 @@ enum class WebRTCCallStatus {
 enum class CallMediaType {
   @SerialName("video") Video,
   @SerialName("audio") Audio
+}
+
+@Serializable
+enum class VideoCamera {
+  @SerialName("user") User,
+  @SerialName("environment") Environment;
+  val flipped: VideoCamera get() = if (this == User) Environment else User
 }
 
 @Serializable

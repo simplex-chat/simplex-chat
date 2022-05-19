@@ -7,7 +7,15 @@ interface WVApiMessage {
   command?: WCallCommand
 }
 
-type WCallCommand = WCCapabilities | WCStartCall | WCAcceptOffer | WCallAnswer | WCallIceCandidates | WCEnableMedia | WCEndCall
+type WCallCommand =
+  | WCCapabilities
+  | WCStartCall
+  | WCAcceptOffer
+  | WCallAnswer
+  | WCallIceCandidates
+  | WCEnableMedia
+  | WCToggleCamera
+  | WCEndCall
 
 type WCallResponse =
   | WRCapabilities
@@ -21,13 +29,18 @@ type WCallResponse =
   | WRError
   | WCAcceptOffer
 
-type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "end"
+type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "end"
 
 type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
   Video = "video",
+}
+
+enum VideoCamera {
+  User = "user",
+  Environment = "environment",
 }
 
 interface IWCallCommand {
@@ -89,6 +102,11 @@ interface WCEnableMedia extends IWCallCommand {
   type: "media"
   media: CallMediaType
   enable: boolean
+}
+
+interface WCToggleCamera extends IWCallCommand {
+  type: "camera"
+  camera: VideoCamera
 }
 
 interface WRCapabilities extends IWCallResponse {
@@ -158,6 +176,21 @@ interface WVAPICall {
   command: WCallCommand
 }
 
+interface Call {
+  connection: RTCPeerConnection
+  iceCandidates: Promise<string> // JSON strings for RTCIceCandidate
+  localMedia: CallMediaType
+  localCamera: VideoCamera
+  localStream: MediaStream
+  remoteStream: MediaStream
+  aesKey?: string
+  useWorker?: boolean
+  worker?: Worker
+  key?: CryptoKey
+}
+
+let activeCall: Call | undefined
+
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
     createEncodedStreams: () => TransformStream
@@ -173,13 +206,6 @@ const processCommand = (function () {
     encodedInsertableStreams: boolean
   }
 
-  interface Call {
-    connection: RTCPeerConnection
-    iceCandidates: Promise<string> // JSON strings for RTCIceCandidate
-    localMedia: CallMediaType
-    localStream: MediaStream
-  }
-
   interface CallConfig {
     peerConnectionConfig: RTCConfigurationWithEncryption
     iceCandidates: {
@@ -188,8 +214,6 @@ const processCommand = (function () {
       extrasTimeout: number
     }
   }
-
-  let activeCall: Call | undefined
 
   const defaultIceServers: RTCIceServer[] = [
     {urls: ["stun:stun.simplex.chat:5349"]},
@@ -205,20 +229,15 @@ const processCommand = (function () {
         iceTransportPolicy: relay ? "relay" : "all",
       },
       iceCandidates: {
-        delay: 2000,
+        delay: 3000,
         extrasInterval: 2000,
         extrasTimeout: 8000,
       },
     }
   }
 
-  async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string, useWorker?: boolean): Promise<Call> {
-    const conn = new RTCPeerConnection(config.peerConnectionConfig)
-    const remoteStream = new MediaStream()
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType))
-    await setUpMediaStreams(conn, localStream, remoteStream, aesKey, useWorker)
-    conn.addEventListener("connectionstatechange", connectionStateChange)
-    const iceCandidates = new Promise<string>((resolve, _) => {
+  function getIceCandidates(conn: RTCPeerConnection, config: CallConfig) {
+    return new Promise<string>((resolve, _) => {
       let candidates: RTCIceCandidate[] = []
       let resolved = false
       let extrasInterval: number | undefined
@@ -264,29 +283,37 @@ const processCommand = (function () {
         sendMessageToNative({resp: {type: "ice", iceCandidates}})
       }
     })
+  }
 
-    return {connection: conn, iceCandidates, localMedia: mediaType, localStream}
+  async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string, useWorker?: boolean): Promise<Call> {
+    const pc = new RTCPeerConnection(config.peerConnectionConfig)
+    const remoteStream = new MediaStream()
+    const localCamera = VideoCamera.User
+    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera))
+    const iceCandidates = getIceCandidates(pc, config)
+    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
+    await setupMediaStreams(call)
+    pc.addEventListener("connectionstatechange", connectionStateChange)
+    return call
 
     async function connectionStateChange() {
       sendMessageToNative({
         resp: {
           type: "connection",
           state: {
-            connectionState: conn.connectionState,
-            iceConnectionState: conn.iceConnectionState,
-            iceGatheringState: conn.iceGatheringState,
-            signalingState: conn.signalingState,
+            connectionState: pc.connectionState,
+            iceConnectionState: pc.iceConnectionState,
+            iceGatheringState: pc.iceGatheringState,
+            signalingState: pc.signalingState,
           },
         },
       })
-      if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
-        conn.removeEventListener("connectionstatechange", connectionStateChange)
-        conn.close()
-        activeCall = undefined
-        resetVideoElements()
+      if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+        pc.removeEventListener("connectionstatechange", connectionStateChange)
+        endCall()
         setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
-      } else if (conn.connectionState == "connected") {
-        const stats = (await conn.getStats()) as Map<string, any>
+      } else if (pc.connectionState == "connected") {
+        const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
           const {type, state} = stat
           if (type === "candidate-pair" && state === "succeeded") {
@@ -325,39 +352,36 @@ const processCommand = (function () {
           const encryption = supportsInsertableStreams(command.useWorker)
           resp = {type: "capabilities", capabilities: {encryption}}
           break
-        case "start":
+        case "start": {
           console.log("starting call")
-          if (activeCall) {
-            // TODO cancel current call
-            resp = {type: "error", message: "start: call already started"}
-          } else {
-            const {media, useWorker, iceServers, relay} = command
-            const encryption = supportsInsertableStreams(useWorker)
-            const aesKey = encryption ? command.aesKey : undefined
-            activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker)
-            const pc = activeCall.connection
-            const offer = await pc.createOffer()
-            await pc.setLocalDescription(offer)
-            // for debugging, returning the command for callee to use
-            // resp = {
-            //   type: "offer",
-            //   offer: serialize(offer),
-            //   iceCandidates: await activeCall.iceCandidates,
-            //   capabilities: {encryption},
-            //   media,
-            //   iceServers,
-            //   relay,
-            //   aesKey,
-            //   useWorker,
-            // }
-            resp = {
-              type: "offer",
-              offer: serialize(offer),
-              iceCandidates: await activeCall.iceCandidates,
-              capabilities: {encryption},
-            }
+          if (activeCall) endCall()
+          const {media, useWorker, iceServers, relay} = command
+          const encryption = supportsInsertableStreams(useWorker)
+          const aesKey = encryption ? command.aesKey : undefined
+          activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker)
+          const pc = activeCall.connection
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          // for debugging, returning the command for callee to use
+          // resp = {
+          //   type: "offer",
+          //   offer: serialize(offer),
+          //   iceCandidates: await activeCall.iceCandidates,
+          //   capabilities: {encryption},
+          //   media,
+          //   iceServers,
+          //   relay,
+          //   aesKey,
+          //   useWorker,
+          // }
+          resp = {
+            type: "offer",
+            offer: serialize(offer),
+            iceCandidates: await activeCall.iceCandidates,
+            capabilities: {encryption},
           }
           break
+        }
         case "offer":
           if (activeCall) {
             resp = {type: "error", message: "accept: call already started"}
@@ -415,15 +439,25 @@ const processCommand = (function () {
             resp = {type: "ok"}
           }
           break
-        case "end":
-          if (pc) {
-            pc.close()
-            activeCall = undefined
-            resetVideoElements()
-            resp = {type: "ok"}
+        case "camera":
+          if (!activeCall || !pc) {
+            resp = {type: "error", message: "camera: call not started"}
+          } else if (activeCall.localMedia == CallMediaType.Audio) {
+            resp = {type: "error", message: "camera: no video"}
           } else {
-            resp = {type: "error", message: "end: call not started"}
+            try {
+              if (command.camera != activeCall.localCamera) {
+                await replaceCamera(activeCall, command.camera)
+              }
+              resp = {type: "ok"}
+            } catch (e) {
+              resp = {type: "error", message: `camera: ${(e as Error).message}`}
+            }
           }
+          break
+        case "end":
+          endCall()
+          resp = {type: "ok"}
           break
         default:
           resp = {type: "error", message: "unknown command"}
@@ -437,55 +471,80 @@ const processCommand = (function () {
     return apiResp
   }
 
+  function endCall() {
+    try {
+      activeCall?.connection?.close()
+    } catch (e) {
+      console.log(e)
+    }
+    activeCall = undefined
+    resetVideoElements()
+  }
+
   function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidateInit[]) {
     for (const c of iceCandidates) {
       conn.addIceCandidate(new RTCIceCandidate(c))
     }
   }
 
-  async function setUpMediaStreams(
-    pc: RTCPeerConnection,
-    localStream: MediaStream,
-    remoteStream: MediaStream,
-    aesKey?: string,
-    useWorker?: boolean
-  ): Promise<void> {
+  async function setupMediaStreams(call: Call): Promise<void> {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
+    await setupEncryptionWorker(call)
+    setupLocalStream(call)
+    setupRemoteStream(call)
+    setupCodecPreferences(call)
+    // setupVideoElement(videos.local)
+    // setupVideoElement(videos.remote)
+    videos.local.srcObject = call.localStream
+    videos.remote.srcObject = call.remoteStream
+  }
 
-    let key: CryptoKey | undefined
-    let worker: Worker | undefined
-    if (aesKey) {
-      key = await callCrypto.decodeAesKey(aesKey)
-      if (useWorker) {
+  async function setupEncryptionWorker(call: Call) {
+    if (call.aesKey) {
+      if (!call.key) call.key = await callCrypto.decodeAesKey(call.aesKey)
+      if (call.useWorker && !call.worker) {
         const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`
-        worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
+        call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
       }
     }
+  }
+
+  function setupLocalStream(call: Call) {
+    const videos = getVideoElements()
+    if (!videos) throw Error("no video elements")
+    const pc = call.connection
+    let {localStream} = call
 
     for (const track of localStream.getTracks()) {
       pc.addTrack(track, localStream)
     }
 
-    if (aesKey && key) {
+    if (call.aesKey && call.key) {
       console.log("set up encryption for sending")
       for (const sender of pc.getSenders() as RTCRtpSenderWithEncryption[]) {
-        setupPeerTransform(TransformOperation.Encrypt, sender, worker, aesKey, key)
+        setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key)
       }
     }
+  }
 
+  function setupRemoteStream(call: Call) {
     // Pull tracks from remote stream as they arrive add them to remoteStream video
+    const pc = call.connection
     pc.ontrack = (event) => {
-      if (aesKey && key) {
+      if (call.aesKey && call.key) {
         console.log("set up decryption for receiving")
-        setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, worker, aesKey, key)
+        setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
       }
       for (const stream of event.streams) {
         for (const track of stream.getTracks()) {
-          remoteStream.addTrack(track)
+          call.remoteStream.addTrack(track)
         }
       }
     }
+  }
+
+  function setupCodecPreferences(call: Call) {
     // We assume VP8 encoding in the decode/encode stages to get the initial
     // bytes to pass as plaintext so we enforce that here.
     // VP8 is supported by all supports of webrtc.
@@ -506,16 +565,31 @@ const processCommand = (function () {
       const selectedCodec = codecs[selectedCodecIndex]
       codecs.splice(selectedCodecIndex, 1)
       codecs.unshift(selectedCodec)
-      for (const t of pc.getTransceivers()) {
+      for (const t of call.connection.getTransceivers()) {
         if (t.sender.track?.kind === "video") {
           t.setCodecPreferences(codecs)
         }
       }
     }
-    // setupVideoElement(videos.local)
-    // setupVideoElement(videos.remote)
+  }
+
+  async function replaceCamera(call: Call, camera: VideoCamera): Promise<void> {
+    const videos = getVideoElements()
+    if (!videos) throw Error("no video elements")
+    const pc = call.connection
+    for (const t of call.localStream.getTracks()) t.stop()
+    call.localCamera = camera
+    const constraints = callMediaConstraints(call.localMedia, camera)
+    const localStream = await navigator.mediaDevices.getUserMedia(constraints)
+    replaceTracks(pc, localStream.getVideoTracks())
+    replaceTracks(pc, localStream.getAudioTracks())
+    call.localStream = localStream
     videos.local.srcObject = localStream
-    videos.remote.srcObject = remoteStream
+  }
+
+  function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
+    const sender = pc.getSenders().find((s) => s.track?.kind === tracks[0].kind)
+    if (sender) for (const t of tracks) sender.replaceTrack(t)
   }
 
   function setupPeerTransform(
@@ -543,7 +617,7 @@ const processCommand = (function () {
     }
   }
 
-  function callMediaConstraints(mediaType: CallMediaType): MediaStreamConstraints {
+  function callMediaConstraints(mediaType: CallMediaType, facingMode: VideoCamera): MediaStreamConstraints {
     switch (mediaType) {
       case CallMediaType.Audio:
         return {audio: true, video: false}
@@ -558,6 +632,7 @@ const processCommand = (function () {
               max: 1280,
             },
             aspectRatio: 1.33,
+            facingMode,
           },
         }
     }

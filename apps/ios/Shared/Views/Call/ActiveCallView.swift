@@ -78,6 +78,8 @@ struct ActiveCallView: View {
                         case .video: m.activeCall = call.copy(videoEnabled: enable)
                         case .audio: m.activeCall = call.copy(audioEnabled: enable)
                         }
+                    case let .camera(camera):
+                        m.activeCall = call.copy(localCamera: camera)
                     case .end:
                         m.activeCall = nil
                         m.activeCallInvitation = nil
@@ -109,6 +111,31 @@ struct ActiveCallOverlay: View {
                     .foregroundColor(.white)
                     .opacity(0.8)
                     .padding()
+
+                    Spacer()
+
+                    HStack {
+                        controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
+                            chatModel.callCommand = .media(media: .audio, enable: !call.audioEnabled)
+                        }
+                        Spacer()
+                        Color.clear.frame(width: 40, height: 40)
+                        Spacer()
+                        callButton("phone.down.fill", size: 60) { dismiss() }
+                            .foregroundColor(.red)
+                        Spacer()
+                        controlButton(call, "arrow.triangle.2.circlepath") {
+                            chatModel.callCommand = .camera(camera: call.localCamera == .user ? .environment : .user)
+                        }
+                        Spacer()
+                        controlButton(call, call.videoEnabled ? "video.fill" : "video.slash") {
+                            chatModel.callCommand = .media(media: .video, enable: !call.videoEnabled)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
                 case .audio:
                     VStack {
                         ProfileImage(imageStr: call.contact.profile.image)
@@ -120,30 +147,20 @@ struct ActiveCallOverlay: View {
                     .opacity(0.8)
                     .padding()
                     .frame(maxHeight: .infinity)
-                }
-                Spacer()
-                ZStack(alignment: .bottom) {
-                    VStack(alignment: .leading) {
-                        if call.localMedia == .video {
-                            callButton(call.videoEnabled ? "video.fill" : "video.slash", size: 48) {
-                                chatModel.callCommand = .media(media: .video, enable: !call.videoEnabled)
-                            }
-                            .foregroundColor(.white)
-                            .opacity(0.85)
-                        }
-                        callButton(call.audioEnabled ? "mic.fill" : "mic.slash", size: 48) {
+
+                    Spacer()
+
+                    ZStack(alignment: .bottom) {
+                        controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
                             chatModel.callCommand = .media(media: .audio, enable: !call.audioEnabled)
                         }
-                        .foregroundColor(.white)
-                        .opacity(0.85)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top)
+                        callButton("phone.down.fill", size: 60) { dismiss() }
+                            .foregroundColor(.red)
                     }
-                    callButton("phone.down.fill", size: 60) { dismiss() }
-                    .foregroundColor(.red)
+                    .padding(.bottom, 60)
+                    .padding(.horizontal, 48)
                 }
-                .padding(.bottom, 60)
-                .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
@@ -155,18 +172,26 @@ struct ActiveCallOverlay: View {
                 .lineLimit(1)
                 .font(.title)
                 .frame(maxWidth: .infinity, alignment: alignment)
-            let status = call.callState == .connected
-                            ? call.encrypted
-                               ? "end-to-end encrypted"
-                               : "no end-to-end encryption"
-                            : call.callState.text
-            Text(status)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity, alignment: alignment)
+            Group {
+                Text(call.callState.text)
+                Text(call.encryptionStatus)
+            }
+            .font(.subheadline)
+            .frame(maxWidth: .infinity, alignment: alignment)
         }
     }
 
-    private func callButton(_ imageName: String, size: CGFloat, perform: @escaping () -> Void) -> some View {
+    @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, _ perform: @escaping () -> Void) -> some View {
+        if call.hasMedia {
+            callButton(imageName, size: 40, perform)
+                .foregroundColor(.white)
+                .opacity(0.85)
+        } else {
+            Color.clear.frame(width: 40, height: 40)
+        }
+    }
+
+    private func callButton(_ imageName: String, size: CGFloat, _ perform: @escaping () -> Void) -> some View {
         Button {
             perform()
         } label: {
