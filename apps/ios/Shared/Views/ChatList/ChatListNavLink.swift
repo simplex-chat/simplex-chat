@@ -190,7 +190,7 @@ struct ChatListNavLink: View {
 
     private func clearChatAlert() -> Alert {
         Alert(
-            title: Text("Clear chat?"),
+            title: Text("Clear conversation?"),
             message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
             primaryButton: .destructive(Text("Clear")) {
                 Task { await clearChat(chat) }
