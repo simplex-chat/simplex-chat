@@ -72,7 +72,8 @@ data Contact = Contact
     profile :: Profile,
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
 
@@ -171,7 +172,8 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
-    createdAt :: UTCTime
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
 

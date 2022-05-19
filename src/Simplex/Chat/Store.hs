@@ -118,7 +118,9 @@ module Simplex.Chat.Store
     getSndFileTransfer,
     getContactFileInfo,
     getContactChatItemIdsAndFileInfo,
+    updateContactTs,
     getGroupChatItemIdsAndFileInfo,
+    updateGroupTs,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -336,7 +338,7 @@ getConnReqContactXContactId st userId cReqHash = do
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -396,7 +398,7 @@ createDirectContact st userId activeConn@Connection {connId} profile =
   liftIOEither . withTransaction st $ \db -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     (localDisplayName, contactId, _) <- ExceptT $ createContact_ db userId connId profile Nothing createdAt
-    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt}
+    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> Maybe Int64 -> UTCTime -> IO (Either StoreError (Text, Int64, Int64))
 createContact_ db userId connId Profile {displayName, fullName, image} viaGroup currentTs =
@@ -536,20 +538,20 @@ updateContact_ db userId contactId displayName newName updatedAt = do
     (newName, updatedAt, userId, contactId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (displayName, userId)
 
-type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, UTCTime)
+type ContactRow = (Int64, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, UTCTime, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
-toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
+toContact ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
   let profile = Profile {displayName, fullName, image}
       activeConn = toConnection connRow
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
 
 toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt) :. connRow) =
+toContactOrError ((contactId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
   let profile = Profile {displayName, fullName, image}
    in case toMaybeConnection connRow of
         Just activeConn ->
-          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
         _ -> Left $ SEContactNotReady localDisplayName
 
 -- TODO return the last connection that is ready, not any last connection
@@ -725,7 +727,7 @@ createOrUpdateContactRequest_ db userId userContactLinkId invId Profile {display
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -854,7 +856,7 @@ createAcceptedContact st userId agentConnId localDisplayName profileId profile x
       (userId, localDisplayName, profileId, currentTs, currentTs, xContactId)
     contactId <- insertedRowId db
     activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing 0 currentTs
-    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = currentTs}
+    pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = currentTs, updatedAt = currentTs}
 
 getLiveSndFileTransfers :: MonadUnliftIO m => SQLiteStore -> User -> m [SndFileTransfer]
 getLiveSndFileTransfers st User {userId} =
@@ -1144,16 +1146,16 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
         <$> DB.query
           db
           [sql|
-            SELECT c.local_display_name, p.display_name, p.full_name, p.image, c.via_group, c.created_at
+            SELECT c.local_display_name, p.display_name, p.full_name, p.image, c.via_group, c.created_at, c.updated_at
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ?
           |]
           (userId, contactId)
-    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(localDisplayName, displayName, fullName, image, viaGroup, createdAt)] =
+    toContact' :: Int64 -> Connection -> [(ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime, UTCTime)] -> Either StoreError Contact
+    toContact' contactId activeConn [(localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt)] =
       let profile = Profile {displayName, fullName, image}
-       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: DB.Connection -> Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ db groupMemberId c = ExceptT $ do
@@ -1163,7 +1165,7 @@ getConnectionEntity st User {userId, userContactId} agentConnId =
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -1254,7 +1256,7 @@ getGroupAndMember st User {userId, userContactId} groupMemberId =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
             mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -1315,7 +1317,7 @@ createNewGroup st gVar user groupProfile =
     groupId <- insertedRowId db
     memberId <- encodedRandomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
-    pure $ Right GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs}
+    pure $ Right GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation ::
@@ -1348,7 +1350,7 @@ createGroupInvitation st user@User {userId} contact@Contact {contactId} GroupInv
         groupId <- insertedRowId db
         _ <- createContactMember_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown currentTs
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) currentTs
-        pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs}
+        pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
@@ -1400,7 +1402,7 @@ getUserGroupDetails st User {userId, userContactId} =
       <$> DB.query
         db
         [sql|
-          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+          SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
             m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
             m.invited_by, m.local_display_name, m.contact_id, mp.display_name, mp.full_name, mp.image
           FROM groups g
@@ -1417,12 +1419,12 @@ getGroupInfoByName st user gName =
     gId <- ExceptT $ getGroupIdByName_ db user gName
     ExceptT $ getGroupInfo_ db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, UTCTime, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt, updatedAt) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, createdAt}
+   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, createdAt, updatedAt}
 
 getGroupMembers :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> m [GroupMember]
 getGroupMembers st user gInfo = liftIO . withTransaction st $ \db -> getGroupMembers_ db user gInfo
@@ -1797,7 +1799,7 @@ getViaGroupMember st User {userId, userContactId} Contact {contactId} =
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
             mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -1839,7 +1841,7 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         db
         [sql|
           SELECT
-            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, p.image, ct.via_group, ct.created_at,
+            ct.contact_id, ct.local_display_name, p.display_name, p.full_name, p.image, ct.via_group, ct.created_at, ct.updated_at,
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM contacts ct
@@ -1855,11 +1857,11 @@ getViaGroupContact st User {userId} GroupMember {groupMemberId} =
         |]
         (userId, groupMemberId)
   where
-    toContact' :: [(Int64, ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime) :. ConnectionRow] -> Maybe Contact
-    toContact' [(contactId, localDisplayName, displayName, fullName, image, viaGroup, createdAt) :. connRow] =
+    toContact' :: [(Int64, ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime, UTCTime) :. ConnectionRow] -> Maybe Contact
+    toContact' [(contactId, localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt) :. connRow] =
       let profile = Profile {displayName, fullName, image}
           activeConn = toConnection connRow
-       in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt}
+       in Just Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
     toContact' _ = Nothing
 
 createSndFileTransfer :: MonadUnliftIO m => SQLiteStore -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> m Int64
@@ -2298,45 +2300,63 @@ getContactFileInfo st userId Contact {contactId} =
 toFileInfo :: (Int64, ACIFileStatus, Maybe FilePath) -> CIFileInfo
 toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
 
-getContactChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> ContactId -> m [(ChatItemId, Maybe CIFileInfo)]
-getContactChatItemIdsAndFileInfo st userId contactId =
+getContactChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> User -> ContactId -> m [(ChatItemId, UTCTime, Maybe CIFileInfo)]
+getContactChatItemIdsAndFileInfo st User {userId} contactId =
   liftIO . withTransaction st $ \db ->
     map toItemIdAndFileInfo
       <$> DB.query
         db
         [sql|
-          SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+          SELECT i.chat_item_id, i.item_ts, f.file_id, f.ci_file_status, f.file_path
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.contact_id = ?
+          ORDER BY i.item_ts ASC
         |]
         (userId, contactId)
 
-toItemIdAndFileInfo :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
-toItemIdAndFileInfo (chatItemId, fileId_, fileStatus_, filePath) =
+toItemIdAndFileInfo :: (ChatItemId, UTCTime, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, UTCTime, Maybe CIFileInfo)
+toItemIdAndFileInfo (chatItemId, itemTs, fileId_, fileStatus_, filePath) =
   case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
-    _ -> (chatItemId, Nothing)
+    (Just fileId, Just fileStatus) -> (chatItemId, itemTs, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, itemTs, Nothing)
 
-getGroupChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> UserId -> Int64 -> m [(ChatItemId, Bool, Maybe CIFileInfo)]
-getGroupChatItemIdsAndFileInfo st userId groupId =
+updateContactTs :: MonadUnliftIO m => SQLiteStore -> User -> Contact -> UTCTime -> m ()
+updateContactTs st User {userId} Contact {contactId} updatedAt =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      "UPDATE contacts SET updated_at = ? WHERE user_id = ? AND contact_id = ?"
+      (updatedAt, userId, contactId)
+
+getGroupChatItemIdsAndFileInfo :: MonadUnliftIO m => SQLiteStore -> User -> Int64 -> m [(ChatItemId, UTCTime, Bool, Maybe CIFileInfo)]
+getGroupChatItemIdsAndFileInfo st User {userId} groupId =
   liftIO . withTransaction st $ \db ->
     map toItemIdDeletedAndFileInfo
       <$> DB.query
         db
         [sql|
-          SELECT i.chat_item_id, i.item_deleted, f.file_id, f.ci_file_status, f.file_path
+          SELECT i.chat_item_id, i.item_ts, i.item_deleted, f.file_id, f.ci_file_status, f.file_path
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           WHERE i.user_id = ? AND i.group_id = ?
+          ORDER BY i.item_ts ASC
         |]
         (userId, groupId)
 
-toItemIdDeletedAndFileInfo :: (ChatItemId, Bool, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Bool, Maybe CIFileInfo)
-toItemIdDeletedAndFileInfo (chatItemId, itemDeleted, fileId_, fileStatus_, filePath) =
+toItemIdDeletedAndFileInfo :: (ChatItemId, UTCTime, Bool, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, UTCTime, Bool, Maybe CIFileInfo)
+toItemIdDeletedAndFileInfo (chatItemId, itemTs, itemDeleted, fileId_, fileStatus_, filePath) =
   case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, itemDeleted, Just CIFileInfo {fileId, fileStatus, filePath})
-    _ -> (chatItemId, itemDeleted, Nothing)
+    (Just fileId, Just fileStatus) -> (chatItemId, itemTs, itemDeleted, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, itemTs, itemDeleted, Nothing)
+
+updateGroupTs :: MonadUnliftIO m => SQLiteStore -> User -> GroupInfo -> UTCTime -> m ()
+updateGroupTs st User {userId} GroupInfo {groupId} updatedAt =
+  liftIO . withTransaction st $ \db ->
+    DB.execute
+      db
+      "UPDATE groups SET updated_at = ? WHERE user_id = ? AND group_id = ?"
+      (updatedAt, userId, groupId)
 
 createNewSndMessage :: StoreMonad m => SQLiteStore -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> m SndMessage
 createNewSndMessage st gVar connOrGroupId mkMessage =
@@ -2617,12 +2637,8 @@ getChatPreviews st user withPCC =
     pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
-    ts (AChat _ Chat {chatItems = ci : _}) = chatItemTs ci
-    ts (AChat _ Chat {chatInfo}) = case chatInfo of
-      DirectChat Contact {createdAt} -> createdAt
-      GroupChat GroupInfo {createdAt} -> createdAt
-      ContactRequest UserContactRequest {updatedAt} -> updatedAt
-      ContactConnection PendingContactConnection {updatedAt} -> updatedAt
+    ts (AChat _ Chat {chatInfo, chatItems = ci : _}) = max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
+    ts (AChat _ Chat {chatInfo}) = chatInfoUpdatedAt chatInfo
 
 chatItemTs :: CChatItem d -> UTCTime
 chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs
@@ -2637,7 +2653,7 @@ getDirectChatPreviews_ db User {userId} = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
@@ -2701,7 +2717,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
@@ -2979,7 +2995,7 @@ getContact_ db userId contactId =
           [sql|
             SELECT
               -- Contact
-              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at,
+              ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
@@ -3169,7 +3185,7 @@ getGroupInfo_ db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id,
