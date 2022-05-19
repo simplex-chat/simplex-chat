@@ -28,28 +28,28 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenu = { ContactMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenu = { GroupMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { GroupMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactRequestView(chat.chatInfo) },
         click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
-        dropdownMenu = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
         click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
-        dropdownMenu = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu
       )
   }
@@ -63,104 +63,80 @@ fun openOrPendingChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
-suspend fun openChat(cInfo: ChatInfo, chatModel: ChatModel) {
-  val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
+suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
     chatModel.chatItems.clear()
     chatModel.chatItems.addAll(chat.chatItems)
-    chatModel.chatId.value = cInfo.id
+    chatModel.chatId.value = chatInfo.id
   }
 }
 
 @Composable
 fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenu(
-    expanded = showMenu.value,
-    onDismissRequest = { showMenu.value = false },
-    Modifier.width(220.dp)
-  ) {
-    ItemAction(
-      stringResource(R.string.clear_verb),
-      Icons.Outlined.Restore,
-      onClick = {
-        clearChatDialog(chatInfo, chatModel)
-        showMenu.value = false
-      }
-    )
-    ItemAction(
-      stringResource(R.string.delete_verb),
-      Icons.Outlined.Delete,
-      onClick = {
-        deleteContactDialog(chatInfo, chatModel)
-        showMenu.value = false
-      },
-      color = Color.Red
-    )
-  }
+  ItemAction(
+    stringResource(R.string.clear_verb),
+    Icons.Outlined.Restore,
+    onClick = {
+      clearChatDialog(chatInfo, chatModel)
+      showMenu.value = false
+    }
+  )
+  ItemAction(
+    stringResource(R.string.delete_verb),
+    Icons.Outlined.Delete,
+    onClick = {
+      deleteContactDialog(chatInfo, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
 }
 
 @Composable
 fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenu(
-    expanded = showMenu.value,
-    onDismissRequest = { showMenu.value = false },
-    Modifier.width(220.dp)
-  ) {
-    ItemAction(
-      stringResource(R.string.clear_verb),
-      Icons.Outlined.Restore,
-      onClick = {
-        clearChatDialog(chatInfo, chatModel)
-        showMenu.value = false
-      }
-    )
-  }
+  ItemAction(
+    stringResource(R.string.clear_verb),
+    Icons.Outlined.Restore,
+    onClick = {
+      clearChatDialog(chatInfo, chatModel)
+      showMenu.value = false
+    }
+  )
 }
 
 @Composable
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenu(
-    expanded = showMenu.value,
-    onDismissRequest = { showMenu.value = false },
-    Modifier.width(220.dp)
-  ) {
-    ItemAction(
-      stringResource(R.string.accept_contact_button),
-      Icons.Outlined.Check,
-      onClick = {
-        acceptContactRequest(chatInfo, chatModel)
-        showMenu.value = false
-      }
-    )
-    ItemAction(
-      stringResource(R.string.reject_contact_button),
-      Icons.Outlined.Close,
-      onClick = {
-        rejectContactRequest(chatInfo, chatModel)
-        showMenu.value = false
-      },
-      color = Color.Red
-    )
-  }
+  ItemAction(
+    stringResource(R.string.accept_contact_button),
+    Icons.Outlined.Check,
+    onClick = {
+      acceptContactRequest(chatInfo, chatModel)
+      showMenu.value = false
+    }
+  )
+  ItemAction(
+    stringResource(R.string.reject_contact_button),
+    Icons.Outlined.Close,
+    onClick = {
+      rejectContactRequest(chatInfo, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
 }
 
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  DropdownMenu(
-    expanded = showMenu.value,
-    onDismissRequest = { showMenu.value = false },
-    Modifier.width(220.dp)
-  ) {
-    ItemAction(
-      stringResource(R.string.delete_verb),
-      Icons.Outlined.Delete,
-      onClick = {
-        deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
-        showMenu.value = false
-      },
-      color = Color.Red
-    )
-  }
+  ItemAction(
+    stringResource(R.string.delete_verb),
+    Icons.Outlined.Delete,
+    onClick = {
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
 }
 
 fun deleteContactDialog(contact: ChatInfo.Direct, chatModel: ChatModel) {
@@ -297,7 +273,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
 fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  dropdownMenu: (@Composable () -> Unit)?,
+  dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>
 ) {
   Surface(
@@ -319,9 +295,15 @@ fun ChatListNavLinkLayout(
     ) {
       chatLinkPreview()
     }
-    if (dropdownMenu != null) {
+    if (dropdownMenuItems != null) {
       Box(Modifier.padding(horizontal = 16.dp)) {
-        dropdownMenu()
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
+          dropdownMenuItems()
+        }
       }
     }
   }
@@ -355,7 +337,7 @@ fun PreviewChatListNavLinkDirect() {
         )
       },
       click = {},
-      dropdownMenu = null,
+      dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) }
     )
   }
@@ -388,7 +370,7 @@ fun PreviewChatListNavLinkGroup() {
         )
       },
       click = {},
-      dropdownMenu = null,
+      dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) }
     )
   }
@@ -408,7 +390,7 @@ fun PreviewChatListNavLinkContactRequest() {
         ContactRequestView(ChatInfo.ContactRequest.sampleData)
       },
       click = {},
-      dropdownMenu = null,
+      dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) }
     )
   }
