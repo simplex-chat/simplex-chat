@@ -113,7 +113,7 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
         chatModel.clearOverlays.value = true
-        if (cInfo != null) withApi { openChat(chatModel, cInfo) }
+        if (cInfo != null) withApi { openChat(cInfo, chatModel) }
       }
     }
     NtfManager.ShowChatsAction -> {

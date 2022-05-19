@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -22,46 +22,144 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
-  ChatListNavLinkLayout(
-    chat = chat,
-    click = {
-      when (chat.chatInfo) {
-        is ChatInfo.ContactRequest -> contactRequestAlertDialog(chat.chatInfo, chatModel)
-        is ChatInfo.ContactConnection -> contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel)
-        else ->
-          if (chat.chatInfo.ready) {
-            withApi { openChat(chatModel, chat.chatInfo) }
-          } else {
-            pendingContactAlertDialog(chat.chatInfo, chatModel)
-          }
-      }
-    },
-    deleteContact = { if (chat.chatInfo is ChatInfo.Direct) deleteContactDialog(chat.chatInfo, chatModel) },
-    clearChat = { clearChatDialog(chat.chatInfo, chatModel) },
-    deleteContactConnection = {
-      if (chat.chatInfo is ChatInfo.ContactConnection) {
-        deleteContactConnectionAlert(chat.chatInfo.contactConnection, chatModel)
-      }
-    },
-    acceptContactRequest = {
-      if (chat.chatInfo is ChatInfo.ContactRequest) {
-        acceptContactRequest(chat.chatInfo, chatModel)
-      }
-    },
-    rejectContactRequest = {
-      if (chat.chatInfo is ChatInfo.ContactRequest) {
-        rejectContactRequest(chat.chatInfo, chatModel)
-      }
-    },
-  )
+  val showMenu = remember { mutableStateOf(false) }
+  when (chat.chatInfo) {
+    is ChatInfo.Direct ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = { ChatPreviewView(chat) },
+        click = { openOrPendingChat(chat.chatInfo, chatModel) },
+        dropdownMenu = { ContactMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu
+      )
+    is ChatInfo.Group ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = { ChatPreviewView(chat) },
+        click = { openOrPendingChat(chat.chatInfo, chatModel) },
+        dropdownMenu = { GroupMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu
+      )
+    is ChatInfo.ContactRequest ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = { ContactRequestView(chat.chatInfo) },
+        click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
+        dropdownMenu = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu
+      )
+    is ChatInfo.ContactConnection ->
+      ChatListNavLinkLayout(
+        chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
+        click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
+        dropdownMenu = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
+        showMenu
+      )
+  }
 }
 
-suspend fun openChat(chatModel: ChatModel, cInfo: ChatInfo) {
+fun openOrPendingChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+  if (chatInfo.ready) {
+    withApi { openChat(chatInfo, chatModel) }
+  } else {
+    pendingContactAlertDialog(chatInfo, chatModel)
+  }
+}
+
+suspend fun openChat(cInfo: ChatInfo, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(cInfo.chatType, cInfo.apiId)
   if (chat != null) {
     chatModel.chatItems.clear()
     chatModel.chatItems.addAll(chat.chatItems)
     chatModel.chatId.value = cInfo.id
+  }
+}
+
+@Composable
+fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenu(
+    expanded = showMenu.value,
+    onDismissRequest = { showMenu.value = false },
+    Modifier.width(220.dp)
+  ) {
+    ItemAction(
+      stringResource(R.string.clear_verb),
+      Icons.Outlined.Restore,
+      onClick = {
+        clearChatDialog(chatInfo, chatModel)
+        showMenu.value = false
+      }
+    )
+    ItemAction(
+      stringResource(R.string.delete_verb),
+      Icons.Outlined.Delete,
+      onClick = {
+        deleteContactDialog(chatInfo, chatModel)
+        showMenu.value = false
+      },
+      color = Color.Red
+    )
+  }
+}
+
+@Composable
+fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenu(
+    expanded = showMenu.value,
+    onDismissRequest = { showMenu.value = false },
+    Modifier.width(220.dp)
+  ) {
+    ItemAction(
+      stringResource(R.string.clear_verb),
+      Icons.Outlined.Restore,
+      onClick = {
+        clearChatDialog(chatInfo, chatModel)
+        showMenu.value = false
+      }
+    )
+  }
+}
+
+@Composable
+fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenu(
+    expanded = showMenu.value,
+    onDismissRequest = { showMenu.value = false },
+    Modifier.width(220.dp)
+  ) {
+    ItemAction(
+      stringResource(R.string.accept_contact_button),
+      Icons.Outlined.Check,
+      onClick = {
+        acceptContactRequest(chatInfo, chatModel)
+        showMenu.value = false
+      }
+    )
+    ItemAction(
+      stringResource(R.string.reject_contact_button),
+      Icons.Outlined.Close,
+      onClick = {
+        rejectContactRequest(chatInfo, chatModel)
+        showMenu.value = false
+      },
+      color = Color.Red
+    )
+  }
+}
+
+@Composable
+fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenu(
+    expanded = showMenu.value,
+    onDismissRequest = { showMenu.value = false },
+    Modifier.width(220.dp)
+  ) {
+    ItemAction(
+      stringResource(R.string.delete_verb),
+      Icons.Outlined.Delete,
+      onClick = {
+        deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
+        showMenu.value = false
+      },
+      color = Color.Red
+    )
   }
 }
 
@@ -98,6 +196,17 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
   )
 }
 
+fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.accept_connection_request__question),
+    text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
+    confirmText = generalGetString(R.string.accept_contact_button),
+    onConfirm = { acceptContactRequest(contactRequest, chatModel) },
+    dismissText = generalGetString(R.string.reject_contact_button),
+    onDismiss = { rejectContactRequest(contactRequest, chatModel) }
+  )
+}
+
 fun acceptContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withApi {
     val contact = chatModel.controller.apiAcceptContactRequest(contactRequest.apiId)
@@ -113,17 +222,6 @@ fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: Cha
     chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
     chatModel.removeChat(contactRequest.id)
   }
-}
-
-fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.accept_connection_request__question),
-    text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
-    confirmText = generalGetString(R.string.accept_contact_button),
-    onConfirm = { acceptContactRequest(contactRequest, chatModel) },
-    dismissText = generalGetString(R.string.reject_contact_button),
-    onDismiss = { rejectContactRequest(contactRequest, chatModel) }
-  )
 }
 
 fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel: ChatModel) {
@@ -197,15 +295,11 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
 
 @Composable
 fun ChatListNavLinkLayout(
-  chat: Chat,
+  chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  deleteContact: () -> Unit,
-  clearChat: () -> Unit,
-  deleteContactConnection: () -> Unit,
-  acceptContactRequest: () -> Unit,
-  rejectContactRequest: () -> Unit
+  dropdownMenu: (@Composable () -> Unit)?,
+  showMenu: MutableState<Boolean>
 ) {
-  val showMenu = remember { mutableStateOf(false) }
   Surface(
     modifier = Modifier
       .fillMaxWidth()
@@ -223,101 +317,12 @@ fun ChatListNavLinkLayout(
         .padding(end = 12.dp),
       verticalAlignment = Alignment.Top
     ) {
-      when (chat.chatInfo) {
-        is ChatInfo.Direct -> ChatPreviewView(chat)
-        is ChatInfo.Group -> ChatPreviewView(chat)
-        is ChatInfo.ContactRequest -> ContactRequestView(chat.chatInfo)
-        is ChatInfo.ContactConnection -> ContactConnectionView(chat.chatInfo.contactConnection)
-      }
+      chatLinkPreview()
     }
-    when (chat.chatInfo) {
-      is ChatInfo.Direct ->
-        Box(Modifier.padding(horizontal = 16.dp)) {
-          DropdownMenu(
-            expanded = showMenu.value,
-            onDismissRequest = { showMenu.value = false },
-            Modifier.width(220.dp)
-          ) {
-            ItemAction(
-              stringResource(R.string.clear_verb),
-              Icons.Outlined.Restore,
-              onClick = {
-                clearChat()
-                showMenu.value = false
-              }
-            )
-            ItemAction(
-              stringResource(R.string.delete_verb),
-              Icons.Outlined.Delete,
-              onClick = {
-                deleteContact()
-                showMenu.value = false
-              },
-              color = Color.Red
-            )
-          }
-        }
-      is ChatInfo.Group ->
-        Box(Modifier.padding(horizontal = 16.dp)) {
-          DropdownMenu(
-            expanded = showMenu.value,
-            onDismissRequest = { showMenu.value = false },
-            Modifier.width(220.dp)
-          ) {
-            ItemAction(
-              stringResource(R.string.clear_verb),
-              Icons.Outlined.Restore,
-              onClick = {
-                clearChat()
-                showMenu.value = false
-              }
-            )
-          }
-        }
-      is ChatInfo.ContactRequest ->
-        Box(Modifier.padding(horizontal = 16.dp)) {
-          DropdownMenu(
-            expanded = showMenu.value,
-            onDismissRequest = { showMenu.value = false },
-            Modifier.width(220.dp)
-          ) {
-            ItemAction(
-              stringResource(R.string.accept_contact_button),
-              Icons.Outlined.Check,
-              onClick = {
-                acceptContactRequest()
-                showMenu.value = false
-              }
-            )
-            ItemAction(
-              stringResource(R.string.reject_contact_button),
-              Icons.Outlined.Close,
-              onClick = {
-                rejectContactRequest()
-                showMenu.value = false
-              },
-              color = Color.Red
-            )
-          }
-        }
-      is ChatInfo.ContactConnection ->
-        Box(Modifier.padding(horizontal = 16.dp)) {
-          DropdownMenu(
-            expanded = showMenu.value,
-            onDismissRequest = { showMenu.value = false },
-            Modifier.width(220.dp)
-          ) {
-            ItemAction(
-              stringResource(R.string.delete_verb),
-              Icons.Outlined.Delete,
-              onClick = {
-                deleteContactConnection()
-                showMenu.value = false
-              },
-              color = Color.Red
-            )
-          }
-        }
+    if (dropdownMenu != null) {
+      Box(Modifier.padding(horizontal = 16.dp)) {
+        dropdownMenu()
+      }
     }
   }
   Divider(Modifier.padding(horizontal = 8.dp))
@@ -333,24 +338,25 @@ fun ChatListNavLinkLayout(
 fun PreviewChatListNavLinkDirect() {
   SimpleXTheme {
     ChatListNavLinkLayout(
-      chat = Chat(
-        chatInfo = ChatInfo.Direct.sampleData,
-        chatItems = listOf(
-          ChatItem.getSampleData(
-            1,
-            CIDirection.DirectSnd(),
-            Clock.System.now(),
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+      chatLinkPreview = {
+        ChatPreviewView(
+          chat = Chat(
+            chatInfo = ChatInfo.Direct.sampleData,
+            chatItems = listOf(
+              ChatItem.getSampleData(
+                1,
+                CIDirection.DirectSnd(),
+                Clock.System.now(),
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+              )
+            ),
+            chatStats = Chat.ChatStats()
           )
-        ),
-        chatStats = Chat.ChatStats()
-      ),
+        )
+      },
       click = {},
-      deleteContact = {},
-      clearChat = {},
-      deleteContactConnection = {},
-      acceptContactRequest = {},
-      rejectContactRequest = {}
+      dropdownMenu = null,
+      showMenu = remember { mutableStateOf(false) }
     )
   }
 }
@@ -365,24 +371,25 @@ fun PreviewChatListNavLinkDirect() {
 fun PreviewChatListNavLinkGroup() {
   SimpleXTheme {
     ChatListNavLinkLayout(
-      chat = Chat(
-        chatInfo = ChatInfo.Group.sampleData,
-        chatItems = listOf(
-          ChatItem.getSampleData(
-            1,
-            CIDirection.DirectSnd(),
-            Clock.System.now(),
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+      chatLinkPreview = {
+        ChatPreviewView(
+          Chat(
+            chatInfo = ChatInfo.Group.sampleData,
+            chatItems = listOf(
+              ChatItem.getSampleData(
+                1,
+                CIDirection.DirectSnd(),
+                Clock.System.now(),
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+              )
+            ),
+            chatStats = Chat.ChatStats()
           )
-        ),
-        chatStats = Chat.ChatStats()
-      ),
+        )
+      },
       click = {},
-      deleteContact = {},
-      clearChat = {},
-      deleteContactConnection = {},
-      acceptContactRequest = {},
-      rejectContactRequest = {}
+      dropdownMenu = null,
+      showMenu = remember { mutableStateOf(false) }
     )
   }
 }
@@ -397,17 +404,12 @@ fun PreviewChatListNavLinkGroup() {
 fun PreviewChatListNavLinkContactRequest() {
   SimpleXTheme {
     ChatListNavLinkLayout(
-      chat = Chat(
-        chatInfo = ChatInfo.ContactRequest.sampleData,
-        chatItems = listOf(),
-        chatStats = Chat.ChatStats()
-      ),
+      chatLinkPreview = {
+        ContactRequestView(ChatInfo.ContactRequest.sampleData)
+      },
       click = {},
-      deleteContact = {},
-      clearChat = {},
-      deleteContactConnection = {},
-      acceptContactRequest = {},
-      rejectContactRequest = {}
+      dropdownMenu = null,
+      showMenu = remember { mutableStateOf(false) }
     )
   }
 }
