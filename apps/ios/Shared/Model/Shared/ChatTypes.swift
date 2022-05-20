@@ -168,6 +168,15 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    var updatedAt: Date {
+        switch self {
+        case let .direct(contact): return contact.updatedAt
+        case let .group(groupInfo): return groupInfo.updatedAt
+        case let .contactRequest(contactRequest): return contactRequest.updatedAt
+        case let .contactConnection(contactConnection): return contactConnection.updatedAt
+        }
+    }
+
     struct SampleData {
         var direct: ChatInfo
         var group: ChatInfo
@@ -201,6 +210,7 @@ struct Contact: Identifiable, Decodable, NamedChat {
     var activeConn: Connection
     var viaGroup: Int64?
     var createdAt: Date
+    var updatedAt: Date
 
     var id: ChatId { get { "@\(contactId)" } }
     var apiId: Int64 { get { contactId } }
@@ -214,7 +224,8 @@ struct Contact: Identifiable, Decodable, NamedChat {
         localDisplayName: "alice",
         profile: Profile.sampleData,
         activeConn: Connection.sampleData,
-        createdAt: .now
+        createdAt: .now,
+        updatedAt: .now
     )
 }
 
@@ -350,6 +361,7 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
     var createdAt: Date
+    var updatedAt: Date
 
     var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
@@ -362,7 +374,8 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
-        createdAt: .now
+        createdAt: .now,
+        updatedAt: .now
     )
 }
 

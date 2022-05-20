@@ -407,10 +407,13 @@ processChatCommand = \case
           cancelFile user fileInfo
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
-      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
-      forM_ latestItem $ \(_, latestItemTs, _) ->
-        withStore $ \st -> updateContactTs st user ct latestItemTs
-      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct))
+      ct' <- case ciIdsAndFileInfo of
+        [] -> pure ct
+        _ -> do
+          let (_, lastItemTs, _) = last ciIdsAndFileInfo
+          withStore (\st -> updateContactTs st user ct lastItemTs)
+          pure (ct :: Contact) {updatedAt = lastItemTs}
+      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st user chatId
@@ -420,10 +423,13 @@ processChatCommand = \case
             cancelFile user fileInfo
             withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
           void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
-      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
-      forM_ latestItem $ \(_, latestItemTs, _, _) ->
-        withStore $ \st -> updateGroupTs st user gInfo latestItemTs
-      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
+      gInfo' <- case ciIdsAndFileInfo of
+        [] -> pure gInfo
+        _ -> do
+          let (_, lastItemTs, _, _) = last ciIdsAndFileInfo
+          withStore (\st -> updateGroupTs st user gInfo lastItemTs)
+          pure (gInfo :: GroupInfo) {updatedAt = lastItemTs}
+      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
@@ -848,6 +854,7 @@ callStatusItemContent userId Contact {contactId} chatItemId receivedStatus = do
         (Just CISCallProgress, WCSConnected) -> Nothing -- if call in-progress received connected -> no change
         (Just CISCallProgress, WCSDisconnected) -> Just (CISCallEnded, callDuration) -- calculate in-progress duration
         (Just CISCallProgress, WCSFailed) -> Just (CISCallEnded, callDuration) -- whether call disconnected or failed
+        (Just CISCallPending, WCSDisconnected) -> Just (CISCallMissed, 0)
         (Just CISCallEnded, _) -> Nothing -- if call already ended or failed -> no change
         (Just CISCallError, _) -> Nothing
         (Just _, WCSConnected) -> Just (CISCallProgress, 0) -- if call ended that was never connected, duration = 0

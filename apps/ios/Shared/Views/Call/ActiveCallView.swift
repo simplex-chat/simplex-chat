@@ -174,7 +174,12 @@ struct ActiveCallOverlay: View {
                 .frame(maxWidth: .infinity, alignment: alignment)
             Group {
                 Text(call.callState.text)
-                Text(call.encryptionStatus)
+                HStack {
+                    Text(call.encryptionStatus)
+                    if let connInfo = call.connectionInfo?.text {
+                        Text("(") + Text(connInfo) + Text(")")
+                    }
+                }
             }
             .font(.subheadline)
             .frame(maxWidth: .infinity, alignment: alignment)
