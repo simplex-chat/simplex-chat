@@ -28,14 +28,14 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactMenuItems(chat.chatInfo, chatModel, showMenu, markRead = { markChatRead(chat, chatModel) }) },
         showMenu
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { GroupMenuItems(chat.chatInfo, chatModel, showMenu, markRead = { markChatRead(chat, chatModel) }) },
         showMenu
       )
     is ChatInfo.ContactRequest ->
@@ -73,7 +73,15 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>, markRead: () -> Unit) {
+  ItemAction(
+    stringResource(R.string.mark_read),
+    Icons.Outlined.Check,
+    onClick = {
+      markRead()
+      showMenu.value = false
+    }
+  )
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
@@ -94,7 +102,15 @@ fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: 
 }
 
 @Composable
-fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>, markRead: () -> Unit) {
+  ItemAction(
+    stringResource(R.string.mark_read),
+    Icons.Outlined.Check,
+    onClick = {
+      markRead()
+      showMenu.value = false
+    }
+  )
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
@@ -137,6 +153,19 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     },
     color = Color.Red
   )
+}
+
+fun markChatRead(chat: Chat, chatModel: ChatModel) {
+  if (chat.chatItems.isNotEmpty()) {
+    chatModel.markChatItemsRead(chat.chatInfo)
+    withApi {
+      chatModel.controller.apiChatRead(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+      )
+    }
+  }
 }
 
 fun deleteContactDialog(contact: ChatInfo.Direct, chatModel: ChatModel) {

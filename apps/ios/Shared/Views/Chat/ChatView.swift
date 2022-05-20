@@ -230,7 +230,7 @@ struct ChatView: View {
     }
 
     func markAllRead() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
             if chatModel.chatId == chat.id {
                 Task { await markChatRead(chat) }
             }

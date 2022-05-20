@@ -200,7 +200,12 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun markChatItemsRead(cInfo: ChatInfo) {
+    // update preview
     val chatIdx = getChatIndex(cInfo.id)
+    if (chatIdx >= 0) {
+      val chat = chats[chatIdx]
+      chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1))
+    }
     // update current chat
     if (chatId.value == cInfo.id) {
       var i = 0
@@ -211,12 +216,6 @@ class ChatModel(val controller: ChatController) {
         }
         i += 1
       }
-      val chat = chats[chatIdx]
-      val pItem  = chat.chatItems.lastOrNull()
-      chats[chatIdx] = chat.copy(
-        chatItems = if (pItem == null) arrayListOf() else arrayListOf(pItem.withStatus(CIStatus.RcvRead())),
-        chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
-      )
     }
   }
 

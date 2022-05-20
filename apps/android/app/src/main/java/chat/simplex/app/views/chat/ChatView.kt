@@ -57,8 +57,8 @@ fun ChatView(chatModel: ChatModel) {
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
       Log.d(TAG, "ChatView ${chatModel.chatId.value}: LaunchedEffect")
-      delay(1000L)
-      if (chat.chatItems.count() > 0) {
+      delay(750L)
+      if (chat.chatItems.isNotEmpty()) {
         chatModel.markChatItemsRead(chat.chatInfo)
         chatModel.controller.cancelNotificationsForChat(chat.id)
         withApi {
