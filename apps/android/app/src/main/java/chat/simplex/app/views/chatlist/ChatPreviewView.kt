@@ -63,7 +63,7 @@ fun ChatPreviewView(chat: Chat) {
         Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
       }
     }
-    val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.createdAt)
+    val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
     Column(
       Modifier.fillMaxHeight(),
       verticalArrangement = Arrangement.Top

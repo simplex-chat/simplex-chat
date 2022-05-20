@@ -275,11 +275,11 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
-  suspend fun apiClearChat(type: ChatType, id: Long): Boolean {
+  suspend fun apiClearChat(type: ChatType, id: Long): ChatInfo? {
     val r = sendCmd(CC.ApiClearChat(type, id))
-    if (r is CR.ChatCleared) return true
+    if (r is CR.ChatCleared) return r.chatInfo
     Log.e(TAG, "apiClearChat bad response: ${r.responseType} ${r.details}")
-    return false
+    return null
   }
 
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
