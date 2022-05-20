@@ -7,7 +7,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,8 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
@@ -33,7 +31,12 @@ fun ChatPreviewView(chat: Chat) {
     Box(contentAlignment = Alignment.BottomStart) {
       ChatInfoImage(cInfo, size = 72.dp)
       if (cInfo is ChatInfo.Direct) {
-        ChatStatusImage(chat)
+        Box(
+          Modifier.size(20.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          ChatStatusImage(chat)
+        }
       }
     }
     Column(
@@ -101,14 +104,16 @@ fun ChatStatusImage(chat: Chat) {
       Icons.Filled.Circle,
       contentDescription = descr,
       tint = HighOrLowlight,
-      modifier = Modifier.padding(start = 6.dp).padding(bottom = 4.dp).size(6.dp)
+      modifier = Modifier
+        .padding(start = 6.dp)
+        .padding(bottom = 4.dp)
+        .size(6.dp)
     )
-  } else if (!(s is Chat.NetworkStatus.Connected)) {
-    Icon(
-      Icons.Filled.MoreHoriz,
-      contentDescription = descr,
-      tint = HighOrLowlight,
-      modifier = Modifier.width(19.dp).padding(start = 6.dp)
+  } else if (s !is Chat.NetworkStatus.Connected) {
+    CircularProgressIndicator(
+      Modifier.size(8.dp),
+      color = HighOrLowlight,
+      strokeWidth = 1.dp
     )
   }
 }
