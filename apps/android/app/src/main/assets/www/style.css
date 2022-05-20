@@ -20,8 +20,7 @@ body {
   max-width: 30%;
   object-fit: cover;
   margin: 16px;
-  margin-bottom: 20%;
   border-radius: 16px;
-  bottom: 0;
+  top: 0;
   right: 0;
 }

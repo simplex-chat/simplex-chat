@@ -26,6 +26,7 @@ struct ActiveCallView: View {
                 .background(.black)
             ActiveCallOverlay(call: chatModel.activeCall, dismiss: { dismiss() })
         }
+        .preferredColorScheme(.dark)
     }
 
     private func sendCommandToWebView() {
