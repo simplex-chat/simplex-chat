@@ -11,7 +11,6 @@ import SwiftUI
 struct ActiveCallView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) private var dismiss
-    @Binding var showCallView: Bool
     @State private var coordinator: WebRTCCoordinator? = nil
     @State private var webViewReady: Bool = false
     @State private var webViewMsg: WVAPIMessage? = nil
@@ -71,7 +70,7 @@ struct ActiveCallView: View {
                     m.activeCall = nil
                     m.activeCallInvitation = nil
                     m.callCommand = nil
-                    showCallView = false
+                    m.showCallView = false
                 case .ok:
                     switch msg.command {
                     case let .media(media, enable):
@@ -85,7 +84,7 @@ struct ActiveCallView: View {
                         m.activeCall = nil
                         m.activeCallInvitation = nil
                         m.callCommand = nil
-                        showCallView = false
+                        m.showCallView = false
                     default: ()
                     }
                 case let .error(message):

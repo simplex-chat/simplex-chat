@@ -388,7 +388,7 @@ struct ConnectionInfo: Codable, Equatable {
                 return "via relay"
             } else {
                 let unknown = NSLocalizedString("unknown", comment: "connection info")
-                return "\(localCandidate?.candidateType?.rawValue ?? unknown)) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
+                return "\(localCandidate?.candidateType?.rawValue ?? unknown) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
             }
         }
     }
