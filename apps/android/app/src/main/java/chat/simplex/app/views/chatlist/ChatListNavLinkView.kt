@@ -18,27 +18,34 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
-  LaunchedEffect(chat.id) {
+  var showMarkRead by remember { mutableStateOf(false) }
+  LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
     showMenu.value = false
+    launch {
+      delay(500L)
+      showMarkRead = chat.chatStats.unreadCount > 0
+    }
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu) },
+        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu) },
+        dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu
       )
     is ChatInfo.ContactRequest ->
@@ -76,8 +83,8 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  if (chat.chatStats.unreadCount > 0) {
+fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
     ItemAction(
       stringResource(R.string.mark_read),
       Icons.Outlined.Check,
@@ -107,8 +114,8 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 }
 
 @Composable
-fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  if (chat.chatStats.unreadCount > 0) {
+fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
     ItemAction(
       stringResource(R.string.mark_read),
       Icons.Outlined.Check,
