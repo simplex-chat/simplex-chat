@@ -47,17 +47,21 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      apiStartChat()
-      apiSetFilesFolder(getAppFilesDirectory(appContext))
-      chatModel.userAddress.value = apiGetUserAddress()
-      chatModel.userSMPServers.value = getUserSMPServers()
-      val chats = apiGetChats()
-      chatModel.chats.clear()
-      chatModel.chats.addAll(chats)
-      chatModel.currentUser.value = user
-      chatModel.userCreated.value = true
-      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-      Log.d(TAG, "started chat")
+      val chatStarted = apiStartChat()
+      if (chatStarted) {
+        apiSetFilesFolder(getAppFilesDirectory(appContext))
+        chatModel.userAddress.value = apiGetUserAddress()
+        chatModel.userSMPServers.value = getUserSMPServers()
+        val chats = apiGetChats()
+        chatModel.chats.clear()
+        chatModel.chats.addAll(chats)
+        chatModel.currentUser.value = user
+        chatModel.userCreated.value = true
+        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+        Log.d(TAG, "chat started")
+      } else {
+        Log.d(TAG, "chat running")
+      }
     } catch(e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -137,10 +141,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat() {
+  suspend fun apiStartChat(): Boolean {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted || r is CR.ChatRunning) return
-    throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    when (r) {
+      is CR.ChatStarted -> return true
+      is CR.ChatRunning -> return false
+      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    }
   }
 
   suspend fun apiSetFilesFolder(filesFolder: String) {

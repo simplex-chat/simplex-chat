@@ -1,5 +1,6 @@
 package chat.simplex.app.views
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -113,6 +114,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
     val user = chatModel.controller.apiCreateActiveUser(
       Profile(displayName, fullName, null)
     )
+    Log.e(SimplexService.TAG, "################################## in createProfile startChat")
     chatModel.controller.startChat(user)
     SimplexService.start(chatModel.controller.appContext)
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
