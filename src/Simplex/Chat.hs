@@ -407,13 +407,13 @@ processChatCommand = \case
           cancelFile user fileInfo
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \st -> deleteDirectChatItemLocal st userId ct itemId CIDMInternal
-      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
-      case latestItem of
-        Just (_, latestItemTs, _) -> do
-          withStore $ \st -> updateContactTs st user ct latestItemTs
-          pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct {updatedAt = latestItemTs}))
-        Nothing ->
-          pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct))
+      ct' <- case ciIdsAndFileInfo of
+        [] -> pure ct
+        _ -> do
+          let (_, lastItemTs, _) = last ciIdsAndFileInfo
+          withStore (\st -> updateContactTs st user ct lastItemTs)
+          pure (ct :: Contact) {updatedAt = lastItemTs}
+      pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \st -> getGroupInfo st user chatId
       ciIdsAndFileInfo <- withStore $ \st -> getGroupChatItemIdsAndFileInfo st user chatId
@@ -423,13 +423,13 @@ processChatCommand = \case
             cancelFile user fileInfo
             withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
           void $ withStore $ \st -> deleteGroupChatItemInternal st user gInfo itemId
-      let latestItem = if not $ null ciIdsAndFileInfo then Just (last ciIdsAndFileInfo) else Nothing
-      case latestItem of
-        Just (_, latestItemTs, _, _) -> do
-          withStore $ \st -> updateGroupTs st user gInfo latestItemTs
-          pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo {updatedAt = latestItemTs}))
-        Nothing ->
-          pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo))
+      gInfo' <- case ciIdsAndFileInfo of
+        [] -> pure gInfo
+        _ -> do
+          let (_, lastItemTs, _, _) = last ciIdsAndFileInfo
+          withStore (\st -> updateGroupTs st user gInfo lastItemTs)
+          pure (gInfo :: GroupInfo) {updatedAt = lastItemTs}
+      pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
