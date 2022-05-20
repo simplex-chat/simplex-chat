@@ -76,14 +76,14 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun updateChats(toChats: List<Chat>) {
+  fun updateChats(newChats: List<Chat>) {
     val mergedChats = arrayListOf<Chat>()
-    for (chat in toChats) {
-      val i = getChatIndex(chat.chatInfo.id)
+    for (newChat in newChats) {
+      val i = getChatIndex(newChat.chatInfo.id)
       if (i >= 0) {
-        mergedChats.add(chat.copy(serverInfo = chats[i].serverInfo))
+        mergedChats.add(newChat.copy(serverInfo = chats[i].serverInfo))
       } else {
-        mergedChats.add(chat)
+        mergedChats.add(newChat)
       }
     }
     chats.clear()
