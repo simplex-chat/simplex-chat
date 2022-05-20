@@ -23,19 +23,22 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
+  LaunchedEffect(chat.id) {
+    showMenu.value = false
+  }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat.chatInfo, chatModel, showMenu, markRead = { markChatRead(chat, chatModel) }) },
+        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu) },
         showMenu
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat.chatInfo, chatModel, showMenu, markRead = { markChatRead(chat, chatModel) }) },
+        dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu) },
         showMenu
       )
     is ChatInfo.ContactRequest ->
@@ -73,20 +76,22 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>, markRead: () -> Unit) {
-  ItemAction(
-    stringResource(R.string.mark_read),
-    Icons.Outlined.Check,
-    onClick = {
-      markRead()
-      showMenu.value = false
-    }
-  )
+fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  if (chat.chatStats.unreadCount > 0) {
+    ItemAction(
+      stringResource(R.string.mark_read),
+      Icons.Outlined.Check,
+      onClick = {
+        markChatRead(chat, chatModel)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
     onClick = {
-      clearChatDialog(chatInfo, chatModel)
+      clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
     }
   )
@@ -94,7 +99,7 @@ fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: 
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactDialog(chatInfo, chatModel)
+      deleteContactDialog(chat.chatInfo as ChatInfo.Direct, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -102,20 +107,22 @@ fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: 
 }
 
 @Composable
-fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>, markRead: () -> Unit) {
-  ItemAction(
-    stringResource(R.string.mark_read),
-    Icons.Outlined.Check,
-    onClick = {
-      markRead()
-      showMenu.value = false
-    }
-  )
+fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  if (chat.chatStats.unreadCount > 0) {
+    ItemAction(
+      stringResource(R.string.mark_read),
+      Icons.Outlined.Check,
+      onClick = {
+        markChatRead(chat, chatModel)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
     onClick = {
-      clearChatDialog(chatInfo, chatModel)
+      clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
     }
   )
@@ -156,15 +163,13 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 }
 
 fun markChatRead(chat: Chat, chatModel: ChatModel) {
-  if (chat.chatItems.isNotEmpty()) {
-    chatModel.markChatItemsRead(chat.chatInfo)
-    withApi {
-      chatModel.controller.apiChatRead(
-        chat.chatInfo.chatType,
-        chat.chatInfo.apiId,
-        CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
-      )
-    }
+  chatModel.markChatItemsRead(chat.chatInfo)
+  withApi {
+    chatModel.controller.apiChatRead(
+      chat.chatInfo.chatType,
+      chat.chatInfo.apiId,
+      CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+    )
   }
 }
 
