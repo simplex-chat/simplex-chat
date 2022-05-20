@@ -204,7 +204,10 @@ class ChatModel(val controller: ChatController) {
     val chatIdx = getChatIndex(cInfo.id)
     if (chatIdx >= 0) {
       val chat = chats[chatIdx]
-      chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1))
+      val lastId = chat.chatItems.lastOrNull()?.id
+      if (lastId != null) {
+        chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = lastId + 1))
+      }
     }
     // update current chat
     if (chatId.value == cInfo.id) {
