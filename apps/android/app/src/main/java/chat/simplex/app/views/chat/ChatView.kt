@@ -3,6 +3,7 @@ package chat.simplex.app.views.chat
 import android.content.res.Configuration
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -18,12 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
@@ -174,42 +177,42 @@ fun ChatLayout(
 
 @Composable
 fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+  @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
+    IconButton(onClick, modifier = modifier) {
+      Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
+    }
+  }
   Column {
     Box(
       Modifier
         .fillMaxWidth()
         .height(52.dp)
         .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(horizontal = 8.dp),
+        .padding(horizontal = 4.dp),
       contentAlignment = Alignment.CenterStart,
     ) {
-      IconButton(onClick = back) {
-        Icon(
-          Icons.Outlined.ArrowBackIos,
-          stringResource(R.string.back),
-          tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp)
-        )
-      }
-      Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-        IconButton(onClick = { startCall(CallMediaType.Video) }) {
-          Icon(
-            Icons.Outlined.Videocam,
-            "video call",
-            tint = MaterialTheme.colors.primary,
-            modifier = Modifier.padding(10.dp)
-          )
+      val cInfo = chat.chatInfo
+      toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
+      if (cInfo is ChatInfo.Direct) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+          Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
+            toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
+              startCall(CallMediaType.Audio)
+            }
+          }
+          toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
+            startCall(CallMediaType.Video)
+          }
         }
       }
       Row(
         Modifier
-          .padding(horizontal = 68.dp)
+          .padding(horizontal = 80.dp)
           .fillMaxWidth()
           .clickable(onClick = info),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        val cInfo = chat.chatInfo
         ChatInfoImage(cInfo, size = 40.dp)
         Column(
           Modifier.padding(start = 8.dp),

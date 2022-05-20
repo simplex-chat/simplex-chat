@@ -379,6 +379,19 @@ struct ConnectionState: Codable, Equatable {
 struct ConnectionInfo: Codable, Equatable {
     var localCandidate: RTCIceCandidate?
     var remoteCandidate: RTCIceCandidate?
+
+    var text: LocalizedStringKey {
+        get {
+            if localCandidate?.candidateType == .host && remoteCandidate?.candidateType == .host {
+                return "peer-to-peer"
+            } else if localCandidate?.candidateType == .relay && remoteCandidate?.candidateType == .relay {
+                return "via relay"
+            } else {
+                let unknown = NSLocalizedString("unknown", comment: "connection info")
+                return "\(localCandidate?.candidateType?.rawValue ?? unknown)) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
+            }
+        }
+    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate

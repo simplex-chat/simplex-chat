@@ -3,6 +3,7 @@ package chat.simplex.app.views.call
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.graphics.fonts.FontStyle
 import android.os.Build
 import android.service.controls.templates.ControlButton
 import android.util.Log
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -189,7 +191,7 @@ private fun ActiveCallOverlayLayout(
 private fun ControlButton(call: Call, icon: ImageVector, @StringRes iconText: Int, action: () -> Unit) {
   if (call.hasMedia) {
     IconButton(onClick = action) {
-      Icon(icon, stringResource(iconText), tint = Color.White, modifier = Modifier.size(40.dp))
+      Icon(icon, stringResource(iconText), tint = Color(0xFFFFFFD8), modifier = Modifier.size(40.dp))
     }
   } else {
     Spacer(Modifier.size(40.dp))
@@ -207,10 +209,16 @@ private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
 
 @Composable
 private fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
+  @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
+    Text(text, color = Color(0xFFFFFFD8), style = style)
   Column(horizontalAlignment = alignment) {
-    Text(call.contact.chatViewName, color = Color.White, style = MaterialTheme.typography.body2)
-    Text(call.callState.text, color = Color.White, style = MaterialTheme.typography.body2)
-    Text(call.encryptionStatus, color = Color.White, style = MaterialTheme.typography.body2)
+    InfoText(call.contact.chatViewName, style = MaterialTheme.typography.h2)
+    InfoText(call.callState.text)
+
+    val connInfo =
+      if (call.connectionInfo == null) ""
+      else " (${call.connectionInfo.text})"
+    InfoText(call.encryptionStatus + connInfo)
   }
 }
 
@@ -390,7 +398,8 @@ fun PreviewActiveCallOverlayVideo() {
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
-        peerMedia = CallMediaType.Video
+        peerMedia = CallMediaType.Video,
+        connectionInfo = ConnectionInfo(RTCIceCandidate(RTCIceCandidateType.Host), RTCIceCandidate(RTCIceCandidateType.Host))
       ),
       dismiss = {},
       toggleAudio = {},
@@ -409,7 +418,8 @@ fun PreviewActiveCallOverlayAudio() {
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,
-        peerMedia = CallMediaType.Audio
+        peerMedia = CallMediaType.Audio,
+        connectionInfo = ConnectionInfo(RTCIceCandidate(RTCIceCandidateType.Host), RTCIceCandidate(RTCIceCandidateType.Host))
       ),
       dismiss = {},
       toggleAudio = {},
