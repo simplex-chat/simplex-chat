@@ -60,9 +60,9 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: () -> Unit)
     confirmText = generalGetString(R.string.clear_verb),
     onConfirm = {
       withApi {
-        val r = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
-        if (r) {
-          chatModel.clearChat(chatInfo)
+        val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
+        if (updatedChatInfo != null) {
+          chatModel.clearChat(updatedChatInfo)
           close()
         }
       }

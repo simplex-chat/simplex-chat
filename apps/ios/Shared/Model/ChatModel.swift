@@ -190,6 +190,7 @@ final class ChatModel: ObservableObject {
         if let chat = getChat(cInfo.id) {
             chat.chatItems = []
             chat.chatStats = ChatStats()
+            chat.chatInfo = cInfo
         }
         // clear current chat
         if chatId == cInfo.id {
