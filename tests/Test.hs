@@ -1,6 +1,7 @@
 import ChatClient
 import ChatTests
 -- import Control.Logger.Simple
+import Control.Concurrent (threadDelay)
 import MarkdownTests
 import MobileTests
 import ProtocolTests
@@ -15,6 +16,8 @@ main = do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
     describe "Mobile API Tests" mobileTests
+    -- Workaround for SQLite IO error in first test after mobile tests on Mac
+    it "Delay after Mobile API Tests" $ threadDelay 100000
     describe "SimpleX chat client" chatTests
     describe "Schema dump" schemaDumpTest
 

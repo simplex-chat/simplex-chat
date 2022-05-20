@@ -37,6 +37,7 @@ library
       Simplex.Chat.Migrations.M20220304_msg_quotes
       Simplex.Chat.Migrations.M20220321_chat_item_edited
       Simplex.Chat.Migrations.M20220404_files_status_fields
+      Simplex.Chat.Migrations.M20220514_profiles_user_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol
@@ -160,6 +161,7 @@ executable simplex-bot-advanced
 executable simplex-chat
   main-is: Main.hs
   other-modules:
+      Server
       Paths_simplex_chat
   hs-source-dirs:
       apps/simplex-chat
@@ -180,6 +182,7 @@ executable simplex-chat
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , mtl ==2.2.*
+    , network ==3.1.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , simple-logger ==0.1.*
@@ -192,6 +195,7 @@ executable simplex-chat
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , websockets ==0.12.*
   default-language: Haskell2010
 
 test-suite simplex-chat-test

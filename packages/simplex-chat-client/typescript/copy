@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# it can be tested in the browser from dist folder
+cp ./src/test.html ./dist/test.html

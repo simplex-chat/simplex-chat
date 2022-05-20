@@ -50,7 +50,7 @@ fun FramedItemView(
       contentAlignment = Alignment.TopStart
     ) {
       MarkdownText(
-        qi.text, sender = qi.sender(user), senderBold = true, maxLines = 3,
+        qi.text, qi.formattedText, sender = qi.sender(user), senderBold = true, maxLines = 3,
         style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
       )
     }

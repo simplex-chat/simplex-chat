@@ -155,6 +155,8 @@ instance ToJSON ConnReqUriHash where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
+
 type ContactName = Text
 
 type GroupName = Text

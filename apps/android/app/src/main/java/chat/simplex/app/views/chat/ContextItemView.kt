@@ -11,8 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -52,7 +50,10 @@ fun ContextItemView(
         contentDescription = stringResource(R.string.icon_descr_context),
         tint = HighOrLowlight,
       )
-      ContextItemText(contextItem)
+      MarkdownText(
+        contextItem.text, contextItem.formattedText,
+        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3
+      )
     }
     IconButton(onClick = cancelContextItem) {
       Icon(
@@ -62,20 +63,6 @@ fun ContextItemView(
         modifier = Modifier.padding(10.dp)
       )
     }
-  }
-}
-
-@Composable
-private fun ContextItemText(cxtItem: ChatItem) {
-  val member = cxtItem.memberDisplayName
-  if (member == null) {
-    Text(cxtItem.text, maxLines = 3)
-  } else {
-    val annotatedText = buildAnnotatedString {
-      withStyle(boldFont) { append(member) }
-      append(": ${cxtItem.text}")
-    }
-    Text(annotatedText, maxLines = 3)
   }
 }
 

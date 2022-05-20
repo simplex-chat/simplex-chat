@@ -107,7 +107,7 @@ data ChatCommand
   | APISendMessage ChatRef ComposedMessage
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
-  | APIChatRead ChatRef (ChatItemId, ChatItemId)
+  | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIDeleteChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64

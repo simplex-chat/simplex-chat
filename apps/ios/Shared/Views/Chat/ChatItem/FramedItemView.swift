@@ -139,7 +139,7 @@ struct FramedItemView: View {
 
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
         let v = MsgContentView(
-            content: ci.content,
+            text: ci.text,
             formattedText: ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
             metaText: ci.timestampText,
@@ -168,7 +168,8 @@ private struct MetaColorPreferenceKey: PreferenceKey {
 
 private func ciQuotedMsgView(_ qi: CIQuote) -> some View {
     MsgContentView(
-        content: qi,
+        text: qi.text,
+        formattedText: qi.formattedText,
         sender: qi.getSender(ChatModel.shared.currentUser)
     )
     .lineLimit(3)
