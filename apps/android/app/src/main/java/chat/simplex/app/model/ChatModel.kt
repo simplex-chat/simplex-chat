@@ -76,6 +76,20 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun updateChats(toChats: List<Chat>) {
+    val mergedChats = arrayListOf<Chat>()
+    for (chat in toChats) {
+      val i = getChatIndex(chat.chatInfo.id)
+      if (i >= 0) {
+        mergedChats.add(chat.copy(serverInfo = chats[i].serverInfo))
+      } else {
+        mergedChats.add(chat)
+      }
+    }
+    chats.clear()
+    chats.addAll(mergedChats)
+  }
+
   fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
     val i = getChatIndex(id)
     if (i >= 0) {

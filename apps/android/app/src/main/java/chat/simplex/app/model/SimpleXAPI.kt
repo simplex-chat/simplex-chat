@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -19,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.startActivityForResult
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
@@ -48,21 +46,21 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     Log.d(TAG, "user: $user")
     try {
       val chatStarted = apiStartChat()
+      apiSetFilesFolder(getAppFilesDirectory(appContext))
+      chatModel.userAddress.value = apiGetUserAddress()
+      chatModel.userSMPServers.value = getUserSMPServers()
+      val chats = apiGetChats()
       if (chatStarted) {
-        apiSetFilesFolder(getAppFilesDirectory(appContext))
-        chatModel.userAddress.value = apiGetUserAddress()
-        chatModel.userSMPServers.value = getUserSMPServers()
-        val chats = apiGetChats()
         chatModel.chats.clear()
         chatModel.chats.addAll(chats)
-        chatModel.currentUser.value = user
-        chatModel.userCreated.value = true
-        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-        Log.d(TAG, "chat started")
       } else {
-        Log.d(TAG, "chat running")
+        chatModel.updateChats(chats)
       }
-    } catch(e: Error) {
+      chatModel.currentUser.value = user
+      chatModel.userCreated.value = true
+      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+      Log.d(TAG, "chat started")
+    } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -534,7 +532,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             }
           },
           onDismiss = {
-            chatModel.activeCallInvitation == null
+            chatModel.activeCallInvitation.value = null
           }
         )
       }
@@ -574,7 +572,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   }
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
-    val call = chatModel.activeCall?.value
+    val call = chatModel.activeCall.value
     if (call != null && call.contact.apiId == contact.apiId) {
       perform(call)
     } else {
