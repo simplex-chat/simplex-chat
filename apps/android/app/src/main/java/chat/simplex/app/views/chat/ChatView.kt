@@ -121,6 +121,22 @@ fun ChatView(chatModel: ChatModel) {
           chatModel.showCallView.value = true
           chatModel.callCommand.value = WCallCommand.Capabilities
         }
+      },
+      acceptCall = { contact ->
+        val invitation = chatModel.callInvitations.remove(contact.id)
+        if (invitation == null) {
+          AlertManager.shared.showAlertMsg("Call already ended!")
+        } else {
+          chatModel.activeCallInvitation.value = null
+          chatModel.activeCall.value = Call(
+            contact = contact,
+            callState = CallState.InvitationReceived,
+            localMedia = invitation.peerMedia,
+            sharedKey = invitation.sharedKey
+          )
+          chatModel.showCallView.value = true
+          chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
+        }
       }
     )
   }
@@ -141,7 +157,8 @@ fun ChatLayout(
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
-  startCall: (CallMediaType) -> Unit
+  startCall: (CallMediaType) -> Unit,
+  acceptCall: (Contact) -> Unit
 ) {
   Surface(
     Modifier
@@ -167,7 +184,7 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
           Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
+            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile, acceptCall)
           }
         }
       }
@@ -255,7 +272,8 @@ fun ChatItemsList(
   chatItems: List<ChatItem>,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  acceptCall: (Contact) -> Unit
 ) {
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
   val keyboardState by getKeyboardState()
@@ -293,11 +311,11 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         }
       } else { // direct message
@@ -308,7 +326,7 @@ fun ChatItemsList(
             end = if (sent) 12.dp else 76.dp,
           )
         ) {
-          ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
+          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
         }
       }
     }
@@ -377,7 +395,8 @@ fun PreviewChatLayout() {
       openDirectChat = {},
       deleteMessage = { _, _ -> },
       receiveFile = {},
-      startCall = {}
+      startCall = {},
+      acceptCall = { _ ->  }
     )
   }
 }
@@ -422,7 +441,8 @@ fun PreviewGroupChatLayout() {
       openDirectChat = {},
       deleteMessage = { _, _ -> },
       receiveFile = {},
-      startCall = {}
+      startCall = {},
+      acceptCall = { _ ->  }
     )
   }
 }

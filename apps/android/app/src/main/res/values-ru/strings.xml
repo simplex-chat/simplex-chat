@@ -366,4 +366,13 @@
     <string name="icon_descr_audio_off">Audio off</string>
     <string name="icon_descr_audio_on">Audio on</string>
     <string name="icon_descr_flip_camera">Flip camera</string>
+
+    <!-- Call items -->
+    <string name="icon_descr_call_pending_sent">Pending call</string>
+    <string name="icon_descr_call_missed">Missed call</string>
+    <string name="icon_descr_call_rejected">Rejected call</string>
+    <string name="icon_descr_call_connecting">Connecting call</string>
+    <string name="icon_descr_call_progress">Call in progress</string>
+    <string name="icon_descr_call_ended">Call ended</string>
+    <string name="answer_call">Answer call</string>
 </resources>
