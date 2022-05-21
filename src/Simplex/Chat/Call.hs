@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Call where
@@ -96,6 +97,12 @@ data CallType = CallType
   }
   deriving (Eq, Show, Generic, FromJSON)
 
+defaultCallType :: CallType
+defaultCallType = CallType CMVideo $ CallCapabilities {encryption = True}
+
+encryptedCall :: CallType -> Bool
+encryptedCall CallType {capabilities = CallCapabilities {encryption}} = encryption
+
 instance ToJSON CallType where toEncoding = J.genericToEncoding J.defaultOptions
 
 -- | * Types for chat protocol
@@ -177,8 +184,8 @@ instance ToJSON CallExtraInfo where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCSession = WebRTCSession
-  { rtcSession :: Text,
-    rtcIceCandidates :: [Text]
+  { rtcSession :: Text, -- LZW compressed JSON encoding of offer or answer
+    rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -187,7 +194,7 @@ instance ToJSON WebRTCSession where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data WebRTCExtraInfo = WebRTCExtraInfo
-  { rtcIceCandidates :: [Text]
+  { rtcIceCandidates :: Text -- LZW compressed JSON encoding of array of ICE candidates
   }
   deriving (Eq, Show, Generic, FromJSON)
 

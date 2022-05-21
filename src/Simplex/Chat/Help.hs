@@ -83,7 +83,7 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: messages, files, groups, address",
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["messages", "files", "groups", "address"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
@@ -102,11 +102,13 @@ filesHelpInfo =
     [ green "File transfer commands:",
       indent <> highlight "/file @<contact> <file_path>     " <> " - send file to contact",
       indent <> highlight "/file #<group> <file_path>       " <> " - send file to group",
+      indent <> highlight "/image <name> [<file_path>]      " <> " - send file as image to @contact or #group",
       indent <> highlight "/freceive <file_id> [<file_path>]" <> " - accept to receive file",
+      indent <> highlight "/fforward <name> [<file_id>]     " <> " - forward received file to @contact or #group",
       indent <> highlight "/fcancel <file_id>               " <> " - cancel sending / receiving file",
       indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status",
       "",
-      "The commands may be abbreviated: " <> listHighlight ["/f", "/fr", "/fc", "/fs"]
+      "The commands may be abbreviated: " <> listHighlight ["/f", "/img", "/fr", "/ff", "/fc", "/fs"]
     ]
 
 groupsHelpInfo :: [StyledString]
@@ -147,7 +149,12 @@ messagesHelpInfo :: [StyledString]
 messagesHelpInfo =
   map
     styleMarkdown
-    [ green "Sending replies to messages",
+    [ green "Show recent messages",
+      indent <> highlight "/tail @alice [N]" <> " - the last N messages with alice (10 by default)",
+      indent <> highlight "/tail #team [N] " <> " - the last N messages in the group team",
+      indent <> highlight "/tail [N]       " <> " - the last N messages in all chats",
+      "",
+      green "Sending replies to messages",
       "To quote a message that starts with \"hi\":",
       indent <> highlight "> @alice (hi) <msg>      " <> " - to reply to alice's most recent message",
       indent <> highlight ">> @alice (hi) <msg>     " <> " - to quote user's most recent message to alice",

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 struct WebRTCCallOffer: Encodable {
     var callType: CallType
@@ -15,16 +16,33 @@ struct WebRTCCallOffer: Encodable {
 
 struct WebRTCSession: Codable {
     var rtcSession: String
-    var rtcIceCandidates: [String]
+    var rtcIceCandidates: String
 }
 
 struct WebRTCExtraInfo: Codable {
-    var rtcIceCandidates: [String]
+    var rtcIceCandidates: String
 }
 
 struct CallInvitation {
     var peerMedia: CallMediaType
     var sharedKey: String?
+    var callTypeText: LocalizedStringKey {
+        get {
+            switch peerMedia {
+            case .video: return sharedKey == nil ? "video call (not e2e encrypted)." : "**e2e encrypted** video call."
+            case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)." : "**e2e encrypted** audio call."
+            }
+        }
+    }
+    var callTitle: LocalizedStringKey {
+        get {
+            switch peerMedia {
+            case .video: return "Incoming video call"
+            case .audio: return "Incoming audio call"
+            }
+        }
+    }
+    var encryptionText: LocalizedStringKey { get { sharedKey == nil ? "no e2e encryption" : "with e2e encryption" } }
 }
 
 struct CallType: Codable {
@@ -37,12 +55,18 @@ enum CallMediaType: String, Codable, Equatable {
     case audio = "audio"
 }
 
+enum VideoCamera: String, Codable, Equatable {
+    case user = "user"
+    case environment = "environment"
+}
+
 struct CallCapabilities: Codable, Equatable {
     var encryption: Bool
 }
 
 enum WebRTCCallStatus: String, Encodable {
     case connected = "connected"
+    case connecting = "connecting"
     case disconnected = "disconnected"
     case failed = "failed"
 }

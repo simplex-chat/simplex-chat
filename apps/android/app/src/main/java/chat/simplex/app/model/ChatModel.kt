@@ -45,6 +45,7 @@ class ChatModel(val controller: ChatController) {
   val activeCallInvitation = mutableStateOf<ContactRef?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
+  val showCallView = mutableStateOf(false)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -73,6 +74,20 @@ class ChatModel(val controller: ChatController) {
     } else {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
+  }
+
+  fun updateChats(newChats: List<Chat>) {
+    val mergedChats = arrayListOf<Chat>()
+    for (newChat in newChats) {
+      val i = getChatIndex(newChat.chatInfo.id)
+      if (i >= 0) {
+        mergedChats.add(newChat.copy(serverInfo = chats[i].serverInfo))
+      } else {
+        mergedChats.add(newChat)
+      }
+    }
+    chats.clear()
+    chats.addAll(mergedChats)
   }
 
   fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
@@ -172,8 +187,28 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun clearChat(cInfo: ChatInfo) {
+    // clear preview
+    val i = getChatIndex(cInfo.id)
+    if (i >= 0) {
+      chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
+    }
+    // clear current chat
+    if (chatId.value == cInfo.id) {
+      chatItems.clear()
+    }
+  }
+
   fun markChatItemsRead(cInfo: ChatInfo) {
+    // update preview
     val chatIdx = getChatIndex(cInfo.id)
+    if (chatIdx >= 0) {
+      val chat = chats[chatIdx]
+      val lastId = chat.chatItems.lastOrNull()?.id
+      if (lastId != null) {
+        chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = lastId + 1))
+      }
+    }
     // update current chat
     if (chatId.value == cInfo.id) {
       var i = 0
@@ -184,12 +219,6 @@ class ChatModel(val controller: ChatController) {
         }
         i += 1
       }
-      val chat = chats[chatIdx]
-      val pItem  = chat.chatItems.lastOrNull()
-      chats[chatIdx] = chat.copy(
-        chatItems = if (pItem == null) arrayListOf() else arrayListOf(pItem.withStatus(CIStatus.RcvRead())),
-        chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
-      )
     }
   }
 
@@ -256,6 +285,7 @@ interface SomeChat {
   val apiId: Long
   val ready: Boolean
   val createdAt: Instant
+  val updatedAt: Instant
 }
 
 @Serializable
@@ -307,6 +337,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val createdAt get() = contact.createdAt
+    override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
     override val fullName get() = contact.fullName
     override val image get() = contact.image
@@ -324,6 +355,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val createdAt get() = groupInfo.createdAt
+    override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
     override val fullName get() = groupInfo.fullName
     override val image get() = groupInfo.image
@@ -341,6 +373,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val createdAt get() = contactRequest.createdAt
+    override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
     override val fullName get() = contactRequest.fullName
     override val image get() = contactRequest.image
@@ -358,6 +391,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val createdAt get() = contactConnection.createdAt
+    override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
     override val fullName get() = contactConnection.fullName
     override val image get() = contactConnection.image
@@ -376,7 +410,8 @@ class Contact(
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
@@ -392,7 +427,8 @@ class Contact(
       localDisplayName = "alice",
       profile = Profile.sampleData,
       activeConn = Connection.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
   }
 }
@@ -438,7 +474,8 @@ class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
-  override val createdAt: Instant
+  override val createdAt: Instant,
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
@@ -453,7 +490,8 @@ class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
-      createdAt = Clock.System.now()
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
     )
   }
 }
@@ -525,7 +563,7 @@ class UserContactRequest (
   override val localDisplayName: String,
   val profile: Profile,
   override val createdAt: Instant,
-  val updatedAt: Instant
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
@@ -553,7 +591,7 @@ class PendingContactConnection(
   val pccConnStatus: ConnStatus,
   val viaContactUri: Boolean,
   override val createdAt: Instant,
-  val updatedAt: Instant
+  override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.ContactConnection
   override val id get () = ":$pccConnId"

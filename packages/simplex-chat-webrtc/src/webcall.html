@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="./style.css" rel="stylesheet" />
+    <script src="./lz-string.min.js"></script>
+    <style>
+      #data-for-peer,
+      #url-for-peer,
+      #chat-command-for-peer,
+      #pass-data-to-peer {
+        position: absolute;
+        color: white;
+      }
+      #ui-overlay {
+        position: absolute;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="remote-video-stream" autoplay playsinline></video>
+    <video id="local-video-stream" muted autoplay playsinline></video>
+    <div id="ui-overlay">
+      <div>
+        <!-- <button id="start-e2ee-call" type="submit">Start call with e2ee</button>
+        <button id="start-call" type="submit">Start call</button>
+        <button id="copy-url-for-peer" type="submit" style="display: none">Copy url for your contact</button>
+        <button id="copy-data-for-peer" type="submit" style="display: none">Copy data for your contact</button> -->
+        <button id="copy-simplex-chat-command" type="submit" style="display: none">Copy SimpleX Chat command</button>
+        <p id="pass-data-to-peer" style="display: none">Send copied data back to your contact</p>
+      </div>
+      <div>
+        <textarea
+          id="command-to-process"
+          cols="30"
+          rows="10"
+          style="display: none"
+          placeholder="Pass copied URL to your contact. Once they send you back the data, paste it here and click Connect"
+        ></textarea>
+      </div>
+      <div>
+        <button id="process-command" type="submit" style="display: none">Connect</button>
+      </div>
+      <div id="url-for-peer" style="display: none"></div>
+      <div id="data-for-peer" style="display: none"></div>
+      <div id="simplex-chat-command" style="display: none"></div>
+    </div>
+  </body>
+  <footer>
+    <script src="./call.js"></script>
+    <script src="./ui.js"></script>
+  </footer>
+</html>

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -10,8 +11,10 @@
 
 module Simplex.Chat.View where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -21,7 +24,11 @@ import qualified Data.Text as T
 import Data.Time.Clock (DiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayToTime, utcToZonedTime)
+import GHC.Generics (Generic)
+import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
+import Simplex.Chat (maxImageSize)
+import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
 import Simplex.Chat.Markdown
@@ -31,8 +38,10 @@ import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
@@ -54,6 +63,7 @@ responseToView testView = \case
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
   CRCmdAccepted _ -> []
@@ -83,6 +93,7 @@ responseToView testView = \case
   CRSentConfirmation -> ["confirmation sent!"]
   CRSentInvitation -> ["connection request sent!"]
   CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
+  CRChatCleared chatInfo -> viewChatCleared chatInfo
   CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
   CRContactAlreadyExists c -> [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted c -> [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
@@ -139,9 +150,9 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation {contact} -> ["call invitation from " <> ttyContact' contact]
-  CRCallOffer {contact} -> ["call offer from " <> ttyContact' contact]
-  CRCallAnswer {contact} -> ["call answer from " <> ttyContact' contact]
+  CRCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
+  CRCallOffer {contact, callType, offer, sharedKey} -> viewCallOffer contact callType offer sharedKey
+  CRCallAnswer {contact, answer} -> viewCallAnswer contact answer
   CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
   CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
@@ -254,14 +265,12 @@ viewItemDelete chat ChatItem {chatDir, meta, content = deletedContent} ChatItem 
     (CIDirectRcv, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromContactDeleted c) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIDirectSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   GroupChat g -> case (chatDir, deletedContent, toContent) of
     (CIGroupRcv GroupMember {localDisplayName = m}, CIRcvMsgContent mc, CIRcvDeleted mode) -> case mode of
       CIDMBroadcast -> viewReceivedMessage (ttyFromGroupDeleted g m) [] mc meta
       CIDMInternal -> ["message deleted"]
-    (CIGroupSnd, _, _) -> ["message deleted"]
-    _ -> []
+    _ -> ["message deleted"]
   _ -> []
 
 directQuote :: forall d'. MsgDirectionI d' => CIDirection 'CTDirect d' -> CIQuote 'CTDirect -> [StyledString]
@@ -314,6 +323,12 @@ viewConnReqInvitation cReq =
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+viewChatCleared :: AChatInfo -> [StyledString]
+viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
+  DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
+  GroupChat gi -> [ttyGroup' gi <> ": all messages are removed locally ONLY"]
+  _ -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -630,6 +645,71 @@ fileProgress :: [Integer] -> Integer -> Integer -> StyledString
 fileProgress chunksNum chunkSize fileSize =
   sShow (sum chunksNum * chunkSize * 100 `div` fileSize) <> "% of " <> humanReadableSize fileSize
 
+viewCallInvitation :: Contact -> CallType -> Maybe C.Key -> [StyledString]
+viewCallInvitation ct@Contact {contactId} callType@CallType {media} sharedKey =
+  [ ttyContact' ct <> " wants to connect with you via WebRTC " <> callMediaStr callType <> " call " <> encryptedCallText callType,
+    "To accept the call, please open the link below in your browser" <> supporedBrowsers callType,
+    "",
+    "https://simplex.chat/call#" <> plain queryString
+  ]
+  where
+    aesKey = B.unpack . strEncode . C.unKey <$> sharedKey
+    queryString =
+      Q.renderSimpleQuery
+        False
+        [ ("command", LB.toStrict . J.encode $ WCCallStart {media, aesKey, useWorker = True}),
+          ("contact_id", B.pack $ show contactId)
+        ]
+
+viewCallOffer :: Contact -> CallType -> WebRTCSession -> Maybe C.Key -> [StyledString]
+viewCallOffer ct@Contact {contactId} callType@CallType {media} WebRTCSession {rtcSession = offer, rtcIceCandidates = iceCandidates} sharedKey =
+  [ ttyContact' ct <> " accepted your WebRTC " <> callMediaStr callType <> " call " <> encryptedCallText callType,
+    "To connect, please open the link below in your browser" <> supporedBrowsers callType,
+    "",
+    "https://simplex.chat/call#" <> plain queryString
+  ]
+  where
+    aesKey = B.unpack . strEncode . C.unKey <$> sharedKey
+    queryString =
+      Q.renderSimpleQuery
+        False
+        [ ("command", LB.toStrict . J.encode $ WCCallOffer {offer, iceCandidates, media, aesKey, useWorker = True}),
+          ("contact_id", B.pack $ show contactId)
+        ]
+
+viewCallAnswer :: Contact -> WebRTCSession -> [StyledString]
+viewCallAnswer ct WebRTCSession {rtcSession = answer, rtcIceCandidates = iceCandidates} =
+  [ ttyContact' ct <> " continued the WebRTC call",
+    "To connect, please paste the data below in your browser window you opened earlier and click Connect button",
+    "",
+    plain . LB.toStrict . J.encode $ WCCallAnswer {answer, iceCandidates}
+  ]
+
+callMediaStr :: CallType -> StyledString
+callMediaStr CallType {media} = case media of
+  CMVideo -> "video"
+  CMAudio -> "audio"
+
+encryptedCallText :: CallType -> StyledString
+encryptedCallText callType
+  | encryptedCall callType = "(e2e encrypted)"
+  | otherwise = "(not e2e encrypted)"
+
+supporedBrowsers :: CallType -> StyledString
+supporedBrowsers callType
+  | encryptedCall callType = " (only Chrome and Safari support e2e encryption for WebRTC, Safari may require enabling WebRTC insertable streams)"
+  | otherwise = ""
+
+data WCallCommand
+  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
+  deriving (Generic)
+
+instance ToJSON WCallCommand where
+  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
+  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
+
 viewChatError :: ChatError -> [StyledString]
 viewChatError = \case
   ChatError err -> case err of
@@ -660,6 +740,9 @@ viewChatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEFileImageType _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
+    CEFileImageSize _ -> ["image type must be JPG, send as a file using " <> highlight' "/f"]
+    CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]

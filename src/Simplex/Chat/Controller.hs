@@ -109,9 +109,11 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIDeleteChat ChatRef
+  | APIClearChat ChatRef
   | APIAcceptContact Int64
   | APIRejectContact Int64
   | APISendCallInvitation ContactId CallType
+  | SendCallInvitation ContactName CallType
   | APIRejectCall ContactId
   | APISendCallOffer ContactId WebRTCCallOffer
   | APISendCallAnswer ContactId WebRTCSession
@@ -132,6 +134,7 @@ data ChatCommand
   | Connect (Maybe AConnectionRequestUri)
   | ConnectSimplex
   | DeleteContact ContactName
+  | ClearContact ContactName
   | ListContacts
   | CreateMyAddress
   | DeleteMyAddress
@@ -151,11 +154,15 @@ data ChatCommand
   | MemberRole GroupName ContactName GroupMemberRole
   | LeaveGroup GroupName
   | DeleteGroup GroupName
+  | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ChatName FilePath
+  | SendImage ChatName FilePath
+  | ForwardFile ChatName FileTransferId
+  | ForwardImage ChatName FileTransferId
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -179,6 +186,7 @@ data ChatResponse
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
+  | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
   | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
   | CRCmdAccepted {corr :: CorrId}
@@ -205,6 +213,7 @@ data ChatResponse
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
+  | CRChatCleared {chatInfo :: AChatInfo}
   | CRUserContactLinkCreated {connReqContact :: ConnReqContact}
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest {contactRequest :: UserContactRequest}
@@ -343,6 +352,9 @@ data ChatErrorType
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
+  | CEFileImageType {filePath :: FilePath}
+  | CEFileImageSize {filePath :: FilePath}
+  | CEFileNotReceived {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete

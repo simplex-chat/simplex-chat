@@ -6,464 +6,628 @@ var CallMediaType;
     CallMediaType["Audio"] = "audio";
     CallMediaType["Video"] = "video";
 })(CallMediaType || (CallMediaType = {}));
-const keyAlgorithm = {
-    name: "AES-GCM",
-    length: 256,
-};
-const keyUsages = ["encrypt", "decrypt"];
+var VideoCamera;
+(function (VideoCamera) {
+    VideoCamera["User"] = "user";
+    VideoCamera["Environment"] = "environment";
+})(VideoCamera || (VideoCamera = {}));
+// for debugging
+// var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
+var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
+// Global object with cryptrographic/encoding functions
+const callCrypto = callCryptoFunction();
+var TransformOperation;
+(function (TransformOperation) {
+    TransformOperation["Encrypt"] = "encrypt";
+    TransformOperation["Decrypt"] = "decrypt";
+})(TransformOperation || (TransformOperation = {}));
 let activeCall;
-const IV_LENGTH = 12;
-const initialPlainTextRequired = {
-    key: 10,
-    delta: 3,
-    undefined: 1,
-};
-function defaultCallConfig(encodedInsertableStreams) {
-    return {
-        peerConnectionConfig: {
-            iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
-            iceCandidatePoolSize: 10,
-            encodedInsertableStreams,
-        },
-        iceCandidates: {
-            delay: 2000,
-            extrasInterval: 2000,
-            extrasTimeout: 8000,
-        },
-    };
-}
-async function initializeCall(config, mediaType, aesKey) {
-    const conn = new RTCPeerConnection(config.peerConnectionConfig);
-    const remoteStream = new MediaStream();
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType));
-    await setUpMediaStreams(conn, localStream, remoteStream, aesKey);
-    conn.addEventListener("connectionstatechange", connectionStateChange);
-    const iceCandidates = new Promise((resolve, _) => {
-        let candidates = [];
-        let resolved = false;
-        let extrasInterval;
-        let extrasTimeout;
-        const delay = setTimeout(() => {
-            if (!resolved) {
-                resolveIceCandidates();
-                extrasInterval = setInterval(() => {
-                    sendIceCandidates();
-                }, config.iceCandidates.extrasInterval);
-                extrasTimeout = setTimeout(() => {
-                    clearInterval(extrasInterval);
-                    sendIceCandidates();
-                }, config.iceCandidates.extrasTimeout);
-            }
-        }, config.iceCandidates.delay);
-        conn.onicecandidate = ({ candidate: c }) => c && candidates.push(c);
-        conn.onicegatheringstatechange = () => {
-            if (conn.iceGatheringState == "complete") {
-                if (resolved) {
-                    if (extrasInterval)
-                        clearInterval(extrasInterval);
-                    if (extrasTimeout)
-                        clearTimeout(extrasTimeout);
-                    sendIceCandidates();
-                }
-                else {
-                    resolveIceCandidates();
-                }
-            }
-        };
-        function resolveIceCandidates() {
-            if (delay)
-                clearTimeout(delay);
-            resolved = true;
-            const iceCandidates = candidates.map((c) => JSON.stringify(c));
-            candidates = [];
-            resolve(iceCandidates);
-        }
-        function sendIceCandidates() {
-            if (candidates.length === 0)
-                return;
-            const iceCandidates = candidates.map((c) => JSON.stringify(c));
-            candidates = [];
-            sendMessageToNative({ resp: { type: "ice", iceCandidates } });
-        }
-    });
-    return { connection: conn, iceCandidates, localMedia: mediaType, localStream };
-    function connectionStateChange() {
-        sendMessageToNative({
-            resp: {
-                type: "connection",
-                state: {
-                    connectionState: conn.connectionState,
-                    iceConnectionState: conn.iceConnectionState,
-                    iceGatheringState: conn.iceGatheringState,
-                    signalingState: conn.signalingState,
-                },
+const processCommand = (function () {
+    const defaultIceServers = [
+        { urls: ["stun:stun.simplex.chat:5349"] },
+        { urls: ["turn:turn.simplex.chat:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
+    ];
+    function getCallConfig(encodedInsertableStreams, iceServers, relay) {
+        return {
+            peerConnectionConfig: {
+                iceServers: iceServers !== null && iceServers !== void 0 ? iceServers : defaultIceServers,
+                iceCandidatePoolSize: 10,
+                encodedInsertableStreams,
+                iceTransportPolicy: relay ? "relay" : "all",
             },
+            iceCandidates: {
+                delay: 3000,
+                extrasInterval: 2000,
+                extrasTimeout: 8000,
+            },
+        };
+    }
+    function getIceCandidates(conn, config) {
+        return new Promise((resolve, _) => {
+            let candidates = [];
+            let resolved = false;
+            let extrasInterval;
+            let extrasTimeout;
+            const delay = setTimeout(() => {
+                if (!resolved) {
+                    resolveIceCandidates();
+                    extrasInterval = setInterval(() => {
+                        sendIceCandidates();
+                    }, config.iceCandidates.extrasInterval);
+                    extrasTimeout = setTimeout(() => {
+                        clearInterval(extrasInterval);
+                        sendIceCandidates();
+                    }, config.iceCandidates.extrasTimeout);
+                }
+            }, config.iceCandidates.delay);
+            conn.onicecandidate = ({ candidate: c }) => c && candidates.push(c);
+            conn.onicegatheringstatechange = () => {
+                if (conn.iceGatheringState == "complete") {
+                    if (resolved) {
+                        if (extrasInterval)
+                            clearInterval(extrasInterval);
+                        if (extrasTimeout)
+                            clearTimeout(extrasTimeout);
+                        sendIceCandidates();
+                    }
+                    else {
+                        resolveIceCandidates();
+                    }
+                }
+            };
+            function resolveIceCandidates() {
+                if (delay)
+                    clearTimeout(delay);
+                resolved = true;
+                const iceCandidates = serialize(candidates);
+                candidates = [];
+                resolve(iceCandidates);
+            }
+            function sendIceCandidates() {
+                if (candidates.length === 0)
+                    return;
+                const iceCandidates = serialize(candidates);
+                candidates = [];
+                sendMessageToNative({ resp: { type: "ice", iceCandidates } });
+            }
         });
-        if (conn.connectionState == "disconnected" || conn.connectionState == "failed") {
-            conn.removeEventListener("connectionstatechange", connectionStateChange);
-            sendMessageToNative({ resp: { type: "ended" } });
-            conn.close();
-            activeCall = undefined;
-            resetVideoElements();
+    }
+    async function initializeCall(config, mediaType, aesKey, useWorker) {
+        const pc = new RTCPeerConnection(config.peerConnectionConfig);
+        const remoteStream = new MediaStream();
+        const localCamera = VideoCamera.User;
+        const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera));
+        const iceCandidates = getIceCandidates(pc, config);
+        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
+        await setupMediaStreams(call);
+        pc.addEventListener("connectionstatechange", connectionStateChange);
+        return call;
+        async function connectionStateChange() {
+            sendMessageToNative({
+                resp: {
+                    type: "connection",
+                    state: {
+                        connectionState: pc.connectionState,
+                        iceConnectionState: pc.iceConnectionState,
+                        iceGatheringState: pc.iceGatheringState,
+                        signalingState: pc.signalingState,
+                    },
+                },
+            });
+            if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
+                pc.removeEventListener("connectionstatechange", connectionStateChange);
+                endCall();
+                setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
+            }
+            else if (pc.connectionState == "connected") {
+                const stats = (await pc.getStats());
+                for (const stat of stats.values()) {
+                    const { type, state } = stat;
+                    if (type === "candidate-pair" && state === "succeeded") {
+                        const iceCandidatePair = stat;
+                        const resp = {
+                            type: "connected",
+                            connectionInfo: {
+                                iceCandidatePair,
+                                localCandidate: stats.get(iceCandidatePair.localCandidateId),
+                                remoteCandidate: stats.get(iceCandidatePair.remoteCandidateId),
+                            },
+                        };
+                        setTimeout(() => sendMessageToNative({ resp }), 0);
+                        break;
+                    }
+                }
+            }
         }
     }
-}
-var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
-async function processCommand(body) {
-    const { corrId, command } = body;
-    const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
-    let resp;
-    try {
-        switch (command.type) {
-            case "capabilities":
-                const encryption = supportsInsertableStreams();
-                resp = { type: "capabilities", capabilities: { encryption } };
-                break;
-            case "start":
-                console.log("starting call");
-                if (activeCall) {
-                    resp = { type: "error", message: "start: call already started" };
-                }
-                else if (!supportsInsertableStreams() && command.aesKey) {
-                    resp = { type: "error", message: "start: encryption is not supported" };
-                }
-                else {
-                    const encryption = supportsInsertableStreams();
-                    const { media, aesKey } = command;
-                    activeCall = await initializeCall(defaultCallConfig(encryption && !!aesKey), media, encryption ? aesKey : undefined);
+    function serialize(x) {
+        return LZString.compressToBase64(JSON.stringify(x));
+    }
+    function parse(s) {
+        return JSON.parse(LZString.decompressFromBase64(s));
+    }
+    async function processCommand(body) {
+        const { corrId, command } = body;
+        const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
+        let resp;
+        try {
+            switch (command.type) {
+                case "capabilities":
+                    const encryption = supportsInsertableStreams(command.useWorker);
+                    resp = { type: "capabilities", capabilities: { encryption } };
+                    break;
+                case "start": {
+                    console.log("starting call");
+                    if (activeCall)
+                        endCall();
+                    const { media, useWorker, iceServers, relay } = command;
+                    const encryption = supportsInsertableStreams(useWorker);
+                    const aesKey = encryption ? command.aesKey : undefined;
+                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker);
                     const pc = activeCall.connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
                     // for debugging, returning the command for callee to use
-                    // resp = {type: "accept", offer: JSON.stringify(offer), iceCandidates: await iceCandidates, media, aesKey}
+                    // resp = {
+                    //   type: "offer",
+                    //   offer: serialize(offer),
+                    //   iceCandidates: await activeCall.iceCandidates,
+                    //   capabilities: {encryption},
+                    //   media,
+                    //   iceServers,
+                    //   relay,
+                    //   aesKey,
+                    //   useWorker,
+                    // }
                     resp = {
                         type: "offer",
-                        offer: JSON.stringify(offer),
+                        offer: serialize(offer),
                         iceCandidates: await activeCall.iceCandidates,
                         capabilities: { encryption },
                     };
+                    break;
                 }
-                break;
-            case "accept":
-                if (activeCall) {
-                    resp = { type: "error", message: "accept: call already started" };
-                }
-                else if (!supportsInsertableStreams() && command.aesKey) {
-                    resp = { type: "error", message: "accept: encryption is not supported" };
-                }
-                else {
-                    const offer = JSON.parse(command.offer);
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
-                    activeCall = await initializeCall(defaultCallConfig(!!command.aesKey), command.media, command.aesKey);
-                    const pc = activeCall.connection;
-                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-                    const answer = await pc.createAnswer();
-                    await pc.setLocalDescription(answer);
-                    addIceCandidates(pc, remoteIceCandidates);
-                    // same as command for caller to use
-                    resp = {
-                        type: "answer",
-                        answer: JSON.stringify(answer),
-                        iceCandidates: await activeCall.iceCandidates,
-                    };
-                }
-                break;
-            case "answer":
-                if (!pc) {
-                    resp = { type: "error", message: "answer: call not started" };
-                }
-                else if (!pc.localDescription) {
-                    resp = { type: "error", message: "answer: local description is not set" };
-                }
-                else if (pc.currentRemoteDescription) {
-                    resp = { type: "error", message: "answer: remote description already set" };
-                }
-                else {
-                    const answer = JSON.parse(command.answer);
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
-                    await pc.setRemoteDescription(new RTCSessionDescription(answer));
-                    addIceCandidates(pc, remoteIceCandidates);
+                case "offer":
+                    if (activeCall) {
+                        resp = { type: "error", message: "accept: call already started" };
+                    }
+                    else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
+                        resp = { type: "error", message: "accept: encryption is not supported" };
+                    }
+                    else {
+                        const offer = parse(command.offer);
+                        const remoteIceCandidates = parse(command.iceCandidates);
+                        const { media, aesKey, useWorker, iceServers, relay } = command;
+                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, useWorker);
+                        const pc = activeCall.connection;
+                        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        addIceCandidates(pc, remoteIceCandidates);
+                        // same as command for caller to use
+                        resp = {
+                            type: "answer",
+                            answer: serialize(answer),
+                            iceCandidates: await activeCall.iceCandidates,
+                        };
+                    }
+                    break;
+                case "answer":
+                    if (!pc) {
+                        resp = { type: "error", message: "answer: call not started" };
+                    }
+                    else if (!pc.localDescription) {
+                        resp = { type: "error", message: "answer: local description is not set" };
+                    }
+                    else if (pc.currentRemoteDescription) {
+                        resp = { type: "error", message: "answer: remote description already set" };
+                    }
+                    else {
+                        const answer = parse(command.answer);
+                        const remoteIceCandidates = parse(command.iceCandidates);
+                        await pc.setRemoteDescription(new RTCSessionDescription(answer));
+                        addIceCandidates(pc, remoteIceCandidates);
+                        resp = { type: "ok" };
+                    }
+                    break;
+                case "ice":
+                    if (pc) {
+                        const remoteIceCandidates = parse(command.iceCandidates);
+                        addIceCandidates(pc, remoteIceCandidates);
+                        resp = { type: "ok" };
+                    }
+                    else {
+                        resp = { type: "error", message: "ice: call not started" };
+                    }
+                    break;
+                case "media":
+                    if (!activeCall) {
+                        resp = { type: "error", message: "media: call not started" };
+                    }
+                    else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video) {
+                        resp = { type: "error", message: "media: no video" };
+                    }
+                    else {
+                        enableMedia(activeCall.localStream, command.media, command.enable);
+                        resp = { type: "ok" };
+                    }
+                    break;
+                case "camera":
+                    if (!activeCall || !pc) {
+                        resp = { type: "error", message: "camera: call not started" };
+                    }
+                    else if (activeCall.localMedia == CallMediaType.Audio) {
+                        resp = { type: "error", message: "camera: no video" };
+                    }
+                    else {
+                        try {
+                            if (command.camera != activeCall.localCamera) {
+                                await replaceCamera(activeCall, command.camera);
+                            }
+                            resp = { type: "ok" };
+                        }
+                        catch (e) {
+                            resp = { type: "error", message: `camera: ${e.message}` };
+                        }
+                    }
+                    break;
+                case "end":
+                    endCall();
                     resp = { type: "ok" };
-                }
-                break;
-            case "ice":
-                if (pc) {
-                    const remoteIceCandidates = command.iceCandidates.map((c) => JSON.parse(c));
-                    addIceCandidates(pc, remoteIceCandidates);
-                    resp = { type: "ok" };
-                }
-                else {
-                    resp = { type: "error", message: "ice: call not started" };
-                }
-                break;
-            case "media":
-                if (!activeCall) {
-                    resp = { type: "error", message: "media: call not started" };
-                }
-                else if (activeCall.localMedia == CallMediaType.Audio && command.media == CallMediaType.Video) {
-                    resp = { type: "error", message: "media: no video" };
-                }
-                else {
-                    enableMedia(activeCall.localStream, command.media, command.enable);
-                    resp = { type: "ok" };
-                }
-                break;
-            case "end":
-                if (pc) {
-                    pc.close();
-                    activeCall = undefined;
-                    resetVideoElements();
-                    resp = { type: "ok" };
-                }
-                else {
-                    resp = { type: "error", message: "end: call not started" };
-                }
-                break;
-            default:
-                resp = { type: "error", message: "unknown command" };
-                break;
+                    break;
+                default:
+                    resp = { type: "error", message: "unknown command" };
+                    break;
+            }
+        }
+        catch (e) {
+            resp = { type: "error", message: e.message };
+        }
+        const apiResp = { corrId, resp, command };
+        sendMessageToNative(apiResp);
+        return apiResp;
+    }
+    function endCall() {
+        var _a;
+        try {
+            (_a = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection) === null || _a === void 0 ? void 0 : _a.close();
+        }
+        catch (e) {
+            console.log(e);
+        }
+        activeCall = undefined;
+        resetVideoElements();
+    }
+    function addIceCandidates(conn, iceCandidates) {
+        for (const c of iceCandidates) {
+            conn.addIceCandidate(new RTCIceCandidate(c));
         }
     }
-    catch (e) {
-        resp = { type: "error", message: e.message };
+    async function setupMediaStreams(call) {
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        await setupEncryptionWorker(call);
+        setupLocalStream(call);
+        setupRemoteStream(call);
+        setupCodecPreferences(call);
+        // setupVideoElement(videos.local)
+        // setupVideoElement(videos.remote)
+        videos.local.srcObject = call.localStream;
+        videos.remote.srcObject = call.remoteStream;
     }
-    const apiResp = { corrId, resp, command };
-    sendMessageToNative(apiResp);
-    return apiResp;
-}
-function addIceCandidates(conn, iceCandidates) {
-    for (const c of iceCandidates) {
-        conn.addIceCandidate(new RTCIceCandidate(c));
-    }
-}
-async function setUpMediaStreams(pc, localStream, remoteStream, aesKey) {
-    var _a;
-    const videos = getVideoElements();
-    if (!videos)
-        throw Error("no video elements");
-    let key;
-    if (aesKey) {
-        const keyData = decodeBase64(encodeAscii(aesKey));
-        if (keyData)
-            key = await crypto.subtle.importKey("raw", keyData, keyAlgorithm, false, keyUsages);
-    }
-    for (const track of localStream.getTracks()) {
-        pc.addTrack(track, localStream);
-    }
-    if (key) {
-        console.log("set up encryption for sending");
-        for (const sender of pc.getSenders()) {
-            setupPeerTransform(sender, encodeFunction(key));
-        }
-    }
-    // Pull tracks from remote stream as they arrive add them to remoteStream video
-    pc.ontrack = (event) => {
-        if (key) {
-            console.log("set up decryption for receiving");
-            setupPeerTransform(event.receiver, decodeFunction(key));
-        }
-        for (const track of event.streams[0].getTracks()) {
-            remoteStream.addTrack(track);
-        }
-    };
-    // We assume VP8 encoding in the decode/encode stages to get the initial
-    // bytes to pass as plaintext so we enforce that here.
-    // VP8 is supported by all supports of webrtc.
-    // Use of VP8 by default may also reduce depacketisation issues.
-    // We do not encrypt the first couple of bytes of the payload so that the
-    // video elements can work by determining video keyframes and the opus mode
-    // being used. This appears to be necessary for any video feed at all.
-    // For VP8 this is the content described in
-    //   https://tools.ietf.org/html/rfc6386#section-9.1
-    // which is 10 bytes for key frames and 3 bytes for delta frames.
-    // For opus (where encodedFrame.type is not set) this is the TOC byte from
-    //   https://tools.ietf.org/html/rfc6716#section-3.1
-    const capabilities = RTCRtpSender.getCapabilities("video");
-    if (capabilities) {
-        const { codecs } = capabilities;
-        const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8");
-        const selectedCodec = codecs[selectedCodecIndex];
-        codecs.splice(selectedCodecIndex, 1);
-        codecs.unshift(selectedCodec);
-        for (const t of pc.getTransceivers()) {
-            if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video") {
-                t.setCodecPreferences(codecs);
+    async function setupEncryptionWorker(call) {
+        if (call.aesKey) {
+            if (!call.key)
+                call.key = await callCrypto.decodeAesKey(call.aesKey);
+            if (call.useWorker && !call.worker) {
+                const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
+                call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
             }
         }
     }
-    // setupVideoElement(videos.local)
-    // setupVideoElement(videos.remote)
-    videos.local.srcObject = localStream;
-    videos.remote.srcObject = remoteStream;
-}
-function callMediaConstraints(mediaType) {
-    switch (mediaType) {
-        case CallMediaType.Audio:
-            return { audio: true, video: false };
-        case CallMediaType.Video:
-            return {
-                audio: true,
-                video: {
-                    frameRate: 24,
-                    width: {
-                        min: 480,
-                        ideal: 720,
-                        max: 1280,
+    function setupLocalStream(call) {
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        const pc = call.connection;
+        let { localStream } = call;
+        for (const track of localStream.getTracks()) {
+            pc.addTrack(track, localStream);
+        }
+        if (call.aesKey && call.key) {
+            console.log("set up encryption for sending");
+            for (const sender of pc.getSenders()) {
+                setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key);
+            }
+        }
+    }
+    function setupRemoteStream(call) {
+        // Pull tracks from remote stream as they arrive add them to remoteStream video
+        const pc = call.connection;
+        pc.ontrack = (event) => {
+            if (call.aesKey && call.key) {
+                console.log("set up decryption for receiving");
+                setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
+            }
+            for (const stream of event.streams) {
+                for (const track of stream.getTracks()) {
+                    call.remoteStream.addTrack(track);
+                }
+            }
+        };
+    }
+    function setupCodecPreferences(call) {
+        // We assume VP8 encoding in the decode/encode stages to get the initial
+        // bytes to pass as plaintext so we enforce that here.
+        // VP8 is supported by all supports of webrtc.
+        // Use of VP8 by default may also reduce depacketisation issues.
+        // We do not encrypt the first couple of bytes of the payload so that the
+        // video elements can work by determining video keyframes and the opus mode
+        // being used. This appears to be necessary for any video feed at all.
+        // For VP8 this is the content described in
+        //   https://tools.ietf.org/html/rfc6386#section-9.1
+        // which is 10 bytes for key frames and 3 bytes for delta frames.
+        // For opus (where encodedFrame.type is not set) this is the TOC byte from
+        //   https://tools.ietf.org/html/rfc6716#section-3.1
+        var _a;
+        const capabilities = RTCRtpSender.getCapabilities("video");
+        if (capabilities) {
+            const { codecs } = capabilities;
+            const selectedCodecIndex = codecs.findIndex((c) => c.mimeType === "video/VP8");
+            const selectedCodec = codecs[selectedCodecIndex];
+            codecs.splice(selectedCodecIndex, 1);
+            codecs.unshift(selectedCodec);
+            for (const t of call.connection.getTransceivers()) {
+                if (((_a = t.sender.track) === null || _a === void 0 ? void 0 : _a.kind) === "video") {
+                    t.setCodecPreferences(codecs);
+                }
+            }
+        }
+    }
+    async function replaceCamera(call, camera) {
+        const videos = getVideoElements();
+        if (!videos)
+            throw Error("no video elements");
+        const pc = call.connection;
+        for (const t of call.localStream.getTracks())
+            t.stop();
+        call.localCamera = camera;
+        const constraints = callMediaConstraints(call.localMedia, camera);
+        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        replaceTracks(pc, localStream.getVideoTracks());
+        replaceTracks(pc, localStream.getAudioTracks());
+        call.localStream = localStream;
+        videos.local.srcObject = localStream;
+    }
+    function replaceTracks(pc, tracks) {
+        const sender = pc.getSenders().find((s) => { var _a; return ((_a = s.track) === null || _a === void 0 ? void 0 : _a.kind) === tracks[0].kind; });
+        if (sender)
+            for (const t of tracks)
+                sender.replaceTrack(t);
+    }
+    function setupPeerTransform(operation, peer, worker, aesKey, key) {
+        if (worker && "RTCRtpScriptTransform" in window) {
+            console.log(`${operation} with worker & RTCRtpScriptTransform`);
+            peer.transform = new RTCRtpScriptTransform(worker, { operation, aesKey });
+        }
+        else if ("createEncodedStreams" in peer) {
+            const { readable, writable } = peer.createEncodedStreams();
+            if (worker) {
+                console.log(`${operation} with worker`);
+                worker.postMessage({ operation, readable, writable, aesKey }, [readable, writable]);
+            }
+            else {
+                console.log(`${operation} without worker`);
+                const transform = callCrypto.transformFrame[operation](key);
+                readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
+            }
+        }
+        else {
+            console.log(`no ${operation}`);
+        }
+    }
+    function callMediaConstraints(mediaType, facingMode) {
+        switch (mediaType) {
+            case CallMediaType.Audio:
+                return { audio: true, video: false };
+            case CallMediaType.Video:
+                return {
+                    audio: true,
+                    video: {
+                        frameRate: 24,
+                        width: {
+                            min: 480,
+                            ideal: 720,
+                            max: 1280,
+                        },
+                        aspectRatio: 1.33,
+                        facingMode,
                     },
-                    aspectRatio: 1.33,
-                },
-            };
+                };
+        }
     }
-}
-function supportsInsertableStreams() {
-    return "createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype;
-}
-function resetVideoElements() {
-    const videos = getVideoElements();
-    if (!videos)
-        return;
-    videos.local.srcObject = null;
-    videos.remote.srcObject = null;
-}
-function getVideoElements() {
-    const local = document.getElementById("local-video-stream");
-    const remote = document.getElementById("remote-video-stream");
-    if (!(local && remote && local instanceof HTMLMediaElement && remote instanceof HTMLMediaElement))
-        return;
-    return { local, remote };
-}
-// function setupVideoElement(video: HTMLElement) {
-//   // TODO use display: none
-//   video.style.opacity = "0"
-//   video.onplaying = () => {
-//     video.style.opacity = "1"
-//   }
-// }
-function enableMedia(s, media, enable) {
-    const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
-    for (const t of tracks)
-        t.enabled = enable;
-}
-/* Stream Transforms */
-function setupPeerTransform(peer, transform) {
-    const streams = peer.createEncodedStreams();
-    streams.readable.pipeThrough(new TransformStream({ transform })).pipeTo(streams.writable);
-}
-/* Cryptography */
-function encodeFunction(key) {
-    return async (frame, controller) => {
-        const data = new Uint8Array(frame.data);
-        const n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0;
-        const iv = randomIV();
-        const initial = data.subarray(0, n);
-        const plaintext = data.subarray(n, data.byteLength);
-        try {
-            const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext);
-            frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer;
-            controller.enqueue(frame);
-        }
-        catch (e) {
-            console.log(`encryption error ${e}`);
-            throw e;
-        }
+    function supportsInsertableStreams(useWorker) {
+        return (("createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype) ||
+            (!!useWorker && "RTCRtpScriptTransform" in window));
+    }
+    function resetVideoElements() {
+        const videos = getVideoElements();
+        if (!videos)
+            return;
+        videos.local.srcObject = null;
+        videos.remote.srcObject = null;
+    }
+    function getVideoElements() {
+        const local = document.getElementById("local-video-stream");
+        const remote = document.getElementById("remote-video-stream");
+        if (!(local && remote && local instanceof HTMLMediaElement && remote instanceof HTMLMediaElement))
+            return;
+        return { local, remote };
+    }
+    // function setupVideoElement(video: HTMLElement) {
+    //   // TODO use display: none
+    //   video.style.opacity = "0"
+    //   video.onplaying = () => {
+    //     video.style.opacity = "1"
+    //   }
+    // }
+    function enableMedia(s, media, enable) {
+        const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
+        for (const t of tracks)
+            t.enabled = enable;
+    }
+    return processCommand;
+})();
+// Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
+function callCryptoFunction() {
+    const initialPlainTextRequired = {
+        key: 10,
+        delta: 3,
     };
-}
-function decodeFunction(key) {
-    return async (frame, controller) => {
-        const data = new Uint8Array(frame.data);
-        const n = frame instanceof RTCEncodedVideoFrame ? initialPlainTextRequired[frame.type] : 0;
-        const initial = data.subarray(0, n);
-        const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH);
-        const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength);
-        try {
-            const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-            frame.data = concatN(initial, new Uint8Array(plaintext)).buffer;
-            controller.enqueue(frame);
-        }
-        catch (e) {
-            console.log(`decryption error ${e}`);
-            throw e;
-        }
-    };
-}
-class RTCEncodedVideoFrame {
-    constructor(type, data) {
-        this.type = type;
-        this.data = data;
+    const IV_LENGTH = 12;
+    function encryptFrame(key) {
+        return async (frame, controller) => {
+            const data = new Uint8Array(frame.data);
+            const n = initialPlainTextRequired[frame.type] || 1;
+            const iv = randomIV();
+            const initial = data.subarray(0, n);
+            const plaintext = data.subarray(n, data.byteLength);
+            try {
+                const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext);
+                frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer;
+                controller.enqueue(frame);
+            }
+            catch (e) {
+                console.log(`encryption error ${e}`);
+                throw e;
+            }
+        };
     }
-}
-function randomIV() {
-    return crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-}
-const char_equal = "=".charCodeAt(0);
-function concatN(...bs) {
-    const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0));
-    bs.reduce((offset, b) => {
-        a.set(b, offset);
-        return offset + b.byteLength;
-    }, 0);
-    return a;
-}
-function encodeAscii(s) {
-    const a = new Uint8Array(s.length);
-    let i = s.length;
-    while (i--)
-        a[i] = s.charCodeAt(i);
-    return a;
-}
-function decodeAscii(a) {
-    let s = "";
-    for (let i = 0; i < a.length; i++)
-        s += String.fromCharCode(a[i]);
-    return s;
-}
-const base64chars = new Uint8Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("").map((c) => c.charCodeAt(0)));
-const base64lookup = new Array(256);
-base64chars.forEach((c, i) => (base64lookup[c] = i));
-function encodeBase64(a) {
-    const len = a.length;
-    const b64len = Math.ceil(len / 3) * 4;
-    const b64 = new Uint8Array(b64len);
-    let j = 0;
-    for (let i = 0; i < len; i += 3) {
-        b64[j++] = base64chars[a[i] >> 2];
-        b64[j++] = base64chars[((a[i] & 3) << 4) | (a[i + 1] >> 4)];
-        b64[j++] = base64chars[((a[i + 1] & 15) << 2) | (a[i + 2] >> 6)];
-        b64[j++] = base64chars[a[i + 2] & 63];
+    function decryptFrame(key) {
+        return async (frame, controller) => {
+            const data = new Uint8Array(frame.data);
+            const n = initialPlainTextRequired[frame.type] || 1;
+            const initial = data.subarray(0, n);
+            const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH);
+            const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength);
+            try {
+                const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+                frame.data = concatN(initial, new Uint8Array(plaintext)).buffer;
+                controller.enqueue(frame);
+            }
+            catch (e) {
+                console.log(`decryption error ${e}`);
+                throw e;
+            }
+        };
     }
-    if (len % 3)
-        b64[b64len - 1] = char_equal;
-    if (len % 3 === 1)
-        b64[b64len - 2] = char_equal;
-    return b64;
-}
-function decodeBase64(b64) {
-    let len = b64.length;
-    if (len % 4)
-        return;
-    let bLen = (len * 3) / 4;
-    if (b64[len - 1] === char_equal) {
-        len--;
-        bLen--;
+    function decodeAesKey(aesKey) {
+        const keyData = callCrypto.decodeBase64url(callCrypto.encodeAscii(aesKey));
+        return crypto.subtle.importKey("raw", keyData, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+    }
+    function concatN(...bs) {
+        const a = new Uint8Array(bs.reduce((size, b) => size + b.byteLength, 0));
+        bs.reduce((offset, b) => {
+            a.set(b, offset);
+            return offset + b.byteLength;
+        }, 0);
+        return a;
+    }
+    function randomIV() {
+        return crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+    }
+    const base64urlChars = new Uint8Array("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".split("").map((c) => c.charCodeAt(0)));
+    const base64urlLookup = new Array(256);
+    base64urlChars.forEach((c, i) => (base64urlLookup[c] = i));
+    const char_equal = "=".charCodeAt(0);
+    function encodeAscii(s) {
+        const a = new Uint8Array(s.length);
+        let i = s.length;
+        while (i--)
+            a[i] = s.charCodeAt(i);
+        return a;
+    }
+    function decodeAscii(a) {
+        let s = "";
+        for (let i = 0; i < a.length; i++)
+            s += String.fromCharCode(a[i]);
+        return s;
+    }
+    function encodeBase64url(a) {
+        const len = a.length;
+        const b64len = Math.ceil(len / 3) * 4;
+        const b64 = new Uint8Array(b64len);
+        let j = 0;
+        for (let i = 0; i < len; i += 3) {
+            b64[j++] = base64urlChars[a[i] >> 2];
+            b64[j++] = base64urlChars[((a[i] & 3) << 4) | (a[i + 1] >> 4)];
+            b64[j++] = base64urlChars[((a[i + 1] & 15) << 2) | (a[i + 2] >> 6)];
+            b64[j++] = base64urlChars[a[i + 2] & 63];
+        }
+        if (len % 3)
+            b64[b64len - 1] = char_equal;
+        if (len % 3 === 1)
+            b64[b64len - 2] = char_equal;
+        return b64;
+    }
+    function decodeBase64url(b64) {
+        let len = b64.length;
+        if (len % 4)
+            return;
+        let bLen = (len * 3) / 4;
         if (b64[len - 1] === char_equal) {
             len--;
             bLen--;
+            if (b64[len - 1] === char_equal) {
+                len--;
+                bLen--;
+            }
         }
+        const bytes = new Uint8Array(bLen);
+        let i = 0;
+        let pos = 0;
+        while (i < len) {
+            const enc1 = base64urlLookup[b64[i++]];
+            const enc2 = i < len ? base64urlLookup[b64[i++]] : 0;
+            const enc3 = i < len ? base64urlLookup[b64[i++]] : 0;
+            const enc4 = i < len ? base64urlLookup[b64[i++]] : 0;
+            if (enc1 === undefined || enc2 === undefined || enc3 === undefined || enc4 === undefined)
+                return;
+            bytes[pos++] = (enc1 << 2) | (enc2 >> 4);
+            bytes[pos++] = ((enc2 & 15) << 4) | (enc3 >> 2);
+            bytes[pos++] = ((enc3 & 3) << 6) | (enc4 & 63);
+        }
+        return bytes;
     }
-    const bytes = new Uint8Array(bLen);
-    let i = 0;
-    let pos = 0;
-    while (i < len) {
-        const enc1 = base64lookup[b64[i++]];
-        const enc2 = i < len ? base64lookup[b64[i++]] : 0;
-        const enc3 = i < len ? base64lookup[b64[i++]] : 0;
-        const enc4 = i < len ? base64lookup[b64[i++]] : 0;
-        if (enc1 === undefined || enc2 === undefined || enc3 === undefined || enc4 === undefined)
-            return;
-        bytes[pos++] = (enc1 << 2) | (enc2 >> 4);
-        bytes[pos++] = ((enc2 & 15) << 4) | (enc3 >> 2);
-        bytes[pos++] = ((enc3 & 3) << 6) | (enc4 & 63);
+    return {
+        transformFrame: { encrypt: encryptFrame, decrypt: decryptFrame },
+        decodeAesKey,
+        encodeAscii,
+        decodeAscii,
+        encodeBase64url,
+        decodeBase64url,
+    };
+}
+// If the worker is used for decryption, this function code (as string) is used to load the worker via Blob
+// We have to use worker optionally, as it crashes in Android web view, regardless of how it is loaded
+function workerFunction() {
+    // encryption with createEncodedStreams support
+    self.addEventListener("message", async ({ data }) => {
+        await setupTransform(data);
+    });
+    // encryption using RTCRtpScriptTransform.
+    if ("RTCTransformEvent" in self) {
+        self.addEventListener("rtctransform", async ({ transformer }) => {
+            const { operation, aesKey } = transformer.options;
+            const { readable, writable } = transformer;
+            await setupTransform({ operation, aesKey, readable, writable });
+        });
     }
-    return bytes;
+    async function setupTransform({ operation, aesKey, readable, writable }) {
+        const key = await callCrypto.decodeAesKey(aesKey);
+        const transform = callCrypto.transformFrame[operation](key);
+        readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
+    }
 }
 //# sourceMappingURL=call.js.map

@@ -1,10 +1,9 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -12,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBackIos
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -28,10 +28,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.SimplexApp.Companion.context
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
@@ -45,10 +45,9 @@ fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
   val composeState = remember { mutableStateOf(ComposeState()) }
+  val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
-  val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val chosenFile = remember { mutableStateOf<Uri?>(null) }
 
   if (chat == null || user == null) {
     chatModel.chatId.value = null
@@ -57,8 +56,8 @@ fun ChatView(chatModel: ChatModel) {
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
       Log.d(TAG, "ChatView ${chatModel.chatId.value}: LaunchedEffect")
-      delay(1000L)
-      if (chat.chatItems.count() > 0) {
+      delay(750L)
+      if (chat.chatItems.isNotEmpty()) {
         chatModel.markChatItemsRead(chat.chatInfo)
         chatModel.controller.cancelNotificationsForChat(chat.id)
         withApi {
@@ -76,15 +75,11 @@ fun ChatView(chatModel: ChatModel) {
       composeState,
       composeView = {
         ComposeView(
-          chatModel,
-          chat,
-          composeState,
-          chosenImage,
-          chosenFile,
-          showAttachmentBottomSheet = { scope.launch { attachmentBottomSheetState.show() } })
+          chatModel, chat, composeState, attachmentOption,
+          showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+        )
       },
-      chosenImage,
-      chosenFile,
+      attachmentOption,
       scope,
       attachmentBottomSheetState,
       chatModel.chatItems,
@@ -94,7 +89,7 @@ fun ChatView(chatModel: ChatModel) {
         val c = chatModel.chats.firstOrNull {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
         }
-        if (c != null) withApi { openChat(chatModel, c.chatInfo) }
+        if (c != null) withApi { openChat(c.chatInfo, chatModel) }
       },
       deleteMessage = { itemId, mode ->
         withApi {
@@ -117,6 +112,30 @@ fun ChatView(chatModel: ChatModel) {
             chatModel.upsertChatItem(cInfo, cItem)
           }
         }
+      },
+      startCall = { media ->
+        val cInfo = chat.chatInfo
+        if (cInfo is ChatInfo.Direct) {
+          chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+          chatModel.showCallView.value = true
+          chatModel.callCommand.value = WCallCommand.Capabilities
+        }
+      },
+      acceptCall = { contact ->
+        val invitation = chatModel.callInvitations.remove(contact.id)
+        if (invitation == null) {
+          AlertManager.shared.showAlertMsg("Call already ended!")
+        } else {
+          chatModel.activeCallInvitation.value = null
+          chatModel.activeCall.value = Call(
+            contact = contact,
+            callState = CallState.InvitationReceived,
+            localMedia = invitation.peerMedia,
+            sharedKey = invitation.sharedKey
+          )
+          chatModel.showCallView.value = true
+          chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
+        }
       }
     )
   }
@@ -128,8 +147,7 @@ fun ChatLayout(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
-  chosenImage: MutableState<Bitmap?>,
-  chosenFile: MutableState<Uri?>,
+  attachmentOption: MutableState<AttachmentOption?>,
   scope: CoroutineScope,
   attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
@@ -137,19 +155,10 @@ fun ChatLayout(
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  startCall: (CallMediaType) -> Unit,
+  acceptCall: (Contact) -> Unit
 ) {
-  fun onImageChange(bitmap: Bitmap) {
-    val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-    composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-  }
-  fun onFileChange(uri: Uri) {
-    val fileName = getFileName(context, uri)
-    if (fileName != null) {
-      composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(fileName))
-    }
-  }
-
   Surface(
     Modifier
       .fillMaxWidth()
@@ -160,25 +169,21 @@ fun ChatLayout(
         scrimColor = Color.Black.copy(alpha = 0.12F),
         modifier = Modifier.navigationBarsWithImePadding(),
         sheetContent = {
-          GetImageBottomSheet(
-            chosenImage,
-            ::onImageChange,
-            chosenFile,
-            ::onFileChange,
-            hideBottomSheet = {
-              scope.launch { attachmentBottomSheetState.hide() }
-            })
+          ChooseAttachmentView(
+            attachmentOption,
+            hide = { scope.launch { attachmentBottomSheetState.hide() } }
+          )
         },
         sheetState = attachmentBottomSheetState,
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
           Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile)
+            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile, acceptCall)
           }
         }
       }
@@ -187,33 +192,43 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit) {
+fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+  @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
+    IconButton(onClick, modifier = modifier) {
+      Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
+    }
+  }
   Column {
     Box(
       Modifier
         .fillMaxWidth()
         .height(52.dp)
         .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(horizontal = 8.dp),
+        .padding(horizontal = 4.dp),
       contentAlignment = Alignment.CenterStart,
     ) {
-      IconButton(onClick = back) {
-        Icon(
-          Icons.Outlined.ArrowBackIos,
-          stringResource(R.string.back),
-          tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp)
-        )
-      }
+      val cInfo = chat.chatInfo
+      toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
+//      if (cInfo is ChatInfo.Direct) {
+//        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+//          Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
+//            toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
+//              startCall(CallMediaType.Audio)
+//            }
+//          }
+//          toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
+//            startCall(CallMediaType.Video)
+//          }
+//        }
+//      }
       Row(
         Modifier
-          .padding(horizontal = 68.dp)
+          .padding(horizontal = 80.dp)
           .fillMaxWidth()
           .clickable(onClick = info),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        val cInfo = chat.chatInfo
         ChatInfoImage(cInfo, size = 40.dp)
         Column(
           Modifier.padding(start = 8.dp),
@@ -256,7 +271,8 @@ fun ChatItemsList(
   chatItems: List<ChatItem>,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  acceptCall: (Contact) -> Unit
 ) {
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
   val keyboardState by getKeyboardState()
@@ -294,11 +310,11 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         }
       } else { // direct message
@@ -309,7 +325,7 @@ fun ChatItemsList(
             end = if (sent) 12.dp else 76.dp,
           )
         ) {
-          ChatItemView(user, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile)
+          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
         }
       }
     }
@@ -369,8 +385,7 @@ fun PreviewChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
-      chosenFile = remember { mutableStateOf(null) },
-      chosenImage = remember { mutableStateOf(null) },
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
@@ -378,7 +393,9 @@ fun PreviewChatLayout() {
       info = {},
       openDirectChat = {},
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      startCall = {},
+      acceptCall = { _ ->  }
     )
   }
 }
@@ -414,8 +431,7 @@ fun PreviewGroupChatLayout() {
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       composeView = {},
-      chosenImage = remember { mutableStateOf(null) },
-      chosenFile = remember { mutableStateOf(null) },
+      attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
@@ -423,7 +439,9 @@ fun PreviewGroupChatLayout() {
       info = {},
       openDirectChat = {},
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      startCall = {},
+      acceptCall = { _ ->  }
     )
   }
 }

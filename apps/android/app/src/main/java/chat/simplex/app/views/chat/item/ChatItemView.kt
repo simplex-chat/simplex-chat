@@ -30,13 +30,15 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatItemView(
   user: User,
+  cInfo: ChatInfo,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  acceptCall: (Contact) -> Unit
 ) {
   val context = LocalContext.current
   val sent = cItem.chatDir.sent
@@ -54,18 +56,12 @@ fun ChatItemView(
         .clip(RoundedCornerShape(18.dp))
         .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
     ) {
-      if (cItem.isMsgContent) {
+      @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
           FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
         }
-      } else if (cItem.isDeletedContent) {
-        DeletedItemView(cItem, showMember = showMember)
-      } else if (cItem.isCall) {
-        FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
-      }
-      if (cItem.isMsgContent) {
         DropdownMenu(
           expanded = showMenu.value,
           onDismissRequest = { showMenu.value = false },
@@ -100,7 +96,7 @@ fun ChatItemView(
               })
             }
           }
-          if (cItem.chatDir.sent && cItem.meta.editable) {
+          if (cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
               composeState.value = ComposeState(editingItem = cItem)
               showMenu.value = false
@@ -116,6 +112,38 @@ fun ChatItemView(
             color = Color.Red
           )
         }
+      }
+
+      @Composable fun DeletedItem() {
+        DeletedItemView(cItem, showMember = showMember)
+        DropdownMenu(
+          expanded = showMenu.value,
+          onDismissRequest = { showMenu.value = false },
+          Modifier.width(220.dp)
+        ) {
+          ItemAction(
+            stringResource(R.string.delete_verb),
+            Icons.Outlined.Delete,
+            onClick = {
+              showMenu.value = false
+              deleteMessageAlertDialog(cItem, deleteMessage = deleteMessage)
+            },
+            color = Color.Red
+          )
+        }
+      }
+
+      @Composable fun CallItem(status: CICallStatus, duration: Int) {
+        CICallItemView(cInfo, cItem, status, duration, acceptCall)
+      }
+
+      when (val c = cItem.content) {
+        is CIContent.SndMsgContent -> ContentItem()
+        is CIContent.RcvMsgContent -> ContentItem()
+        is CIContent.SndDeleted -> DeletedItem()
+        is CIContent.RcvDeleted -> DeletedItem()
+        is CIContent.SndCall -> CallItem(c.status, c.duration)
+        is CIContent.RcvCall -> CallItem(c.status, c.duration)
       }
     }
   }
@@ -170,13 +198,15 @@ fun PreviewChatItemView() {
   SimpleXTheme {
     ChatItemView(
       User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      acceptCall = { _ -> }
     )
   }
 }
@@ -187,11 +217,13 @@ fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
       User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
       composeState = remember { mutableStateOf(ComposeState()) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
-      receiveFile = {}
+      receiveFile = {},
+      acceptCall = { _ -> }
     )
   }
 }

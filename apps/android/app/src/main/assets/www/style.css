@@ -21,6 +21,6 @@ body {
   object-fit: cover;
   margin: 16px;
   border-radius: 16px;
-  bottom: 0;
+  top: 0;
   right: 0;
 }

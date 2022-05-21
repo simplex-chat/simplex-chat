@@ -13,7 +13,6 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
-    @State private var showCallView = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
 
     var user: User
@@ -22,7 +21,7 @@ struct ChatListView: View {
         let v = NavigationView {
             List {
                 ForEach(filteredChats()) { chat in
-                    ChatListNavLink(chat: chat, showCallView: $showCallView)
+                    ChatListNavLink(chat: chat)
                         .padding(.trailing, -16)
                 }
             }
@@ -50,11 +49,11 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .fullScreenCover(isPresented: $showCallView) {
-                ActiveCallView(showCallView: $showCallView)
+            .fullScreenCover(isPresented: $chatModel.showCallView) {
+                ActiveCallView()
             }
-            .onChange(of: showCallView) { _ in
-                if (showCallView) { return }
+            .onChange(of: chatModel.showCallView) { _ in
+                if (chatModel.showCallView) { return }
                 if let call = chatModel.activeCall {
                     Task {
                         do {
@@ -69,7 +68,7 @@ struct ChatListView: View {
             .onChange(of: chatModel.activeCallInvitation) { _ in
                 if let contactRef = chatModel.activeCallInvitation,
                    case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
-                   let invitation = chatModel.callInvitations.removeValue(forKey: contactRef.id) {
+                   let invitation = chatModel.callInvitations[contactRef.id] {
                     answerCallAlert(contact, invitation)
                 }
             }
@@ -98,22 +97,27 @@ struct ChatListView: View {
     }
 
     private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
-        AlertManager.shared.showAlert(Alert(
-            title: Text("Incoming call"),
+        return AlertManager.shared.showAlert(Alert(
+            title: Text(invitation.callTitle),
+            message: Text(contact.profile.displayName).bold() +
+                Text(" wants to connect with you via ") +
+                Text(invitation.callTypeText),
             primaryButton: .default(Text("Answer")) {
-                if chatModel.activeCallInvitation == nil {
-                    DispatchQueue.main.async {
-                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
-                    }
-                } else {
+                if let activeCallInvitation = chatModel.activeCallInvitation {
+                    chatModel.callInvitations.removeValue(forKey: activeCallInvitation.id)
                     chatModel.activeCallInvitation = nil
                     chatModel.activeCall = Call(
                         contact: contact,
                         callState: .invitationReceived,
-                        localMedia: invitation.peerMedia
+                        localMedia: invitation.peerMedia,
+                        sharedKey: invitation.sharedKey
                     )
-                    showCallView = true
-                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                    chatModel.showCallView = true
+                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+                } else {
+                    DispatchQueue.main.async {
+                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
+                    }
                 }
             },
             secondaryButton: .cancel()

@@ -124,9 +124,8 @@ struct ComposeView: View {
 
     @State private var showChooseSource = false
     @State private var showImagePicker = false
-    @State private var imageSource: ImageSource = .imageLibrary
+    @State private var showTakePhoto = false
     @State var chosenImage: UIImage? = nil
-
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
     
@@ -171,25 +170,24 @@ struct ComposeView: View {
         }
         .confirmationDialog("Attach", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
-                imageSource = .camera
-                showImagePicker = true
+                showTakePhoto = true
             }
             Button("Choose from library") {
-                imageSource = .imageLibrary
                 showImagePicker = true
             }
             Button("Choose file") {
                 showFileImporter = true
             }
         }
-        .sheet(isPresented: $showImagePicker) {
-            switch imageSource {
-            case .imageLibrary:
-                LibraryImagePicker(image: $chosenImage) {
-                    didSelectItem in showImagePicker = false
-                }
-            case .camera:
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
                 CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) {
+                didSelectItem in showImagePicker = false
             }
         }
         .onChange(of: chosenImage) { image in

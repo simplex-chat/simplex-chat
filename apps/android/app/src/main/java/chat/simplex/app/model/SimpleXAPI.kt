@@ -1,9 +1,14 @@
 package chat.simplex.app.model
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
-import android.content.Context
-import android.content.SharedPreferences
+import android.app.Application
+import android.content.*
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -40,18 +45,22 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      apiStartChat()
+      val chatStarted = apiStartChat()
       apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       val chats = apiGetChats()
-      chatModel.chats.clear()
-      chatModel.chats.addAll(chats)
+      if (chatStarted) {
+        chatModel.chats.clear()
+        chatModel.chats.addAll(chats)
+      } else {
+        chatModel.updateChats(chats)
+      }
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-      Log.d(TAG, "started chat")
-    } catch(e: Error) {
+      Log.d(TAG, "chat started")
+    } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -130,10 +139,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat() {
+  suspend fun apiStartChat(): Boolean {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted || r is CR.ChatRunning) return
-    throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    when (r) {
+      is CR.ChatStarted -> return true
+      is CR.ChatRunning -> return false
+      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    }
   }
 
   suspend fun apiSetFilesFolder(filesFolder: String) {
@@ -268,6 +280,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return false
   }
 
+  suspend fun apiClearChat(type: ChatType, id: Long): ChatInfo? {
+    val r = sendCmd(CC.ApiClearChat(type, id))
+    if (r is CR.ChatCleared) return r.chatInfo
+    Log.e(TAG, "apiClearChat bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
     val r = sendCmd(CC.ApiUpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
@@ -332,20 +351,20 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallOffer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>, media: CallMediaType, capabilities: CallCapabilities): Boolean {
+  suspend fun apiSendCallOffer(contact: Contact, rtcSession: String, rtcIceCandidates: String, media: CallMediaType, capabilities: CallCapabilities): Boolean {
     val webRtcSession = WebRTCSession(rtcSession, rtcIceCandidates)
     val callOffer = WebRTCCallOffer(CallType(media, capabilities), webRtcSession)
     val r = sendCmd(CC.ApiSendCallOffer(contact, callOffer))
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallAnswer(contact: Contact, rtcSession: String, rtcIceCandidates: List<String>): Boolean {
+  suspend fun apiSendCallAnswer(contact: Contact, rtcSession: String, rtcIceCandidates: String): Boolean {
     val answer = WebRTCSession(rtcSession, rtcIceCandidates)
     val r = sendCmd(CC.ApiSendCallAnswer(contact, answer))
     return r is CR.CmdOk
   }
 
-  suspend fun apiSendCallExtraInfo(contact: Contact, rtcIceCandidates: List<String>): Boolean {
+  suspend fun apiSendCallExtraInfo(contact: Contact, rtcIceCandidates: String): Boolean {
     val extraInfo = WebRTCExtraInfo(rtcIceCandidates)
     val r = sendCmd(CC.ApiSendCallExtraInfo(contact, extraInfo))
     return r is CR.CmdOk
@@ -356,15 +375,9 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     return r is CR.CmdOk
   }
 
-  suspend fun apiCallStatus(contact: Contact, status: String): Boolean {
-    try {
-      val callStatus = WebRTCCallStatus.valueOf(status)
-      val r = sendCmd(CC.ApiCallStatus(contact, callStatus))
-      return r is CR.CmdOk
-    } catch (e: Error) {
-      Log.d(TAG,"apiCallStatus: call status $status not used")
-      return false
-    }
+  suspend fun apiCallStatus(contact: Contact, status: WebRTCCallStatus): Boolean {
+    val r = sendCmd(CC.ApiCallStatus(contact, status))
+    return r is CR.CmdOk
   }
 
   suspend fun apiChatRead(type: ChatType, id: Long, range: CC.ItemRange): Boolean {
@@ -491,8 +504,79 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
           removeFile(appContext, fileName)
         }
       }
+      is CR.CallInvitation -> {
+        val invitation = CallInvitation(r.callType.media, r.sharedKey)
+        chatModel.callInvitations[r.contact.id] = invitation
+        if (chatModel.activeCallInvitation.value == null) {
+          chatModel.activeCallInvitation.value = ContactRef(r.contact.apiId, r.contact.localDisplayName)
+        }
+        ntfManager.notifyCallInvitation(r.contact, invitation)
+        AlertManager.shared.showAlertDialog(
+          title = invitation.callTitle,
+          text =  String.format(generalGetString(R.string.contact_wants_to_connect_via_call), r.contact.displayName) + " " +  invitation.callTypeText + ".",
+          confirmText = generalGetString(R.string.answer),
+          onConfirm = {
+            if (chatModel.activeCallInvitation.value == null) {
+              AlertManager.shared.hideAlert()
+              withApi { AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended)) }
+            } else {
+              chatModel.activeCallInvitation.value = null
+              chatModel.activeCall.value = Call(
+                contact = r.contact,
+                callState = CallState.InvitationReceived,
+                localMedia = invitation.peerMedia,
+                sharedKey = invitation.sharedKey
+              )
+              chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
+              chatModel.showCallView.value = true
+            }
+          },
+          onDismiss = {
+            chatModel.activeCallInvitation.value = null
+          }
+        )
+      }
+      is CR.CallOffer -> {
+        // TODO askConfirmation?
+        // TODO check encryption is compatible
+        withCall(r, r.contact) { call ->
+          chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
+          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey)
+        }
+      }
+      is CR.CallAnswer -> {
+        withCall(r, r.contact) { call ->
+          chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+          chatModel.callCommand.value = WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
+        }
+      }
+      is CR.CallExtraInfo -> {
+        withCall(r, r.contact) { _ ->
+          chatModel.callCommand.value = WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
+        }
+      }
+      is CR.CallEnded -> {
+        withCall(r, r.contact) { _ ->
+          chatModel.callCommand.value = WCallCommand.End
+          withApi {
+            chatModel.activeCall.value = null
+            chatModel.callCommand.value = null
+          }
+        }
+        chatModel.activeCallInvitation.value = null
+        chatModel.showCallView.value = false
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
+    }
+  }
+
+  private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
+    val call = chatModel.activeCall.value
+    if (call != null && call.contact.apiId == contact.apiId) {
+      perform(call)
+    } else {
+      Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
     }
   }
 
@@ -526,36 +610,116 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     chatModel.updateNetworkStatus(contact.id, Chat.NetworkStatus.Error(err))
   }
 
-  fun showBackgroundServiceNotice() {
+  fun showBackgroundServiceNoticeIfNeeded() {
+    Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
     if (!getBackgroundServiceNoticeShown()) {
-      AlertManager.shared.showAlert {
-        AlertDialog(
-          onDismissRequest = AlertManager.shared::hideAlert,
-          title = {
-            Row {
-              Icon(
-                Icons.Outlined.Bolt,
-                contentDescription = stringResource(R.string.icon_descr_instant_notifications),
-              )
-              Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
-            }
-          },
-          text = {
-            Column {
-              Text(
-                annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
-                Modifier.padding(bottom = 8.dp)
-              )
-              Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
-            }
-          },
-          confirmButton = {
-            Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
-          }
-        )
+      // the branch for the new users who has never seen service notice
+      if (isIgnoringBatteryOptimizations(appContext)) {
+        showBGServiceNotice()
+      } else {
+        showBGServiceNoticeIgnoreOptimization()
       }
-      setBackgroundServiceNoticeShown()
+      // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
+      setBackgroundServiceNoticeShown(true)
+      setBackgroundServiceBatteryNoticeShown(true)
+    } else if (!isIgnoringBatteryOptimizations(appContext) && getRunServiceInBackground()) {
+      // the branch for users who have app installed, and have seen the service notice,
+      // but the battery optimization for the app is on (Android 12) AND the service is running
+      if (getBackgroundServiceBatteryNoticeShown()) {
+        // users have been presented with battery notice before - they did not allow ignoring optimizitions -> disable service
+        showDisablingServiceNotice()
+        setRunServiceInBackground(false)
+        chatModel.runServiceInBackground.value = false
+      } else {
+        // show battery optimization notice
+        showBGServiceNoticeIgnoreOptimization()
+        setBackgroundServiceBatteryNoticeShown(true)
+      }
     }
+  }
+
+  private fun showBGServiceNotice() = AlertManager.shared.showAlert {
+    AlertDialog(
+      onDismissRequest = AlertManager.shared::hideAlert,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            Modifier.padding(bottom = 8.dp)
+          )
+          Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
+        }
+      },
+      confirmButton = {
+        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+      }
+    )
+  }
+
+  private fun showBGServiceNoticeIgnoreOptimization() = AlertManager.shared.showAlert {
+    val ignoreOptimization = {
+      AlertManager.shared.hideAlert()
+      askAboutIgnoringBatteryOptimization(appContext)
+    }
+    AlertDialog(
+      onDismissRequest = ignoreOptimization,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            Modifier.padding(bottom = 8.dp)
+          )
+          Text(annotatedStringResource(R.string.turn_off_battery_optimization))
+        }
+      },
+      confirmButton = {
+        Button(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
+      }
+    )
+  }
+
+  private fun showDisablingServiceNotice() = AlertManager.shared.showAlert {
+    AlertDialog(
+      onDismissRequest = AlertManager.shared::hideAlert,
+      title = {
+        Row {
+          Icon(
+            Icons.Outlined.Bolt,
+            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+          )
+          Text(stringResource(R.string.private_instant_notifications_disabled), fontWeight = FontWeight.Bold)
+        }
+      },
+      text = {
+        Column {
+          Text(
+            annotatedStringResource(R.string.turning_off_background_service),
+            Modifier.padding(bottom = 8.dp)
+          )
+        }
+      },
+      confirmButton = {
+        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+      }
+    )
   }
 
   fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -572,18 +736,45 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
       .apply()
 
-  fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+  private fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
 
-  fun setBackgroundServiceNoticeShown() =
+  fun setBackgroundServiceNoticeShown(shown: Boolean) =
     sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, true)
+      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, shown)
       .apply()
+
+  private fun getBackgroundServiceBatteryNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
+
+  fun setBackgroundServiceBatteryNoticeShown(shown: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, shown)
+      .apply()
+
+  fun isIgnoringBatteryOptimizations(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+    val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
+    return powerManager.isIgnoringBatteryOptimizations(context.packageName)
+  }
+
+  private fun askAboutIgnoringBatteryOptimization(context: Context) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+    Intent().apply {
+      @SuppressLint("BatteryLife")
+      action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+      data = Uri.parse("package:${context.packageName}")
+      // This flag is needed when you start a new activity from non-Activity context
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      context.startActivity(this)
+    }
+  }
 
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
+    private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
   }
 }
 
@@ -604,6 +795,7 @@ sealed class CC {
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
+  class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
   class CreateMyAddress: CC()
@@ -637,6 +829,7 @@ sealed class CC {
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
+    is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
     is CreateMyAddress -> "/address"
@@ -650,7 +843,7 @@ sealed class CC {
     is ApiSendCallAnswer -> "/_call answer @${contact.apiId} ${json.encodeToString(answer)}"
     is ApiSendCallExtraInfo -> "/_call extra @${contact.apiId} ${json.encodeToString(extraInfo)}"
     is ApiEndCall -> "/_call end @${contact.apiId}"
-    is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus}"
+    is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ReceiveFile -> "/freceive $fileId"
   }
@@ -671,6 +864,7 @@ sealed class CC {
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
+    is ApiClearChat -> "apiClearChat"
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is CreateMyAddress -> "createMyAddress"
@@ -742,6 +936,7 @@ sealed class CR {
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val contact: Contact): CR()
+  @Serializable @SerialName("chatCleared") class ChatCleared(val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
@@ -774,8 +969,8 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String?): CR()
-  @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String?, val askConfirmation: Boolean): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null): CR()
+  @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val contact: Contact): CR()
@@ -799,6 +994,7 @@ sealed class CR {
     is SentInvitation -> "sentInvitation"
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactDeleted -> "contactDeleted"
+    is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
@@ -857,6 +1053,7 @@ sealed class CR {
     is SentInvitation -> noDetails()
     is ContactAlreadyExists -> json.encodeToString(contact)
     is ContactDeleted -> json.encodeToString(contact)
+    is ChatCleared -> json.encodeToString(chatInfo)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ParsedMarkdown -> json.encodeToString(formattedText)

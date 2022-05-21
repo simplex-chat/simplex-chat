@@ -38,10 +38,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         } else if content.categoryIdentifier == ntfCategoryCallInvitation && (action == ntfActionAcceptCall || action == ntfActionRejectCall),
                   let chatId = content.userInfo["chatId"] as? String,
                   case let .direct(contact) = chatModel.getChat(chatId)?.chatInfo,
-                  let invitation = chatModel.callInvitations[chatId] {
+                  let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
             if action == ntfActionAcceptCall {
+                chatModel.activeCallInvitation = nil
                 chatModel.activeCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
-                chatModel.chatId = nil
+                chatModel.showCallView = true
                 chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
             } else {
                 Task {
@@ -56,7 +57,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                     }
                 }
             }
-            chatModel.callInvitations.removeValue(forKey: chatId)
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }

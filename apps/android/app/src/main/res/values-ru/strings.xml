@@ -54,8 +54,11 @@
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
+    <string name="private_instant_notifications_disabled">Приватные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
+    <string name="turn_off_battery_optimization">Для использования приватных уведомлений, пожалуйста отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в слеующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turning_off_background_service">Оптимизация батареи включена, поэтому приватные уведомления выключены. Вы можете снова включить их через Настройки.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
@@ -164,6 +167,13 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если вы отклоните запрос на соединение.</string>
     <string name="accept_contact_button">Принять</string>
     <string name="reject_contact_button">Отклонить</string>
+
+    <!-- Clear Chat - ChatListNavLinkView.kt -->
+    <string name="clear_chat_question">Очистить разговор?</string>
+    <string name="clear_chat_warning">Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</string>
+    <string name="clear_verb">Очистить</string>
+    <string name="clear_chat_button">Очистить разговор</string>
+    <string name="mark_read">Прочитано</string>
 
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
@@ -286,7 +296,7 @@
     <string name="callstatus_accepted">принятый звонок</string>
     <string name="callstatus_connecting">соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
-    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s!</xliff:g></string>
+    <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
     <string name="callstatus_error">ошибка соединения</string>
 
     <!-- CallState -->
@@ -329,4 +339,40 @@
     <string name="or">или</string>
     <string name="connect_with_the_developers">Соединиться с разработчиками</string>
     <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+
+    <!-- Call -->
+    <string name="incoming_video_call">Входящий видеозвонок</string>
+    <string name="incoming_audio_call">Входящий аудиозвонок</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> хочет связаться с вами через </string>
+    <string name="video_call_no_encryption">видеозвонок (не e2e зашифрованный)</string>
+    <string name="encrypted_video_call">e2e зашифрованный видеозвонок</string>
+    <string name="audio_call_no_encryption">аудиозвонок (не e2e зашифрованный)</string>
+    <string name="encrypted_audio_call">e2e зашифрованный аудиозвонок</string>
+    <string name="answer">Принять</string>
+    <string name="call_already_ended">Звонок уже завершен!</string>
+    <string name="icon_descr_video_call">видеозвонок</string>
+    <string name="icon_descr_audio_call">аудиозвонок</string>
+
+    <!-- Call overlay -->
+    <string name="status_e2e_encrypted">e2e зашифровано</string>
+    <string name="status_no_e2e_encryption">нет e2e шифрования</string>
+    <string name="status_contact_has_e2e_encryption">у контакта есть e2e шифрование</string>
+    <string name="status_contact_has_no_e2e_encryption">у контакта нет e2e шифрования</string>
+    <string name="call_connection_peer_to_peer">peer-to-peer</string>
+    <string name="call_connection_via_relay">через relay сервер</string>
+    <string name="icon_descr_hang_up">Закончить звонок</string>
+    <string name="icon_descr_video_off">Выключить видео</string>
+    <string name="icon_descr_video_on">Включить видео</string>
+    <string name="icon_descr_audio_off">Выключить звук</string>
+    <string name="icon_descr_audio_on">Включить звук</string>
+    <string name="icon_descr_flip_camera">Перевернуть камеру</string>
+
+    <!-- Call items -->
+    <string name="icon_descr_call_pending_sent">Входящий звонок</string>
+    <string name="icon_descr_call_missed">Пропущенный звонок</string>
+    <string name="icon_descr_call_rejected">Отклоненный звонок</string>
+    <string name="icon_descr_call_connecting">Соединяющийся звонок</string>
+    <string name="icon_descr_call_progress">Текущий звонок</string>
+    <string name="icon_descr_call_ended">Звонок завершен</string>
+    <string name="answer_call">Принять звонок</string>
 </resources>

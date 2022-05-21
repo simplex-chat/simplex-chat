@@ -11,7 +11,6 @@ import SwiftUI
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
-    @Binding var showCallView: Bool
     @State private var showContactRequestDialog = false
 
     var body: some View {
@@ -28,7 +27,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(chat: chat, showCallView: $showCallView)
+        ChatView(chat: chat)
         .onAppear {
             do {
                 let cInfo = chat.chatInfo
@@ -53,6 +52,9 @@ struct ChatListNavLink: View {
             if chat.chatStats.unreadCount > 0 {
                 markReadButton()
             }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            clearChatButton()
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
@@ -90,6 +92,9 @@ struct ChatListNavLink: View {
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            clearChatButton()
+        }
+        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
             } label: {
@@ -106,6 +111,15 @@ struct ChatListNavLink: View {
             Label("Read", systemImage: "checkmark")
         }
         .tint(Color.accentColor)
+    }
+
+    private func clearChatButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(clearChatAlert())
+        } label: {
+            Label("Clear", systemImage: "gobackward")
+        }
+        .tint(Color.orange)
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
@@ -168,6 +182,17 @@ struct ChatListNavLink: View {
                         logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(responseError(error))")
                     }
                 }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func clearChatAlert() -> Alert {
+        Alert(
+            title: Text("Clear conversation?"),
+            message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            primaryButton: .destructive(Text("Clear")) {
+                Task { await clearChat(chat) }
             },
             secondaryButton: .cancel()
         )
@@ -253,20 +278,19 @@ struct ChatListNavLink: View {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
-        @State var showCallView = false
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showCallView: $showCallView)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showCallView: $showCallView)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ), showCallView: $showCallView)
+            ))
         }
         .previewLayout(.fixed(width: 360, height: 80))
     }

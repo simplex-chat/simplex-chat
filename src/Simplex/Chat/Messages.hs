@@ -60,6 +60,13 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
+chatInfoUpdatedAt :: ChatInfo c -> UTCTime
+chatInfoUpdatedAt = \case
+  DirectChat Contact {updatedAt} -> updatedAt
+  GroupChat GroupInfo {updatedAt} -> updatedAt
+  ContactRequest UserContactRequest {updatedAt} -> updatedAt
+  ContactConnection PendingContactConnection {updatedAt} -> updatedAt
+
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
@@ -81,6 +88,14 @@ jsonChatInfo = \case
   GroupChat g -> JCInfoGroup g
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
+
+data AChatInfo = forall c. AChatInfo (SChatType c) (ChatInfo c)
+
+deriving instance Show AChatInfo
+
+instance ToJSON AChatInfo where
+  toJSON (AChatInfo _ c) = J.toJSON c
+  toEncoding (AChatInfo _ c) = J.toEncoding c
 
 data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
   { chatDir :: CIDirection c d,
@@ -362,6 +377,13 @@ instance StrEncoding ACIFileStatus where
       "rcv_complete" -> pure $ AFS SMDRcv CIFSRcvComplete
       "rcv_cancelled" -> pure $ AFS SMDRcv CIFSRcvCancelled
       _ -> fail "bad file status"
+
+-- to conveniently read file data from db
+data CIFileInfo = CIFileInfo
+  { fileId :: Int64,
+    fileStatus :: ACIFileStatus,
+    filePath :: Maybe FilePath
+  }
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd

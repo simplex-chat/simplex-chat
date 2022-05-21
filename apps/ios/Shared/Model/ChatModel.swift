@@ -27,10 +27,11 @@ final class ChatModel: ObservableObject {
     @Published var deviceToken: String?
     @Published var tokenStatus = NtfTknStatus.new
     // current WebRTC call
-    @Published var callInvitations: Dictionary<String, CallInvitation> = [:]
+    @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
     @Published var activeCallInvitation: ContactRef?
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
+    @Published var showCallView = false
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -182,6 +183,19 @@ final class ChatModel: ObservableObject {
                 }
                 i = i + 1
             }
+        }
+    }
+
+    func clearChat(_ cInfo: ChatInfo) {
+        // clear preview
+        if let chat = getChat(cInfo.id) {
+            chat.chatItems = []
+            chat.chatStats = ChatStats()
+            chat.chatInfo = cInfo
+        }
+        // clear current chat
+        if chatId == cInfo.id {
+            chatItems = []
         }
     }
 

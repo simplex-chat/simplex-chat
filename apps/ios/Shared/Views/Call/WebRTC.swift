@@ -22,6 +22,8 @@ class Call: Equatable {
     var sharedKey: String?
     var audioEnabled: Bool
     var videoEnabled: Bool
+    var localCamera: VideoCamera
+    var connectionInfo: ConnectionInfo?
 
     init(
         contact: Contact,
@@ -31,7 +33,9 @@ class Call: Equatable {
         peerMedia: CallMediaType? = nil,
         sharedKey: String? = nil,
         audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil
+        videoEnabled: Bool? = nil,
+        localCamera: VideoCamera = .user,
+        connectionInfo: ConnectionInfo? = nil
     ) {
         self.contact = contact
         self.callState = callState
@@ -41,6 +45,8 @@ class Call: Equatable {
         self.sharedKey = sharedKey
         self.audioEnabled = audioEnabled ?? true
         self.videoEnabled = videoEnabled ?? (localMedia == .video)
+        self.localCamera = localCamera
+        self.connectionInfo = connectionInfo
     }
 
     func copy(
@@ -51,7 +57,9 @@ class Call: Equatable {
         peerMedia: CallMediaType? = nil,
         sharedKey: String? = nil,
         audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil
+        videoEnabled: Bool? = nil,
+        localCamera: VideoCamera? = nil,
+        connectionInfo: ConnectionInfo? = nil
     ) -> Call {
         Call (
             contact: contact ?? self.contact,
@@ -61,13 +69,25 @@ class Call: Equatable {
             peerMedia: peerMedia ?? self.peerMedia,
             sharedKey: sharedKey ?? self.sharedKey,
             audioEnabled: audioEnabled ?? self.audioEnabled,
-            videoEnabled: videoEnabled ?? self.videoEnabled
+            videoEnabled: videoEnabled ?? self.videoEnabled,
+            localCamera: localCamera ?? self.localCamera,
+            connectionInfo: connectionInfo ?? self.connectionInfo
         )
     }
 
-    var encrypted: Bool {
-        (localCapabilities?.encryption ?? false) && sharedKey != nil
+    var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
+    var localEncrypted: Bool { get { localCapabilities?.encryption ?? false } }
+    var encryptionStatus: LocalizedStringKey {
+        get {
+            switch callState {
+            case .waitCapabilities: return ""
+            case .invitationSent: return localEncrypted ? "e2e encrypted" : "no e2e encryption"
+            case .invitationReceived: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
+            default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted" 
+            }
+        }
     }
+    var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
 }
 
 enum CallState {
@@ -97,29 +117,34 @@ struct WVAPICall: Encodable {
     var command: WCallCommand
 }
 
-struct WVAPIMessage: Equatable, Decodable {
+struct WVAPIMessage: Equatable, Decodable, Encodable {
     var corrId: Int?
     var resp: WCallResponse
     var command: WCallCommand?
 }
 
 enum WCallCommand: Equatable, Encodable, Decodable {
-    case capabilities
-    case start(media: CallMediaType, aesKey: String? = nil)
-    case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
-    case answer(answer: String, iceCandidates: [String])
-    case ice(iceCandidates: [String])
+    case capabilities(useWorker: Bool? = nil)
+    case start(media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
+    case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
+    case answer(answer: String, iceCandidates: String)
+    case ice(iceCandidates: String)
     case media(media: CallMediaType, enable: Bool)
+    case camera(camera: VideoCamera)
     case end
 
     enum CodingKeys: String, CodingKey {
         case type
         case media
+        case camera
         case aesKey
+        case useWorker
         case offer
         case answer
         case iceCandidates
         case enable
+        case iceServers
+        case relay
     }
 
     var cmdType: String {
@@ -127,10 +152,11 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             switch self {
             case .capabilities: return "capabilities"
             case .start: return "start"
-            case .accept: return "accept"
+            case .offer: return "offer"
             case .answer: return "answer"
             case .ice: return "ice"
             case .media: return "media"
+            case .camera: return "camera"
             case .end: return "end"
             }
         }
@@ -139,18 +165,25 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .capabilities:
+        case let .capabilities(useWorker):
             try container.encode("capabilities", forKey: .type)
-        case let .start(media, aesKey):
+            try container.encode(useWorker, forKey: .useWorker)
+        case let .start(media, aesKey, useWorker, iceServers, relay):
             try container.encode("start", forKey: .type)
             try container.encode(media, forKey: .media)
             try container.encode(aesKey, forKey: .aesKey)
-        case let .accept(offer, iceCandidates, media, aesKey):
-            try container.encode("accept", forKey: .type)
+            try container.encode(useWorker, forKey: .useWorker)
+            try container.encode(iceServers, forKey: .iceServers)
+            try container.encode(relay, forKey: .relay)
+        case let .offer(offer, iceCandidates, media, aesKey, useWorker, iceServers, relay):
+            try container.encode("offer", forKey: .type)
             try container.encode(offer, forKey: .offer)
             try container.encode(iceCandidates, forKey: .iceCandidates)
             try container.encode(media, forKey: .media)
             try container.encode(aesKey, forKey: .aesKey)
+            try container.encode(useWorker, forKey: .useWorker)
+            try container.encode(iceServers, forKey: .iceServers)
+            try container.encode(relay, forKey: .relay)
         case let .answer(answer, iceCandidates):
             try container.encode("answer", forKey: .type)
             try container.encode(answer, forKey: .answer)
@@ -162,6 +195,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
             try container.encode("media", forKey: .type)
             try container.encode(media, forKey: .media)
             try container.encode(enable, forKey: .enable)
+        case let .camera(camera):
+            try container.encode("camera", forKey: .type)
+            try container.encode(camera, forKey: .camera)
         case .end:
             try container.encode("end", forKey: .type)
         }
@@ -172,28 +208,38 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         let type = try container.decode(String.self, forKey: CodingKeys.type)
         switch type {
         case "capabilities":
-            self = .capabilities
+            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
+            self = .capabilities(useWorker: useWorker)
         case "start":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
-            self = .start(media: media, aesKey: aesKey)
-        case "accept":
+            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
+            let iceServers = try container.decode(([RTCIceServer]?).self, forKey: .iceServers)
+            let relay = try container.decode((Bool?).self, forKey: .relay)
+            self = .start(media: media, aesKey: aesKey, useWorker: useWorker, iceServers: iceServers, relay: relay)
+        case "offer":
             let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)
-            self = .accept(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey)
+            let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
+            let iceServers = try container.decode(([RTCIceServer]?).self, forKey: .iceServers)
+            let relay = try container.decode((Bool?).self, forKey: .relay)
+            self = .offer(offer: offer, iceCandidates: iceCandidates, media: media, aesKey: aesKey, useWorker: useWorker, iceServers: iceServers, relay: relay)
         case "answer":
             let answer = try container.decode(String.self, forKey: CodingKeys.answer)
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             self = .answer(answer: answer, iceCandidates: iceCandidates)
         case "ice":
-            let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+            let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
             self = .ice(iceCandidates: iceCandidates)
         case "media":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let enable = try container.decode(Bool.self, forKey: CodingKeys.enable)
             self = .media(media: media, enable: enable)
+        case "camera":
+            let camera = try container.decode(VideoCamera.self, forKey: CodingKeys.camera)
+            self = .camera(camera: camera)
         case "end":
             self = .end
         default:
@@ -205,12 +251,11 @@ enum WCallCommand: Equatable, Encodable, Decodable {
 
 enum WCallResponse: Equatable, Decodable {
     case capabilities(capabilities: CallCapabilities)
-    case offer(offer: String, iceCandidates: [String], capabilities: CallCapabilities)
-    // TODO remove accept, it is needed for debugging
-//    case accept(offer: String, iceCandidates: [String], media: CallMediaType, aesKey: String? = nil)
-    case answer(answer: String, iceCandidates: [String])
-    case ice(iceCandidates: [String])
+    case offer(offer: String, iceCandidates: String, capabilities: CallCapabilities)
+    case answer(answer: String, iceCandidates: String)
+    case ice(iceCandidates: String)
     case connection(state: ConnectionState)
+    case connected(connectionInfo: ConnectionInfo)
     case ended
     case ok
     case error(message: String)
@@ -223,10 +268,8 @@ enum WCallResponse: Equatable, Decodable {
         case answer
         case iceCandidates
         case state
+        case connectionInfo
         case message
-        // TODO remove media, aesKey
-        case media
-        case aesKey
     }
 
     var respType: String {
@@ -234,10 +277,10 @@ enum WCallResponse: Equatable, Decodable {
             switch self {
             case .capabilities: return("capabilities")
             case .offer: return("offer")
-//            case .accept: return("accept")
-            case .answer: return("answer (TODO remove)")
+            case .answer: return("answer")
             case .ice: return("ice")
             case .connection: return("connection")
+            case .connected: return("connected")
             case .ended: return("ended")
             case .ok: return("ok")
             case .error: return("error")
@@ -256,19 +299,22 @@ enum WCallResponse: Equatable, Decodable {
                 self = .capabilities(capabilities: capabilities)
             case "offer":
                 let offer = try container.decode(String.self, forKey: CodingKeys.offer)
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 let capabilities = try container.decode(CallCapabilities.self, forKey: CodingKeys.capabilities)
                 self = .offer(offer: offer, iceCandidates: iceCandidates, capabilities: capabilities)
             case "answer":
                 let answer = try container.decode(String.self, forKey: CodingKeys.answer)
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 self = .answer(answer: answer, iceCandidates: iceCandidates)
             case "ice":
-                let iceCandidates = try container.decode([String].self, forKey: CodingKeys.iceCandidates)
+                let iceCandidates = try container.decode(String.self, forKey: CodingKeys.iceCandidates)
                 self = .ice(iceCandidates: iceCandidates)
             case "connection":
                 let state = try container.decode(ConnectionState.self, forKey: CodingKeys.state)
                 self = .connection(state: state)
+            case "connected":
+                let connectionInfo = try container.decode(ConnectionInfo.self, forKey: CodingKeys.connectionInfo)
+                self = .connected(connectionInfo: connectionInfo)
             case "ended":
                 self = .ended
             case "ok":
@@ -286,43 +332,84 @@ enum WCallResponse: Equatable, Decodable {
 }
 
 // This protocol is for debugging
-//extension WCallResponse: Encodable {
-//    func encode(to encoder: Encoder) throws {
-//        var container = encoder.container(keyedBy: CodingKeys.self)
-//        switch self {
-//        case .capabilities:
-//            try container.encode("capabilities", forKey: .type)
-//        case let .offer(offer, iceCandidates, capabilities):
-//            try container.encode("offer", forKey: .type)
-//            try container.encode(offer, forKey: .offer)
-//            try container.encode(iceCandidates, forKey: .iceCandidates)
-//            try container.encode(capabilities, forKey: .capabilities)
-//        case let .answer(answer, iceCandidates):
-//            try container.encode("answer", forKey: .type)
-//            try container.encode(answer, forKey: .answer)
-//            try container.encode(iceCandidates, forKey: .iceCandidates)
-//        case let .ice(iceCandidates):
-//            try container.encode("ice", forKey: .type)
-//            try container.encode(iceCandidates, forKey: .iceCandidates)
-//        case let .connection(state):
-//            try container.encode("connection", forKey: .type)
-//            try container.encode(state, forKey: .state)
-//        case .ended:
-//            try container.encode("ended", forKey: .type)
-//        case .ok:
-//            try container.encode("ok", forKey: .type)
-//        case let .error(message):
-//            try container.encode("error", forKey: .type)
-//            try container.encode(message, forKey: .message)
-//        case let .invalid(type):
-//            try container.encode(type, forKey: .type)
-//        }
-//    }
-//}
+extension WCallResponse: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .capabilities:
+            try container.encode("capabilities", forKey: .type)
+        case let .offer(offer, iceCandidates, capabilities):
+            try container.encode("offer", forKey: .type)
+            try container.encode(offer, forKey: .offer)
+            try container.encode(iceCandidates, forKey: .iceCandidates)
+            try container.encode(capabilities, forKey: .capabilities)
+        case let .answer(answer, iceCandidates):
+            try container.encode("answer", forKey: .type)
+            try container.encode(answer, forKey: .answer)
+            try container.encode(iceCandidates, forKey: .iceCandidates)
+        case let .ice(iceCandidates):
+            try container.encode("ice", forKey: .type)
+            try container.encode(iceCandidates, forKey: .iceCandidates)
+        case let .connection(state):
+            try container.encode("connection", forKey: .type)
+            try container.encode(state, forKey: .state)
+        case let .connected(connectionInfo):
+            try container.encode("connected", forKey: .type)
+            try container.encode(connectionInfo, forKey: .connectionInfo)
+        case .ended:
+            try container.encode("ended", forKey: .type)
+        case .ok:
+            try container.encode("ok", forKey: .type)
+        case let .error(message):
+            try container.encode("error", forKey: .type)
+            try container.encode(message, forKey: .message)
+        case let .invalid(type):
+            try container.encode(type, forKey: .type)
+        }
+    }
+}
 
 struct ConnectionState: Codable, Equatable {
     var connectionState: String
     var iceConnectionState: String
     var iceGatheringState: String
     var signalingState: String
+}
+
+struct ConnectionInfo: Codable, Equatable {
+    var localCandidate: RTCIceCandidate?
+    var remoteCandidate: RTCIceCandidate?
+
+    var text: LocalizedStringKey {
+        get {
+            if localCandidate?.candidateType == .host && remoteCandidate?.candidateType == .host {
+                return "peer-to-peer"
+            } else if localCandidate?.candidateType == .relay && remoteCandidate?.candidateType == .relay {
+                return "via relay"
+            } else {
+                let unknown = NSLocalizedString("unknown", comment: "connection info")
+                return "\(localCandidate?.candidateType?.rawValue ?? unknown) / \(remoteCandidate?.candidateType?.rawValue ?? unknown)"
+            }
+        }
+    }
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
+struct RTCIceCandidate: Codable, Equatable {
+    var candidateType: RTCIceCandidateType?
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
+enum RTCIceCandidateType: String, Codable {
+    case host = "host"
+    case serverReflexive = "srflx"
+    case peerReflexive = "prflx"
+    case relay = "relay"
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
+struct RTCIceServer: Codable, Equatable {
+    var urls: [String]
+    var username: String? = nil
+    var credential: String? = nil
 }

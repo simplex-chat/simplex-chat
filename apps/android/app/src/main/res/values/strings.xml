@@ -54,8 +54,11 @@
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="private_instant_notifications">Private instant notifications!</string>
+  <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
+  <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
+  <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
@@ -165,6 +168,13 @@
   <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">If you choose to reject sender will NOT be notified.</string>
   <string name="accept_contact_button">Accept</string>
   <string name="reject_contact_button">Reject</string>
+
+  <!-- Clear Chat - ChatListNavLinkView.kt -->
+  <string name="clear_chat_question">Clear conversation?</string>
+  <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
+  <string name="clear_verb">Clear</string>
+  <string name="clear_chat_button">Clear conversation</string>
+  <string name="mark_read">Mark read</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_your_contact">You invited your contact</string>
@@ -287,7 +297,7 @@
   <string name="callstatus_accepted">accepted</string>
   <string name="callstatus_connecting">connecting…</string>
   <string name="callstatus_in_progress">in progress</string>
-  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s!</xliff:g></string>
+  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
   <string name="callstatus_error">error</string>
 
   <!-- CallState -->
@@ -330,4 +340,40 @@
   <string name="or">or</string>
   <string name="connect_with_the_developers">Connect with the developers</string>
   <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">To ask any questions and to receive <xliff:g id="appNameFull">SimpleX Chat</xliff:g> updates.</string>
+
+  <!-- Call -->
+  <string name="incoming_video_call">Incoming video call</string>
+  <string name="incoming_audio_call">Incoming audio call</string>
+  <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> wants to connect with you via</string>
+  <string name="video_call_no_encryption">video call (not e2e encrypted)</string>
+  <string name="encrypted_video_call">e2e encrypted video call</string>
+  <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
+  <string name="encrypted_audio_call">e2e encrypted audio call</string>
+  <string name="answer">Answer</string>
+  <string name="call_already_ended">Call already ended!</string>
+  <string name="icon_descr_video_call">video call</string>
+  <string name="icon_descr_audio_call">audio call</string>
+
+  <!-- Call overlay -->
+  <string name="status_e2e_encrypted">e2e encrypted</string>
+  <string name="status_no_e2e_encryption">no e2e encryption</string>
+  <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
+  <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+  <string name="call_connection_peer_to_peer">peer-to-peer</string>
+  <string name="call_connection_via_relay">via relay</string>
+  <string name="icon_descr_hang_up">Hang up</string>
+  <string name="icon_descr_video_off">Video off</string>
+  <string name="icon_descr_video_on">Video on</string>
+  <string name="icon_descr_audio_off">Audio off</string>
+  <string name="icon_descr_audio_on">Audio on</string>
+  <string name="icon_descr_flip_camera">Flip camera</string>
+
+  <!-- Call items -->
+  <string name="icon_descr_call_pending_sent">Pending call</string>
+  <string name="icon_descr_call_missed">Missed call</string>
+  <string name="icon_descr_call_rejected">Rejected call</string>
+  <string name="icon_descr_call_connecting">Connecting call</string>
+  <string name="icon_descr_call_progress">Call in progress</string>
+  <string name="icon_descr_call_ended">Call ended</string>
+  <string name="answer_call">Answer call</string>
 </resources>
