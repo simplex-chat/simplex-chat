@@ -104,7 +104,7 @@ filesHelpInfo =
       indent <> highlight "/file #<group> <file_path>       " <> " - send file to group",
       indent <> highlight "/image <name> [<file_path>]      " <> " - send file as image to @contact or #group",
       indent <> highlight "/freceive <file_id> [<file_path>]" <> " - accept to receive file",
-      indent <> highlight "/fforward <name> [<file_id>]   " <> " - forward received file to contact",
+      indent <> highlight "/fforward <name> [<file_id>]     " <> " - forward received file to @contact or #group",
       indent <> highlight "/fcancel <file_id>               " <> " - cancel sending / receiving file",
       indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status",
       "",
