@@ -27,6 +27,7 @@ import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayT
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
+import Simplex.Chat (maxImageSize)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -739,6 +740,9 @@ viewChatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEFileImageType _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
+    CEFileImageSize _ -> ["image type must be JPG, send as a file using " <> highlight' "/f"]
+    CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
