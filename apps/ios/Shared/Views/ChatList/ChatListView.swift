@@ -101,8 +101,7 @@ struct ChatListView: View {
             title: Text(invitation.callTitle),
             message: Text(contact.profile.displayName).bold() +
                 Text(" wants to connect with you via ") +
-                Text(invitation.callTypeText) +
-                Text("\nIf you accept this call and you don't use relay, your IP address might be visible to your contact."),
+                Text(invitation.callTypeText),
             primaryButton: .default(Text("Answer")) {
                 if let activeCallInvitation = chatModel.activeCallInvitation {
                     chatModel.callInvitations.removeValue(forKey: activeCallInvitation.id)

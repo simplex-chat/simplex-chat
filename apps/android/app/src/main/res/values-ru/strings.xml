@@ -341,39 +341,38 @@
     <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 
     <!-- Call -->
-    <string name="incoming_video_call">Incoming video call</string>
-    <string name="incoming_audio_call">Incoming audio call</string>
-    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> wants to connect with you via </string>
-    <string name="video_call_no_encryption">video call (not e2e encrypted)</string>
-    <string name="encrypted_video_call">e2e encrypted video call</string>
-    <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
-    <string name="encrypted_audio_call">e2e encrypted audio call</string>
-    <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call and you don\'t use relay, your IP address might be visible to your contact.</string>
-    <string name="answer">Answer</string>
-    <string name="call_already_ended">Call already ended!</string>
-    <string name="icon_descr_video_call">video call</string>
-    <string name="icon_descr_audio_call">audio call</string>
+    <string name="incoming_video_call">Входящий видеозвонок</string>
+    <string name="incoming_audio_call">Входящий аудиозвонок</string>
+    <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> хочет связаться с вами через </string>
+    <string name="video_call_no_encryption">видеозвонок (не e2e зашифрованный)</string>
+    <string name="encrypted_video_call">e2e зашифрованный видеозвонок</string>
+    <string name="audio_call_no_encryption">аудиозвонок (не e2e зашифрованный)</string>
+    <string name="encrypted_audio_call">e2e зашифрованный аудиозвонок</string>
+    <string name="answer">Принять</string>
+    <string name="call_already_ended">Звонок уже завершен!</string>
+    <string name="icon_descr_video_call">видеозвонок</string>
+    <string name="icon_descr_audio_call">аудиозвонок</string>
 
     <!-- Call overlay -->
-    <string name="status_e2e_encrypted">e2e encrypted</string>
-    <string name="status_no_e2e_encryption">no e2e encryption</string>
-    <string name="status_contact_has_e2e_encryption">contact has e2e encryption</string>
-    <string name="status_contact_has_no_e2e_encryption">contact has no e2e encryption</string>
+    <string name="status_e2e_encrypted">e2e зашифровано</string>
+    <string name="status_no_e2e_encryption">нет e2e шифрования</string>
+    <string name="status_contact_has_e2e_encryption">у контакта есть e2e шифрование</string>
+    <string name="status_contact_has_no_e2e_encryption">у контакта нет e2e шифрования</string>
     <string name="call_connection_peer_to_peer">peer-to-peer</string>
-    <string name="call_connection_via_relay">via relay</string>
-    <string name="icon_descr_hang_up">Hang up</string>
-    <string name="icon_descr_video_off">Video off</string>
-    <string name="icon_descr_video_on">Video on</string>
-    <string name="icon_descr_audio_off">Audio off</string>
-    <string name="icon_descr_audio_on">Audio on</string>
-    <string name="icon_descr_flip_camera">Flip camera</string>
+    <string name="call_connection_via_relay">через relay сервер</string>
+    <string name="icon_descr_hang_up">Закончить звонок</string>
+    <string name="icon_descr_video_off">Выключить видео</string>
+    <string name="icon_descr_video_on">Включить видео</string>
+    <string name="icon_descr_audio_off">Выключить звук</string>
+    <string name="icon_descr_audio_on">Включить звук</string>
+    <string name="icon_descr_flip_camera">Перевернуть камеру</string>
 
     <!-- Call items -->
-    <string name="icon_descr_call_pending_sent">Pending call</string>
-    <string name="icon_descr_call_missed">Missed call</string>
-    <string name="icon_descr_call_rejected">Rejected call</string>
-    <string name="icon_descr_call_connecting">Connecting call</string>
-    <string name="icon_descr_call_progress">Call in progress</string>
-    <string name="icon_descr_call_ended">Call ended</string>
-    <string name="answer_call">Answer call</string>
+    <string name="icon_descr_call_pending_sent">Входящий звонок</string>
+    <string name="icon_descr_call_missed">Пропущенный звонок</string>
+    <string name="icon_descr_call_rejected">Отклоненный звонок</string>
+    <string name="icon_descr_call_connecting">Соединяющийся звонок</string>
+    <string name="icon_descr_call_progress">Текущий звонок</string>
+    <string name="icon_descr_call_ended">Звонок завершен</string>
+    <string name="answer_call">Принять звонок</string>
 </resources>
