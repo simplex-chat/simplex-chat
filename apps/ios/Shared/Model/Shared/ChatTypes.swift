@@ -884,8 +884,12 @@ enum CICallStatus: String, Decodable {
         case .accepted: return NSLocalizedString("accepted", comment: "call status")
         case .negotiated: return NSLocalizedString("connecting…", comment: "call status")
         case .progress: return NSLocalizedString("in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended %02d:%02d", comment: "call status"), sec / 60, sec % 60)
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended %@", comment: "call status"), CICallStatus.durationText(sec))
         case .error: return NSLocalizedString("error", comment: "call status")
         }
+    }
+
+    static func durationText(_ sec: Int) -> String {
+        String(format: "%02d:%02d", sec / 60, sec % 60)
     }
 }
