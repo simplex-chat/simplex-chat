@@ -76,6 +76,20 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
+  fun updateChats(newChats: List<Chat>) {
+    val mergedChats = arrayListOf<Chat>()
+    for (newChat in newChats) {
+      val i = getChatIndex(newChat.chatInfo.id)
+      if (i >= 0) {
+        mergedChats.add(newChat.copy(serverInfo = chats[i].serverInfo))
+      } else {
+        mergedChats.add(newChat)
+      }
+    }
+    chats.clear()
+    chats.addAll(mergedChats)
+  }
+
   fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
     val i = getChatIndex(id)
     if (i >= 0) {
@@ -186,7 +200,15 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun markChatItemsRead(cInfo: ChatInfo) {
+    // update preview
     val chatIdx = getChatIndex(cInfo.id)
+    if (chatIdx >= 0) {
+      val chat = chats[chatIdx]
+      val lastId = chat.chatItems.lastOrNull()?.id
+      if (lastId != null) {
+        chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = lastId + 1))
+      }
+    }
     // update current chat
     if (chatId.value == cInfo.id) {
       var i = 0
@@ -197,12 +219,6 @@ class ChatModel(val controller: ChatController) {
         }
         i += 1
       }
-      val chat = chats[chatIdx]
-      val pItem  = chat.chatItems.lastOrNull()
-      chats[chatIdx] = chat.copy(
-        chatItems = if (pItem == null) arrayListOf() else arrayListOf(pItem.withStatus(CIStatus.RcvRead())),
-        chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = chat.chatItems.last().id + 1)
-      )
     }
   }
 

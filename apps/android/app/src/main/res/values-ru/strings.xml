@@ -173,6 +173,7 @@
     <string name="clear_chat_warning">Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</string>
     <string name="clear_verb">Очистить</string>
     <string name="clear_chat_button">Очистить разговор</string>
+    <string name="mark_read">Прочитано</string>
 
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
@@ -366,4 +367,13 @@
     <string name="icon_descr_audio_off">Audio off</string>
     <string name="icon_descr_audio_on">Audio on</string>
     <string name="icon_descr_flip_camera">Flip camera</string>
+
+    <!-- Call items -->
+    <string name="icon_descr_call_pending_sent">Pending call</string>
+    <string name="icon_descr_call_missed">Missed call</string>
+    <string name="icon_descr_call_rejected">Rejected call</string>
+    <string name="icon_descr_call_connecting">Connecting call</string>
+    <string name="icon_descr_call_progress">Call in progress</string>
+    <string name="icon_descr_call_ended">Call ended</string>
+    <string name="answer_call">Answer call</string>
 </resources>

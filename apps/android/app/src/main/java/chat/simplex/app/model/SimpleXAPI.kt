@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -19,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat.startActivityForResult
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
@@ -47,18 +45,22 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      apiStartChat()
+      val chatStarted = apiStartChat()
       apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       val chats = apiGetChats()
-      chatModel.chats.clear()
-      chatModel.chats.addAll(chats)
+      if (chatStarted) {
+        chatModel.chats.clear()
+        chatModel.chats.addAll(chats)
+      } else {
+        chatModel.updateChats(chats)
+      }
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-      Log.d(TAG, "started chat")
-    } catch(e: Error) {
+      Log.d(TAG, "chat started")
+    } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e
     }
@@ -137,10 +139,13 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat() {
+  suspend fun apiStartChat(): Boolean {
     val r = sendCmd(CC.StartChat())
-    if (r is CR.ChatStarted || r is CR.ChatRunning) return
-    throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    when (r) {
+      is CR.ChatStarted -> return true
+      is CR.ChatRunning -> return false
+      else -> throw Error("failed starting chat: ${r.responseType} ${r.details}")
+    }
   }
 
   suspend fun apiSetFilesFolder(filesFolder: String) {
@@ -527,7 +532,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
             }
           },
           onDismiss = {
-            chatModel.activeCallInvitation == null
+            chatModel.activeCallInvitation.value = null
           }
         )
       }
@@ -567,7 +572,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
   }
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
-    val call = chatModel.activeCall?.value
+    val call = chatModel.activeCall.value
     if (call != null && call.contact.apiId == contact.apiId) {
       perform(call)
     } else {

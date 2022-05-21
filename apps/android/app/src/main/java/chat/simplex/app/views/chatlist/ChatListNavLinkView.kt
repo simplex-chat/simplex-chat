@@ -18,24 +18,34 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
+  var showMarkRead by remember { mutableStateOf(false) }
+  LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
+    showMenu.value = false
+    launch {
+      delay(500L)
+      showMarkRead = chat.chatStats.unreadCount > 0
+    }
+  }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu
       )
     is ChatInfo.ContactRequest ->
@@ -73,12 +83,22 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
+    ItemAction(
+      stringResource(R.string.mark_read),
+      Icons.Outlined.Check,
+      onClick = {
+        markChatRead(chat, chatModel)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
     onClick = {
-      clearChatDialog(chatInfo, chatModel)
+      clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
     }
   )
@@ -86,7 +106,7 @@ fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: 
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactDialog(chatInfo, chatModel)
+      deleteContactDialog(chat.chatInfo as ChatInfo.Direct, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -94,12 +114,22 @@ fun ContactMenuItems(chatInfo: ChatInfo.Direct, chatModel: ChatModel, showMenu: 
 }
 
 @Composable
-fun GroupMenuItems(chatInfo: ChatInfo.Group, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
+    ItemAction(
+      stringResource(R.string.mark_read),
+      Icons.Outlined.Check,
+      onClick = {
+        markChatRead(chat, chatModel)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
     onClick = {
-      clearChatDialog(chatInfo, chatModel)
+      clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
     }
   )
@@ -137,6 +167,17 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     },
     color = Color.Red
   )
+}
+
+fun markChatRead(chat: Chat, chatModel: ChatModel) {
+  chatModel.markChatItemsRead(chat.chatInfo)
+  withApi {
+    chatModel.controller.apiChatRead(
+      chat.chatInfo.chatType,
+      chat.chatInfo.apiId,
+      CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+    )
+  }
 }
 
 fun deleteContactDialog(contact: ChatInfo.Direct, chatModel: ChatModel) {
