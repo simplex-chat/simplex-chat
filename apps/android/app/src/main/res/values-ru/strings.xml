@@ -359,7 +359,7 @@
     <string name="status_contact_has_e2e_encryption">у контакта есть e2e шифрование</string>
     <string name="status_contact_has_no_e2e_encryption">у контакта нет e2e шифрования</string>
     <string name="call_connection_peer_to_peer">peer-to-peer</string>
-    <string name="call_connection_via_relay">через relay узел</string>
+    <string name="call_connection_via_relay">через relay сервер</string>
     <string name="icon_descr_hang_up">Закончить звонок</string>
     <string name="icon_descr_video_off">Выключить видео</string>
     <string name="icon_descr_video_on">Включить видео</string>
