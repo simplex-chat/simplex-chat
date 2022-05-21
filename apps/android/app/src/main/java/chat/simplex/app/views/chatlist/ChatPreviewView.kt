@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,17 +30,7 @@ import chat.simplex.app.views.helpers.badgeLayout
 fun ChatPreviewView(chat: Chat) {
   Row {
     val cInfo = chat.chatInfo
-    Box(contentAlignment = Alignment.BottomStart) {
-      ChatInfoImage(cInfo, size = 72.dp)
-      if (cInfo is ChatInfo.Direct) {
-        Box(
-          Modifier.size(20.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          ChatStatusImage(chat)
-        }
-      }
-    }
+    ChatInfoImage(cInfo, size = 72.dp)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
@@ -71,25 +63,41 @@ fun ChatPreviewView(chat: Chat) {
       Modifier.fillMaxHeight(),
       verticalArrangement = Arrangement.Top
     ) {
-      Text(
-        ts,
-        color = HighOrLowlight,
-        style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(bottom = 5.dp)
-      )
-      val n = chat.chatStats.unreadCount
-      if (n > 0) {
+      Box(
+        contentAlignment = Alignment.TopEnd
+      ) {
         Text(
-          if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
-          color = MaterialTheme.colors.onPrimary,
-          fontSize = 14.sp,
-          modifier = Modifier
-            .background(MaterialTheme.colors.primary, shape = CircleShape)
-            .align(Alignment.End)
-            .badgeLayout()
-            .padding(horizontal = 3.dp)
-            .padding(vertical = 1.dp)
+          ts,
+          color = HighOrLowlight,
+          style = MaterialTheme.typography.body2,
+          modifier = Modifier.padding(bottom = 5.dp)
         )
+        val n = chat.chatStats.unreadCount
+        if (n > 0) {
+          Box(
+            Modifier.padding(top = 24.dp),
+            contentAlignment = Alignment.Center
+          ) {
+            Text(
+              if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
+              color = MaterialTheme.colors.onPrimary,
+              fontSize = 11.sp,
+              modifier = Modifier
+                .background(MaterialTheme.colors.primary, shape = CircleShape)
+                .badgeLayout()
+                .padding(horizontal = 3.dp)
+                .padding(vertical = 1.dp)
+            )
+          }
+        }
+        if (cInfo is ChatInfo.Direct) {
+          Box(
+            Modifier.padding(top = 52.dp),
+            contentAlignment = Alignment.Center
+          ) {
+            ChatStatusImage(chat)
+          }
+        }
       }
     }
   }
@@ -101,19 +109,17 @@ fun ChatStatusImage(chat: Chat) {
   val descr = s.statusString
   if (s is Chat.NetworkStatus.Error) {
     Icon(
-      Icons.Filled.Circle,
+      Icons.Outlined.ErrorOutline,
       contentDescription = descr,
       tint = HighOrLowlight,
       modifier = Modifier
-        .padding(start = 6.dp)
-        .padding(bottom = 4.dp)
-        .size(6.dp)
+        .size(19.dp)
     )
   } else if (s !is Chat.NetworkStatus.Connected) {
     CircularProgressIndicator(
-      Modifier.size(8.dp),
+      Modifier.padding(horizontal = 2.dp).size(15.dp),
       color = HighOrLowlight,
-      strokeWidth = 1.dp
+      strokeWidth = 1.5.dp
     )
   }
 }
