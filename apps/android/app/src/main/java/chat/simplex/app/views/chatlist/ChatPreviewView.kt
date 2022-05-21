@@ -57,44 +57,40 @@ fun ChatPreviewView(chat: Chat) {
       }
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
-    Column(
-      Modifier.fillMaxHeight(),
-      verticalArrangement = Arrangement.Top
+
+    Box(
+      contentAlignment = Alignment.TopEnd
     ) {
-      Box(
-        contentAlignment = Alignment.TopEnd
-      ) {
-        Text(
-          ts,
-          color = HighOrLowlight,
-          style = MaterialTheme.typography.body2,
-          modifier = Modifier.padding(bottom = 5.dp)
-        )
-        val n = chat.chatStats.unreadCount
-        if (n > 0) {
-          Box(
-            Modifier.padding(top = 24.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            Text(
-              if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
-              color = MaterialTheme.colors.onPrimary,
-              fontSize = 11.sp,
-              modifier = Modifier
-                .background(MaterialTheme.colors.primary, shape = CircleShape)
-                .badgeLayout()
-                .padding(horizontal = 3.dp)
-                .padding(vertical = 1.dp)
-            )
-          }
+      Text(
+        ts,
+        color = HighOrLowlight,
+        style = MaterialTheme.typography.body2,
+        modifier = Modifier.padding(bottom = 5.dp)
+      )
+      val n = chat.chatStats.unreadCount
+      if (n > 0) {
+        Box(
+          Modifier.padding(top = 24.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
+            color = MaterialTheme.colors.onPrimary,
+            fontSize = 11.sp,
+            modifier = Modifier
+              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .badgeLayout()
+              .padding(horizontal = 3.dp)
+              .padding(vertical = 1.dp)
+          )
         }
-        if (cInfo is ChatInfo.Direct) {
-          Box(
-            Modifier.padding(top = 52.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            ChatStatusImage(chat)
-          }
+      }
+      if (cInfo is ChatInfo.Direct) {
+        Box(
+          Modifier.padding(top = 52.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          ChatStatusImage(chat)
         }
       }
     }
@@ -115,7 +111,9 @@ fun ChatStatusImage(chat: Chat) {
     )
   } else if (s !is Chat.NetworkStatus.Connected) {
     CircularProgressIndicator(
-      Modifier.padding(horizontal = 2.dp).size(15.dp),
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(15.dp),
       color = HighOrLowlight,
       strokeWidth = 1.5.dp
     )
