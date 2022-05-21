@@ -8,6 +8,9 @@
 " (can be copied)" = " (можно скопировать)";
 
 /* No comment provided by engineer. */
+" wants to connect with you via " = " хочет связаться с вами через ";
+
+/* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
@@ -17,10 +20,10 @@
 ": " = ": ";
 
 /* No comment provided by engineer. */
-": %@" = ": %@";
+"!1 colored!" = "!1 цвет!";
 
 /* No comment provided by engineer. */
-"!1 colored!" = "!1 цвет!";
+"(" = "(";
 
 /* No comment provided by engineer. */
 ")" = ")";
@@ -35,6 +38,12 @@
 "**Create link / QR code** for your contact to use." = "**Создать ссылку / QR код** для вашего контакта.";
 
 /* No comment provided by engineer. */
+"**e2e encrypted** audio call." = "**e2e зашифрованный** аудиозвонок.";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call." = "**e2e зашифрованный** видеозвонок.";
+
+/* No comment provided by engineer. */
 "**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.";
 
 /* No comment provided by engineer. */
@@ -45,6 +54,9 @@
 
 /* No comment provided by engineer. */
 "#secret#" = "#секрет#";
+
+/* No comment provided by engineer. */
+"%@ / %@" = "%@ / %@";
 
 /* notification title */
 "%@ is connected!" = "Установлено соединение с %@!";
@@ -92,6 +104,9 @@
 "Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
 
 /* No comment provided by engineer. */
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected" = "Все контакты, которые соединились через этот адрес, сохранятся.";
 
 /* No comment provided by engineer. */
@@ -101,7 +116,13 @@
 "Answer" = "Ответить";
 
 /* No comment provided by engineer. */
+"Answer call" = "Принять звонок";
+
+/* No comment provided by engineer. */
 "Attach" = "Прикрепить";
+
+/* No comment provided by engineer. */
+"audio call (not e2e encrypted)." = "аудиозвонок (не e2e зашифрованный).";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
@@ -138,6 +159,12 @@
 
 /* No comment provided by engineer. */
 "Clear" = "Очистить";
+
+/* No comment provided by engineer. */
+"Clear conversation" = "Очистить разговор";
+
+/* No comment provided by engineer. */
+"Clear conversation?" = "Очистить разговор?";
 
 /* No comment provided by engineer. */
 "colored" = "цвет";
@@ -208,6 +235,12 @@
 
 /* No comment provided by engineer. */
 "Contact and all messages will be deleted - this cannot be undone!" = "Контакт и все сообщения будут удалены - это действие нельзя отменить!";
+
+/* No comment provided by engineer. */
+"contact has e2e encryption" = "у контакта есть e2e шифрование";
+
+/* No comment provided by engineer. */
+"contact has no e2e encryption" = "у контакта нет e2e шифрования";
 
 /* notification */
 "Contact is connected" = "Соединение с контактом установлено";
@@ -285,16 +318,19 @@
 "Display name" = "Имя профиля";
 
 /* No comment provided by engineer. */
+"e2e encrypted" = "e2e зашифровано";
+
+/* No comment provided by engineer. */
 "Edit" = "Редактировать";
 
 /* No comment provided by engineer. */
 "Enable notifications? (BETA)" = "Включить уведомления? (БЕТА)";
 
 /* No comment provided by engineer. */
-"end-to-end encrypted" = "end-to-end зашифрованный звонок";
+"End" = "Завершить";
 
 /* call status */
-"ended %02d:%02d" = "звонок завершён %1$d:%2$d";
+"ended %@" = "завершен %@";
 
 /* No comment provided by engineer. */
 "Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
@@ -345,6 +381,9 @@
 "How to use markdown" = "Как форматировать";
 
 /* No comment provided by engineer. */
+"ICE" = "ICE";
+
+/* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.";
 
 /* No comment provided by engineer. */
@@ -365,11 +404,14 @@
 /* call status */
 "in progress" = "активный звонок";
 
-/* notification body */
-"Incoming %@ call" = "Входящий звонок";
+/* notification */
+"Incoming audio call" = "Входящий аудиозвонок";
 
 /* notification */
 "Incoming call" = "Входящий звонок";
+
+/* notification */
+"Incoming video call" = "Входящий видеозвонок";
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
@@ -420,7 +462,7 @@
 "New message" = "Новое сообщение";
 
 /* No comment provided by engineer. */
-"no end-to-end encryption" = "end-to-end шифрование не поддерживается";
+"no e2e encryption" = "нет e2e шифрования";
 
 /* No comment provided by engineer. */
 "Notifications are disabled!" = "Уведомления выключены";
@@ -454,6 +496,9 @@
 
 /* No comment provided by engineer. */
 "Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.";
+
+/* No comment provided by engineer. */
+"peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
 "People can connect to you only via the links you share." = "С вами можно соединиться только через созданные вами ссылки.";
@@ -516,6 +561,9 @@
 "secret" = "секрет";
 
 /* No comment provided by engineer. */
+"Send" = "Отправить";
+
+/* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
 
 /* No comment provided by engineer. */
@@ -535,6 +583,9 @@
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
+
+/* No comment provided by engineer. */
+"Start" = "Начать";
 
 /* No comment provided by engineer. */
 "starting…" = "инициализация…";
@@ -599,6 +650,9 @@
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
 
+/* connection info */
+"unknown" = "неизвестно";
+
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.";
 
@@ -618,6 +672,12 @@
 "via one-time link" = "через одноразовую ссылку";
 
 /* No comment provided by engineer. */
+"via relay" = "через relay сервер";
+
+/* No comment provided by engineer. */
+"video call (not e2e encrypted)." = "видеозвонок (не e2e зашифрованный).";
+
+/* No comment provided by engineer. */
 "waiting for answer…" = "ожидается ответ…";
 
 /* No comment provided by engineer. */
@@ -634,6 +694,9 @@
 
 /* No comment provided by engineer. */
 "Welcome %@!" = "Здравствуйте %@!";
+
+/* No comment provided by engineer. */
+"with e2e encryption" = "e2e зашифровано";
 
 /* No comment provided by engineer. */
 "You" = "Вы";

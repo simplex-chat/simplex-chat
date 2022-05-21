@@ -1,3 +1,9 @@
+/* No comment provided by engineer. */
+"**e2e encrypted** audio call." = "**e2e зашифрованный** аудиозвонок.";
+
+/* No comment provided by engineer. */
+"**e2e encrypted** video call." = "**e2e зашифрованный** видеозвонок.";
+
 /* notification title */
 "%@ is connected!" = "соединение с %@ установлено!";
 
@@ -9,6 +15,9 @@
 
 /* call status */
 "accepted" = "принятый звонок";
+
+/* No comment provided by engineer. */
+"audio call (not e2e encrypted)." = "аудиозвонок (не e2e зашифрованный).";
 
 /* call status */
 "calling…" = "входящий звонок…";
@@ -27,7 +36,7 @@
 "deleted" = "удалено";
 
 /* call status */
-"ended %02d:%02d" = "звонок завершён %1$d:%2$d";
+"ended %@" = "завершен %@";
 
 /* call status */
 "error" = "ошибка соединения";
@@ -35,14 +44,20 @@
 /* call status */
 "in progress" = "активный звонок";
 
-/* notification body */
-"Incoming %@ call" = "Входящий звонок";
+/* notification */
+"Incoming audio call" = "Входящий аудиозвонок";
+
+/* notification */
+"Incoming video call" = "Входящий видеозвонок";
 
 /* chat list item title */
 "invited to connect" = "приглашение соединиться";
 
 /* call status */
 "missed" = "пропущенный звонок";
+
+/* No comment provided by engineer. */
+"no e2e encryption" = "нет e2e шифрования";
 
 /* call status */
 "rejected" = "отклоненный звонок";
@@ -52,6 +67,12 @@
 
 /* chat list item description */
 "via one-time link" = "через одноразовую ссылку";
+
+/* No comment provided by engineer. */
+"video call (not e2e encrypted)." = "видеозвонок (не e2e зашифрованный).";
+
+/* No comment provided by engineer. */
+"with e2e encryption" = "e2e зашифровано";
 
 /* notification body */
 "You can now send messages to %@" = "Вы можете отправлять сообщения %@";
