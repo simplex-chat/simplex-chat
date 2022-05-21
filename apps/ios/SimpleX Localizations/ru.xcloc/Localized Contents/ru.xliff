@@ -192,7 +192,7 @@
       </trans-unit>
       <trans-unit id="Capabilities" xml:space="preserve">
         <source>Capabilities</source>
-        <source>Возможности</source>
+        <target>Возможности</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
