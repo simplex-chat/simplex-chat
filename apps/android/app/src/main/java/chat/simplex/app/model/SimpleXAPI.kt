@@ -513,7 +513,7 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
         ntfManager.notifyCallInvitation(r.contact, invitation)
         AlertManager.shared.showAlertDialog(
           title = invitation.callTitle,
-          text =  String.format(generalGetString(R.string.contact_wants_to_connect_via_call), r.contact.displayName) + " " +  invitation.callTypeText + ".\n" + generalGetString(R.string.if_you_accept_this_call_your_ip_address_visible),
+          text =  String.format(generalGetString(R.string.contact_wants_to_connect_via_call), r.contact.displayName) + " " +  invitation.callTypeText + ".",
           confirmText = generalGetString(R.string.answer),
           onConfirm = {
             if (chatModel.activeCallInvitation.value == null) {
