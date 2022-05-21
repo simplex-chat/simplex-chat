@@ -108,7 +108,7 @@ filesHelpInfo =
       indent <> highlight "/fcancel <file_id>               " <> " - cancel sending / receiving file",
       indent <> highlight "/fstatus <file_id>               " <> " - show file transfer status",
       "",
-      "The commands may be abbreviated: " <> listHighlight ["/f", "img", "/fr", "/ff", "/fc", "/fs"]
+      "The commands may be abbreviated: " <> listHighlight ["/f", "/img", "/fr", "/ff", "/fc", "/fs"]
     ]
 
 groupsHelpInfo :: [StyledString]
