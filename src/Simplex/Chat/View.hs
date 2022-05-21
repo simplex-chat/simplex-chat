@@ -119,8 +119,6 @@ responseToView testView = \case
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
-  CRImageSizeNotSupported -> viewImageSizeNotSupported
-  CRImageFileTypeNotSupported -> viewImageFileTypeNotSupported
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
@@ -458,18 +456,6 @@ viewSMPServers smpServers testView =
         then "no custom SMP servers saved"
         else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
 
-viewImageSizeNotSupported :: [StyledString]
-viewImageSizeNotSupported =
-  [ "Currently maximum supported image size is " <> highlight (show maxImageSize <> " bytes") <> ", please resize image before sending.",
-    "Alternatively you can use " <> highlight' "/file" <> " command to send image as a file."
-  ]
-
-viewImageFileTypeNotSupported :: [StyledString]
-viewImageFileTypeNotSupported =
-  [ "Currently the only supported image file type is " <> highlight' "JPEG" <> ".",
-    "You can use " <> highlight' "/file" <> " command to send image as a file."
-  ]
-
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
   | n == n' && fullName == fullName' && image == image' = []
@@ -754,6 +740,9 @@ viewChatError = \case
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
     CEFileInternal e -> ["file error: " <> plain e]
+    CEFileImageType _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
+    CEFileImageSize _ -> ["image type must be JPG, send as a file using " <> highlight' "/f"]
+    CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]

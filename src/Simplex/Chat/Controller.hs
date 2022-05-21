@@ -161,6 +161,8 @@ data ChatCommand
   | LastMessages (Maybe ChatName) Int
   | SendFile ChatName FilePath
   | SendImage ChatName FilePath
+  | ForwardFile ChatName FileTransferId
+  | ForwardImage ChatName FileTransferId
   | ReceiveFile FileTransferId (Maybe FilePath)
   | CancelFile FileTransferId
   | FileStatus FileTransferId
@@ -231,8 +233,6 @@ data ChatResponse
   | CRSndFileCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
-  | CRImageSizeNotSupported
-  | CRImageFileTypeNotSupported
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
@@ -352,6 +352,9 @@ data ChatErrorType
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
   | CEFileInternal {message :: String}
+  | CEFileImageType {filePath :: FilePath}
+  | CEFileImageSize {filePath :: FilePath}
+  | CEFileNotReceived {fileId :: FileTransferId}
   | CEInvalidQuote
   | CEInvalidChatItemUpdate
   | CEInvalidChatItemDelete

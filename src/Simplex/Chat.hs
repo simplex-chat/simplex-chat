@@ -695,16 +695,14 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCFile "")
   SendImage chatName f -> withUser $ \user -> do
-    fsFilePath <- toFSFilePath f
-    fileSize <- getFileSize fsFilePath
-    sendImage user fileSize
-    where
-      sendImage user fileSize
-        | not (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) = pure CRImageFileTypeNotSupported
-        | fileSize > maxImageSize = pure CRImageSizeNotSupported
-        | otherwise = do
-          chatRef <- getChatRef user chatName
-          processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
+    chatRef <- getChatRef user chatName
+    filePath <- toFSFilePath f
+    unless (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) $ throwChatError CEFileImageType {filePath}
+    fileSize <- getFileSize filePath
+    unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
+    processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
+  ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
+  ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   ReceiveFile fileId filePath_ -> withUser $ \user ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st user fileId
@@ -846,6 +844,12 @@ processChatCommand = \case
                 _ -> TM.delete ctId calls
               pure CRCmdOk
             | otherwise -> throwChatError $ CECallContact contactId
+    forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
+    forwardFile chatName fileId sendCommand = withUser $ \user -> do
+      withStore (\st -> getRcvFileTransfer st user fileId) >>= \case
+        RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} ->
+          processChatCommand $ sendCommand chatName filePath
+        _ -> throwChatError CEFileNotReceived {fileId}
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
@@ -2255,6 +2259,8 @@ chatCommandP =
     <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
     <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath)
     <|> ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath)
+    <|> ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal)
+    <|> ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
