@@ -371,7 +371,7 @@
     <string name="icon_descr_call_pending_sent">Входящий звонок</string>
     <string name="icon_descr_call_missed">Пропущенный звонок</string>
     <string name="icon_descr_call_rejected">Отклоненный звонок</string>
-    <string name="icon_descr_call_connecting">Соединяющийся звонка</string>
+    <string name="icon_descr_call_connecting">Соединяющийся звонок</string>
     <string name="icon_descr_call_progress">Звонок в процессе</string>
     <string name="icon_descr_call_ended">Звонок завершен</string>
     <string name="answer_call">Принять звонок</string>
