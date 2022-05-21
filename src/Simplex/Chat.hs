@@ -846,10 +846,12 @@ processChatCommand = \case
             | otherwise -> throwChatError $ CECallContact contactId
     forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
-      withStore (\st -> getRcvFileTransfer st user fileId) >>= \case
-        RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} ->
-          processChatCommand $ sendCommand chatName filePath
+      withStore (\st -> getFileTransfer st user fileId) >>= \case
+        FTRcv RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> forward filePath
+        FTSnd {fileTransferMeta = FileTransferMeta {filePath}} -> forward filePath
         _ -> throwChatError CEFileNotReceived {fileId}
+      where
+        forward = processChatCommand . sendCommand chatName
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
