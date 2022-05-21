@@ -30,7 +30,7 @@ import Data.Char (isSpace)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find)
+import Data.List (find, isSuffixOf)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -104,6 +104,12 @@ _defaultSMPServers =
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers = ["smp://ZH1Dkt2_EQRbxUUyjLlcUjg1KAhBrqfvE0xfn7Ki0Zg=@ntf1.simplex.im"]
+
+maxImageSize :: Integer
+maxImageSize = 236700
+
+fixedImagePreview :: ImageData
+fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
@@ -688,6 +694,17 @@ processChatCommand = \case
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCFile "")
+  SendImage chatName f -> withUser $ \user -> do
+    fsFilePath <- toFSFilePath f
+    fileSize <- getFileSize fsFilePath
+    sendImage user fileSize
+    where
+      sendImage user fileSize
+        | not (".jpg" `isSuffixOf` f || ".jpeg" `isSuffixOf` f) = pure CRImageFileTypeNotSupported
+        | fileSize > maxImageSize = pure CRImageSizeNotSupported
+        | otherwise = do
+          chatRef <- getChatRef user chatName
+          processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ReceiveFile fileId filePath_ -> withUser $ \user ->
     withChatLock . procCmd $ do
       ft <- withStore $ \st -> getRcvFileTransfer st user fileId
@@ -2237,6 +2254,7 @@ chatCommandP =
     <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
     <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
     <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath)
+    <|> ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath)
     <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
     <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
     <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)

@@ -27,6 +27,7 @@ import Data.Time.LocalTime (ZonedTime (..), localDay, localTimeOfDay, timeOfDayT
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
+import Simplex.Chat (maxImageSize)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -118,6 +119,8 @@ responseToView testView = \case
   CRSndFileCancelled _ ft -> sendingFile_ "cancelled" ft
   CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
+  CRImageSizeNotSupported -> viewImageSizeNotSupported
+  CRImageFileTypeNotSupported -> viewImageFileTypeNotSupported
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
@@ -454,6 +457,18 @@ viewSMPServers smpServers testView =
       if null smpServers
         then "no custom SMP servers saved"
         else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
+
+viewImageSizeNotSupported :: [StyledString]
+viewImageSizeNotSupported =
+  [ "Currently maximum supported image size is " <> highlight (show maxImageSize <> " bytes") <> ", please resize image before sending.",
+    "Alternatively you can use " <> highlight' "/file" <> " command to send image as a file."
+  ]
+
+viewImageFileTypeNotSupported :: [StyledString]
+viewImageFileTypeNotSupported =
+  [ "Currently the only supported image file type is " <> highlight' "JPEG" <> ".",
+    "You can use " <> highlight' "/file" <> " command to send image as a file."
+  ]
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
