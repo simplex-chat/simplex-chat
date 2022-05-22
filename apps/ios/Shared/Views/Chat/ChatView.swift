@@ -105,27 +105,25 @@ struct ChatView: View {
                     ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
                 }
             }
-//            ToolbarItem(placement: .navigationBarTrailing) {
-//                if case let .direct(contact) = cInfo {
-//                    HStack {
-//                        callButton(contact, .audio, imageName: "phone")
-//                        callButton(contact, .video, imageName: "video")
-//                    }
-//                }
-//            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if case let .direct(contact) = cInfo {
+                    HStack {
+                        callButton(contact, .audio, imageName: "phone")
+                        callButton(contact, .video, imageName: "video")
+                    }
+                }
+            }
         }
         .navigationBarBackButtonHidden(true)
     }
 
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
-            chatModel.activeCall = Call(
-                contact: contact,
-                callState: .waitCapabilities,
-                localMedia: media
-            )
+            let call = Call(contact: contact, callState: .waitCapabilities, localMedia: media)
+            chatModel.activeCall = call
             chatModel.showCallView = true
             chatModel.callCommand = .capabilities(useWorker: true)
+            CallController.shared.startCall(call)
         } label: {
             Image(systemName: imageName)
         }

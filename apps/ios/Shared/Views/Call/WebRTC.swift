@@ -9,70 +9,35 @@
 import Foundation
 import SwiftUI
 
-class Call: Equatable {
+class Call: ObservableObject, Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {
         lhs.contact.apiId == rhs.contact.apiId
     }
 
     var contact: Contact
-    var callState: CallState
+    var callkitUuid: UUID
     var localMedia: CallMediaType
-    var localCapabilities: CallCapabilities?
-    var peerMedia: CallMediaType?
-    var sharedKey: String?
-    var audioEnabled: Bool
-    var videoEnabled: Bool
-    var localCamera: VideoCamera
-    var connectionInfo: ConnectionInfo?
+    @Published var callState: CallState
+    @Published var localCapabilities: CallCapabilities?
+    @Published var peerMedia: CallMediaType?
+    @Published var sharedKey: String?
+    @Published var audioEnabled = true
+    @Published var videoEnabled: Bool
+    @Published var localCamera = VideoCamera.user
+    @Published var connectionInfo: ConnectionInfo?
 
     init(
         contact: Contact,
         callState: CallState,
         localMedia: CallMediaType,
-        localCapabilities: CallCapabilities? = nil,
-        peerMedia: CallMediaType? = nil,
-        sharedKey: String? = nil,
-        audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil,
-        localCamera: VideoCamera = .user,
-        connectionInfo: ConnectionInfo? = nil
+        sharedKey: String? = nil
     ) {
         self.contact = contact
         self.callState = callState
         self.localMedia = localMedia
-        self.localCapabilities = localCapabilities
-        self.peerMedia = peerMedia
         self.sharedKey = sharedKey
-        self.audioEnabled = audioEnabled ?? true
-        self.videoEnabled = videoEnabled ?? (localMedia == .video)
-        self.localCamera = localCamera
-        self.connectionInfo = connectionInfo
-    }
-
-    func copy(
-        contact: Contact? = nil,
-        callState: CallState? = nil,
-        localMedia: CallMediaType? = nil,
-        localCapabilities: CallCapabilities? = nil,
-        peerMedia: CallMediaType? = nil,
-        sharedKey: String? = nil,
-        audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil,
-        localCamera: VideoCamera? = nil,
-        connectionInfo: ConnectionInfo? = nil
-    ) -> Call {
-        Call (
-            contact: contact ?? self.contact,
-            callState: callState ?? self.callState,
-            localMedia: localMedia ?? self.localMedia,
-            localCapabilities: localCapabilities ?? self.localCapabilities,
-            peerMedia: peerMedia ?? self.peerMedia,
-            sharedKey: sharedKey ?? self.sharedKey,
-            audioEnabled: audioEnabled ?? self.audioEnabled,
-            videoEnabled: videoEnabled ?? self.videoEnabled,
-            localCamera: localCamera ?? self.localCamera,
-            connectionInfo: connectionInfo ?? self.connectionInfo
-        )
+        self.videoEnabled = localMedia == .video
+        self.callkitUuid = UUID()
     }
 
     var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
@@ -275,16 +240,16 @@ enum WCallResponse: Equatable, Decodable {
     var respType: String {
         get {
             switch self {
-            case .capabilities: return("capabilities")
-            case .offer: return("offer")
-            case .answer: return("answer")
-            case .ice: return("ice")
-            case .connection: return("connection")
-            case .connected: return("connected")
-            case .ended: return("ended")
-            case .ok: return("ok")
-            case .error: return("error")
-            case .invalid: return("invalid")
+            case .capabilities: return "capabilities"
+            case .offer: return "offer"
+            case .answer: return "answer"
+            case .ice: return "ice"
+            case .connection: return "connection"
+            case .connected: return "connected"
+            case .ended: return "ended"
+            case .ok: return "ok"
+            case .error: return "error"
+            case .invalid: return "invalid"
             }
         }
     }

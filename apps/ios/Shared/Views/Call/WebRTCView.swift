@@ -9,20 +9,24 @@
 import SwiftUI
 import WebKit
 
-class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
-    var webViewReady: Binding<Bool>
+class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate {
+    var rtcWebView: Binding<WKWebView?>
     var webViewMsg: Binding<WVAPIMessage?>
-    private var webView: WKWebView?
 
-    internal init(webViewReady: Binding<Bool>, webViewMsg: Binding<WVAPIMessage?>) {
-        self.webViewReady = webViewReady
+    internal init(rtcWebView: Binding<WKWebView?>, webViewMsg: Binding<WVAPIMessage?>) {
+        self.rtcWebView = rtcWebView
         self.webViewMsg = webViewMsg
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.allowsBackForwardNavigationGestures = false
-        self.webView = webView
-        webViewReady.wrappedValue = true
+        self.rtcWebView.wrappedValue = webView
+        ChatModel.shared.callWebView = webView
+    }
+
+    func webView(_ webView: WKWebView, decideMediaCapturePermissionsFor origin : WKSecurityOrigin, initiatedBy frame: WKFrameInfo, type: WKMediaCaptureType) async -> WKPermissionDecision {
+        print("webView", #function)
+        return .grant
     }
 
     // receive message from WKWebView
@@ -41,24 +45,15 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
             logger.error("WebRTCCoordinator.userContentController: message parsing error \(String(describing: message.body))")
         }
     }
-
-    func sendCommand(command: WCallCommand) {
-        if let webView = webView {
-            logger.debug("WebRTCCoordinator.sendCommand")
-            let apiCmd = encodeJSON(WVAPICall(command: command))
-            let js = "processCommand(\(apiCmd))"
-            webView.evaluateJavaScript(js)
-        }
-    }
 }
 
 struct WebRTCView: UIViewRepresentable {
-    @Binding var coordinator: WebRTCCoordinator?
-    @Binding var webViewReady: Bool
+    @State private var coordinator: WebRTCCoordinator?
+    @Binding var rtcWebView: WKWebView?
     @Binding var webViewMsg: WVAPIMessage?
 
     func makeCoordinator() -> WebRTCCoordinator {
-        WebRTCCoordinator(webViewReady: $webViewReady, webViewMsg: $webViewMsg)
+        WebRTCCoordinator(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -93,16 +88,22 @@ struct WebRTCView: UIViewRepresentable {
     }
 }
 
+func sendCallCommand(_ webView: WKWebView, _ command: WCallCommand) {
+    logger.debug("sendCallCommand: \(command.cmdType)")
+    let apiCmd = encodeJSON(WVAPICall(command: command))
+    let js = "processCommand(\(apiCmd))"
+    webView.evaluateJavaScript(js)
+}
+
 struct CallViewDebug: View {
-    @State private var coordinator: WebRTCCoordinator? = nil
     @State private var commandStr = ""
-    @State private var webViewReady: Bool = false
+    @State private var rtcWebView: WKWebView? = nil
     @State private var webViewMsg: WVAPIMessage? = nil
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
         VStack(spacing: 30) {
-            WebRTCView(coordinator: $coordinator, webViewReady: $webViewReady, webViewMsg: $webViewMsg).frame(maxHeight: 260)
+            WebRTCView(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg).frame(maxHeight: 260)
                 .onChange(of: webViewMsg) { _ in
                     if let resp = webViewMsg {
                         commandStr = encodeJSON(resp)
@@ -130,21 +131,21 @@ struct CallViewDebug: View {
                     commandStr = ""
                 }
                 Button("Send") {
-                    if let c = coordinator,
+                    if let wv = rtcWebView,
                        let command: WCallCommand = decodeJSON(commandStr) {
-                        c.sendCommand(command: command)
+                        sendCallCommand(wv, command)
                     }
                 }
             }
             HStack(spacing: 20) {
                 Button("Capabilities") {
-                    if let c = coordinator {
-                        c.sendCommand(command: .capabilities(useWorker: true))
+                    if let wv = rtcWebView {
+                        sendCallCommand(wv, .capabilities(useWorker: true))
                     }
                 }
                 Button("Start") {
-                    if let c = coordinator {
-                        c.sendCommand(command: .start(media: .video))
+                    if let wv = rtcWebView {
+                        sendCallCommand(wv, .start(media: .video))
                     }
                 }
                 Button("Accept") {

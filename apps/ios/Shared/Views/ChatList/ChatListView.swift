@@ -50,20 +50,9 @@ struct ChatListView: View {
                 }
             }
             .fullScreenCover(isPresented: $chatModel.showCallView) {
-                ActiveCallView()
-            }
-            .onChange(of: chatModel.showCallView) { _ in
-                if (chatModel.showCallView) { return }
                 if let call = chatModel.activeCall {
-                    Task {
-                        do {
-                            try await apiEndCall(call.contact)
-                        } catch {
-                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
-                        }
-                    }
+                    ActiveCallView(call: call)
                 }
-                chatModel.callCommand = .end
             }
             .onChange(of: chatModel.activeCallInvitation) { _ in
                 if let contactRef = chatModel.activeCallInvitation,

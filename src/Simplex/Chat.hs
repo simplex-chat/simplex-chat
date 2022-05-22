@@ -880,6 +880,7 @@ callStatusItemContent userId Contact {contactId} chatItemId receivedStatus = do
         (Just CISCallPending, WCSDisconnected) -> Just (CISCallMissed, 0)
         (Just CISCallEnded, _) -> Nothing -- if call already ended or failed -> no change
         (Just CISCallError, _) -> Nothing
+        (Just _, WCSConnecting) -> Just (CISCallNegotiated, 0)
         (Just _, WCSConnected) -> Just (CISCallProgress, 0) -- if call ended that was never connected, duration = 0
         (Just _, WCSDisconnected) -> Just (CISCallEnded, 0)
         (Just _, WCSFailed) -> Just (CISCallError, 0)

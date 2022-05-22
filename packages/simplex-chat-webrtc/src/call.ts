@@ -310,8 +310,10 @@ const processCommand = (function () {
       })
       if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
         pc.removeEventListener("connectionstatechange", connectionStateChange)
+        if (activeCall) {
+          setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
+        }
         endCall()
-        setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
       } else if (pc.connectionState == "connected") {
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
@@ -326,7 +328,7 @@ const processCommand = (function () {
                 remoteCandidate: stats.get(iceCandidatePair.remoteCandidateId),
               },
             }
-            setTimeout(() => sendMessageToNative({resp}), 0)
+            setTimeout(() => sendMessageToNative({resp}), 500)
             break
           }
         }
@@ -442,13 +444,9 @@ const processCommand = (function () {
         case "camera":
           if (!activeCall || !pc) {
             resp = {type: "error", message: "camera: call not started"}
-          } else if (activeCall.localMedia == CallMediaType.Audio) {
-            resp = {type: "error", message: "camera: no video"}
           } else {
             try {
-              if (command.camera != activeCall.localCamera) {
-                await replaceCamera(activeCall, command.camera)
-              }
+              await replaceMedia(activeCall, command.camera)
               resp = {type: "ok"}
             } catch (e) {
               resp = {type: "error", message: `camera: ${(e as Error).message}`}
@@ -573,7 +571,7 @@ const processCommand = (function () {
     }
   }
 
-  async function replaceCamera(call: Call, camera: VideoCamera): Promise<void> {
+  async function replaceMedia(call: Call, camera: VideoCamera): Promise<void> {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection

@@ -636,15 +636,15 @@ func processReceivedMsg(_ res: ChatResponse) {
             }
             NtfManager.shared.notifyCallInvitation(contact, invitation)
         case let .callOffer(contact, callType, offer, sharedKey, _):
-            // TODO askConfirmation?
-            // TODO check encryption is compatible
             withCall(contact) { call in
-                m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
+                call.callState = .offerReceived
+                call.peerMedia = callType.media
+                call.sharedKey = sharedKey
                 m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey, useWorker: true)
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in
-                m.activeCall = call.copy(callState: .negotiated)
+                call.callState = .negotiated
                 m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
             }
         case let .callExtraInfo(contact, extraInfo):

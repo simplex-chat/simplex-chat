@@ -7,160 +7,203 @@
 //
 
 import SwiftUI
+import WebKit
 
 struct ActiveCallView: View {
-    @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var coordinator: WebRTCCoordinator? = nil
-    @State private var webViewReady: Bool = false
+    @EnvironmentObject var m: ChatModel
+    @ObservedObject var call: Call
+    @State private var rtcWebView: WKWebView? = nil
     @State private var webViewMsg: WVAPIMessage? = nil
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            WebRTCView(coordinator: $coordinator, webViewReady: $webViewReady, webViewMsg: $webViewMsg)
+            WebRTCView(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg)
                 .onAppear() { sendCommandToWebView() }
-                .onChange(of: chatModel.callCommand) { _ in sendCommandToWebView() }
-                .onChange(of: webViewReady) { _ in sendCommandToWebView() }
+                .onChange(of: m.callCommand) { _ in sendCommandToWebView() }
+                .onChange(of: rtcWebView) { _ in sendCommandToWebView() }
                 .onChange(of: webViewMsg) { _ in processWebViewMessage() }
                 .background(.black)
-            ActiveCallOverlay(call: chatModel.activeCall, dismiss: { dismiss() })
+            if let call = m.activeCall, let webView = rtcWebView  {
+                ActiveCallOverlay(call: call, webView: webView)
+            }
         }
         .preferredColorScheme(.dark)
     }
 
     private func sendCommandToWebView() {
-        if chatModel.activeCall != nil && webViewReady,
-           let cmd = chatModel.callCommand,
-           let c = coordinator {
-            chatModel.callCommand = nil
-            logger.debug("ActiveCallView: command \(cmd.cmdType)")
-            c.sendCommand(command: cmd)
+        if m.activeCall != nil,
+           let wv = rtcWebView,
+           let cmd = m.callCommand {
+            m.callCommand = nil
+            sendCallCommand(wv, cmd)
         }
     }
 
+//    private func enableMedia(_ wv: WKWebView, _ media: CallMediaType) async {
+//        await wv.setMicrophoneCaptureState(.active)
+//        if case .video = media {
+//            await wv.setCameraCaptureState(.active)
+//        }
+//    }
+
     private func processWebViewMessage() {
-        let m = chatModel
         if let msg = webViewMsg,
-           let call = chatModel.activeCall {
+           let call = m.activeCall,
+           let webView = rtcWebView {
             logger.debug("ActiveCallView: response \(msg.resp.respType)")
-            Task {
-                switch msg.resp {
-                case let .capabilities(capabilities):
-                    let callType = CallType(media: call.localMedia, capabilities: capabilities)
-                    try await apiSendCallInvitation(call.contact, callType)
-                    m.activeCall = call.copy(callState: .invitationSent, localCapabilities: capabilities)
-                case let .offer(offer, iceCandidates, capabilities):
-                    try await apiSendCallOffer(call.contact, offer, iceCandidates,
-                                               media: call.localMedia, capabilities: capabilities)
-                    m.activeCall = call.copy(callState: .offerSent, localCapabilities: capabilities)
-                case let .answer(answer, iceCandidates):
-                    try await apiSendCallAnswer(call.contact, answer, iceCandidates)
-                    m.activeCall = call.copy(callState: .negotiated)
-                case let .ice(iceCandidates):
-                    try await apiSendCallExtraInfo(call.contact, iceCandidates)
-                case let .connection(state):
-                    if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
-                       case .connected = callStatus {
-                        m.activeCall = call.copy(callState: .connected)
+            switch msg.resp {
+            case let .capabilities(capabilities):
+                let callType = CallType(media: call.localMedia, capabilities: capabilities)
+                Task {
+                    do {
+                        try await apiSendCallInvitation(call.contact, callType)
+                    } catch {
+                        logger.error("apiSendCallInvitation \(responseError(error))")
                     }
-                    try await apiCallStatus(call.contact, state.connectionState)
-                case let .connected(connectionInfo):
-                    m.activeCall = call.copy(callState: .connected, connectionInfo: connectionInfo)
-                case .ended:
-                    m.activeCall = nil
-                    m.activeCallInvitation = nil
-                    m.callCommand = nil
-                    m.showCallView = false
-                case .ok:
-                    switch msg.command {
-                    case let .media(media, enable):
-                        switch media {
-                        case .video: m.activeCall = call.copy(videoEnabled: enable)
-                        case .audio: m.activeCall = call.copy(audioEnabled: enable)
-                        }
-                    case let .camera(camera):
-                        m.activeCall = call.copy(localCamera: camera)
-                    case .end:
-                        m.activeCall = nil
-                        m.activeCallInvitation = nil
-                        m.callCommand = nil
-                        m.showCallView = false
-                    default: ()
+                    DispatchQueue.main.async {
+                        call.callState = .invitationSent
+                        call.localCapabilities = capabilities
                     }
-                case let .error(message):
-                    logger.debug("ActiveCallView: command error: \(message)")
-                case let .invalid(type):
-                    logger.debug("ActiveCallView: invalid response: \(type)")
                 }
+            case let .offer(offer, iceCandidates, capabilities):
+                Task {
+                    do {
+                        try await apiSendCallOffer(call.contact, offer, iceCandidates,
+                                               media: call.localMedia, capabilities: capabilities)
+                    } catch {
+                        logger.error("apiSendCallOffer \(responseError(error))")
+                    }
+                    DispatchQueue.main.async {
+                        call.callState = .offerSent
+                        call.localCapabilities = capabilities
+                    }
+                }
+            case let .answer(answer, iceCandidates):
+                Task {
+                    do {
+                        try await apiSendCallAnswer(call.contact, answer, iceCandidates)
+                    } catch {
+                        logger.error("apiSendCallAnswer \(responseError(error))")
+                    }
+                    DispatchQueue.main.async {
+                        call.callState = .negotiated
+                    }
+                }
+            case let .ice(iceCandidates):
+                Task {
+                    do {
+                        try await apiSendCallExtraInfo(call.contact, iceCandidates)
+                    } catch {
+                        logger.error("apiSendCallExtraInfo \(responseError(error))")
+                    }
+                }
+            case let .connection(state):
+                if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
+                   case .connected = callStatus {
+                    call.callState = .connected
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+//                        m.callCommand = .camera(camera: call.localCamera)
+//                    }
+                }
+                Task {
+                    do {
+                        try await apiCallStatus(call.contact, state.connectionState)
+                    } catch {
+                        logger.error("apiCallStatus \(responseError(error))")
+                    }
+                }
+            case let .connected(connectionInfo):
+                call.callState = .connected
+                call.connectionInfo = connectionInfo
+            case .ended:
+                closeCallView(webView)
+            case .ok:
+                switch msg.command {
+                case let .camera(camera):
+                    call.localCamera = camera
+                    Task {
+                        await webView.setMicrophoneCaptureState(call.audioEnabled ? .active : .muted)
+                    }
+                case .end:
+                    closeCallView(webView)
+                default: ()
+                }
+            case let .error(message):
+                logger.debug("ActiveCallView: command error: \(message)")
+            case let .invalid(type):
+                logger.debug("ActiveCallView: invalid response: \(type)")
             }
+        }
+    }
+
+    private func closeCallView(_ webView: WKWebView) {
+        m.activeCall = nil
+        m.callCommand = nil
+        m.showCallView = false
+        CallController.shared.endCall(call)
+        Task {
+            await webView.setMicrophoneCaptureState(.muted)
+            await webView.setCameraCaptureState(.muted)
         }
     }
 }
 
 struct ActiveCallOverlay: View {
     @EnvironmentObject var chatModel: ChatModel
-    var call: Call?
-    var dismiss: () -> Void
+    @ObservedObject var call: Call
+    var webView: WKWebView
 
     var body: some View {
         VStack {
-            if let call = call {
-                switch call.localMedia {
-                case .video:
-                    callInfoView(call, .leading)
-                    .foregroundColor(.white)
-                    .opacity(0.8)
-                    .padding()
+            switch call.localMedia {
+            case .video:
+                callInfoView(call, .leading)
+                .foregroundColor(.white)
+                .opacity(0.8)
+                .padding()
 
+                Spacer()
+
+                HStack {
+                    toggleAudioButton()
                     Spacer()
-
-                    HStack {
-                        controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
-                            chatModel.callCommand = .media(media: .audio, enable: !call.audioEnabled)
-                        }
-                        Spacer()
+                    Color.clear.frame(width: 40, height: 40)
+                    Spacer()
+                    endCallButton()
+                    Spacer()
+                    if call.videoEnabled {
+                        flipCameraButton()
+                    } else {
                         Color.clear.frame(width: 40, height: 40)
-                        Spacer()
-                        callButton("phone.down.fill", size: 60) { dismiss() }
-                            .foregroundColor(.red)
-                        Spacer()
-                        controlButton(call, "arrow.triangle.2.circlepath") {
-                            chatModel.callCommand = .camera(camera: call.localCamera == .user ? .environment : .user)
-                        }
-                        Spacer()
-                        controlButton(call, call.videoEnabled ? "video.fill" : "video.slash") {
-                            chatModel.callCommand = .media(media: .video, enable: !call.videoEnabled)
-                        }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                case .audio:
-                    VStack {
-                        ProfileImage(imageStr: call.contact.profile.image)
-                            .scaledToFit()
-                            .frame(width: 192, height: 192)
-                        callInfoView(call, .center)
-                    }
-                    .foregroundColor(.white)
-                    .opacity(0.8)
-                    .padding()
-                    .frame(maxHeight: .infinity)
-
                     Spacer()
-
-                    ZStack(alignment: .bottom) {
-                        controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
-                            chatModel.callCommand = .media(media: .audio, enable: !call.audioEnabled)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        callButton("phone.down.fill", size: 60) { dismiss() }
-                            .foregroundColor(.red)
-                    }
-                    .padding(.bottom, 60)
-                    .padding(.horizontal, 48)
+                    toggleVideoButton()
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            case .audio:
+                VStack {
+                    ProfileImage(imageStr: call.contact.profile.image)
+                        .scaledToFit()
+                        .frame(width: 192, height: 192)
+                    callInfoView(call, .center)
+                }
+                .foregroundColor(.white)
+                .opacity(0.8)
+                .padding()
+                .frame(maxHeight: .infinity)
+
+                Spacer()
+
+                ZStack(alignment: .bottom) {
+                    toggleAudioButton()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    endCallButton()
+                }
+                .padding(.bottom, 60)
+                .padding(.horizontal, 48)
             }
         }
         .frame(maxWidth: .infinity)
@@ -183,6 +226,60 @@ struct ActiveCallOverlay: View {
             }
             .font(.subheadline)
             .frame(maxWidth: .infinity, alignment: alignment)
+        }
+    }
+
+    private func endCallButton() -> some View {
+        callButton("phone.down.fill", size: 60) {
+            chatModel.callCommand = .end
+            chatModel.showCallView = false
+            CallController.shared.endCall(call)
+            Task {
+                do {
+                    try await apiEndCall(call.contact)
+                } catch {
+                    logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
+                }
+            }
+        }
+        .foregroundColor(.red)
+    }
+
+    private func toggleAudioButton() -> some View {
+        controlButton(call, call.audioEnabled ? "mic.fill" : "mic.slash") {
+            Task {
+                await webView.setMicrophoneCaptureState(call.audioEnabled ? .muted : .active)
+                DispatchQueue.main.async {
+                    call.audioEnabled = !call.audioEnabled
+                }
+            }
+        }
+    }
+
+    private func toggleVideoButton() -> some View {
+        controlButton(call, call.videoEnabled ? "video.fill" : "video.slash") {
+            Task {
+                await webView.setCameraCaptureState(call.videoEnabled ? .muted : .active)
+                DispatchQueue.main.async {
+                    call.videoEnabled = !call.videoEnabled
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func flipCameraButton() -> some View {
+        let cmd = WCallCommand.camera(camera: call.localCamera == .user ? .environment : .user)
+        controlButton(call, "arrow.triangle.2.circlepath") {
+            if call.audioEnabled {
+                chatModel.callCommand = cmd
+            } else {
+                Task {
+                    await webView.setMicrophoneCaptureState(.active)
+                    DispatchQueue.main.async {
+                        chatModel.callCommand = cmd
+                    }
+                }
+            }
         }
     }
 
@@ -211,9 +308,9 @@ struct ActiveCallOverlay: View {
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .video), dismiss: {})
+            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .video), webView: WKWebView())
                 .background(.black)
-            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .audio), dismiss: {})
+            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .audio), webView: WKWebView())
                 .background(.black)
         }
     }
