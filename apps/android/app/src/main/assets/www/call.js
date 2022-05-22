@@ -398,6 +398,8 @@ const processCommand = (function () {
         videos.local.srcObject = localStream;
     }
     function replaceTracks(pc, tracks) {
+        if (!tracks.length)
+            return;
         const sender = pc.getSenders().find((s) => { var _a; return ((_a = s.track) === null || _a === void 0 ? void 0 : _a.kind) === tracks[0].kind; });
         if (sender)
             for (const t of tracks)

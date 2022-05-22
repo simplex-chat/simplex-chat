@@ -29,7 +29,6 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus = NtfTknStatus.new
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
-    @Published var activeCallInvitation: ContactRef?
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false

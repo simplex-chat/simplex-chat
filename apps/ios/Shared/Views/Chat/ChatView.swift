@@ -119,11 +119,7 @@ struct ChatView: View {
 
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
-            let call = Call(contact: contact, callState: .waitCapabilities, localMedia: media)
-            chatModel.activeCall = call
-            chatModel.showCallView = true
-            chatModel.callCommand = .capabilities(useWorker: true)
-            CallController.shared.startCall(call)
+            CallController.shared.startCall(contact, media)
         } label: {
             Image(systemName: imageName)
         }

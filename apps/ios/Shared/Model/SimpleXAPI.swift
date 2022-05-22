@@ -11,6 +11,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
+import CallKit
 
 private var chatController: chat_ctrl?
 
@@ -629,12 +630,34 @@ func processReceivedMsg(_ res: ChatResponse) {
                 removeFile(fileName)
             }
         case let .callInvitation(contact, callType, sharedKey):
-            let invitation = CallInvitation(peerMedia: callType.media, sharedKey: sharedKey)
+            let uuid = UUID()
+            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey)
             m.callInvitations[contact.id] = invitation
-            if (m.activeCallInvitation == nil) {
-                m.activeCallInvitation = ContactRef(contactId: contact.apiId, localDisplayName: contact.localDisplayName)
-            }
-            NtfManager.shared.notifyCallInvitation(contact, invitation)
+            let callUpdate = CXCallUpdate()
+            callUpdate.remoteHandle = CXHandle(type: .generic, value: contact.displayName)
+            callUpdate.hasVideo = callType.media == .video
+            CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
+                if let error = error {
+                    invitation.callkitUUID = nil
+                    m.callInvitations[contact.id] = invitation
+                    logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
+                } else {
+                    logger.debug("reportNewIncomingCall success")
+                }
+            })
+
+// This will be called from notification service extension
+//            CXProvider.reportNewIncomingVoIPPushPayload([
+//                "displayName": contact.displayName,
+//                "contactId": contact.id,
+//                "uuid": invitation.callkitUUID
+//            ]) { error in
+//                if let error = error {
+//                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription)")
+//                } else {
+//                    logger.debug("reportNewIncomingVoIPPushPayload success for \(contact.id)")
+//                }
+//            }
         case let .callOffer(contact, callType, offer, sharedKey, _):
             withCall(contact) { call in
                 call.callState = .offerReceived
@@ -652,9 +675,15 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
             }
         case let .callEnded(contact):
-            m.activeCallInvitation = nil
-            withCall(contact) { _ in
+            if let invitation = m.callInvitations.removeValue(forKey: contact.id),
+               let uuid = invitation.callkitUUID {
+                CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+            }
+            withCall(contact) { call in
                 m.callCommand = .end
+                if let uuid = call.callkitUUID {
+                    CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+                }
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")

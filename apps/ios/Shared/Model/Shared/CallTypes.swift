@@ -24,6 +24,8 @@ struct WebRTCExtraInfo: Codable {
 }
 
 struct CallInvitation {
+    var contact: Contact
+    var callkitUUID: UUID?
     var peerMedia: CallMediaType
     var sharedKey: String?
     var callTypeText: LocalizedStringKey {

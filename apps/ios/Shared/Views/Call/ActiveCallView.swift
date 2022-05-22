@@ -39,13 +39,6 @@ struct ActiveCallView: View {
         }
     }
 
-//    private func enableMedia(_ wv: WKWebView, _ media: CallMediaType) async {
-//        await wv.setMicrophoneCaptureState(.active)
-//        if case .video = media {
-//            await wv.setCameraCaptureState(.active)
-//        }
-//    }
-
     private func processWebViewMessage() {
         if let msg = webViewMsg,
            let call = m.activeCall,
@@ -100,10 +93,15 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
+                    if call.direction == .outgoing, let uuid = call.callkitUUID {
+                        CallController.shared.provider.reportOutgoingCall(with: uuid, connectedAt: nil)
+                    }
                     call.callState = .connected
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-//                        m.callCommand = .camera(camera: call.localCamera)
-//                    }
+                    // CallKit doesn't work well with WKWebView
+                    // This is a hack to enable microphone in WKWebView after CallKit takes over it
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        m.callCommand = .camera(camera: call.localCamera)
+                    }
                 }
                 Task {
                     do {
@@ -117,6 +115,10 @@ struct ActiveCallView: View {
                 call.connectionInfo = connectionInfo
             case .ended:
                 closeCallView(webView)
+                call.callState = .ended
+                if let uuid = call.callkitUUID {
+                    CallController.shared.endCall(uuid)
+                }
             case .ok:
                 switch msg.command {
                 case let .camera(camera):
@@ -137,10 +139,7 @@ struct ActiveCallView: View {
     }
 
     private func closeCallView(_ webView: WKWebView) {
-        m.activeCall = nil
-        m.callCommand = nil
         m.showCallView = false
-        CallController.shared.endCall(call)
         Task {
             await webView.setMicrophoneCaptureState(.muted)
             await webView.setCameraCaptureState(.muted)
@@ -231,15 +230,10 @@ struct ActiveCallOverlay: View {
 
     private func endCallButton() -> some View {
         callButton("phone.down.fill", size: 60) {
-            chatModel.callCommand = .end
-            chatModel.showCallView = false
-            CallController.shared.endCall(call)
-            Task {
-                do {
-                    try await apiEndCall(call.contact)
-                } catch {
-                    logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
-                }
+            if let uuid = call.callkitUUID {
+                CallController.shared.endCall(uuid)
+            } else {
+                CallController.shared.callManager.endCall(call: call) {}
             }
         }
         .foregroundColor(.red)
@@ -308,9 +302,9 @@ struct ActiveCallOverlay: View {
 struct ActiveCallOverlay_Previews: PreviewProvider {
     static var previews: some View {
         Group{
-            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .video), webView: WKWebView())
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .video), webView: WKWebView())
                 .background(.black)
-            ActiveCallOverlay(call: Call(contact: Contact.sampleData, callState: .offerSent, localMedia: .audio), webView: WKWebView())
+            ActiveCallOverlay(call: Call(direction: .incoming, contact: Contact.sampleData, callkitUUID: UUID(), callState: .offerSent, localMedia: .audio), webView: WKWebView())
                 .background(.black)
         }
     }

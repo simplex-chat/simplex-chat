@@ -14,8 +14,9 @@ class Call: ObservableObject, Equatable {
         lhs.contact.apiId == rhs.contact.apiId
     }
 
+    var direction: CallDirection
     var contact: Contact
-    var callkitUuid: UUID
+    var callkitUUID: UUID?
     var localMedia: CallMediaType
     @Published var callState: CallState
     @Published var localCapabilities: CallCapabilities?
@@ -27,17 +28,20 @@ class Call: ObservableObject, Equatable {
     @Published var connectionInfo: ConnectionInfo?
 
     init(
+        direction: CallDirection,
         contact: Contact,
+        callkitUUID: UUID?,
         callState: CallState,
         localMedia: CallMediaType,
         sharedKey: String? = nil
     ) {
+        self.direction = direction
         self.contact = contact
+        self.callkitUUID = callkitUUID
         self.callState = callState
         self.localMedia = localMedia
         self.sharedKey = sharedKey
         self.videoEnabled = localMedia == .video
-        self.callkitUuid = UUID()
     }
 
     var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
@@ -53,6 +57,19 @@ class Call: ObservableObject, Equatable {
         }
     }
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
+
+//    func callkitEnd() {
+//        if case .incoming = direction {
+//            CallController.shared.provider.reportCall(with: callkitUUID, endedAt: nil, reason: .remoteEnded)
+//        } else {
+//
+//        }
+//    }
+}
+
+enum CallDirection {
+    case incoming
+    case outgoing
 }
 
 enum CallState {
@@ -63,6 +80,7 @@ enum CallState {
     case offerReceived
     case negotiated
     case connected
+    case ended
 
     var text: LocalizedStringKey {
         switch self {
@@ -73,6 +91,7 @@ enum CallState {
         case .offerReceived: return "received answer…"
         case .negotiated: return "connecting…"
         case .connected: return "connected"
+        case .ended: return "ended"
         }
     }
 }

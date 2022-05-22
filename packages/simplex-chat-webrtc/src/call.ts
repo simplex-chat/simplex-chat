@@ -586,6 +586,7 @@ const processCommand = (function () {
   }
 
   function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
+    if (!tracks.length) return
     const sender = pc.getSenders().find((s) => s.track?.kind === tracks[0].kind)
     if (sender) for (const t of tracks) sender.replaceTrack(t)
   }
