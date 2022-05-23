@@ -90,6 +90,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
       Icons.Outlined.Check,
       onClick = {
         markChatRead(chat, chatModel)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         showMenu.value = false
       }
     )
@@ -121,6 +122,7 @@ fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bool
       Icons.Outlined.Check,
       onClick = {
         markChatRead(chat, chatModel)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         showMenu.value = false
       }
     )
