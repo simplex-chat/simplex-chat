@@ -35,7 +35,7 @@ fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: () -> Unit) {
+fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.delete_contact__question),
     text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
@@ -46,14 +46,15 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: () -> U
         if (r) {
           chatModel.removeChat(chatInfo.id)
           chatModel.chatId.value = null
-          close()
+          chatModel.controller.ntfManager.cancelNotificationsForChat(chatInfo.id)
+          close?.invoke()
         }
       }
     }
   )
 }
 
-fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: () -> Unit) {
+fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.clear_chat_question),
     text = generalGetString(R.string.clear_chat_warning),
@@ -63,7 +64,8 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: () -> Unit)
         val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
         if (updatedChatInfo != null) {
           chatModel.clearChat(updatedChatInfo)
-          close()
+          chatModel.controller.ntfManager.cancelNotificationsForChat(chatInfo.id)
+          close?.invoke()
         }
       }
     }
