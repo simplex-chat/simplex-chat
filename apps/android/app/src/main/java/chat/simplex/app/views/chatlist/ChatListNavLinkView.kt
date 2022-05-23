@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.chat.clearChatDialog
+import chat.simplex.app.views.chat.deleteContactDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
@@ -90,6 +92,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
       Icons.Outlined.Check,
       onClick = {
         markChatRead(chat, chatModel)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         showMenu.value = false
       }
     )
@@ -121,6 +124,7 @@ fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bool
       Icons.Outlined.Check,
       onClick = {
         markChatRead(chat, chatModel)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         showMenu.value = false
       }
     )
@@ -178,39 +182,6 @@ fun markChatRead(chat: Chat, chatModel: ChatModel) {
       CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
     )
   }
-}
-
-fun deleteContactDialog(contact: ChatInfo.Direct, chatModel: ChatModel) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.delete_contact__question),
-    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
-    confirmText = generalGetString(R.string.delete_verb),
-    onConfirm = {
-      withApi {
-        val r = chatModel.controller.apiDeleteChat(contact.chatType, contact.apiId)
-        if (r) {
-          chatModel.removeChat(contact.id)
-          chatModel.chatId.value = null
-        }
-      }
-    }
-  )
-}
-
-fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.clear_chat_question),
-    text = generalGetString(R.string.clear_chat_warning),
-    confirmText = generalGetString(R.string.clear_verb),
-    onConfirm = {
-      withApi {
-        val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
-        if (updatedChatInfo != null) {
-          chatModel.clearChat(updatedChatInfo)
-        }
-      }
-    }
-  )
 }
 
 fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
