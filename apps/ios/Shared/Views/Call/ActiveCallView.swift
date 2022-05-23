@@ -124,7 +124,11 @@ struct ActiveCallView: View {
                 case let .camera(camera):
                     call.localCamera = camera
                     Task {
+                        // This disables microphone if it was disabled before flipping the camera
                         await webView.setMicrophoneCaptureState(call.audioEnabled ? .active : .muted)
+                        // This compensates for the bug on some devices when remote video does not appear
+                        await webView.setCameraCaptureState(.muted)
+                        await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
                     }
                 case .end:
                     closeCallView(webView)
@@ -268,6 +272,7 @@ struct ActiveCallOverlay: View {
                 chatModel.callCommand = cmd
             } else {
                 Task {
+                    // Microphone has to be enabled before flipping the camera to avoid prompt for user permission when getUserMedia is called in webview
                     await webView.setMicrophoneCaptureState(.active)
                     DispatchQueue.main.async {
                         chatModel.callCommand = cmd

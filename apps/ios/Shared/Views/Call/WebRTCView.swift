@@ -35,14 +35,26 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler,
         didReceive message: WKScriptMessage
     ) {
         logger.debug("WebRTCCoordinator.userContentController")
-        if let msgStr = message.body as? String,
-           let msg: WVAPIMessage = decodeJSON(msgStr) {
-            webViewMsg.wrappedValue = msg
-            if case .invalid = msg.resp {
-                logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
+        switch message.name {
+        case "webrtc":
+            if let msgStr = message.body as? String,
+               let msg: WVAPIMessage = decodeJSON(msgStr) {
+                // this is the binding that communicates messages from webview to swift view
+                webViewMsg.wrappedValue = msg
+                if case .invalid = msg.resp {
+                    logger.error("WebRTCCoordinator.userContentController: invalid message \(String(describing: message.body))")
+                }
+            } else {
+                logger.error("WebRTCCoordinator.userContentController: message parsing error \(String(describing: message.body))")
             }
-        } else {
-            logger.error("WebRTCCoordinator.userContentController: message parsing error \(String(describing: message.body))")
+        case "logger":
+            if let msgStr = message.body as? String {
+                logger.error("WebRTCCoordinator console.error: \(msgStr)")
+            } else {
+                logger.error("WebRTCCoordinator console.error: \(String(describing: message.body))")
+            }
+        default:
+            logger.error("WebRTCCoordinator.userContentController: invalid message.name \(message.name)")
         }
     }
 }
@@ -67,10 +79,14 @@ struct WebRTCView: UIViewRepresentable {
         cfg.mediaTypesRequiringUserActionForPlayback = []
         cfg.allowsInlineMediaPlayback = true
 
-        let source = "sendMessageToNative = (msg) => webkit.messageHandlers.webrtc.postMessage(JSON.stringify(msg))"
-        let script = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
-        wkController.addUserScript(script)
-        wkController.add(wkCoordinator, name: "webrtc")
+        let addScript = { (handler: String, source: String) in
+            let script = WKUserScript(source: source, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+            wkController.addUserScript(script)
+            wkController.add(wkCoordinator, name: handler)
+        }
+
+        addScript("webrtc", "sendMessageToNative = (msg) => webkit.messageHandlers.webrtc.postMessage(JSON.stringify(msg))")
+        addScript("logger", "console.error = (arg) => webkit.messageHandlers.logger.postMessage(JSON.stringify(arg))")
 
         let wkWebView = WKWebView(frame: .zero, configuration: cfg)
         wkWebView.navigationDelegate = wkCoordinator

@@ -289,7 +289,8 @@ const processCommand = (function () {
     const pc = new RTCPeerConnection(config.peerConnectionConfig)
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera))
+    const constraints = callMediaConstraints(mediaType, localCamera)
+    const localStream = await navigator.mediaDevices.getUserMedia(constraints)
     const iceCandidates = getIceCandidates(pc, config)
     const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
     await setupMediaStreams(call)
@@ -445,12 +446,8 @@ const processCommand = (function () {
           if (!activeCall || !pc) {
             resp = {type: "error", message: "camera: call not started"}
           } else {
-            try {
-              await replaceMedia(activeCall, command.camera)
-              resp = {type: "ok"}
-            } catch (e) {
-              resp = {type: "error", message: `camera: ${(e as Error).message}`}
-            }
+            await replaceMedia(activeCall, command.camera)
+            resp = {type: "ok"}
           }
           break
         case "end":
@@ -462,7 +459,7 @@ const processCommand = (function () {
           break
       }
     } catch (e) {
-      resp = {type: "error", message: (e as Error).message}
+      resp = {type: "error", message: `${command.type}: ${(e as Error).message}`}
     }
     const apiResp = {corrId, resp, command}
     sendMessageToNative(apiResp)
@@ -530,14 +527,18 @@ const processCommand = (function () {
     // Pull tracks from remote stream as they arrive add them to remoteStream video
     const pc = call.connection
     pc.ontrack = (event) => {
-      if (call.aesKey && call.key) {
-        console.log("set up decryption for receiving")
-        setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
-      }
-      for (const stream of event.streams) {
-        for (const track of stream.getTracks()) {
-          call.remoteStream.addTrack(track)
+      try {
+        if (call.aesKey && call.key) {
+          console.log("set up decryption for receiving")
+          setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
         }
+        for (const stream of event.streams) {
+          for (const track of stream.getTracks()) {
+            call.remoteStream.addTrack(track)
+          }
+        }
+      } catch (e) {
+        console.error((e as Error).message)
       }
     }
   }
