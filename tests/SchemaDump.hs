@@ -25,6 +25,6 @@ testVerifySchemaDump =
     void $ readCreateProcess (shell $ "touch " <> schema) ""
     savedSchema <- readFile schema
     savedSchema `seq` pure ()
-    void $ readCreateProcess (shell $ "sqlite3 " <> testDB <> " .schema > " <> schema) ""
+    void $ readCreateProcess (shell $ "sqlite3 " <> testDB <> " '.schema --indent' > " <> schema) ""
     currentSchema <- readFile schema
     savedSchema `shouldBe` currentSchema

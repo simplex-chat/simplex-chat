@@ -203,6 +203,7 @@ import Simplex.Chat.Migrations.M20220304_msg_quotes
 import Simplex.Chat.Migrations.M20220321_chat_item_edited
 import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Migrations.M20220514_profiles_user_id
+import Simplex.Chat.Migrations.M20220524_chat_settings
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe)
@@ -228,7 +229,8 @@ schemaMigrations =
     ("20220304_msg_quotes", m20220304_msg_quotes),
     ("20220321_chat_item_edited", m20220321_chat_item_edited),
     ("20220404_files_status_fields", m20220404_files_status_fields),
-    ("20220514_profiles_user_id", m20220514_profiles_user_id)
+    ("20220514_profiles_user_id", m20220514_profiles_user_id),
+    ("20220524_chat_settings", m20220524_chat_settings)
   ]
 
 -- | The list of migrations in ascending order by date

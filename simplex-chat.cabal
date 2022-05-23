@@ -38,9 +38,11 @@ library
       Simplex.Chat.Migrations.M20220321_chat_item_edited
       Simplex.Chat.Migrations.M20220404_files_status_fields
       Simplex.Chat.Migrations.M20220514_profiles_user_id
+      Simplex.Chat.Migrations.M20220524_chat_settings
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol
+      Simplex.Chat.Settings
       Simplex.Chat.Store
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
