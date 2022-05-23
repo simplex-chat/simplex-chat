@@ -4,7 +4,7 @@
 
 ## New in version 2.1 - clearing conversations without deleting contacts
 
-In this version you can irreversibly delete individual messages after they were deleted by senders and also completely clear the conversation.
+In this version you can irreversibly delete individual messages after they were deleted by a sender, and also completely clear the conversation.
 
 The only way to do it before this version was by deleting the contact, now you can keep the connection when you clear the conversation.
 
