@@ -25,6 +25,9 @@ struct ContentView: View {
                                 alertManager.showAlert(notificationAlert())
                             })
                         }
+                        if let call = chatModel.activeCall {
+                            ActiveCallView(call: call)
+                        }
                         IncomingCallView()
                     }
                 } else {

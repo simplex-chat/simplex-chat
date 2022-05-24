@@ -198,8 +198,8 @@ class CallController: NSObject, CXProviderDelegate, ObservableObject {
         }
     }
 
-    func endCall(call: Call) {
-        callManager.endCall(call: call) {}
+    func endCall(call: Call, completed: @escaping () -> Void) {
+        callManager.endCall(call: call, completed: completed)
     }
 
     private func requestTransaction(with action: CXAction) {

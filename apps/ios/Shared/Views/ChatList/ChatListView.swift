@@ -49,11 +49,6 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .fullScreenCover(isPresented: $chatModel.showCallView) {
-                if let call = chatModel.activeCall {
-                    ActiveCallView(call: call)
-                }
-            }
         }
         .navigationViewStyle(.stack)
 

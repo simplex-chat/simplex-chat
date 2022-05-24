@@ -9,44 +9,57 @@
 import SwiftUI
 
 struct IncomingCallView: View {
-    @ObservedObject var callController = CallController.shared
+    @EnvironmentObject var m: ChatModel
+    @ObservedObject var cc = CallController.shared
 
     var body: some View {
-        if let invitation = callController.activeCallInvitation {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Image(systemName: invitation.peerMedia == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
-                    Text(invitation.callTypeText)
-                }
-                HStack {
-                    ProfilePreview(profileOf: invitation.contact, color: .white)
-                    Spacer()
-
-                    callButton("Reject", "phone.down.fill", .red) {
-                        callController.endCall(invitation: invitation)
-                    }
-
-                    callButton("Ignore", "multiply", .accentColor) {
-                        callController.activeCallInvitation = nil
-                    }
-
-                    callButton("Accept", "checkmark", .green) {
-                        callController.answerCall(invitation: invitation)
-                    }
-                }
+        let sp = SoundPlayer.shared
+        if let invitation = cc.activeCallInvitation {
+            if m.activeCall == nil {
+                incomingCall(invitation)
+                .onAppear { sp.startRingtone() }
+                .onDisappear { sp.stopRingtone() }
+            } else {
+                incomingCall(invitation)
             }
-            .onAppear {
-                SoundPlayer.shared.startRingtone()
-            }
-            .onDisappear {
-                SoundPlayer.shared.stopRingtone()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
-//            .background(.secondary)
-            .background(Color(uiColor: .tertiarySystemGroupedBackground))
         }
+    }
+
+    private func incomingCall(_ invitation: CallInvitation) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: invitation.peerMedia == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
+                Text(invitation.callTypeText)
+            }
+            HStack {
+                ProfilePreview(profileOf: invitation.contact, color: .white)
+                Spacer()
+
+                callButton("Reject", "phone.down.fill", .red) {
+                    cc.endCall(invitation: invitation)
+                }
+
+                callButton("Ignore", "multiply", .accentColor) {
+                    cc.activeCallInvitation = nil
+                }
+
+                callButton("Accept", "checkmark", .green) {
+                    if let call = m.activeCall {
+                        cc.endCall(call: call) {
+                            DispatchQueue.main.async {
+                                cc.answerCall(invitation: invitation)
+                            }
+                        }
+                    } else {
+                        cc.answerCall(invitation: invitation)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
     }
 
     private func callButton(_ text: LocalizedStringKey, _ image: String, _ color: Color, action: @escaping () -> Void) -> some View {

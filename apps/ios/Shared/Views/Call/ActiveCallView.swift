@@ -237,11 +237,12 @@ struct ActiveCallOverlay: View {
     }
 
     private func endCallButton() -> some View {
-        callButton("phone.down.fill", size: 60) {
+        let cc = CallController.shared
+        return callButton("phone.down.fill", size: 60) {
             if let uuid = call.callkitUUID {
-                CallController.shared.endCall(callUUID: uuid)
+                cc.endCall(callUUID: uuid)
             } else {
-                CallController.shared.endCall(call: call)
+                cc.endCall(call: call) {}
             }
         }
         .foregroundColor(.red)

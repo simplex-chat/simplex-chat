@@ -75,9 +75,9 @@ class CallManager {
                 } catch {
                     logger.error("CallController.provider apiEndCall error: \(responseError(error))")
                 }
-                completed()
                 DispatchQueue.main.async {
                     m.activeCall = nil
+                    completed()
                 }
             }
         }
