@@ -540,8 +540,9 @@ const processCommand = (function () {
             call.remoteStream.addTrack(track)
           }
         }
+        console.log(`ontrack success`)
       } catch (e) {
-        console.error((e as Error).message)
+        console.log(`ontrack error: ${(e as Error).message}`)
       }
     }
   }

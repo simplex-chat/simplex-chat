@@ -351,9 +351,10 @@ const processCommand = (function () {
                         call.remoteStream.addTrack(track);
                     }
                 }
+                console.log(`ontrack success`);
             }
             catch (e) {
-                console.error(e.message);
+                console.log(`ontrack error: ${e.message}`);
             }
         };
     }
