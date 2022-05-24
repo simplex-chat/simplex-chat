@@ -11,20 +11,27 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
+    @ObservedObject var callController = CallController.shared
     @State private var showNotificationAlert = false
     @State private var showChats = false
 
     var body: some View {
         ZStack {
             if let step = chatModel.onboardingStage {
-                if case .onboardingComplete = step,
-                   let user = chatModel.currentUser,
-                   showChats {
-                    ChatListView(user: user)
-                    .onAppear {
-                        NtfManager.shared.requestAuthorization(onDeny: {
-                            alertManager.showAlert(notificationAlert())
-                        })
+                if showChats,
+                   case .onboardingComplete = step,
+                   let user = chatModel.currentUser {
+                    ZStack(alignment: .top) {
+                        ChatListView(user: user)
+                        .onAppear {
+                            NtfManager.shared.requestAuthorization(onDeny: {
+                                alertManager.showAlert(notificationAlert())
+                            })
+                        }
+                        if chatModel.showCallView, let call = chatModel.activeCall {
+                            ActiveCallView(call: call)
+                        }
+                        IncomingCallView()
                     }
                 } else {
                     OnboardingView(onboarding: step)

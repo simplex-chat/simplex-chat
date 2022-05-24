@@ -879,13 +879,13 @@ enum CICallStatus: String, Decodable {
     func text(_ sec: Int) -> String {
         switch self {
         case .pending: return NSLocalizedString("calling…", comment: "call status")
-        case .missed: return NSLocalizedString("missed", comment: "call status")
-        case .rejected: return NSLocalizedString("rejected", comment: "call status")
-        case .accepted: return NSLocalizedString("accepted", comment: "call status")
-        case .negotiated: return NSLocalizedString("connecting…", comment: "call status")
-        case .progress: return NSLocalizedString("in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended %@", comment: "call status"), CICallStatus.durationText(sec))
-        case .error: return NSLocalizedString("error", comment: "call status")
+        case .missed: return NSLocalizedString("missed call", comment: "call status")
+        case .rejected: return NSLocalizedString("rejected call", comment: "call status")
+        case .accepted: return NSLocalizedString("accepted call", comment: "call status")
+        case .negotiated: return NSLocalizedString("connecting call…", comment: "call status")
+        case .progress: return NSLocalizedString("call in progress", comment: "call status")
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
+        case .error: return NSLocalizedString("call error", comment: "call status")
         }
     }
 

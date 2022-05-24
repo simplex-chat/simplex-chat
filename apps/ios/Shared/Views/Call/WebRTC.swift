@@ -9,70 +9,39 @@
 import Foundation
 import SwiftUI
 
-class Call: Equatable {
+class Call: ObservableObject, Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {
         lhs.contact.apiId == rhs.contact.apiId
     }
 
+    var direction: CallDirection
     var contact: Contact
-    var callState: CallState
+    var callkitUUID: UUID?
     var localMedia: CallMediaType
-    var localCapabilities: CallCapabilities?
-    var peerMedia: CallMediaType?
-    var sharedKey: String?
-    var audioEnabled: Bool
-    var videoEnabled: Bool
-    var localCamera: VideoCamera
-    var connectionInfo: ConnectionInfo?
+    @Published var callState: CallState
+    @Published var localCapabilities: CallCapabilities?
+    @Published var peerMedia: CallMediaType?
+    @Published var sharedKey: String?
+    @Published var audioEnabled = true
+    @Published var videoEnabled: Bool
+    @Published var localCamera = VideoCamera.user
+    @Published var connectionInfo: ConnectionInfo?
 
     init(
+        direction: CallDirection,
         contact: Contact,
+        callkitUUID: UUID?,
         callState: CallState,
         localMedia: CallMediaType,
-        localCapabilities: CallCapabilities? = nil,
-        peerMedia: CallMediaType? = nil,
-        sharedKey: String? = nil,
-        audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil,
-        localCamera: VideoCamera = .user,
-        connectionInfo: ConnectionInfo? = nil
+        sharedKey: String? = nil
     ) {
+        self.direction = direction
         self.contact = contact
+        self.callkitUUID = callkitUUID
         self.callState = callState
         self.localMedia = localMedia
-        self.localCapabilities = localCapabilities
-        self.peerMedia = peerMedia
         self.sharedKey = sharedKey
-        self.audioEnabled = audioEnabled ?? true
-        self.videoEnabled = videoEnabled ?? (localMedia == .video)
-        self.localCamera = localCamera
-        self.connectionInfo = connectionInfo
-    }
-
-    func copy(
-        contact: Contact? = nil,
-        callState: CallState? = nil,
-        localMedia: CallMediaType? = nil,
-        localCapabilities: CallCapabilities? = nil,
-        peerMedia: CallMediaType? = nil,
-        sharedKey: String? = nil,
-        audioEnabled: Bool? = nil,
-        videoEnabled: Bool? = nil,
-        localCamera: VideoCamera? = nil,
-        connectionInfo: ConnectionInfo? = nil
-    ) -> Call {
-        Call (
-            contact: contact ?? self.contact,
-            callState: callState ?? self.callState,
-            localMedia: localMedia ?? self.localMedia,
-            localCapabilities: localCapabilities ?? self.localCapabilities,
-            peerMedia: peerMedia ?? self.peerMedia,
-            sharedKey: sharedKey ?? self.sharedKey,
-            audioEnabled: audioEnabled ?? self.audioEnabled,
-            videoEnabled: videoEnabled ?? self.videoEnabled,
-            localCamera: localCamera ?? self.localCamera,
-            connectionInfo: connectionInfo ?? self.connectionInfo
-        )
+        self.videoEnabled = localMedia == .video
     }
 
     var encrypted: Bool { get { localEncrypted && sharedKey != nil } }
@@ -82,7 +51,7 @@ class Call: Equatable {
             switch callState {
             case .waitCapabilities: return ""
             case .invitationSent: return localEncrypted ? "e2e encrypted" : "no e2e encryption"
-            case .invitationReceived: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
+            case .invitationAccepted: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
             default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted" 
             }
         }
@@ -90,24 +59,33 @@ class Call: Equatable {
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
 }
 
+enum CallDirection {
+    case incoming
+    case outgoing
+}
+
 enum CallState {
-    case waitCapabilities
-    case invitationSent
-    case invitationReceived
-    case offerSent
-    case offerReceived
-    case negotiated
+    case waitCapabilities   // outgoing call started
+    case invitationSent     // outgoing call - sent invitation
+    case invitationAccepted // incoming call started
+    case offerSent          // incoming - webrtc started and offer sent
+    case offerReceived      // outgoing - webrtc offer received via API
+    case answerReceived     // incoming - webrtc answer received via API
+    case negotiated         // outgoing - webrtc offer processed and answer sent, incoming - webrtc answer processed
     case connected
+    case ended
 
     var text: LocalizedStringKey {
         switch self {
         case .waitCapabilities: return "starting…"
         case .invitationSent: return "waiting for answer…"
-        case .invitationReceived: return "starting…"
+        case .invitationAccepted: return "starting…"
         case .offerSent: return "waiting for confirmation…"
         case .offerReceived: return "received answer…"
+        case .answerReceived: return "received confirmation…"
         case .negotiated: return "connecting…"
         case .connected: return "connected"
+        case .ended: return "ended"
         }
     }
 }
@@ -275,16 +253,16 @@ enum WCallResponse: Equatable, Decodable {
     var respType: String {
         get {
             switch self {
-            case .capabilities: return("capabilities")
-            case .offer: return("offer")
-            case .answer: return("answer")
-            case .ice: return("ice")
-            case .connection: return("connection")
-            case .connected: return("connected")
-            case .ended: return("ended")
-            case .ok: return("ok")
-            case .error: return("error")
-            case .invalid: return("invalid")
+            case .capabilities: return "capabilities"
+            case .offer: return "offer"
+            case .answer: return "answer"
+            case .ice: return "ice"
+            case .connection: return "connection"
+            case .connected: return "connected"
+            case .ended: return "ended"
+            case .ok: return "ok"
+            case .error: return "error"
+            case .invalid: return "invalid"
             }
         }
     }

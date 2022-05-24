@@ -38,10 +38,10 @@
 "**Create link / QR code** for your contact to use." = "**Создать ссылку / QR код** для вашего контакта.";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** audio call." = "**e2e зашифрованный** аудиозвонок.";
+"**e2e encrypted** audio call" = "**e2e зашифрованный** аудиозвонок";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** video call." = "**e2e зашифрованный** видеозвонок.";
+"**e2e encrypted** video call" = "**e2e зашифрованный** видеозвонок";
 
 /* No comment provided by engineer. */
 "**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.";
@@ -122,7 +122,7 @@
 "Attach" = "Прикрепить";
 
 /* No comment provided by engineer. */
-"audio call (not e2e encrypted)." = "аудиозвонок (не e2e зашифрованный).";
+"audio call (not e2e encrypted)" = "аудиозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
@@ -678,7 +678,7 @@
 "via relay" = "через relay сервер";
 
 /* No comment provided by engineer. */
-"video call (not e2e encrypted)." = "видеозвонок (не e2e зашифрованный).";
+"video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
 "waiting for answer…" = "ожидается ответ…";

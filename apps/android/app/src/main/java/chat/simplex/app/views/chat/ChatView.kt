@@ -209,18 +209,18 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (
     ) {
       val cInfo = chat.chatInfo
       toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
-//      if (cInfo is ChatInfo.Direct) {
-//        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-//          Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
-//            toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
-//              startCall(CallMediaType.Audio)
-//            }
-//          }
-//          toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
-//            startCall(CallMediaType.Video)
-//          }
-//        }
-//      }
+      if (cInfo is ChatInfo.Direct) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+          Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
+            toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
+              startCall(CallMediaType.Audio)
+            }
+          }
+          toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
+            startCall(CallMediaType.Video)
+          }
+        }
+      }
       Row(
         Modifier
           .padding(horizontal = 80.dp)

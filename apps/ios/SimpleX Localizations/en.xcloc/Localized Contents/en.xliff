@@ -90,14 +90,14 @@
         <target>**Scan QR code**: to connect to your contact in person or via video call.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call." xml:space="preserve">
-        <source>**e2e encrypted** audio call.</source>
-        <target>**e2e encrypted** audio call.</target>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e encrypted** audio call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call." xml:space="preserve">
-        <source>**e2e encrypted** video call.</source>
-        <target>**e2e encrypted** video call.</target>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e encrypted** video call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
@@ -1118,9 +1118,9 @@ SimpleX servers cannot see your profile.</target>
         <target>accepted</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)." xml:space="preserve">
-        <source>audio call (not e2e encrypted).</source>
-        <target>audio call (not e2e encrypted).</target>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>audio call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -1279,9 +1279,9 @@ SimpleX servers cannot see your profile.</target>
         <target>via relay</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)." xml:space="preserve">
-        <source>video call (not e2e encrypted).</source>
-        <target>video call (not e2e encrypted).</target>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>video call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for answer…" xml:space="preserve">
@@ -1380,14 +1380,14 @@ SimpleX servers cannot see your profile.</target>
         <target>%@ wants to connect!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call." xml:space="preserve">
-        <source>**e2e encrypted** audio call.</source>
-        <target>**e2e encrypted** audio call.</target>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e encrypted** audio call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call." xml:space="preserve">
-        <source>**e2e encrypted** video call.</source>
-        <target>**e2e encrypted** video call.</target>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e encrypted** video call</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -1415,9 +1415,9 @@ SimpleX servers cannot see your profile.</target>
         <target>accepted</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)." xml:space="preserve">
-        <source>audio call (not e2e encrypted).</source>
-        <target>audio call (not e2e encrypted).</target>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>audio call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="calling…" xml:space="preserve">
@@ -1491,9 +1491,9 @@ SimpleX servers cannot see your profile.</target>
         <target>via one-time link</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)." xml:space="preserve">
-        <source>video call (not e2e encrypted).</source>
-        <target>video call (not e2e encrypted).</target>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>video call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="with e2e encryption" xml:space="preserve">

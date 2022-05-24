@@ -38,18 +38,7 @@ struct SettingsView: View {
                         UserProfile()
                             .navigationTitle("Your chat profile")
                     } label: {
-                        HStack {
-                            ProfileImage(imageStr: user.image)
-                                .frame(width: 44, height: 44)
-                                .padding(.trailing, 6)
-                                .padding(.vertical, 6)
-                            VStack(alignment: .leading) {
-                                Text(user.displayName)
-                                    .fontWeight(.bold)
-                                    .font(.title2)
-                                Text(user.fullName)
-                            }
-                        }
+                        ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
                     NavigationLink {
@@ -239,6 +228,26 @@ struct SettingsView: View {
                 withAnimation() { useNotifications = false }
             }
         )
+    }
+}
+
+struct ProfilePreview: View {
+    var profileOf: NamedChat
+    var color = Color(uiColor: .tertiarySystemGroupedBackground)
+
+    var body: some View {
+        HStack {
+            ProfileImage(imageStr: profileOf.image, color: color)
+                .frame(width: 44, height: 44)
+                .padding(.trailing, 6)
+                .padding(.vertical, 6)
+            VStack(alignment: .leading) {
+                Text(profileOf.displayName)
+                    .fontWeight(.bold)
+                    .font(.title2)
+                Text(profileOf.fullName)
+            }
+        }
     }
 }
 
