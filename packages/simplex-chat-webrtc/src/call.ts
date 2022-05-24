@@ -884,14 +884,6 @@ function workerFunction() {
   async function setupTransform({operation, aesKey, readable, writable}: Transform): Promise<void> {
     const key = await callCrypto.decodeAesKey(aesKey)
     const transform = callCrypto.transformFrame[operation](key)
-    // const transform = async (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => {
-    //   try {
-    //     await transform_(frame, controller)
-    //     self.postMessage({result: "transform success"})
-    //   } catch (e) {
-    //     self.postMessage({result: `transform error: ${(e as Error).message}`})
-    //   }
-    // }
     readable.pipeThrough(new TransformStream({transform})).pipeTo(writable)
   }
 }
