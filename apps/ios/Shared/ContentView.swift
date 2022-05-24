@@ -5,18 +5,21 @@
 //  Created by Evgeny Poberezkin on 17/01/2022.
 //
 
+import LocalAuthentication
 import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @State private var showNotificationAlert = false
+    @State private var showChats = false
 
     var body: some View {
         ZStack {
             if let step = chatModel.onboardingStage {
                 if case .onboardingComplete = step,
-                   let user = chatModel.currentUser {
+                   let user = chatModel.currentUser,
+                   showChats {
                     ChatListView(user: user)
                     .onAppear {
                         NtfManager.shared.requestAuthorization(onDeny: {
@@ -29,6 +32,31 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+        .onAppear {
+            authenticate()
+        }
+    }
+
+    func authenticate() {
+        logger.debug("in authenticate")
+        let laContext = LAContext()
+        var authError: NSError?
+        if laContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
+            logger.debug("in laContext.canEvaluatePolicy")
+            let reason = "Open chat"
+            laContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { sucess, authenticationError in
+                logger.debug("in laContext.evaluatePolicy")
+                DispatchQueue.main.async {
+                    if sucess {
+                        showChats = true
+                    } else {
+                        logger.error("authentication error: \(authenticationError.debugDescription)")
+                    }
+                }
+            }
+        } else {
+            logger.error("no biometry error: \(authError.debugDescription)")
+        }
     }
 
     func notificationAlert() -> Alert {
