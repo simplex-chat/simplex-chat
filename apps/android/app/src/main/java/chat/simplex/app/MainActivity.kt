@@ -15,8 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -42,14 +41,13 @@ class MainActivity: FragmentActivity() {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
   private val showChats = mutableStateOf(false)
+
   private lateinit var executor: Executor
   private lateinit var biometricPrompt: BiometricPrompt
   private lateinit var promptInfo: BiometricPrompt.PromptInfo
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    // TODO authenticate only if onboarding is complete and preference is set
-    authenticate()
 //    testJson()
     processNotificationIntent(intent, vm.chatModel)
     setContent {
@@ -59,9 +57,7 @@ class MainActivity: FragmentActivity() {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          if (showChats.value) {
-            MainPage(vm.chatModel)
-          }
+          MainPage(vm.chatModel)
         }
       }
     }
@@ -147,33 +143,40 @@ class MainActivity: FragmentActivity() {
       }
     }
   }
+
+  @Composable
+  fun MainPage(chatModel: ChatModel) {
+    LaunchedEffect(chatModel.runAuthenticate.value) {
+      // TODO authenticate only if onboarding is complete and preference is set
+      authenticate()
+      chatModel.runAuthenticate.value = false
+    }
+    Box {
+      val onboarding = chatModel.onboardingStage.value
+      val userCreated = chatModel.userCreated.value
+      when {
+        onboarding == null || userCreated == null -> SplashView()
+        onboarding == OnboardingStage.OnboardingComplete && userCreated ->
+          if (showChats.value) {
+            if (chatModel.showCallView.value) ActiveCallView(chatModel)
+            else if (chatModel.chatId.value == null) ChatListView(chatModel)
+            else ChatView(chatModel)
+          }
+        onboarding == OnboardingStage.Step1_SimpleXInfo ->
+          Box(Modifier.padding(horizontal = 20.dp)) {
+            SimpleXInfo(chatModel, onboarding = true)
+          }
+        onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+      }
+      ModalManager.shared.showInView()
+      AlertManager.shared.showInView()
+    }
+  }
 }
 
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
   val app = getApplication<SimplexApp>()
   val chatModel = app.chatModel
-}
-
-@Composable
-fun MainPage(chatModel: ChatModel) {
-  Box {
-    val onboarding = chatModel.onboardingStage.value
-    val userCreated = chatModel.userCreated.value
-    when {
-      onboarding == null || userCreated == null -> SplashView()
-      onboarding == OnboardingStage.OnboardingComplete && userCreated ->
-        if (chatModel.showCallView.value) ActiveCallView(chatModel)
-        else if (chatModel.chatId.value == null) ChatListView(chatModel)
-        else ChatView(chatModel)
-      onboarding == OnboardingStage.Step1_SimpleXInfo ->
-        Box(Modifier.padding(horizontal = 20.dp)) {
-          SimpleXInfo(chatModel, onboarding = true)
-        }
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
-    }
-    ModalManager.shared.showInView()
-    AlertManager.shared.showInView()
-  }
 }
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
@@ -196,8 +199,10 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
 }
 
 fun processIntent(intent: Intent?, chatModel: ChatModel) {
+  Log.e(TAG, "######################################### in processIntent")
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
+      Log.e(TAG, "######################################### in android.intent.action.VIEW")
       val uri = intent.data
       if (uri != null) connectIfOpenedViaUri(uri, chatModel)
     }
@@ -205,6 +210,7 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
 }
 
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
+  Log.e(TAG, "######################################### in connectIfOpenedViaUri")
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     // TODO open from chat list view
