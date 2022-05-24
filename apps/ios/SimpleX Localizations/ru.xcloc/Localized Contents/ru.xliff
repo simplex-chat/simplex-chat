@@ -90,14 +90,14 @@
         <target>**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call." xml:space="preserve">
-        <source>**e2e encrypted** audio call.</source>
-        <target>**e2e зашифрованный** аудиозвонок.</target>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e зашифрованный** аудиозвонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call." xml:space="preserve">
-        <source>**e2e encrypted** video call.</source>
-        <target>**e2e зашифрованный** видеозвонок.</target>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e зашифрованный** видеозвонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
@@ -1118,9 +1118,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>принятый звонок</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)." xml:space="preserve">
-        <source>audio call (not e2e encrypted).</source>
-        <target>аудиозвонок (не e2e зашифрованный).</target>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>аудиозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -1279,9 +1279,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>через relay сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)." xml:space="preserve">
-        <source>video call (not e2e encrypted).</source>
-        <target>видеозвонок (не e2e зашифрованный).</target>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>видеозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for answer…" xml:space="preserve">
@@ -1380,14 +1380,14 @@ SimpleX серверы не могут получить доступ к ваше
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call." xml:space="preserve">
-        <source>**e2e encrypted** audio call.</source>
-        <target>**e2e зашифрованный** аудиозвонок.</target>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e зашифрованный** аудиозвонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call." xml:space="preserve">
-        <source>**e2e encrypted** video call.</source>
-        <target>**e2e зашифрованный** видеозвонок.</target>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e зашифрованный** видеозвонок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -1415,9 +1415,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>принятый звонок</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)." xml:space="preserve">
-        <source>audio call (not e2e encrypted).</source>
-        <target>аудиозвонок (не e2e зашифрованный).</target>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>аудиозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="calling…" xml:space="preserve">
@@ -1491,9 +1491,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>через одноразовую ссылку</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)." xml:space="preserve">
-        <source>video call (not e2e encrypted).</source>
-        <target>видеозвонок (не e2e зашифрованный).</target>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>видеозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="with e2e encryption" xml:space="preserve">

@@ -37,25 +37,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             Task { await acceptContactRequest(contactRequest) }
         } else if content.categoryIdentifier == ntfCategoryCallInvitation && (action == ntfActionAcceptCall || action == ntfActionRejectCall),
                   let chatId = content.userInfo["chatId"] as? String,
-                  case let .direct(contact) = chatModel.getChat(chatId)?.chatInfo,
                   let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+            let cc = CallController.shared
             if action == ntfActionAcceptCall {
-                chatModel.activeCallInvitation = nil
-                chatModel.activeCall = Call(contact: contact, callState: .invitationReceived, localMedia: invitation.peerMedia)
-                chatModel.showCallView = true
-                chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+                cc.answerCall(invitation: invitation)
             } else {
-                Task {
-                    do {
-                        try await apiRejectCall(contact)
-                        if chatModel.activeCall?.contact.id == chatId {
-                            DispatchQueue.main.async {
-                                chatModel.callCommand = .end
-                                chatModel.activeCall = nil
-                            }
-                        }
-                    }
-                }
+                cc.endCall(invitation: invitation)
             }
         } else {
             chatModel.chatId = content.targetContentIdentifier
@@ -89,6 +76,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             // this notification is deliverd from the notifications server
             // when the app is in foreground it does not need to be shown
             case ntfCategoryCheckMessage: return []
+            case ntfCategoryCallInvitation: return []
             default: return [.sound, .banner, .list]
             }
         } else {
@@ -136,11 +124,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [
                     UNNotificationAction(
                         identifier: ntfActionAcceptCall,
-                        title: NSLocalizedString("Answer", comment: "accept incoming call via notification")
+                        title: NSLocalizedString("Accept", comment: "accept incoming call via notification"),
+                        options: .foreground
                     ),
                     UNNotificationAction(
                         identifier: ntfActionRejectCall,
-                        title: NSLocalizedString("Ignore", comment: "ignore incoming call via notification")
+                        title: NSLocalizedString("Reject", comment: "reject incoming call via notification")
                     )
                 ],
                 intentIdentifiers: [],
@@ -194,9 +183,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         addNotification(createMessageReceivedNtf(cInfo, cItem))
     }
 
-    func notifyCallInvitation(_ contact: Contact, _ invitation: CallInvitation) {
+    func notifyCallInvitation(_ invitation: CallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
-        addNotification(createCallInvitationNtf(contact, invitation))
+        addNotification(createCallInvitationNtf(invitation))
     }
 
     // TODO remove

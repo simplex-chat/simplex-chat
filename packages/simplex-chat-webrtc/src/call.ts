@@ -289,7 +289,8 @@ const processCommand = (function () {
     const pc = new RTCPeerConnection(config.peerConnectionConfig)
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
-    const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera))
+    const constraints = callMediaConstraints(mediaType, localCamera)
+    const localStream = await navigator.mediaDevices.getUserMedia(constraints)
     const iceCandidates = getIceCandidates(pc, config)
     const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
     await setupMediaStreams(call)
@@ -310,8 +311,10 @@ const processCommand = (function () {
       })
       if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
         pc.removeEventListener("connectionstatechange", connectionStateChange)
+        if (activeCall) {
+          setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
+        }
         endCall()
-        setTimeout(() => sendMessageToNative({resp: {type: "ended"}}), 0)
       } else if (pc.connectionState == "connected") {
         const stats = (await pc.getStats()) as Map<string, any>
         for (const stat of stats.values()) {
@@ -326,7 +329,7 @@ const processCommand = (function () {
                 remoteCandidate: stats.get(iceCandidatePair.remoteCandidateId),
               },
             }
-            setTimeout(() => sendMessageToNative({resp}), 0)
+            setTimeout(() => sendMessageToNative({resp}), 500)
             break
           }
         }
@@ -442,17 +445,9 @@ const processCommand = (function () {
         case "camera":
           if (!activeCall || !pc) {
             resp = {type: "error", message: "camera: call not started"}
-          } else if (activeCall.localMedia == CallMediaType.Audio) {
-            resp = {type: "error", message: "camera: no video"}
           } else {
-            try {
-              if (command.camera != activeCall.localCamera) {
-                await replaceCamera(activeCall, command.camera)
-              }
-              resp = {type: "ok"}
-            } catch (e) {
-              resp = {type: "error", message: `camera: ${(e as Error).message}`}
-            }
+            await replaceMedia(activeCall, command.camera)
+            resp = {type: "ok"}
           }
           break
         case "end":
@@ -464,7 +459,7 @@ const processCommand = (function () {
           break
       }
     } catch (e) {
-      resp = {type: "error", message: (e as Error).message}
+      resp = {type: "error", message: `${command.type}: ${(e as Error).message}`}
     }
     const apiResp = {corrId, resp, command}
     sendMessageToNative(apiResp)
@@ -506,6 +501,9 @@ const processCommand = (function () {
       if (call.useWorker && !call.worker) {
         const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`
         call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
+        call.worker.onerror = ({error, filename, lineno, message}: ErrorEvent) =>
+          console.log(JSON.stringify({error, filename, lineno, message}))
+        call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
       }
     }
   }
@@ -532,14 +530,19 @@ const processCommand = (function () {
     // Pull tracks from remote stream as they arrive add them to remoteStream video
     const pc = call.connection
     pc.ontrack = (event) => {
-      if (call.aesKey && call.key) {
-        console.log("set up decryption for receiving")
-        setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
-      }
-      for (const stream of event.streams) {
-        for (const track of stream.getTracks()) {
-          call.remoteStream.addTrack(track)
+      try {
+        if (call.aesKey && call.key) {
+          console.log("set up decryption for receiving")
+          setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
         }
+        for (const stream of event.streams) {
+          for (const track of stream.getTracks()) {
+            call.remoteStream.addTrack(track)
+          }
+        }
+        console.log(`ontrack success`)
+      } catch (e) {
+        console.log(`ontrack error: ${(e as Error).message}`)
       }
     }
   }
@@ -573,7 +576,7 @@ const processCommand = (function () {
     }
   }
 
-  async function replaceCamera(call: Call, camera: VideoCamera): Promise<void> {
+  async function replaceMedia(call: Call, camera: VideoCamera): Promise<void> {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
@@ -588,6 +591,7 @@ const processCommand = (function () {
   }
 
   function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
+    if (!tracks.length) return
     const sender = pc.getSenders().find((s) => s.track?.kind === tracks[0].kind)
     if (sender) for (const t of tracks) sender.replaceTrack(t)
   }
@@ -713,8 +717,10 @@ function callCryptoFunction(): CallCrypto {
       const initial = data.subarray(0, n)
       const plaintext = data.subarray(n, data.byteLength)
       try {
-        const ciphertext = await crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext)
-        frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer
+        const ciphertext = new Uint8Array(
+          plaintext.length ? await crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext) : 0
+        )
+        frame.data = concatN(initial, ciphertext, iv).buffer
         controller.enqueue(frame)
       } catch (e) {
         console.log(`encryption error ${e}`)
@@ -731,8 +737,8 @@ function callCryptoFunction(): CallCrypto {
       const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH)
       const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
       try {
-        const plaintext = await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, ciphertext)
-        frame.data = concatN(initial, new Uint8Array(plaintext)).buffer
+        const plaintext = new Uint8Array(ciphertext.length ? await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, ciphertext) : 0)
+        frame.data = concatN(initial, plaintext).buffer
         controller.enqueue(frame)
       } catch (e) {
         console.log(`decryption error ${e}`)
@@ -864,9 +870,14 @@ function workerFunction() {
   // encryption using RTCRtpScriptTransform.
   if ("RTCTransformEvent" in self) {
     self.addEventListener("rtctransform", async ({transformer}: any) => {
-      const {operation, aesKey} = transformer.options
-      const {readable, writable} = transformer
-      await setupTransform({operation, aesKey, readable, writable})
+      try {
+        const {operation, aesKey} = transformer.options
+        const {readable, writable} = transformer
+        await setupTransform({operation, aesKey, readable, writable})
+        self.postMessage({result: "setupTransform success"})
+      } catch (e) {
+        self.postMessage({message: `setupTransform error: ${(e as Error).message}`})
+      }
     })
   }
 

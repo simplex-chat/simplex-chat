@@ -70,7 +70,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 // TODO check if app in background
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
                 // TODO remove
-                NtfManager.shared.notifyCheckingMessages()
+                // NtfManager.shared.notifyCheckingMessages()
                 receiveMessages(completionHandler)
             } else if let smpQueue = ntfData["checkMessage"] as? String {
                 // TODO check if app in background
