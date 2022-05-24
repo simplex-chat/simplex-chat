@@ -49,9 +49,9 @@ class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler,
             }
         case "logger":
             if let msgStr = message.body as? String {
-                logger.error("WebRTCCoordinator console.error: \(msgStr)")
+                logger.error("WebRTCCoordinator console.log: \(msgStr)")
             } else {
-                logger.error("WebRTCCoordinator console.error: \(String(describing: message.body))")
+                logger.error("WebRTCCoordinator console.log: \(String(describing: message.body))")
             }
         default:
             logger.error("WebRTCCoordinator.userContentController: invalid message.name \(message.name)")
@@ -86,7 +86,7 @@ struct WebRTCView: UIViewRepresentable {
         }
 
         addScript("webrtc", "sendMessageToNative = (msg) => webkit.messageHandlers.webrtc.postMessage(JSON.stringify(msg))")
-        addScript("logger", "console.error = (arg) => webkit.messageHandlers.logger.postMessage(JSON.stringify(arg))")
+        addScript("logger", "console.log = (arg) => webkit.messageHandlers.logger.postMessage(JSON.stringify(arg))")
 
         let wkWebView = WKWebView(frame: .zero, configuration: cfg)
         wkWebView.navigationDelegate = wkCoordinator

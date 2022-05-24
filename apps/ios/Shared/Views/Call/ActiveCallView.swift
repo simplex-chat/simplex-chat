@@ -136,6 +136,7 @@ struct ActiveCallView: View {
                     }
                 case .end:
                     closeCallView(webView)
+                    m.activeCall = nil
                 default: ()
                 }
             case let .error(message):

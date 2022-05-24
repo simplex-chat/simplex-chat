@@ -15,12 +15,12 @@ struct IncomingCallView: View {
     var body: some View {
         let sp = SoundPlayer.shared
         if let invitation = cc.activeCallInvitation {
-            if m.activeCall == nil {
+            if m.showCallView {
+                incomingCall(invitation)
+            } else {
                 incomingCall(invitation)
                 .onAppear { sp.startRingtone() }
                 .onDisappear { sp.stopRingtone() }
-            } else {
-                incomingCall(invitation)
             }
         }
     }

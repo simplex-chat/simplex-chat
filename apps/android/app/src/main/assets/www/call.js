@@ -316,6 +316,8 @@ const processCommand = (function () {
             if (call.useWorker && !call.worker) {
                 const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
+                call.worker.onerror = ({ error, filename, lineno, message }) => console.log(JSON.stringify({ error, filename, lineno, message }));
+                call.worker.onmessage = ({ data }) => console.log(JSON.stringify({ message: data }));
             }
         }
     }
@@ -494,7 +496,9 @@ function callCryptoFunction() {
             const initial = data.subarray(0, n);
             const plaintext = data.subarray(n, data.byteLength);
             try {
-                const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext);
+                const ciphertext = plaintext.length
+                    ? await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext)
+                    : new ArrayBuffer(0);
                 frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer;
                 controller.enqueue(frame);
             }
@@ -512,7 +516,7 @@ function callCryptoFunction() {
             const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH);
             const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength);
             try {
-                const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+                const plaintext = ciphertext.length ? await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext) : new ArrayBuffer(0);
                 frame.data = concatN(initial, new Uint8Array(plaintext)).buffer;
                 controller.enqueue(frame);
             }
@@ -619,14 +623,28 @@ function workerFunction() {
     // encryption using RTCRtpScriptTransform.
     if ("RTCTransformEvent" in self) {
         self.addEventListener("rtctransform", async ({ transformer }) => {
-            const { operation, aesKey } = transformer.options;
-            const { readable, writable } = transformer;
-            await setupTransform({ operation, aesKey, readable, writable });
+            try {
+                const { operation, aesKey } = transformer.options;
+                const { readable, writable } = transformer;
+                await setupTransform({ operation, aesKey, readable, writable });
+                self.postMessage({ result: "setupTransform success" });
+            }
+            catch (e) {
+                self.postMessage({ message: `setupTransform error: ${e.message}` });
+            }
         });
     }
     async function setupTransform({ operation, aesKey, readable, writable }) {
         const key = await callCrypto.decodeAesKey(aesKey);
         const transform = callCrypto.transformFrame[operation](key);
+        // const transform = async (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => {
+        //   try {
+        //     await transform_(frame, controller)
+        //     self.postMessage({result: "transform success"})
+        //   } catch (e) {
+        //     self.postMessage({result: `transform error: ${(e as Error).message}`})
+        //   }
+        // }
         readable.pipeThrough(new TransformStream({ transform })).pipeTo(writable);
     }
 }
