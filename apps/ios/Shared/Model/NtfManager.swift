@@ -11,6 +11,8 @@ import UserNotifications
 import UIKit
 
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
+let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
+let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
 private let ntfTimeInterval: TimeInterval = 1
 
@@ -33,6 +35,27 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
            let chatId = content.userInfo["chatId"] as? String,
            case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
             Task { await acceptContactRequest(contactRequest) }
+        } else if content.categoryIdentifier == ntfCategoryCallInvitation && (action == ntfActionAcceptCall || action == ntfActionRejectCall),
+                  let chatId = content.userInfo["chatId"] as? String,
+                  case let .direct(contact) = chatModel.getChat(chatId)?.chatInfo,
+                  let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+            if action == ntfActionAcceptCall {
+                chatModel.activeCall = Call(direction: .incoming, contact: contact, callkitUUID: invitation.callkitUUID, callState: .invitationAccepted, localMedia: invitation.peerMedia)
+                chatModel.showCallView = true
+                chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey)
+            } else {
+                Task {
+                    do {
+                        try await apiRejectCall(contact)
+                        if chatModel.activeCall?.contact.id == chatId {
+                            DispatchQueue.main.async {
+                                chatModel.callCommand = .end
+                                chatModel.activeCall = nil
+                            }
+                        }
+                    }
+                }
+            }
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }
@@ -65,6 +88,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             // this notification is deliverd from the notifications server
             // when the app is in foreground it does not need to be shown
             case ntfCategoryCheckMessage: return []
+            case ntfCategoryCallInvitation: return []
             default: return [.sound, .banner, .list]
             }
         } else {
@@ -106,6 +130,21 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 actions: [],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New message", comment: "notification")
+            ),
+            UNNotificationCategory(
+                identifier: ntfCategoryCallInvitation,
+                actions: [
+                    UNNotificationAction(
+                        identifier: ntfActionAcceptCall,
+                        title: NSLocalizedString("Answer", comment: "accept incoming call via notification")
+                    ),
+                    UNNotificationAction(
+                        identifier: ntfActionRejectCall,
+                        title: NSLocalizedString("Ignore", comment: "ignore incoming call via notification")
+                    )
+                ],
+                intentIdentifiers: [],
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Incoming call", comment: "notification")
             ),
             // TODO remove
             UNNotificationCategory(
@@ -153,6 +192,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
         addNotification(createMessageReceivedNtf(cInfo, cItem))
+    }
+
+    func notifyCallInvitation(_ invitation: CallInvitation) {
+        logger.debug("NtfManager.notifyCallInvitation")
+        addNotification(createCallInvitationNtf(invitation))
     }
 
     // TODO remove

@@ -93,14 +93,16 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-                    if call.direction == .outgoing, let uuid = call.callkitUUID {
-                        CallController.shared.provider.reportOutgoingCall(with: uuid, connectedAt: nil)
+                    if case .outgoing = call.direction {
+                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
                     }
                     call.callState = .connected
                     // CallKit doesn't work well with WKWebView
                     // This is a hack to enable microphone in WKWebView after CallKit takes over it
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        m.callCommand = .camera(camera: call.localCamera)
+                    if CallController.useCallKit {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            m.callCommand = .camera(camera: call.localCamera)
+                        }
                     }
                 }
                 Task {
@@ -117,18 +119,20 @@ struct ActiveCallView: View {
                 closeCallView(webView)
                 call.callState = .ended
                 if let uuid = call.callkitUUID {
-                    CallController.shared.endCall(uuid)
+                    CallController.shared.endCall(callUUID: uuid)
                 }
             case .ok:
                 switch msg.command {
+                case .answer:
+                    call.callState = .negotiated
                 case let .camera(camera):
                     call.localCamera = camera
                     Task {
                         // This disables microphone if it was disabled before flipping the camera
                         await webView.setMicrophoneCaptureState(call.audioEnabled ? .active : .muted)
                         // This compensates for the bug on some devices when remote video does not appear
-                        await webView.setCameraCaptureState(.muted)
-                        await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
+                        // await webView.setCameraCaptureState(.muted)
+                        // await webView.setCameraCaptureState(call.videoEnabled ? .active : .muted)
                     }
                 case .end:
                     closeCallView(webView)
@@ -235,9 +239,9 @@ struct ActiveCallOverlay: View {
     private func endCallButton() -> some View {
         callButton("phone.down.fill", size: 60) {
             if let uuid = call.callkitUUID {
-                CallController.shared.endCall(uuid)
+                CallController.shared.endCall(callUUID: uuid)
             } else {
-                CallController.shared.callManager.endCall(call: call) {}
+                CallController.shared.endCall(call: call)
             }
         }
         .foregroundColor(.red)

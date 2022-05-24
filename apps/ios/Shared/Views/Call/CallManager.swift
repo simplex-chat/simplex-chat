@@ -40,7 +40,7 @@ class CallManager {
             direction: .incoming,
             contact: invitation.contact,
             callkitUUID: invitation.callkitUUID,
-            callState: .invitationReceived,
+            callState: .invitationAccepted,
             localMedia: invitation.peerMedia,
             sharedKey: invitation.sharedKey
         )
@@ -49,19 +49,10 @@ class CallManager {
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
-        let m = ChatModel.shared
-        if let call = m.activeCall, call.callkitUUID == callUUID {
+        if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
             endCall(call: call) { completed(true) }
         } else if let invitation = getCallInvitation(callUUID) {
-            m.callInvitations.removeValue(forKey: invitation.contact.id)
-            Task {
-                do {
-                    try await apiRejectCall(invitation.contact)
-                } catch {
-                    logger.error("CallController.provider apiRejectCall error: \(responseError(error))")
-                }
-                completed(true)
-            }
+            endCall(invitation: invitation) { completed(true) }
         } else {
             completed(false)
         }
@@ -89,6 +80,18 @@ class CallManager {
                     m.activeCall = nil
                 }
             }
+        }
+    }
+
+    func endCall(invitation: CallInvitation, completed: @escaping () -> Void) {
+        ChatModel.shared.callInvitations.removeValue(forKey: invitation.contact.id)
+        Task {
+            do {
+                try await apiRejectCall(invitation.contact)
+            } catch {
+                logger.error("CallController.provider apiRejectCall error: \(responseError(error))")
+            }
+            completed()
         }
     }
 

@@ -11,11 +11,14 @@ import CallKit
 import PushKit
 import AVFoundation
 
-class CallController: NSObject, CXProviderDelegate {
+class CallController: NSObject, CXProviderDelegate, ObservableObject {
+    static let useCallKit = false
     static let shared = CallController()
-    let provider = CXProvider(configuration: CallController.configuration)
-    let controller = CXCallController()
-    let callManager = CallManager()
+    private let provider = CXProvider(configuration: CallController.configuration)
+    private let controller = CXCallController()
+    private let callManager = CallManager()
+    @Published var activeCallInvitation: CallInvitation?
+
 // PKPushRegistry will be used from notification service extension
 //    let registry = PKPushRegistry(queue: nil)
 
@@ -116,17 +119,87 @@ class CallController: NSObject, CXProviderDelegate {
 //        }
 //    }
 
+    func reportNewIncomingCall(invitation: CallInvitation, completion: @escaping (Error?) -> Void) {
+        logger.debug("CallController.reportNewIncomingCall")
+        if CallController.useCallKit, let uuid = invitation.callkitUUID {
+            let update = CXCallUpdate()
+            update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.displayName)
+            update.hasVideo = invitation.peerMedia == .video
+            provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
+        } else {
+            NtfManager.shared.notifyCallInvitation(invitation)
+            activeCallInvitation = invitation
+        }
+    }
+
+    func reportOutgoingCall(call: Call, connectedAt dateConnected: Date?) {
+        if CallController.useCallKit, let uuid = call.callkitUUID {
+            provider.reportOutgoingCall(with: uuid, connectedAt: dateConnected)
+        }
+    }
+
+    func reportCallRemoteEnded(invitation: CallInvitation) {
+        if CallController.useCallKit, let uuid = invitation.callkitUUID {
+            provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+        } else if invitation.contact.id == activeCallInvitation?.contact.id {
+            activeCallInvitation = nil
+        }
+    }
+
+    func reportCallRemoteEnded(call: Call) {
+        if CallController.useCallKit, let uuid = call.callkitUUID {
+            provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+        }
+    }
+
     func startCall(_ contact: Contact, _ media: CallMediaType) {
         logger.debug("CallController.startCall")
         let uuid = callManager.newOutgoingCall(contact, media)
-        let handle = CXHandle(type: .generic, value: contact.displayName)
-        let action = CXStartCallAction(call: uuid, handle: handle)
-        action.isVideo = media == .video
-        requestTransaction(with: action)
+        if CallController.useCallKit {
+            let handle = CXHandle(type: .generic, value: contact.displayName)
+            let action = CXStartCallAction(call: uuid, handle: handle)
+            action.isVideo = media == .video
+            requestTransaction(with: action)
+        } else if callManager.startOutgoingCall(callUUID: uuid) {
+            logger.debug("CallController.startCall: call started")
+        } else {
+            logger.error("CallController.startCall: no active call")
+        }
     }
 
-    func endCall(_ uuid: UUID) {
-        requestTransaction(with: CXEndCallAction(call: uuid))
+    func answerCall(invitation: CallInvitation) {
+        callManager.answerIncomingCall(invitation: invitation)
+        if invitation.contact.id == self.activeCallInvitation?.contact.id {
+            self.activeCallInvitation = nil
+        }
+    }
+
+    func endCall(callUUID: UUID) {
+        if CallController.useCallKit {
+            requestTransaction(with: CXEndCallAction(call: callUUID))
+        } else {
+            callManager.endCall(callUUID: callUUID) { ok in
+                if ok {
+                    logger.debug("CallController.endCall: call ended")
+                } else {
+                    logger.error("CallController.endCall: no actove call pr call invitation to end")
+                }
+            }
+        }
+    }
+
+    func endCall(invitation: CallInvitation) {
+        callManager.endCall(invitation: invitation) {
+            if invitation.contact.id == self.activeCallInvitation?.contact.id {
+                DispatchQueue.main.async {
+                    self.activeCallInvitation = nil
+                }
+            }
+        }
+    }
+
+    func endCall(call: Call) {
+        callManager.endCall(call: call) {}
     }
 
     private func requestTransaction(with action: CXAction) {

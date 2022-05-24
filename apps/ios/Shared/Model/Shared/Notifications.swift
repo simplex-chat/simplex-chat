@@ -13,6 +13,7 @@ import SwiftUI
 let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
 let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
 let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
 // TODO remove
 let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
@@ -46,6 +47,19 @@ func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutable
         body: hideSecrets(cItem),
         targetContentIdentifier: cInfo.id
 //            userInfo: ["chatId": cInfo.id, "chatItemId": cItem.id]
+    )
+}
+
+func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificationContent {
+    let text = invitation.peerMedia == .video
+                ? NSLocalizedString("Incoming video call", comment: "notification")
+                : NSLocalizedString("Incoming audio call", comment: "notification")
+    return createNotification(
+        categoryIdentifier: ntfCategoryCallInvitation,
+        title: "\(invitation.contact.chatViewName):",
+        body: text,
+        targetContentIdentifier: nil,
+        userInfo: ["chatId": invitation.contact.id]
     )
 }
 

@@ -31,20 +31,16 @@ struct CallInvitation {
     var callTypeText: LocalizedStringKey {
         get {
             switch peerMedia {
-            case .video: return sharedKey == nil ? "video call (not e2e encrypted)." : "**e2e encrypted** video call."
-            case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)." : "**e2e encrypted** audio call."
+            case .video: return sharedKey == nil ? "video call (not e2e encrypted)" : "**e2e encrypted** video call"
+            case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)" : "**e2e encrypted** audio call"
             }
         }
     }
-    var callTitle: LocalizedStringKey {
-        get {
-            switch peerMedia {
-            case .video: return "Incoming video call"
-            case .audio: return "Incoming audio call"
-            }
-        }
-    }
-    var encryptionText: LocalizedStringKey { get { sharedKey == nil ? "no e2e encryption" : "with e2e encryption" } }
+
+    static let sampleData = CallInvitation(
+        contact: Contact.sampleData,
+        peerMedia: .audio
+    )
 }
 
 struct CallType: Codable {

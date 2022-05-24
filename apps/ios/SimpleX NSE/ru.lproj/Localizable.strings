@@ -1,8 +1,8 @@
 /* No comment provided by engineer. */
-"**e2e encrypted** audio call." = "**e2e зашифрованный** аудиозвонок.";
+"**e2e encrypted** audio call" = "**e2e зашифрованный** аудиозвонок";
 
 /* No comment provided by engineer. */
-"**e2e encrypted** video call." = "**e2e зашифрованный** видеозвонок.";
+"**e2e encrypted** video call" = "**e2e зашифрованный** видеозвонок";
 
 /* notification title */
 "%@ is connected!" = "соединение с %@ установлено!";
@@ -17,7 +17,7 @@
 "accepted" = "принятый звонок";
 
 /* No comment provided by engineer. */
-"audio call (not e2e encrypted)." = "аудиозвонок (не e2e зашифрованный).";
+"audio call (not e2e encrypted)" = "аудиозвонок (не e2e зашифрованный)";
 
 /* call status */
 "calling…" = "входящий звонок…";
@@ -69,7 +69,7 @@
 "via one-time link" = "через одноразовую ссылку";
 
 /* No comment provided by engineer. */
-"video call (not e2e encrypted)." = "видеозвонок (не e2e зашифрованный).";
+"video call (not e2e encrypted)" = "видеозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
 "with e2e encryption" = "e2e зашифровано";

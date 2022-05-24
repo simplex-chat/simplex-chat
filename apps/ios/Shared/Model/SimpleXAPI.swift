@@ -633,10 +633,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             let uuid = UUID()
             var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey)
             m.callInvitations[contact.id] = invitation
-            let callUpdate = CXCallUpdate()
-            callUpdate.remoteHandle = CXHandle(type: .generic, value: contact.displayName)
-            callUpdate.hasVideo = callType.media == .video
-            CallController.shared.provider.reportNewIncomingCall(with: uuid, update: callUpdate, completion: { error in
+            CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
                 if let error = error {
                     invitation.callkitUUID = nil
                     m.callInvitations[contact.id] = invitation
@@ -644,7 +641,7 @@ func processReceivedMsg(_ res: ChatResponse) {
                 } else {
                     logger.debug("reportNewIncomingCall success")
                 }
-            })
+            }
 
 // This will be called from notification service extension
 //            CXProvider.reportNewIncomingVoIPPushPayload([
@@ -667,7 +664,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in
-                call.callState = .negotiated
+                call.callState = .answerReceived
                 m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
             }
         case let .callExtraInfo(contact, extraInfo):
@@ -675,15 +672,12 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
             }
         case let .callEnded(contact):
-            if let invitation = m.callInvitations.removeValue(forKey: contact.id),
-               let uuid = invitation.callkitUUID {
-                CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
+            if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
+                CallController.shared.reportCallRemoteEnded(invitation: invitation)
             }
             withCall(contact) { call in
                 m.callCommand = .end
-                if let uuid = call.callkitUUID {
-                    CallController.shared.provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
-                }
+                CallController.shared.reportCallRemoteEnded(call: call)
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")

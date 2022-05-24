@@ -51,20 +51,12 @@ class Call: ObservableObject, Equatable {
             switch callState {
             case .waitCapabilities: return ""
             case .invitationSent: return localEncrypted ? "e2e encrypted" : "no e2e encryption"
-            case .invitationReceived: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
+            case .invitationAccepted: return sharedKey == nil ? "contact has no e2e encryption" : "contact has e2e encryption"
             default: return !localEncrypted ? "no e2e encryption" : sharedKey == nil ? "contact has no e2e encryption" : "e2e encrypted" 
             }
         }
     }
     var hasMedia: Bool { get { callState == .offerSent || callState == .negotiated || callState == .connected } }
-
-//    func callkitEnd() {
-//        if case .incoming = direction {
-//            CallController.shared.provider.reportCall(with: callkitUUID, endedAt: nil, reason: .remoteEnded)
-//        } else {
-//
-//        }
-//    }
 }
 
 enum CallDirection {
@@ -73,12 +65,13 @@ enum CallDirection {
 }
 
 enum CallState {
-    case waitCapabilities
-    case invitationSent
-    case invitationReceived
-    case offerSent
-    case offerReceived
-    case negotiated
+    case waitCapabilities   // outgoing call started
+    case invitationSent     // outgoing call - sent invitation
+    case invitationAccepted // incoming call started
+    case offerSent          // incoming - webrtc started and offer sent
+    case offerReceived      // outgoing - webrtc offer received via API
+    case answerReceived     // incoming - webrtc answer received via API
+    case negotiated         // outgoing - webrtc offer processed and answer sent, incoming - webrtc answer processed
     case connected
     case ended
 
@@ -86,9 +79,10 @@ enum CallState {
         switch self {
         case .waitCapabilities: return "starting…"
         case .invitationSent: return "waiting for answer…"
-        case .invitationReceived: return "starting…"
+        case .invitationAccepted: return "starting…"
         case .offerSent: return "waiting for confirmation…"
         case .offerReceived: return "received answer…"
+        case .answerReceived: return "received confirmation…"
         case .negotiated: return "connecting…"
         case .connected: return "connected"
         case .ended: return "ended"
