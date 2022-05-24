@@ -33,6 +33,7 @@ struct ContentView: View {
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .onAppear {
+            // TODO authenticate only if onboarding is complete and preference is set
             authenticate()
         }
     }
