@@ -38,24 +38,31 @@ struct ContentView: View {
     }
 
     func authenticate() {
-        logger.debug("in authenticate")
         let laContext = LAContext()
-        var authError: NSError?
-        if laContext.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &authError) {
-            logger.debug("in laContext.canEvaluatePolicy")
-            let reason = "Open chat"
-            laContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { sucess, authenticationError in
-                logger.debug("in laContext.evaluatePolicy")
+        var authAvailabilityError: NSError?
+        if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
+            let reason = "Access chats"
+            laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
                 DispatchQueue.main.async {
-                    if sucess {
+                    if success {
                         showChats = true
                     } else {
-                        logger.error("authentication error: \(authenticationError.debugDescription)")
+                        logger.error("authentication error: \(authError.debugDescription)")
+                        AlertManager.shared.showAlertMsg(
+                            title: "Authentication failed",
+                            message: "You could not be verified; please try again."
+                        )
                     }
                 }
             }
         } else {
-            logger.error("no biometry error: \(authError.debugDescription)")
+            logger.error("authentication availability error: \(authAvailabilityError.debugDescription)")
+            AlertManager.shared.showAlertMsg(
+                title: "Authentication unavailable",
+                message: "You device is not configured for authentication."
+            )
+            // TODO turn off preference
+            showChats = true
         }
     }
 
