@@ -34,7 +34,7 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
-open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: NtfManager, val appContext: Context) {
+open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
   private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
@@ -83,10 +83,6 @@ open class ChatController(private val ctrl: ChatCtrl, private val ntfManager: Nt
       }
     }
     return false
-  }
-
-  fun cancelNotificationsForChat(chatId: String) {
-    ntfManager.cancelNotificationsForChat(chatId)
   }
 
   suspend fun sendCmd(cmd: CC): CR {
