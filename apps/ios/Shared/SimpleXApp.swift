@@ -7,7 +7,6 @@
 
 import SwiftUI
 import OSLog
-import AVFoundation
 
 let logger = Logger()
 
