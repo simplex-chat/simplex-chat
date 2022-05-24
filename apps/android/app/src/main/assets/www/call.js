@@ -496,10 +496,8 @@ function callCryptoFunction() {
             const initial = data.subarray(0, n);
             const plaintext = data.subarray(n, data.byteLength);
             try {
-                const ciphertext = plaintext.length
-                    ? await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext)
-                    : new ArrayBuffer(0);
-                frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer;
+                const ciphertext = new Uint8Array(plaintext.length ? await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext) : 0);
+                frame.data = concatN(initial, ciphertext, iv).buffer;
                 controller.enqueue(frame);
             }
             catch (e) {
@@ -516,8 +514,8 @@ function callCryptoFunction() {
             const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH);
             const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength);
             try {
-                const plaintext = ciphertext.length ? await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext) : new ArrayBuffer(0);
-                frame.data = concatN(initial, new Uint8Array(plaintext)).buffer;
+                const plaintext = new Uint8Array(ciphertext.length ? await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext) : 0);
+                frame.data = concatN(initial, plaintext).buffer;
                 controller.enqueue(frame);
             }
             catch (e) {
