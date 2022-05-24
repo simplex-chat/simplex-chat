@@ -5,16 +5,22 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricManager.Authenticators.*
+import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.AndroidViewModel
 import androidx.work.*
 import chat.simplex.app.model.ChatModel
@@ -29,16 +35,21 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
-//import kotlinx.serialization.decodeFromString
-
-class MainActivity: ComponentActivity() {
+class MainActivity: FragmentActivity() {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
+  private val showChats = mutableStateOf(false)
+  private lateinit var executor: Executor
+  private lateinit var biometricPrompt: BiometricPrompt
+  private lateinit var promptInfo: BiometricPrompt.PromptInfo
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // TODO authenticate only if onboarding is complete and preference is set
+    authenticate()
 //    testJson()
     processNotificationIntent(intent, vm.chatModel)
     setContent {
@@ -48,7 +59,9 @@ class MainActivity: ComponentActivity() {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(vm.chatModel)
+          if (showChats.value) {
+            MainPage(vm.chatModel)
+          }
         }
       }
     }
@@ -76,6 +89,63 @@ class MainActivity: ComponentActivity() {
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
     WorkManager.getInstance(this)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+  }
+
+  private fun authenticate() {
+    val biometricManager = BiometricManager.from(this)
+    when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
+      BiometricManager.BIOMETRIC_SUCCESS -> {
+        executor = ContextCompat.getMainExecutor(this)
+        biometricPrompt = BiometricPrompt(
+          this,
+          executor,
+          object: BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationError(
+              errorCode: Int,
+              errString: CharSequence
+            ) {
+              super.onAuthenticationError(errorCode, errString)
+              Toast.makeText(
+                applicationContext,
+                if (errString.isNotEmpty()) "Authentication error: $errString" else "Authentication error",
+                Toast.LENGTH_SHORT
+              ).show()
+            }
+
+            override fun onAuthenticationSucceeded(
+              result: BiometricPrompt.AuthenticationResult
+            ) {
+              super.onAuthenticationSucceeded(result)
+              showChats.value = true
+            }
+
+            override fun onAuthenticationFailed() {
+              super.onAuthenticationFailed()
+              Toast.makeText(
+                applicationContext,
+                "Authentication failed",
+                Toast.LENGTH_SHORT
+              ).show()
+            }
+          }
+        )
+        promptInfo = BiometricPrompt.PromptInfo.Builder()
+          .setTitle("Access chats")
+          .setSubtitle("Log in using your credential")
+          .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+          .setConfirmationRequired(false)
+          .build()
+        biometricPrompt.authenticate(promptInfo)
+      }
+      else -> {
+        AlertManager.shared.showAlertMsg(
+          "Authentication unavailable",
+          "Your device is not configured for authentication."
+        )
+        // TODO turn off preference
+        showChats.value = true
+      }
+    }
   }
 }
 
@@ -163,7 +233,6 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     }
   }
 }
-
 //fun testJson() {
 //  val str: String = """
 //  """.trimIndent()

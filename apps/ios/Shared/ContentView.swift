@@ -60,7 +60,7 @@ struct ContentView: View {
             logger.error("authentication availability error: \(authAvailabilityError.debugDescription)")
             AlertManager.shared.showAlertMsg(
                 title: "Authentication unavailable",
-                message: "You device is not configured for authentication."
+                message: "Your device is not configured for authentication."
             )
             // TODO turn off preference
             showChats = true
