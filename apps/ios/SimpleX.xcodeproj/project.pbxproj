@@ -31,6 +31,7 @@
 		5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C55A91E283AD0E400C4E99E /* CallManager.swift */; };
 		5C55A921283CCCB700C4E99E /* IncomingCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C55A920283CCCB700C4E99E /* IncomingCallView.swift */; };
 		5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C55A922283CEDE600C4E99E /* SoundPlayer.swift */; };
+		5C55A92E283D0FDE00C4E99E /* sounds in Resources */ = {isa = PBXBuildFile; fileRef = 5C55A92D283D0FDE00C4E99E /* sounds */; };
 		5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C577F7C27C83AA10006112D /* MarkdownHelp.swift */; };
 		5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */; };
 		5C5E5D3D282447AB00B0488A /* CallTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5E5D3C282447AB00B0488A /* CallTypes.swift */; };
@@ -154,6 +155,7 @@
 		5C55A91E283AD0E400C4E99E /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
 		5C55A920283CCCB700C4E99E /* IncomingCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncomingCallView.swift; sourceTree = "<group>"; };
 		5C55A922283CEDE600C4E99E /* SoundPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPlayer.swift; sourceTree = "<group>"; };
+		5C55A92D283D0FDE00C4E99E /* sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = sounds; sourceTree = "<group>"; };
 		5C577F7C27C83AA10006112D /* MarkdownHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHelp.swift; sourceTree = "<group>"; };
 		5C5E5D3A2824468B00B0488A /* ActiveCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveCallView.swift; sourceTree = "<group>"; };
 		5C5E5D3C282447AB00B0488A /* CallTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallTypes.swift; sourceTree = "<group>"; };
@@ -374,6 +376,7 @@
 		5CA059BD279559F40002BEB4 = {
 			isa = PBXGroup;
 			children = (
+				5C55A92D283D0FDE00C4E99E /* sounds */,
 				3C714779281C0F6800CB4D4B /* www */,
 				5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */,
 				5CC2C0FA2809BF11000C35E3 /* Localizable.strings */,
@@ -637,6 +640,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C55A92E283D0FDE00C4E99E /* sounds in Resources */,
 				3C71477A281C0F6800CB4D4B /* www in Resources */,
 				5CA059EF279559F40002BEB4 /* Assets.xcassets in Resources */,
 				5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */,

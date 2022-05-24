@@ -36,10 +36,10 @@ struct IncomingCallView: View {
                 }
             }
             .onAppear {
-                SoundPlayer.shared.startSound(.ringing)
+                SoundPlayer.shared.startRingtone()
             }
             .onDisappear {
-                SoundPlayer.shared.stopSound()
+                SoundPlayer.shared.stopRingtone()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

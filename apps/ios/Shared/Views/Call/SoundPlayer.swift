@@ -11,34 +11,35 @@ import AVFoundation
 
 class SoundPlayer {
     static let shared = SoundPlayer()
-    private var playing: SystemSound?
+    private var audioPlayer: AVAudioPlayer?
 
-    enum SystemSound {
-        case ringing
-
-        var systemId: SystemSoundID {
-            switch self {
-            case .ringing: return 1151
-            }
+    func startRingtone() {
+        audioPlayer?.stop()
+        logger.debug("startRingtone")
+        guard let path = Bundle.main.path(forResource: "ringtone2", ofType: "m4a", inDirectory: "sounds") else {
+            logger.debug("startRingtone: file not found")
+            return
         }
-    }
+        do {
+            let player = try AVAudioPlayer(contentsOf: URL(fileURLWithPath: path))
+            if player.prepareToPlay() {
+                audioPlayer = player
+            }
+        } catch {
+            logger.debug("startRingtone: AVAudioPlayer error \(error.localizedDescription)")
+        }
 
-    func startSound(_ sound: SystemSound, delay: UInt64 = 3) {
-        playing = sound
         Task {
-            while playing == sound {
-                AudioServicesPlaySystemSound(sound.systemId)
-                do {
-                    try await Task.sleep(nanoseconds: delay * 1_000_000_000)
-                } catch {
-                    logger.error("startSound: Task.sleep error: \(error.localizedDescription)")
-                    playing = nil
-                }
+            while let player = audioPlayer {
+                player.play()
+                AudioServicesPlayAlertSound(kSystemSoundID_Vibrate)
+                _ = try? await Task.sleep(nanoseconds: UInt64(player.duration * 1_000_000_000))
             }
         }
     }
 
-    func stopSound() {
-        playing = nil
+    func stopRingtone() {
+        audioPlayer?.stop()
+        audioPlayer = nil
     }
 }
