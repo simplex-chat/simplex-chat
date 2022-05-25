@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
-  private val chatShown = mutableStateOf<Boolean>(false)
+  private val chatShown = mutableStateOf(false)
   private val userAuthorized = mutableStateOf<Boolean?>(null)
   private val lastLA = mutableStateOf<Long?>(null)
 
