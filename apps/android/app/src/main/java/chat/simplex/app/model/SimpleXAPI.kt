@@ -34,6 +34,18 @@ import kotlin.concurrent.thread
 
 typealias ChatCtrl = Long
 
+fun isAppOnForeground(context: Context): Boolean {
+  val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+  val appProcesses = activityManager.runningAppProcesses ?: return false
+  val packageName = context.packageName
+  for (appProcess in appProcesses) {
+    if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+      return true
+    }
+  }
+  return false
+}
+
 open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
   var chatModel = ChatModel(this)
   private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
@@ -71,18 +83,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     thread(name="receiver") {
       withApi { recvMspLoop() }
     }
-  }
-
-  open fun isAppOnForeground(context: Context): Boolean {
-    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    val appProcesses = activityManager.runningAppProcesses ?: return false
-    val packageName = context.packageName
-    for (appProcess in appProcesses) {
-      if (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
-        return true
-      }
-    }
-    return false
   }
 
   suspend fun sendCmd(cmd: CC): CR {
@@ -454,7 +454,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
             }
           }
         }
-        if (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id) {
+        if (!cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -501,36 +501,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       }
       is CR.CallInvitation -> {
-        val invitation = CallInvitation(r.callType.media, r.sharedKey)
-        chatModel.callInvitations[r.contact.id] = invitation
-        if (chatModel.activeCallInvitation.value == null) {
-          chatModel.activeCallInvitation.value = ContactRef(r.contact.apiId, r.contact.localDisplayName)
-        }
-        ntfManager.notifyCallInvitation(r.contact, invitation)
-        AlertManager.shared.showAlertDialog(
-          title = invitation.callTitle,
-          text =  String.format(generalGetString(R.string.contact_wants_to_connect_via_call), r.contact.displayName) + " " +  invitation.callTypeText + ".",
-          confirmText = generalGetString(R.string.answer),
-          onConfirm = {
-            if (chatModel.activeCallInvitation.value == null) {
-              AlertManager.shared.hideAlert()
-              withApi { AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended)) }
-            } else {
-              chatModel.activeCallInvitation.value = null
-              chatModel.activeCall.value = Call(
-                contact = r.contact,
-                callState = CallState.InvitationReceived,
-                localMedia = invitation.peerMedia,
-                sharedKey = invitation.sharedKey
-              )
-              chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
-              chatModel.showCallView.value = true
-            }
-          },
-          onDismiss = {
-            chatModel.activeCallInvitation.value = null
-          }
-        )
+        val invitation = CallInvitation(r.contact, r.callType.media, r.sharedKey)
+        chatModel.callManager.reportNewIncomingCall(invitation)
       }
       is CR.CallOffer -> {
         // TODO askConfirmation?
@@ -542,7 +514,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       }
       is CR.CallAnswer -> {
         withCall(r, r.contact) { call ->
-          chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
+          chatModel.activeCall.value = call.copy(callState = CallState.AnswerReceived)
           chatModel.callCommand.value = WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
         }
       }
@@ -552,15 +524,17 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       }
       is CR.CallEnded -> {
-        withCall(r, r.contact) { _ ->
+        val invitation = chatModel.callInvitations.remove(r.contact.id)
+        if (invitation != null) {
+          chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
+        }
+        withCall(r, r.contact) { call ->
           chatModel.callCommand.value = WCallCommand.End
           withApi {
             chatModel.activeCall.value = null
-            chatModel.callCommand.value = null
+            chatModel.showCallView.value = false
           }
         }
-        chatModel.activeCallInvitation.value = null
-        chatModel.showCallView.value = false
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")

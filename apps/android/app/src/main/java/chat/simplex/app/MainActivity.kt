@@ -1,7 +1,8 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.Intent
+import android.app.NotificationManager
+import android.content.*
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -22,6 +23,7 @@ import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
+import chat.simplex.app.views.call.IncomingCallView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
@@ -91,11 +93,16 @@ fun MainPage(chatModel: ChatModel) {
     val userCreated = chatModel.userCreated.value
     when {
       onboarding == null || userCreated == null -> SplashView()
-      onboarding == OnboardingStage.OnboardingComplete && userCreated ->
-        if (chatModel.showCallView.value) ActiveCallView(chatModel)
-        else if (chatModel.chatId.value == null) ChatListView(chatModel)
-        else ChatView(chatModel)
-      onboarding == OnboardingStage.Step1_SimpleXInfo ->
+      onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
+        Box {
+          if (chatModel.showCallView.value) ActiveCallView(chatModel)
+          else if (chatModel.chatId.value == null) ChatListView(chatModel)
+          else ChatView(chatModel)
+
+          val invitation = chatModel.activeCallInvitation.value
+          if (invitation != null) IncomingCallView(invitation, chatModel)
+        }
+      } onboarding == OnboardingStage.Step1_SimpleXInfo ->
         Box(Modifier.padding(horizontal = 20.dp)) {
           SimpleXInfo(chatModel, onboarding = true)
         }
@@ -121,6 +128,15 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
+    }
+    NtfManager.AcceptCallAction -> {
+      val chatId = intent.getStringExtra("chatId")
+      val invitation = chatModel.callInvitations[chatId]
+      if (invitation == null) {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
+      } else {
+        chatModel.callManager.answerIncomingCall(invitation)
+      }
     }
   }
 }

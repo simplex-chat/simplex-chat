@@ -305,8 +305,10 @@
   <string name="callstate_waiting_for_answer">waiting for answer…</string>
   <string name="callstate_waiting_for_confirmation">waiting for confirmation…</string>
   <string name="callstate_received_answer">received answer…</string>
+  <string name="callstate_received_confirmation">received confirmation…</string>
   <string name="callstate_connecting">connecting…</string>
   <string name="callstate_connected">connected</string>
+  <string name="callstate_ended">ended</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -349,7 +351,9 @@
   <string name="encrypted_video_call">e2e encrypted video call</string>
   <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
   <string name="encrypted_audio_call">e2e encrypted audio call</string>
-  <string name="answer">Answer</string>
+  <string name="accept">Accept</string>
+  <string name="reject">Reject</string>
+  <string name="ignore">Ignore</string>
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>

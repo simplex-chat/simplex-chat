@@ -19,6 +19,7 @@
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
       tools:ignore="ScopedStorage" />
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
   <application
       android:name="SimplexApp"

@@ -129,7 +129,7 @@ fun ChatView(chatModel: ChatModel) {
           chatModel.activeCallInvitation.value = null
           chatModel.activeCall.value = Call(
             contact = contact,
-            callState = CallState.InvitationReceived,
+            callState = CallState.InvitationAccepted,
             localMedia = invitation.peerMedia,
             sharedKey = invitation.sharedKey
           )
