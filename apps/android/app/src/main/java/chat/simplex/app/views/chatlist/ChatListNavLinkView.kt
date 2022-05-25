@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.WarningOrange
 import chat.simplex.app.views.chat.clearChatDialog
 import chat.simplex.app.views.chat.deleteContactDialog
 import chat.simplex.app.views.chat.item.ItemAction
@@ -103,7 +104,8 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
-    }
+    },
+    color = WarningOrange
   )
   ItemAction(
     stringResource(R.string.delete_verb),

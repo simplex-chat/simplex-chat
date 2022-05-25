@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chatlist
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -12,9 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.PendingContactConnection
 import chat.simplex.app.model.getTimestampText
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
 
 @Composable
@@ -36,7 +38,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         fontWeight = FontWeight.Bold,
         color = HighOrLowlight
       )
-      Text(contactConnection.description, maxLines = 2, color = HighOrLowlight)
+      Text(contactConnection.description, maxLines = 2, color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactConnection.updatedAt)
     Column(
