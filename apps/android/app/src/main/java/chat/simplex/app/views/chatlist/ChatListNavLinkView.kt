@@ -137,7 +137,8 @@ fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bool
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
-    }
+    },
+    color = WarningOrange
   )
 }
 
