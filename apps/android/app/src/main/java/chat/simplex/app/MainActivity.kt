@@ -5,12 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.*
-import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -18,9 +14,8 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
@@ -34,20 +29,18 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
-import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 
-class MainActivity: FragmentActivity() {
+class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
-  private val showChats = mutableStateOf(false)
-
-  private lateinit var executor: Executor
-  private lateinit var biometricPrompt: BiometricPrompt
-  private lateinit var promptInfo: BiometricPrompt.PromptInfo
+  private val chatShown = mutableStateOf<Boolean>(false)
+  private val userAuthorized = mutableStateOf<Boolean?>(null)
+  private val lastLA = mutableStateOf<Long?>(null)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
 //    testJson()
     processNotificationIntent(intent, vm.chatModel)
     setContent {
@@ -57,7 +50,7 @@ class MainActivity: FragmentActivity() {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(vm.chatModel)
+          MainPage()
         }
       }
     }
@@ -67,6 +60,36 @@ class MainActivity: FragmentActivity() {
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
     processIntent(intent, vm.chatModel)
+  }
+
+  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+    withApi {
+      when (event) {
+        Lifecycle.Event.ON_START -> {
+          // perform local authentication if needed
+          val cm = vm.chatModel
+          val lastLAVal = lastLA.value
+          if (
+            cm.controller.getPerformLA()
+            && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
+          ) {
+            userAuthorized.value = false
+            authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
+              when (laResult) {
+                LAResult.Success -> {
+                  userAuthorized.value = true
+                  lastLA.value = System.nanoTime()
+                }
+                LAResult.Unavailable -> {
+                  cm.controller.setPerformLA(false)
+                }
+                else -> {}
+              }
+            })
+          }
+        }
+      }
+    }
   }
 
   private fun schedulePeriodicServiceRestartWorker() {
@@ -87,86 +110,40 @@ class MainActivity: FragmentActivity() {
     WorkManager.getInstance(this)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
-  private fun authenticate() {
-    val biometricManager = BiometricManager.from(this)
-    when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
-      BiometricManager.BIOMETRIC_SUCCESS -> {
-        executor = ContextCompat.getMainExecutor(this)
-        biometricPrompt = BiometricPrompt(
-          this,
-          executor,
-          object: BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationError(
-              errorCode: Int,
-              errString: CharSequence
-            ) {
-              super.onAuthenticationError(errorCode, errString)
-              Toast.makeText(
-                applicationContext,
-                if (errString.isNotEmpty()) "Authentication error: $errString" else "Authentication error",
-                Toast.LENGTH_SHORT
-              ).show()
-            }
-
-            override fun onAuthenticationSucceeded(
-              result: BiometricPrompt.AuthenticationResult
-            ) {
-              super.onAuthenticationSucceeded(result)
-              showChats.value = true
-            }
-
-            override fun onAuthenticationFailed() {
-              super.onAuthenticationFailed()
-              Toast.makeText(
-                applicationContext,
-                "Authentication failed",
-                Toast.LENGTH_SHORT
-              ).show()
-            }
-          }
-        )
-        promptInfo = BiometricPrompt.PromptInfo.Builder()
-          .setTitle("Access chats")
-          .setSubtitle("Log in using your credential")
-          .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-          .setConfirmationRequired(false)
-          .build()
-        biometricPrompt.authenticate(promptInfo)
-      }
-      else -> {
-        AlertManager.shared.showAlertMsg(
-          "Authentication unavailable",
-          "Your device is not configured for authentication."
-        )
-        // TODO turn off preference
-        showChats.value = true
-      }
-    }
-  }
-
   @Composable
-  fun MainPage(chatModel: ChatModel) {
-    LaunchedEffect(chatModel.runAuthenticate.value) {
-      // TODO authenticate only if onboarding is complete and preference is set
-      authenticate()
-      chatModel.runAuthenticate.value = false
-    }
+  fun MainPage() {
     Box {
-      val onboarding = chatModel.onboardingStage.value
-      val userCreated = chatModel.userCreated.value
+      val cm = vm.chatModel
+      val onboarding = cm.onboardingStage.value
+      val userCreated = cm.userCreated.value
+      val userAuthorized = userAuthorized.value
       when {
+        userAuthorized != null && !userAuthorized -> SplashView() // TODO not authorized view
         onboarding == null || userCreated == null -> SplashView()
-        onboarding == OnboardingStage.OnboardingComplete && userCreated ->
-          if (showChats.value) {
-            if (chatModel.showCallView.value) ActiveCallView(chatModel)
-            else if (chatModel.chatId.value == null) ChatListView(chatModel)
-            else ChatView(chatModel)
+        onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
+          if (cm.showCallView.value) ActiveCallView(cm)
+          else {
+            // <-- advertise local authentication
+            // not in Lifecycle.Event.ON_START because chat has to be started (startChat) so we can check onboarding stage and chats
+            if (
+              !cm.controller.getLANoticeShown()
+              && !chatShown.value
+              && cm.chats.isNotEmpty()
+              && authenticationAvailable(this@MainActivity)
+            ) {
+              cm.controller.showLANotice(this@MainActivity)
+            }
+            // advertise local authentication -->
+            chatShown.value = true
+            if (cm.chatId.value == null) ChatListView(cm)
+            else ChatView(cm)
           }
+        }
         onboarding == OnboardingStage.Step1_SimpleXInfo ->
           Box(Modifier.padding(horizontal = 20.dp)) {
-            SimpleXInfo(chatModel, onboarding = true)
+            SimpleXInfo(cm, onboarding = true)
           }
-        onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+        onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(cm)
       }
       ModalManager.shared.showInView()
       AlertManager.shared.showInView()
@@ -199,10 +176,8 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
 }
 
 fun processIntent(intent: Intent?, chatModel: ChatModel) {
-  Log.e(TAG, "######################################### in processIntent")
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
-      Log.e(TAG, "######################################### in android.intent.action.VIEW")
       val uri = intent.data
       if (uri != null) connectIfOpenedViaUri(uri, chatModel)
     }
@@ -210,7 +185,6 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
 }
 
 fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
-  Log.e(TAG, "######################################### in connectIfOpenedViaUri")
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     // TODO open from chat list view

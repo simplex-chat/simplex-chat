@@ -46,19 +46,35 @@
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
+  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="private_instant_notifications">Private instant notifications!</string>
   <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
   <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
   <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
+
+  <!-- local authentication notice - SimpleXAPI.kt -->
+  <string name="la_notice_title">Local authentication</string>
+  <string name="la_notice_text">You can enable local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to protect your chats. If you accept, you will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_turn_on">Turn on</string>
+
+  <!-- LocalAuthentication.kt -->
+  <string name="auth_turned_on">Local authentication turned on</string>
+  <string name="auth_turned_on_desc">You will be required to complete authentication each time you start the app. App will also lock after being in background for more than 30 seconds.</string>
+  <string name="auth_access_chats">Access chats</string>
+  <string name="auth_log_in_using_credential">Log in using your credential</string>
+  <string name="auth_error">Authentication error</string>
+  <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
+  <string name="auth_failed">Authentication failed</string>
+  <string name="auth_unavailable">Authentication unavailable</string>
+  <string name="auth_unavailable_desc">Your device is not configured for authentication.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>

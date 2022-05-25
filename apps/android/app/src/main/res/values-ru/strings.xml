@@ -46,13 +46,13 @@
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-    <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
     <string name="error_deleting_contact">Ошибка удаления контакта</string>
     <string name="error_deleting_group">Ошибка удаления группы</string>
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
+    <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
     <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
     <string name="private_instant_notifications_disabled">Приватные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>

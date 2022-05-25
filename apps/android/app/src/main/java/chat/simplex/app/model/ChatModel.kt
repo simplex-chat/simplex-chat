@@ -22,7 +22,6 @@ import kotlinx.serialization.json.*
 
 class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
-  val runAuthenticate = mutableStateOf<Boolean?>(false)
   val currentUser = mutableStateOf<User?>(null)
   val userCreated = mutableStateOf<Boolean?>(null)
   val chats = mutableStateListOf<Chat>()
