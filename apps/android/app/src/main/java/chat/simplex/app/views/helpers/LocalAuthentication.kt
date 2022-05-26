@@ -1,10 +1,10 @@
 package chat.simplex.app.views.helpers
 
 import android.content.Context
+import android.os.Build.VERSION.SDK_INT
 import android.widget.Toast
 import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
-import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+import androidx.biometric.BiometricManager.Authenticators.*
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
@@ -23,8 +23,26 @@ fun authenticate(
   activity: FragmentActivity,
   completed: (LAResult) -> Unit
 ) {
+  when {
+    SDK_INT in 28..29 ->
+      // KeyguardManager.isDeviceSecure()? https://developer.android.com/training/sign-in/biometric-auth#declare-supported-authentication-types
+      authenticateWithBiometricManager(promptTitle, promptSubtitle, activity, completed, BIOMETRIC_WEAK or DEVICE_CREDENTIAL)
+    SDK_INT > 29 ->
+      authenticateWithBiometricManager(promptTitle, promptSubtitle, activity, completed, BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+    else ->
+      completed(LAResult.Unavailable)
+  }
+}
+
+private fun authenticateWithBiometricManager(
+  promptTitle: String,
+  promptSubtitle: String,
+  activity: FragmentActivity,
+  completed: (LAResult) -> Unit,
+  authenticators: Int
+) {
   val biometricManager = BiometricManager.from(activity)
-  when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
+  when (biometricManager.canAuthenticate(authenticators)) {
     BiometricManager.BIOMETRIC_SUCCESS -> {
       val executor = ContextCompat.getMainExecutor(activity)
       val biometricPrompt = BiometricPrompt(
@@ -55,7 +73,7 @@ fun authenticate(
       val promptInfo = BiometricPrompt.PromptInfo.Builder()
         .setTitle(promptTitle)
         .setSubtitle(promptSubtitle)
-        .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        .setAllowedAuthenticators(authenticators)
         .setConfirmationRequired(false)
         .build()
       biometricPrompt.authenticate(promptInfo)
