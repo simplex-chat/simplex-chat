@@ -64,6 +64,26 @@
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
 
+    <!-- local authentication notice - SimpleXAPI.kt -->
+    <string name="la_notice_title">Заблокируйте свои чаты</string>
+    <string name="la_notice_text">Чтобы защитить свои чаты, включите блокировку чатов для <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет предложено пройти аутентификацию, прежде чем эта функция будет включена.</string>
+    <string name="la_notice_turn_on">Включить</string>
+
+    <!-- LocalAuthentication.kt -->
+    <string name="auth_turned_on">Блокировка чатов включена</string>
+    <string name="auth_turned_on_desc">Вы будете аутентифицированы при каждом запуске приложения и при возобновлении его работы спутся 30 секунд в фоновом режиме.</string>
+    <string name="auth_access_chats">Разблокировать чаты</string>
+    <string name="auth_log_in_using_credential">Пройдите аутентификацию</string>
+    <string name="auth_enable">Включить блокировку чатов</string>
+    <string name="auth_disable">Отключить блокировку чатов</string>
+    <string name="auth_confirm_credential">Пройдите аутентификацию</string>
+    <string name="auth_error">Ошибка аутентификации</string>
+    <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
+    <string name="auth_failed">Ошибка аутентификации</string>
+    <string name="auth_unavailable">Аутентификация недоступна</string>
+    <string name="auth_unavailable_instruction_desc">На устройстве не включена аутентификация. Вы можете включить блокировку чатов в Настройках после включения аутентификации.</string>
+    <string name="auth_unavailable_turning_off_desc">На устройстве выключена аутентификация. Отключение блокировки чатов.</string>
+
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
     <string name="share_verb">Поделиться</string>
@@ -219,8 +239,7 @@
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видеозвонка</b>, или ваш контакт может отправить вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
     <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</string>
-
-
+    
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
@@ -231,6 +250,7 @@
     <string name="chat_with_the_founder">Соединиться с разработчиками</string>
     <string name="send_us_an_email">Отправить email</string>
     <string name="private_notifications">Приватные уведомления</string>
+    <string name="chat_lock">Блокировка чатов</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>

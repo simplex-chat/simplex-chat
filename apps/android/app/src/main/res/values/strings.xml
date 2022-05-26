@@ -60,6 +60,10 @@
   <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
   <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
 
+  <!-- SimpleX Chat foreground Service -->
+  <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
+  <string name="simplex_service_notification_text">Receiving messages…</string>
+
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title">Lock your chats</string>
   <string name="la_notice_text">To protect your chats, turn on Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
@@ -77,12 +81,8 @@
   <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
   <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
-  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Chat Lock via Settings, once you enable device authentication.</string>
-  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
-
-  <!-- SimpleX Chat foreground Service -->
-  <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
-  <string name="simplex_service_notification_text">Receiving messages…</string>
+  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on Chat Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off Chat Lock.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
