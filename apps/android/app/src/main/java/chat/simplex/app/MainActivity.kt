@@ -78,19 +78,20 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
               generalGetString(R.string.auth_access_chats),
               generalGetString(R.string.auth_log_in_using_credential),
               this@MainActivity,
-              applicationContext,
               completed = { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
                     userAuthorized.value = true
                     lastLA.value = System.nanoTime()
                   }
+                  is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
+                  LAResult.Failed -> laFailedToast(applicationContext)
                   LAResult.Unavailable -> {
                     userAuthorized.value = true
                     cm.performLA.value = false
                     cm.controller.setPerformLA(false)
+                    laUnavailableTurningOffAlert()
                   }
-                  else -> {}
                 }
               }
             )
@@ -139,7 +140,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
               !cm.controller.getLANoticeShown()
               && !chatShown.value
               && cm.chats.isNotEmpty()
-              && authenticationAvailable(this@MainActivity)
             ) {
               cm.controller.showLANotice(this@MainActivity)
             }
@@ -167,7 +167,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         generalGetString(R.string.auth_enable),
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
-        applicationContext,
         completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
@@ -175,9 +174,20 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
               cm.controller.setPerformLA(true)
               laTurnedOnAlert()
             }
-            else -> {
+            is LAResult.Error -> {
               cm.performLA.value = false
               cm.controller.setPerformLA(false)
+              laErrorToast(applicationContext, laResult.errString)
+            }
+            LAResult.Failed -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+              laFailedToast(applicationContext)
+            }
+            LAResult.Unavailable -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+              laUnavailableInstructionAlert()
             }
           }
         }
@@ -187,19 +197,26 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         generalGetString(R.string.auth_disable),
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
-        applicationContext,
         completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
               cm.performLA.value = false
               cm.controller.setPerformLA(false)
             }
-            LAResult.Unavailable -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+            is LAResult.Error -> {
+              cm.performLA.value = true
+              cm.controller.setPerformLA(true)
+              laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
               cm.performLA.value = true
+              cm.controller.setPerformLA(true)
+              laFailedToast(applicationContext)
+            }
+            LAResult.Unavailable -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+              laUnavailableTurningOffAlert()
             }
           }
         }

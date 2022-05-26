@@ -12,23 +12,15 @@ import chat.simplex.app.R
 
 sealed class LAResult {
   object Success: LAResult()
+  class Error(val errString: CharSequence): LAResult()
   object Failed: LAResult()
   object Unavailable: LAResult()
-}
-
-fun authenticationAvailable(activity: FragmentActivity): Boolean {
-  val biometricManager = BiometricManager.from(activity)
-  return when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
-    BiometricManager.BIOMETRIC_SUCCESS -> true
-    else -> false
-  }
 }
 
 fun authenticate(
   promptTitle: String,
   promptSubtitle: String,
   activity: FragmentActivity,
-  context: Context,
   completed: (LAResult) -> Unit
 ) {
   val biometricManager = BiometricManager.from(activity)
@@ -44,12 +36,7 @@ fun authenticate(
             errString: CharSequence
           ) {
             super.onAuthenticationError(errorCode, errString)
-            Toast.makeText(
-              context,
-              if (errString.isNotEmpty()) String.format(generalGetString(R.string.auth_error_w_desc), errString) else generalGetString(R.string.auth_error),
-              Toast.LENGTH_SHORT
-            ).show()
-            completed(LAResult.Failed)
+            completed(LAResult.Error(errString))
           }
 
           override fun onAuthenticationSucceeded(
@@ -61,11 +48,6 @@ fun authenticate(
 
           override fun onAuthenticationFailed() {
             super.onAuthenticationFailed()
-            Toast.makeText(
-              context,
-              generalGetString(R.string.auth_failed),
-              Toast.LENGTH_SHORT
-            ).show()
             completed(LAResult.Failed)
           }
         }
@@ -79,10 +61,6 @@ fun authenticate(
       biometricPrompt.authenticate(promptInfo)
     }
     else -> {
-      AlertManager.shared.showAlertMsg(
-        generalGetString(R.string.auth_unavailable),
-        generalGetString(R.string.auth_unavailable_desc)
-      )
       completed(LAResult.Unavailable)
     }
   }
@@ -91,4 +69,26 @@ fun authenticate(
 fun laTurnedOnAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(R.string.auth_turned_on),
   generalGetString(R.string.auth_turned_on_desc)
+)
+
+fun laErrorToast(context: Context, errString: CharSequence) = Toast.makeText(
+  context,
+  if (errString.isNotEmpty()) String.format(generalGetString(R.string.auth_error_w_desc), errString) else generalGetString(R.string.auth_error),
+  Toast.LENGTH_SHORT
+).show()
+
+fun laFailedToast(context: Context) = Toast.makeText(
+  context,
+  generalGetString(R.string.auth_failed),
+  Toast.LENGTH_SHORT
+).show()
+
+fun laUnavailableInstructionAlert() = AlertManager.shared.showAlertMsg(
+  generalGetString(R.string.auth_unavailable),
+  generalGetString(R.string.auth_unavailable_instruction_desc)
+)
+
+fun laUnavailableTurningOffAlert() = AlertManager.shared.showAlertMsg(
+  generalGetString(R.string.auth_unavailable),
+  generalGetString(R.string.auth_unavailable_turning_off_desc)
 )

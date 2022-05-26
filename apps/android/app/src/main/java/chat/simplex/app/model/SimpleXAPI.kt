@@ -733,7 +733,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
             generalGetString(R.string.auth_enable),
             generalGetString(R.string.auth_confirm_credential),
             activity,
-            appContext,
             completed = { laResult ->
               when (laResult) {
                 LAResult.Success -> {
@@ -741,9 +740,20 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
                   setPerformLA(true)
                   laTurnedOnAlert()
                 }
-                else -> {
+                is LAResult.Error -> {
                   chatModel.performLA.value = false
                   setPerformLA(false)
+                  laErrorToast(appContext, laResult.errString)
+                }
+                LAResult.Failed -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laFailedToast(appContext)
+                }
+                LAResult.Unavailable -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laUnavailableInstructionAlert()
                 }
               }
             }
