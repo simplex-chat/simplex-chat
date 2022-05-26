@@ -729,19 +729,25 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         text = generalGetString(R.string.la_notice_text),
         confirmText = generalGetString(R.string.la_notice_turn_on),
         onConfirm = {
-          authenticate(activity, appContext, onLAResult = { laResult ->
-            when (laResult) {
-              LAResult.Success -> {
-                chatModel.performLA.value = true
-                setPerformLA(true)
-                laTurnedOnAlert()
-              }
-              else -> {
-                chatModel.performLA.value = false
-                setPerformLA(false)
+          authenticate(
+            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_confirm_credential),
+            activity,
+            appContext,
+            onLAResult = { laResult ->
+              when (laResult) {
+                LAResult.Success -> {
+                  chatModel.performLA.value = true
+                  setPerformLA(true)
+                  laTurnedOnAlert()
+                }
+                else -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                }
               }
             }
-          })
+          )
         }
       )
     }

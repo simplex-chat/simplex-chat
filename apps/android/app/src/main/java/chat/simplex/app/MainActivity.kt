@@ -74,18 +74,28 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
           ) {
             userAuthorized.value = false
-            authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
-              when (laResult) {
-                LAResult.Success -> {
-                  userAuthorized.value = true
-                  lastLA.value = System.nanoTime()
+            authenticate(
+              generalGetString(R.string.auth_access_chats),
+              generalGetString(R.string.auth_log_in_using_credential),
+              this@MainActivity,
+              applicationContext,
+              onLAResult = { laResult ->
+                when (laResult) {
+                  LAResult.Success -> {
+                    userAuthorized.value = true
+                    lastLA.value = System.nanoTime()
+                  }
+                  LAResult.Unavailable -> {
+                    userAuthorized.value = true
+                    cm.performLA.value = false
+                    cm.controller.setPerformLA(false)
+                  }
+                  else -> {}
                 }
-                LAResult.Unavailable -> {
-                  cm.controller.setPerformLA(false)
-                }
-                else -> {}
               }
-            })
+            )
+          } else {
+            userAuthorized.value = true
           }
         }
       }
@@ -118,8 +128,8 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       val userCreated = cm.userCreated.value
       val userAuthorized = userAuthorized.value
       when {
-        userAuthorized != null && !userAuthorized -> SplashView() // TODO not authorized view
         onboarding == null || userCreated == null -> SplashView()
+        userAuthorized != null && !userAuthorized -> SplashView()
         onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
           if (cm.showCallView.value) ActiveCallView(cm)
           else {
@@ -153,35 +163,47 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun setPerformLA(on: Boolean) {
     val cm = vm.chatModel
     if (on) {
-      authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
-        when (laResult) {
-          LAResult.Success -> {
-            cm.performLA.value = true
-            cm.controller.setPerformLA(true)
-            laTurnedOnAlert()
-          }
-          else -> {
-            cm.performLA.value = false
-            cm.controller.setPerformLA(false)
+      authenticate(
+        generalGetString(R.string.auth_enable),
+        generalGetString(R.string.auth_confirm_credential),
+        this@MainActivity,
+        applicationContext,
+        onLAResult = { laResult ->
+          when (laResult) {
+            LAResult.Success -> {
+              cm.performLA.value = true
+              cm.controller.setPerformLA(true)
+              laTurnedOnAlert()
+            }
+            else -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+            }
           }
         }
-      })
+      )
     } else {
-      authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
-        when (laResult) {
-          LAResult.Success -> {
-            cm.performLA.value = false
-            cm.controller.setPerformLA(false)
-          }
-          LAResult.Unavailable -> {
-            cm.performLA.value = false
-            cm.controller.setPerformLA(false)
-          }
-          LAResult.Failed -> {
-            cm.performLA.value = true
+      authenticate(
+        generalGetString(R.string.auth_disable),
+        generalGetString(R.string.auth_confirm_credential),
+        this@MainActivity,
+        applicationContext,
+        onLAResult = { laResult ->
+          when (laResult) {
+            LAResult.Success -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+            }
+            LAResult.Unavailable -> {
+              cm.performLA.value = false
+              cm.controller.setPerformLA(false)
+            }
+            LAResult.Failed -> {
+              cm.performLA.value = true
+            }
           }
         }
-      })
+      )
     }
   }
 }

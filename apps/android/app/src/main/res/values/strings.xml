@@ -70,6 +70,9 @@
   <string name="auth_turned_on_desc">You will be required to complete authentication each time you start the app. App will also lock after being in background for more than 30 seconds.</string>
   <string name="auth_access_chats">Access chats</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
+  <string name="auth_enable">Enable local authentication</string>
+  <string name="auth_disable">Disable local authentication</string>
+  <string name="auth_confirm_credential">Confirm your credential</string>
   <string name="auth_error">Authentication error</string>
   <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
   <string name="auth_failed">Authentication failed</string>

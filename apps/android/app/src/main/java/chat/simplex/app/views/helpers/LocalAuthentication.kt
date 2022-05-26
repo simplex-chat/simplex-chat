@@ -24,7 +24,13 @@ fun authenticationAvailable(activity: FragmentActivity): Boolean {
   }
 }
 
-fun authenticate(activity: FragmentActivity, context: Context, onLAResult: (laResult: LAResult) -> Unit) {
+fun authenticate(
+  promptTitle: String,
+  promptSubtitle: String,
+  activity: FragmentActivity,
+  context: Context,
+  onLAResult: (laResult: LAResult) -> Unit
+) {
   val biometricManager = BiometricManager.from(activity)
   when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
     BiometricManager.BIOMETRIC_SUCCESS -> {
@@ -65,8 +71,8 @@ fun authenticate(activity: FragmentActivity, context: Context, onLAResult: (laRe
         }
       )
       val promptInfo = BiometricPrompt.PromptInfo.Builder()
-        .setTitle(generalGetString(R.string.auth_access_chats))
-        .setSubtitle(generalGetString(R.string.auth_log_in_using_credential))
+        .setTitle(promptTitle)
+        .setSubtitle(promptSubtitle)
         .setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         .setConfirmationRequired(false)
         .build()
