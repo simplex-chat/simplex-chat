@@ -224,13 +224,9 @@ fun MainPage(
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
   var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
   LaunchedEffect(userAuthorized.value) {
-    val userAuthorizedVal = userAuthorized.value
     launch {
       delay(500L)
-      chatsAccessAuthorized = when {
-        userAuthorizedVal != null && !userAuthorizedVal -> false
-        else -> true
-      }
+      chatsAccessAuthorized = userAuthorized.value == true
     }
   }
   Box {
