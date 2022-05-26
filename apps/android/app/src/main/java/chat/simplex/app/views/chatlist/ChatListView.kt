@@ -64,7 +64,7 @@ fun scaffoldController(): ScaffoldController {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel) {
+fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val scaffoldCtrl = scaffoldController()
   if (chatModel.clearOverlays.value) {
     scaffoldCtrl.collapse()
@@ -73,7 +73,7 @@ fun ChatListView(chatModel: ChatModel) {
   }
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
-    drawerContent = { SettingsView(chatModel) },
+    drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),

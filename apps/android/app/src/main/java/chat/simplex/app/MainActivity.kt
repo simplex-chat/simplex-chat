@@ -135,7 +135,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             }
             // advertise local authentication -->
             chatShown.value = true
-            if (cm.chatId.value == null) ChatListView(cm)
+            if (cm.chatId.value == null) ChatListView(cm, setPerformLA = { setPerformLA(it) })
             else ChatView(cm)
           }
         }
@@ -147,6 +147,41 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       }
       ModalManager.shared.showInView()
       AlertManager.shared.showInView()
+    }
+  }
+
+  private fun setPerformLA(on: Boolean) {
+    val cm = vm.chatModel
+    if (on) {
+      authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            cm.performLA.value = true
+            cm.controller.setPerformLA(true)
+            laTurnedOnAlert()
+          }
+          else -> {
+            cm.performLA.value = false
+            cm.controller.setPerformLA(false)
+          }
+        }
+      })
+    } else {
+      authenticate(this@MainActivity, applicationContext, onLAResult = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            cm.performLA.value = false
+            cm.controller.setPerformLA(false)
+          }
+          LAResult.Unavailable -> {
+            cm.performLA.value = false
+            cm.controller.setPerformLA(false)
+          }
+          LAResult.Failed -> {
+            cm.performLA.value = true
+          }
+        }
+      })
     }
   }
 }
