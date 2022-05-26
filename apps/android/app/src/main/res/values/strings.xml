@@ -252,6 +252,7 @@
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
   <string name="private_notifications">Private notifications</string>
+  <string name="local_authentication">Local authentication</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>

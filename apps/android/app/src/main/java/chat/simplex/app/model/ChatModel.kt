@@ -39,6 +39,7 @@ class ChatModel(val controller: ChatController) {
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<Uri?>(null)
   val runServiceInBackground = mutableStateOf(true)
+  val performLA = mutableStateOf(false)
 
   // current WebRTC call
   val callInvitations = mutableStateMapOf<String, CallInvitation>()

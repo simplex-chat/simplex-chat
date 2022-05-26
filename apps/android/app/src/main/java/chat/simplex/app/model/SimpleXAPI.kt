@@ -41,6 +41,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   init {
     chatModel.runServiceInBackground.value = getRunServiceInBackground()
+    chatModel.performLA.value = getPerformLA()
   }
 
   suspend fun startChat(user: User) {
@@ -731,10 +732,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
           authenticate(activity, appContext, onLAResult = { laResult ->
             when (laResult) {
               LAResult.Success -> {
+                chatModel.performLA.value = true
                 setPerformLA(true)
                 laTurnedOnAlert()
               }
               else -> {
+                chatModel.performLA.value = false
                 setPerformLA(false)
               }
             }

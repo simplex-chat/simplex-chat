@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import android.app.Activity
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
@@ -29,19 +32,59 @@ import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
 fun SettingsView(chatModel: ChatModel) {
+  val context = LocalContext.current
   val user = chatModel.currentUser.value
+
+  fun setRunServiceInBackground(on: Boolean) {
+    chatModel.controller.setRunServiceInBackground(on)
+    if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+      chatModel.controller.setBackgroundServiceNoticeShown(false)
+    }
+    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+    chatModel.runServiceInBackground.value = on
+  }
+
+  fun setPerformLA(on: Boolean) {
+    if (on) {
+      authenticate(context as FragmentActivity, context, onLAResult = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            chatModel.performLA.value = true
+            chatModel.controller.setPerformLA(true)
+            laTurnedOnAlert()
+          }
+          else -> {
+            chatModel.performLA.value = false
+            chatModel.controller.setPerformLA(false)
+          }
+        }
+      })
+    } else {
+      authenticate(context as FragmentActivity, context, onLAResult = { laResult ->
+        when (laResult) {
+          LAResult.Success -> {
+            chatModel.performLA.value = false
+            chatModel.controller.setPerformLA(false)
+          }
+          LAResult.Unavailable -> {
+            chatModel.performLA.value = false
+            chatModel.controller.setPerformLA(false)
+          }
+          LAResult.Failed -> {
+            chatModel.performLA.value = true
+          }
+        }
+      })
+    }
+  }
+
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
       runServiceInBackground = chatModel.runServiceInBackground,
-      setRunServiceInBackground = { on ->
-        chatModel.controller.setRunServiceInBackground(on)
-        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-          chatModel.controller.setBackgroundServiceNoticeShown(false)
-        }
-        chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-        chatModel.runServiceInBackground.value = on
-      },
+      setRunServiceInBackground = ::setRunServiceInBackground,
+      performLA = chatModel.performLA,
+      setPerformLA = ::setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
@@ -58,6 +101,8 @@ fun SettingsLayout(
   profile: Profile,
   runServiceInBackground: MutableState<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
+  performLA: MutableState<Boolean>,
+  setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
@@ -177,10 +222,34 @@ fun SettingsLayout(
           stringResource(R.string.private_notifications), Modifier
             .padding(end = 24.dp)
             .fillMaxWidth()
-            .weight(1F))
+            .weight(1F)
+        )
         Switch(
           checked = runServiceInBackground.value,
           onCheckedChange = { setRunServiceInBackground(it) },
+          colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colors.primary,
+            uncheckedThumbColor = HighOrLowlight
+          ),
+          modifier = Modifier.padding(end = 8.dp)
+        )
+      }
+      Divider(Modifier.padding(horizontal = 8.dp))
+      SettingsSectionView() {
+        Icon(
+          Icons.Outlined.Lock,
+          contentDescription = stringResource(R.string.local_authentication),
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(
+          stringResource(R.string.local_authentication), Modifier
+            .padding(end = 24.dp)
+            .fillMaxWidth()
+            .weight(1F)
+        )
+        Switch(
+          checked = performLA.value,
+          onCheckedChange = { setPerformLA(it) },
           colors = SwitchDefaults.colors(
             checkedThumbColor = MaterialTheme.colors.primary,
             uncheckedThumbColor = HighOrLowlight
@@ -242,8 +311,10 @@ fun PreviewSettingsLayout() {
       profile = Profile.sampleData,
       runServiceInBackground = remember { mutableStateOf(true) },
       setRunServiceInBackground = {},
-      showModal = {{}},
-      showCustomModal = {{}},
+      performLA = remember { mutableStateOf(false) },
+      setPerformLA = {},
+      showModal = { {} },
+      showCustomModal = { {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )
