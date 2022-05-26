@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -22,7 +23,7 @@ import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
-import chat.simplex.app.views.call.IncomingCallView
+import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
@@ -99,7 +100,7 @@ fun MainPage(chatModel: ChatModel) {
           else ChatView(chatModel)
 
           val invitation = chatModel.activeCallInvitation.value
-          if (invitation != null) IncomingCallView(invitation, chatModel)
+          if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
       } onboarding == OnboardingStage.Step1_SimpleXInfo ->
         Box(Modifier.padding(horizontal = 20.dp)) {

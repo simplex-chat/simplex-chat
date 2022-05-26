@@ -46,6 +46,7 @@ class ChatModel(val controller: ChatController) {
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)
+  val switchingCall = mutableStateOf(false)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value

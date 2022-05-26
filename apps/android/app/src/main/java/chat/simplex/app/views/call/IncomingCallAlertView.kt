@@ -1,8 +1,5 @@
 package chat.simplex.app.views.call
 
-import android.media.MediaPlayer
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -20,23 +17,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.getSystemService
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Contact
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.withScope
 import chat.simplex.app.views.usersettings.ProfilePreview
-import kotlinx.coroutines.delay
 
 @Composable
-fun IncomingCallView(invitation: CallInvitation, chatModel: ChatModel) {
+fun IncomingCallAlertView(invitation: CallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
-  LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = chatModel.activeCall.value == null) }
+  LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = !chatModel.showCallView.value) }
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
-  IncomingCallLayout(
+  IncomingCallAlertLayout(
     invitation,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = { chatModel.activeCallInvitation.value = null },
@@ -45,44 +39,39 @@ fun IncomingCallView(invitation: CallInvitation, chatModel: ChatModel) {
 }
 
 @Composable
-fun IncomingCallLayout(
+fun IncomingCallAlertLayout(
   invitation: CallInvitation,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
-  Column(
-    Modifier
-      .background(if (isSystemInDarkTheme()) IncomingCallDark else IncomingCallLight)
-      .padding(top = 16.dp)
-      .padding(bottom = 16.dp)
-      .padding(start = 16.dp)
-      .padding(end = 8.dp)
-  ) {
-//  VStack(alignment: .leading, spacing: 6) {
-    Row {
-      @Composable fun CallIcon(icon: ImageVector, @StringRes descrId: Int) = Icon(icon, stringResource(descrId), tint = SimplexGreen)
-      if (invitation.peerMedia == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, R.string.icon_descr_video_call)
-      else CallIcon(Icons.Filled.Phone, R.string.icon_descr_audio_call)
-      Spacer(Modifier.width(4.dp))
-      Text(invitation.callTypeText)
-    }
+  val color = if (isSystemInDarkTheme()) IncomingCallDark else IncomingCallLight
+  Column(Modifier.background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
+    IncomingCallInfo(invitation)
     Spacer(Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
       ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
-      Spacer(
-        Modifier
-          .fillMaxWidth()
-          .weight(1f))
-      CallButton(R.string.reject, Icons.Filled.CallEnd, Color.Red, rejectCall)
-      CallButton(R.string.ignore, Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
-      CallButton(R.string.accept, Icons.Filled.Check, SimplexGreen, acceptCall)
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
+      CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
+      CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
     }
   }
 }
 
 @Composable
-private fun CallButton(@StringRes textId: Int, icon: ImageVector, color: Color, action: () -> Unit) {
+fun IncomingCallInfo(invitation: CallInvitation) {
+  @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
+  Row {
+    if (invitation.peerMedia == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
+    else CallIcon(Icons.Filled.Phone, stringResource(R.string.icon_descr_audio_call))
+    Spacer(Modifier.width(4.dp))
+    Text(invitation.callTypeText)
+  }
+}
+
+@Composable
+private fun CallButton(text: String, icon: ImageVector, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
     color = Color.Transparent
@@ -94,17 +83,17 @@ private fun CallButton(@StringRes textId: Int, icon: ImageVector, color: Color, 
         .padding(4.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Icon(icon, stringResource(textId), tint = color, modifier = Modifier.scale(1.2f))
-      Text(stringResource(textId), style = MaterialTheme.typography.body2, color = HighOrLowlight)
+      Icon(icon, text, tint = color, modifier = Modifier.scale(1.2f))
+      Text(text, style = MaterialTheme.typography.body2, color = HighOrLowlight)
     }
   }
 }
 
 @Preview
 @Composable
-fun PreviewIncomingCallLayout() {
+fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
-    IncomingCallLayout(
+    IncomingCallAlertLayout(
       invitation = CallInvitation(
         contact = Contact.sampleData,
         peerMedia = CallMediaType.Audio,

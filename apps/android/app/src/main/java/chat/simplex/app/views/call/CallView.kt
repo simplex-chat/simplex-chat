@@ -208,7 +208,7 @@ private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
 }
 
 @Composable
-private fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
+fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
   @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
     Text(text, color = Color(0xFFFFFFD8), style = style)
   Column(horizontalAlignment = alignment) {

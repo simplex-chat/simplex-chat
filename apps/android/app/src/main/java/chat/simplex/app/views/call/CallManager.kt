@@ -21,15 +21,19 @@ class CallManager(val chatModel: ChatModel) {
       justAcceptIncomingCall(invitation = invitation)
     } else {
       withApi {
-        endCall(call = call)
-        justAcceptIncomingCall(invitation = invitation)
+        chatModel.switchingCall.value = true
+        try {
+          endCall(call = call)
+          justAcceptIncomingCall(invitation = invitation)
+        } finally {
+          withApi { chatModel.switchingCall.value = false }
+        }
       }
     }
   }
 
   private fun justAcceptIncomingCall(invitation: CallInvitation) {
     with (chatModel) {
-      callInvitations.remove(invitation.contact.id)
       activeCall.value = Call(
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
@@ -38,6 +42,7 @@ class CallManager(val chatModel: ChatModel) {
       )
       showCallView.value = true
       callCommand.value = WCallCommand.Start (media = invitation.peerMedia, aesKey = invitation.sharedKey)
+      callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null
         controller.ntfManager.cancelCallNotification()

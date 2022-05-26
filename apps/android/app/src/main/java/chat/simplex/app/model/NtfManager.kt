@@ -12,8 +12,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
-import chat.simplex.app.views.call.CallInvitation
-import chat.simplex.app.views.call.CallMediaType
+import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.base64ToBitmap
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
@@ -104,23 +103,30 @@ class NtfManager(val context: Context) {
     if (isAppOnForeground(context)) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
+    val keyguardManager = getKeyguardManager(context)
     val image = invitation.contact.image
-    val notification = NotificationCompat.Builder(context, CallChannel)
+    var ntfBuilder = NotificationCompat.Builder(context, CallChannel)
       .setContentTitle(invitation.contact.displayName)
       .setContentText("Incoming ${invitation.peerMedia} call (${if (invitation.sharedKey == null) "not e2e encrypted" else "e2e encrypted"})")
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_CALL)
-      .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
-      .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
       .setSmallIcon(R.drawable.ntf_icon)
       .setLargeIcon(if (image == null) BitmapFactory.decodeResource(context.resources, R.drawable.icon) else base64ToBitmap(image))
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setSound(Uri.parse( "android.resource://chat.simplex.app/" + R.raw.ringtone), AudioManager.STREAM_NOTIFICATION)
-      .build()
-
+    ntfBuilder =
+      if (keyguardManager.isDeviceLocked) {
+        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        ntfBuilder
+          .setFullScreenIntent(fullScreenPendingIntent, true)
+      } else {
+        ntfBuilder
+          .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
+      }
     with(NotificationManagerCompat.from(context)) {
-      notify(CallNotificationId, notification)
+      notify(CallNotificationId, ntfBuilder.build())
     }
   }
 

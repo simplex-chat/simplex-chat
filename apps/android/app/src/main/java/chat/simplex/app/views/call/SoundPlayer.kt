@@ -11,30 +11,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 
 class SoundPlayer {
-  var sounds: Sounds? = null
+  var player: MediaPlayer? = null
   var playing = false
 
-  class Sounds(val player: MediaPlayer, val vibrator: Vibrator?, val effect: VibrationEffect)
-
-  fun initialize(cxt: Context): Sounds {
-    val s = Sounds(
-      player = MediaPlayer.create(cxt, R.raw.ring_once),
-      vibrator = ContextCompat.getSystemService(cxt, Vibrator::class.java),
-      effect = VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE)
-    )
-    sounds = s
-    return s
-  }
-
   fun start(cxt: Context, scope: CoroutineScope, sound: Boolean) {
-    val s = sounds ?: initialize(cxt)
+    if (sound) player = MediaPlayer.create(cxt, R.raw.ring_once)
+    val vibrator = ContextCompat.getSystemService(cxt, Vibrator::class.java)
+    val effect = VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE)
     playing = true
     withScope(scope) {
       while (playing) {
-        withScope(scope) {
-          if (sound) s.player.start()
-          s.vibrator?.vibrate(s.effect)
-        }
+        if (sound) player?.start()
+        vibrator?.vibrate(effect)
         delay(3500)
       }
     }
@@ -42,7 +30,7 @@ class SoundPlayer {
 
   fun stop() {
     playing = false
-    sounds?.player?.stop()
+    player?.stop()
   }
 
   companion object {
