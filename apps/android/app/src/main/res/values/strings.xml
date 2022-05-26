@@ -62,7 +62,7 @@
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title">Lock your chats</string>
-  <string name="la_notice_text">To protect your chats, enable Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_text">To protect your chats, turn on Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
 
   <!-- LocalAuthentication.kt -->
