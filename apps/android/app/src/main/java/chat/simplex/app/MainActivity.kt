@@ -29,6 +29,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class MainActivity: FragmentActivity(), LifecycleEventObserver {
@@ -51,7 +53,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(cm, userAuthorized.value, ::setPerformLA, ::advertiseLA, chatShown)
+          MainPage(cm, userAuthorized, ::setPerformLA, ::advertiseLA, chatShown)
           LaunchedEffect(cm.showAdvertiseLAUnavailableAlert.value) {
             if (cm.showAdvertiseLAUnavailableAlert.value) {
               laUnavailableInstructionAlert()
@@ -214,17 +216,29 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 @Composable
 fun MainPage(
   chatModel: ChatModel,
-  userAuthorized: Boolean?,
+  userAuthorized: MutableState<Boolean?>,
   setPerformLA: (Boolean) -> Unit,
   advertiseLA: () -> Unit,
   chatShown: MutableState<Boolean>
 ) {
+  // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
+  var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
+  LaunchedEffect(userAuthorized.value) {
+    val userAuthorizedVal = userAuthorized.value
+    launch {
+      delay(500L)
+      chatsAccessAuthorized = when {
+        userAuthorizedVal != null && !userAuthorizedVal -> false
+        else -> true
+      }
+    }
+  }
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
     when {
       onboarding == null || userCreated == null -> SplashView()
-      userAuthorized != null && !userAuthorized -> SplashView()
+      !chatsAccessAuthorized -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         if (chatModel.showCallView.value) ActiveCallView(chatModel)
         else {
