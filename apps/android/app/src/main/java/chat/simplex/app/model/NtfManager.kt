@@ -118,9 +118,16 @@ class NtfManager(val context: Context) {
           .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
           .setSound(soundUri)
       }
+    val text = generalGetString(
+      if (invitation.peerMedia == CallMediaType.Video) {
+        if (invitation.sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
+      } else {
+        if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
+      }
+    )
     ntfBuilder = ntfBuilder
       .setContentTitle(invitation.contact.displayName)
-      .setContentText("Incoming ${invitation.peerMedia} call (${if (invitation.sharedKey == null) "not e2e encrypted" else "e2e encrypted"})")
+      .setContentText(text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_CALL)
       .setSmallIcon(R.drawable.ntf_icon)
