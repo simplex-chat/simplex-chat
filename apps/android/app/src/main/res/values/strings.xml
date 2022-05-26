@@ -61,13 +61,13 @@
   <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
-  <string name="la_notice_title">Local authentication</string>
-  <string name="la_notice_text">You can enable local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to protect your chats. If you accept, you will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_title">Protect your chats</string>
+  <string name="la_notice_text">To protect your chats, enable local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
 
   <!-- LocalAuthentication.kt -->
   <string name="auth_turned_on">Local authentication turned on</string>
-  <string name="auth_turned_on_desc">You will be required to complete authentication each time you start the app. App will also lock after being in background for more than 30 seconds.</string>
+  <string name="auth_turned_on_desc">You will be required to complete authentication every time you start or resume the app after more than 30 seconds in background.</string>
   <string name="auth_access_chats">Access chats</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
   <string name="auth_enable">Enable local authentication</string>
@@ -78,7 +78,7 @@
   <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
   <string name="auth_unavailable_instruction_desc">Your device is not configured for authentication. If your device supports authentication via device credential (e.g. PIN) or biometric authentication, you can set it up and then enable this feature from Settings to protect your chats.</string>
-  <string name="auth_unavailable_turning_off_desc">Your device is not configured for authentication. Turning off local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
