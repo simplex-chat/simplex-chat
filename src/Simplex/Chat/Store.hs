@@ -2640,9 +2640,6 @@ getChatPreviews st user withPCC =
     ts (AChat _ Chat {chatInfo, chatItems = ci : _}) = max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
     ts (AChat _ Chat {chatInfo}) = chatInfoUpdatedAt chatInfo
 
-chatItemTs :: CChatItem d -> UTCTime
-chatItemTs (CChatItem _ ChatItem {meta = CIMeta {itemTs}}) = itemTs
-
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db User {userId} = do
   tz <- getCurrentTimeZone
