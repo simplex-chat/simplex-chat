@@ -79,7 +79,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
               generalGetString(R.string.auth_log_in_using_credential),
               this@MainActivity,
               applicationContext,
-              onLAResult = { laResult ->
+              completed = { laResult ->
                 when (laResult) {
                   LAResult.Success -> {
                     userAuthorized.value = true
@@ -168,7 +168,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
         applicationContext,
-        onLAResult = { laResult ->
+        completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
               cm.performLA.value = true
@@ -188,7 +188,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
         applicationContext,
-        onLAResult = { laResult ->
+        completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
               cm.performLA.value = false

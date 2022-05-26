@@ -29,7 +29,7 @@ fun authenticate(
   promptSubtitle: String,
   activity: FragmentActivity,
   context: Context,
-  onLAResult: (laResult: LAResult) -> Unit
+  completed: (LAResult) -> Unit
 ) {
   val biometricManager = BiometricManager.from(activity)
   when (biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)) {
@@ -49,14 +49,14 @@ fun authenticate(
               if (errString.isNotEmpty()) String.format(generalGetString(R.string.auth_error_w_desc), errString) else generalGetString(R.string.auth_error),
               Toast.LENGTH_SHORT
             ).show()
-            onLAResult(LAResult.Failed)
+            completed(LAResult.Failed)
           }
 
           override fun onAuthenticationSucceeded(
             result: BiometricPrompt.AuthenticationResult
           ) {
             super.onAuthenticationSucceeded(result)
-            onLAResult(LAResult.Success)
+            completed(LAResult.Success)
           }
 
           override fun onAuthenticationFailed() {
@@ -66,7 +66,7 @@ fun authenticate(
               generalGetString(R.string.auth_failed),
               Toast.LENGTH_SHORT
             ).show()
-            onLAResult(LAResult.Failed)
+            completed(LAResult.Failed)
           }
         }
       )
@@ -83,7 +83,7 @@ fun authenticate(
         generalGetString(R.string.auth_unavailable),
         generalGetString(R.string.auth_unavailable_desc)
       )
-      onLAResult(LAResult.Unavailable)
+      completed(LAResult.Unavailable)
     }
   }
 }

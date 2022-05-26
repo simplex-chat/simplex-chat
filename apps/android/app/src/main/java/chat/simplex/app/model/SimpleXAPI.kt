@@ -734,7 +734,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
             generalGetString(R.string.auth_confirm_credential),
             activity,
             appContext,
-            onLAResult = { laResult ->
+            completed = { laResult ->
               when (laResult) {
                 LAResult.Success -> {
                   chatModel.performLA.value = true
