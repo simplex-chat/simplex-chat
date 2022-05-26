@@ -42,7 +42,8 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     super.onCreate(savedInstanceState)
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
 //    testJson()
-    processNotificationIntent(intent, vm.chatModel)
+    val cm = vm.chatModel
+    processNotificationIntent(intent, cm)
     setContent {
       SimpleXTheme {
         Surface(
@@ -50,7 +51,12 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(vm.chatModel, userAuthorized.value, ::setPerformLA, ::advertiseLA, chatShown)
+          MainPage(cm, userAuthorized.value, ::setPerformLA, ::advertiseLA, chatShown)
+          LaunchedEffect(cm.showAdvertiseLAUnavailableAlert.value) {
+            if (cm.showAdvertiseLAUnavailableAlert.value) {
+              laUnavailableInstructionAlert()
+            }
+          }
         }
       }
     }

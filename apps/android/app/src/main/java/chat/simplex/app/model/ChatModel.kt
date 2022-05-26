@@ -42,6 +42,7 @@ class ChatModel(val controller: ChatController) {
   // preferences
   val runServiceInBackground = mutableStateOf(true)
   val performLA = mutableStateOf(false)
+  val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
 
   // current WebRTC call
   val callInvitations = mutableStateMapOf<String, CallInvitation>()

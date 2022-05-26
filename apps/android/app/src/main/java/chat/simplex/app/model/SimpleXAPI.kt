@@ -753,7 +753,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
                 LAResult.Unavailable -> {
                   chatModel.performLA.value = false
                   setPerformLA(false)
-                  laUnavailableInstructionAlert()
+                  chatModel.showAdvertiseLAUnavailableAlert.value = true
                 }
               }
             }
