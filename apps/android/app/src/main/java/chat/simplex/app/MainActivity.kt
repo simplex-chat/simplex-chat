@@ -124,6 +124,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun setPerformLA(on: Boolean) {
     val cm = vm.chatModel
     if (on) {
+      cm.controller.setLANoticeShown(true)
       authenticate(
         generalGetString(R.string.auth_enable),
         generalGetString(R.string.auth_confirm_credential),
@@ -133,6 +134,8 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             LAResult.Success -> {
               cm.performLA.value = true
               cm.controller.setPerformLA(true)
+              userAuthorized.value = true
+              lastLA.value = System.nanoTime()
               laTurnedOnAlert()
             }
             is LAResult.Error -> {

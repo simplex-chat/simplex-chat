@@ -38,6 +38,8 @@ class ChatModel(val controller: ChatController) {
 
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<Uri?>(null)
+
+  // preferences
   val runServiceInBackground = mutableStateOf(true)
   val performLA = mutableStateOf(false)
 
