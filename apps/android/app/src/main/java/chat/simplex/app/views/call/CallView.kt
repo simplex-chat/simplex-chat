@@ -357,8 +357,6 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
         }
       }
     }
-  } else {
-    Text("NEED PERMISSIONS")
   }
 }
 
