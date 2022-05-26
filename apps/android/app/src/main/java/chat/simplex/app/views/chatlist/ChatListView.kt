@@ -105,43 +105,6 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
 }
 
 @Composable
-fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState())
-      .fillMaxWidth()
-      .padding(16.dp)
-  ) {
-    val welcomeMsg = if (displayName != null) {
-      String.format(stringResource(R.string.personal_welcome), displayName)
-    } else stringResource(R.string.welcome)
-    Text(
-      text = welcomeMsg,
-      Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
-    )
-    ChatHelpView { scaffoldCtrl.toggleSheet() }
-    Row(
-      Modifier.padding(top = 30.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      Text(
-        stringResource(R.string.this_text_is_available_in_settings),
-        color = MaterialTheme.colors.onBackground
-      )
-      Icon(
-        Icons.Outlined.Settings,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.onBackground,
-        modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
-      )
-    }
-  }
-}
-
-@Composable
 fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
   Row(
     horizontalArrangement = Arrangement.SpaceBetween,
