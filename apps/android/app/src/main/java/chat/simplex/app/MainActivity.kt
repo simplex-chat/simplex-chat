@@ -1,7 +1,6 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.app.NotificationManager
 import android.content.*
 import android.net.Uri
 import android.os.Bundle
@@ -131,11 +130,12 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")
+      Log.d(TAG, "processNotificationIntent: AcceptCallAction $chatId")
       val invitation = chatModel.callInvitations[chatId]
       if (invitation == null) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
       } else {
-        chatModel.callManager.answerIncomingCall(invitation)
+        chatModel.callManager.acceptIncomingCall(invitation = invitation)
       }
     }
   }

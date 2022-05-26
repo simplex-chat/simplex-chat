@@ -294,10 +294,10 @@
     <string name="callstatus_missed">пропущенный звонок</string>
     <string name="callstatus_rejected">отклоненный звонок</string>
     <string name="callstatus_accepted">принятый звонок</string>
-    <string name="callstatus_connecting">соединяется…</string>
+    <string name="callstatus_connecting">звонок соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
     <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-    <string name="callstatus_error">ошибка соединения</string>
+    <string name="callstatus_error">ошибка звонка</string>
 
     <!-- CallState -->
     <string name="callstate_starting">инициализация…</string>

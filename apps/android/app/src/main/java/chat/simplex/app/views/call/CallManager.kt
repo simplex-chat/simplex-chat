@@ -15,7 +15,19 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun answerIncomingCall(invitation: CallInvitation) {
+  fun acceptIncomingCall(invitation: CallInvitation) {
+    val call = chatModel.activeCall.value
+    if (call == null) {
+      justAcceptIncomingCall(invitation = invitation)
+    } else {
+      withApi {
+        endCall(call = call)
+        justAcceptIncomingCall(invitation = invitation)
+      }
+    }
+  }
+
+  private fun justAcceptIncomingCall(invitation: CallInvitation) {
     with (chatModel) {
       callInvitations.remove(invitation.contact.id)
       activeCall.value = Call(

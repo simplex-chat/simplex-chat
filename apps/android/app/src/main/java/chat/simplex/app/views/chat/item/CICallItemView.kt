@@ -32,7 +32,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
         AcceptCallButton(cInfo, acceptCall)
       }
       CICallStatus.Missed -> Icon(Icons.Outlined.Call, stringResource(R.string.icon_descr_call_missed), tint = Color.Red)
-      CICallStatus.Rejected -> Icon(Icons.Outlined.CallEnd, stringResource(R.string.icon_descr_call_rejected), tint = HighOrLowlight)
+      CICallStatus.Rejected -> Icon(Icons.Outlined.CallEnd, stringResource(R.string.icon_descr_call_rejected), tint = Color.Red)
       CICallStatus.Accepted -> ConnectingCallIcon()
       CICallStatus.Negotiated -> ConnectingCallIcon()
       CICallStatus.Progress -> Icon(Icons.Filled.PhoneInTalk, stringResource(R.string.icon_descr_call_progress), tint = SimplexGreen)

@@ -290,15 +290,15 @@
   <string name="colored">colored</string>
   <string name="secret">secret</string>
 
-  <!-- CICallStatus -->
+  <!-- CICallStatus - in chat items -->
   <string name="callstatus_calling">calling…</string>
-  <string name="callstatus_missed">missed</string>
-  <string name="callstatus_rejected">rejected</string>
-  <string name="callstatus_accepted">accepted</string>
-  <string name="callstatus_connecting">connecting…</string>
-  <string name="callstatus_in_progress">in progress</string>
-  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-  <string name="callstatus_error">error</string>
+  <string name="callstatus_missed">missed call</string>
+  <string name="callstatus_rejected">rejected call</string>
+  <string name="callstatus_accepted">accepted call</string>
+  <string name="callstatus_connecting">connecting call…</string>
+  <string name="callstatus_in_progress">call in progress</string>
+  <string name="callstatus_ended">call ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+  <string name="callstatus_error">call error</string>
 
   <!-- CallState -->
   <string name="callstate_starting">starting…</string>

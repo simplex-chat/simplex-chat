@@ -23,8 +23,7 @@ import chat.simplex.app.R
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
@@ -81,7 +80,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
     thread(name="receiver") {
-      withApi { recvMspLoop() }
+      GlobalScope.launch { withContext(Dispatchers.IO) { recvMspLoop() } }
     }
   }
 

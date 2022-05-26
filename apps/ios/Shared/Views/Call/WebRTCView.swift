@@ -111,78 +111,72 @@ func sendCallCommand(_ webView: WKWebView, _ command: WCallCommand) {
     webView.evaluateJavaScript(js)
 }
 
-struct CallViewDebug: View {
-    @State private var commandStr = ""
-    @State private var rtcWebView: WKWebView? = nil
-    @State private var webViewMsg: WVAPIMessage? = nil
-    @FocusState private var keyboardVisible: Bool
-
-    var body: some View {
-        VStack(spacing: 30) {
-            WebRTCView(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg).frame(maxHeight: 260)
-                .onChange(of: webViewMsg) { _ in
-                    if let resp = webViewMsg {
-                        commandStr = encodeJSON(resp)
-                    }
-                }
-            TextEditor(text: $commandStr)
-                .focused($keyboardVisible)
-                .disableAutocorrection(true)
-                .textInputAutocapitalization(.never)
-                .padding(.horizontal, 5)
-                .padding(.top, 2)
-                .frame(height: 112)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                )
-            HStack(spacing: 20) {
-                Button("Copy") {
-                    UIPasteboard.general.string = commandStr
-                }
-                Button("Paste") {
-                    commandStr = UIPasteboard.general.string ?? ""
-                }
-                Button("Clear") {
-                    commandStr = ""
-                }
-                Button("Send") {
-                    if let wv = rtcWebView,
-                       let command: WCallCommand = decodeJSON(commandStr) {
-                        sendCallCommand(wv, command)
-                    }
-                }
-            }
-            HStack(spacing: 20) {
-                Button("Capabilities") {
-                    if let wv = rtcWebView {
-                        sendCallCommand(wv, .capabilities(useWorker: true))
-                    }
-                }
-                Button("Start") {
-                    if let wv = rtcWebView {
-                        sendCallCommand(wv, .start(media: .video))
-                    }
-                }
-                Button("Accept") {
-
-                }
-                Button("Answer") {
-
-                }
-                Button("ICE") {
-
-                }
-                Button("End") {
-
-                }
-            }
-        }
-    }
-}
+//struct CallViewDebug: View {
+//    @State private var commandStr = ""
+//    @State private var rtcWebView: WKWebView? = nil
+//    @State private var webViewMsg: WVAPIMessage? = nil
+//    @FocusState private var keyboardVisible: Bool
 //
-//struct CallViewDebug_Previews: PreviewProvider {
-//    static var previews: some View {
-//        CallViewDebug()
+//    var body: some View {
+//        VStack(spacing: 30) {
+//            WebRTCView(rtcWebView: $rtcWebView, webViewMsg: $webViewMsg).frame(maxHeight: 260)
+//                .onChange(of: webViewMsg) { _ in
+//                    if let resp = webViewMsg {
+//                        commandStr = encodeJSON(resp)
+//                    }
+//                }
+//            TextEditor(text: $commandStr)
+//                .focused($keyboardVisible)
+//                .disableAutocorrection(true)
+//                .textInputAutocapitalization(.never)
+//                .padding(.horizontal, 5)
+//                .padding(.top, 2)
+//                .frame(height: 112)
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: 10)
+//                        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+//                )
+//            HStack(spacing: 20) {
+//                Button("Copy") {
+//                    UIPasteboard.general.string = commandStr
+//                }
+//                Button("Paste") {
+//                    commandStr = UIPasteboard.general.string ?? ""
+//                }
+//                Button("Clear") {
+//                    commandStr = ""
+//                }
+//                Button("Send") {
+//                    if let wv = rtcWebView,
+//                       let command: WCallCommand = decodeJSON(commandStr) {
+//                        sendCallCommand(wv, command)
+//                    }
+//                }
+//            }
+//            HStack(spacing: 20) {
+//                Button("Capabilities") {
+//                    if let wv = rtcWebView {
+//                        sendCallCommand(wv, .capabilities(useWorker: true))
+//                    }
+//                }
+//                Button("Start") {
+//                    if let wv = rtcWebView {
+//                        sendCallCommand(wv, .start(media: .video))
+//                    }
+//                }
+//                Button("Accept") {
+//
+//                }
+//                Button("Answer") {
+//
+//                }
+//                Button("ICE") {
+//
+//                }
+//                Button("End") {
+//
+//                }
+//            }
+//        }
 //    }
 //}

@@ -1,20 +1,12 @@
 package chat.simplex.app.views.call
 
 import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.graphics.fonts.FontStyle
-import android.os.Build
-import android.service.controls.templates.ControlButton
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
-import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.magnifier
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,11 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
@@ -41,7 +31,6 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.ChatInfoLayout
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
@@ -107,7 +96,12 @@ fun ActiveCallView(chatModel: ChatModel) {
                 CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
               }
             }
-            is WCallCommand.Camera -> chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+            is WCallCommand.Camera -> {
+              chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+              if (!call.audioEnabled) {
+                chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = false)
+              }
+            }
             is WCallCommand.End -> endCall()
             else -> {}
           }

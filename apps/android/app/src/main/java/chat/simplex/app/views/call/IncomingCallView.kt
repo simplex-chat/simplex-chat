@@ -1,48 +1,46 @@
 package chat.simplex.app.views.call
 
-import android.media.Image
+import android.media.MediaPlayer
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.getSystemService
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Contact
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.withScope
 import chat.simplex.app.views.usersettings.ProfilePreview
+import kotlinx.coroutines.delay
 
 @Composable
 fun IncomingCallView(invitation: CallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
+  val cxt = LocalContext.current
+  val scope = rememberCoroutineScope()
+  LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = chatModel.activeCall.value == null) }
+  DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallLayout(
     invitation,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = { chatModel.activeCallInvitation.value = null },
-    acceptCall = {
-      val call = chatModel.activeCall.value
-      if (call == null) {
-        cm.answerIncomingCall(invitation = invitation)
-      } else {
-        withApi {
-          cm.endCall(call = call)
-          cm.answerIncomingCall(invitation = invitation)
-        }
-      }
-    }
+    acceptCall = { cm.acceptIncomingCall(invitation = invitation) }
   )
 }
 
