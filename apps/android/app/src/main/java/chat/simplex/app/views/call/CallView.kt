@@ -273,8 +273,6 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 //}
 
 @Composable
-// for debugging
-// fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (String) -> Unit) {
 fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(

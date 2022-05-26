@@ -4,11 +4,8 @@ import android.app.*
 import android.content.*
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
-import android.media.AudioAttributes.*
-import android.media.AudioManager
 import android.net.Uri
 import android.util.Log
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
@@ -24,7 +21,9 @@ class NtfManager(val context: Context) {
     const val OpenChatAction: String = "chat.simplex.app.OPEN_CHAT"
     const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
+    // DO NOT change notification channel settings / names
     const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION"
+    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION"
     const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
     const val CallNotificationId: Int = -1
   }
@@ -35,6 +34,7 @@ class NtfManager(val context: Context) {
 
   init {
     manager.createNotificationChannel(NotificationChannel(MessageChannel, "SimpleX Chat messages", NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, "SimpleX Chat calls (lock screen)", NotificationManager.IMPORTANCE_HIGH))
     manager.createNotificationChannel(callNotificationChannel())
   }
 
@@ -44,11 +44,10 @@ class NtfManager(val context: Context) {
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)
       .build()
-    val soundUri = Uri.Builder().scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
-      .authority("chat.simplex.app")
-      .path(R.raw.ringtone.toString())
-      .build()
+    val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+    Log.d(TAG,"callNotificationChannel sound: $soundUri")
     callChannel.setSound(soundUri, attrs)
+    callChannel.enableVibration(true)
     return callChannel
   }
 
@@ -105,7 +104,21 @@ class NtfManager(val context: Context) {
     Log.d(TAG, "notifyCallInvitation $contactId")
     val keyguardManager = getKeyguardManager(context)
     val image = invitation.contact.image
-    var ntfBuilder = NotificationCompat.Builder(context, CallChannel)
+    var ntfBuilder =
+      if (keyguardManager.isDeviceLocked) {
+        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        NotificationCompat.Builder(context, LockScreenCallChannel)
+          .setFullScreenIntent(fullScreenPendingIntent, true)
+          .setSilent(true)
+      } else {
+        val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+        NotificationCompat.Builder(context, CallChannel)
+          .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
+          .setSound(soundUri)
+      }
+    ntfBuilder = ntfBuilder
       .setContentTitle(invitation.contact.displayName)
       .setContentText("Incoming ${invitation.peerMedia} call (${if (invitation.sharedKey == null) "not e2e encrypted" else "e2e encrypted"})")
       .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -114,17 +127,6 @@ class NtfManager(val context: Context) {
       .setLargeIcon(if (image == null) BitmapFactory.decodeResource(context.resources, R.drawable.icon) else base64ToBitmap(image))
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-    ntfBuilder =
-      if (keyguardManager.isDeviceLocked) {
-        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
-        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
-        ntfBuilder
-          .setFullScreenIntent(fullScreenPendingIntent, true)
-      } else {
-        ntfBuilder
-          .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
-          .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
-      }
     with(NotificationManagerCompat.from(context)) {
       notify(CallNotificationId, ntfBuilder.build())
     }
