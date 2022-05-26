@@ -61,24 +61,24 @@
   <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
-  <string name="la_notice_title">Protect your chats</string>
-  <string name="la_notice_text">To protect your chats, enable local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_title">Lock your chats</string>
+  <string name="la_notice_text">To protect your chats, enable Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
 
   <!-- LocalAuthentication.kt -->
-  <string name="auth_turned_on">Local authentication turned on</string>
+  <string name="auth_turned_on">Chat Lock turned on</string>
   <string name="auth_turned_on_desc">You will be required to complete authentication every time you start or resume the app after more than 30 seconds in background.</string>
   <string name="auth_access_chats">Access chats</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
-  <string name="auth_enable">Enable local authentication</string>
-  <string name="auth_disable">Disable local authentication</string>
+  <string name="auth_enable">Enable Chat Lock</string>
+  <string name="auth_disable">Disable Chat Lock</string>
   <string name="auth_confirm_credential">Confirm your credential</string>
   <string name="auth_error">Authentication error</string>
   <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
   <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
-  <string name="auth_unavailable_instruction_desc">Your device is not configured for authentication. If your device supports authentication via device credential (e.g. PIN) or biometric authentication, you can set it up and then enable this feature from Settings to protect your chats.</string>
-  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off local authentication for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Chat Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off Chat Lock for <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
@@ -256,7 +256,7 @@
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
   <string name="private_notifications">Private notifications</string>
-  <string name="local_authentication">Local authentication</string>
+  <string name="chat_lock">Chat Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>

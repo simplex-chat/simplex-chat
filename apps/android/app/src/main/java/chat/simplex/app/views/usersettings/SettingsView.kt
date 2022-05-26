@@ -200,11 +200,11 @@ fun SettingsLayout(
       SettingsSectionView() {
         Icon(
           Icons.Outlined.Lock,
-          contentDescription = stringResource(R.string.local_authentication),
+          contentDescription = stringResource(R.string.chat_lock),
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
-          stringResource(R.string.local_authentication), Modifier
+          stringResource(R.string.chat_lock), Modifier
             .padding(end = 24.dp)
             .fillMaxWidth()
             .weight(1F)
