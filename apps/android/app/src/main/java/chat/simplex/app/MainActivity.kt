@@ -50,7 +50,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage()
+          MainPage(vm.chatModel, userAuthorized.value, ::setPerformLA, ::advertiseLA, chatShown)
         }
       }
     }
@@ -121,45 +121,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     WorkManager.getInstance(this)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
-  @Composable
-  fun MainPage() {
-    Box {
-      val cm = vm.chatModel
-      val onboarding = cm.onboardingStage.value
-      val userCreated = cm.userCreated.value
-      val userAuthorized = userAuthorized.value
-      when {
-        onboarding == null || userCreated == null -> SplashView()
-        userAuthorized != null && !userAuthorized -> SplashView()
-        onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
-          if (cm.showCallView.value) ActiveCallView(cm)
-          else {
-            // <-- advertise local authentication
-            // not in Lifecycle.Event.ON_START because chat has to be started (startChat) so we can check onboarding stage and chats
-            if (
-              !cm.controller.getLANoticeShown()
-              && !chatShown.value
-              && cm.chats.isNotEmpty()
-            ) {
-              cm.controller.showLANotice(this@MainActivity)
-            }
-            // advertise local authentication -->
-            chatShown.value = true
-            if (cm.chatId.value == null) ChatListView(cm, setPerformLA = { setPerformLA(it) })
-            else ChatView(cm)
-          }
-        }
-        onboarding == OnboardingStage.Step1_SimpleXInfo ->
-          Box(Modifier.padding(horizontal = 20.dp)) {
-            SimpleXInfo(cm, onboarding = true)
-          }
-        onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(cm)
-      }
-      ModalManager.shared.showInView()
-      AlertManager.shared.showInView()
-    }
-  }
-
   private fun setPerformLA(on: Boolean) {
     val cm = vm.chatModel
     if (on) {
@@ -223,11 +184,56 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       )
     }
   }
+
+  private fun advertiseLA() {
+    val cm = vm.chatModel
+    if (
+      !cm.controller.getLANoticeShown()
+      && !chatShown.value
+      && cm.chats.isNotEmpty()
+    ) {
+      cm.controller.showLANotice(this@MainActivity)
+    }
+  }
 }
 
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
   val app = getApplication<SimplexApp>()
   val chatModel = app.chatModel
+}
+
+@Composable
+fun MainPage(
+  chatModel: ChatModel,
+  userAuthorized: Boolean?,
+  setPerformLA: (Boolean) -> Unit,
+  advertiseLA: () -> Unit,
+  chatShown: MutableState<Boolean>
+) {
+  Box {
+    val onboarding = chatModel.onboardingStage.value
+    val userCreated = chatModel.userCreated.value
+    when {
+      onboarding == null || userCreated == null -> SplashView()
+      userAuthorized != null && !userAuthorized -> SplashView()
+      onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
+        if (chatModel.showCallView.value) ActiveCallView(chatModel)
+        else {
+          advertiseLA()
+          chatShown.value = true
+          if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
+          else ChatView(chatModel)
+        }
+      }
+      onboarding == OnboardingStage.Step1_SimpleXInfo ->
+        Box(Modifier.padding(horizontal = 20.dp)) {
+          SimpleXInfo(chatModel, onboarding = true)
+        }
+      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
+    }
+    ModalManager.shared.showInView()
+    AlertManager.shared.showInView()
+  }
 }
 
 fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
