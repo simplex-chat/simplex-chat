@@ -66,23 +66,23 @@
 
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title">Блокировка SimpleX</string>
-    <string name="la_notice_text">Чтобы защитить свои чаты, включите блокировку чатов для <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет предложено пройти аутентификацию, прежде чем эта функция будет включена.</string>
+    <string name="la_notice_text">Чтобы защитить вашу информацию, включите блокировку <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет нужно пройти аутентификацию для включения блокировки.</string>
     <string name="la_notice_turn_on">Включить</string>
 
     <!-- LocalAuthentication.kt -->
-    <string name="auth_turned_on">Блокировка чатов включена</string>
+    <string name="auth_turned_on">Блокировка SimpleX включена</string>
     <string name="auth_turned_on_desc">Вы будете аутентифицированы при каждом запуске приложения и при возобновлении его работы спутся 30 секунд в фоновом режиме.</string>
-    <string name="auth_access_chats">Разблокировать чаты</string>
+    <string name="auth_access_chats">Разблокировать SimpleX</string>
     <string name="auth_log_in_using_credential">Пройдите аутентификацию</string>
-    <string name="auth_enable">Включить блокировку чатов</string>
-    <string name="auth_disable">Отключить блокировку чатов</string>
+    <string name="auth_enable">Включить блокировку SimpleX</string>
+    <string name="auth_disable">Отключить блокировку SimpleX</string>
     <string name="auth_confirm_credential">Пройдите аутентификацию</string>
     <string name="auth_error">Ошибка аутентификации</string>
     <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
     <string name="auth_failed">Ошибка аутентификации</string>
     <string name="auth_unavailable">Аутентификация недоступна</string>
-    <string name="auth_unavailable_instruction_desc">На устройстве не включена аутентификация. Вы можете включить блокировку чатов в Настройках после включения аутентификации.</string>
-    <string name="auth_unavailable_turning_off_desc">На устройстве выключена аутентификация. Отключение блокировки чатов.</string>
+    <string name="auth_unavailable_instruction_desc">На устройстве не включена аутентификация. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
+    <string name="auth_unavailable_turning_off_desc">На устройстве выключена аутентификация. Отключение блокировки SimpleX Chat.</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
