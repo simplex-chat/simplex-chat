@@ -248,8 +248,6 @@ fun MainPage(
             if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
             else ChatView(chatModel)
           }
-          val invitation = chatModel.activeCallInvitation.value
-          if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo ->
@@ -259,6 +257,8 @@ fun MainPage(
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
     }
     ModalManager.shared.showInView()
+    val invitation = chatModel.activeCallInvitation.value
+    if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
   }
 }
