@@ -156,7 +156,7 @@ private fun ActiveCallOverlayLayout(
             ControlButton(call, Icons.Filled.FlipCameraAndroid, R.string.icon_descr_flip_camera, flipCamera)
             ControlButton(call, Icons.Filled.Videocam, R.string.icon_descr_video_off, toggleVideo)
           } else {
-            Spacer(Modifier.size(40.dp))
+            Spacer(Modifier.size(48.dp))
             ControlButton(call, Icons.Outlined.VideocamOff, R.string.icon_descr_video_on, toggleVideo)
           }
         }

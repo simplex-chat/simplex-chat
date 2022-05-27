@@ -8,9 +8,6 @@
 " (can be copied)" = " (можно скопировать)";
 
 /* No comment provided by engineer. */
-" wants to connect with you via " = " хочет связаться с вами через ";
-
-/* No comment provided by engineer. */
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
@@ -88,7 +85,8 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "наверху, затем выберите:";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   accept incoming call via notification */
 "Accept" = "Принять";
 
 /* No comment provided by engineer. */
@@ -98,7 +96,7 @@
 "Accept contact request from %@?" = "Принять запрос на соединение от %@?";
 
 /* call status */
-"accepted" = "принятый звонок";
+"accepted call" = " принятый звонок";
 
 /* No comment provided by engineer. */
 "Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
@@ -111,9 +109,6 @@
 
 /* No comment provided by engineer. */
 "Already connected?" = "Соединение уже установлено?";
-
-/* accept incoming call via notification */
-"Answer" = "Ответить";
 
 /* No comment provided by engineer. */
 "Answer call" = "Принять звонок";
@@ -131,13 +126,19 @@
 "Call already ended!" = "Звонок уже завершен!";
 
 /* call status */
+"call error" = "ошибка звонка";
+
+/* call status */
+"call in progress" = "активный звонок";
+
+/* No comment provided by engineer. */
+"Call settings" = "Настройки звонков";
+
+/* call status */
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
 "Cancel" = "Отменить";
-
-/* No comment provided by engineer. */
-"Capabilities" = "Возможности";
 
 /* No comment provided by engineer. */
 "Chat console" = "Консоль";
@@ -194,10 +195,16 @@
 "Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
+"Connect via relay" = "Соединяться через сервер (relay)";
+
+/* No comment provided by engineer. */
 "Connect with the developers" = "Соединиться с разработчиками";
 
 /* No comment provided by engineer. */
 "connected" = "соединение установлено";
+
+/* call status */
+"connecting call…" = "звонок соединяется…";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";
@@ -205,8 +212,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
-/* call status
-   chat list item title */
+/* chat list item title */
 "connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
@@ -330,16 +336,13 @@
 "Enable notifications? (BETA)" = "Включить уведомления? (БЕТА)";
 
 /* No comment provided by engineer. */
-"End" = "Завершить";
+"ended" = "завершён";
 
 /* call status */
-"ended %@" = "завершен %@";
+"ended call %@" = "завершённый звонок %@";
 
 /* No comment provided by engineer. */
 "Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
-
-/* call status */
-"error" = "ошибка соединения";
 
 /* No comment provided by engineer. */
 "Error deleting token" = "Ошибка удаления токена";
@@ -384,15 +387,12 @@
 "How to use markdown" = "Как форматировать";
 
 /* No comment provided by engineer. */
-"ICE" = "ICE";
-
-/* No comment provided by engineer. */
 "If you can't meet in person, **show QR code in the video call**, or share the link." = "Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.";
 
 /* No comment provided by engineer. */
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.";
 
-/* ignore incoming call via notification */
+/* No comment provided by engineer. */
 "Ignore" = "Не отвечать";
 
 /* No comment provided by engineer. */
@@ -403,9 +403,6 @@
 
 /* No comment provided by engineer. */
 "In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке – самый безопасный способ установить соединение";
-
-/* call status */
-"in progress" = "активный звонок";
 
 /* notification */
 "Incoming audio call" = "Входящий аудиозвонок";
@@ -453,7 +450,7 @@
 "Message delivery error" = "Ошибка доставки сообщения";
 
 /* call status */
-"missed" = "пропущенный звонок";
+"missed call" = "пропущенный звонок";
 
 /* No comment provided by engineer. */
 "Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с вами.";
@@ -531,6 +528,9 @@
 "received answer…" = "получен ответ…";
 
 /* No comment provided by engineer. */
+"received confirmation…" = "получено подтверждение…";
+
+/* reject incoming call via notification */
 "Reject" = "Отклонить";
 
 /* No comment provided by engineer. */
@@ -540,7 +540,7 @@
 "Reject contact request" = "Отклонить запрос";
 
 /* call status */
-"rejected" = "отклоненный звонок";
+"rejected call" = "отклонённый звонок";
 
 /* No comment provided by engineer. */
 "Reply" = "Ответить";
@@ -564,9 +564,6 @@
 "secret" = "секрет";
 
 /* No comment provided by engineer. */
-"Send" = "Отправить";
-
-/* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
 
 /* No comment provided by engineer. */
@@ -586,9 +583,6 @@
 
 /* No comment provided by engineer. */
 "SMP servers" = "SMP серверы";
-
-/* No comment provided by engineer. */
-"Start" = "Начать";
 
 /* No comment provided by engineer. */
 "starting…" = "инициализация…";
@@ -697,9 +691,6 @@
 
 /* No comment provided by engineer. */
 "Welcome %@!" = "Здравствуйте %@!";
-
-/* No comment provided by engineer. */
-"with e2e encryption" = "e2e зашифровано";
 
 /* No comment provided by engineer. */
 "You" = "Вы";

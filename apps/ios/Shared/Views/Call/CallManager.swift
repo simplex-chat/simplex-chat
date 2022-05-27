@@ -19,7 +19,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(useWorker: true)
+            m.callCommand = .capabilities(media: call.localMedia, useWorker: true)
             return true
         }
         return false
@@ -45,7 +45,9 @@ class CallManager {
             sharedKey: invitation.sharedKey
         )
         m.showCallView = true
-        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+        let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+        logger.debug("answerIncomingCall useRelay \(useRelay)")
+        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {

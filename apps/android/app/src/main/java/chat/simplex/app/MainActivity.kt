@@ -72,7 +72,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           val m = vm.chatModel
           val lastLAVal = lastLA.value
           if (
-            m.controller.getPerformLA()
+            m.controller.prefPerformLA.get()
             && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
           ) {
             userAuthorized.value = false
@@ -91,7 +91,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
                   LAResult.Unavailable -> {
                     userAuthorized.value = true
                     m.performLA.value = false
-                    m.controller.setPerformLA(false)
+                    m.controller.prefPerformLA.set(false)
                     laUnavailableTurningOffAlert()
                   }
                 }
@@ -106,13 +106,13 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   }
 
   private fun schedulePeriodicServiceRestartWorker() {
-    val workerVersion = chatController.getAutoRestartWorkerVersion()
+    val workerVersion = chatController.prefAutoRestartWorkerVersion.get()
     val workPolicy = if (workerVersion == SimplexService.SERVICE_START_WORKER_VERSION) {
       Log.d(TAG, "ServiceStartWorker version matches: choosing KEEP as existing work policy")
       ExistingPeriodicWorkPolicy.KEEP
     } else {
       Log.d(TAG, "ServiceStartWorker version DOES NOT MATCH: choosing REPLACE as existing work policy")
-      chatController.setAutoRestartWorkerVersion(SimplexService.SERVICE_START_WORKER_VERSION)
+      chatController.prefAutoRestartWorkerVersion.set(SimplexService.SERVICE_START_WORKER_VERSION)
       ExistingPeriodicWorkPolicy.REPLACE
     }
     val work = PeriodicWorkRequestBuilder<SimplexService.ServiceStartWorker>(SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES, TimeUnit.MINUTES)
@@ -126,7 +126,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun setPerformLA(on: Boolean) {
     val m = vm.chatModel
     if (on) {
-      m.controller.setLANoticeShown(true)
+      m.controller.prefLANoticeShown.set(true)
       authenticate(
         generalGetString(R.string.auth_enable),
         generalGetString(R.string.auth_confirm_credential),
@@ -135,24 +135,24 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           when (laResult) {
             LAResult.Success -> {
               m.performLA.value = true
-              m.controller.setPerformLA(true)
+              m.controller.prefPerformLA.set(true)
               userAuthorized.value = true
               lastLA.value = System.nanoTime()
               laTurnedOnAlert()
             }
             is LAResult.Error -> {
               m.performLA.value = false
-              m.controller.setPerformLA(false)
+              m.controller.prefPerformLA.set(false)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
               m.performLA.value = false
-              m.controller.setPerformLA(false)
+              m.controller.prefPerformLA.set(false)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
               m.performLA.value = false
-              m.controller.setPerformLA(false)
+              m.controller.prefPerformLA.set(false)
               laUnavailableInstructionAlert()
             }
           }
@@ -167,21 +167,21 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           when (laResult) {
             LAResult.Success -> {
               m.performLA.value = false
-              m.controller.setPerformLA(false)
+              m.controller.prefPerformLA.set(false)
             }
             is LAResult.Error -> {
               m.performLA.value = true
-              m.controller.setPerformLA(true)
+              m.controller.prefPerformLA.set(true)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
               m.performLA.value = true
-              m.controller.setPerformLA(true)
+              m.controller.prefPerformLA.set(true)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
               m.performLA.value = false
-              m.controller.setPerformLA(false)
+              m.controller.prefPerformLA.set(false)
               laUnavailableTurningOffAlert()
             }
           }
@@ -212,7 +212,7 @@ fun MainPage(
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
-      !chatModel.controller.getLANoticeShown()
+      !chatModel.controller.prefLANoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
       && chatModel.chats.isNotEmpty()

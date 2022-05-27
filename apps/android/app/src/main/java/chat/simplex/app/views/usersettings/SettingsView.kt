@@ -1,8 +1,9 @@
 package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -32,9 +34,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
 
   fun setRunServiceInBackground(on: Boolean) {
-    chatModel.controller.setRunServiceInBackground(on)
+    chatModel.controller.prefRunServiceInBackground.set(on)
     if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-      chatModel.controller.setBackgroundServiceNoticeShown(false)
+      chatModel.controller.prefBackgroundServiceNoticeShown.set(false)
     }
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
     chatModel.runServiceInBackground.value = on
@@ -75,6 +77,7 @@ fun SettingsLayout(
     Modifier
       .background(MaterialTheme.colors.background)
       .fillMaxSize()
+      .verticalScroll(rememberScrollState())
   ) {
     Column(
       Modifier
@@ -83,6 +86,7 @@ fun SettingsLayout(
         .padding(8.dp)
         .padding(top = 16.dp)
     ) {
+      @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
       Text(
         stringResource(R.string.your_settings),
         style = MaterialTheme.typography.h1,
@@ -93,147 +97,216 @@ fun SettingsLayout(
       SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp) {
         ProfilePreview(profile)
       }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showModal { UserAddressView(it) }) {
-        Icon(
-          Icons.Outlined.QrCode,
-          contentDescription = stringResource(R.string.icon_descr_address),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.your_simplex_contact_address))
-      }
+      divider()
+      UserAddressSection(showModal)
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView(showModal { HelpView(it) }) {
-        Icon(
-          Icons.Outlined.HelpOutline,
-          contentDescription = stringResource(R.string.icon_descr_help),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.how_to_use_simplex_chat))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showModal { SimpleXInfo(it, onboarding = false) }) {
-        Icon(
-          Icons.Outlined.Info,
-          contentDescription = stringResource(R.string.icon_descr_help),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.about_simplex_chat))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showModal { MarkdownHelpView() }) {
-        Icon(
-          Icons.Outlined.TextFormat,
-          contentDescription = stringResource(R.string.markdown_help),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.markdown_in_messages))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ uriHandler.openUri(simplexTeamUri) }) {
-        Icon(
-          Icons.Outlined.Tag,
-          contentDescription = stringResource(R.string.icon_descr_simplex_team),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          stringResource(R.string.chat_with_the_founder),
-          color = MaterialTheme.colors.primary
-        )
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ uriHandler.openUri("mailto:chat@simplex.chat") }) {
-        Icon(
-          Icons.Outlined.Email,
-          contentDescription = stringResource(R.string.icon_descr_email),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          stringResource(R.string.send_us_an_email),
-          color = MaterialTheme.colors.primary
-        )
-      }
+      CallSettingsSection(showModal)
+      divider()
+      ChatLockSection(performLA, setPerformLA)
+      divider()
+      PrivateNotificationsSection(runServiceInBackground, setRunServiceInBackground)
+      divider()
+      SMPServersSection(showModal)
       Spacer(Modifier.height(24.dp))
 
-      SettingsSectionView(showModal { SMPServersView(it) }) {
-        Icon(
-          Icons.Outlined.Dns,
-          contentDescription = stringResource(R.string.smp_servers),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.smp_servers))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView() {
-        Icon(
-          Icons.Outlined.Bolt,
-          contentDescription = stringResource(R.string.private_notifications),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          stringResource(R.string.private_notifications), Modifier
-            .padding(end = 24.dp)
-            .fillMaxWidth()
-            .weight(1F)
-        )
-        Switch(
-          checked = runServiceInBackground.value,
-          onCheckedChange = { setRunServiceInBackground(it) },
-          colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colors.primary,
-            uncheckedThumbColor = HighOrLowlight
-          ),
-          modifier = Modifier.padding(end = 8.dp)
-        )
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView() {
-        Icon(
-          Icons.Outlined.Lock,
-          contentDescription = stringResource(R.string.chat_lock),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          stringResource(R.string.chat_lock), Modifier
-            .padding(end = 24.dp)
-            .fillMaxWidth()
-            .weight(1F)
-        )
-        Switch(
-          checked = performLA.value,
-          onCheckedChange = { setPerformLA(it) },
-          colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colors.primary,
-            uncheckedThumbColor = HighOrLowlight
-          ),
-          modifier = Modifier.padding(end = 8.dp)
-        )
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView(showTerminal) {
-        Icon(
-          painter = painterResource(id = R.drawable.ic_outline_terminal),
-          contentDescription = stringResource(R.string.chat_console),
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.chat_console))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-      SettingsSectionView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
-        Icon(
-          painter = painterResource(id = R.drawable.ic_github),
-          contentDescription = "GitHub",
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
-      }
-      Divider(Modifier.padding(horizontal = 8.dp))
-//      SettingsSectionView(showVideoChatPrototype) {
-      SettingsSectionView() {
-        Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-      }
+      HelpViewSection(showModal)
+      divider()
+      SimpleXInfoSection(showModal)
+      divider()
+      MarkdownHelpSection(showModal)
+      divider()
+      ConnectToDevelopersSection(uriHandler)
+      divider()
+      SendEmailSection(uriHandler)
+      Spacer(Modifier.height(24.dp))
+
+      ChatConsoleSection(showTerminal)
+      divider()
+      InstallTerminalAppSection(uriHandler)
+      divider()
+      AppVersionSection()
     }
+  }
+}
+
+@Composable private fun UserAddressSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { UserAddressView(it) }) {
+    Icon(
+      Icons.Outlined.QrCode,
+      contentDescription = stringResource(R.string.icon_descr_address),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.your_simplex_contact_address))
+  }
+}
+
+@Composable private fun CallSettingsSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { CallSettingsView(it) }) {
+    Icon(
+      Icons.Outlined.Videocam,
+      contentDescription = stringResource(R.string.call_settings),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.call_settings))
+  }
+}
+
+@Composable private fun HelpViewSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { HelpView(it) }) {
+    Icon(
+      Icons.Outlined.HelpOutline,
+      contentDescription = stringResource(R.string.icon_descr_help),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.how_to_use_simplex_chat))
+  }
+}
+
+@Composable private fun SimpleXInfoSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { SimpleXInfo(it, onboarding = false) }) {
+    Icon(
+      Icons.Outlined.Info,
+      contentDescription = stringResource(R.string.icon_descr_help),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.about_simplex_chat))
+  }
+}
+
+@Composable private fun MarkdownHelpSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { MarkdownHelpView() }) {
+    Icon(
+      Icons.Outlined.TextFormat,
+      contentDescription = stringResource(R.string.markdown_help),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.markdown_in_messages))
+  }
+}
+
+@Composable private fun ConnectToDevelopersSection(uriHandler: UriHandler) {
+  SettingsSectionView({ uriHandler.openUri(simplexTeamUri) }) {
+    Icon(
+      Icons.Outlined.Tag,
+      contentDescription = stringResource(R.string.icon_descr_simplex_team),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(
+      stringResource(R.string.chat_with_the_founder),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable private fun SendEmailSection(uriHandler: UriHandler) {
+  SettingsSectionView({ uriHandler.openUri("mailto:chat@simplex.chat") }) {
+    Icon(
+      Icons.Outlined.Email,
+      contentDescription = stringResource(R.string.icon_descr_email),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(
+      stringResource(R.string.send_us_an_email),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable private fun SMPServersSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+  SettingsSectionView(showModal { SMPServersView(it) }) {
+    Icon(
+      Icons.Outlined.Dns,
+      contentDescription = stringResource(R.string.smp_servers),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.smp_servers))
+  }
+}
+
+@Composable private fun PrivateNotificationsSection(
+  runServiceInBackground: MutableState<Boolean>,
+  setRunServiceInBackground: (Boolean) -> Unit
+) {
+  SettingsSectionView() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        Icons.Outlined.Bolt,
+        contentDescription = stringResource(R.string.private_notifications),
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        stringResource(R.string.private_notifications),
+        Modifier
+          .padding(end = 24.dp)
+          .fillMaxWidth()
+          .weight(1f)
+      )
+      Switch(
+        checked = runServiceInBackground.value,
+        onCheckedChange = { setRunServiceInBackground(it) },
+        colors = SwitchDefaults.colors(
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
+        ),
+        modifier = Modifier.padding(end = 8.dp)
+      )
+    }
+  }
+}
+
+@Composable private fun ChatLockSection(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
+  SettingsSectionView() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        Icons.Outlined.Lock,
+        contentDescription = stringResource(R.string.chat_lock),
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        stringResource(R.string.chat_lock), Modifier
+          .padding(end = 24.dp)
+          .fillMaxWidth()
+          .weight(1F)
+      )
+      Switch(
+        checked = performLA.value,
+        onCheckedChange = { setPerformLA(it) },
+        colors = SwitchDefaults.colors(
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
+        ),
+        modifier = Modifier.padding(end = 8.dp)
+      )
+    }
+  }
+}
+
+@Composable private fun ChatConsoleSection(showTerminal: () -> Unit) {
+  SettingsSectionView(showTerminal) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_outline_terminal),
+      contentDescription = stringResource(R.string.chat_console),
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.chat_console))
+  }
+}
+
+@Composable private fun InstallTerminalAppSection(uriHandler: UriHandler) {
+  SettingsSectionView({ uriHandler.openUri("https://github.com/simplex-chat/simplex-chat") }) {
+    Icon(
+      painter = painterResource(id = R.drawable.ic_github),
+      contentDescription = "GitHub",
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
+  }
+}
+
+@Composable private fun AppVersionSection() {
+  SettingsSectionView() {
+    Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
   }
 }
 
