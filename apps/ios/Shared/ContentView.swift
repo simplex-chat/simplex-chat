@@ -102,8 +102,16 @@ final class AlertManager: ObservableObject {
         if let message = message {
             showAlert(Alert(title: Text(title), message: Text(message)))
         } else {
-            showAlert(Alert(title: Text(title)))
+            showAlert(mkAlert(title: title))
         }
+    }
+}
+
+func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> Alert {
+    if let message = message {
+        return Alert(title: Text(title), message: Text(message))
+    } else {
+        return Alert(title: Text(title))
     }
 }
 

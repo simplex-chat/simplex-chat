@@ -15,6 +15,7 @@ struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
     @Environment(\.scenePhase) var scenePhase
+    @AppStorage(DEFAULT_PERFORM_LA) private var performLA = false
     @State private var userAuthorized: Bool? = nil
     @State private var doAuthenticate: Bool = true
     @State private var enteredBackground: Double? = nil
@@ -35,6 +36,7 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
+                    chatModel.performLA = performLA
                     initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
@@ -46,9 +48,9 @@ struct SimpleXApp: App {
                         doAuthenticate = true
                         enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .inactive:
-                        authenticateUser()
+                        authenticateOnPhaseChange()
                     case .active:
-                        authenticateUser()
+                        authenticateOnPhaseChange()
                     default:
                         break
                     }
@@ -56,22 +58,26 @@ struct SimpleXApp: App {
         }
     }
 
-    private func authenticateUser() {
+    private func authenticateOnPhaseChange() {
         if doAuthenticate {
             doAuthenticate = false
-            if authenticationExpired() {
+            if performLA,
+               authenticationExpired() {
                 userAuthorized = false
-                authenticate() { laResult in
+                authenticate(reason: "Access chats") { laResult in
                     switch (laResult) {
                     case .success:
                         userAuthorized = true
                     case .failed:
-                        laFailedAlert()
+                        AlertManager.shared.showAlert(laFailedAlert())
                     case .unavailable:
                         userAuthorized = true
-                        laUnavailableAlert()
+                        performLA = false
+                        AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                     }
                 }
+            } else {
+                userAuthorized = true
             }
         }
     }

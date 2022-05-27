@@ -14,11 +14,13 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 
 let appDefaults: [String:Any] = [
+    DEFAULT_PERFORM_LA: false,
     DEFAULT_USE_NOTIFICATIONS: false,
     DEFAULT_PENDING_CONNECTIONS: true,
     DEFAULT_WEBRTC_POLICY_RELAY: true
@@ -30,10 +32,22 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
+    @AppStorage(DEFAULT_PERFORM_LA) private var performLA = false
+    @State private var performLAToggleReset = false
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
+    @State var alert: SettingsViewAlert? = nil
+
+    enum SettingsViewAlert: Identifiable {
+        case laTurnedOnAlert
+        case laFailedAlert
+        case laUnavailableInstructionAlert
+        case laUnavailableTurningOffAlert
+
+        var id: SettingsViewAlert { get { self } }
+    }
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -57,6 +71,9 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    settingsRow("lock") {
+                        Toggle("SimpleX Lock", isOn: $chatModel.performLA)
+                    }
                     settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
@@ -137,6 +154,60 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
+            .onChange(of: chatModel.performLA) { performLAToggle in
+                if performLAToggleReset {
+                    performLAToggleReset = false
+                } else {
+                    if (performLAToggle) {
+                        authenticate(reason: "Enable SimpleX Lock") { laResult in
+                            switch (laResult) {
+                            case .success:
+                                performLA = true
+                                alert = .laTurnedOnAlert
+                            case .failed:
+                                performLA = false
+                                withAnimation() {
+                                    chatModel.performLA = false
+                                }
+                                performLAToggleReset = true
+                                alert = .laFailedAlert
+                            case .unavailable:
+                                performLA = false
+                                withAnimation() {
+                                    chatModel.performLA = false
+                                }
+                                performLAToggleReset = true
+                                alert = .laUnavailableInstructionAlert
+                            }
+                        }
+                    } else {
+                        authenticate(reason: "Disable SimpleX Lock") { laResult in
+                            switch (laResult) {
+                            case .success:
+                                performLA = false
+                            case .failed:
+                                performLA = true
+                                withAnimation() {
+                                    chatModel.performLA = true
+                                }
+                                performLAToggleReset = true
+                                alert = .laFailedAlert
+                            case .unavailable:
+                                performLA = false
+                                alert = .laUnavailableTurningOffAlert
+                            }
+                        }
+                    }
+                }
+            }
+            .alert(item: $alert) { alertItem in
+                switch(alertItem) {
+                case .laTurnedOnAlert: return laTurnedOnAlert()
+                case .laFailedAlert: return laFailedAlert()
+                case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
+                case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
+                }
+            }
         }
     }
 
