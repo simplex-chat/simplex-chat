@@ -17,7 +17,7 @@ struct SimpleXApp: App {
     @Environment(\.scenePhase) var scenePhase
     @State private var userAuthorized: Bool? = nil
     @State private var doAuthenticate: Bool = true
-    @State private var lastLA: Double? = nil
+    @State private var enteredBackground: Double? = nil
 
     init() {
         hs_init(0, nil)
@@ -44,6 +44,7 @@ struct SimpleXApp: App {
                     case .background:
                         BGManager.shared.schedule()
                         doAuthenticate = true
+                        enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .inactive:
                         authenticateUser()
                     case .active:
@@ -56,30 +57,30 @@ struct SimpleXApp: App {
     }
 
     private func authenticateUser() {
-        if doAuthenticate,
-           authenticationExpired() {
+        if doAuthenticate {
             doAuthenticate = false
-            userAuthorized = false
-            authenticate() { laResult in
-                switch (laResult) {
-                case .success:
-                    userAuthorized = true
-                    lastLA = ProcessInfo.processInfo.systemUptime
-                case .failed:
-                    laFailedAlert()
-                case .unavailable:
-                    userAuthorized = true
-                    laUnavailableAlert()
+            if authenticationExpired() {
+                userAuthorized = false
+                authenticate() { laResult in
+                    switch (laResult) {
+                    case .success:
+                        userAuthorized = true
+                    case .failed:
+                        laFailedAlert()
+                    case .unavailable:
+                        userAuthorized = true
+                        laUnavailableAlert()
+                    }
                 }
             }
         }
     }
 
     private func authenticationExpired() -> Bool {
-        if (lastLA == nil) {
+        if (enteredBackground == nil) {
             return true
         }
-        else if let lastLA = lastLA, ProcessInfo.processInfo.systemUptime - lastLA >= 30 {
+        else if let enteredBackground = enteredBackground, ProcessInfo.processInfo.systemUptime - enteredBackground >= 30 {
             return true
         } else {
             return false
