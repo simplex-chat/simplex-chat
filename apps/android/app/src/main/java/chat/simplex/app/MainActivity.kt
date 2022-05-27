@@ -31,13 +31,11 @@ import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
-  private val chatShown = mutableStateOf(false)
   private val userAuthorized = mutableStateOf<Boolean?>(null)
   private val lastLA = mutableStateOf<Long?>(null)
 
@@ -54,12 +52,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(cm, userAuthorized, ::setPerformLA, ::advertiseLA, chatShown)
-          LaunchedEffect(cm.showAdvertiseLAUnavailableAlert.value) {
-            if (cm.showAdvertiseLAUnavailableAlert.value) {
-              laUnavailableInstructionAlert()
-            }
-          }
+          MainPage(cm, userAuthorized, ::setPerformLA, showLANotice = { cm.controller.showLANotice(this) })
         }
       }
     }
@@ -196,17 +189,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       )
     }
   }
-
-  private fun advertiseLA() {
-    val cm = vm.chatModel
-    if (
-      !cm.controller.getLANoticeShown()
-      && !chatShown.value
-      && cm.chats.isNotEmpty()
-    ) {
-      cm.controller.showLANotice(this@MainActivity)
-    }
-  }
 }
 
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
@@ -219,15 +201,29 @@ fun MainPage(
   chatModel: ChatModel,
   userAuthorized: MutableState<Boolean?>,
   setPerformLA: (Boolean) -> Unit,
-  advertiseLA: () -> Unit,
-  chatShown: MutableState<Boolean>
+  showLANotice: () -> Unit
 ) {
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
   var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
   LaunchedEffect(userAuthorized.value) {
-    launch {
-      delay(500L)
-      chatsAccessAuthorized = userAuthorized.value == true
+    delay(500L)
+    chatsAccessAuthorized = userAuthorized.value == true
+  }
+  var showAdvertiseLAAlert by remember { mutableStateOf(false) }
+  LaunchedEffect(showAdvertiseLAAlert) {
+    if (
+      !chatModel.controller.getLANoticeShown()
+      && showAdvertiseLAAlert
+      && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
+      && chatModel.chats.isNotEmpty()
+      && chatModel.activeCallInvitation.value == null
+    ) {
+      showLANotice()
+    }
+  }
+  LaunchedEffect(chatModel.showAdvertiseLAUnavailableAlert.value) {
+    if (chatModel.showAdvertiseLAUnavailableAlert.value) {
+      laUnavailableInstructionAlert()
     }
   }
   Box {
@@ -238,14 +234,13 @@ fun MainPage(
       !chatsAccessAuthorized -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
-          val invitation = chatModel.activeCallInvitation.value
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
           else {
-            if (invitation == null) advertiseLA()
-            chatShown.value = true
+            showAdvertiseLAAlert = true
             if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
             else ChatView(chatModel)
           }
+          val invitation = chatModel.activeCallInvitation.value
           if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
       }
