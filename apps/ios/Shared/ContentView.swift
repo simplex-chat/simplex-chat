@@ -5,7 +5,6 @@
 //  Created by Evgeny Poberezkin on 17/01/2022.
 //
 
-import LocalAuthentication
 import SwiftUI
 
 struct ContentView: View {
@@ -13,12 +12,13 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @State private var showNotificationAlert = false
-    @State private var showChats = false
+    @State private var userAuthorized: Bool? = nil
 
     var body: some View {
         ZStack {
             if let step = chatModel.onboardingStage {
-                if showChats,
+                if let userAuthorized = userAuthorized,
+                   userAuthorized,
                    case .onboardingComplete = step,
                    let user = chatModel.currentUser {
                     ZStack(alignment: .top) {
@@ -41,36 +41,16 @@ struct ContentView: View {
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .onAppear {
             // TODO authenticate only if onboarding is complete and preference is set
-            authenticate()
-        }
-    }
-
-    func authenticate() {
-        let laContext = LAContext()
-        var authAvailabilityError: NSError?
-        if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
-            let reason = "Access chats"
-            laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
-                DispatchQueue.main.async {
-                    if success {
-                        showChats = true
-                    } else {
-                        logger.error("authentication error: \(authError.debugDescription)")
-                        AlertManager.shared.showAlertMsg(
-                            title: "Authentication failed",
-                            message: "You could not be verified; please try again."
-                        )
-                    }
+            userAuthorized = false
+            authenticate() { laResult in
+                switch (laResult) {
+                case .success: userAuthorized = true
+                case .failed: laFailedAlert()
+                case .unavailable:
+                    userAuthorized = true
+                    laUnavailableAlert()
                 }
             }
-        } else {
-            logger.error("authentication availability error: \(authAvailabilityError.debugDescription)")
-            AlertManager.shared.showAlertMsg(
-                title: "Authentication unavailable",
-                message: "Your device is not configured for authentication."
-            )
-            // TODO turn off preference
-            showChats = true
         }
     }
 
