@@ -43,8 +43,8 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     super.onCreate(savedInstanceState)
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
 //    testJson()
-    val cm = vm.chatModel
-    processNotificationIntent(intent, cm)
+    val m = vm.chatModel
+    processNotificationIntent(intent, m)
     setContent {
       SimpleXTheme {
         Surface(
@@ -52,7 +52,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(cm, userAuthorized, ::setPerformLA, showLANotice = { cm.controller.showLANotice(this) })
+          MainPage(m, userAuthorized, ::setPerformLA, showLANotice = { m.controller.showLANotice(this) })
         }
       }
     }
@@ -69,10 +69,10 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       when (event) {
         Lifecycle.Event.ON_START -> {
           // perform local authentication if needed
-          val cm = vm.chatModel
+          val m = vm.chatModel
           val lastLAVal = lastLA.value
           if (
-            cm.controller.getPerformLA()
+            m.controller.getPerformLA()
             && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
           ) {
             userAuthorized.value = false
@@ -90,8 +90,8 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
                   LAResult.Failed -> laFailedToast(applicationContext)
                   LAResult.Unavailable -> {
                     userAuthorized.value = true
-                    cm.performLA.value = false
-                    cm.controller.setPerformLA(false)
+                    m.performLA.value = false
+                    m.controller.setPerformLA(false)
                     laUnavailableTurningOffAlert()
                   }
                 }
@@ -124,9 +124,9 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   }
 
   private fun setPerformLA(on: Boolean) {
-    val cm = vm.chatModel
+    val m = vm.chatModel
     if (on) {
-      cm.controller.setLANoticeShown(true)
+      m.controller.setLANoticeShown(true)
       authenticate(
         generalGetString(R.string.auth_enable),
         generalGetString(R.string.auth_confirm_credential),
@@ -134,25 +134,25 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
-              cm.performLA.value = true
-              cm.controller.setPerformLA(true)
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
               userAuthorized.value = true
               lastLA.value = System.nanoTime()
               laTurnedOnAlert()
             }
             is LAResult.Error -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
               laUnavailableInstructionAlert()
             }
           }
@@ -166,22 +166,22 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         completed = { laResult ->
           when (laResult) {
             LAResult.Success -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
             }
             is LAResult.Error -> {
-              cm.performLA.value = true
-              cm.controller.setPerformLA(true)
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
-              cm.performLA.value = true
-              cm.controller.setPerformLA(true)
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
-              cm.performLA.value = false
-              cm.controller.setPerformLA(false)
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
               laUnavailableTurningOffAlert()
             }
           }
