@@ -37,7 +37,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
   private val userAuthorized = mutableStateOf<Boolean?>(null)
-  private val lastLA = mutableStateOf<Long?>(null)
+  private val enteredBackground = mutableStateOf<Long?>(null)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -67,13 +67,16 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     withApi {
       when (event) {
+        Lifecycle.Event.ON_STOP -> {
+          enteredBackground.value = System.nanoTime()
+        }
         Lifecycle.Event.ON_START -> {
           // perform local authentication if needed
           val m = vm.chatModel
-          val lastLAVal = lastLA.value
+          val enteredBackgroundVal = enteredBackground.value
           if (
             m.controller.prefPerformLA.get()
-            && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
+            && (enteredBackgroundVal == null || (System.nanoTime() - enteredBackgroundVal >= 30 * 1e+9))
           ) {
             userAuthorized.value = false
             authenticate(
@@ -82,10 +85,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
               this@MainActivity,
               completed = { laResult ->
                 when (laResult) {
-                  LAResult.Success -> {
-                    userAuthorized.value = true
-                    lastLA.value = System.nanoTime()
-                  }
+                  LAResult.Success -> userAuthorized.value = true
                   is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
                   LAResult.Failed -> laFailedToast(applicationContext)
                   LAResult.Unavailable -> {
@@ -136,8 +136,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             LAResult.Success -> {
               m.performLA.value = true
               m.controller.prefPerformLA.set(true)
-              userAuthorized.value = true
-              lastLA.value = System.nanoTime()
               laTurnedOnAlert()
             }
             is LAResult.Error -> {
