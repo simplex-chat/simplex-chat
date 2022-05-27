@@ -170,10 +170,10 @@
   <string name="reject_contact_button">Reject</string>
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
-  <string name="clear_chat_question">Clear conversation?</string>
+  <string name="clear_chat_question">Clear chat?</string>
   <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
   <string name="clear_verb">Clear</string>
-  <string name="clear_chat_button">Clear conversation</string>
+  <string name="clear_chat_button">Clear chat</string>
   <string name="mark_read">Mark read</string>
 
   <!-- Pending contact connection alert dialogues -->
@@ -349,7 +349,6 @@
   <string name="encrypted_video_call">e2e encrypted video call</string>
   <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
   <string name="encrypted_audio_call">e2e encrypted audio call</string>
-  <string name="if_you_accept_this_call_your_ip_address_visible">If you accept this call and you don\'t use relay, your IP address might be visible to your contact.</string>
   <string name="answer">Answer</string>
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>

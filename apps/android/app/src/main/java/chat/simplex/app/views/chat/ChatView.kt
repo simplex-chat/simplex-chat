@@ -26,7 +26,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
@@ -60,7 +59,7 @@ fun ChatView(chatModel: ChatModel) {
       delay(750L)
       if (chat.chatItems.isNotEmpty()) {
         chatModel.markChatItemsRead(chat.chatInfo)
-        chatModel.controller.cancelNotificationsForChat(chat.id)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         withApi {
           chatModel.controller.apiChatRead(
             chat.chatInfo.chatType,

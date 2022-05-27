@@ -880,6 +880,7 @@ callStatusItemContent userId Contact {contactId} chatItemId receivedStatus = do
         (Just CISCallPending, WCSDisconnected) -> Just (CISCallMissed, 0)
         (Just CISCallEnded, _) -> Nothing -- if call already ended or failed -> no change
         (Just CISCallError, _) -> Nothing
+        (Just _, WCSConnecting) -> Just (CISCallNegotiated, 0)
         (Just _, WCSConnected) -> Just (CISCallProgress, 0) -- if call ended that was never connected, duration = 0
         (Just _, WCSDisconnected) -> Just (CISCallEnded, 0)
         (Just _, WCSFailed) -> Just (CISCallError, 0)
@@ -1677,7 +1678,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- practically, this should not happen
       call_ <- atomically (TM.lookupInsert contactId call' calls)
       forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected Nothing
-      toView $ CRCallInvitation ct callType sharedKey
+      toView . CRCallInvitation ct callType sharedKey $ chatItemTs' ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       where
         saveCallItem status = saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvCall status 0) Nothing

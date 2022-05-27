@@ -40,6 +40,7 @@ class MainActivity: ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 //    testJson()
+    processNotificationIntent(intent, vm.chatModel)
     setContent {
       SimpleXTheme {
         Surface(
@@ -105,11 +106,11 @@ fun MainPage(chatModel: ChatModel) {
   }
 }
 
-fun processIntent(intent: Intent?, chatModel: ChatModel) {
+fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
   when (intent?.action) {
     NtfManager.OpenChatAction -> {
       val chatId = intent.getStringExtra("chatId")
-      Log.d(TAG, "processIntent: OpenChatAction $chatId")
+      Log.d(TAG, "processNotificationIntent: OpenChatAction $chatId")
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
         chatModel.clearOverlays.value = true
@@ -117,9 +118,15 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
       }
     }
     NtfManager.ShowChatsAction -> {
-      Log.d(TAG, "processIntent: ShowChatsAction")
+      Log.d(TAG, "processNotificationIntent: ShowChatsAction")
+      chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
     }
+  }
+}
+
+fun processIntent(intent: Intent?, chatModel: ChatModel) {
+  when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) connectIfOpenedViaUri(uri, chatModel)

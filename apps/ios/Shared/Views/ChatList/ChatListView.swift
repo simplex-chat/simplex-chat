@@ -49,29 +49,6 @@ struct ChatListView: View {
                     NewChatButton()
                 }
             }
-            .fullScreenCover(isPresented: $chatModel.showCallView) {
-                ActiveCallView()
-            }
-            .onChange(of: chatModel.showCallView) { _ in
-                if (chatModel.showCallView) { return }
-                if let call = chatModel.activeCall {
-                    Task {
-                        do {
-                            try await apiEndCall(call.contact)
-                        } catch {
-                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
-                        }
-                    }
-                }
-                chatModel.callCommand = .end
-            }
-            .onChange(of: chatModel.activeCallInvitation) { _ in
-                if let contactRef = chatModel.activeCallInvitation,
-                   case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
-                   let invitation = chatModel.callInvitations[contactRef.id] {
-                    answerCallAlert(contact, invitation)
-                }
-            }
         }
         .navigationViewStyle(.stack)
 
@@ -94,35 +71,6 @@ struct ChatListView: View {
                 (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
-    }
-
-    private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
-        return AlertManager.shared.showAlert(Alert(
-            title: Text(invitation.callTitle),
-            message: Text(contact.profile.displayName).bold() +
-                Text(" wants to connect with you via ") +
-                Text(invitation.callTypeText) +
-                Text("\nIf you accept this call and you don't use relay, your IP address might be visible to your contact."),
-            primaryButton: .default(Text("Answer")) {
-                if let activeCallInvitation = chatModel.activeCallInvitation {
-                    chatModel.callInvitations.removeValue(forKey: activeCallInvitation.id)
-                    chatModel.activeCallInvitation = nil
-                    chatModel.activeCall = Call(
-                        contact: contact,
-                        callState: .invitationReceived,
-                        localMedia: invitation.peerMedia,
-                        sharedKey: invitation.sharedKey
-                    )
-                    chatModel.showCallView = true
-                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
-                } else {
-                    DispatchQueue.main.async {
-                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
-                    }
-                }
-            },
-            secondaryButton: .cancel()
-        ))
     }
 }
 

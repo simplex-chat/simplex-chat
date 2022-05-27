@@ -20,6 +20,11 @@
         <target> (можно скопировать)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id=" wants to connect with you via " xml:space="preserve">
+        <source> wants to connect with you via </source>
+        <target> хочет связаться с вами через </target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve">
         <source>!1 colored!</source>
         <target>!1 цвет!</target>
@@ -28,6 +33,11 @@
       <trans-unit id="#secret#" xml:space="preserve">
         <source>#secret#</source>
         <target>#секрет#</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ / %@" xml:space="preserve">
+        <source>%@ / %@</source>
+        <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -48,6 +58,11 @@
       <trans-unit id="%lldk" xml:space="preserve">
         <source>%lldk</source>
         <target>%lldk</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="(" xml:space="preserve">
+        <source>(</source>
+        <target>(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve">
@@ -75,8 +90,18 @@
         <target>**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e зашифрованный** аудиозвонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e зашифрованный** видеозвонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
-        <source>*bold*</source>
+        <source>\*bold*</source>
         <target>\*жирный*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -93,11 +118,6 @@
       <trans-unit id=": " xml:space="preserve">
         <source>: </source>
         <target>: </target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id=": %@" xml:space="preserve">
-        <source>: %@</source>
-        <target>: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -130,6 +150,11 @@
         <target>Добавьте контакт, чтобы начать разговор</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+        <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
+        <target>Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All your contacts will remain connected" xml:space="preserve">
         <source>All your contacts will remain connected</source>
         <target>Все контакты, которые соединились через этот адрес, сохранятся.</target>
@@ -145,6 +170,11 @@
         <target>Ответить</target>
         <note>accept incoming call via notification</note>
       </trans-unit>
+      <trans-unit id="Answer call" xml:space="preserve">
+        <source>Answer call</source>
+        <target>Принять звонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
         <source>Attach</source>
         <target>Прикрепить</target>
@@ -158,6 +188,11 @@
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Отменить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Capabilities" xml:space="preserve">
+        <source>Capabilities</source>
+        <target>Возможности</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
@@ -198,6 +233,16 @@
       <trans-unit id="Clear" xml:space="preserve">
         <source>Clear</source>
         <target>Очистить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear conversation" xml:space="preserve">
+        <source>Clear conversation</source>
+        <target>Очистить разговор</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Clear conversation?" xml:space="preserve">
+        <source>Clear conversation?</source>
+        <target>Очистить разговор?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
@@ -415,6 +460,11 @@
         <target>Включить уведомления? (БЕТА)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="End" xml:space="preserve">
+        <source>End</source>
+        <target>Завершить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
         <source>Enter one SMP server per line:</source>
         <target>Введите SMP серверы, каждый на отдельной строке:</target>
@@ -490,6 +540,11 @@
         <target>Как форматировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="ICE" xml:space="preserve">
+        <source>ICE</source>
+        <target>ICE</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
         <target>Если вы не можете встретиться лично, вы можете **показать QR код во время видеозвонка**, или поделиться ссылкой.</target>
@@ -520,14 +575,19 @@
         <target>При встрече или в видеозвонке – самый безопасный способ установить соединение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incoming %@ call" xml:space="preserve">
-        <source>Incoming %@ call</source>
-        <target>Входящий звонок</target>
-        <note>notification body</note>
+      <trans-unit id="Incoming audio call" xml:space="preserve">
+        <source>Incoming audio call</source>
+        <target>Входящий аудиозвонок</target>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Incoming call" xml:space="preserve">
         <source>Incoming call</source>
         <target>Входящий звонок</target>
+        <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Incoming video call" xml:space="preserve">
+        <source>Incoming video call</source>
+        <target>Входящий видеозвонок</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" xml:space="preserve">
@@ -735,6 +795,11 @@
         <target>Сосканировать QR код контакта</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send" xml:space="preserve">
+        <source>Send</source>
+        <target>Отправить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server connected" xml:space="preserve">
         <source>Server connected</source>
         <target>Установлено соединение с сервером</target>
@@ -763,6 +828,11 @@
       <trans-unit id="Show pending connections" xml:space="preserve">
         <source>Show pending connections</source>
         <target>Показать ожидаемые соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Start" xml:space="preserve">
+        <source>Start</source>
+        <target>Начать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -1029,12 +1099,12 @@ SimpleX серверы не могут получить доступ к ваше
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
-        <source>_italic_</source>
+        <source>\_italic_</source>
         <target>\_курсив_</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="`a + b`" xml:space="preserve">
-        <source>`a + b`</source>
+        <source>\`a + b`</source>
         <target>\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1047,6 +1117,11 @@ SimpleX серверы не могут получить доступ к ваше
         <source>accepted</source>
         <target>принятый звонок</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>аудиозвонок (не e2e зашифрованный)</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -1089,19 +1164,29 @@ SimpleX серверы не могут получить доступ к ваше
         <target>connection:%@</target>
         <note>connection information</note>
       </trans-unit>
+      <trans-unit id="contact has e2e encryption" xml:space="preserve">
+        <source>contact has e2e encryption</source>
+        <target>у контакта есть e2e шифрование</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="contact has no e2e encryption" xml:space="preserve">
+        <source>contact has no e2e encryption</source>
+        <target>у контакта нет e2e шифрования</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
         <source>deleted</source>
         <target>удалено</target>
         <note>deleted chat item</note>
       </trans-unit>
-      <trans-unit id="end-to-end encrypted" xml:space="preserve">
-        <source>end-to-end encrypted</source>
-        <target>end-to-end зашифрованный звонок</target>
+      <trans-unit id="e2e encrypted" xml:space="preserve">
+        <source>e2e encrypted</source>
+        <target>e2e зашифровано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="ended %02d:%02d" xml:space="preserve">
-        <source>ended %1$d:%2$d</source>
-        <target>звонок завершён %1$d:%2$d</target>
+      <trans-unit id="ended %@" xml:space="preserve">
+        <source>ended %@</source>
+        <target>завершен %@</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="error" xml:space="preserve">
@@ -1129,14 +1214,19 @@ SimpleX серверы не могут получить доступ к ваше
         <target>пропущенный звонок</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="no end-to-end encryption" xml:space="preserve">
-        <source>no end-to-end encryption</source>
-        <target>end-to-end шифрование не поддерживается</target>
+      <trans-unit id="no e2e encryption" xml:space="preserve">
+        <source>no e2e encryption</source>
+        <target>нет e2e шифрования</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="or" xml:space="preserve">
         <source>or</source>
         <target>или</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="peer-to-peer" xml:space="preserve">
+        <source>peer-to-peer</source>
+        <target>peer-to-peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
@@ -1164,6 +1254,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>зачеркнуть</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="unknown" xml:space="preserve">
+        <source>unknown</source>
+        <target>неизвестно</target>
+        <note>connection info</note>
+      </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
         <target>v%@ (%@)</target>
@@ -1178,6 +1273,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>via one-time link</source>
         <target>через одноразовую ссылку</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="via relay" xml:space="preserve">
+        <source>via relay</source>
+        <target>через relay сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>видеозвонок (не e2e зашифрованный)</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for answer…" xml:space="preserve">
         <source>waiting for answer…</source>
@@ -1194,13 +1299,18 @@ SimpleX серверы не могут получить доступ к ваше
         <target>хочет соединиться с вами!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="with e2e encryption" xml:space="preserve">
+        <source>with e2e encryption</source>
+        <target>e2e зашифровано</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>
         <target>вы создали ссылку</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
-        <source>~strike~</source>
+        <source>\~strike~</source>
         <target>\~зачеркнуть~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1270,15 +1380,30 @@ SimpleX серверы не могут получить доступ к ваше
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+        <source>**e2e encrypted** audio call</source>
+        <target>**e2e зашифрованный** аудиозвонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+        <source>**e2e encrypted** video call</source>
+        <target>**e2e зашифрованный** видеозвонок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
         <source>Accept contact request from %@?</source>
         <target>Принять запрос на соединение от %@?</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="Incoming %@ call" xml:space="preserve">
-        <source>Incoming %@ call</source>
-        <target>Входящий звонок</target>
-        <note>notification body</note>
+      <trans-unit id="Incoming audio call" xml:space="preserve">
+        <source>Incoming audio call</source>
+        <target>Входящий аудиозвонок</target>
+        <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Incoming video call" xml:space="preserve">
+        <source>Incoming video call</source>
+        <target>Входящий видеозвонок</target>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
@@ -1289,6 +1414,11 @@ SimpleX серверы не могут получить доступ к ваше
         <source>accepted</source>
         <target>принятый звонок</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+        <source>audio call (not e2e encrypted)</source>
+        <target>аудиозвонок (не e2e зашифрованный)</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="calling…" xml:space="preserve">
         <source>calling…</source>
@@ -1316,9 +1446,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>удалено</target>
         <note>deleted chat item</note>
       </trans-unit>
-      <trans-unit id="ended %02d:%02d" xml:space="preserve">
-        <source>ended %1$d:%2$d</source>
-        <target>звонок завершён %1$d:%2$d</target>
+      <trans-unit id="ended %@" xml:space="preserve">
+        <source>ended %@</source>
+        <target>завершен %@</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="error" xml:space="preserve">
@@ -1341,6 +1471,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>пропущенный звонок</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="no e2e encryption" xml:space="preserve">
+        <source>no e2e encryption</source>
+        <target>нет e2e шифрования</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="rejected" xml:space="preserve">
         <source>rejected</source>
         <target>отклоненный звонок</target>
@@ -1355,6 +1490,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>via one-time link</source>
         <target>через одноразовую ссылку</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+        <source>video call (not e2e encrypted)</source>
+        <target>видеозвонок (не e2e зашифрованный)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="with e2e encryption" xml:space="preserve">
+        <source>with e2e encryption</source>
+        <target>e2e зашифровано</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>

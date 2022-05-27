@@ -326,6 +326,7 @@ fun ComposeView(
               mc = updateMsgContent(oldMsgContent)
             )
             if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+            clearState()
           }
         }
       }
@@ -369,11 +370,13 @@ fun ComposeView(
               mc = mc
             )
             if (aChatItem != null) chatModel.addChatItem(cInfo, aChatItem.chatItem)
+            clearState()
           }
+        } else {
+          clearState()
         }
       }
     }
-    clearState()
   }
 
   fun onMessageChange(s: String) {

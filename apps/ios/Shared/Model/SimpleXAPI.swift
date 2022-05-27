@@ -11,6 +11,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
+import CallKit
 
 private var chatController: chat_ctrl?
 
@@ -629,22 +630,41 @@ func processReceivedMsg(_ res: ChatResponse) {
                 removeFile(fileName)
             }
         case let .callInvitation(contact, callType, sharedKey):
-            let invitation = CallInvitation(peerMedia: callType.media, sharedKey: sharedKey)
+            let uuid = UUID()
+            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey)
             m.callInvitations[contact.id] = invitation
-            if (m.activeCallInvitation == nil) {
-                m.activeCallInvitation = ContactRef(contactId: contact.apiId, localDisplayName: contact.localDisplayName)
+            CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
+                if let error = error {
+                    invitation.callkitUUID = nil
+                    m.callInvitations[contact.id] = invitation
+                    logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
+                } else {
+                    logger.debug("reportNewIncomingCall success")
+                }
             }
-            NtfManager.shared.notifyCallInvitation(contact, invitation)
+
+// This will be called from notification service extension
+//            CXProvider.reportNewIncomingVoIPPushPayload([
+//                "displayName": contact.displayName,
+//                "contactId": contact.id,
+//                "uuid": invitation.callkitUUID
+//            ]) { error in
+//                if let error = error {
+//                    logger.error("reportNewIncomingVoIPPushPayload error \(error.localizedDescription)")
+//                } else {
+//                    logger.debug("reportNewIncomingVoIPPushPayload success for \(contact.id)")
+//                }
+//            }
         case let .callOffer(contact, callType, offer, sharedKey, _):
-            // TODO askConfirmation?
-            // TODO check encryption is compatible
             withCall(contact) { call in
-                m.activeCall = call.copy(callState: .offerReceived, peerMedia: callType.media, sharedKey: sharedKey)
+                call.callState = .offerReceived
+                call.peerMedia = callType.media
+                call.sharedKey = sharedKey
                 m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey, useWorker: true)
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in
-                m.activeCall = call.copy(callState: .negotiated)
+                call.callState = .answerReceived
                 m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
             }
         case let .callExtraInfo(contact, extraInfo):
@@ -652,9 +672,12 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
             }
         case let .callEnded(contact):
-            m.activeCallInvitation = nil
-            withCall(contact) { _ in
+            if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
+                CallController.shared.reportCallRemoteEnded(invitation: invitation)
+            }
+            withCall(contact) { call in
                 m.callCommand = .end
+                CallController.shared.reportCallRemoteEnded(call: call)
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")

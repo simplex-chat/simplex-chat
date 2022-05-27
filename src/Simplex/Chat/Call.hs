@@ -202,16 +202,18 @@ instance ToJSON WebRTCExtraInfo where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
-data WebRTCCallStatus = WCSConnected | WCSDisconnected | WCSFailed
+data WebRTCCallStatus = WCSConnecting | WCSConnected | WCSDisconnected | WCSFailed
   deriving (Show)
 
 instance StrEncoding WebRTCCallStatus where
   strEncode = \case
+    WCSConnecting -> "connecting"
     WCSConnected -> "connected"
     WCSDisconnected -> "disconnected"
     WCSFailed -> "failed"
   strP =
     A.takeTill (== ' ') >>= \case
+      "connecting" -> pure WCSConnecting
       "connected" -> pure WCSConnected
       "disconnected" -> pure WCSDisconnected
       "failed" -> pure WCSFailed

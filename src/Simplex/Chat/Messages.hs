@@ -152,6 +152,12 @@ instance ToJSON (CChatItem c) where
 chatItemId' :: ChatItem c d -> ChatItemId
 chatItemId' ChatItem {meta = CIMeta {itemId}} = itemId
 
+chatItemTs :: CChatItem c -> UTCTime
+chatItemTs (CChatItem _ ci) = chatItemTs' ci
+
+chatItemTs' :: ChatItem c d -> UTCTime
+chatItemTs' ChatItem {meta = CIMeta {itemTs}} = itemTs
+
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
