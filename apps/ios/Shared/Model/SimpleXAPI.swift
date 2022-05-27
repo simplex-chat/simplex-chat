@@ -629,9 +629,9 @@ func processReceivedMsg(_ res: ChatResponse) {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
-        case let .callInvitation(contact, callType, sharedKey):
+        case let .callInvitation(contact, callType, sharedKey, callTs):
             let uuid = UUID()
-            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey)
+            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey, callTs: callTs)
             m.callInvitations[contact.id] = invitation
             CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
                 if let error = error {

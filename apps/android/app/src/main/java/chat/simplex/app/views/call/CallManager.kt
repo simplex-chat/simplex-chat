@@ -4,14 +4,21 @@ import android.util.Log
 import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.helpers.withApi
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.minutes
 
 class CallManager(val chatModel: ChatModel) {
   fun reportNewIncomingCall(invitation: CallInvitation) {
     Log.d(TAG, "CallManager.reportNewIncomingCall")
     with (chatModel) {
       callInvitations[invitation.contact.id] = invitation
-      activeCallInvitation.value = invitation
-      controller.ntfManager.notifyCallInvitation(invitation)
+      if (Clock.System.now() - invitation.callTs <= 3.minutes) {
+        activeCallInvitation.value = invitation
+        controller.ntfManager.notifyCallInvitation(invitation)
+      } else {
+        val contact = invitation.contact
+        controller.ntfManager.notifyMessageReceived(chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
+      }
     }
   }
 
@@ -41,7 +48,8 @@ class CallManager(val chatModel: ChatModel) {
         sharedKey = invitation.sharedKey
       )
       showCallView.value = true
-      callCommand.value = WCallCommand.Start (media = invitation.peerMedia, aesKey = invitation.sharedKey)
+      val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
+      callCommand.value = WCallCommand.Start (media = invitation.peerMedia, aesKey = invitation.sharedKey, relay = useRelay)
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null

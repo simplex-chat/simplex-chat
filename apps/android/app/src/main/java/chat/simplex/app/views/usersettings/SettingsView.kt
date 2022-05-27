@@ -34,9 +34,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
 
   fun setRunServiceInBackground(on: Boolean) {
-    chatModel.controller.prefRunServiceInBackground.set(on)
+    chatModel.controller.appPrefs.runServiceInBackground.set(on)
     if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-      chatModel.controller.prefBackgroundServiceNoticeShown.set(false)
+      chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
     }
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
     chatModel.runServiceInBackground.value = on
