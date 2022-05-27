@@ -12,13 +12,12 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @State private var showNotificationAlert = false
-    @State private var userAuthorized: Bool? = nil
+    @Binding var userAuthorized: Bool?
 
     var body: some View {
         ZStack {
             if let step = chatModel.onboardingStage {
-                if let userAuthorized = userAuthorized,
-                   userAuthorized,
+                if userAuthorized == true,
                    case .onboardingComplete = step,
                    let user = chatModel.currentUser {
                     ZStack(alignment: .top) {
@@ -39,19 +38,6 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-        .onAppear {
-            // TODO authenticate only if onboarding is complete and preference is set
-            userAuthorized = false
-            authenticate() { laResult in
-                switch (laResult) {
-                case .success: userAuthorized = true
-                case .failed: laFailedAlert()
-                case .unavailable:
-                    userAuthorized = true
-                    laUnavailableAlert()
-                }
-            }
-        }
     }
 
     func notificationAlert() -> Alert {
