@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
@@ -51,6 +52,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   init {
     chatModel.runServiceInBackground.value = getRunServiceInBackground()
+    chatModel.performLA.value = getPerformLA()
   }
 
   suspend fun startChat(user: User) {
@@ -691,6 +693,49 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
+  fun showLANotice(activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    if (!getLANoticeShown()) {
+      setLANoticeShown(true)
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(R.string.la_notice_title),
+        text = generalGetString(R.string.la_notice_text),
+        confirmText = generalGetString(R.string.la_notice_turn_on),
+        onConfirm = {
+          authenticate(
+            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_confirm_credential),
+            activity,
+            completed = { laResult ->
+              when (laResult) {
+                LAResult.Success -> {
+                  chatModel.performLA.value = true
+                  setPerformLA(true)
+                  laTurnedOnAlert()
+                }
+                is LAResult.Error -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laErrorToast(appContext, laResult.errString)
+                }
+                LAResult.Failed -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laFailedToast(appContext)
+                }
+                LAResult.Unavailable -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  chatModel.showAdvertiseLAUnavailableAlert.value = true
+                }
+              }
+            }
+          )
+        }
+      )
+    }
+  }
+
   fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
 
   fun setAutoRestartWorkerVersion(version: Int) =
@@ -738,12 +783,28 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
+  fun getPerformLA(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_PERFORM_LA, false)
+
+  fun setPerformLA(performLA: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_PERFORM_LA, performLA)
+      .apply()
+
+  fun getLANoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+
+  fun setLANoticeShown(shown: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, shown)
+      .apply()
+
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
+    private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
+    private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
   }
 }
 

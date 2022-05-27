@@ -5,18 +5,17 @@ import android.content.*
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.AndroidViewModel
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
@@ -31,18 +30,21 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
+import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
 
-//import kotlinx.serialization.decodeFromString
-
-class MainActivity: ComponentActivity() {
+class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
+  private val userAuthorized = mutableStateOf<Boolean?>(null)
+  private val lastLA = mutableStateOf<Long?>(null)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
 //    testJson()
-    processNotificationIntent(intent, vm.chatModel)
+    val m = vm.chatModel
+    processNotificationIntent(intent, m)
     setContent {
       SimpleXTheme {
         Surface(
@@ -50,7 +52,7 @@ class MainActivity: ComponentActivity() {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(vm.chatModel)
+          MainPage(m, userAuthorized, ::setPerformLA, showLANotice = { m.controller.showLANotice(this) })
         }
       }
     }
@@ -60,6 +62,47 @@ class MainActivity: ComponentActivity() {
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
     processIntent(intent, vm.chatModel)
+  }
+
+  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+    withApi {
+      when (event) {
+        Lifecycle.Event.ON_START -> {
+          // perform local authentication if needed
+          val m = vm.chatModel
+          val lastLAVal = lastLA.value
+          if (
+            m.controller.getPerformLA()
+            && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
+          ) {
+            userAuthorized.value = false
+            authenticate(
+              generalGetString(R.string.auth_access_chats),
+              generalGetString(R.string.auth_log_in_using_credential),
+              this@MainActivity,
+              completed = { laResult ->
+                when (laResult) {
+                  LAResult.Success -> {
+                    userAuthorized.value = true
+                    lastLA.value = System.nanoTime()
+                  }
+                  is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
+                  LAResult.Failed -> laFailedToast(applicationContext)
+                  LAResult.Unavailable -> {
+                    userAuthorized.value = true
+                    m.performLA.value = false
+                    m.controller.setPerformLA(false)
+                    laUnavailableTurningOffAlert()
+                  }
+                }
+              }
+            )
+          } else {
+            userAuthorized.value = true
+          }
+        }
+      }
+    }
   }
 
   private fun schedulePeriodicServiceRestartWorker() {
@@ -79,6 +122,73 @@ class MainActivity: ComponentActivity() {
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
     WorkManager.getInstance(this)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
+
+  private fun setPerformLA(on: Boolean) {
+    val m = vm.chatModel
+    if (on) {
+      m.controller.setLANoticeShown(true)
+      authenticate(
+        generalGetString(R.string.auth_enable),
+        generalGetString(R.string.auth_confirm_credential),
+        this@MainActivity,
+        completed = { laResult ->
+          when (laResult) {
+            LAResult.Success -> {
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
+              userAuthorized.value = true
+              lastLA.value = System.nanoTime()
+              laTurnedOnAlert()
+            }
+            is LAResult.Error -> {
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
+              laErrorToast(applicationContext, laResult.errString)
+            }
+            LAResult.Failed -> {
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
+              laFailedToast(applicationContext)
+            }
+            LAResult.Unavailable -> {
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
+              laUnavailableInstructionAlert()
+            }
+          }
+        }
+      )
+    } else {
+      authenticate(
+        generalGetString(R.string.auth_disable),
+        generalGetString(R.string.auth_confirm_credential),
+        this@MainActivity,
+        completed = { laResult ->
+          when (laResult) {
+            LAResult.Success -> {
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
+            }
+            is LAResult.Error -> {
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
+              laErrorToast(applicationContext, laResult.errString)
+            }
+            LAResult.Failed -> {
+              m.performLA.value = true
+              m.controller.setPerformLA(true)
+              laFailedToast(applicationContext)
+            }
+            LAResult.Unavailable -> {
+              m.performLA.value = false
+              m.controller.setPerformLA(false)
+              laUnavailableTurningOffAlert()
+            }
+          }
+        }
+      )
+    }
+  }
 }
 
 class SimplexViewModel(application: Application): AndroidViewModel(application) {
@@ -87,22 +197,54 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 }
 
 @Composable
-fun MainPage(chatModel: ChatModel) {
+fun MainPage(
+  chatModel: ChatModel,
+  userAuthorized: MutableState<Boolean?>,
+  setPerformLA: (Boolean) -> Unit,
+  showLANotice: () -> Unit
+) {
+  // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
+  var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
+  LaunchedEffect(userAuthorized.value) {
+    delay(500L)
+    chatsAccessAuthorized = userAuthorized.value == true
+  }
+  var showAdvertiseLAAlert by remember { mutableStateOf(false) }
+  LaunchedEffect(showAdvertiseLAAlert) {
+    if (
+      !chatModel.controller.getLANoticeShown()
+      && showAdvertiseLAAlert
+      && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
+      && chatModel.chats.isNotEmpty()
+      && chatModel.activeCallInvitation.value == null
+    ) {
+      showLANotice()
+    }
+  }
+  LaunchedEffect(chatModel.showAdvertiseLAUnavailableAlert.value) {
+    if (chatModel.showAdvertiseLAUnavailableAlert.value) {
+      laUnavailableInstructionAlert()
+    }
+  }
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
     when {
       onboarding == null || userCreated == null -> SplashView()
+      !chatsAccessAuthorized -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
-          else if (chatModel.chatId.value == null) ChatListView(chatModel)
-          else ChatView(chatModel)
-
+          else {
+            showAdvertiseLAAlert = true
+            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
+            else ChatView(chatModel)
+          }
           val invitation = chatModel.activeCallInvitation.value
           if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
-      } onboarding == OnboardingStage.Step1_SimpleXInfo ->
+      }
+      onboarding == OnboardingStage.Step1_SimpleXInfo ->
         Box(Modifier.padding(horizontal = 20.dp)) {
           SimpleXInfo(chatModel, onboarding = true)
         }
@@ -180,7 +322,6 @@ fun connectIfOpenedViaUri(uri: Uri, chatModel: ChatModel) {
     }
   }
 }
-
 //fun testJson() {
 //  val str: String = """
 //  """.trimIndent()

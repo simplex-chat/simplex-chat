@@ -22,7 +22,6 @@ import chat.simplex.app.views.chat.deleteContactDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
@@ -31,10 +30,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   var showMarkRead by remember { mutableStateOf(false) }
   LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
     showMenu.value = false
-    launch {
-      delay(500L)
-      showMarkRead = chat.chatStats.unreadCount > 0
-    }
+    delay(500L)
+    showMarkRead = chat.chatStats.unreadCount > 0
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
