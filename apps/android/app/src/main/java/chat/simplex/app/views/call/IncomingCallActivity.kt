@@ -35,7 +35,6 @@ import chat.simplex.app.model.Contact
 import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
-import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.SimpleXLogo
 
 class IncomingCallActivity: ComponentActivity() {
@@ -116,7 +115,7 @@ fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
-  var acceptCallsFromLockScreen by remember { mutableStateOf(chatModel.controller.acceptCallsFromLockScreen.get()) }
+  var acceptCallsFromLockScreen by remember { mutableStateOf(chatModel.controller.prefAcceptCallsFromLockScreen.get()) }
   LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = true) }
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallLockScreenAlertLayout(

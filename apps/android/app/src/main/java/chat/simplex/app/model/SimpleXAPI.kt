@@ -50,9 +50,18 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   var chatModel = ChatModel(this)
   private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
+  val prefRunServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  val prefBackgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+  private val prefBackgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
+  val prefAutoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
+  val prefWebrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
+  val prefAcceptCallsFromLockScreen = mkBoolPreference(SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN, false)
+  val prefPerformLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
+  val prefLANoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+
   init {
-    chatModel.runServiceInBackground.value = getRunServiceInBackground()
-    chatModel.performLA.value = getPerformLA()
+    chatModel.runServiceInBackground.value = prefRunServiceInBackground.get()
+    chatModel.performLA.value = prefPerformLA.get()
   }
 
   suspend fun startChat(user: User) {
@@ -583,7 +592,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun showBackgroundServiceNoticeIfNeeded() {
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
-    if (!getBackgroundServiceNoticeShown()) {
+    if (!prefBackgroundServiceNoticeShown.get()) {
       // the branch for the new users who has never seen service notice
       if (isIgnoringBatteryOptimizations(appContext)) {
         showBGServiceNotice()
@@ -591,20 +600,20 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         showBGServiceNoticeIgnoreOptimization()
       }
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
-      setBackgroundServiceNoticeShown(true)
-      setBackgroundServiceBatteryNoticeShown(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && getRunServiceInBackground()) {
+      prefBackgroundServiceNoticeShown.set(true)
+      prefBackgroundServiceBatteryNoticeShown.set(true)
+    } else if (!isIgnoringBatteryOptimizations(appContext) && prefRunServiceInBackground.get()) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
-      if (getBackgroundServiceBatteryNoticeShown()) {
+      if (prefBackgroundServiceBatteryNoticeShown.get()) {
         // users have been presented with battery notice before - they did not allow ignoring optimizitions -> disable service
         showDisablingServiceNotice()
-        setRunServiceInBackground(false)
+        prefRunServiceInBackground.set(false)
         chatModel.runServiceInBackground.value = false
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization()
-        setBackgroundServiceBatteryNoticeShown(true)
+        prefBackgroundServiceBatteryNoticeShown.set(true)
       }
     }
   }
@@ -695,8 +704,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun showLANotice(activity: FragmentActivity) {
     Log.d(TAG, "showLANotice")
-    if (!getLANoticeShown()) {
-      setLANoticeShown(true)
+    if (!prefLANoticeShown.get()) {
+      prefLANoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
         title = generalGetString(R.string.la_notice_title),
         text = generalGetString(R.string.la_notice_text),
@@ -710,22 +719,22 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
               when (laResult) {
                 LAResult.Success -> {
                   chatModel.performLA.value = true
-                  setPerformLA(true)
+                  prefPerformLA.set(true)
                   laTurnedOnAlert()
                 }
                 is LAResult.Error -> {
                   chatModel.performLA.value = false
-                  setPerformLA(false)
+                  prefPerformLA.set(false)
                   laErrorToast(appContext, laResult.errString)
                 }
                 LAResult.Failed -> {
                   chatModel.performLA.value = false
-                  setPerformLA(false)
+                  prefPerformLA.set(false)
                   laFailedToast(appContext)
                 }
                 LAResult.Unavailable -> {
                   chatModel.performLA.value = false
-                  setPerformLA(false)
+                  prefPerformLA.set(false)
                   chatModel.showAdvertiseLAUnavailableAlert.value = true
                 }
               }
@@ -735,38 +744,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       )
     }
   }
-
-  fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
-
-  fun setAutoRestartWorkerVersion(version: Int) =
-    sharedPreferences.edit()
-      .putInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, version)
-      .apply()
-
-  fun getRunServiceInBackground(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
-
-  fun setRunServiceInBackground(runService: Boolean) =
-    sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, runService)
-      .apply()
-
-  private fun getBackgroundServiceNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
-
-  fun setBackgroundServiceNoticeShown(shown: Boolean) =
-    sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_SERVICE_NOTICE_SHOWN, shown)
-      .apply()
-
-  private fun getBackgroundServiceBatteryNoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
-
-  fun setBackgroundServiceBatteryNoticeShown(shown: Boolean) =
-    sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, shown)
-      .apply()
-
-  val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
-
-  val acceptCallsFromLockScreen = mkBoolPreference(SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN, false)
 
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
@@ -787,19 +764,11 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  fun getPerformLA(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_PERFORM_LA, false)
-
-  fun setPerformLA(performLA: Boolean) =
-    sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_PERFORM_LA, performLA)
-      .apply()
-
-  fun getLANoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, false)
-
-  fun setLANoticeShown(shown: Boolean) =
-    sharedPreferences.edit()
-      .putBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, shown)
-      .apply()
+  private fun mkIntPreference(prefName: String, default: Int) =
+    Preference(
+      get = fun() = sharedPreferences.getInt(prefName, default),
+      set = fun(value) = sharedPreferences.edit().putInt(prefName, value).apply()
+    )
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
     Preference(

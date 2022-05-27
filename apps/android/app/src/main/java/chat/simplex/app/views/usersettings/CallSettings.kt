@@ -14,8 +14,8 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 @Composable
 fun CallSettingsView(m: ChatModel) {
   CallSettingsLayout(
-    webrtcPolicyRelay = m.controller.webrtcPolicyRelay,
-    acceptCallsFromLockScreen = m.controller.acceptCallsFromLockScreen
+    webrtcPolicyRelay = m.controller.prefWebrtcPolicyRelay,
+    acceptCallsFromLockScreen = m.controller.prefAcceptCallsFromLockScreen
   )
 }
 
