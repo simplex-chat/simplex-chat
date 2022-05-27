@@ -65,7 +65,7 @@
     <string name="simplex_service_notification_text">Приём сообщений…</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
-    <string name="la_notice_title">Заблокируйте свои чаты</string>
+    <string name="la_notice_title">Блокировка SimpleX</string>
     <string name="la_notice_text">Чтобы защитить свои чаты, включите блокировку чатов для <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет предложено пройти аутентификацию, прежде чем эта функция будет включена.</string>
     <string name="la_notice_turn_on">Включить</string>
 
