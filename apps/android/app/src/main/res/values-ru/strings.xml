@@ -250,7 +250,7 @@
     <string name="chat_with_the_founder">Соединиться с разработчиками</string>
     <string name="send_us_an_email">Отправить email</string>
     <string name="private_notifications">Приватные уведомления</string>
-    <string name="chat_lock">Блокировка чатов</string>
+    <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
