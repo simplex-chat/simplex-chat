@@ -314,18 +314,20 @@
     <string name="callstatus_missed">пропущенный звонок</string>
     <string name="callstatus_rejected">отклоненный звонок</string>
     <string name="callstatus_accepted">принятый звонок</string>
-    <string name="callstatus_connecting">соединяется…</string>
+    <string name="callstatus_connecting">звонок соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
     <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-    <string name="callstatus_error">ошибка соединения</string>
+    <string name="callstatus_error">ошибка звонка</string>
 
     <!-- CallState -->
     <string name="callstate_starting">инициализация…</string>
     <string name="callstate_waiting_for_answer">ожидается ответ…</string>
     <string name="callstate_waiting_for_confirmation">ожидается подтверждение…</string>
     <string name="callstate_received_answer">получен ответ…</string>
+    <string name="callstate_received_confirmation">получено подтверждение…</string>
     <string name="callstate_connecting">соединяется…</string>
     <string name="callstate_connected">соединено</string>
+    <string name="callstate_ended">завершен</string>
 
     <!-- SimpleXInfo -->
     <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
@@ -368,7 +370,9 @@
     <string name="encrypted_video_call">e2e зашифрованный видеозвонок</string>
     <string name="audio_call_no_encryption">аудиозвонок (не e2e зашифрованный)</string>
     <string name="encrypted_audio_call">e2e зашифрованный аудиозвонок</string>
-    <string name="answer">Принять</string>
+    <string name="accept">Принять</string>
+    <string name="reject">Отклонить</string>
+    <string name="ignore">Закрыть</string>
     <string name="call_already_ended">Звонок уже завершен!</string>
     <string name="icon_descr_video_call">видеозвонок</string>
     <string name="icon_descr_audio_call">аудиозвонок</string>

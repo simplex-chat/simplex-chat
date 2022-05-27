@@ -1,20 +1,12 @@
 package chat.simplex.app.views.call
 
 import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.graphics.fonts.FontStyle
-import android.os.Build
-import android.service.controls.templates.ControlButton
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
-import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.magnifier
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -28,11 +20,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
@@ -41,7 +31,6 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.ChatInfoLayout
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
@@ -94,15 +83,25 @@ fun ActiveCallView(chatModel: ChatModel) {
           is WCallResponse.Connected -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
           }
-          is WCallResponse.Ended -> endCall()
+          is WCallResponse.Ended -> {
+            chatModel.activeCall.value = call.copy(callState = CallState.Ended)
+            endCall()
+          }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
+            is WCallCommand.Answer ->
+              chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
             is WCallCommand.Media -> {
               when (cmd.media) {
                 CallMediaType.Video -> chatModel.activeCall.value = call.copy(videoEnabled = cmd.enable)
                 CallMediaType.Audio -> chatModel.activeCall.value = call.copy(audioEnabled = cmd.enable)
               }
             }
-            is WCallCommand.Camera -> chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+            is WCallCommand.Camera -> {
+              chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
+              if (!call.audioEnabled) {
+                chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = false)
+              }
+            }
             is WCallCommand.End -> endCall()
             else -> {}
           }
@@ -153,10 +152,11 @@ private fun ActiveCallOverlayLayout(
           IconButton(onClick = dismiss) {
             Icon(Icons.Filled.CallEnd, stringResource(R.string.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(64.dp))
           }
-          ControlButton(call, Icons.Filled.FlipCameraAndroid, R.string.icon_descr_flip_camera, flipCamera)
           if (call.videoEnabled) {
+            ControlButton(call, Icons.Filled.FlipCameraAndroid, R.string.icon_descr_flip_camera, flipCamera)
             ControlButton(call, Icons.Filled.Videocam, R.string.icon_descr_video_off, toggleVideo)
           } else {
+            Spacer(Modifier.size(40.dp))
             ControlButton(call, Icons.Outlined.VideocamOff, R.string.icon_descr_video_on, toggleVideo)
           }
         }
@@ -208,7 +208,7 @@ private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
 }
 
 @Composable
-private fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
+fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
   @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
     Text(text, color = Color(0xFFFFFFD8), style = style)
   Column(horizontalAlignment = alignment) {
@@ -273,8 +273,6 @@ private fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
 //}
 
 @Composable
-// for debugging
-// fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (String) -> Unit) {
 fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(
@@ -359,8 +357,6 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
         }
       }
     }
-  } else {
-    Text("NEED PERMISSIONS")
   }
 }
 

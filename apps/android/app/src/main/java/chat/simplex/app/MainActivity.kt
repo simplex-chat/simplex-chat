@@ -1,13 +1,14 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.Intent
+import android.content.*
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -22,6 +23,7 @@ import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
+import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
@@ -236,12 +238,16 @@ fun MainPage(
       onboarding == null || userCreated == null -> SplashView()
       !chatsAccessAuthorized -> SplashView()
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
-        if (chatModel.showCallView.value) ActiveCallView(chatModel)
-        else {
-          advertiseLA()
-          chatShown.value = true
-          if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
-          else ChatView(chatModel)
+        Box {
+          val invitation = chatModel.activeCallInvitation.value
+          if (chatModel.showCallView.value) ActiveCallView(chatModel)
+          else {
+            if (invitation == null) advertiseLA()
+            chatShown.value = true
+            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
+            else ChatView(chatModel)
+          }
+          if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo ->
@@ -270,6 +276,16 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       Log.d(TAG, "processNotificationIntent: ShowChatsAction")
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
+    }
+    NtfManager.AcceptCallAction -> {
+      val chatId = intent.getStringExtra("chatId")
+      Log.d(TAG, "processNotificationIntent: AcceptCallAction $chatId")
+      val invitation = chatModel.callInvitations[chatId]
+      if (invitation == null) {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))
+      } else {
+        chatModel.callManager.acceptIncomingCall(invitation = invitation)
+      }
     }
   }
 }

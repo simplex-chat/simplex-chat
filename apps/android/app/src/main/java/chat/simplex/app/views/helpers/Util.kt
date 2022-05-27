@@ -34,8 +34,10 @@ import java.util.*
 import kotlin.math.log2
 import kotlin.math.pow
 
-fun withApi(action: suspend CoroutineScope.() -> Unit): Job =
-  GlobalScope.launch { withContext(Dispatchers.Main, action) }
+fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
+
+fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
+  scope.launch { withContext(Dispatchers.Main, action) }
 
 enum class KeyboardState {
   Opened, Closed

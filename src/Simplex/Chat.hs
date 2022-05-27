@@ -1678,7 +1678,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- practically, this should not happen
       call_ <- atomically (TM.lookupInsert contactId call' calls)
       forM_ call_ $ \call -> updateCallItemStatus userId ct call WCSDisconnected Nothing
-      toView $ CRCallInvitation ct callType sharedKey
+      toView . CRCallInvitation ct callType sharedKey $ chatItemTs' ci
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       where
         saveCallItem status = saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvCall status 0) Nothing

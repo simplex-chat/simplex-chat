@@ -3,6 +3,7 @@ package chat.simplex.app.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 
 private val DarkColorPalette = darkColors(
   primary = SimplexBlue,  // If this value changes also need to update #0088ff in string resource files
@@ -13,10 +14,8 @@ private val DarkColorPalette = darkColors(
 //  background = Color(0xFF121212),
 //  surface = Color(0xFF121212),
 //  error = Color(0xFFCF6679),
-//  onPrimary = Color.Black,
-//  onSecondary = Color.Black,
-//  onBackground = Color.White,
-//  onSurface = Color.White,
+  onBackground = Color(0xFFFFFBFA),
+  onSurface = Color(0xFFFFFBFA),
 //  onError: Color = Color.Black,
 )
 private val LightColorPalette = lightColors(
