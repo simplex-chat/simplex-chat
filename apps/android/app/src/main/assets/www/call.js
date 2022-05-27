@@ -96,8 +96,7 @@ const processCommand = (function () {
         const pc = new RTCPeerConnection(config.peerConnectionConfig);
         const remoteStream = new MediaStream();
         const localCamera = VideoCamera.User;
-        const constraints = callMediaConstraints(mediaType, localCamera);
-        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const localStream = await getLocatMediaStream(mediaType, localCamera);
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
@@ -156,11 +155,17 @@ const processCommand = (function () {
         try {
             switch (command.type) {
                 case "capabilities":
+                    console.log("starting outgoing call - capabilities");
+                    if (activeCall)
+                        endCall();
+                    // This request for local media stream is made to prompt for camera/mic permissions on call start
+                    if (command.media)
+                        await getLocatMediaStream(command.media, VideoCamera.User);
                     const encryption = supportsInsertableStreams(command.useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
                 case "start": {
-                    console.log("starting call");
+                    console.log("starting incoming call - create webrtc session");
                     if (activeCall)
                         endCall();
                     const { media, useWorker, iceServers, relay } = command;
@@ -394,8 +399,7 @@ const processCommand = (function () {
         for (const t of call.localStream.getTracks())
             t.stop();
         call.localCamera = camera;
-        const constraints = callMediaConstraints(call.localMedia, camera);
-        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const localStream = await getLocatMediaStream(call.localMedia, camera);
         replaceTracks(pc, localStream.getVideoTracks());
         replaceTracks(pc, localStream.getAudioTracks());
         call.localStream = localStream;
@@ -429,6 +433,10 @@ const processCommand = (function () {
         else {
             console.log(`no ${operation}`);
         }
+    }
+    function getLocatMediaStream(mediaType, facingMode) {
+        const constraints = callMediaConstraints(mediaType, facingMode);
+        return navigator.mediaDevices.getUserMedia(constraints);
     }
     function callMediaConstraints(mediaType, facingMode) {
         switch (mediaType) {

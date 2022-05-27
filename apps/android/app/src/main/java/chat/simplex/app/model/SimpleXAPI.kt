@@ -719,6 +719,10 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       .putBoolean(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, shown)
       .apply()
 
+  val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
+
+  val acceptCallsFromLockScreen = mkBoolPreference(SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN, false)
+
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
@@ -738,14 +742,24 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
+  private fun mkBoolPreference(prefName: String, default: Boolean) =
+    Preference(
+      get = fun() = sharedPreferences.getBoolean(prefName, default),
+      set = fun(value) = sharedPreferences.edit().putBoolean(prefName, value).apply()
+    )
+
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
+    private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
+    private const val SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN = "AcceptCallsFromLockScreen"
   }
 }
+
+class Preference<T>(val get: () -> T, val set: (T) -> Unit)
 
 // ChatCommand
 sealed class CC {

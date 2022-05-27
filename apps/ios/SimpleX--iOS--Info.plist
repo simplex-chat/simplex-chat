@@ -23,10 +23,8 @@
 	<false/>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>audio</string>
 		<string>fetch</string>
 		<string>remote-notification</string>
-		<string>voip</string>
 	</array>
 </dict>
 </plist>

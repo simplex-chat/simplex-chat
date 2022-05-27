@@ -358,6 +358,16 @@
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
 
+  <!-- Call settings -->
+  <string name="call_settings">Call settings</string>
+  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="accept_calls_from_lock_screen">Accept calls from lock screen</string>
+
+  <!-- Call Lock Screen -->
+  <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
+  <string name="allow_accepting_calls_from_lock_screen">Enable calls from lock screen via Settings.</string>
+  <string name="open_verb">Open</string>
+
   <!-- Call overlay -->
   <string name="status_e2e_encrypted">e2e encrypted</string>
   <string name="status_no_e2e_encryption">no e2e encryption</string>

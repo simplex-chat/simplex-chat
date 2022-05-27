@@ -1,6 +1,7 @@
 package chat.simplex.app.views.call
 
 import android.app.KeyguardManager
+import android.app.KeyguardManager.KeyguardLock
 import android.content.*
 import android.content.res.Configuration
 import android.os.Build
@@ -11,7 +12,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -25,16 +25,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Contact
+import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
+import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.SimpleXLogo
 
 class IncomingCallActivity: ComponentActivity() {
@@ -93,7 +95,7 @@ fun IncomingCallActivityView(m: ChatModel, activity: IncomingCallActivity) {
       activity.finish()
     }
   }
-  SimpleXTheme(darkTheme = true) {
+  SimpleXTheme {
     Surface(
       Modifier
         .background(MaterialTheme.colors.background)
@@ -104,33 +106,48 @@ fun IncomingCallActivityView(m: ChatModel, activity: IncomingCallActivity) {
           if (invitation != null) IncomingCallAlertView(invitation, m)
         }
       } else if (invitation != null) {
-        IncomingCallLockScreenAlert(invitation, m)
+        IncomingCallLockScreenAlert(invitation, m, activity)
       }
     }
   }
 }
 
 @Composable
-fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel) {
+fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel, activity: IncomingCallActivity) {
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
+  var acceptCallsFromLockScreen by remember { mutableStateOf(chatModel.controller.acceptCallsFromLockScreen.get()) }
   LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = true) }
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallLockScreenAlertLayout(
     invitation,
+    acceptCallsFromLockScreen,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = { chatModel.activeCallInvitation.value = null },
-    acceptCall = { cm.acceptIncomingCall(invitation = invitation) }
+    acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
+    openApp = {
+      SoundPlayer.shared.stop()
+      var intent = Intent(activity, MainActivity::class.java)
+        .setAction(OpenChatAction)
+        .putExtra("chatId", invitation.contact.id)
+      activity.startActivity(intent)
+      activity.finish()
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        getKeyguardManager(activity).requestDismissKeyguard(activity, null)
+      }
+    }
   )
 }
 
 @Composable
 fun IncomingCallLockScreenAlertLayout(
   invitation: CallInvitation,
+  acceptCallsFromLockScreen: Boolean,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
-  acceptCall: () -> Unit
+  acceptCall: () -> Unit,
+  openApp: () -> Unit
 ) {
   Column(
     Modifier
@@ -139,22 +156,24 @@ fun IncomingCallLockScreenAlertLayout(
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     IncomingCallInfo(invitation)
-    Spacer(
-      Modifier
-        .fillMaxHeight()
-        .weight(1f))
-    ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
-    Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
-    Spacer(
-      Modifier
-        .fillMaxHeight()
-        .weight(1f))
-    Row {
-      LockScreenCallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
-      Spacer(Modifier.size(48.dp))
-      LockScreenCallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
-      Spacer(Modifier.size(48.dp))
-      LockScreenCallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+    Spacer(Modifier.fillMaxHeight().weight(1f))
+    if (acceptCallsFromLockScreen) {
+      ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
+      Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
+      Spacer(Modifier.fillMaxHeight().weight(1f))
+      Row {
+        LockScreenCallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
+        Spacer(Modifier.size(48.dp))
+        LockScreenCallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
+        Spacer(Modifier.size(48.dp))
+        LockScreenCallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+      }
+    } else {
+      SimpleXLogo()
+      Text(stringResource(R.string.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
+      Text(stringResource(R.string.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
+      Spacer(Modifier.fillMaxHeight().weight(1f))
+      SimpleButton(text = stringResource(R.string.open_verb), icon = Icons.Filled.Check, click = openApp)
     }
   }
 }
@@ -166,7 +185,9 @@ private fun LockScreenCallButton(text: String, icon: ImageVector, color: Color, 
     color = Color.Transparent
   ) {
     Column(
-      Modifier.defaultMinSize(minWidth = 50.dp).padding(4.dp),
+      Modifier
+        .defaultMinSize(minWidth = 50.dp)
+        .padding(4.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       IconButton(action) {
@@ -185,16 +206,21 @@ private fun LockScreenCallButton(text: String, icon: ImageVector, color: Color, 
 @Composable
 fun PreviewIncomingCallLockScreenAlert() {
   SimpleXTheme(true) {
-    Surface(Modifier.background(MaterialTheme.colors.background).fillMaxSize()) {
+    Surface(
+      Modifier
+        .background(MaterialTheme.colors.background)
+        .fillMaxSize()) {
       IncomingCallLockScreenAlertLayout(
         invitation = CallInvitation(
           contact = Contact.sampleData,
           peerMedia = CallMediaType.Audio,
           sharedKey = null
         ),
+        acceptCallsFromLockScreen = false,
         rejectCall = {},
         ignoreCall = {},
-        acceptCall = {}
+        acceptCall = {},
+        openApp = {},
       )
     }
   }
