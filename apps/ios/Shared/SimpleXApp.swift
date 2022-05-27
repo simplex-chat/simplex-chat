@@ -16,7 +16,7 @@ struct SimpleXApp: App {
     @StateObject private var chatModel = ChatModel.shared
     @Environment(\.scenePhase) var scenePhase
     @State private var userAuthorized: Bool? = nil
-    @State private var doAuthenticate: Bool? = nil
+    @State private var doAuthenticate: Bool = true
     @State private var lastLA: Double? = nil
 
     init() {
@@ -35,7 +35,6 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     initializeChat()
-                    doAuthenticate = true
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
@@ -56,7 +55,7 @@ struct SimpleXApp: App {
     }
 
     private func authenticateUser() {
-        if doAuthenticate == true,
+        if doAuthenticate,
            authenticationExpired() {
             doAuthenticate = false
             userAuthorized = false
