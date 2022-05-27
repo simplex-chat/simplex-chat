@@ -228,6 +228,12 @@ fun MainPage(
       laUnavailableInstructionAlert()
     }
   }
+  LaunchedEffect(chatModel.clearOverlays.value) {
+    if (chatModel.clearOverlays.value) {
+      ModalManager.shared.closeModals()
+      chatModel.clearOverlays.value = false
+    }
+  }
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
@@ -275,7 +281,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")
+      if (chatId == null || chatId == "") return
       Log.d(TAG, "processNotificationIntent: AcceptCallAction $chatId")
+      chatModel.clearOverlays.value = true
       val invitation = chatModel.callInvitations[chatId]
       if (invitation == null) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))

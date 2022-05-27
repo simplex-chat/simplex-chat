@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -75,7 +76,8 @@ fun SharedPreferenceToggle(
 @Composable
 fun <T>SharedPreferenceRadioButton(text: String, prefState: MutableState<T>, preference: Preference<T>, value: T) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    RadioButton(selected = prefState.value == value, onClick = {
+    val colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colors.primary)
+    RadioButton(selected = prefState.value == value, colors = colors, onClick = {
       preference.set(value)
       prefState.value = value
     })
