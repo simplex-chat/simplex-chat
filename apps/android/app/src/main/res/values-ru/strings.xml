@@ -377,6 +377,16 @@
     <string name="icon_descr_video_call">видеозвонок</string>
     <string name="icon_descr_audio_call">аудиозвонок</string>
 
+    <!-- Call settings -->
+    <string name="call_settings">Настройки звонков</string>
+    <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
+    <string name="accept_calls_from_lock_screen">Принимать с экрана блокировки</string>
+
+    <!-- Call Lock Screen -->
+    <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nto accept call</string>
+    <string name="allow_accepting_calls_from_lock_screen">You can allow accepting calls from lock screen via Settings.</string>
+    <string name="open_verb">Open</string>
+
     <!-- Call overlay -->
     <string name="status_e2e_encrypted">e2e зашифровано</string>
     <string name="status_no_e2e_encryption">нет e2e шифрования</string>
