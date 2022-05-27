@@ -30,20 +30,25 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
-fun SettingsView(chatModel: ChatModel) {
+fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
+
+  fun setRunServiceInBackground(on: Boolean) {
+    chatModel.controller.setRunServiceInBackground(on)
+    if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+      chatModel.controller.setBackgroundServiceNoticeShown(false)
+    }
+    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+    chatModel.runServiceInBackground.value = on
+  }
+
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
       runServiceInBackground = chatModel.runServiceInBackground,
-      setRunServiceInBackground = { on ->
-        chatModel.controller.setRunServiceInBackground(on)
-        if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-          chatModel.controller.setBackgroundServiceNoticeShown(false)
-        }
-        chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-        chatModel.runServiceInBackground.value = on
-      },
+      setRunServiceInBackground = ::setRunServiceInBackground,
+      performLA = chatModel.performLA,
+      setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
@@ -60,6 +65,8 @@ fun SettingsLayout(
   profile: Profile,
   runServiceInBackground: MutableState<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
+  performLA: MutableState<Boolean>,
+  setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
@@ -95,6 +102,8 @@ fun SettingsLayout(
       Spacer(Modifier.height(24.dp))
 
       CallSettingsSection(showModal)
+      divider()
+      ChatLockSection(performLA, setPerformLA)
       divider()
       PrivateNotificationsSection(runServiceInBackground, setRunServiceInBackground)
       divider()
@@ -246,6 +255,33 @@ fun SettingsLayout(
   }
 }
 
+@Composable private fun ChatLockSection(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
+  SettingsSectionView() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        Icons.Outlined.Lock,
+        contentDescription = stringResource(R.string.chat_lock),
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        stringResource(R.string.chat_lock), Modifier
+          .padding(end = 24.dp)
+          .fillMaxWidth()
+          .weight(1F)
+      )
+      Switch(
+        checked = performLA.value,
+        onCheckedChange = { setPerformLA(it) },
+        colors = SwitchDefaults.colors(
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
+        ),
+        modifier = Modifier.padding(end = 8.dp)
+      )
+    }
+  }
+}
+
 @Composable private fun ChatConsoleSection(showTerminal: () -> Unit) {
   SettingsSectionView(showTerminal) {
     Icon(
@@ -314,8 +350,10 @@ fun PreviewSettingsLayout() {
       profile = Profile.sampleData,
       runServiceInBackground = remember { mutableStateOf(true) },
       setRunServiceInBackground = {},
-      showModal = {{}},
-      showCustomModal = {{}},
+      performLA = remember { mutableStateOf(false) },
+      setPerformLA = {},
+      showModal = { {} },
+      showCustomModal = { {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

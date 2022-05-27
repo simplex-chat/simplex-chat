@@ -12,11 +12,13 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @State private var showNotificationAlert = false
+    @Binding var userAuthorized: Bool?
 
     var body: some View {
         ZStack {
             if let step = chatModel.onboardingStage {
-                if case .onboardingComplete = step,
+                if userAuthorized == true,
+                   case .onboardingComplete = step,
                    let user = chatModel.currentUser {
                     ZStack(alignment: .top) {
                         ChatListView(user: user)

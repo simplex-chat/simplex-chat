@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.views.call.*
@@ -51,6 +52,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   init {
     chatModel.runServiceInBackground.value = getRunServiceInBackground()
+    chatModel.performLA.value = getPerformLA()
   }
 
   suspend fun startChat(user: User) {
@@ -527,7 +529,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         if (invitation != null) {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
         }
-        withCall(r, r.contact) { call ->
+        withCall(r, r.contact) { _ ->
           chatModel.callCommand.value = WCallCommand.End
           withApi {
             chatModel.activeCall.value = null
@@ -691,6 +693,49 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
+  fun showLANotice(activity: FragmentActivity) {
+    Log.d(TAG, "showLANotice")
+    if (!getLANoticeShown()) {
+      setLANoticeShown(true)
+      AlertManager.shared.showAlertDialog(
+        title = generalGetString(R.string.la_notice_title),
+        text = generalGetString(R.string.la_notice_text),
+        confirmText = generalGetString(R.string.la_notice_turn_on),
+        onConfirm = {
+          authenticate(
+            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_confirm_credential),
+            activity,
+            completed = { laResult ->
+              when (laResult) {
+                LAResult.Success -> {
+                  chatModel.performLA.value = true
+                  setPerformLA(true)
+                  laTurnedOnAlert()
+                }
+                is LAResult.Error -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laErrorToast(appContext, laResult.errString)
+                }
+                LAResult.Failed -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  laFailedToast(appContext)
+                }
+                LAResult.Unavailable -> {
+                  chatModel.performLA.value = false
+                  setPerformLA(false)
+                  chatModel.showAdvertiseLAUnavailableAlert.value = true
+                }
+              }
+            }
+          )
+        }
+      )
+    }
+  }
+
   fun getAutoRestartWorkerVersion(): Int = sharedPreferences.getInt(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
 
   fun setAutoRestartWorkerVersion(version: Int) =
@@ -742,6 +787,20 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
+  fun getPerformLA(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_PERFORM_LA, false)
+
+  fun setPerformLA(performLA: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_PERFORM_LA, performLA)
+      .apply()
+
+  fun getLANoticeShown(): Boolean = sharedPreferences.getBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+
+  fun setLANoticeShown(shown: Boolean) =
+    sharedPreferences.edit()
+      .putBoolean(SHARED_PREFS_LA_NOTICE_SHOWN, shown)
+      .apply()
+
   private fun mkBoolPreference(prefName: String, default: Boolean) =
     Preference(
       get = fun() = sharedPreferences.getBoolean(prefName, default),
@@ -756,6 +815,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
     private const val SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN = "AcceptCallsFromLockScreen"
+    private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
+    private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
   }
 }
 
