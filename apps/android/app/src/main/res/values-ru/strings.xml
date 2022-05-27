@@ -71,7 +71,7 @@
 
     <!-- LocalAuthentication.kt -->
     <string name="auth_turned_on">Блокировка SimpleX включена</string>
-    <string name="auth_turned_on_desc">Вы будете аутентифицированы при каждом запуске приложения и при возобновлении его работы спутся 30 секунд в фоновом режиме.</string>
+    <string name="auth_turned_on_desc">Вы будете аутентифицированы при каждом запуске приложения и при возобновлении его работы спустя 30 секунд в фоновом режиме.</string>
     <string name="auth_access_chats">Разблокировать SimpleX</string>
     <string name="auth_log_in_using_credential">Пройдите аутентификацию</string>
     <string name="auth_enable">Включить блокировку SimpleX</string>
