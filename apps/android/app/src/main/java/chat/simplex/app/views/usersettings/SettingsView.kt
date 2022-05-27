@@ -10,6 +10,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -19,8 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.Profile
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.TerminalView
@@ -84,16 +84,7 @@ fun SettingsLayout(
       Spacer(Modifier.height(30.dp))
 
       SettingsSectionView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp) {
-        ProfileImage(size = 60.dp, profile.image)
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Column {
-          Text(
-            profile.displayName,
-            style = MaterialTheme.typography.caption,
-            fontWeight = FontWeight.Bold,
-          )
-          Text(profile.fullName)
-        }
+        ProfilePreview(profile)
       }
       Divider(Modifier.padding(horizontal = 8.dp))
       SettingsSectionView(showModal { UserAddressView(it) }) {
@@ -212,6 +203,19 @@ fun SettingsLayout(
         Text("v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
       }
     }
+  }
+}
+
+@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary) {
+  ProfileImage(size = size, image = profileOf.image, color = color)
+  Spacer(Modifier.padding(horizontal = 4.dp))
+  Column {
+    Text(
+      profileOf.displayName,
+      style = MaterialTheme.typography.caption,
+      fontWeight = FontWeight.Bold,
+    )
+    Text(profileOf.fullName)
   }
 }
 

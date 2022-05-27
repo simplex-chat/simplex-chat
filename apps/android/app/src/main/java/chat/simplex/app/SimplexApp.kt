@@ -5,8 +5,7 @@ import android.net.LocalServerSocket
 import android.util.Log
 import androidx.lifecycle.*
 import chat.simplex.app.model.*
-import chat.simplex.app.views.helpers.getFilesDirectory
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import java.io.BufferedReader
 import java.io.InputStreamReader

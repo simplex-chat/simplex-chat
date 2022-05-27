@@ -61,12 +61,12 @@ class CallManager {
     func endCall(call: Call, completed: @escaping () -> Void) {
         let m = ChatModel.shared
         if case .ended = call.callState {
-            logger.debug("CallController.provider CXEndCallAction: call ended")
+            logger.debug("CallManager.endCall: call ended")
             m.activeCall = nil
             m.showCallView = false
             completed()
         } else {
-            logger.debug("CallController.provider CXEndCallAction: ending call...")
+            logger.debug("CallManager.endCall: ending call...")
             m.callCommand = .end
             m.showCallView = false
             Task {

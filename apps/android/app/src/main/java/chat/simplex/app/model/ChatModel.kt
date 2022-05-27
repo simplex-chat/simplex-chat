@@ -8,8 +8,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
-import chat.simplex.app.ui.theme.SecretColor
-import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.onboarding.OnboardingStage
@@ -41,11 +40,13 @@ class ChatModel(val controller: ChatController) {
   val runServiceInBackground = mutableStateOf(true)
 
   // current WebRTC call
+  val callManager = CallManager(this)
   val callInvitations = mutableStateMapOf<String, CallInvitation>()
-  val activeCallInvitation = mutableStateOf<ContactRef?>(null)
+  val activeCallInvitation = mutableStateOf<CallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)
+  val switchingCall = mutableStateOf(false)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -457,10 +458,10 @@ class Connection(val connId: Long, val connStatus: ConnStatus) {
 
 @Serializable
 class Profile(
-  val displayName: String,
-  val fullName: String,
-  val image: String? = null
-  ) {
+  override val displayName: String,
+  override val fullName: String,
+  override val image: String? = null
+): NamedChat {
   companion object {
     val sampleData = Profile(
       displayName = "alice",
@@ -686,13 +687,6 @@ data class ChatItem (
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
     else null
-
-  val isMsgContent: Boolean get() =
-    when (content) {
-      is CIContent.SndMsgContent -> true
-      is CIContent.RcvMsgContent -> true
-      else -> false
-    }
 
   val isDeletedContent: Boolean get() =
     when (content) {
@@ -1080,7 +1074,7 @@ enum class FormatColor(val color: String) {
 
   val uiColor: Color @Composable get() = when (this) {
     red -> Color.Red
-    green -> Color.Green
+    green -> SimplexGreen
     blue -> SimplexBlue
     yellow -> Color.Yellow
     cyan -> Color.Cyan
