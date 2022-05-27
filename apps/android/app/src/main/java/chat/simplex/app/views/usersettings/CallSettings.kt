@@ -43,7 +43,9 @@ fun CallSettingsLayout(
       Text(stringResource(R.string.call_on_lock_screen))
       Row {
         SharedPreferenceRadioButton(stringResource(R.string.no_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.DISABLE)
+        Spacer(Modifier.fillMaxWidth().weight(1f))
         SharedPreferenceRadioButton(stringResource(R.string.show_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.SHOW)
+        Spacer(Modifier.fillMaxWidth().weight(1f))
         SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
       }
     }
@@ -76,11 +78,11 @@ fun SharedPreferenceToggle(
 @Composable
 fun <T>SharedPreferenceRadioButton(text: String, prefState: MutableState<T>, preference: Preference<T>, value: T) {
   Row(verticalAlignment = Alignment.CenterVertically) {
+    Text(text)
     val colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colors.primary)
     RadioButton(selected = prefState.value == value, colors = colors, onClick = {
       preference.set(value)
       prefState.value = value
     })
-    Text(text)
   }
 }

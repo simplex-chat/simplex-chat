@@ -1,6 +1,7 @@
 package chat.simplex.app.model
 
 import android.app.*
+import android.app.Notification.VISIBILITY_PUBLIC
 import android.content.*
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
@@ -111,9 +112,10 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     var ntfBuilder =
       if (keyguardManager.isDeviceLocked && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
-        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
+          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
           .setSilent(true)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)

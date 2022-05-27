@@ -119,6 +119,7 @@ struct SettingsView: View {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
+                            .opacity(0.5)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
                     }
@@ -128,12 +129,7 @@ struct SettingsView: View {
 //                            notificationsToggle(token)
 //                        }
 //                    }
-//                    NavigationLink {
-//                        CallViewDebug()
-//                            .frame(maxHeight: .infinity, alignment: .top)
-//                    } label: {
-                        Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
-//                    }
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
@@ -142,7 +138,7 @@ struct SettingsView: View {
 
     private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.secondary)
             content().padding(.leading, indent)
         }
     }
