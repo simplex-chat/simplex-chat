@@ -290,7 +290,7 @@ const processCommand = (function () {
     const pc = new RTCPeerConnection(config.peerConnectionConfig)
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
-    const localStream = await getLocatMediaStream(mediaType, localCamera)
+    const localStream = await getLocalMediaStream(mediaType, localCamera)
     const iceCandidates = getIceCandidates(pc, config)
     const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
     await setupMediaStreams(call)
@@ -355,7 +355,7 @@ const processCommand = (function () {
           console.log("starting outgoing call - capabilities")
           if (activeCall) endCall()
           // This request for local media stream is made to prompt for camera/mic permissions on call start
-          if (command.media) await getLocatMediaStream(command.media, VideoCamera.User)
+          if (command.media) await getLocalMediaStream(command.media, VideoCamera.User)
           const encryption = supportsInsertableStreams(command.useWorker)
           resp = {type: "capabilities", capabilities: {encryption}}
           break
@@ -586,7 +586,7 @@ const processCommand = (function () {
     const pc = call.connection
     for (const t of call.localStream.getTracks()) t.stop()
     call.localCamera = camera
-    const localStream = await getLocatMediaStream(call.localMedia, camera)
+    const localStream = await getLocalMediaStream(call.localMedia, camera)
     replaceTracks(pc, localStream.getVideoTracks())
     replaceTracks(pc, localStream.getAudioTracks())
     call.localStream = localStream
@@ -624,7 +624,7 @@ const processCommand = (function () {
     }
   }
 
-  function getLocatMediaStream(mediaType: CallMediaType, facingMode: VideoCamera): Promise<MediaStream> {
+  function getLocalMediaStream(mediaType: CallMediaType, facingMode: VideoCamera): Promise<MediaStream> {
     const constraints = callMediaConstraints(mediaType, facingMode)
     return navigator.mediaDevices.getUserMedia(constraints)
   }
