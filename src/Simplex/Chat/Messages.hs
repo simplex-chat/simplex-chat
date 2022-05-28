@@ -33,7 +33,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
-import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgIntegrity (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -240,11 +240,13 @@ instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions
 
+-- This type is not saved to DB, so all JSON encodings are platform-specific
 data CIMeta (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
+    itemIntegrity :: CIIntegrity d,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Bool,
     itemEdited :: Bool,
@@ -264,6 +266,26 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIIntegrity (d :: MsgDirection) where
+  CISndMsgOk :: CIIntegrity MDSnd
+  CIRcvMsgOk :: CIIntegrity MDRcv
+  CIRcvMsgBadId :: AgentMsgId -> CIIntegrity MDRcv
+  CIRcvMsgBadHash :: CIIntegrity MDRcv
+  CIRcvMsgDuplicate :: CIIntegrity MDRcv
+
+deriving instance Show (CIIntegrity d)
+
+checkMsgIntegrity :: MsgIntegrity -> (CIIntegrity MDRcv, Maybe (CIContent MDRcv))
+checkMsgIntegrity = \case
+  MsgError err -> case err of
+    MsgSkipped fromId toId -> (CIRcvMsgOk, Just $ CIRcvSkippedMsgs fromId toId)
+    MsgBadId msgId -> (CIRcvMsgBadId msgId, Nothing)
+    MsgBadHash -> (CIRcvMsgBadHash, Nothing)
+    MsgDuplicate -> (CIRcvMsgDuplicate, Nothing)
+  _ -> (CIRcvMsgOk, Nothing)
+
+data ACIIntegrity = forall d. MsgDirectionI d => ACIIntegrity (SMsgDirection d) (CIIntegrity d)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
@@ -487,6 +509,7 @@ ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
   CIDMInternal -> "this item is deleted (internal)"
 
+-- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 data CIContent (d :: MsgDirection) where
   CISndMsgContent :: MsgContent -> CIContent 'MDSnd
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
@@ -494,6 +517,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
+  CIRcvSkippedMsgs :: {fromMsgId :: AgentMsgId, toMsgId :: AgentMsgId} -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
 
@@ -505,6 +529,9 @@ ciContentToText = \case
   CIRcvDeleted cidm -> ciDeleteModeToText cidm
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
+  CIRcvSkippedMsgs fromId toId
+    | fromId == toId -> "1 skipped message"
+    | otherwise -> T.pack (show $ toId - fromId + 1) <> " skipped messages"
 
 msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of

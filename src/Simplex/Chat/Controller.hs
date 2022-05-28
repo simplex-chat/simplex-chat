@@ -189,7 +189,7 @@ data ChatResponse
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
-  | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
+  | CRMsgIntegrityError {msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
