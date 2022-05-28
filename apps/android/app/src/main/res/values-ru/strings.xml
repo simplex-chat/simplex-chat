@@ -83,6 +83,7 @@
     <string name="auth_unavailable">Аутентификация недоступна</string>
     <string name="auth_unavailable_instruction_desc">На устройстве не включена аутентификация. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
     <string name="auth_unavailable_turning_off_desc">На устройстве выключена аутентификация. Отключение блокировки SimpleX Chat.</string>
+    <string name="auth_retry">Повторить</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>

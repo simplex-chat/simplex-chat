@@ -83,6 +83,7 @@
   <string name="auth_unavailable">Authentication unavailable</string>
   <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
   <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off SimpleX Lock.</string>
+  <string name="auth_retry">Retry</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
