@@ -66,10 +66,8 @@ fun scaffoldController(): ScaffoldController {
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val scaffoldCtrl = scaffoldController()
-  if (chatModel.clearOverlays.value) {
-    scaffoldCtrl.collapse()
-    ModalManager.shared.closeModal()
-    chatModel.clearOverlays.value = false
+  LaunchedEffect(chatModel.clearOverlays.value) {
+    if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,

@@ -1,6 +1,7 @@
 package chat.simplex.app.model
 
 import android.app.*
+import android.app.Notification.VISIBILITY_PUBLIC
 import android.content.*
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
@@ -14,7 +15,7 @@ import chat.simplex.app.views.helpers.base64ToBitmap
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
 
-class NtfManager(val context: Context) {
+class NtfManager(val context: Context, private val appPreferences: AppPreferences) {
   companion object {
     const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
     const val MessageGroup: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
@@ -64,21 +65,25 @@ class NtfManager(val context: Context) {
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
-    Log.d(TAG, "notifyMessageReceived ${cInfo.id}")
+    notifyMessageReceived(chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+  }
+
+  fun notifyMessageReceived(chatId: String, displayName: String, msgText: String) {
+    Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
-    val recentNotification = (now - prevNtfTime.getOrDefault(cInfo.id, 0) < msgNtfTimeoutMs)
-    prevNtfTime[cInfo.id] = now
+    val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
+    prevNtfTime[chatId] = now
 
     val notification = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(cInfo.displayName)
-      .setContentText(hideSecrets(cItem))
+      .setContentTitle(displayName)
+      .setContentText(msgText)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setSmallIcon(R.drawable.ntf_icon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setContentIntent(chatPendingIntent(OpenChatAction, cInfo.id))
+      .setContentIntent(chatPendingIntent(OpenChatAction, chatId))
       .setSilent(recentNotification)
       .build()
 
@@ -93,7 +98,7 @@ class NtfManager(val context: Context) {
 
     with(NotificationManagerCompat.from(context)) {
       // using cInfo.id only shows one notification per chat and updates it when the message arrives
-      notify(cInfo.id.hashCode(), notification)
+      notify(chatId.hashCode(), notification)
       notify(0, summary)
     }
   }
@@ -105,11 +110,12 @@ class NtfManager(val context: Context) {
     val keyguardManager = getKeyguardManager(context)
     val image = invitation.contact.image
     var ntfBuilder =
-      if (keyguardManager.isDeviceLocked) {
+      if (keyguardManager.isDeviceLocked && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
         val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
-        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, LockScreenCallChannel)
           .setFullScreenIntent(fullScreenPendingIntent, true)
+          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
           .setSilent(true)
       } else {
         val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)

@@ -34,9 +34,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
 
   fun setRunServiceInBackground(on: Boolean) {
-    chatModel.controller.prefRunServiceInBackground.set(on)
+    chatModel.controller.appPrefs.runServiceInBackground.set(on)
     if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-      chatModel.controller.prefBackgroundServiceNoticeShown.set(false)
+      chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
     }
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
     chatModel.runServiceInBackground.value = on
@@ -135,6 +135,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.QrCode,
       contentDescription = stringResource(R.string.icon_descr_address),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.your_simplex_contact_address))
@@ -146,6 +147,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.Videocam,
       contentDescription = stringResource(R.string.call_settings),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.call_settings))
@@ -157,6 +159,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.HelpOutline,
       contentDescription = stringResource(R.string.icon_descr_help),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.how_to_use_simplex_chat))
@@ -168,6 +171,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.Info,
       contentDescription = stringResource(R.string.icon_descr_help),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.about_simplex_chat))
@@ -179,6 +183,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.TextFormat,
       contentDescription = stringResource(R.string.markdown_help),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.markdown_in_messages))
@@ -190,6 +195,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.Tag,
       contentDescription = stringResource(R.string.icon_descr_simplex_team),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(
@@ -204,6 +210,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.Email,
       contentDescription = stringResource(R.string.icon_descr_email),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(
@@ -218,6 +225,7 @@ fun SettingsLayout(
     Icon(
       Icons.Outlined.Dns,
       contentDescription = stringResource(R.string.smp_servers),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.smp_servers))
@@ -233,6 +241,7 @@ fun SettingsLayout(
       Icon(
         Icons.Outlined.Bolt,
         contentDescription = stringResource(R.string.private_notifications),
+        tint = HighOrLowlight,
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
@@ -261,6 +270,7 @@ fun SettingsLayout(
       Icon(
         Icons.Outlined.Lock,
         contentDescription = stringResource(R.string.chat_lock),
+        tint = HighOrLowlight,
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
@@ -287,6 +297,7 @@ fun SettingsLayout(
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.chat_console))
@@ -298,6 +309,7 @@ fun SettingsLayout(
     Icon(
       painter = painterResource(id = R.drawable.ic_github),
       contentDescription = "GitHub",
+      tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))

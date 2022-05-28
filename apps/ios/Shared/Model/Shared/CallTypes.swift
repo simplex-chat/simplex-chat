@@ -28,6 +28,7 @@ struct CallInvitation {
     var callkitUUID: UUID?
     var peerMedia: CallMediaType
     var sharedKey: String?
+    var callTs: Date
     var callTypeText: LocalizedStringKey {
         get {
             switch peerMedia {
@@ -39,7 +40,8 @@ struct CallInvitation {
 
     static let sampleData = CallInvitation(
         contact: Contact.sampleData,
-        peerMedia: .audio
+        peerMedia: .audio,
+        callTs: .now
     )
 }
 

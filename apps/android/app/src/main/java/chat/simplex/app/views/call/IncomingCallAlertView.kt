@@ -22,6 +22,7 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Contact
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.usersettings.ProfilePreview
+import kotlinx.datetime.Clock
 
 @Composable
 fun IncomingCallAlertView(invitation: CallInvitation, chatModel: ChatModel) {
@@ -97,7 +98,8 @@ fun PreviewIncomingCallAlertLayout() {
       invitation = CallInvitation(
         contact = Contact.sampleData,
         peerMedia = CallMediaType.Audio,
-        sharedKey = null
+        sharedKey = null,
+        callTs = Clock.System.now()
       ),
       rejectCall = {},
       ignoreCall = {},
