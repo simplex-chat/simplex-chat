@@ -42,7 +42,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-//    testJson()
+    // testJson()
     val m = vm.chatModel
     processNotificationIntent(intent, m)
     setContent {
@@ -74,31 +74,32 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           // perform local authentication if needed
           val m = vm.chatModel
           val enteredBackgroundVal = enteredBackground.value
-          if (
-            m.controller.prefPerformLA.get()
-            && (enteredBackgroundVal == null || (System.nanoTime() - enteredBackgroundVal >= 30 * 1e+9))
-          ) {
-            userAuthorized.value = false
-            authenticate(
-              generalGetString(R.string.auth_unlock),
-              generalGetString(R.string.auth_log_in_using_credential),
-              this@MainActivity,
-              completed = { laResult ->
-                when (laResult) {
-                  LAResult.Success -> userAuthorized.value = true
-                  is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
-                  LAResult.Failed -> laFailedToast(applicationContext)
-                  LAResult.Unavailable -> {
-                    userAuthorized.value = true
-                    m.performLA.value = false
-                    m.controller.prefPerformLA.set(false)
-                    laUnavailableTurningOffAlert()
+          if (!m.controller.prefPerformLA.get()) {
+            userAuthorized.value = true
+          } else {
+            if (enteredBackgroundVal == null || System.nanoTime() - enteredBackgroundVal >= 30 * 1e+9) {
+              userAuthorized.value = false
+              authenticate(
+                generalGetString(R.string.auth_unlock),
+                generalGetString(R.string.auth_log_in_using_credential),
+                this@MainActivity,
+                completed = { laResult ->
+                  when (laResult) {
+                    LAResult.Success -> {
+                      userAuthorized.value = true
+                    }
+                    is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
+                    LAResult.Failed -> laFailedToast(applicationContext)
+                    LAResult.Unavailable -> {
+                      userAuthorized.value = true
+                      m.performLA.value = false
+                      m.controller.prefPerformLA.set(false)
+                      laUnavailableTurningOffAlert()
+                    }
                   }
                 }
-              }
-            )
-          } else {
-            userAuthorized.value = true
+              )
+            }
           }
         }
       }
@@ -202,7 +203,7 @@ fun MainPage(
   showLANotice: () -> Unit
 ) {
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
+  var chatsAccessAuthorized by remember { mutableStateOf(false) }
   LaunchedEffect(userAuthorized.value) {
     delay(500L)
     chatsAccessAuthorized = userAuthorized.value == true
