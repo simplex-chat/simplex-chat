@@ -915,9 +915,7 @@ enum MsgErrorType: Decodable {
     var text: String {
         switch self {
         case let .msgSkipped(fromMsgId, toMsgId):
-            return fromMsgId == toMsgId
-                ? NSLocalizedString("1 skipped message", comment: "integrity error chat item")
-                : String.localizedStringWithFormat(NSLocalizedString("%d skipped messages", comment: "integrity error chat item"), toMsgId - fromMsgId + 1)
+            return String.localizedStringWithFormat(NSLocalizedString("%d skipped message(s)", comment: "integrity error chat item"), toMsgId - fromMsgId + 1)
         case .msgBadHash: return NSLocalizedString("bad message hash", comment: "integrity error chat item") // not used now
         case .msgBadId: return NSLocalizedString("bad message ID", comment: "integrity error chat item") // not used now
         case .msgDuplicate: return NSLocalizedString("duplicate message", comment: "integrity error chat item") // not used now

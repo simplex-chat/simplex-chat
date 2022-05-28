@@ -10,6 +10,9 @@
 /* notification title */
 "%@ wants to connect!" = "%@ хочет соединиться!";
 
+/* integrity error chat item */
+"%d skipped message(s)" = "%d пропущенных сообщений";
+
 /* notification body */
 "Accept contact request from %@?" = "Принять запрос на соединение от %@?";
 
@@ -18,6 +21,12 @@
 
 /* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "аудиозвонок (не e2e зашифрованный)";
+
+/* integrity error chat item */
+"bad message hash" = "ошибка хэш сообщения";
+
+/* integrity error chat item */
+"bad message ID" = "ошибка ID сообщения";
 
 /* call status */
 "call error" = "ошибка звонка";
@@ -42,6 +51,9 @@
 
 /* deleted chat item */
 "deleted" = "удалено";
+
+/* integrity error chat item */
+"duplicate message" = "повторное сообщение";
 
 /* call status */
 "ended call %@" = "завершённый звонок %@";

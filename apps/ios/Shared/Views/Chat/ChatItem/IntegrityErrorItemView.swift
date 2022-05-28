@@ -28,6 +28,21 @@ struct IntegrityErrorItemView: View {
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .cornerRadius(18)
         .textSelection(.disabled)
+        .onTapGesture { skippedMessagesAlert() }
+    }
+
+    private func skippedMessagesAlert() {
+        AlertManager.shared.showAlertMsg(
+            title: "Skipped messages",
+            message: """
+                It can happen when:
+                1. The messages expire on the server if they were not received for 30 days,
+                2. The server you use to receive the messages from this contact was updated and restarted.
+                3. The connection is compromised.
+                Please connect to the developers via Settings to receive the updates.
+                We will be adding server redundancy to prevent lost messages.
+                """
+        )
     }
 }
 
