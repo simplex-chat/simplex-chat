@@ -14,6 +14,7 @@ struct ContentView: View {
     @Binding var doAuthenticate: Bool
     @Binding var enteredBackground: Double?
     @State private var userAuthorized: Bool?
+    @State private var laFailed: Bool = false
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -46,6 +47,8 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
+            } else if prefPerformLA && laFailed {
+                retryAuthView()
             }
         }
         .onChange(of: doAuthenticate) { doAuth in
@@ -55,6 +58,13 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    private func retryAuthView() -> some View {
+        Button {
+            laFailed = false
+            runAuthenticate()
+        } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
     }
 
     private func runAuthenticate() {
@@ -67,6 +77,7 @@ struct ContentView: View {
                 case .success:
                     userAuthorized = true
                 case .failed:
+                    laFailed = true
                     AlertManager.shared.showAlert(laFailedAlert())
                 case .unavailable:
                     userAuthorized = true
