@@ -33,7 +33,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
-import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgIntegrity (..), MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
@@ -171,6 +171,13 @@ toCIDirection = \case
   CDGroupSnd _ -> CIGroupSnd
   CDGroupRcv _ m -> CIGroupRcv m
 
+toChatInfo :: ChatDirection c d -> ChatInfo c
+toChatInfo = \case
+  CDDirectSnd c -> DirectChat c
+  CDDirectRcv c -> DirectChat c
+  CDGroupSnd g -> GroupChat g
+  CDGroupRcv g _ -> GroupChat g
+
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
     itemSent :: SMsgDirection d,
@@ -246,7 +253,6 @@ data CIMeta (d :: MsgDirection) = CIMeta
     itemTs :: ChatItemTs,
     itemText :: Text,
     itemStatus :: CIStatus d,
-    itemIntegrity :: CIIntegrity d,
     itemSharedMsgId :: Maybe SharedMsgId,
     itemDeleted :: Bool,
     itemEdited :: Bool,
@@ -266,26 +272,6 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, editable, localItemTs, createdAt, updatedAt}
 
 instance ToJSON (CIMeta d) where toEncoding = J.genericToEncoding J.defaultOptions
-
-data CIIntegrity (d :: MsgDirection) where
-  CISndMsgOk :: CIIntegrity MDSnd
-  CIRcvMsgOk :: CIIntegrity MDRcv
-  CIRcvMsgBadId :: AgentMsgId -> CIIntegrity MDRcv
-  CIRcvMsgBadHash :: CIIntegrity MDRcv
-  CIRcvMsgDuplicate :: CIIntegrity MDRcv
-
-deriving instance Show (CIIntegrity d)
-
-checkMsgIntegrity :: MsgIntegrity -> (CIIntegrity MDRcv, Maybe (CIContent MDRcv))
-checkMsgIntegrity = \case
-  MsgError err -> case err of
-    MsgSkipped fromId toId -> (CIRcvMsgOk, Just $ CIRcvSkippedMsgs fromId toId)
-    MsgBadId msgId -> (CIRcvMsgBadId msgId, Nothing)
-    MsgBadHash -> (CIRcvMsgBadHash, Nothing)
-    MsgDuplicate -> (CIRcvMsgDuplicate, Nothing)
-  _ -> (CIRcvMsgOk, Nothing)
-
-data ACIIntegrity = forall d. MsgDirectionI d => ACIIntegrity (SMsgDirection d) (CIIntegrity d)
 
 data CIQuote (c :: ChatType) = CIQuote
   { chatDir :: CIQDirection c,
@@ -457,7 +443,7 @@ instance StrEncoding ACIStatus where
       "snd_new" -> pure $ ACIStatus SMDSnd CISSndNew
       "snd_sent" -> pure $ ACIStatus SMDSnd CISSndSent
       "snd_error_auth" -> pure $ ACIStatus SMDSnd CISSndErrorAuth
-      "snd_error" -> ACIStatus SMDSnd <$> (A.space *> strP)
+      "snd_error" -> ACIStatus SMDSnd . CISSndError <$> (A.space *> strP)
       "rcv_new" -> pure $ ACIStatus SMDRcv CISRcvNew
       "rcv_read" -> pure $ ACIStatus SMDRcv CISRcvRead
       _ -> fail "bad status"
@@ -517,7 +503,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDeleted :: CIDeleteMode -> CIContent 'MDRcv
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
-  CIRcvSkippedMsgs :: {fromMsgId :: AgentMsgId, toMsgId :: AgentMsgId} -> CIContent 'MDRcv
+  CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
 
@@ -529,9 +515,16 @@ ciContentToText = \case
   CIRcvDeleted cidm -> ciDeleteModeToText cidm
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
-  CIRcvSkippedMsgs fromId toId
+  CIRcvIntegrityError err -> msgIntegrityError err
+
+msgIntegrityError :: MsgErrorType -> Text
+msgIntegrityError = \case
+  MsgSkipped fromId toId
     | fromId == toId -> "1 skipped message"
     | otherwise -> T.pack (show $ toId - fromId + 1) <> " skipped messages"
+  MsgBadId msgId -> "unexpected message ID " <> T.pack (show msgId)
+  MsgBadHash -> "incorrect message hash"
+  MsgDuplicate -> "duplicate message ID"
 
 msgDirToDeletedContent_ :: SMsgDirection d -> CIDeleteMode -> CIContent d
 msgDirToDeletedContent_ msgDir mode = case msgDir of
@@ -566,6 +559,7 @@ data JSONCIContent
   | JCIRcvDeleted {deleteMode :: CIDeleteMode}
   | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
+  | JCIRcvIntegrityError {msgError :: MsgErrorType}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -583,6 +577,7 @@ jsonCIContent = \case
   CIRcvDeleted cidm -> JCIRcvDeleted cidm
   CISndCall status duration -> JCISndCall {status, duration}
   CIRcvCall status duration -> JCIRcvCall {status, duration}
+  CIRcvIntegrityError err -> JCIRcvIntegrityError err
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -592,6 +587,7 @@ aciContentJSON = \case
   JCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
+  JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
 
 -- platform independent
 data DBJSONCIContent
@@ -601,6 +597,7 @@ data DBJSONCIContent
   | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
+  | DBJCIRcvIntegrityError {msgError :: MsgErrorType}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -618,6 +615,7 @@ dbJsonCIContent = \case
   CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
+  CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -627,6 +625,7 @@ aciContentDBJSON = \case
   DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
+  DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
 
 data CICallStatus
   = CISCallPending

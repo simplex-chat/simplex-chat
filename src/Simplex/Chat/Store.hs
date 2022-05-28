@@ -131,6 +131,7 @@ module Simplex.Chat.Store
     deletePendingGroupMessage,
     createNewSndChatItem,
     createNewRcvChatItem,
+    createNewChatItemNoMsg,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
@@ -2530,6 +2531,14 @@ createNewRcvChatItem st user chatDirection RcvMessage {msgId, chatMsgEvent} shar
           CDDirectRcv _ -> (Just $ not sent, Nothing)
           CDGroupRcv GroupInfo {membership = GroupMember {memberId = userMemberId}} _ ->
             (Just $ Just userMemberId == memberId, memberId)
+
+createNewChatItemNoMsg :: forall c d m. (MsgDirectionI d, MonadUnliftIO m) => SQLiteStore -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> m ChatItemId
+createNewChatItemNoMsg st user chatDirection ciContent itemTs createdAt =
+  liftIO . withTransaction st $ \db ->
+    createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow itemTs createdAt
+  where
+    quoteRow :: NewQuoteRow
+    quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
 
 createNewChatItem_ :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> Maybe MessageId -> Maybe SharedMsgId -> CIContent d -> NewQuoteRow -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItem_ db User {userId} chatDirection msgId_ sharedMsgId ciContent quoteRow itemTs createdAt = do

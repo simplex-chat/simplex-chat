@@ -1465,7 +1465,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newContentMessage ct@Contact {localDisplayName = c} mc msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrity msgMeta $ \e -> case e of
+        MsgSkipped {} -> createIntegrityErrorItem (CDDirectRcv ct) e msgMeta
+        _ -> toView $ CRMsgIntegrityError e -- TODO add integrity status to item instead
       let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
       ciFile_ <- processFileInvitation fileInvitation_ $
         \fi chSize -> withStore $ \st -> createRcvFileTransfer st userId ct fi chSize
@@ -1526,7 +1528,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       ciFile_ <- processFileInvitation fileInvitation_ $
         \fi chSize -> withStore $ \st -> createRcvGroupFileTransfer st userId m fi chSize
       ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile_
-      groupMsgToView gInfo ci msgMeta
+      groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
       showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
@@ -1558,8 +1560,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      -- TODO chunk size has to be sent as part of invitation
+      checkIntegrity msgMeta $ \e -> case e of
+        MsgSkipped {} -> createIntegrityErrorItem (CDDirectRcv ct) e msgMeta
+        _ -> toView $ CRMsgIntegrityError e -- TODO add integrity status to item instead
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
@@ -1575,7 +1578,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
-      groupMsgToView gInfo ci msgMeta
+      groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
@@ -1619,9 +1622,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               Left e -> throwError e
           else messageError "x.file.acpt.inv: fileName is different from expected"
 
-    groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
-    groupMsgToView gInfo ci msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+    groupMsgToView :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
+    groupMsgToView gInfo m ci msgMeta = do
+      checkIntegrity msgMeta $ \e -> case e of
+        MsgSkipped {} -> createIntegrityErrorItem (CDGroupRcv gInfo m) e msgMeta
+        _ -> toView $ CRMsgIntegrityError e -- TODO add integrity status to item instead
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
@@ -1636,6 +1641,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     checkIntegrity MsgMeta {integrity} action = case integrity of
       MsgError e -> action e
       MsgOk -> pure ()
+
+    createIntegrityErrorItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgErrorType -> MsgMeta -> m ()
+    createIntegrityErrorItem cd err MsgMeta {broker = (_, brokerTs)} = do
+      createdAt <- liftIO getCurrentTime
+      let content = CIRcvIntegrityError err
+      ciId <- withStore $ \st -> createNewChatItemNoMsg st user cd content brokerTs createdAt
+      ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing brokerTs createdAt
+      toView $ CRNewChatItem $ AChatItem (chatTypeI @c) SMDRcv (toChatInfo cd) ci
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
@@ -1666,7 +1679,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
     xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrity msgMeta $ \e -> case e of
+        MsgSkipped {} -> createIntegrityErrorItem (CDDirectRcv ct) e msgMeta
+        _ -> toView $ CRMsgIntegrityError e
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       ci <- saveCallItem CISCallPending
       let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
