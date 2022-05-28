@@ -1638,10 +1638,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         MsgSkipped {} -> createIntegrityErrorItem e
         _ -> toView $ CRMsgIntegrityError e
       where
-        createIntegrityErrorItem :: MsgErrorType -> m ()
-        createIntegrityErrorItem err = do
+        createIntegrityErrorItem e = do
           createdAt <- liftIO getCurrentTime
-          let content = CIRcvIntegrityError err
+          let content = CIRcvIntegrityError e
           ciId <- withStore $ \st -> createNewChatItemNoMsg st user cd content brokerTs createdAt
           ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing brokerTs createdAt
           toView $ CRNewChatItem $ AChatItem (chatTypeI @c) SMDRcv (toChatInfo cd) ci
