@@ -14,12 +14,14 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_LA_NOTICE_SHOWN = "LocalAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 
 let appDefaults: [String:Any] = [
+    DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
     DEFAULT_USE_NOTIFICATIONS: false,
     DEFAULT_PENDING_CONNECTIONS: true,
@@ -33,6 +35,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var performLAToggleReset = false
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
@@ -151,6 +154,7 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
             .onChange(of: chatModel.performLA) { performLAToggle in
+                prefLANoticeShown = true
                 if performLAToggleReset {
                     performLAToggleReset = false
                 } else {

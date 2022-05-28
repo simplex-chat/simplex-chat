@@ -12,6 +12,9 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var userAuthorized: Bool?
+    @State private var notificationAlertShown: Bool?
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         ZStack {
@@ -24,7 +27,14 @@ struct ContentView: View {
                             .onAppear {
                                 NtfManager.shared.requestAuthorization(onDeny: {
                                     alertManager.showAlert(notificationAlert())
+                                    notificationAlertShown = true
                                 })
+                                if (!prefLANoticeShown) {
+                                    prefLANoticeShown = true
+                                    if notificationAlertShown != true {
+                                        alertManager.showAlert(laNoticeAlert())
+                                    }
+                                }
                             }
                             if chatModel.showCallView, let call = chatModel.activeCall {
                                 ActiveCallView(call: call)
@@ -38,6 +48,32 @@ struct ContentView: View {
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    func laNoticeAlert() -> Alert {
+        Alert(
+            title: Text("SimpleX Lock"),
+            message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
+            primaryButton: .default(Text("Turn on")) {
+//                DispatchQueue.main.async {
+//                    UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+//                }
+                authenticate(reason: "Enable SimpleX Lock") { laResult in
+                    switch laResult {
+                    case .success:
+                        prefPerformLA = true
+                        alertManager.showAlert(laTurnedOnAlert())
+                    case .failed:
+                        prefPerformLA = false
+                        alertManager.showAlert(laFailedAlert())
+                    case .unavailable:
+                        prefPerformLA = false
+                        alertManager.showAlert(laUnavailableInstructionAlert())
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+         )
     }
 
     func notificationAlert() -> Alert {

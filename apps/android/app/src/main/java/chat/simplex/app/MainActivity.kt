@@ -86,9 +86,17 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
                 this@MainActivity,
                 completed = { laResult ->
                   when (laResult) {
-                    LAResult.Success -> userAuthorized.value = true
-                    is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
-                    LAResult.Failed -> laFailedToast(applicationContext)
+                    LAResult.Success -> {
+                      userAuthorized.value = true
+                    }
+                    is LAResult.Error -> {
+                      laErrorToast(applicationContext, laResult.errString)
+                      this@MainActivity.finish()
+                    }
+                    LAResult.Failed -> {
+                      laFailedToast(applicationContext)
+                      this@MainActivity.finish()
+                    }
                     LAResult.Unavailable -> {
                       userAuthorized.value = true
                       m.performLA.value = false
