@@ -14,4 +14,4 @@ It would be helpful to the users to know when they have skipped messages rather 
 
 The proposed types/data model differentiates the integrity errors that are related to a particular item (they are saved to item meta-data, and should be shown as item status in the UI) and the errors that indicate skipped messages (these are created as separate chat items, and should be shown in the UI as a separate chat item).
 
-See [PR #705](https://github.com/simplex-chat/simplex-chat/pull/705) for the proposed schema and type changes.
+This [PR #705](https://github.com/simplex-chat/simplex-chat/pull/705) only implements chat item for skipped messages, for the remaining message integrity errors it still uses the event CRMsgIntegrityError that is only displayed in the terminal.
