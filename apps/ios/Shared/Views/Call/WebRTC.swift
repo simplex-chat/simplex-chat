@@ -102,7 +102,7 @@ struct WVAPIMessage: Equatable, Decodable, Encodable {
 }
 
 enum WCallCommand: Equatable, Encodable, Decodable {
-    case capabilities(useWorker: Bool? = nil)
+    case capabilities(media: CallMediaType, useWorker: Bool? = nil)
     case start(media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case offer(offer: String, iceCandidates: String, media: CallMediaType, aesKey: String? = nil, useWorker: Bool? = nil, iceServers: [RTCIceServer]? = nil, relay: Bool? = nil)
     case answer(answer: String, iceCandidates: String)
@@ -143,8 +143,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .capabilities(useWorker):
+        case let .capabilities(media, useWorker):
             try container.encode("capabilities", forKey: .type)
+            try container.encode(media, forKey: .media)
             try container.encode(useWorker, forKey: .useWorker)
         case let .start(media, aesKey, useWorker, iceServers, relay):
             try container.encode("start", forKey: .type)
@@ -186,8 +187,9 @@ enum WCallCommand: Equatable, Encodable, Decodable {
         let type = try container.decode(String.self, forKey: CodingKeys.type)
         switch type {
         case "capabilities":
+            let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let useWorker = try container.decode((Bool?).self, forKey: CodingKeys.useWorker)
-            self = .capabilities(useWorker: useWorker)
+            self = .capabilities(media: media, useWorker: useWorker)
         case "start":
             let media = try container.decode(CallMediaType.self, forKey: CodingKeys.media)
             let aesKey = try? container.decode(String.self, forKey: CodingKeys.aesKey)

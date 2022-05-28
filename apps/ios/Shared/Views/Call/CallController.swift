@@ -127,7 +127,9 @@ class CallController: NSObject, CXProviderDelegate, ObservableObject {
             provider.reportNewIncomingCall(with: uuid, update: update, completion: completion)
         } else {
             NtfManager.shared.notifyCallInvitation(invitation)
-            activeCallInvitation = invitation
+            if invitation.callTs.timeIntervalSinceNow >= -180 {
+                activeCallInvitation = invitation
+            }
         }
     }
 

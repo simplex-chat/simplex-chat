@@ -19,7 +19,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(useWorker: true)
+            m.callCommand = .capabilities(media: call.localMedia, useWorker: true)
             return true
         }
         return false
@@ -45,7 +45,9 @@ class CallManager {
             sharedKey: invitation.sharedKey
         )
         m.showCallView = true
-        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+        let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+        logger.debug("answerIncomingCall useRelay \(useRelay)")
+        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
@@ -61,12 +63,12 @@ class CallManager {
     func endCall(call: Call, completed: @escaping () -> Void) {
         let m = ChatModel.shared
         if case .ended = call.callState {
-            logger.debug("CallController.provider CXEndCallAction: call ended")
+            logger.debug("CallManager.endCall: call ended")
             m.activeCall = nil
             m.showCallView = false
             completed()
         } else {
-            logger.debug("CallController.provider CXEndCallAction: ending call...")
+            logger.debug("CallManager.endCall: ending call...")
             m.callCommand = .end
             m.showCallView = false
             Task {

@@ -16,6 +16,13 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
+let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+
+let appDefaults: [String:Any] = [
+    DEFAULT_USE_NOTIFICATIONS: false,
+    DEFAULT_PENDING_CONNECTIONS: true,
+    DEFAULT_WEBRTC_POLICY_RELAY: true
+]
 
 private var indent: CGFloat = 36
 
@@ -58,6 +65,12 @@ struct SettingsView: View {
                             .navigationTitle("Your SMP servers")
                     } label: {
                         settingsRow("server.rack") { Text("SMP servers") }
+                    }
+                    NavigationLink {
+                        CallSettings()
+                            .navigationTitle("Call settings")
+                    } label: {
+                        settingsRow("video") { Text("Call settings") }
                     }
                 }
 
@@ -106,6 +119,7 @@ struct SettingsView: View {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
+                            .opacity(0.5)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
                     }
@@ -115,12 +129,7 @@ struct SettingsView: View {
 //                            notificationsToggle(token)
 //                        }
 //                    }
-//                    NavigationLink {
-//                        CallViewDebug()
-//                            .frame(maxHeight: .infinity, alignment: .top)
-//                    } label: {
-                        Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
-//                    }
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
@@ -129,7 +138,7 @@ struct SettingsView: View {
 
     private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.secondary)
             content().padding(.leading, indent)
         }
     }

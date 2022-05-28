@@ -48,6 +48,10 @@ class ModalManager {
     modalCount.value = modalViews.count()
   }
 
+  fun closeModals() {
+    while (modalViews.isNotEmpty()) closeModal()
+  }
+
   @Composable
   fun showInView() {
     if (modalCount.value > 0) modalViews.lastOrNull()?.invoke(::closeModal)

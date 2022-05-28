@@ -126,15 +126,7 @@ fun ChatView(chatModel: ChatModel) {
         if (invitation == null) {
           AlertManager.shared.showAlertMsg("Call already ended!")
         } else {
-          chatModel.activeCallInvitation.value = null
-          chatModel.activeCall.value = Call(
-            contact = contact,
-            callState = CallState.InvitationReceived,
-            localMedia = invitation.peerMedia,
-            sharedKey = invitation.sharedKey
-          )
-          chatModel.showCallView.value = true
-          chatModel.callCommand.value = WCallCommand.Start(media = invitation.peerMedia, aesKey = invitation.sharedKey)
+          chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
       }
     )

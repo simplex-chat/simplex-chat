@@ -46,13 +46,13 @@
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
+  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="private_instant_notifications">Private instant notifications!</string>
   <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
@@ -63,6 +63,26 @@
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
+
+  <!-- local authentication notice - SimpleXAPI.kt -->
+  <string name="la_notice_title">SimpleX Lock</string>
+  <string name="la_notice_text">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_turn_on">Turn on</string>
+
+  <!-- LocalAuthentication.kt -->
+  <string name="auth_turned_on">SimpleX Lock turned on</string>
+  <string name="auth_turned_on_desc">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
+  <string name="auth_access_chats">Access chats</string>
+  <string name="auth_log_in_using_credential">Log in using your credential</string>
+  <string name="auth_enable">Enable SimpleX Lock</string>
+  <string name="auth_disable">Disable SimpleX Lock</string>
+  <string name="auth_confirm_credential">Confirm your credential</string>
+  <string name="auth_error">Authentication error</string>
+  <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
+  <string name="auth_failed">Authentication failed</string>
+  <string name="auth_unavailable">Authentication unavailable</string>
+  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off SimpleX Lock.</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
@@ -236,6 +256,7 @@
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
   <string name="private_notifications">Private notifications</string>
+  <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>
@@ -290,23 +311,25 @@
   <string name="colored">colored</string>
   <string name="secret">secret</string>
 
-  <!-- CICallStatus -->
+  <!-- CICallStatus - in chat items -->
   <string name="callstatus_calling">calling…</string>
-  <string name="callstatus_missed">missed</string>
-  <string name="callstatus_rejected">rejected</string>
-  <string name="callstatus_accepted">accepted</string>
-  <string name="callstatus_connecting">connecting…</string>
-  <string name="callstatus_in_progress">in progress</string>
-  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-  <string name="callstatus_error">error</string>
+  <string name="callstatus_missed">missed call</string>
+  <string name="callstatus_rejected">rejected call</string>
+  <string name="callstatus_accepted">accepted call</string>
+  <string name="callstatus_connecting">connecting call…</string>
+  <string name="callstatus_in_progress">call in progress</string>
+  <string name="callstatus_ended">call ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+  <string name="callstatus_error">call error</string>
 
   <!-- CallState -->
   <string name="callstate_starting">starting…</string>
   <string name="callstate_waiting_for_answer">waiting for answer…</string>
   <string name="callstate_waiting_for_confirmation">waiting for confirmation…</string>
   <string name="callstate_received_answer">received answer…</string>
+  <string name="callstate_received_confirmation">received confirmation…</string>
   <string name="callstate_connecting">connecting…</string>
   <string name="callstate_connected">connected</string>
+  <string name="callstate_ended">ended</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -349,10 +372,25 @@
   <string name="encrypted_video_call">e2e encrypted video call</string>
   <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
   <string name="encrypted_audio_call">e2e encrypted audio call</string>
-  <string name="answer">Answer</string>
+  <string name="accept">Accept</string>
+  <string name="reject">Reject</string>
+  <string name="ignore">Ignore</string>
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
+
+  <!-- Call settings -->
+  <string name="call_settings">Call settings</string>
+  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="call_on_lock_screen">Calls on lock screen:</string>
+  <string name="accept_call_on_lock_screen">Accept</string>
+  <string name="show_call_on_lock_screen">Show</string>
+  <string name="no_call_on_lock_screen">Disable</string>
+
+  <!-- Call Lock Screen -->
+  <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
+  <string name="allow_accepting_calls_from_lock_screen">Enable calls from lock screen via Settings.</string>
+  <string name="open_verb">Open</string>
 
   <!-- Call overlay -->
   <string name="status_e2e_encrypted">e2e encrypted</string>

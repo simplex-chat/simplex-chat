@@ -5,8 +5,7 @@ import android.net.LocalServerSocket
 import android.util.Log
 import androidx.lifecycle.*
 import chat.simplex.app.model.*
-import chat.simplex.app.views.helpers.getFilesDirectory
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -30,7 +29,7 @@ external fun chatRecvMsg(ctrl: ChatCtrl) : String
 class SimplexApp: Application(), LifecycleEventObserver {
   val chatController: ChatController by lazy {
     val ctrl = chatInit(getFilesDirectory(applicationContext))
-    ChatController(ctrl, ntfManager, applicationContext)
+    ChatController(ctrl, ntfManager, applicationContext, appPreferences)
   }
 
   val chatModel: ChatModel by lazy {
@@ -38,7 +37,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   private val ntfManager: NtfManager by lazy {
-    NtfManager(applicationContext)
+    NtfManager(applicationContext, appPreferences)
+  }
+
+  private val appPreferences: AppPreferences by lazy {
+    AppPreferences(applicationContext)
   }
 
   override fun onCreate() {
@@ -62,7 +65,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_STOP ->
-          if (!chatController.getRunServiceInBackground()) SimplexService.stop(applicationContext)
+          if (!appPreferences.runServiceInBackground.get()) SimplexService.stop(applicationContext)
         Lifecycle.Event.ON_START ->
           SimplexService.start(applicationContext)
         Lifecycle.Event.ON_RESUME ->

@@ -40,13 +40,7 @@ fun SimpleXInfoLayout(
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.Start) {
-    Image(
-      painter = painterResource(R.drawable.logo),
-      contentDescription = stringResource(R.string.image_descr_simplex_logo),
-      modifier = Modifier
-        .padding(vertical = 20.dp)
-        .fillMaxWidth(0.80f)
-    )
+    SimpleXLogo()
 
     Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 16.dp))
 
@@ -77,6 +71,17 @@ fun SimpleXInfoLayout(
         click = showModal { HowItWorks(user, onboardingStage) })
     }
   }
+}
+
+@Composable
+fun SimpleXLogo() {
+  Image(
+    painter = painterResource(R.drawable.logo),
+    contentDescription = stringResource(R.string.image_descr_simplex_logo),
+    modifier = Modifier
+      .padding(vertical = 20.dp)
+      .fillMaxWidth(0.80f)
+  )
 }
 
 @Composable
