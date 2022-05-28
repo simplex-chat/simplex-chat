@@ -80,7 +80,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           ) {
             userAuthorized.value = false
             authenticate(
-              generalGetString(R.string.auth_access_chats),
+              generalGetString(R.string.auth_unlock),
               generalGetString(R.string.auth_log_in_using_credential),
               this@MainActivity,
               completed = { laResult ->

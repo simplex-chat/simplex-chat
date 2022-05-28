@@ -64,7 +64,7 @@ struct SimpleXApp: App {
             if performLA,
                authenticationExpired() {
                 userAuthorized = false
-                authenticate(reason: "Access chats") { laResult in
+                authenticate(reason: "Unlock") { laResult in
                     switch (laResult) {
                     case .success:
                         userAuthorized = true

@@ -72,7 +72,7 @@
   <!-- LocalAuthentication.kt -->
   <string name="auth_turned_on">SimpleX Lock turned on</string>
   <string name="auth_turned_on_desc">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
-  <string name="auth_access_chats">Access chats</string>
+  <string name="auth_unlock">Unlock</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
   <string name="auth_enable">Enable SimpleX Lock</string>
   <string name="auth_disable">Disable SimpleX Lock</string>
