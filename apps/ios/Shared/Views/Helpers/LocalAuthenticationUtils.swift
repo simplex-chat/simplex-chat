@@ -15,11 +15,10 @@ enum LAResult {
     case unavailable(authError: String?)
 }
 
-func authenticate(completed: @escaping (LAResult) -> Void) {
+func authenticate(reason: String, completed: @escaping (LAResult) -> Void) {
     let laContext = LAContext()
     var authAvailabilityError: NSError?
     if laContext.canEvaluatePolicy(.deviceOwnerAuthentication, error: &authAvailabilityError) {
-        let reason = "Access chats"
         laContext.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, authError in
             DispatchQueue.main.async {
                 if success {
@@ -36,16 +35,30 @@ func authenticate(completed: @escaping (LAResult) -> Void) {
     }
 }
 
-func laFailedAlert() {
-    AlertManager.shared.showAlertMsg(
+func laTurnedOnAlert() -> Alert {
+    mkAlert(
+        title: "SimpleX Lock turned on",
+        message: "You will be required to authenticate when you start or resume the app after 30 seconds in background."
+    )
+}
+
+func laFailedAlert() -> Alert {
+    mkAlert(
         title: "Authentication failed",
         message: "You could not be verified; please try again."
     )
 }
 
-func laUnavailableAlert() {
-    AlertManager.shared.showAlertMsg(
+func laUnavailableInstructionAlert() -> Alert {
+    mkAlert(
         title: "Authentication unavailable",
-        message: "Your device is not configured for authentication."
+        message: "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication."
+    )
+}
+
+func laUnavailableTurningOffAlert() -> Alert {
+    mkAlert(
+        title: "Authentication unavailable",
+        message: "Device authentication is disabled. Turning off SimpleX Lock."
     )
 }

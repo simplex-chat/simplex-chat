@@ -11,29 +11,29 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
-    @State private var showNotificationAlert = false
     @Binding var userAuthorized: Bool?
 
     var body: some View {
         ZStack {
-            if let step = chatModel.onboardingStage {
-                if userAuthorized == true,
-                   case .onboardingComplete = step,
-                   let user = chatModel.currentUser {
-                    ZStack(alignment: .top) {
-                        ChatListView(user: user)
-                        .onAppear {
-                            NtfManager.shared.requestAuthorization(onDeny: {
-                                alertManager.showAlert(notificationAlert())
-                            })
+            if userAuthorized == true {
+                if let step = chatModel.onboardingStage {
+                    if case .onboardingComplete = step,
+                       let user = chatModel.currentUser {
+                        ZStack(alignment: .top) {
+                            ChatListView(user: user)
+                            .onAppear {
+                                NtfManager.shared.requestAuthorization(onDeny: {
+                                    alertManager.showAlert(notificationAlert())
+                                })
+                            }
+                            if chatModel.showCallView, let call = chatModel.activeCall {
+                                ActiveCallView(call: call)
+                            }
+                            IncomingCallView()
                         }
-                        if chatModel.showCallView, let call = chatModel.activeCall {
-                            ActiveCallView(call: call)
-                        }
-                        IncomingCallView()
+                    } else {
+                        OnboardingView(onboarding: step)
                     }
-                } else {
-                    OnboardingView(onboarding: step)
                 }
             }
         }
@@ -99,11 +99,15 @@ final class AlertManager: ObservableObject {
     }
 
     func showAlertMsg(title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
-        if let message = message {
-            showAlert(Alert(title: Text(title), message: Text(message)))
-        } else {
-            showAlert(Alert(title: Text(title)))
-        }
+        showAlert(mkAlert(title: title, message: message))
+    }
+}
+
+func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> Alert {
+    if let message = message {
+        return Alert(title: Text(title), message: Text(message))
+    } else {
+        return Alert(title: Text(title))
     }
 }
 

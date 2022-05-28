@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.*
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -37,12 +38,12 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
   private val userAuthorized = mutableStateOf<Boolean?>(null)
-  private val lastLA = mutableStateOf<Long?>(null)
+  private val enteredBackground = mutableStateOf<Long?>(null)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-//    testJson()
+    // testJson()
     val m = vm.chatModel
     processNotificationIntent(intent, m)
     setContent {
@@ -67,38 +68,37 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     withApi {
       when (event) {
+        Lifecycle.Event.ON_STOP -> {
+          enteredBackground.value = elapsedRealtime()
+        }
         Lifecycle.Event.ON_START -> {
           // perform local authentication if needed
           val m = vm.chatModel
-          val lastLAVal = lastLA.value
-          if (
-            m.controller.appPrefs.performLA.get()
-            && (lastLAVal == null || (System.nanoTime() - lastLAVal >= 30 * 1e+9))
-          ) {
-            userAuthorized.value = false
-            authenticate(
-              generalGetString(R.string.auth_access_chats),
-              generalGetString(R.string.auth_log_in_using_credential),
-              this@MainActivity,
-              completed = { laResult ->
-                when (laResult) {
-                  LAResult.Success -> {
-                    userAuthorized.value = true
-                    lastLA.value = System.nanoTime()
-                  }
-                  is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
-                  LAResult.Failed -> laFailedToast(applicationContext)
-                  LAResult.Unavailable -> {
-                    userAuthorized.value = true
-                    m.performLA.value = false
-                    m.controller.appPrefs.performLA.set(false)
-                    laUnavailableTurningOffAlert()
+          val enteredBackgroundVal = enteredBackground.value
+          if (!m.controller.appPrefs.performLA.get()) {
+            userAuthorized.value = true
+          } else {
+            if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+              userAuthorized.value = false
+              authenticate(
+                generalGetString(R.string.auth_unlock),
+                generalGetString(R.string.auth_log_in_using_credential),
+                this@MainActivity,
+                completed = { laResult ->
+                  when (laResult) {
+                    LAResult.Success -> userAuthorized.value = true
+                    is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
+                    LAResult.Failed -> laFailedToast(applicationContext)
+                    LAResult.Unavailable -> {
+                      userAuthorized.value = true
+                      m.performLA.value = false
+                      m.controller.appPrefs.performLA.set(false)
+                      laUnavailableTurningOffAlert()
+                    }
                   }
                 }
-              }
-            )
-          } else {
-            userAuthorized.value = true
+              )
+            }
           }
         }
       }
@@ -137,8 +137,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             LAResult.Success -> {
               m.performLA.value = true
               prefPerformLA.set(true)
-              userAuthorized.value = true
-              lastLA.value = System.nanoTime()
               laTurnedOnAlert()
             }
             is LAResult.Error -> {
@@ -206,7 +204,7 @@ fun MainPage(
   showLANotice: () -> Unit
 ) {
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by remember { mutableStateOf<Boolean>(false) }
+  var chatsAccessAuthorized by remember { mutableStateOf(false) }
   LaunchedEffect(userAuthorized.value) {
     delay(500L)
     chatsAccessAuthorized = userAuthorized.value == true
