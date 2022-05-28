@@ -158,7 +158,7 @@ struct SettingsView: View {
                 if performLAToggleReset {
                     performLAToggleReset = false
                 } else {
-                    if (performLAToggle) {
+                    if performLAToggle {
                         enableLA()
                     } else {
                         disableLA()
@@ -166,7 +166,7 @@ struct SettingsView: View {
                 }
             }
             .alert(item: $alert) { alertItem in
-                switch(alertItem) {
+                switch alertItem {
                 case .laTurnedOnAlert: return laTurnedOnAlert()
                 case .laFailedAlert: return laFailedAlert()
                 case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
@@ -178,7 +178,7 @@ struct SettingsView: View {
 
     private func enableLA() {
         authenticate(reason: "Enable SimpleX Lock") { laResult in
-            switch (laResult) {
+            switch laResult {
             case .success:
                 performLA = true
                 alert = .laTurnedOnAlert
