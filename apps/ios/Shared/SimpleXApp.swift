@@ -86,14 +86,10 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        enteredBackground == nil || ProcessInfo.processInfo.systemUptime - enteredBackground! >= 30
-//        if (enteredBackground == nil) {
-//            return true
-//        }
-//        else if let enteredBackground = enteredBackground, ProcessInfo.processInfo.systemUptime - enteredBackground >= 30 {
-//            return true
-//        } else {
-//            return false
-//        }
+        if let enteredBackground = enteredBackground {
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+        } else {
+            return true
+        }
     }
 }
