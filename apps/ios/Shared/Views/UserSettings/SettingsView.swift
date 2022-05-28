@@ -34,11 +34,12 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @State var performLA: Bool = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
-    @State private var performLAToggleReset = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @State private var performLAToggleReset = false
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
     @State var alert: SettingsViewAlert? = nil
@@ -75,7 +76,7 @@ struct SettingsView: View {
                 
                 Section("Settings") {
                     settingsRow("lock") {
-                        Toggle("SimpleX Lock", isOn: $chatModel.performLA)
+                        Toggle("SimpleX Lock", isOn: $performLA)
                     }
                     settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
@@ -153,7 +154,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
-            .onChange(of: chatModel.performLA) { performLAToggle in
+            .onChange(of: performLA) { performLAToggle in
                 prefLANoticeShown = true
                 if performLAToggleReset {
                     performLAToggleReset = false
@@ -185,14 +186,14 @@ struct SettingsView: View {
             case .failed:
                 prefPerformLA = false
                 withAnimation() {
-                    chatModel.performLA = false
+                    performLA = false
                 }
                 performLAToggleReset = true
                 alert = .laFailedAlert
             case .unavailable:
                 prefPerformLA = false
                 withAnimation() {
-                    chatModel.performLA = false
+                    performLA = false
                 }
                 performLAToggleReset = true
                 alert = .laUnavailableInstructionAlert
@@ -208,7 +209,7 @@ struct SettingsView: View {
             case .failed:
                 prefPerformLA = true
                 withAnimation() {
-                    chatModel.performLA = true
+                    performLA = true
                 }
                 performLAToggleReset = true
                 alert = .laFailedAlert

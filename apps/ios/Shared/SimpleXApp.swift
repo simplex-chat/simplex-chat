@@ -16,7 +16,7 @@ struct SimpleXApp: App {
     @StateObject private var chatModel = ChatModel.shared
     @ObservedObject var alertManager = AlertManager.shared
     @Environment(\.scenePhase) var scenePhase
-    @AppStorage(DEFAULT_PERFORM_LA) private var performLA = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool? = nil
     @State private var doAuthenticate: Bool = true
     @State private var enteredBackground: Double? = nil
@@ -37,7 +37,6 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    chatModel.performLA = performLA
                     initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
@@ -62,7 +61,7 @@ struct SimpleXApp: App {
     private func authenticateOnPhaseChange() {
         if doAuthenticate {
             doAuthenticate = false
-            if !performLA {
+            if !prefPerformLA {
                 userAuthorized = true
             } else {
                 if authenticationExpired() {
@@ -75,8 +74,7 @@ struct SimpleXApp: App {
                             AlertManager.shared.showAlert(laFailedAlert())
                         case .unavailable:
                             userAuthorized = true
-                            performLA = false
-                            chatModel.performLA = false
+                            prefPerformLA = false
                             AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                         }
                     }
