@@ -40,6 +40,19 @@ struct ContentView: View {
     }
 }
 
+func notificationAlert() -> Alert {
+    Alert(
+        title: Text("Notifications are disabled!"),
+         message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
+         primaryButton: .default(Text("Open Settings")) {
+             DispatchQueue.main.async {
+                 UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+             }
+         },
+         secondaryButton: .cancel()
+     )
+}
+
 func connectViaUrl() {
     let m = ChatModel.shared
     if let url = m.appOpenUrl {
@@ -69,19 +82,6 @@ func connectViaUrlAlert(_ url: URL) -> Alert {
     } else {
         return Alert(title: Text("Error: URL is invalid"))
     }
-}
-
-func notificationAlert() -> Alert {
-    Alert(
-        title: Text("Notifications are disabled!"),
-         message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
-         primaryButton: .default(Text("Open Settings")) {
-             DispatchQueue.main.async {
-                 UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
-             }
-         },
-         secondaryButton: .cancel()
-     )
 }
 
 final class AlertManager: ObservableObject {

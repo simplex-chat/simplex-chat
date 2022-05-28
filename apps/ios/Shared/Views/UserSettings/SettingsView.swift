@@ -159,44 +159,9 @@ struct SettingsView: View {
                     performLAToggleReset = false
                 } else {
                     if (performLAToggle) {
-                        authenticate(reason: "Enable SimpleX Lock") { laResult in
-                            switch (laResult) {
-                            case .success:
-                                performLA = true
-                                alert = .laTurnedOnAlert
-                            case .failed:
-                                performLA = false
-                                withAnimation() {
-                                    chatModel.performLA = false
-                                }
-                                performLAToggleReset = true
-                                alert = .laFailedAlert
-                            case .unavailable:
-                                performLA = false
-                                withAnimation() {
-                                    chatModel.performLA = false
-                                }
-                                performLAToggleReset = true
-                                alert = .laUnavailableInstructionAlert
-                            }
-                        }
+                        enableLA()
                     } else {
-                        authenticate(reason: "Disable SimpleX Lock") { laResult in
-                            switch (laResult) {
-                            case .success:
-                                performLA = false
-                            case .failed:
-                                performLA = true
-                                withAnimation() {
-                                    chatModel.performLA = true
-                                }
-                                performLAToggleReset = true
-                                alert = .laFailedAlert
-                            case .unavailable:
-                                performLA = false
-                                alert = .laUnavailableTurningOffAlert
-                            }
-                        }
+                        disableLA()
                     }
                 }
             }
@@ -207,6 +172,49 @@ struct SettingsView: View {
                 case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
                 case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
                 }
+            }
+        }
+    }
+
+    private func enableLA() {
+        authenticate(reason: "Enable SimpleX Lock") { laResult in
+            switch (laResult) {
+            case .success:
+                performLA = true
+                alert = .laTurnedOnAlert
+            case .failed:
+                performLA = false
+                withAnimation() {
+                    chatModel.performLA = false
+                }
+                performLAToggleReset = true
+                alert = .laFailedAlert
+            case .unavailable:
+                performLA = false
+                withAnimation() {
+                    chatModel.performLA = false
+                }
+                performLAToggleReset = true
+                alert = .laUnavailableInstructionAlert
+            }
+        }
+    }
+
+    private func disableLA() {
+        authenticate(reason: "Disable SimpleX Lock") { laResult in
+            switch (laResult) {
+            case .success:
+                performLA = false
+            case .failed:
+                performLA = true
+                withAnimation() {
+                    chatModel.performLA = true
+                }
+                performLAToggleReset = true
+                alert = .laFailedAlert
+            case .unavailable:
+                performLA = false
+                alert = .laUnavailableTurningOffAlert
             }
         }
     }
