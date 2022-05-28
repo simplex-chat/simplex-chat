@@ -1129,9 +1129,9 @@ sealed class MsgErrorType() {
   @Serializable @SerialName("msgDuplicate") class MsgDuplicate(): MsgErrorType()
 
   val text: String get() = when (this) {
-    is MsgSkipped -> if (fromMsgId == toMsgId) "1 skipped message" else "${toMsgId - fromMsgId + 1} skipped messages"
-    is MsgBadHash -> "bad message hash" // not used now
-    is MsgBadId -> "bad message ID" // not used now
-    is MsgDuplicate -> "duplicate message" // not used now
+    is MsgSkipped -> String.format(generalGetString(R.string.integrity_msg_skipped), toMsgId - fromMsgId + 1)
+    is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
+    is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
+    is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
   }
 }

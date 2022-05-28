@@ -415,4 +415,12 @@
   <string name="icon_descr_call_progress">Call in progress</string>
   <string name="icon_descr_call_ended">Call ended</string>
   <string name="answer_call">Answer call</string>
+
+  <!-- Message integrity -->
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)"</string>
+  <string name="integrity_msg_bad_hash">bad message hash</string>
+  <string name="integrity_msg_bad_id">bad message ID</string>
+  <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="alert_title_skipped_messages">Skipped messages</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
 </resources>

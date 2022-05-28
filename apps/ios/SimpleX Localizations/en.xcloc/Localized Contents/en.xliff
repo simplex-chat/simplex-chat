@@ -631,18 +631,18 @@
         <target>Invalid connection link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
+      <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
         <source>It can happen when:
 1. The messages expire on the server if they were not received for 30 days,
 2. The server you use to receive the messages from this contact was updated and restarted.
 3. The connection is compromised.
-Please connect to the developers via Settings to receive the updates.
+Please connect to the developers via Settings to receive the updates about the servers.
 We will be adding server redundancy to prevent lost messages.</source>
         <target>It can happen when:
 1. The messages expire on the server if they were not received for 30 days,
 2. The server you use to receive the messages from this contact was updated and restarted.
 3. The connection is compromised.
-Please connect to the developers via Settings to receive the updates.
+Please connect to the developers via Settings to receive the updates about the servers.
 We will be adding server redundancy to prevent lost messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
