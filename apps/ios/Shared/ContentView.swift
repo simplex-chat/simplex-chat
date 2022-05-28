@@ -12,7 +12,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var userAuthorized: Bool?
-    @State private var notificationAlertShown: Bool?
+    @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
@@ -27,14 +27,13 @@ struct ContentView: View {
                             .onAppear {
                                 NtfManager.shared.requestAuthorization(onDeny: {
                                     alertManager.showAlert(notificationAlert())
-                                    notificationAlertShown = true
                                 })
-                                if (!prefLANoticeShown) {
+                                // Local Authentication notice is to be shown on next start after onboarding is complete
+                                if (!prefLANoticeShown && prefShowLANotice) {
                                     prefLANoticeShown = true
-                                    if notificationAlertShown != true {
-                                        alertManager.showAlert(laNoticeAlert())
-                                    }
+                                    alertManager.showAlert(laNoticeAlert())
                                 }
+                                prefShowLANotice = true
                             }
                             if chatModel.showCallView, let call = chatModel.activeCall {
                                 ActiveCallView(call: call)

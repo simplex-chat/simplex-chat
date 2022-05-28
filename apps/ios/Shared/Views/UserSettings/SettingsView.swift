@@ -14,6 +14,7 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_SHOW_LA_NOTICE = "ShowLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "LocalAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
@@ -21,6 +22,7 @@ let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 
 let appDefaults: [String:Any] = [
+    DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
     DEFAULT_USE_NOTIFICATIONS: false,
