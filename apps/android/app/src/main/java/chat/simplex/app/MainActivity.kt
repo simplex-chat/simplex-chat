@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.*
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -68,7 +69,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_STOP -> {
-          enteredBackground.value = System.nanoTime()
+          enteredBackground.value = elapsedRealtime()
         }
         Lifecycle.Event.ON_START -> {
           // perform local authentication if needed
@@ -77,7 +78,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           if (!m.controller.prefPerformLA.get()) {
             userAuthorized.value = true
           } else {
-            if (enteredBackgroundVal == null || System.nanoTime() - enteredBackgroundVal >= 30 * 1e+9) {
+            if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
               userAuthorized.value = false
               authenticate(
                 generalGetString(R.string.auth_unlock),
