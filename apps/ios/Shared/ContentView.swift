@@ -90,10 +90,8 @@ struct ContentView: View {
 
     private func authenticationExpired() -> Bool {
         if let enteredBackground = enteredBackground {
-            logger.error("enteredBackground \(enteredBackground)")
             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
         } else {
-            logger.error("enteredBackground nil")
             return true
         }
     }
