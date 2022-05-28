@@ -11,7 +11,9 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
-    @Binding var userAuthorized: Bool?
+    @Binding var doAuthenticate: Bool
+    @Binding var enteredBackground: Double?
+    @State private var userAuthorized: Bool?
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -46,7 +48,43 @@ struct ContentView: View {
                 }
             }
         }
+        .onChange(of: doAuthenticate) { doAuth in
+            if doAuth,
+               authenticationExpired() {
+                runAuthenticate()
+            }
+        }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    private func runAuthenticate() {
+        if !prefPerformLA {
+            userAuthorized = true
+        } else {
+            userAuthorized = false
+            authenticate(reason: "Unlock") { laResult in
+                switch (laResult) {
+                case .success:
+                    userAuthorized = true
+                case .failed:
+                    AlertManager.shared.showAlert(laFailedAlert())
+                case .unavailable:
+                    userAuthorized = true
+                    prefPerformLA = false
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
+            }
+        }
+    }
+
+    private func authenticationExpired() -> Bool {
+        if let enteredBackground = enteredBackground {
+            logger.error("enteredBackground \(enteredBackground)")
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+        } else {
+            logger.error("enteredBackground nil")
+            return true
+        }
     }
 
     func laNoticeAlert() -> Alert {
@@ -54,9 +92,6 @@ struct ContentView: View {
             title: Text("SimpleX Lock"),
             message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
             primaryButton: .default(Text("Turn on")) {
-//                DispatchQueue.main.async {
-//                    UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
-//                }
                 authenticate(reason: "Enable SimpleX Lock") { laResult in
                     switch laResult {
                     case .success:
