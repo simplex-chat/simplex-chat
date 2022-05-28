@@ -71,7 +71,7 @@ struct ContentView: View {
             userAuthorized = true
         } else {
             userAuthorized = false
-            authenticate(reason: "Unlock") { laResult in
+            authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
                 switch (laResult) {
                 case .success:
                     userAuthorized = true
@@ -100,7 +100,7 @@ struct ContentView: View {
             title: Text("SimpleX Lock"),
             message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
             primaryButton: .default(Text("Turn on")) {
-                authenticate(reason: "Enable SimpleX Lock") { laResult in
+                authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
                     switch laResult {
                     case .success:
                         prefPerformLA = true

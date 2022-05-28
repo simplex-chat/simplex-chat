@@ -77,6 +77,12 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    NavigationLink {
+                        CallSettings()
+                            .navigationTitle("Call settings")
+                    } label: {
+                        settingsRow("video") { Text("Call settings") }
+                    }
                     settingsRow("lock") {
                         Toggle("SimpleX Lock", isOn: $performLA)
                     }
@@ -88,12 +94,6 @@ struct SettingsView: View {
                             .navigationTitle("Your SMP servers")
                     } label: {
                         settingsRow("server.rack") { Text("SMP servers") }
-                    }
-                    NavigationLink {
-                        CallSettings()
-                            .navigationTitle("Call settings")
-                    } label: {
-                        settingsRow("video") { Text("Call settings") }
                     }
                 }
 
@@ -180,7 +180,7 @@ struct SettingsView: View {
     }
 
     private func enableLA() {
-        authenticate(reason: "Enable SimpleX Lock") { laResult in
+        authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
                 prefPerformLA = true
@@ -204,7 +204,7 @@ struct SettingsView: View {
     }
 
     private func disableLA() {
-        authenticate(reason: "Disable SimpleX Lock") { laResult in
+        authenticate(reason: NSLocalizedString("Disable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch (laResult) {
             case .success:
                 prefPerformLA = false

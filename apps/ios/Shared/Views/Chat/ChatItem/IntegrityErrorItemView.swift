@@ -1,14 +1,14 @@
 //
-//  FramedItemView.swift
-//  SimpleX
+//  IntegrityErrorItemView.swift
+//  SimpleX (iOS)
 //
-//  Created by JRoberts on 04/02/2022.
+//  Created by Evgeny on 28/05/2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
 
 import SwiftUI
 
-struct DeletedItemView: View {
+struct IntegrityErrorItemView: View {
     var chatItem: ChatItem
     var showMember = false
 
@@ -18,7 +18,7 @@ struct DeletedItemView: View {
                 Text(member).fontWeight(.medium) + Text(": ")
             }
             Text(chatItem.content.text)
-                .foregroundColor(.secondary)
+                .foregroundColor(.red)
                 .italic()
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
@@ -31,15 +31,8 @@ struct DeletedItemView: View {
     }
 }
 
-struct DeletedItemView_Previews: PreviewProvider {
+struct IntegrityErrorItemView_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(
-                chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)),
-                showMember: true
-            )
-        }
-        .previewLayout(.fixed(width: 360, height: 200))
+        IntegrityErrorItemView(chatItem: ChatItem.getIntegrityErrorSample())
     }
 }
