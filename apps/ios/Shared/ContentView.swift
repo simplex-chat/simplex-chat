@@ -21,6 +21,11 @@ struct ContentView: View {
                    let user = chatModel.currentUser {
                     ZStack(alignment: .top) {
                         ChatListView(user: user)
+                        .onAppear {
+                            NtfManager.shared.requestAuthorization(onDeny: {
+                                alertManager.showAlert(notificationAlert())
+                            })
+                        }
                         if chatModel.showCallView, let call = chatModel.activeCall {
                             ActiveCallView(call: call)
                         }
@@ -63,6 +68,45 @@ func connectViaUrlAlert(_ url: URL) -> Alert {
         )
     } else {
         return Alert(title: Text("Error: URL is invalid"))
+    }
+}
+
+func notificationAlert() -> Alert {
+    Alert(
+        title: Text("Notifications are disabled!"),
+         message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
+         primaryButton: .default(Text("Open Settings")) {
+             DispatchQueue.main.async {
+                 UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+             }
+         },
+         secondaryButton: .cancel()
+     )
+}
+
+final class AlertManager: ObservableObject {
+    static let shared = AlertManager()
+    @Published var presentAlert = false
+    @Published var alertView: Alert?
+
+    func showAlert(_ alert: Alert) {
+        logger.debug("AlertManager.showAlert")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.alertView = alert
+            self.presentAlert = true
+        }
+    }
+
+    func showAlertMsg(title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
+        showAlert(mkAlert(title: title, message: message))
+    }
+}
+
+func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> Alert {
+    if let message = message {
+        return Alert(title: Text(title), message: Text(message))
+    } else {
+        return Alert(title: Text(title))
     }
 }
 
