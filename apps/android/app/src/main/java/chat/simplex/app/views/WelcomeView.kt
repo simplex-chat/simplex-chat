@@ -87,7 +87,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
         val createModifier: Modifier
         val createColor: Color
         if (enabled) {
-          createModifier = Modifier.padding(8.dp).clickable { createProfile(chatModel, displayName.value, fullName.value) }
+          createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value) }.padding(8.dp)
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)

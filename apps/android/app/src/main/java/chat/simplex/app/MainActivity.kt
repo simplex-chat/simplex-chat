@@ -75,7 +75,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           // perform local authentication if needed
           val m = vm.chatModel
           val enteredBackgroundVal = enteredBackground.value
-          if (!m.controller.prefPerformLA.get()) {
+          if (!m.controller.appPrefs.performLA.get()) {
             userAuthorized.value = true
           } else {
             if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
@@ -92,7 +92,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
                     LAResult.Unavailable -> {
                       userAuthorized.value = true
                       m.performLA.value = false
-                      m.controller.prefPerformLA.set(false)
+                      m.controller.appPrefs.performLA.set(false)
                       laUnavailableTurningOffAlert()
                     }
                   }
@@ -106,13 +106,13 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   }
 
   private fun schedulePeriodicServiceRestartWorker() {
-    val workerVersion = chatController.prefAutoRestartWorkerVersion.get()
+    val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
     val workPolicy = if (workerVersion == SimplexService.SERVICE_START_WORKER_VERSION) {
       Log.d(TAG, "ServiceStartWorker version matches: choosing KEEP as existing work policy")
       ExistingPeriodicWorkPolicy.KEEP
     } else {
       Log.d(TAG, "ServiceStartWorker version DOES NOT MATCH: choosing REPLACE as existing work policy")
-      chatController.prefAutoRestartWorkerVersion.set(SimplexService.SERVICE_START_WORKER_VERSION)
+      chatController.appPrefs.autoRestartWorkerVersion.set(SimplexService.SERVICE_START_WORKER_VERSION)
       ExistingPeriodicWorkPolicy.REPLACE
     }
     val work = PeriodicWorkRequestBuilder<SimplexService.ServiceStartWorker>(SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES, TimeUnit.MINUTES)
@@ -126,31 +126,32 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun setPerformLA(on: Boolean) {
     val m = vm.chatModel
     if (on) {
-      m.controller.prefLANoticeShown.set(true)
+      m.controller.appPrefs.laNoticeShown.set(true)
       authenticate(
         generalGetString(R.string.auth_enable),
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
         completed = { laResult ->
+          val prefPerformLA = m.controller.appPrefs.performLA
           when (laResult) {
             LAResult.Success -> {
               m.performLA.value = true
-              m.controller.prefPerformLA.set(true)
+              prefPerformLA.set(true)
               laTurnedOnAlert()
             }
             is LAResult.Error -> {
               m.performLA.value = false
-              m.controller.prefPerformLA.set(false)
+              prefPerformLA.set(false)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
               m.performLA.value = false
-              m.controller.prefPerformLA.set(false)
+              prefPerformLA.set(false)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
               m.performLA.value = false
-              m.controller.prefPerformLA.set(false)
+              prefPerformLA.set(false)
               laUnavailableInstructionAlert()
             }
           }
@@ -162,24 +163,25 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         generalGetString(R.string.auth_confirm_credential),
         this@MainActivity,
         completed = { laResult ->
+          val prefPerformLA = m.controller.appPrefs.performLA
           when (laResult) {
             LAResult.Success -> {
               m.performLA.value = false
-              m.controller.prefPerformLA.set(false)
+              prefPerformLA.set(false)
             }
             is LAResult.Error -> {
               m.performLA.value = true
-              m.controller.prefPerformLA.set(true)
+              prefPerformLA.set(true)
               laErrorToast(applicationContext, laResult.errString)
             }
             LAResult.Failed -> {
               m.performLA.value = true
-              m.controller.prefPerformLA.set(true)
+              prefPerformLA.set(true)
               laFailedToast(applicationContext)
             }
             LAResult.Unavailable -> {
               m.performLA.value = false
-              m.controller.prefPerformLA.set(false)
+              prefPerformLA.set(false)
               laUnavailableTurningOffAlert()
             }
           }
@@ -210,7 +212,7 @@ fun MainPage(
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
-      !chatModel.controller.prefLANoticeShown.get()
+      !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete
       && chatModel.chats.isNotEmpty()
@@ -222,6 +224,12 @@ fun MainPage(
   LaunchedEffect(chatModel.showAdvertiseLAUnavailableAlert.value) {
     if (chatModel.showAdvertiseLAUnavailableAlert.value) {
       laUnavailableInstructionAlert()
+    }
+  }
+  LaunchedEffect(chatModel.clearOverlays.value) {
+    if (chatModel.clearOverlays.value) {
+      ModalManager.shared.closeModals()
+      chatModel.clearOverlays.value = false
     }
   }
   Box {
@@ -238,8 +246,6 @@ fun MainPage(
             if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
             else ChatView(chatModel)
           }
-          val invitation = chatModel.activeCallInvitation.value
-          if (invitation != null) IncomingCallAlertView(invitation, chatModel)
         }
       }
       onboarding == OnboardingStage.Step1_SimpleXInfo ->
@@ -249,6 +255,8 @@ fun MainPage(
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
     }
     ModalManager.shared.showInView()
+    val invitation = chatModel.activeCallInvitation.value
+    if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
   }
 }
@@ -271,7 +279,9 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
     }
     NtfManager.AcceptCallAction -> {
       val chatId = intent.getStringExtra("chatId")
+      if (chatId == null || chatId == "") return
       Log.d(TAG, "processNotificationIntent: AcceptCallAction $chatId")
+      chatModel.clearOverlays.value = true
       val invitation = chatModel.callInvitations[chatId]
       if (invitation == null) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.call_already_ended))

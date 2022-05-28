@@ -199,7 +199,7 @@ enum ChatResponse: Decodable, Error {
     case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileRcvCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndGroupFileCancelled(chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
-    case callInvitation(contact: Contact, callType: CallType, sharedKey: String?)
+    case callInvitation(contact: Contact, callType: CallType, sharedKey: String?, callTs: Date)
     case callOffer(contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(contact: Contact, answer: WebRTCSession)
     case callExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
@@ -322,7 +322,7 @@ enum ChatResponse: Decodable, Error {
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndFileRcvCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndGroupFileCancelled(chatItem, _, _): return String(describing: chatItem)
-            case let .callInvitation(contact, callType, sharedKey): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")"
+            case let .callInvitation(contact, callType, sharedKey, _): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")"
             case let .callOffer(contact, callType, offer, sharedKey, askConfirmation): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))"
             case let .callAnswer(contact, answer): return "contact: \(contact.id)\nanswer: \(String(describing: answer))"
             case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"

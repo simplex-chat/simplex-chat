@@ -30,12 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.Contact
+import chat.simplex.app.model.*
 import chat.simplex.app.model.NtfManager.Companion.OpenChatAction
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.onboarding.SimpleXLogo
+import kotlinx.datetime.Clock
 
 class IncomingCallActivity: ComponentActivity() {
   private val vm by viewModels<SimplexViewModel>()
@@ -115,12 +115,12 @@ fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
-  var acceptCallsFromLockScreen by remember { mutableStateOf(chatModel.controller.prefAcceptCallsFromLockScreen.get()) }
+  var callOnLockScreen by remember { mutableStateOf(chatModel.controller.appPrefs.callOnLockScreen.get()) }
   LaunchedEffect(true) { SoundPlayer.shared.start(cxt, scope, sound = true) }
   DisposableEffect(true) { onDispose { SoundPlayer.shared.stop() } }
   IncomingCallLockScreenAlertLayout(
     invitation,
-    acceptCallsFromLockScreen,
+    callOnLockScreen,
     rejectCall = { cm.endCall(invitation = invitation) },
     ignoreCall = { chatModel.activeCallInvitation.value = null },
     acceptCall = { cm.acceptIncomingCall(invitation = invitation) },
@@ -141,7 +141,7 @@ fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel
 @Composable
 fun IncomingCallLockScreenAlertLayout(
   invitation: CallInvitation,
-  acceptCallsFromLockScreen: Boolean,
+  callOnLockScreen: CallOnLockScreen?,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit,
@@ -155,7 +155,7 @@ fun IncomingCallLockScreenAlertLayout(
   ) {
     IncomingCallInfo(invitation)
     Spacer(Modifier.fillMaxHeight().weight(1f))
-    if (acceptCallsFromLockScreen) {
+    if (callOnLockScreen == CallOnLockScreen.ACCEPT) {
       ProfileImage(size = 192.dp, image = invitation.contact.profile.image)
       Text(invitation.contact.chatViewName, style = MaterialTheme.typography.h2)
       Spacer(Modifier.fillMaxHeight().weight(1f))
@@ -166,7 +166,7 @@ fun IncomingCallLockScreenAlertLayout(
         Spacer(Modifier.size(48.dp))
         LockScreenCallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
       }
-    } else {
+    } else if (callOnLockScreen == CallOnLockScreen.SHOW) {
       SimpleXLogo()
       Text(stringResource(R.string.open_simplex_chat_to_accept_call), textAlign = TextAlign.Center, lineHeight = 22.sp)
       Text(stringResource(R.string.allow_accepting_calls_from_lock_screen), textAlign = TextAlign.Center, style = MaterialTheme.typography.body2, lineHeight = 22.sp)
@@ -212,9 +212,10 @@ fun PreviewIncomingCallLockScreenAlert() {
         invitation = CallInvitation(
           contact = Contact.sampleData,
           peerMedia = CallMediaType.Audio,
-          sharedKey = null
+          sharedKey = null,
+          callTs = Clock.System.now()
         ),
-        acceptCallsFromLockScreen = false,
+        callOnLockScreen = null,
         rejectCall = {},
         ignoreCall = {},
         acceptCall = {},

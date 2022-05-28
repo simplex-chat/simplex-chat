@@ -46,22 +46,76 @@ fun isAppOnForeground(context: Context): Boolean {
   return false
 }
 
-open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context) {
-  var chatModel = ChatModel(this)
-  private val sharedPreferences: SharedPreferences = appContext.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+enum class CallOnLockScreen {
+  DISABLE,
+  SHOW,
+  ACCEPT;
 
-  val prefRunServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
-  val prefBackgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
-  private val prefBackgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
-  val prefAutoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
-  val prefWebrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
-  val prefAcceptCallsFromLockScreen = mkBoolPreference(SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN, false)
-  val prefPerformLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
-  val prefLANoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+  companion object {
+    val default = SHOW
+  }
+}
+
+class AppPreferences(val context: Context) {
+  private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+
+  val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
+  val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
+  val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
+  val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
+  private val _callOnLockScreen = mkStrPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default.name)
+  val callOnLockScreen: Preference<CallOnLockScreen> = Preference(
+    get = fun(): CallOnLockScreen {
+      val value = _callOnLockScreen.get() ?: return CallOnLockScreen.default
+      return try {
+        CallOnLockScreen.valueOf(value)
+      } catch (e: Error) {
+        CallOnLockScreen.default
+      }
+    },
+    set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
+  )
+  val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
+  val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+
+  private fun mkIntPreference(prefName: String, default: Int) =
+    Preference(
+      get = fun() = sharedPreferences.getInt(prefName, default),
+      set = fun(value) = sharedPreferences.edit().putInt(prefName, value).apply()
+    )
+
+  private fun mkBoolPreference(prefName: String, default: Boolean) =
+    Preference(
+      get = fun() = sharedPreferences.getBoolean(prefName, default),
+      set = fun(value) = sharedPreferences.edit().putBoolean(prefName, value).apply()
+    )
+
+  private fun mkStrPreference(prefName: String, default: String?): Preference<String?> =
+    Preference(
+      get = fun() = sharedPreferences.getString(prefName, default),
+      set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
+    )
+
+  companion object {
+    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
+    private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
+    private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
+    private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
+    private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
+    private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
+    private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
+    private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
+    private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
+  }
+}
+
+open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
+  val chatModel = ChatModel(this)
 
   init {
-    chatModel.runServiceInBackground.value = prefRunServiceInBackground.get()
-    chatModel.performLA.value = prefPerformLA.get()
+    chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
+    chatModel.performLA.value = appPrefs.performLA.get()
   }
 
   suspend fun startChat(user: User) {
@@ -511,7 +565,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       }
       is CR.CallInvitation -> {
-        val invitation = CallInvitation(r.contact, r.callType.media, r.sharedKey)
+        val invitation = CallInvitation(r.contact, r.callType.media, r.sharedKey, r.callTs)
         chatModel.callManager.reportNewIncomingCall(invitation)
       }
       is CR.CallOffer -> {
@@ -519,7 +573,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         // TODO check encryption is compatible
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
-          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey)
+          val useRelay = chatModel.controller.appPrefs.webrtcPolicyRelay.get()
+          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey, relay = useRelay)
         }
       }
       is CR.CallAnswer -> {
@@ -592,7 +647,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun showBackgroundServiceNoticeIfNeeded() {
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
-    if (!prefBackgroundServiceNoticeShown.get()) {
+    if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who has never seen service notice
       if (isIgnoringBatteryOptimizations(appContext)) {
         showBGServiceNotice()
@@ -600,20 +655,20 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         showBGServiceNoticeIgnoreOptimization()
       }
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
-      prefBackgroundServiceNoticeShown.set(true)
-      prefBackgroundServiceBatteryNoticeShown.set(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && prefRunServiceInBackground.get()) {
+      appPrefs.backgroundServiceNoticeShown.set(true)
+      appPrefs.backgroundServiceBatteryNoticeShown.set(true)
+    } else if (!isIgnoringBatteryOptimizations(appContext) && appPrefs.runServiceInBackground.get()) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
-      if (prefBackgroundServiceBatteryNoticeShown.get()) {
+      if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
         // users have been presented with battery notice before - they did not allow ignoring optimizitions -> disable service
         showDisablingServiceNotice()
-        prefRunServiceInBackground.set(false)
+        appPrefs.runServiceInBackground.set(false)
         chatModel.runServiceInBackground.value = false
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization()
-        prefBackgroundServiceBatteryNoticeShown.set(true)
+        appPrefs.backgroundServiceBatteryNoticeShown.set(true)
       }
     }
   }
@@ -704,8 +759,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun showLANotice(activity: FragmentActivity) {
     Log.d(TAG, "showLANotice")
-    if (!prefLANoticeShown.get()) {
-      prefLANoticeShown.set(true)
+    if (!appPrefs.laNoticeShown.get()) {
+      appPrefs.laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
         title = generalGetString(R.string.la_notice_title),
         text = generalGetString(R.string.la_notice_text),
@@ -719,22 +774,22 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
               when (laResult) {
                 LAResult.Success -> {
                   chatModel.performLA.value = true
-                  prefPerformLA.set(true)
+                  appPrefs.performLA.set(true)
                   laTurnedOnAlert()
                 }
                 is LAResult.Error -> {
                   chatModel.performLA.value = false
-                  prefPerformLA.set(false)
+                  appPrefs.performLA.set(false)
                   laErrorToast(appContext, laResult.errString)
                 }
                 LAResult.Failed -> {
                   chatModel.performLA.value = false
-                  prefPerformLA.set(false)
+                  appPrefs.performLA.set(false)
                   laFailedToast(appContext)
                 }
                 LAResult.Unavailable -> {
                   chatModel.performLA.value = false
-                  prefPerformLA.set(false)
+                  appPrefs.performLA.set(false)
                   chatModel.showAdvertiseLAUnavailableAlert.value = true
                 }
               }
@@ -762,30 +817,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
       context.startActivity(this)
     }
-  }
-
-  private fun mkIntPreference(prefName: String, default: Int) =
-    Preference(
-      get = fun() = sharedPreferences.getInt(prefName, default),
-      set = fun(value) = sharedPreferences.edit().putInt(prefName, value).apply()
-    )
-
-  private fun mkBoolPreference(prefName: String, default: Boolean) =
-    Preference(
-      get = fun() = sharedPreferences.getBoolean(prefName, default),
-      set = fun(value) = sharedPreferences.edit().putBoolean(prefName, value).apply()
-    )
-
-  companion object {
-    private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
-    private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
-    private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
-    private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
-    private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
-    private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
-    private const val SHARED_PREFS_WEBRTC_ACCEPT_CALLS_FROM_LOCK_SCREEN = "AcceptCallsFromLockScreen"
-    private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
-    private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
   }
 }
 
@@ -982,7 +1013,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()

@@ -382,7 +382,10 @@
   <!-- Call settings -->
   <string name="call_settings">Call settings</string>
   <string name="connect_calls_via_relay">Connect via relay</string>
-  <string name="accept_calls_from_lock_screen">Accept calls from lock screen</string>
+  <string name="call_on_lock_screen">Calls on lock screen:</string>
+  <string name="accept_call_on_lock_screen">Accept</string>
+  <string name="show_call_on_lock_screen">Show</string>
+  <string name="no_call_on_lock_screen">Disable</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>

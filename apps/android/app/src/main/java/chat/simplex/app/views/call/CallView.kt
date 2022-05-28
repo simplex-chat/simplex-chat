@@ -39,14 +39,10 @@ import kotlinx.serialization.encodeToString
 
 @Composable
 fun ActiveCallView(chatModel: ChatModel) {
-  val endCall = {
-    Log.d(TAG, "ActiveCallView: endCall")
-    chatModel.activeCall.value = null
-    chatModel.activeCallInvitation.value = null
-    chatModel.callCommand.value = null
-    chatModel.showCallView.value = false
-  }
-  BackHandler(onBack = endCall)
+  BackHandler(onBack = {
+    val call = chatModel.activeCall.value
+    if (call != null) withApi { chatModel.callManager.endCall(call) }
+  })
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
@@ -85,7 +81,8 @@ fun ActiveCallView(chatModel: ChatModel) {
           }
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
-            endCall()
+            withApi { chatModel.callManager.endCall(call) }
+            chatModel.showCallView.value = false
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
             is WCallCommand.Answer ->
@@ -102,7 +99,8 @@ fun ActiveCallView(chatModel: ChatModel) {
                 chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = false)
               }
             }
-            is WCallCommand.End -> endCall()
+            is WCallCommand.End ->
+              chatModel.showCallView.value = false
             else -> {}
           }
           is WCallResponse.Error -> {
@@ -112,21 +110,15 @@ fun ActiveCallView(chatModel: ChatModel) {
       }
     }
     val call = chatModel.activeCall.value
-    if (call != null)  ActiveCallOverlay(call, chatModel, endCall)
+    if (call != null)  ActiveCallOverlay(call, chatModel)
   }
 }
 
 @Composable
-private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, endCall: () -> Unit) {
+private fun ActiveCallOverlay(call: Call, chatModel: ChatModel) {
   ActiveCallOverlayLayout(
     call = call,
-    dismiss = {
-      chatModel.callCommand.value = WCallCommand.End
-      withApi {
-        chatModel.controller.apiEndCall(call.contact)
-        endCall()
-      }
-    },
+    dismiss = { withApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled) },
     toggleVideo = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled) },
     flipCamera = { chatModel.callCommand.value = WCallCommand.Camera(call.localCamera.flipped) }
