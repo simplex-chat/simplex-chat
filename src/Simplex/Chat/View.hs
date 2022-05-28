@@ -208,6 +208,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
+      CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       where
         from = ttyFromContact' c
     where
@@ -223,6 +224,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
+      CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       where
         from = ttyFromGroup' g m
     where
@@ -294,6 +296,9 @@ msgPreview = msgPlain . preview . msgContentText
     preview t
       | T.length t <= 120 = t
       | otherwise = T.take 120 t <> "..."
+
+viewRcvIntegrityError :: StyledString -> MsgErrorType -> CIMeta 'MDRcv -> [StyledString]
+viewRcvIntegrityError from msgErr meta = receivedWithTime_ from [] meta $ viewMsgIntegrityError msgErr
 
 viewMsgIntegrityError :: MsgErrorType -> [StyledString]
 viewMsgIntegrityError err = msgError $ case err of
