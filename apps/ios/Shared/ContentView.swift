@@ -38,19 +38,19 @@ struct ContentView: View {
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
-}
 
-func notificationAlert() -> Alert {
-    Alert(
-        title: Text("Notifications are disabled!"),
-         message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
-         primaryButton: .default(Text("Open Settings")) {
-             DispatchQueue.main.async {
-                 UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
-             }
-         },
-         secondaryButton: .cancel()
-     )
+    func notificationAlert() -> Alert {
+        Alert(
+            title: Text("Notifications are disabled!"),
+             message: Text("The app can notify you when you receive messages or contact requests - please open settings to enable."),
+             primaryButton: .default(Text("Open Settings")) {
+                 DispatchQueue.main.async {
+                     UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
+                 }
+             },
+             secondaryButton: .cancel()
+         )
+    }
 }
 
 func connectViaUrl() {
