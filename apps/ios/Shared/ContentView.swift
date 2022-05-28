@@ -52,8 +52,7 @@ struct ContentView: View {
             }
         }
         .onChange(of: doAuthenticate) { doAuth in
-            if doAuth,
-               authenticationExpired() {
+            if doAuth, authenticationExpired() {
                 runAuthenticate()
             }
         }
