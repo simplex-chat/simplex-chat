@@ -32,7 +32,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_PERFORM_LA) private var performLA = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var performLAToggleReset = false
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
@@ -176,17 +176,17 @@ struct SettingsView: View {
         authenticate(reason: "Enable SimpleX Lock") { laResult in
             switch laResult {
             case .success:
-                performLA = true
+                prefPerformLA = true
                 alert = .laTurnedOnAlert
             case .failed:
-                performLA = false
+                prefPerformLA = false
                 withAnimation() {
                     chatModel.performLA = false
                 }
                 performLAToggleReset = true
                 alert = .laFailedAlert
             case .unavailable:
-                performLA = false
+                prefPerformLA = false
                 withAnimation() {
                     chatModel.performLA = false
                 }
@@ -200,16 +200,16 @@ struct SettingsView: View {
         authenticate(reason: "Disable SimpleX Lock") { laResult in
             switch (laResult) {
             case .success:
-                performLA = false
+                prefPerformLA = false
             case .failed:
-                performLA = true
+                prefPerformLA = true
                 withAnimation() {
                     chatModel.performLA = true
                 }
                 performLAToggleReset = true
                 alert = .laFailedAlert
             case .unavailable:
-                performLA = false
+                prefPerformLA = false
                 alert = .laUnavailableTurningOffAlert
             }
         }
