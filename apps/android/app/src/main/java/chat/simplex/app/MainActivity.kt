@@ -12,14 +12,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
@@ -39,6 +44,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private val chatController by lazy { (application as SimplexApp).chatController }
   private val userAuthorized = mutableStateOf<Boolean?>(null)
   private val enteredBackground = mutableStateOf<Long?>(null)
+  private val laFailed = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -53,7 +59,14 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             .background(MaterialTheme.colors.background)
             .fillMaxSize()
         ) {
-          MainPage(m, userAuthorized, ::setPerformLA, showLANotice = { m.controller.showLANotice(this) })
+          MainPage(
+            m,
+            userAuthorized,
+            laFailed,
+            ::runAuthenticate,
+            ::setPerformLA,
+            showLANotice = { m.controller.showLANotice(this) }
+          )
         }
       }
     }
@@ -72,36 +85,47 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
           enteredBackground.value = elapsedRealtime()
         }
         Lifecycle.Event.ON_START -> {
-          // perform local authentication if needed
-          val m = vm.chatModel
           val enteredBackgroundVal = enteredBackground.value
-          if (!m.controller.appPrefs.performLA.get()) {
-            userAuthorized.value = true
-          } else {
-            if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
-              userAuthorized.value = false
-              authenticate(
-                generalGetString(R.string.auth_unlock),
-                generalGetString(R.string.auth_log_in_using_credential),
-                this@MainActivity,
-                completed = { laResult ->
-                  when (laResult) {
-                    LAResult.Success -> userAuthorized.value = true
-                    is LAResult.Error -> laErrorToast(applicationContext, laResult.errString)
-                    LAResult.Failed -> laFailedToast(applicationContext)
-                    LAResult.Unavailable -> {
-                      userAuthorized.value = true
-                      m.performLA.value = false
-                      m.controller.appPrefs.performLA.set(false)
-                      laUnavailableTurningOffAlert()
-                    }
-                  }
-                }
-              )
-            }
+          if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+            runAuthenticate()
           }
         }
       }
+    }
+  }
+
+  private fun runAuthenticate() {
+    val m = vm.chatModel
+    if (!m.controller.appPrefs.performLA.get()) {
+      userAuthorized.value = true
+    } else {
+      userAuthorized.value = false
+      authenticate(
+        generalGetString(R.string.auth_unlock),
+        generalGetString(R.string.auth_log_in_using_credential),
+        this@MainActivity,
+        completed = { laResult ->
+          when (laResult) {
+            LAResult.Success -> {
+              userAuthorized.value = true
+            }
+            is LAResult.Error -> {
+              laFailed.value = true
+              laErrorToast(applicationContext, laResult.errString)
+            }
+            LAResult.Failed -> {
+              laFailed.value = true
+              laFailedToast(applicationContext)
+            }
+            LAResult.Unavailable -> {
+              userAuthorized.value = true
+              m.performLA.value = false
+              m.controller.appPrefs.performLA.set(false)
+              laUnavailableTurningOffAlert()
+            }
+          }
+        }
+      )
     }
   }
 
@@ -124,70 +148,79 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   }
 
   private fun setPerformLA(on: Boolean) {
-    val m = vm.chatModel
+    vm.chatModel.controller.appPrefs.laNoticeShown.set(true)
     if (on) {
-      m.controller.appPrefs.laNoticeShown.set(true)
-      authenticate(
-        generalGetString(R.string.auth_enable),
-        generalGetString(R.string.auth_confirm_credential),
-        this@MainActivity,
-        completed = { laResult ->
-          val prefPerformLA = m.controller.appPrefs.performLA
-          when (laResult) {
-            LAResult.Success -> {
-              m.performLA.value = true
-              prefPerformLA.set(true)
-              laTurnedOnAlert()
-            }
-            is LAResult.Error -> {
-              m.performLA.value = false
-              prefPerformLA.set(false)
-              laErrorToast(applicationContext, laResult.errString)
-            }
-            LAResult.Failed -> {
-              m.performLA.value = false
-              prefPerformLA.set(false)
-              laFailedToast(applicationContext)
-            }
-            LAResult.Unavailable -> {
-              m.performLA.value = false
-              prefPerformLA.set(false)
-              laUnavailableInstructionAlert()
-            }
-          }
-        }
-      )
+      enableLA()
     } else {
-      authenticate(
-        generalGetString(R.string.auth_disable),
-        generalGetString(R.string.auth_confirm_credential),
-        this@MainActivity,
-        completed = { laResult ->
-          val prefPerformLA = m.controller.appPrefs.performLA
-          when (laResult) {
-            LAResult.Success -> {
-              m.performLA.value = false
-              prefPerformLA.set(false)
-            }
-            is LAResult.Error -> {
-              m.performLA.value = true
-              prefPerformLA.set(true)
-              laErrorToast(applicationContext, laResult.errString)
-            }
-            LAResult.Failed -> {
-              m.performLA.value = true
-              prefPerformLA.set(true)
-              laFailedToast(applicationContext)
-            }
-            LAResult.Unavailable -> {
-              m.performLA.value = false
-              prefPerformLA.set(false)
-              laUnavailableTurningOffAlert()
-            }
+      disableLA()
+    }
+  }
+
+  private fun enableLA() {
+    val m = vm.chatModel
+    authenticate(
+      generalGetString(R.string.auth_enable),
+      generalGetString(R.string.auth_confirm_credential),
+      this@MainActivity,
+      completed = { laResult ->
+        val prefPerformLA = m.controller.appPrefs.performLA
+        when (laResult) {
+          LAResult.Success -> {
+            m.performLA.value = true
+            prefPerformLA.set(true)
+            laTurnedOnAlert()
+          }
+          is LAResult.Error -> {
+            m.performLA.value = false
+            prefPerformLA.set(false)
+            laErrorToast(applicationContext, laResult.errString)
+          }
+          LAResult.Failed -> {
+            m.performLA.value = false
+            prefPerformLA.set(false)
+            laFailedToast(applicationContext)
+          }
+          LAResult.Unavailable -> {
+            m.performLA.value = false
+            prefPerformLA.set(false)
+            laUnavailableInstructionAlert()
           }
         }
-      )
-    }
+      }
+    )
+  }
+
+  private fun disableLA() {
+    val m = vm.chatModel
+    authenticate(
+      generalGetString(R.string.auth_disable),
+      generalGetString(R.string.auth_confirm_credential),
+      this@MainActivity,
+      completed = { laResult ->
+        val prefPerformLA = m.controller.appPrefs.performLA
+        when (laResult) {
+          LAResult.Success -> {
+            m.performLA.value = false
+            prefPerformLA.set(false)
+          }
+          is LAResult.Error -> {
+            m.performLA.value = true
+            prefPerformLA.set(true)
+            laErrorToast(applicationContext, laResult.errString)
+          }
+          LAResult.Failed -> {
+            m.performLA.value = true
+            prefPerformLA.set(true)
+            laFailedToast(applicationContext)
+          }
+          LAResult.Unavailable -> {
+            m.performLA.value = false
+            prefPerformLA.set(false)
+            laUnavailableTurningOffAlert()
+          }
+        }
+      }
+    )
   }
 }
 
@@ -200,6 +233,8 @@ class SimplexViewModel(application: Application): AndroidViewModel(application) 
 fun MainPage(
   chatModel: ChatModel,
   userAuthorized: MutableState<Boolean?>,
+  laFailed: MutableState<Boolean>,
+  runAuthenticate: () -> Unit,
   setPerformLA: (Boolean) -> Unit,
   showLANotice: () -> Unit
 ) {
@@ -232,12 +267,36 @@ fun MainPage(
       chatModel.clearOverlays.value = false
     }
   }
+
+  @Composable
+  fun retryAuthView() {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      SimpleButton(
+        stringResource(R.string.auth_retry),
+        icon = Icons.Outlined.Replay,
+        click = {
+          laFailed.value = false
+          runAuthenticate()
+        }
+      )
+    }
+  }
+
   Box {
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
     when {
       onboarding == null || userCreated == null -> SplashView()
-      !chatsAccessAuthorized -> SplashView()
+      !chatsAccessAuthorized -> {
+        if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {
+          retryAuthView()
+        } else {
+          SplashView()
+        }
+      }
       onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
         Box {
           if (chatModel.showCallView.value) ActiveCallView(chatModel)

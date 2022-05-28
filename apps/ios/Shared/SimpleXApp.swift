@@ -16,9 +16,9 @@ struct SimpleXApp: App {
     @StateObject private var chatModel = ChatModel.shared
     @ObservedObject var alertManager = AlertManager.shared
     @Environment(\.scenePhase) var scenePhase
-    @AppStorage(DEFAULT_PERFORM_LA) private var performLA = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool? = nil
-    @State private var doAuthenticate: Bool = true
+    @State private var doAuthenticate: Bool = false
     @State private var enteredBackground: Double? = nil
 
     init() {
@@ -30,14 +30,13 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(userAuthorized: $userAuthorized)
+            ContentView(doAuthenticate: $doAuthenticate, enteredBackground: $enteredBackground)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    chatModel.performLA = performLA
                     initializeChat()
                 }
                 .onChange(of: scenePhase) { phase in
@@ -46,50 +45,14 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         BGManager.shared.schedule()
-                        doAuthenticate = true
+                        doAuthenticate = false
                         enteredBackground = ProcessInfo.processInfo.systemUptime
-                    case .inactive:
-                        authenticateOnPhaseChange()
                     case .active:
-                        authenticateOnPhaseChange()
+                        doAuthenticate = true
                     default:
                         break
                     }
                 }
-        }
-    }
-
-    private func authenticateOnPhaseChange() {
-        if doAuthenticate {
-            doAuthenticate = false
-            if !performLA {
-                userAuthorized = true
-            } else {
-                if authenticationExpired() {
-                    userAuthorized = false
-                    authenticate(reason: "Unlock") { laResult in
-                        switch (laResult) {
-                        case .success:
-                            userAuthorized = true
-                        case .failed:
-                            AlertManager.shared.showAlert(laFailedAlert())
-                        case .unavailable:
-                            userAuthorized = true
-                            performLA = false
-                            chatModel.performLA = false
-                            AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
-        } else {
-            return true
         }
     }
 }

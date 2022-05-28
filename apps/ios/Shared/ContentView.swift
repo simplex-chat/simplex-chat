@@ -11,7 +11,13 @@ struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
-    @Binding var userAuthorized: Bool?
+    @Binding var doAuthenticate: Bool
+    @Binding var enteredBackground: Double?
+    @State private var userAuthorized: Bool?
+    @State private var laFailed: Bool = false
+    @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         ZStack {
@@ -25,6 +31,12 @@ struct ContentView: View {
                                 NtfManager.shared.requestAuthorization(onDeny: {
                                     alertManager.showAlert(notificationAlert())
                                 })
+                                // Local Authentication notice is to be shown on next start after onboarding is complete
+                                if (!prefLANoticeShown && prefShowLANotice) {
+                                    prefLANoticeShown = true
+                                    alertManager.showAlert(laNoticeAlert())
+                                }
+                                prefShowLANotice = true
                             }
                             if chatModel.showCallView, let call = chatModel.activeCall {
                                 ActiveCallView(call: call)
@@ -35,9 +47,75 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
+            } else if prefPerformLA && laFailed {
+                retryAuthView()
+            }
+        }
+        .onChange(of: doAuthenticate) { doAuth in
+            if doAuth, authenticationExpired() {
+                runAuthenticate()
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    private func retryAuthView() -> some View {
+        Button {
+            laFailed = false
+            runAuthenticate()
+        } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
+    }
+
+    private func runAuthenticate() {
+        if !prefPerformLA {
+            userAuthorized = true
+        } else {
+            userAuthorized = false
+            authenticate(reason: "Unlock") { laResult in
+                switch (laResult) {
+                case .success:
+                    userAuthorized = true
+                case .failed:
+                    laFailed = true
+                    AlertManager.shared.showAlert(laFailedAlert())
+                case .unavailable:
+                    userAuthorized = true
+                    prefPerformLA = false
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
+            }
+        }
+    }
+
+    private func authenticationExpired() -> Bool {
+        if let enteredBackground = enteredBackground {
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+        } else {
+            return true
+        }
+    }
+
+    func laNoticeAlert() -> Alert {
+        Alert(
+            title: Text("SimpleX Lock"),
+            message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
+            primaryButton: .default(Text("Turn on")) {
+                authenticate(reason: "Enable SimpleX Lock") { laResult in
+                    switch laResult {
+                    case .success:
+                        prefPerformLA = true
+                        alertManager.showAlert(laTurnedOnAlert())
+                    case .failed:
+                        prefPerformLA = false
+                        alertManager.showAlert(laFailedAlert())
+                    case .unavailable:
+                        prefPerformLA = false
+                        alertManager.showAlert(laUnavailableInstructionAlert())
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+         )
     }
 
     func notificationAlert() -> Alert {

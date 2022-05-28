@@ -14,7 +14,6 @@ import WebKit
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var currentUser: User?
-    @Published var performLA: Bool = false
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
