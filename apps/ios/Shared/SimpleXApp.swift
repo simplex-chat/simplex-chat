@@ -14,10 +14,12 @@ let logger = Logger()
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
+    @ObservedObject var alertManager = AlertManager.shared
     @Environment(\.scenePhase) var scenePhase
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var userAuthorized: Bool? = nil
-    @State private var doAuthenticate: Bool? = nil
-    @State private var lastLA: Double? = nil
+    @State private var doAuthenticate: Bool = false
+    @State private var enteredBackground: Double? = nil
 
     init() {
         hs_init(0, nil)
@@ -28,7 +30,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(userAuthorized: $userAuthorized)
+            ContentView(doAuthenticate: $doAuthenticate, enteredBackground: $enteredBackground)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -36,7 +38,6 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     initializeChat()
-                    doAuthenticate = true
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
@@ -44,46 +45,14 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         BGManager.shared.schedule()
-                        doAuthenticate = true
-                    case .inactive:
-                        authenticateUser()
+                        doAuthenticate = false
+                        enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .active:
-                        authenticateUser()
+                        doAuthenticate = true
                     default:
                         break
                     }
                 }
-        }
-    }
-
-    private func authenticateUser() {
-        if doAuthenticate == true,
-           authenticationExpired() {
-            doAuthenticate = false
-            userAuthorized = false
-            authenticate() { laResult in
-                switch (laResult) {
-                case .success:
-                    userAuthorized = true
-                    lastLA = ProcessInfo.processInfo.systemUptime
-                case .failed:
-                    laFailedAlert()
-                case .unavailable:
-                    userAuthorized = true
-                    laUnavailableAlert()
-                }
-            }
-        }
-    }
-
-    private func authenticationExpired() -> Bool {
-        if (lastLA == nil) {
-            return true
-        }
-        else if let lastLA = lastLA, ProcessInfo.processInfo.systemUptime - lastLA >= 30 {
-            return true
-        } else {
-            return false
         }
     }
 }

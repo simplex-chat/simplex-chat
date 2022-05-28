@@ -470,9 +470,10 @@ processChatCommand = \case
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \userId ct Call {chatItemId, callState} -> case callState of
-      CallInvitationReceived {} ->
+      CallInvitationReceived {} -> do
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
-         in updateDirectChatItemView userId ct chatItemId aciContent Nothing $> Nothing
+        withStore $ \st -> updateDirectChatItemsRead st contactId $ Just (chatItemId, chatItemId)
+        updateDirectChatItemView userId ct chatItemId aciContent Nothing $> Nothing
       _ -> throwChatError . CECallState $ callStateTag callState
   APISendCallOffer contactId WebRTCCallOffer {callType, rtcSession} ->
     -- party accepting call
@@ -483,6 +484,7 @@ processChatCommand = \case
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         SndMessage {msgId} <- sendDirectContactMessage ct (XCallOffer callId offer)
+        withStore $ \st -> updateDirectChatItemsRead st contactId $ Just (chatItemId, chatItemId)
         updateDirectChatItemView userId ct chatItemId aciContent $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
@@ -1465,7 +1467,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newContentMessage ct@Contact {localDisplayName = c} mc msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
       ciFile_ <- processFileInvitation fileInvitation_ $
         \fi chSize -> withStore $ \st -> createRcvFileTransfer st userId ct fi chSize
@@ -1485,7 +1487,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       updateRcvChatItem `catchError` \e ->
         case e of
           (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
@@ -1506,7 +1508,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
     messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       deleteRcvChatItem `catchError` \e ->
         case e of
           (ChatErrorStore (SEChatItemSharedMsgIdNotFound sMsgId)) -> toView $ CRChatItemDeletedNotFound ct sMsgId
@@ -1526,7 +1528,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       ciFile_ <- processFileInvitation fileInvitation_ $
         \fi chSize -> withStore $ \st -> createRcvGroupFileTransfer st userId m fi chSize
       ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile_
-      groupMsgToView gInfo ci msgMeta
+      groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
       showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
@@ -1558,8 +1560,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
-      -- TODO chunk size has to be sent as part of invitation
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       chSize <- asks $ fileChunkSize . config
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvFileTransfer st userId ct fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
@@ -1575,14 +1576,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       RcvFileTransfer {fileId} <- withStore $ \st -> createRcvGroupFileTransfer st userId m fInv chSize
       let ciFile = Just $ CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent $ MCFile "") ciFile
-      groupMsgToView gInfo ci msgMeta
+      groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
       showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
       setActive $ ActiveG g
 
     xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancel Contact {contactId} sharedMsgId msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+    xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \st -> getFileIdBySharedMsgId st userId contactId sharedMsgId
       ft@RcvFileTransfer {cancelled} <- withStore (\st -> getRcvFileTransfer st user fileId)
       unless cancelled $ do
@@ -1590,8 +1591,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         toView $ CRRcvFileSndCancelled ft
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancelGroup GroupInfo {groupId} GroupMember {memberId} sharedMsgId msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+    xFileCancelGroup g@GroupInfo {groupId} mem@GroupMember {memberId} sharedMsgId msgMeta = do
+      checkIntegrityCreateItem (CDGroupRcv g mem) msgMeta
       fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
       CChatItem msgDir ChatItem {chatDir} <- withStore $ \st -> getGroupChatItemBySharedMsgId st user groupId sharedMsgId
       case (msgDir, chatDir) of
@@ -1606,8 +1607,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
-    xFileAcptInvGroup GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+    xFileAcptInvGroup g@GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
+      checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \st -> getGroupFileIdBySharedMsgId st userId groupId sharedMsgId
       (FileTransferMeta {fileName, cancelled}, _) <- withStore (\st -> getSndFileTransfer st user fileId)
       unless cancelled $
@@ -1619,9 +1620,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               Left e -> throwError e
           else messageError "x.file.acpt.inv: fileName is different from expected"
 
-    groupMsgToView :: GroupInfo -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
-    groupMsgToView gInfo ci msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+    groupMsgToView :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
+    groupMsgToView gInfo m ci msgMeta = do
+      checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> m ()
@@ -1632,10 +1633,19 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       toView $ CRReceivedGroupInvitation gInfo ct memRole
       showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
 
-    checkIntegrity :: MsgMeta -> (MsgErrorType -> m ()) -> m ()
-    checkIntegrity MsgMeta {integrity} action = case integrity of
-      MsgError e -> action e
+    checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
+    checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
+      MsgError e -> case e of
+        MsgSkipped {} -> createIntegrityErrorItem e
+        _ -> toView $ CRMsgIntegrityError e
+      where
+        createIntegrityErrorItem e = do
+          createdAt <- liftIO getCurrentTime
+          let content = CIRcvIntegrityError e
+          ciId <- withStore $ \st -> createNewChatItemNoMsg st user cd content brokerTs createdAt
+          ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing brokerTs createdAt
+          toView $ CRNewChatItem $ AChatItem (chatTypeI @c) SMDRcv (toChatInfo cd) ci
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c@Contact {profile = p} p' = unless (p == p') $ do
@@ -1666,7 +1676,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
     xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg msgMeta = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
       ci <- saveCallItem CISCallPending
       let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
@@ -1739,7 +1749,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     msgCurrentCall :: Contact -> CallId -> Text -> RcvMessage -> MsgMeta -> (Call -> m (Maybe Call, Maybe ACIContent)) -> m ()
     msgCurrentCall ct@Contact {contactId = ctId'} callId' eventName RcvMessage {msgId} msgMeta action = do
-      checkIntegrity msgMeta $ toView . CRMsgIntegrityError
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       calls <- asks currentCalls
       atomically (TM.lookup ctId' calls) >>= \case
         Nothing -> messageError $ eventName <> ": no current call"

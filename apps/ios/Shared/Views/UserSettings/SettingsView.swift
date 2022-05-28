@@ -14,11 +14,17 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
+let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
+let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 
 let appDefaults: [String:Any] = [
+    DEFAULT_SHOW_LA_NOTICE: false,
+    DEFAULT_LA_NOTICE_SHOWN: false,
+    DEFAULT_PERFORM_LA: false,
     DEFAULT_USE_NOTIFICATIONS: false,
     DEFAULT_PENDING_CONNECTIONS: true,
     DEFAULT_WEBRTC_POLICY_RELAY: true
@@ -30,10 +36,24 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
+    @State var performLA: Bool = false
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @State private var performLAToggleReset = false
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
+    @State var alert: SettingsViewAlert? = nil
+
+    enum SettingsViewAlert: Identifiable {
+        case laTurnedOnAlert
+        case laFailedAlert
+        case laUnavailableInstructionAlert
+        case laUnavailableTurningOffAlert
+
+        var id: SettingsViewAlert { get { self } }
+    }
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -57,6 +77,9 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    settingsRow("lock") {
+                        Toggle("SimpleX Lock", isOn: $performLA)
+                    }
                     settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
@@ -133,6 +156,69 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
+            .onChange(of: performLA) { performLAToggle in
+                prefLANoticeShown = true
+                if performLAToggleReset {
+                    performLAToggleReset = false
+                } else {
+                    if performLAToggle {
+                        enableLA()
+                    } else {
+                        disableLA()
+                    }
+                }
+            }
+            .alert(item: $alert) { alertItem in
+                switch alertItem {
+                case .laTurnedOnAlert: return laTurnedOnAlert()
+                case .laFailedAlert: return laFailedAlert()
+                case .laUnavailableInstructionAlert: return laUnavailableInstructionAlert()
+                case .laUnavailableTurningOffAlert: return laUnavailableTurningOffAlert()
+                }
+            }
+        }
+    }
+
+    private func enableLA() {
+        authenticate(reason: "Enable SimpleX Lock") { laResult in
+            switch laResult {
+            case .success:
+                prefPerformLA = true
+                alert = .laTurnedOnAlert
+            case .failed:
+                prefPerformLA = false
+                withAnimation() {
+                    performLA = false
+                }
+                performLAToggleReset = true
+                alert = .laFailedAlert
+            case .unavailable:
+                prefPerformLA = false
+                withAnimation() {
+                    performLA = false
+                }
+                performLAToggleReset = true
+                alert = .laUnavailableInstructionAlert
+            }
+        }
+    }
+
+    private func disableLA() {
+        authenticate(reason: "Disable SimpleX Lock") { laResult in
+            switch (laResult) {
+            case .success:
+                prefPerformLA = false
+            case .failed:
+                prefPerformLA = true
+                withAnimation() {
+                    performLA = true
+                }
+                performLAToggleReset = true
+                alert = .laFailedAlert
+            case .unavailable:
+                prefPerformLA = false
+                alert = .laUnavailableTurningOffAlert
+            }
         }
     }
 
