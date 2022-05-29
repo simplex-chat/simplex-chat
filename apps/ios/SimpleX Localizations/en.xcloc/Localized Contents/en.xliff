@@ -506,11 +506,6 @@
         <target>Enable notifications? (BETA)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
-        <source>Enter one SMP server per line:</source>
-        <target>Enter one SMP server per line:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error deleting token" xml:space="preserve">
         <source>Error deleting token</source>
         <target>Error deleting token</target>
@@ -844,6 +839,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>SMP servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SMP servers (one per line)" xml:space="preserve">
+        <source>SMP servers (one per line)</source>
+        <target>SMP servers (one per line)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
