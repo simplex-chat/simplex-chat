@@ -10,7 +10,7 @@ import SwiftUI
 
 enum ComposePreview {
     case noPreview
-    case linkPreview(linkPreview: LinkPreview)
+    case linkPreview(linkPreview: LinkPreview?)
     case imagePreview(imagePreview: String)
     case filePreview(fileName: String)
 }
@@ -26,6 +26,7 @@ struct ComposeState {
     var preview: ComposePreview
     var contextItem: ComposeContextItem
     var inProgress: Bool = false
+    var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
         message: String = "",
@@ -80,7 +81,7 @@ struct ComposeState {
         case .filePreview:
             return false
         default:
-            return true
+            return useLinkPreviews
         }
     }
 
@@ -406,11 +407,13 @@ struct ComposeView: View {
         if let uri = composeState.linkPreview()?.uri.absoluteString {
             cancelledLinks.insert(uri)
         }
+        pendingLinkUrl = nil
         composeState = composeState.copy(preview: .noPreview)
     }
 
     private func loadLinkPreview(_ url: URL) {
         if pendingLinkUrl == url {
+            composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
             getLinkPreview(url: url) { linkPreview in
                 if let linkPreview = linkPreview,
                    pendingLinkUrl == url {
@@ -432,6 +435,7 @@ struct ComposeView: View {
         switch (composeState.preview) {
         case let .linkPreview(linkPreview: linkPreview):
             if let url = parseMessage(composeState.message),
+               let linkPreview = linkPreview,
                url == linkPreview.uri {
                 return .link(text: composeState.message, preview: linkPreview)
             } else {

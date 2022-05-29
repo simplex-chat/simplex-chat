@@ -169,7 +169,7 @@
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Use Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file\n(new in v2.0)</string>
+  <string name="choose_file">Choose file</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>

@@ -176,6 +176,11 @@
         <target>Прикрепить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+        <source>Audio &amp; video calls</source>
+        <target>Аудио- и видеозвонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Authentication failed" xml:space="preserve">
         <source>Authentication failed</source>
         <target>Ошибка аутентификации</target>
@@ -186,14 +191,14 @@
         <target>Аутентификация недоступна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Auto-accept hi-res images" xml:space="preserve">
+        <source>Auto-accept hi-res images</source>
+        <target>Авто-приём картинок</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
         <source>Call already ended!</source>
         <target>Звонок уже завершен!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Call settings" xml:space="preserve">
-        <source>Call settings</source>
-        <target>Настройки звонков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -213,7 +218,7 @@
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
-        <target>Назад</target>
+        <target>Чаты</target>
         <note>back button to return to chats list</note>
       </trans-unit>
       <trans-unit id="Check messages" xml:space="preserve">
@@ -227,8 +232,8 @@
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
-        <source>Choose file (new in v2.0)</source>
-        <target>Выбрать файл (v2.0)</target>
+        <source>Choose file</source>
+        <target>Выбрать файл</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
@@ -454,6 +459,11 @@
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Для разработчиков</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Device" xml:space="preserve">
+        <source>Device</source>
+        <target>Устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
@@ -776,6 +786,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Назначайте звонки заранее, поскольку уведомления приходят с задержкой (мы улучшаем это)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+        <source>Privacy &amp; security</source>
+        <target>Конфиденциальность</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Более конфиденциальный</target>
@@ -854,6 +869,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Scan contact's QR code" xml:space="preserve">
         <source>Scan contact's QR code</source>
         <target>Сосканировать QR код контакта</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send link previews" xml:space="preserve">
+        <source>Send link previews</source>
+        <target>Отправлять картинки ссылок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server connected" xml:space="preserve">
@@ -1137,6 +1157,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваш SimpleX адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your calls" xml:space="preserve">
+        <source>Your calls</source>
+        <target>Ваши звонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your chat address" xml:space="preserve">
         <source>Your chat address</source>
         <target>Ваш SimpleX адрес</target>
@@ -1172,6 +1197,11 @@ You can cancel this connection and remove the contact (and try later with a new 
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your privacy" xml:space="preserve">
+        <source>Your privacy</source>
+        <target>Конфиденциальность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">

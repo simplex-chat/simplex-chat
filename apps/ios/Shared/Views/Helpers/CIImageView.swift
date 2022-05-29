@@ -47,11 +47,23 @@ struct CIImageView: View {
               let uiImage = UIImage(data: data) {
                 imageView(uiImage)
                     .onTapGesture {
-                        if case .rcvAccepted = file?.fileStatus {
-                            AlertManager.shared.showAlertMsg(
-                                title: "Waiting for image",
-                                message: "Image will be received when your contact is online, please wait or check later!"
-                            )
+                        if let file = file {
+                            switch file.fileStatus {
+                            case .rcvInvitation:
+                                Task {
+                                    await receiveFile(fileId: file.fileId)
+                                    // TODO image accepted alert?
+                                }
+                            case .rcvAccepted:
+                                AlertManager.shared.showAlertMsg(
+                                    title: "Waiting for image",
+                                    message: "Image will be received when your contact is online, please wait or check later!"
+                                )
+                            case .rcvTransfer: () // ?
+                            case .rcvComplete: () // ?
+                            case .rcvCancelled: () // TODO
+                            default: ()
+                            }
                         }
                     }
             }
