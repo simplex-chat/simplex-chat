@@ -144,6 +144,7 @@ fun ChatItemView(
         is CIContent.RcvDeleted -> DeletedItem()
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
+        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
       }
     }
   }

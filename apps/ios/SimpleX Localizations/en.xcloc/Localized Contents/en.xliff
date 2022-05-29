@@ -45,6 +45,11 @@
         <target>%@ wants to connect!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+        <source>%d skipped message(s)</source>
+        <target>%d skipped message(s)</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
         <target>%lld</target>
@@ -169,6 +174,16 @@
       <trans-unit id="Attach" xml:space="preserve">
         <source>Attach</source>
         <target>Attach</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication failed" xml:space="preserve">
+        <source>Authentication failed</source>
+        <target>Authentication failed</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication unavailable" xml:space="preserve">
+        <source>Authentication unavailable</source>
+        <target>Authentication unavailable</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
@@ -441,15 +456,40 @@
         <target>Develop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+        <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
+        <target>Device authentication is disabled. Turning off SimpleX Lock.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+        <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
+        <target>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+        <source>Disable SimpleX Lock</source>
+        <target>Disable SimpleX Lock</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
         <target>Display name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+        <source>Do NOT use SimpleX for emergency calls.</source>
+        <target>Do NOT use SimpleX for emergency calls.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
         <source>Edit</source>
         <target>Edit</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+        <source>Enable SimpleX Lock</source>
+        <target>Enable SimpleX Lock</target>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable notifications? (BETA)" xml:space="preserve">
         <source>Enable notifications? (BETA)</source>
@@ -531,6 +571,11 @@
         <target>How to use markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
+        <source>If the video fails to connect, flip the camera to resolve it.</source>
+        <target>If the video fails to connect, flip the camera to resolve it.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
         <source>If you can't meet in person, **show QR code in the video call**, or share the link.</source>
         <target>If you can't meet in person, **show QR code in the video call**, or share the link.</target>
@@ -586,6 +631,21 @@
         <target>Invalid connection link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
+        <source>It can happen when:
+1. The messages expire on the server if they were not received for 30 days,
+2. The server you use to receive the messages from this contact was updated and restarted.
+3. The connection is compromised.
+Please connect to the developers via Settings to receive the updates about the servers.
+We will be adding server redundancy to prevent lost messages.</source>
+        <target>It can happen when:
+1. The messages expire on the server if they were not received for 30 days,
+2. The server you use to receive the messages from this contact was updated and restarted.
+3. The connection is compromised.
+Please connect to the developers via Settings to receive the updates about the servers.
+We will be adding server redundancy to prevent lost messages.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
         <source>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</source>
         <target>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</target>
@@ -599,6 +659,11 @@
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Large file!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Limitations" xml:space="preserve">
+        <source>Limitations</source>
+        <target>Limitations</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -706,6 +771,11 @@
         <target>Please check your network connection and try again.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Pre-arrange the calls, as notifications arrive with a delay (we are improving it)." xml:space="preserve">
+        <source>Pre-arrange the calls, as notifications arrive with a delay (we are improving it).</source>
+        <target>Pre-arrange the calls, as notifications arrive with a delay (we are improving it).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
         <source>Privacy redefined</source>
         <target>Privacy redefined</target>
@@ -749,6 +819,11 @@
       <trans-unit id="Reply" xml:space="preserve">
         <source>Reply</source>
         <target>Reply</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Retry" xml:space="preserve">
+        <source>Retry</source>
+        <target>Retry</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SMP servers" xml:space="preserve">
@@ -811,6 +886,21 @@
         <target>Show pending connections</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX Lock" xml:space="preserve">
+        <source>SimpleX Lock</source>
+        <target>SimpleX Lock</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+        <source>SimpleX Lock turned on</source>
+        <target>SimpleX Lock turned on</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Skipped messages" xml:space="preserve">
+        <source>Skipped messages</source>
+        <target>Skipped messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
         <target>Take picture</target>
@@ -853,6 +943,11 @@
         <target>The contact you shared this link with will NOT be able to connect!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
+        <source>The microphone does not work when the app is in the background.</source>
+        <target>The microphone does not work when the app is in the background.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
         <source>The next generation of private messaging</source>
         <target>The next generation of private messaging</target>
@@ -888,9 +983,21 @@
         <target>To make your first private connection, choose **one of the following**:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
+        <source>To prevent the call interruption, enable Do Not Disturb mode.</source>
+        <target>To prevent the call interruption, enable Do Not Disturb mode.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
         <target>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+        <source>To protect your information, turn on SimpleX Lock.
+You will be prompted to complete authentication before this feature is enabled.</source>
+        <target>To protect your information, turn on SimpleX Lock.
+You will be prompted to complete authentication before this feature is enabled.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -901,6 +1008,11 @@
       <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this contact.</source>
         <target>Trying to connect to the server used to receive messages from this contact.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Turn on" xml:space="preserve">
+        <source>Turn on</source>
+        <target>Turn on</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -914,6 +1026,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.
 To connect, please ask your contact to create another connection link and check that you have a stable network connection.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlock" xml:space="preserve">
+        <source>Unlock</source>
+        <target>Unlock</target>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
         <source>Use SimpleX Chat servers?</source>
@@ -985,6 +1102,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You could not be verified; please try again." xml:space="preserve">
+        <source>You could not be verified; please try again.</source>
+        <target>You could not be verified; please try again.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You invited your contact" xml:space="preserve">
         <source>You invited your contact</source>
         <target>You invited your contact</target>
@@ -998,6 +1120,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
         <target>You will be connected when your contact's device is online, please wait or check later!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
+        <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
+        <target>You will be required to authenticate when you start or resume the app after 30 seconds in background.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
@@ -1099,6 +1226,16 @@ SimpleX servers cannot see your profile.</target>
         <target>audio call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="bad message ID" xml:space="preserve">
+        <source>bad message ID</source>
+        <target>bad message ID</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
+      <trans-unit id="bad message hash" xml:space="preserve">
+        <source>bad message hash</source>
+        <target>bad message hash</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
         <target>bold</target>
@@ -1168,6 +1305,11 @@ SimpleX servers cannot see your profile.</target>
         <source>deleted</source>
         <target>deleted</target>
         <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="duplicate message" xml:space="preserve">
+        <source>duplicate message</source>
+        <target>duplicate message</target>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="e2e encrypted" xml:space="preserve">
         <source>e2e encrypted</source>
@@ -1316,6 +1458,11 @@ SimpleX servers cannot see your profile.</target>
         <target>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
+      <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
+        <source>SimpleX uses Face ID for local authentication</source>
+        <target>SimpleX uses Face ID for local authentication</target>
+        <note>Privacy - Face ID Usage Description</note>
+      </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
         <source>SimpleX needs microphone access for audio and video calls.</source>
         <target>SimpleX needs microphone access for audio and video calls.</target>
@@ -1365,6 +1512,11 @@ SimpleX servers cannot see your profile.</target>
         <target>%@ wants to connect!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+        <source>%d skipped message(s)</source>
+        <target>%d skipped message(s)</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
         <source>**e2e encrypted** audio call</source>
         <target>**e2e encrypted** audio call</target>
@@ -1405,6 +1557,16 @@ SimpleX servers cannot see your profile.</target>
         <target>audio call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="bad message ID" xml:space="preserve">
+        <source>bad message ID</source>
+        <target>bad message ID</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
+      <trans-unit id="bad message hash" xml:space="preserve">
+        <source>bad message hash</source>
+        <target>bad message hash</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="call error" xml:space="preserve">
         <source>call error</source>
         <target>call error</target>
@@ -1444,6 +1606,11 @@ SimpleX servers cannot see your profile.</target>
         <source>deleted</source>
         <target>deleted</target>
         <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="duplicate message" xml:space="preserve">
+        <source>duplicate message</source>
+        <target>duplicate message</target>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="ended call %@" xml:space="preserve">
         <source>ended call %@</source>

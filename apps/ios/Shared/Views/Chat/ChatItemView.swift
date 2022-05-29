@@ -22,6 +22,7 @@ struct ChatItemView: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
+        case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
         }
     }
 

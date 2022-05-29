@@ -65,24 +65,24 @@
   <string name="simplex_service_notification_text">Receiving messages…</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
-  <string name="la_notice_title">SimpleX Lock</string>
-  <string name="la_notice_text">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
+  <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
   <string name="la_notice_turn_on">Turn on</string>
 
   <!-- LocalAuthentication.kt -->
-  <string name="auth_turned_on">SimpleX Lock turned on</string>
-  <string name="auth_turned_on_desc">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
+  <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
+  <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
   <string name="auth_unlock">Unlock</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
-  <string name="auth_enable">Enable SimpleX Lock</string>
-  <string name="auth_disable">Disable SimpleX Lock</string>
+  <string name="auth_enable_simplex_lock">Enable SimpleX Lock</string>
+  <string name="auth_disable_simplex_lock">Disable SimpleX Lock</string>
   <string name="auth_confirm_credential">Confirm your credential</string>
   <string name="auth_error">Authentication error</string>
   <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
   <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
-  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
-  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off SimpleX Lock.</string>
+  <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_retry">Retry</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
@@ -415,4 +415,12 @@
   <string name="icon_descr_call_progress">Call in progress</string>
   <string name="icon_descr_call_ended">Call ended</string>
   <string name="answer_call">Answer call</string>
+
+  <!-- Message integrity -->
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)"</string>
+  <string name="integrity_msg_bad_hash">bad message hash</string>
+  <string name="integrity_msg_bad_id">bad message ID</string>
+  <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="alert_title_skipped_messages">Skipped messages</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
 </resources>

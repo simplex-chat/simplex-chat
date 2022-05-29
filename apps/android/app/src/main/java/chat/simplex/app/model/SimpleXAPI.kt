@@ -762,12 +762,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     if (!appPrefs.laNoticeShown.get()) {
       appPrefs.laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.la_notice_title),
-        text = generalGetString(R.string.la_notice_text),
+        title = generalGetString(R.string.la_notice_title_simplex_lock),
+        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
         confirmText = generalGetString(R.string.la_notice_turn_on),
         onConfirm = {
           authenticate(
-            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_enable_simplex_lock),
             generalGetString(R.string.auth_confirm_credential),
             activity,
             completed = { laResult ->
