@@ -70,19 +70,19 @@
   <string name="la_notice_turn_on">Turn on</string>
 
   <!-- LocalAuthentication.kt -->
-  <string name="auth_turned_on">SimpleX Lock turned on</string>
-  <string name="auth_turned_on_desc">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
+  <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
+  <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
   <string name="auth_unlock">Unlock</string>
   <string name="auth_log_in_using_credential">Log in using your credential</string>
-  <string name="auth_enable">Enable SimpleX Lock</string>
-  <string name="auth_disable">Disable SimpleX Lock</string>
+  <string name="auth_enable_simplex_lock">Enable SimpleX Lock</string>
+  <string name="auth_disable_simplex_lock">Disable SimpleX Lock</string>
   <string name="auth_confirm_credential">Confirm your credential</string>
   <string name="auth_error">Authentication error</string>
   <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
   <string name="auth_failed">Authentication failed</string>
   <string name="auth_unavailable">Authentication unavailable</string>
-  <string name="auth_unavailable_instruction_desc">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
-  <string name="auth_unavailable_turning_off_desc">Device authentication is disabled. Turning off SimpleX Lock.</string>
+  <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_retry">Retry</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->

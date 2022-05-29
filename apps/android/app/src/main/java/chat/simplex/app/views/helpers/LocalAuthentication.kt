@@ -85,8 +85,8 @@ private fun authenticateWithBiometricManager(
 }
 
 fun laTurnedOnAlert() = AlertManager.shared.showAlertMsg(
-  generalGetString(R.string.auth_turned_on),
-  generalGetString(R.string.auth_turned_on_desc)
+  generalGetString(R.string.auth_simplex_lock_turned_on),
+  generalGetString(R.string.auth_you_will_be_required_to_authenticate_when_you_start_or_resume)
 )
 
 fun laErrorToast(context: Context, errString: CharSequence) = Toast.makeText(
@@ -103,10 +103,10 @@ fun laFailedToast(context: Context) = Toast.makeText(
 
 fun laUnavailableInstructionAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(R.string.auth_unavailable),
-  generalGetString(R.string.auth_unavailable_instruction_desc)
+  generalGetString(R.string.auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled)
 )
 
 fun laUnavailableTurningOffAlert() = AlertManager.shared.showAlertMsg(
   generalGetString(R.string.auth_unavailable),
-  generalGetString(R.string.auth_unavailable_turning_off_desc)
+  generalGetString(R.string.auth_device_authentication_is_disabled_turning_off)
 )

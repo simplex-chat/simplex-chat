@@ -767,7 +767,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         confirmText = generalGetString(R.string.la_notice_turn_on),
         onConfirm = {
           authenticate(
-            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_enable_simplex_lock),
             generalGetString(R.string.auth_confirm_credential),
             activity,
             completed = { laResult ->
