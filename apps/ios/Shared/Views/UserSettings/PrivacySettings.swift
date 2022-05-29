@@ -20,7 +20,7 @@ struct PrivacySettings: View {
                 }
                 Section("Chats") {
                     settingsRow("photo") {
-                        Toggle("Auto-accept hi-res images", isOn: $autoAcceptImages)
+                        Toggle("Auto-accept images", isOn: $autoAcceptImages)
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)

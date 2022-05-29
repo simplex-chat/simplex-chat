@@ -191,9 +191,9 @@
         <target>Authentication unavailable</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept hi-res images" xml:space="preserve">
-        <source>Auto-accept hi-res images</source>
-        <target>Auto-accept hi-res images</target>
+      <trans-unit id="Auto-accept images" xml:space="preserve">
+        <source>Auto-accept images</source>
+        <target>Auto-accept images</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">

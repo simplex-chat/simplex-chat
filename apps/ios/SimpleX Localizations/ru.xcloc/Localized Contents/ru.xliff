@@ -191,8 +191,8 @@
         <target>Аутентификация недоступна</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept hi-res images" xml:space="preserve">
-        <source>Auto-accept hi-res images</source>
+      <trans-unit id="Auto-accept images" xml:space="preserve">
+        <source>Auto-accept images</source>
         <target>Авто-приём картинок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
