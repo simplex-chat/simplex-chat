@@ -430,4 +430,12 @@
   <string name="your_privacy">Your privacy</string>
   <string name="auto_accept_images">Auto-accept images</string>
   <string name="send_link_previews">Send link previews</string>
+
+  <!-- Settings sections -->
+  <string name="settings_section_title_you">YOU</string>
+  <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_help">HELP</string>
+  <string name="settings_section_title_develop">DEVELOP</string>
+  <string name="settings_section_title_device">DEVICE</string>
+  <string name="settings_section_title_chats">CHATS</string>
 </resources>

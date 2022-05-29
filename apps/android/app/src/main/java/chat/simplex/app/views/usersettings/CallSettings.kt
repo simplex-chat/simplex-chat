@@ -32,21 +32,28 @@ fun CallSettingsLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     Text(
       stringResource(R.string.your_calls),
-      Modifier.padding(bottom = 24.dp),
+      Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)
-    Column {
-      Text(stringResource(R.string.call_on_lock_screen))
-      Row {
-        SharedPreferenceRadioButton(stringResource(R.string.no_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.DISABLE)
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-        SharedPreferenceRadioButton(stringResource(R.string.show_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.SHOW)
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-        SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
+    SettingsSectionView(stringResource(R.string.settings_section_title_settings)) {
+      Box(Modifier.padding(start = 10.dp)) {
+        SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)
+      }
+      divider()
+
+      Column(Modifier.padding(start = 10.dp, top = 12.dp)) {
+        Text(stringResource(R.string.call_on_lock_screen))
+        Row {
+          SharedPreferenceRadioButton(stringResource(R.string.no_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.DISABLE)
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+          SharedPreferenceRadioButton(stringResource(R.string.show_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.SHOW)
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+          SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
+        }
       }
     }
   }
