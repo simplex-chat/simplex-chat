@@ -374,12 +374,6 @@
 				5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */,
 				5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */,
 				5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */,
-				3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */,
-				3CDBCF4727FF621E00354CDD /* CILinkView.swift */,
-				649BCD9F280460FD00C3A862 /* ComposeImageView.swift */,
-				649BCDA12805D6EF00C3A862 /* CIImageView.swift */,
-				648010AA281ADD15009009B9 /* CIFileView.swift */,
-				6454036E2822A9750090DDFF /* ComposeFileView.swift */,
 				5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */,
 				646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */,
 			);
@@ -527,6 +521,9 @@
 				5CE4407827ADB701007B033A /* EmojiItemView.swift */,
 				5CEACCEC27DEA495000BD591 /* MsgContentView.swift */,
 				5C3A88D027DF57800060F1C2 /* FramedItemView.swift */,
+				649BCDA12805D6EF00C3A862 /* CIImageView.swift */,
+				648010AA281ADD15009009B9 /* CIFileView.swift */,
+				3CDBCF4727FF621E00354CDD /* CILinkView.swift */,
 				64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */,
 				5C029EA72837DBB3004A9677 /* CICallItemView.swift */,
 				5C3F1D552842B68D00EC8A82 /* IntegrityErrorItemView.swift */,
@@ -540,6 +537,9 @@
 				5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */,
 				5CEACCE227DE9246000BD591 /* ComposeView.swift */,
 				64AA1C6827EE10C800AC7277 /* ContextItemView.swift */,
+				649BCD9F280460FD00C3A862 /* ComposeImageView.swift */,
+				6454036E2822A9750090DDFF /* ComposeFileView.swift */,
+				3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */,
 			);
 			path = ComposeMessage;
 			sourceTree = "<group>";
