@@ -132,7 +132,7 @@
 "Authentication unavailable" = "Аутентификация недоступна";
 
 /* No comment provided by engineer. */
-"Auto-accept images" = "Авто-приём картинок";
+"Auto-accept images" = "Автоприем изображений";
 
 /* integrity error chat item */
 "bad message hash" = "ошибка хэш сообщения";
