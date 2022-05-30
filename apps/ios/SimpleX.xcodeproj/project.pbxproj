@@ -76,7 +76,7 @@
 		5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403927A5F9BE00368C90 /* CreateGroupView.swift */; };
 		5CDCAD482818589900503DA2 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD472818589900503DA2 /* NotificationService.swift */; };
 		5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
-		5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5CE2BA77284530BF00EC33A6 /* SimpleXChat.h in Headers */ = {isa = PBXBuildFile; fileRef = 5CE2BA76284530BF00EC33A6 /* SimpleXChat.h */; };
 		5CE2BA79284530CC00EC33A6 /* SimpleXChat.docc in Sources */ = {isa = PBXBuildFile; fileRef = 5CE2BA78284530CC00EC33A6 /* SimpleXChat.docc */; };
 		5CE2BA85284532AD00EC33A6 /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6908028376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a */; };
