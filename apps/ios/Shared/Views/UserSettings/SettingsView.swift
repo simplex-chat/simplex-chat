@@ -150,12 +150,12 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("gauge") { Text("Experimental features") }
                     }
-//                    if let token = chatModel.deviceToken {
-//                        HStack {
-//                            notificationsIcon()
-//                            notificationsToggle(token)
-//                        }
-//                    }
+                    if let token = chatModel.deviceToken {
+                        HStack {
+                            notificationsIcon()
+                            notificationsToggle(token)
+                        }
+                    }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
