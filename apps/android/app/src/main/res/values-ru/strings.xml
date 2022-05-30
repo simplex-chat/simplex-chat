@@ -428,4 +428,12 @@
     <string name="your_privacy">Конфиденциальность</string>
     <string name="auto_accept_images">Автоприем изображений</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
+
+    <!-- Settings sections -->
+    <string name="settings_section_title_you">ВЫ</string>
+    <string name="settings_section_title_settings">НАСТРОЙКИ</string>
+    <string name="settings_section_title_help">ПОМОЩЬ</string>
+    <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
+    <string name="settings_section_title_device">УСТРОЙСТВО</string>
+    <string name="settings_section_title_chats">ЧАТЫ</string>
 </resources>
