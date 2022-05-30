@@ -23,7 +23,7 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 
-let appDefaults: [String:Any] = [
+let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
