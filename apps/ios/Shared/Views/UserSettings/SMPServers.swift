@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let serversFont = Font.custom("Menlo", size: 14)
 

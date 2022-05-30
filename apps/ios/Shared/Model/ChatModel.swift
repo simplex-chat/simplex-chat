@@ -10,6 +10,7 @@ import Foundation
 import Combine
 import SwiftUI
 import WebKit
+import SimpleXChat
 
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?

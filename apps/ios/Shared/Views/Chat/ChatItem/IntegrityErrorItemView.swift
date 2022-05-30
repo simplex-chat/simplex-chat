@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct IntegrityErrorItemView: View {
     var chatItem: ChatItem

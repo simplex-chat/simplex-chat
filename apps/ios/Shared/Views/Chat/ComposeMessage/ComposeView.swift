@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 enum ComposePreview {
     case noPreview

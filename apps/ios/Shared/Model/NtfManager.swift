@@ -9,6 +9,7 @@
 import Foundation
 import UserNotifications
 import UIKit
+import SimpleXChat
 
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"

@@ -9,20 +9,22 @@
 import Foundation
 import SwiftUI
 
+let GROUP_DEFAULT_APP_IN_BACKGROUND = "appInBackground"
+
 func getGroupDefaults() -> UserDefaults? {
-    UserDefaults(suiteName: "5NN7GUYB6T.group.chat.simplex.app")
+    UserDefaults(suiteName: "group.chat.simplex.app")
 }
 
-func setAppState(_ phase: ScenePhase) {
+public func setAppState(_ phase: ScenePhase) {
     if let defaults = getGroupDefaults() {
-        defaults.set(phase == .background, forKey: "appInBackground")
+        defaults.set(phase == .background, forKey: GROUP_DEFAULT_APP_IN_BACKGROUND)
         defaults.synchronize()
     }
 }
 
-func getAppState() -> ScenePhase {
+public func getAppState() -> ScenePhase {
     if let defaults = getGroupDefaults() {
-        if defaults.bool(forKey: "appInBackground") {
+        if defaults.bool(forKey: GROUP_DEFAULT_APP_IN_BACKGROUND) {
             return .background
         }
     }

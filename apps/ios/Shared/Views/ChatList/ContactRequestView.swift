@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ContactRequestView: View {
     var contactRequest: UserContactRequest

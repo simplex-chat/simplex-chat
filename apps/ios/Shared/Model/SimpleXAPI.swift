@@ -12,6 +12,7 @@ import Dispatch
 import BackgroundTasks
 import SwiftUI
 import CallKit
+import SimpleXChat
 
 private var chatController: chat_ctrl?
 

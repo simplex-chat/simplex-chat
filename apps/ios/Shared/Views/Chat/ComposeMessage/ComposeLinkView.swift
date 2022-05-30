@@ -8,7 +8,7 @@
 
 import SwiftUI
 import LinkPresentation
-
+import SimpleXChat
 
 func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
     logger.debug("getLinkMetadata: fetching URL preview")
