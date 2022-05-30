@@ -21,7 +21,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
         m.deviceToken = token
-        // UserDefaults.standard.set(false, forKey: DEFAULT_USE_NOTIFICATIONS)
         let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
         if useNotifications {
             Task {
