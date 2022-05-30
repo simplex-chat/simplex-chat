@@ -1,7 +1,8 @@
 package chat.simplex.app.views.call
 
 import android.app.KeyguardManager
-import android.content.*
+import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle

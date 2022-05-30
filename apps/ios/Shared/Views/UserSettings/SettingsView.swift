@@ -22,6 +22,7 @@ let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -31,7 +32,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_PENDING_CONNECTIONS: true,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
-    DEFAULT_PRIVACY_LINK_PREVIEWS: true
+    DEFAULT_PRIVACY_LINK_PREVIEWS: true,
+    DEFAULT_EXPERIMENTAL_CALLS: false
 ]
 
 private var indent: CGFloat = 36
@@ -42,6 +44,7 @@ struct SettingsView: View {
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
 
@@ -67,11 +70,13 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
-                    NavigationLink {
-                        CallSettings()
-                            .navigationTitle("Your calls")
-                    } label: {
-                        settingsRow("video") { Text("Audio & video calls") }
+                    if enableCalls {
+                        NavigationLink {
+                            CallSettings()
+                                .navigationTitle("Your calls")
+                        } label: {
+                            settingsRow("video") { Text("Audio & video calls") }
+                        }
                     }
                     NavigationLink {
                         PrivacySettings()
@@ -138,6 +143,12 @@ struct SettingsView: View {
                             .opacity(0.5)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
+                    }
+                    NavigationLink {
+                        ExperimentalFeaturesView()
+                            .navigationTitle("Experimental features")
+                    } label: {
+                        settingsRow("gauge") { Text("Experimental features") }
                     }
 //                    if let token = chatModel.deviceToken {
 //                        HStack {

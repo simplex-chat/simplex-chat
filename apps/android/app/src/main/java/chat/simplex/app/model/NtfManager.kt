@@ -1,7 +1,6 @@
 package chat.simplex.app.model
 
 import android.app.*
-import android.app.Notification.VISIBILITY_PUBLIC
 import android.content.*
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes

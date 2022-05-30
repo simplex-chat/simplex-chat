@@ -379,7 +379,7 @@
     <string name="icon_descr_audio_call">аудиозвонок</string>
 
     <!-- Call settings -->
-    <string name="call_settings">Аудио- и видеозвонки</string>
+    <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
     <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
@@ -436,4 +436,5 @@
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_experimental_features">Экспериментальные функции</string>
 </resources>

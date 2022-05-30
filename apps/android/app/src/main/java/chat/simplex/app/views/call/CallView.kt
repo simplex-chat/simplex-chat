@@ -31,7 +31,8 @@ import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.helpers.ProfileImage
+import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString

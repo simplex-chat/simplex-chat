@@ -24,7 +24,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Reply
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +40,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.helpers.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import java.io.File
 
 sealed class ComposePreview {

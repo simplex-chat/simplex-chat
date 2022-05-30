@@ -7,7 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,7 +20,6 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
 import chat.simplex.app.views.usersettings.SettingsView

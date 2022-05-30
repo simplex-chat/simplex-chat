@@ -5,10 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -62,17 +59,18 @@ fun CallSettingsLayout(
 @Composable
 fun SharedPreferenceToggle(
   text: String,
-  preference: Preference<Boolean>
+  preference: Preference<Boolean>,
+  preferenceState: MutableState<Boolean>? = null
 ) {
-  var preferenceState by remember { mutableStateOf(preference.get()) }
+  val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Text(text, Modifier.padding(end = 24.dp))
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Switch(
-      checked = preferenceState,
+      checked = prefState.value,
       onCheckedChange = {
         preference.set(it)
-        preferenceState = it
+        prefState.value = it
       },
       colors = SwitchDefaults.colors(
         checkedThumbColor = MaterialTheme.colors.primary,

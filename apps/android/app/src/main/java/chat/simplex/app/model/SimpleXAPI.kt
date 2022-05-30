@@ -80,6 +80,7 @@ class AppPreferences(val context: Context) {
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -111,6 +112,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
+
   }
 }
 
