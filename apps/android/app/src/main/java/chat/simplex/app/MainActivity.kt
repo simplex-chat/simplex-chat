@@ -1,7 +1,7 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.*
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock.elapsedRealtime

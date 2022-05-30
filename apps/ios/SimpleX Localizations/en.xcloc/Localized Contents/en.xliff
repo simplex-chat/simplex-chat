@@ -531,6 +531,11 @@
         <target>Error: URL is invalid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Experimental features" xml:space="preserve">
+        <source>Experimental features</source>
+        <target>Experimental features</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
         <source>File will be received when your contact is online, please wait or check later!</source>
         <target>File will be received when your contact is online, please wait or check later!</target>
@@ -744,6 +749,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Paste" xml:space="preserve">
         <source>Paste</source>
         <target>Paste</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste image" xml:space="preserve">
+        <source>Paste image</source>
+        <target>Paste image</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste received link" xml:space="preserve">

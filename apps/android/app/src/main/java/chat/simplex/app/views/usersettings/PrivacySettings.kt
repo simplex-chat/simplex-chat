@@ -1,21 +1,17 @@
 package chat.simplex.app.views.usersettings
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.TravelExplore
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SettingsBackgroundLight
-import chat.simplex.app.views.helpers.ModalView
+import chat.simplex.app.model.ChatModel
 
 @Composable
 fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
@@ -35,37 +31,9 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     Spacer(Modifier.height(30.dp))
 
     SettingsSectionView(stringResource(R.string.settings_section_title_chats)) {
-      AutoAcceptImagesSection(chatModel.controller.appPrefs.privacyAcceptImages)
+      SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       divider()
-      LinkPreviewsSection(chatModel.controller.appPrefs.privacyLinkPreviews)
-    }
-  }
-}
-
-@Composable private fun AutoAcceptImagesSection(prefAcceptImages: Preference<Boolean>) {
-  SettingsItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        Icons.Outlined.Image,
-        contentDescription = stringResource(R.string.auto_accept_images),
-        tint = HighOrLowlight,
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      SharedPreferenceToggle(stringResource(R.string.auto_accept_images), prefAcceptImages)
-    }
-  }
-}
-
-@Composable private fun LinkPreviewsSection(prefLinkPreviews: Preference<Boolean>) {
-  SettingsItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        Icons.Outlined.TravelExplore,
-        contentDescription = stringResource(R.string.send_link_previews),
-        tint = HighOrLowlight,
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      SharedPreferenceToggle(stringResource(R.string.send_link_previews), prefLinkPreviews)
+      SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
     }
   }
 }

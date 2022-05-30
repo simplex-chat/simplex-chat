@@ -381,7 +381,7 @@
   <string name="icon_descr_audio_call">audio call</string>
 
   <!-- Call settings -->
-  <string name="call_settings">Audio &amp; video calls</string>
+  <string name="settings_audio_video_calls">Audio &amp; video calls</string>
   <string name="your_calls">Your calls</string>
   <string name="connect_calls_via_relay">Connect via relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
@@ -438,4 +438,5 @@
   <string name="settings_section_title_develop">DEVELOP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_experimental_features">Experimental features</string>
 </resources>
