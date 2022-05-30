@@ -176,6 +176,11 @@ struct ComposeView: View {
             Button("Choose from library") {
                 showImagePicker = true
             }
+            if UIPasteboard.general.hasImages {
+                Button("Paste image") {
+                    chosenImage = UIPasteboard.general.image
+                }
+            }
             Button("Choose file") {
                 showFileImporter = true
             }
