@@ -843,10 +843,11 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
   @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
-  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -855,6 +856,7 @@ sealed class CIContent: ItemContent {
     is RcvDeleted -> generalGetString(R.string.deleted_description)
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
+    is RcvIntegrityError -> msgError.text
   }
 }
 
@@ -1117,4 +1119,19 @@ enum class CICallStatus {
   }
 
   fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+}
+
+@Serializable
+sealed class MsgErrorType() {
+  @Serializable @SerialName("msgSkipped") class MsgSkipped(val fromMsgId: Long, val toMsgId: Long): MsgErrorType()
+  @Serializable @SerialName("msgBadId") class MsgBadId(val msgId: Long): MsgErrorType()
+  @Serializable @SerialName("msgBadHash") class MsgBadHash(): MsgErrorType()
+  @Serializable @SerialName("msgDuplicate") class MsgDuplicate(): MsgErrorType()
+
+  val text: String get() = when (this) {
+    is MsgSkipped -> String.format(generalGetString(R.string.integrity_msg_skipped), toMsgId - fromMsgId + 1)
+    is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
+    is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
+    is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
+  }
 }

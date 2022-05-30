@@ -121,7 +121,7 @@ fun FramedItemView(
           Column(Modifier.fillMaxWidth()) {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, showMenu)
+                CIImageView(image = mc.image, file = ci.file, showMenu, receiveFile)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {

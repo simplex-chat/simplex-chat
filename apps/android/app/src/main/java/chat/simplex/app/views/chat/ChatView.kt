@@ -44,7 +44,9 @@ import kotlinx.datetime.Clock
 fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
-  val composeState = remember { mutableStateOf(ComposeState()) }
+  val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val enableCalls = chatModel.controller.appPrefs.experimentalCalls.get()
+  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
   val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
@@ -83,6 +85,8 @@ fun ChatView(chatModel: ChatModel) {
       scope,
       attachmentBottomSheetState,
       chatModel.chatItems,
+      useLinkPreviews = useLinkPreviews,
+      enableCalls = enableCalls,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       openDirectChat = { contactId ->
@@ -104,14 +108,7 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       receiveFile = { fileId ->
-        withApi {
-          val chatItem = chatModel.controller.apiReceiveFile(fileId)
-          if (chatItem != null) {
-            val cInfo = chatItem.chatInfo
-            val cItem = chatItem.chatItem
-            chatModel.upsertChatItem(cInfo, cItem)
-          }
-        }
+        withApi { chatModel.controller.receiveFile(fileId) }
       },
       startCall = { media ->
         val cInfo = chat.chatInfo
@@ -143,6 +140,8 @@ fun ChatLayout(
   scope: CoroutineScope,
   attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
+  useLinkPreviews: Boolean,
+  enableCalls: Boolean = false,
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -170,12 +169,12 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
+          topBar = { ChatInfoToolbar(chat, enableCalls, back, info, startCall) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
           Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, openDirectChat, deleteMessage, receiveFile, acceptCall)
+            ChatItemsList(user, chat, composeState, chatItems, useLinkPreviews, openDirectChat, deleteMessage, receiveFile, acceptCall)
           }
         }
       }
@@ -184,7 +183,7 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+fun ChatInfoToolbar(chat: Chat, enableCalls: Boolean, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
   @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
     IconButton(onClick, modifier = modifier) {
       Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
@@ -201,7 +200,7 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (
     ) {
       val cInfo = chat.chatInfo
       toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
-      if (cInfo is ChatInfo.Direct) {
+      if (cInfo is ChatInfo.Direct && enableCalls) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
           Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
             toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
@@ -261,6 +260,7 @@ fun ChatItemsList(
   chat: Chat,
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
+  useLinkPreviews: Boolean,
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -302,11 +302,11 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
           }
         }
       } else { // direct message
@@ -317,7 +317,7 @@ fun ChatItemsList(
             end = if (sent) 12.dp else 76.dp,
           )
         ) {
-          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
         }
       }
     }
@@ -375,12 +375,13 @@ fun PreviewChatLayout() {
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
       ),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
+      useLinkPreviews = true,
       back = {},
       info = {},
       openDirectChat = {},
@@ -421,12 +422,13 @@ fun PreviewGroupChatLayout() {
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
       ),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
+      useLinkPreviews = true,
       back = {},
       info = {},
       openDirectChat = {},

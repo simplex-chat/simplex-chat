@@ -1,7 +1,7 @@
 package chat.simplex.app
 
 import android.app.Application
-import android.content.*
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock.elapsedRealtime
@@ -159,7 +159,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun enableLA() {
     val m = vm.chatModel
     authenticate(
-      generalGetString(R.string.auth_enable),
+      generalGetString(R.string.auth_enable_simplex_lock),
       generalGetString(R.string.auth_confirm_credential),
       this@MainActivity,
       completed = { laResult ->
@@ -193,7 +193,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
   private fun disableLA() {
     val m = vm.chatModel
     authenticate(
-      generalGetString(R.string.auth_disable),
+      generalGetString(R.string.auth_disable_simplex_lock),
       generalGetString(R.string.auth_confirm_credential),
       this@MainActivity,
       completed = { laResult ->

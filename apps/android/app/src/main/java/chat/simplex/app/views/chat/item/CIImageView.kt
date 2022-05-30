@@ -26,7 +26,8 @@ import chat.simplex.app.views.helpers.*
 fun CIImageView(
   image: String,
   file: CIFile?,
-  showMenu: MutableState<Boolean>
+  showMenu: MutableState<Boolean>,
+  receiveFile: (Long) -> Unit
 ) {
   @Composable
   fun loadingIndicator() {
@@ -98,11 +99,21 @@ fun CIImageView(
       })
     } else {
       imageView(base64ToBitmap(image), onClick = {
-        if (file != null && file.fileStatus == CIFileStatus.RcvAccepted)
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.waiting_for_image),
-            generalGetString(R.string.image_will_be_received_when_contact_is_online)
-          )
+        if (file != null) {
+          when (file.fileStatus) {
+            CIFileStatus.RcvInvitation ->
+              receiveFile(file.fileId)
+            CIFileStatus.RcvAccepted ->
+              AlertManager.shared.showAlertMsg(
+                generalGetString(R.string.waiting_for_image),
+                generalGetString(R.string.image_will_be_received_when_contact_is_online)
+              )
+            CIFileStatus.RcvTransfer -> {} // ?
+            CIFileStatus.RcvComplete -> {} // ?
+            CIFileStatus.RcvCancelled -> {} // TODO
+            else -> {}
+          }
+        }
       })
     }
     loadingIndicator()

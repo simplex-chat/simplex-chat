@@ -65,24 +65,24 @@
     <string name="simplex_service_notification_text">Приём сообщений…</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
-    <string name="la_notice_title">Блокировка SimpleX</string>
-    <string name="la_notice_text">Чтобы защитить вашу информацию, включите блокировку <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет нужно пройти аутентификацию для включения блокировки.</string>
+    <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Чтобы защитить вашу информацию, включите блокировку <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет нужно пройти аутентификацию для включения блокировки.</string>
     <string name="la_notice_turn_on">Включить</string>
 
     <!-- LocalAuthentication.kt -->
-    <string name="auth_turned_on">Блокировка SimpleX включена</string>
-    <string name="auth_turned_on_desc">Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.</string>
+    <string name="auth_simplex_lock_turned_on">Блокировка SimpleX включена</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.</string>
     <string name="auth_unlock">Разблокировать</string>
     <string name="auth_log_in_using_credential">Пройдите аутентификацию</string>
-    <string name="auth_enable">Включить блокировку SimpleX</string>
-    <string name="auth_disable">Отключить блокировку SimpleX</string>
+    <string name="auth_enable_simplex_lock">Включить блокировку SimpleX</string>
+    <string name="auth_disable_simplex_lock">Отключить блокировку SimpleX</string>
     <string name="auth_confirm_credential">Пройдите аутентификацию</string>
     <string name="auth_error">Ошибка аутентификации</string>
     <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
     <string name="auth_failed">Ошибка аутентификации</string>
     <string name="auth_unavailable">Аутентификация недоступна</string>
-    <string name="auth_unavailable_instruction_desc">На устройстве не включена аутентификация. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
-    <string name="auth_unavailable_turning_off_desc">На устройстве выключена аутентификация. Отключение блокировки SimpleX Chat.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</string>
     <string name="auth_retry">Повторить</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
@@ -168,7 +168,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="choose_file">Файлы\n(v2.0)</string>
+    <string name="choose_file">Файлы</string>
 
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -379,7 +379,8 @@
     <string name="icon_descr_audio_call">аудиозвонок</string>
 
     <!-- Call settings -->
-    <string name="call_settings">Настройки звонков</string>
+    <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
+    <string name="your_calls">Ваши звонки</string>
     <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
@@ -413,4 +414,27 @@
     <string name="icon_descr_call_progress">Текущий звонок</string>
     <string name="icon_descr_call_ended">Звонок завершен</string>
     <string name="answer_call">Принять звонок</string>
+
+    <!-- Message integrity -->
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений"</string>
+    <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
+    <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
+    <string name="integrity_msg_duplicate">повторное сообщение</string>
+    <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.</string>
+
+    <!-- Privacy settings -->
+    <string name="privacy_and_security">Конфиденциальность</string>
+    <string name="your_privacy">Конфиденциальность</string>
+    <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="send_link_previews">Отправлять картинки ссылок</string>
+
+    <!-- Settings sections -->
+    <string name="settings_section_title_you">ВЫ</string>
+    <string name="settings_section_title_settings">НАСТРОЙКИ</string>
+    <string name="settings_section_title_help">ПОМОЩЬ</string>
+    <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
+    <string name="settings_section_title_device">УСТРОЙСТВО</string>
+    <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_experimental_features">Экспериментальные функции</string>
 </resources>

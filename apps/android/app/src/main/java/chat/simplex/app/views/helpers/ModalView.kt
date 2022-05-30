@@ -9,20 +9,22 @@ import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.TAG
 
 @Composable
-fun ModalView(close: () -> Unit, content: @Composable () -> Unit) {
+fun ModalView(
+  close: () -> Unit,
+  background: Color = MaterialTheme.colors.background,
+  modifier: Modifier = Modifier.padding(horizontal = 16.dp),
+  content: @Composable () -> Unit,
+) {
   BackHandler(onBack = close)
-  Surface(
-    Modifier
-      .background(MaterialTheme.colors.background)
-      .fillMaxSize()
-  ) {
-    Column {
+  Surface(Modifier.fillMaxSize()) {
+    Column(Modifier.background(background)) {
       CloseSheetBar(close)
-      Box(Modifier.padding(horizontal = 16.dp)) { content() }
+      Box(modifier) { content() }
     }
   }
 }
@@ -32,7 +34,7 @@ class ModalManager {
   private val modalCount = mutableStateOf(0)
 
   fun showModal(content: @Composable () -> Unit) {
-    showCustomModal { close -> ModalView(close, content) }
+    showCustomModal { close -> ModalView(close, content = content) }
   }
 
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {

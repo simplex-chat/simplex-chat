@@ -111,7 +111,7 @@ fun PreviewSendMsgView() {
   val textStyle = remember { mutableStateOf(smallFont) }
   SimpleXTheme {
     SendMsgView(
-      composeState = remember { mutableStateOf(ComposeState()) },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       sendMessage = {},
       onMessageChange = { _ -> },
       textStyle = textStyle
@@ -129,7 +129,7 @@ fun PreviewSendMsgView() {
 fun PreviewSendMsgViewEditing() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateEditing = ComposeState(editingItem = ChatItem.getSampleData())
+  val composeStateEditing = ComposeState(editingItem = ChatItem.getSampleData(), useLinkPreviews = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
@@ -150,7 +150,7 @@ fun PreviewSendMsgViewEditing() {
 fun PreviewSendMsgViewInProgress() {
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
-  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt"), inProgress = true)
+  val composeStateInProgress = ComposeState(preview = ComposePreview.FilePreview("test.txt"), inProgress = true, useLinkPreviews = true)
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },

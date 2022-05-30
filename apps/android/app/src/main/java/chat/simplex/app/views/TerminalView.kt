@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
-  val composeState = remember { mutableStateOf(ComposeState()) }
+  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
   BackHandler(onBack = close)
   TerminalLayout(
     chatModel.terminalItems,
@@ -35,7 +35,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       withApi {
         // show "in progress"
         chatModel.controller.sendCmd(CC.Console(composeState.value.message))
-        composeState.value = ComposeState()
+        composeState.value = ComposeState(useLinkPreviews = false)
         // hide "in progress"
       }
     },
@@ -120,7 +120,7 @@ fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
       terminalItems = TerminalItem.sampleData,
-      composeState = remember { mutableStateOf(ComposeState()) },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
       close = {}
     )

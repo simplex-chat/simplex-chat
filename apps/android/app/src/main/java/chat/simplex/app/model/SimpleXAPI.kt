@@ -78,6 +78,9 @@ class AppPreferences(val context: Context) {
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+  val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
+  val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -107,6 +110,10 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
+    private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
+    private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
+    private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
+
   }
 }
 
@@ -510,13 +517,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE) {
-          withApi {
-            val chatItem = apiReceiveFile(file.fileId)
-            if (chatItem != null) {
-              chatItemSimpleUpdate(chatItem)
-            }
-          }
+        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE && appPrefs.privacyAcceptImages.get()) {
+          withApi { receiveFile(file.fileId) }
         }
         if (!cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
@@ -612,6 +614,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       perform(call)
     } else {
       Log.d(TAG, "processReceivedMsg: ignoring ${r.responseType}, not in call with the contact ${contact.id}")
+    }
+  }
+
+  suspend fun receiveFile(fileId: Long) {
+    val chatItem = apiReceiveFile(fileId)
+    if (chatItem != null) {
+      chatItemSimpleUpdate(chatItem)
     }
   }
 
@@ -762,12 +771,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     if (!appPrefs.laNoticeShown.get()) {
       appPrefs.laNoticeShown.set(true)
       AlertManager.shared.showAlertDialog(
-        title = generalGetString(R.string.la_notice_title),
-        text = generalGetString(R.string.la_notice_text),
+        title = generalGetString(R.string.la_notice_title_simplex_lock),
+        text = generalGetString(R.string.la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled),
         confirmText = generalGetString(R.string.la_notice_turn_on),
         onConfirm = {
           authenticate(
-            generalGetString(R.string.auth_enable),
+            generalGetString(R.string.auth_enable_simplex_lock),
             generalGetString(R.string.auth_confirm_credential),
             activity,
             completed = { laResult ->

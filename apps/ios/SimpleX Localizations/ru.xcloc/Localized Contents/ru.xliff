@@ -45,6 +45,11 @@
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+        <source>%d skipped message(s)</source>
+        <target>%d пропущенных сообщение(й)</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
         <target>%lld</target>
@@ -171,14 +176,29 @@
         <target>Прикрепить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+        <source>Audio &amp; video calls</source>
+        <target>Аудио- и видеозвонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication failed" xml:space="preserve">
+        <source>Authentication failed</source>
+        <target>Ошибка аутентификации</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Authentication unavailable" xml:space="preserve">
+        <source>Authentication unavailable</source>
+        <target>Аутентификация недоступна</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Auto-accept images" xml:space="preserve">
+        <source>Auto-accept images</source>
+        <target>Автоприем изображений</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
         <source>Call already ended!</source>
         <target>Звонок уже завершен!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Call settings" xml:space="preserve">
-        <source>Call settings</source>
-        <target>Настройки звонков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -198,7 +218,7 @@
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
         <source>Chats</source>
-        <target>Назад</target>
+        <target>Чаты</target>
         <note>back button to return to chats list</note>
       </trans-unit>
       <trans-unit id="Check messages" xml:space="preserve">
@@ -212,8 +232,8 @@
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Choose file" xml:space="preserve">
-        <source>Choose file (new in v2.0)</source>
-        <target>Выбрать файл (v2.0)</target>
+        <source>Choose file</source>
+        <target>Выбрать файл</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
@@ -441,9 +461,34 @@
         <target>Для разработчиков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Device" xml:space="preserve">
+        <source>Device</source>
+        <target>Устройство</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+        <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
+        <target>Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+        <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
+        <target>Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+        <source>Disable SimpleX Lock</source>
+        <target>Отключить блокировку SimpleX</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
         <target>Имя профиля</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
+        <source>Do NOT use SimpleX for emergency calls.</source>
+        <target>Не используйте SimpleX для экстренных звонков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -451,14 +496,14 @@
         <target>Редактировать</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+        <source>Enable SimpleX Lock</source>
+        <target>Включить блокировку SimpleX</target>
+        <note>authentication reason</note>
+      </trans-unit>
       <trans-unit id="Enable notifications? (BETA)" xml:space="preserve">
         <source>Enable notifications? (BETA)</source>
         <target>Включить уведомления? (БЕТА)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Enter one SMP server per line:" xml:space="preserve">
-        <source>Enter one SMP server per line:</source>
-        <target>Введите SMP серверы, каждый на отдельной строке:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting token" xml:space="preserve">
@@ -484,6 +529,11 @@
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
         <target>Ошибка: неверная ссылка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Experimental features" xml:space="preserve">
+        <source>Experimental features</source>
+        <target>Экспериментальные функции</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
@@ -529,6 +579,11 @@
       <trans-unit id="How to use markdown" xml:space="preserve">
         <source>How to use markdown</source>
         <target>Как форматировать</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
+        <source>If the video fails to connect, flip the camera to resolve it.</source>
+        <target>Если видео не соединилось, переключите камеру.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you can't meet in person, **show QR code in the video call**, or share the link." xml:space="preserve">
@@ -586,6 +641,21 @@
         <target>Ошибка в ссылке контакта</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
+        <source>It can happen when:
+1. The messages expire on the server if they were not received for 30 days,
+2. The server you use to receive the messages from this contact was updated and restarted.
+3. The connection is compromised.
+Please connect to the developers via Settings to receive the updates about the servers.
+We will be adding server redundancy to prevent lost messages.</source>
+        <target>Это может случится, когда:
+1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.
+2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.
+3. Соединение компроментировано.
+Пожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.
+Мы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
         <source>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</source>
         <target>Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).</target>
@@ -599,6 +669,11 @@
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Большой файл!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Limitations" xml:space="preserve">
+        <source>Limitations</source>
+        <target>Ограничения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -676,6 +751,11 @@
         <target>Вставить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Paste image" xml:space="preserve">
+        <source>Paste image</source>
+        <target>Вставить изображение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Paste received link" xml:space="preserve">
         <source>Paste received link</source>
         <target>Вставить полученную ссылку</target>
@@ -704,6 +784,16 @@
       <trans-unit id="Please check your network connection and try again." xml:space="preserve">
         <source>Please check your network connection and try again.</source>
         <target>Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Pre-arrange the calls, as notifications arrive with a delay (we are improving it)." xml:space="preserve">
+        <source>Pre-arrange the calls, as notifications arrive with a delay (we are improving it).</source>
+        <target>Назначайте звонки заранее, поскольку уведомления приходят с задержкой (мы улучшаем это)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+        <source>Privacy &amp; security</source>
+        <target>Конфиденциальность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Privacy redefined" xml:space="preserve">
@@ -751,9 +841,19 @@
         <target>Ответить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Retry" xml:space="preserve">
+        <source>Retry</source>
+        <target>Повторить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="SMP servers" xml:space="preserve">
         <source>SMP servers</source>
         <target>SMP серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SMP servers (one per line)" xml:space="preserve">
+        <source>SMP servers (one per line)</source>
+        <target>SMP серверы (один на строке)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
@@ -779,6 +879,11 @@
       <trans-unit id="Scan contact's QR code" xml:space="preserve">
         <source>Scan contact's QR code</source>
         <target>Сосканировать QR код контакта</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send link previews" xml:space="preserve">
+        <source>Send link previews</source>
+        <target>Отправлять картинки ссылок</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server connected" xml:space="preserve">
@@ -809,6 +914,21 @@
       <trans-unit id="Show pending connections" xml:space="preserve">
         <source>Show pending connections</source>
         <target>Показать ожидаемые соединения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock" xml:space="preserve">
+        <source>SimpleX Lock</source>
+        <target>Блокировка SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+        <source>SimpleX Lock turned on</source>
+        <target>Блокировка SimpleX включена</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Skipped messages" xml:space="preserve">
+        <source>Skipped messages</source>
+        <target>Пропущенные сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -853,6 +973,11 @@
         <target>Контакт, которому вы отправили эту ссылку, не сможет соединиться!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
+        <source>The microphone does not work when the app is in the background.</source>
+        <target>Микрофон не работает, когда приложение в фоновом режиме.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
         <source>The next generation of private messaging</source>
         <target>Новое поколение приватных сообщений</target>
@@ -888,9 +1013,21 @@
         <target>Чтобы добавить ваш первый контакт, выберите **одно из**:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
+        <source>To prevent the call interruption, enable Do Not Disturb mode.</source>
+        <target>Чтобы избежать прерывания звонков, включите режим Не Беспокоить.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
         <target>Чтобы защитить вашу конфиденциальность, вместо ID пользователей, которые есть в других платформах, SimpleX использует ID для очередей сообщений, разные для каждого контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+        <source>To protect your information, turn on SimpleX Lock.
+You will be prompted to complete authentication before this feature is enabled.</source>
+        <target>Чтобы защитить вашу информацию, включите блокировку SimpleX Chat.
+Вам будет нужно пройти аутентификацию для включения блокировки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
@@ -901,6 +1038,11 @@
       <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this contact.</source>
         <target>Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Turn on" xml:space="preserve">
+        <source>Turn on</source>
+        <target>Включить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -914,6 +1056,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
 Чтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlock" xml:space="preserve">
+        <source>Unlock</source>
+        <target>Разблокировать</target>
+        <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
         <source>Use SimpleX Chat servers?</source>
@@ -985,6 +1132,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вы определяете через какие серверы вы **получаете сообщения**, ваши контакты - серверы, которые вы используете для отправки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You could not be verified; please try again." xml:space="preserve">
+        <source>You could not be verified; please try again.</source>
+        <target>Верификация не удалась; пожалуйста, попробуйте ещё раз.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You invited your contact" xml:space="preserve">
         <source>You invited your contact</source>
         <target>Вы пригласили ваш контакт</target>
@@ -1000,6 +1152,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Соединение будет установлено, когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
+        <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
+        <target>Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
         <source>Your SMP servers</source>
         <target>Ваши SMP серверы</target>
@@ -1008,6 +1165,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>Ваш SimpleX адрес</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your calls" xml:space="preserve">
+        <source>Your calls</source>
+        <target>Ваши звонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat address" xml:space="preserve">
@@ -1045,6 +1207,11 @@ You can cancel this connection and remove the contact (and try later with a new 
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your privacy" xml:space="preserve">
+        <source>Your privacy</source>
+        <target>Конфиденциальность</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
@@ -1098,6 +1265,16 @@ SimpleX серверы не могут получить доступ к ваше
         <source>audio call (not e2e encrypted)</source>
         <target>аудиозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="bad message ID" xml:space="preserve">
+        <source>bad message ID</source>
+        <target>ошибка ID сообщения</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
+      <trans-unit id="bad message hash" xml:space="preserve">
+        <source>bad message hash</source>
+        <target>ошибка хэш сообщения</target>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -1168,6 +1345,11 @@ SimpleX серверы не могут получить доступ к ваше
         <source>deleted</source>
         <target>удалено</target>
         <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="duplicate message" xml:space="preserve">
+        <source>duplicate message</source>
+        <target>повторное сообщение</target>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="e2e encrypted" xml:space="preserve">
         <source>e2e encrypted</source>
@@ -1316,6 +1498,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>SimpleX использует камеру для сканирования QR кодов при соединении с другими пользователями и для видео звонков.</target>
         <note>Privacy - Camera Usage Description</note>
       </trans-unit>
+      <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
+        <source>SimpleX uses Face ID for local authentication</source>
+        <target>SimpleX использует Face ID для аутентификации</target>
+        <note>Privacy - Face ID Usage Description</note>
+      </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
         <source>SimpleX needs microphone access for audio and video calls.</source>
         <target>SimpleX использует микрофон для аудио и видео звонков.</target>
@@ -1365,6 +1552,11 @@ SimpleX серверы не могут получить доступ к ваше
         <target>%@ хочет соединиться!</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+        <source>%d skipped message(s)</source>
+        <target>%d пропущенных сообщений</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
         <source>**e2e encrypted** audio call</source>
         <target>**e2e зашифрованный** аудиозвонок</target>
@@ -1405,6 +1597,16 @@ SimpleX серверы не могут получить доступ к ваше
         <target>аудиозвонок (не e2e зашифрованный)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="bad message ID" xml:space="preserve">
+        <source>bad message ID</source>
+        <target>ошибка ID сообщения</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
+      <trans-unit id="bad message hash" xml:space="preserve">
+        <source>bad message hash</source>
+        <target>ошибка хэш сообщения</target>
+        <note>integrity error chat item</note>
+      </trans-unit>
       <trans-unit id="call error" xml:space="preserve">
         <source>call error</source>
         <target>ошибка звонка</target>
@@ -1444,6 +1646,11 @@ SimpleX серверы не могут получить доступ к ваше
         <source>deleted</source>
         <target>удалено</target>
         <note>deleted chat item</note>
+      </trans-unit>
+      <trans-unit id="duplicate message" xml:space="preserve">
+        <source>duplicate message</source>
+        <target>повторное сообщение</target>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="ended call %@" xml:space="preserve">
         <source>ended call %@</source>
