@@ -120,6 +120,9 @@
 "Attach" = "Прикрепить";
 
 /* No comment provided by engineer. */
+"Audio & video calls" = "Аудио- и видеозвонки";
+
+/* No comment provided by engineer. */
 "audio call (not e2e encrypted)" = "аудиозвонок (не e2e зашифрованный)";
 
 /* No comment provided by engineer. */
@@ -127,6 +130,9 @@
 
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Аутентификация недоступна";
+
+/* No comment provided by engineer. */
+"Auto-accept images" = "Автоприем изображений";
 
 /* integrity error chat item */
 "bad message hash" = "ошибка хэш сообщения";
@@ -146,9 +152,6 @@
 /* call status */
 "call in progress" = "активный звонок";
 
-/* No comment provided by engineer. */
-"Call settings" = "Настройки звонков";
-
 /* call status */
 "calling…" = "входящий звонок…";
 
@@ -162,7 +165,7 @@
 "Chat with the developers" = "Соединиться с разработчиками";
 
 /* back button to return to chats list */
-"Chats" = "Назад";
+"Chats" = "Чаты";
 
 /* No comment provided by engineer. */
 "Check messages" = "Проверять сообщения";
@@ -171,7 +174,7 @@
 "Checking new messages..." = "Проверяются новые сообщения...";
 
 /* No comment provided by engineer. */
-"Choose file" = "Выбрать файл (v2.0)";
+"Choose file" = "Выбрать файл";
 
 /* No comment provided by engineer. */
 "Choose from library" = "Выбрать из библиотеки";
@@ -337,6 +340,9 @@
 
 /* No comment provided by engineer. */
 "Develop" = "Для разработчиков";
+
+/* No comment provided by engineer. */
+"Device" = "Устройство";
 
 /* No comment provided by engineer. */
 "Device authentication is disabled. Turning off SimpleX Lock." = "Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.";
@@ -555,6 +561,9 @@
 "Pre-arrange the calls, as notifications arrive with a delay (we are improving it)." = "Назначайте звонки заранее, поскольку уведомления приходят с задержкой (мы улучшаем это)";
 
 /* No comment provided by engineer. */
+"Privacy & security" = "Конфиденциальность";
+
+/* No comment provided by engineer. */
 "Privacy redefined" = "Более конфиденциальный";
 
 /* No comment provided by engineer. */
@@ -610,6 +619,9 @@
 
 /* No comment provided by engineer. */
 "secret" = "секрет";
+
+/* No comment provided by engineer. */
+"Send link previews" = "Отправлять картинки ссылок";
 
 /* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
@@ -810,6 +822,9 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.";
 
 /* No comment provided by engineer. */
+"Your calls" = "Ваши звонки";
+
+/* No comment provided by engineer. */
 "Your chat address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
@@ -829,6 +844,9 @@
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
+
+/* No comment provided by engineer. */
+"Your privacy" = "Конфиденциальность";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ваш профиль хранится на вашем устройстве и отправляется только вашим контактам.\nSimpleX серверы не могут получить доступ к вашему профилю.";

@@ -34,7 +34,7 @@ fun CallSettingsLayout(
   ) {
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     Text(
-      stringResource(R.string.call_settings),
+      stringResource(R.string.your_calls),
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
@@ -71,6 +71,7 @@ fun SharedPreferenceToggle(
         checkedThumbColor = MaterialTheme.colors.primary,
         uncheckedThumbColor = HighOrLowlight
       ),
+      modifier = Modifier.padding(end = 6.dp)
     )
   }
 }

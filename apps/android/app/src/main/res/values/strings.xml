@@ -169,7 +169,7 @@
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Use Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file\n(new in v2.0)</string>
+  <string name="choose_file">Choose file</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -381,7 +381,8 @@
   <string name="icon_descr_audio_call">audio call</string>
 
   <!-- Call settings -->
-  <string name="call_settings">Call settings</string>
+  <string name="call_settings">Audio &amp; video calls</string>
+  <string name="your_calls">Your calls</string>
   <string name="connect_calls_via_relay">Connect via relay</string>
   <string name="call_on_lock_screen">Calls on lock screen:</string>
   <string name="accept_call_on_lock_screen">Accept</string>
@@ -423,4 +424,10 @@
   <string name="integrity_msg_duplicate">duplicate message</string>
   <string name="alert_title_skipped_messages">Skipped messages</string>
   <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
+
+  <!-- Privacy settings -->
+  <string name="privacy_and_security">Privacy &amp; security</string>
+  <string name="your_privacy">Your privacy</string>
+  <string name="auto_accept_images">Auto-accept images</string>
+  <string name="send_link_previews">Send link previews</string>
 </resources>

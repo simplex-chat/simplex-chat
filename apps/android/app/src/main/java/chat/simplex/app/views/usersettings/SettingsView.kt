@@ -47,7 +47,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       profile = user.profile,
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = ::setRunServiceInBackground,
-      performLA = chatModel.performLA,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
@@ -65,7 +64,6 @@ fun SettingsLayout(
   profile: Profile,
   runServiceInBackground: MutableState<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
-  performLA: MutableState<Boolean>,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
@@ -103,7 +101,7 @@ fun SettingsLayout(
 
       CallSettingsSection(showModal)
       divider()
-      ChatLockSection(performLA, setPerformLA)
+      PrivacySettingsSection(showModal, setPerformLA)
       divider()
       PrivateNotificationsSection(runServiceInBackground, setRunServiceInBackground)
       divider()
@@ -151,6 +149,18 @@ fun SettingsLayout(
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(stringResource(R.string.call_settings))
+  }
+}
+
+@Composable private fun PrivacySettingsSection(showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit), setPerformLA: (Boolean) -> Unit) {
+  SettingsSectionView(showModal { PrivacySettingsView(it, setPerformLA) }) {
+    Icon(
+      Icons.Outlined.Lock,
+      contentDescription = stringResource(R.string.privacy_and_security),
+      tint = HighOrLowlight,
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(stringResource(R.string.privacy_and_security))
   }
 }
 
@@ -258,13 +268,13 @@ fun SettingsLayout(
           checkedThumbColor = MaterialTheme.colors.primary,
           uncheckedThumbColor = HighOrLowlight
         ),
-        modifier = Modifier.padding(end = 8.dp)
+        modifier = Modifier.padding(end = 6.dp)
       )
     }
   }
 }
 
-@Composable private fun ChatLockSection(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
+@Composable fun ChatLockSection(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
   SettingsSectionView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
@@ -286,7 +296,7 @@ fun SettingsLayout(
           checkedThumbColor = MaterialTheme.colors.primary,
           uncheckedThumbColor = HighOrLowlight
         ),
-        modifier = Modifier.padding(end = 8.dp)
+        modifier = Modifier.padding(end = 6.dp)
       )
     }
   }
@@ -362,7 +372,6 @@ fun PreviewSettingsLayout() {
       profile = Profile.sampleData,
       runServiceInBackground = remember { mutableStateOf(true) },
       setRunServiceInBackground = {},
-      performLA = remember { mutableStateOf(false) },
       setPerformLA = {},
       showModal = { {} },
       showCustomModal = { {} },

@@ -168,7 +168,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="choose_file">Файлы\n(v2.0)</string>
+    <string name="choose_file">Файлы</string>
 
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -379,7 +379,8 @@
     <string name="icon_descr_audio_call">аудиозвонок</string>
 
     <!-- Call settings -->
-    <string name="call_settings">Настройки звонков</string>
+    <string name="call_settings">Аудио- и видеозвонки</string>
+    <string name="your_calls">Ваши звонки</string>
     <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
     <string name="accept_call_on_lock_screen">Принимать</string>
@@ -421,4 +422,10 @@
     <string name="integrity_msg_duplicate">повторное сообщение</string>
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.</string>
+
+    <!-- Privacy settings -->
+    <string name="privacy_and_security">Конфиденциальность</string>
+    <string name="your_privacy">Конфиденциальность</string>
+    <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="send_link_previews">Отправлять картинки ссылок</string>
 </resources>

@@ -36,6 +36,7 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
+  useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   acceptCall: (Contact) -> Unit
@@ -69,7 +70,7 @@ fun ChatItemView(
         ) {
           ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             if (composeState.value.editing) {
-              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
             } else {
               composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
             }
@@ -98,7 +99,7 @@ fun ChatItemView(
           }
           if (cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
-              composeState.value = ComposeState(editingItem = cItem)
+              composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
             })
           }
@@ -203,7 +204,8 @@ fun PreviewChatItemView() {
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      useLinkPreviews = true,
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},
@@ -220,7 +222,8 @@ fun PreviewChatItemViewDeletedContent() {
       User.sampleData,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      useLinkPreviews = true,
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},

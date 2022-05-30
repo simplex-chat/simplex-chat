@@ -45,7 +45,7 @@ import java.io.File
 
 sealed class ComposePreview {
   object NoPreview: ComposePreview()
-  class CLinkPreview(val linkPreview: LinkPreview): ComposePreview()
+  class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
   class ImagePreview(val image: String): ComposePreview()
   class FilePreview(val fileName: String): ComposePreview()
 }
@@ -60,12 +60,14 @@ data class ComposeState(
   val message: String = "",
   val preview: ComposePreview = ComposePreview.NoPreview,
   val contextItem: ComposeContextItem = ComposeContextItem.NoContextItem,
-  val inProgress: Boolean = false
+  val inProgress: Boolean = false,
+  val useLinkPreviews: Boolean
 ) {
-  constructor(editingItem: ChatItem): this(
+  constructor(editingItem: ChatItem, useLinkPreviews: Boolean): this (
     editingItem.content.text,
     chatItemPreview(editingItem),
-    ComposeContextItem.EditingItem(editingItem)
+    ComposeContextItem.EditingItem(editingItem),
+    useLinkPreviews = useLinkPreviews
   )
 
   val editing: Boolean
@@ -88,7 +90,7 @@ data class ComposeState(
       when (preview) {
         is ComposePreview.ImagePreview -> false
         is ComposePreview.FilePreview -> false
-        else -> true
+        else -> useLinkPreviews
       }
   val linkPreview: LinkPreview?
     get() =
@@ -124,6 +126,7 @@ fun ComposeView(
   val prevLinkUrl = remember { mutableStateOf<String?>(null) }
   val pendingLinkUrl = remember { mutableStateOf<String?>(null) }
   val cancelledLinks = remember { mutableSetOf<String>() }
+  val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
@@ -239,6 +242,7 @@ fun ComposeView(
 
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
+      composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
       withApi {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
@@ -277,7 +281,7 @@ fun ComposeView(
       is ComposePreview.CLinkPreview -> {
         val url = parseMessage(cs.message)
         val lp = composePreview.linkPreview
-        if (url == lp.uri) {
+        if (lp != null && url == lp.uri) {
           MsgContent.MCLink(cs.message, preview = lp)
         } else {
           MsgContent.MCText(cs.message)
@@ -299,7 +303,7 @@ fun ComposeView(
   }
 
   fun clearState() {
-    composeState.value = ComposeState()
+    composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
     chosenImage.value = null
     chosenFile.value = null
@@ -397,6 +401,7 @@ fun ComposeView(
     if (uri != null) {
       cancelledLinks.add(uri)
     }
+    pendingLinkUrl.value = null
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
   }
 

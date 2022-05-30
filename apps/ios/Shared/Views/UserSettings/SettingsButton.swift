@@ -11,14 +11,13 @@ import SwiftUI
 struct SettingsButton: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var showSettings = false
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         Button { showSettings = true } label: {
             Image(systemName: "gearshape")
         }
         .sheet(isPresented: $showSettings, content: {
-            SettingsView(showSettings: $showSettings, performLA: prefPerformLA)
+            SettingsView(showSettings: $showSettings)
         })
     }
 }
