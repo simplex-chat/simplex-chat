@@ -193,7 +193,7 @@
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
         <source>Auto-accept images</source>
-        <target>Авто-приём картинок</target>
+        <target>Автоприем изображений</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Call already ended!" xml:space="preserve">
