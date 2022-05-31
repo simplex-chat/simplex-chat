@@ -10,7 +10,7 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
-func getChatCtrl() -> chat_ctrl {
+public func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
     let dataDir = getDocumentsDirectory().path + "/mobile_v1"
     logger.debug("documents directory \(dataDir)")
@@ -20,12 +20,12 @@ func getChatCtrl() -> chat_ctrl {
     return chatController!
 }
 
-func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
+public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
     var c = cmd.cmdString.cString(using: .utf8)!
     return chatResponse(chat_send_cmd(getChatCtrl(), &c))
 }
 
-func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
+public func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
     let s = String.init(cString: cjson)
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
@@ -57,7 +57,7 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
     return nil
 }
 
-func responseError(_ err: Error) -> String {
+public func responseError(_ err: Error) -> String {
     if let r = err as? ChatResponse {
         return String(describing: r)
     } else {

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let memberImageSize: CGFloat = 34
 

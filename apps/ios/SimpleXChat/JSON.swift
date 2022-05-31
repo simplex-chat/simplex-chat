@@ -8,7 +8,7 @@
 
 import Foundation
 
-func getJSONDecoder() -> JSONDecoder {
+public func getJSONDecoder() -> JSONDecoder {
     let jd = JSONDecoder()
     let fracSeconds = getDateFormatter("yyyy-MM-dd'T'HH:mm:ss.SSSZZZZZ")
     let noFracSeconds = getDateFormatter("yyyy-MM-dd'T'HH:mm:ssZZZZZ")
@@ -23,7 +23,7 @@ func getJSONDecoder() -> JSONDecoder {
     return jd
 }
 
-func getJSONEncoder() -> JSONEncoder {
+public func getJSONEncoder() -> JSONEncoder {
     let je = JSONEncoder()
     je.dateEncodingStrategy = .iso8601
     return je

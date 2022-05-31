@@ -7,6 +7,7 @@
 
 import SwiftUI
 import OSLog
+import SimpleXChat
 
 let logger = Logger()
 

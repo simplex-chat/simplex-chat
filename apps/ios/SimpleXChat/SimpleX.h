@@ -1,6 +1,15 @@
 //
-//  Use this file to import your target's public headers that you would like to expose to Swift.
+//  SimpleX.h
+//  SimpleX
 //
+//  Created by Evgeny on 30/05/2022.
+//  Copyright © 2022 SimpleX Chat. All rights reserved.
+//
+
+#ifndef SimpleX_h
+#define SimpleX_h
+
+#endif /* SimpleX_h */
 
 extern void hs_init(int argc, char **argv[]);
 

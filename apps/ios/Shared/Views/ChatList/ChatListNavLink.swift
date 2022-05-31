@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct EmojiItemView: View {
     var chatItem: ChatItem

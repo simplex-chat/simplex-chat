@@ -11,7 +11,7 @@ import Foundation
 let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
 
-enum ChatCommand {
+public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case startChat
@@ -50,7 +50,7 @@ enum ChatCommand {
     case receiveFile(fileId: Int64)
     case string(String)
 
-    var cmdString: String {
+    public var cmdString: String {
         get {
             switch self {
             case .showActiveUser: return "/u"
@@ -95,7 +95,7 @@ enum ChatCommand {
         }
     }
 
-    var cmdType: String {
+    public var cmdType: String {
         get {
             switch self {
             case .showActiveUser: return "showActiveUser"
@@ -151,7 +151,7 @@ struct APIResponse: Decodable {
     var resp: ChatResponse
 }
 
-enum ChatResponse: Decodable, Error {
+public enum ChatResponse: Decodable, Error {
     case response(type: String, json: String)
     case activeUser(user: User)
     case chatStarted
@@ -211,7 +211,7 @@ enum ChatResponse: Decodable, Error {
     case chatCmdError(chatError: ChatError)
     case chatError(chatError: ChatError)
 
-    var responseType: String {
+    public var responseType: String {
         get {
             switch self {
             case let .response(type, _): return "* \(type)"
@@ -274,7 +274,7 @@ enum ChatResponse: Decodable, Error {
         }
     }
 
-    var details: String {
+    public var details: String {
         get {
             switch self {
             case let .response(_, json): return json
@@ -346,7 +346,7 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
-func decodeJSON<T: Decodable>(_ json: String) -> T? {
+public func decodeJSON<T: Decodable>(_ json: String) -> T? {
     if let data = json.data(using: .utf8) {
         return try? jsonDecoder.decode(T.self, from: data)
     }
@@ -366,7 +366,7 @@ private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
     return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
 }
 
-func encodeJSON<T: Encodable>(_ value: T) -> String {
+public func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
     return String(decoding: data, as: UTF8.self)
 }
@@ -375,13 +375,13 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
-enum ChatError: Decodable {
+public enum ChatError: Decodable {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
 }
 
-enum ChatErrorType: Decodable {
+public enum ChatErrorType: Decodable {
     case noActiveUser
     case activeUserExists
     case chatNotStarted
@@ -415,7 +415,7 @@ enum ChatErrorType: Decodable {
     case commandError(message: String)
 }
 
-enum StoreError: Decodable {
+public enum StoreError: Decodable {
     case duplicateName
     case contactNotFound(contactId: Int64)
     case contactNotFoundByName(contactName: ContactName)
@@ -448,7 +448,7 @@ enum StoreError: Decodable {
     case chatItemNotFoundByFileId(fileId: Int64)
 }
 
-enum AgentErrorType: Decodable {
+public enum AgentErrorType: Decodable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
@@ -458,7 +458,7 @@ enum AgentErrorType: Decodable {
     case INTERNAL(internalErr: String)
 }
 
-enum CommandErrorType: Decodable {
+public enum CommandErrorType: Decodable {
     case PROHIBITED
     case SYNTAX
     case NO_CONN
@@ -466,7 +466,7 @@ enum CommandErrorType: Decodable {
     case LARGE
 }
 
-enum ConnectionErrorType: Decodable {
+public enum ConnectionErrorType: Decodable {
     case NOT_FOUND
     case DUPLICATE
     case SIMPLEX
@@ -474,7 +474,7 @@ enum ConnectionErrorType: Decodable {
     case NOT_AVAILABLE
 }
 
-enum BrokerErrorType: Decodable {
+public enum BrokerErrorType: Decodable {
     case RESPONSE(smpErr: ProtocolErrorType)
     case UNEXPECTED
     case NETWORK
@@ -482,7 +482,7 @@ enum BrokerErrorType: Decodable {
     case TIMEOUT
 }
 
-enum ProtocolErrorType: Decodable {
+public enum ProtocolErrorType: Decodable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
@@ -493,7 +493,7 @@ enum ProtocolErrorType: Decodable {
     case INTERNAL
 }
 
-enum ProtocolCommandError: Decodable {
+public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
     case NO_AUTH
@@ -501,20 +501,20 @@ enum ProtocolCommandError: Decodable {
     case NO_ENTITY
 }
 
-enum ProtocolTransportError: Decodable {
+public enum ProtocolTransportError: Decodable {
     case badBlock
     case largeMsg
     case badSession
     case handshake(handshakeErr: SMPHandshakeError)
 }
 
-enum SMPHandshakeError: Decodable {
+public enum SMPHandshakeError: Decodable {
     case PARSE
     case VERSION
     case IDENTITY
 }
 
-enum SMPAgentError: Decodable {
+public enum SMPAgentError: Decodable {
     case A_MESSAGE
     case A_PROHIBITED
     case A_VERSION

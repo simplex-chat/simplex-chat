@@ -8,6 +8,7 @@
 
 import UserNotifications
 import OSLog
+import SimpleXChat
 
 let logger = Logger()
 
@@ -59,7 +60,7 @@ func startChat() -> User? {
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
             return user
         } catch {
-            logger.error("NotificationService startChat error: \(responseError(error))")
+            logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
         }
     } else {
         logger.debug("no active user")
@@ -120,8 +121,11 @@ func apiGetActiveUser() -> User? {
 
 func apiStartChat() throws {
     let r = sendSimpleXCmd(.startChat)
-    if case .chatStarted = r { return }
-    throw r
+    switch r {
+    case .chatStarted: return
+    case .chatRunning: return
+    default: throw r
+    }
 }
 
 func apiSetFilesFolder(filesFolder: String) throws {

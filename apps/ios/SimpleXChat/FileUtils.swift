@@ -8,17 +8,21 @@
 
 import Foundation
 import SwiftUI
+import OSLog
+
+let logger = Logger()
 
 // maximum image file size to be auto-accepted
-let maxImageSize: Int64 = 236700
+public let maxImageSize: Int64 = 236700
 
-let maxFileSize: Int64 = 8000000
+public let maxFileSize: Int64 = 8000000
 
 func getDocumentsDirectory() -> URL {
-    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+//    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.chat.simplex.app")!
 }
 
-func getAppFilesDirectory() -> URL {
+public func getAppFilesDirectory() -> URL {
     getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
@@ -26,7 +30,7 @@ func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-func getLoadedFilePath(_ file: CIFile?) -> String? {
+public func getLoadedFilePath(_ file: CIFile?) -> String? {
     if let file = file,
        file.loaded,
        let savedFile = file.filePath {
@@ -35,14 +39,14 @@ func getLoadedFilePath(_ file: CIFile?) -> String? {
     return nil
 }
 
-func getLoadedImage(_ file: CIFile?) -> UIImage? {
+public func getLoadedImage(_ file: CIFile?) -> UIImage? {
     if let filePath = getLoadedFilePath(file) {
         return UIImage(contentsOfFile: filePath)
     }
     return nil
 }
 
-func saveFileFromURL(_ url: URL) -> String? {
+public func saveFileFromURL(_ url: URL) -> String? {
     let savedFile: String?
     if url.startAccessingSecurityScopedResource() {
         do {
@@ -61,7 +65,7 @@ func saveFileFromURL(_ url: URL) -> String? {
     return savedFile
 }
 
-func saveImage(_ uiImage: UIImage) -> String? {
+public func saveImage(_ uiImage: UIImage) -> String? {
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
         let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
         let fileName = uniqueCombine("IMG_\(timestamp).jpg")
@@ -113,7 +117,7 @@ private extension String {
     }
 }
 
-func removeFile(_ fileName: String) {
+public func removeFile(_ fileName: String) {
     do {
         try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
     } catch {
@@ -123,7 +127,7 @@ func removeFile(_ fileName: String) {
 
 // image utils
 
-func dropImagePrefix(_ s: String) -> String {
+public func dropImagePrefix(_ s: String) -> String {
     dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
 }
 
@@ -131,7 +135,7 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
 }
 
-func cropToSquare(_ image: UIImage) -> UIImage {
+public func cropToSquare(_ image: UIImage) -> UIImage {
     let size = image.size
     let side = min(size.width, size.height)
     let newSize = CGSize(width: side, height: side)
@@ -159,7 +163,7 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
     return data
 }
 
-func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     var str = compressImageStr(img)
     var dataSize = str?.count ?? 0

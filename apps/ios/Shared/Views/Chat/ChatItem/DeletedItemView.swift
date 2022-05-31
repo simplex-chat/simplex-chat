@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct DeletedItemView: View {
     var chatItem: ChatItem

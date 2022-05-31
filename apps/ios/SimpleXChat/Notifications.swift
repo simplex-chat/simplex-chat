@@ -10,17 +10,17 @@ import Foundation
 import UserNotifications
 import SwiftUI
 
-let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
-let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
-let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
-let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
-let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
+public let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
+public let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"
+public let ntfCategoryMessageReceived = "NTF_CAT_MESSAGE_RECEIVED"
+public let ntfCategoryCallInvitation = "NTF_CAT_CALL_INVITATION"
+public let ntfCategoryCheckMessage = "NTF_CAT_CHECK_MESSAGE"
 // TODO remove
-let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
+public let ntfCategoryCheckingMessages = "NTF_CAT_CHECKING_MESSAGES"
 
-let appNotificationId = "chat.simplex.app.notification"
+public let appNotificationId = "chat.simplex.app.notification"
 
-func createContactRequestNtf(_ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
+public func createContactRequestNtf(_ contactRequest: UserContactRequest) -> UNMutableNotificationContent {
     createNotification(
         categoryIdentifier: ntfCategoryContactRequest,
         title: String.localizedStringWithFormat(NSLocalizedString("%@ wants to connect!", comment: "notification title"), contactRequest.displayName),
@@ -30,7 +30,7 @@ func createContactRequestNtf(_ contactRequest: UserContactRequest) -> UNMutableN
     )
 }
 
-func createContactConnectedNtf(_ contact: Contact) -> UNMutableNotificationContent {
+public func createContactConnectedNtf(_ contact: Contact) -> UNMutableNotificationContent {
     createNotification(
         categoryIdentifier: ntfCategoryContactConnected,
         title: String.localizedStringWithFormat(NSLocalizedString("%@ is connected!", comment: "notification title"), contact.displayName),
@@ -40,7 +40,7 @@ func createContactConnectedNtf(_ contact: Contact) -> UNMutableNotificationConte
     )
 }
 
-func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
+public func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutableNotificationContent {
     createNotification(
         categoryIdentifier: ntfCategoryMessageReceived,
         title: "\(cInfo.chatViewName):",
@@ -50,7 +50,7 @@ func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutable
     )
 }
 
-func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificationContent {
+public func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificationContent {
     let text = invitation.peerMedia == .video
                 ? NSLocalizedString("Incoming video call", comment: "notification")
                 : NSLocalizedString("Incoming audio call", comment: "notification")
@@ -63,7 +63,7 @@ func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificat
     )
 }
 
-func createNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
+public func createNotification(categoryIdentifier: String, title: String, subtitle: String? = nil, body: String? = nil,
                         targetContentIdentifier: String? = nil, userInfo: [AnyHashable : Any] = [:]) -> UNMutableNotificationContent {
     let content = UNMutableNotificationContent()
     content.categoryIdentifier = categoryIdentifier

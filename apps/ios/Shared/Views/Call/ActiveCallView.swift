@@ -8,6 +8,7 @@
 
 import SwiftUI
 import WebKit
+import SimpleXChat
 
 struct ActiveCallView: View {
     @EnvironmentObject var m: ChatModel

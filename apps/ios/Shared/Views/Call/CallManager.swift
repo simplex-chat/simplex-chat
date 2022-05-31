@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SimpleXChat
 
 class CallManager {
     func newOutgoingCall(_ contact: Contact, _ media: CallMediaType) -> UUID {
