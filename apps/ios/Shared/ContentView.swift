@@ -71,6 +71,7 @@ struct ContentView: View {
             userAuthorized = true
         } else {
             userAuthorized = false
+            chatModel.showChatInfo = false
             authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
                 switch (laResult) {
                 case .success:
