@@ -70,19 +70,21 @@ struct ContentView: View {
         if !prefPerformLA {
             userAuthorized = true
         } else {
-            userAuthorized = false
             chatModel.showChatInfo = false
-            authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
-                switch (laResult) {
-                case .success:
-                    userAuthorized = true
-                case .failed:
-                    laFailed = true
-                    AlertManager.shared.showAlert(laFailedAlert())
-                case .unavailable:
-                    userAuthorized = true
-                    prefPerformLA = false
-                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+            DispatchQueue.main.async() {
+                userAuthorized = false
+                authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+                    switch (laResult) {
+                    case .success:
+                        userAuthorized = true
+                    case .failed:
+                        laFailed = true
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    case .unavailable:
+                        userAuthorized = true
+                        prefPerformLA = false
+                        AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                    }
                 }
             }
         }
