@@ -18,7 +18,6 @@ struct ChatView: View {
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
-    @State private var showChatInfo = false
     @State private var showDeleteMessage = false
 
     var body: some View {
@@ -98,12 +97,12 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfo = true
+                    chatModel.showChatInfo = true
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatInfo) {
-                    ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                .sheet(isPresented: $chatModel.showChatInfo) {
+                    ChatInfoView(chat: chat)
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
