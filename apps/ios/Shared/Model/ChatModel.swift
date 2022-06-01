@@ -9,10 +9,12 @@
 import Foundation
 import Combine
 import SwiftUI
+import WebKit
 
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var currentUser: User?
+    @Published var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
@@ -28,10 +30,10 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus = NtfTknStatus.new
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
-    @Published var activeCallInvitation: ContactRef?
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
+    var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

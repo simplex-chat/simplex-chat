@@ -8,8 +8,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
-import chat.simplex.app.ui.theme.SecretColor
-import chat.simplex.app.ui.theme.SimplexBlue
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.onboarding.OnboardingStage
@@ -38,14 +37,20 @@ class ChatModel(val controller: ChatController) {
 
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<Uri?>(null)
+
+  // preferences
   val runServiceInBackground = mutableStateOf(true)
+  val performLA = mutableStateOf(false)
+  val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
 
   // current WebRTC call
+  val callManager = CallManager(this)
   val callInvitations = mutableStateMapOf<String, CallInvitation>()
-  val activeCallInvitation = mutableStateOf<ContactRef?>(null)
+  val activeCallInvitation = mutableStateOf<CallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)
+  val switchingCall = mutableStateOf(false)
 
   fun updateUserProfile(profile: Profile) {
     val user = currentUser.value
@@ -457,10 +462,10 @@ class Connection(val connId: Long, val connStatus: ConnStatus) {
 
 @Serializable
 class Profile(
-  val displayName: String,
-  val fullName: String,
-  val image: String? = null
-  ) {
+  override val displayName: String,
+  override val fullName: String,
+  override val image: String? = null
+): NamedChat {
   companion object {
     val sampleData = Profile(
       displayName = "alice",
@@ -687,13 +692,6 @@ data class ChatItem (
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.memberProfile.displayName
     else null
 
-  val isMsgContent: Boolean get() =
-    when (content) {
-      is CIContent.SndMsgContent -> true
-      is CIContent.RcvMsgContent -> true
-      else -> false
-    }
-
   val isDeletedContent: Boolean get() =
     when (content) {
       is CIContent.SndDeleted -> true
@@ -845,10 +843,11 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
   @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
-  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
-  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent get() = null }
+  @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -857,6 +856,7 @@ sealed class CIContent: ItemContent {
     is RcvDeleted -> generalGetString(R.string.deleted_description)
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
+    is RcvIntegrityError -> msgError.text
   }
 }
 
@@ -1080,7 +1080,7 @@ enum class FormatColor(val color: String) {
 
   val uiColor: Color @Composable get() = when (this) {
     red -> Color.Red
-    green -> Color.Green
+    green -> SimplexGreen
     blue -> SimplexBlue
     yellow -> Color.Yellow
     cyan -> Color.Cyan
@@ -1119,4 +1119,19 @@ enum class CICallStatus {
   }
 
   fun duration(sec: Int): String = "%02d:%02d".format(sec / 60, sec % 60)
+}
+
+@Serializable
+sealed class MsgErrorType() {
+  @Serializable @SerialName("msgSkipped") class MsgSkipped(val fromMsgId: Long, val toMsgId: Long): MsgErrorType()
+  @Serializable @SerialName("msgBadId") class MsgBadId(val msgId: Long): MsgErrorType()
+  @Serializable @SerialName("msgBadHash") class MsgBadHash(): MsgErrorType()
+  @Serializable @SerialName("msgDuplicate") class MsgDuplicate(): MsgErrorType()
+
+  val text: String get() = when (this) {
+    is MsgSkipped -> String.format(generalGetString(R.string.integrity_msg_skipped), toMsgId - fromMsgId + 1)
+    is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
+    is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
+    is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
+  }
 }

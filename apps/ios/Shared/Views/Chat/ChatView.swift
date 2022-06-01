@@ -13,11 +13,11 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
     @ObservedObject var chat: Chat
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
-    @State private var showChatInfo = false
     @State private var showDeleteMessage = false
 
     var body: some View {
@@ -97,35 +97,29 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfo = true
+                    chatModel.showChatInfo = true
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatInfo) {
-                    ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                .sheet(isPresented: $chatModel.showChatInfo) {
+                    ChatInfoView(chat: chat)
                 }
             }
-//            ToolbarItem(placement: .navigationBarTrailing) {
-//                if case let .direct(contact) = cInfo {
-//                    HStack {
-//                        callButton(contact, .audio, imageName: "phone")
-//                        callButton(contact, .video, imageName: "video")
-//                    }
-//                }
-//            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if enableCalls, case let .direct(contact) = cInfo {
+                    HStack {
+                        callButton(contact, .audio, imageName: "phone")
+                        callButton(contact, .video, imageName: "video")
+                    }
+                }
+            }
         }
         .navigationBarBackButtonHidden(true)
     }
 
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
-            chatModel.activeCall = Call(
-                contact: contact,
-                callState: .waitCapabilities,
-                localMedia: media
-            )
-            chatModel.showCallView = true
-            chatModel.callCommand = .capabilities(useWorker: true)
+            CallController.shared.startCall(contact, media)
         } label: {
             Image(systemName: imageName)
         }

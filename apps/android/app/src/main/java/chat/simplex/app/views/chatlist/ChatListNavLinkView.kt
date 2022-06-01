@@ -11,17 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.*
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.WarningOrange
 import chat.simplex.app.views.chat.clearChatDialog
 import chat.simplex.app.views.chat.deleteContactDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 @Composable
@@ -30,10 +30,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   var showMarkRead by remember { mutableStateOf(false) }
   LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
     showMenu.value = false
-    launch {
-      delay(500L)
-      showMarkRead = chat.chatStats.unreadCount > 0
-    }
+    delay(500L)
+    showMarkRead = chat.chatStats.unreadCount > 0
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
@@ -103,7 +101,8 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
-    }
+    },
+    color = WarningOrange
   )
   ItemAction(
     stringResource(R.string.delete_verb),
@@ -135,7 +134,8 @@ fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bool
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
-    }
+    },
+    color = WarningOrange
   )
 }
 

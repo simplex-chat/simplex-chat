@@ -46,13 +46,13 @@
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-    <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
     <string name="error_deleting_contact">Ошибка удаления контакта</string>
     <string name="error_deleting_group">Ошибка удаления группы</string>
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
 
     <!-- background service notice - SimpleXAPI.kt -->
+    <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
     <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
     <string name="private_instant_notifications_disabled">Приватные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
@@ -63,6 +63,27 @@
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
+
+    <!-- local authentication notice - SimpleXAPI.kt -->
+    <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Чтобы защитить вашу информацию, включите блокировку <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.\nВам будет нужно пройти аутентификацию для включения блокировки.</string>
+    <string name="la_notice_turn_on">Включить</string>
+
+    <!-- LocalAuthentication.kt -->
+    <string name="auth_simplex_lock_turned_on">Блокировка SimpleX включена</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.</string>
+    <string name="auth_unlock">Разблокировать</string>
+    <string name="auth_log_in_using_credential">Пройдите аутентификацию</string>
+    <string name="auth_enable_simplex_lock">Включить блокировку SimpleX</string>
+    <string name="auth_disable_simplex_lock">Отключить блокировку SimpleX</string>
+    <string name="auth_confirm_credential">Пройдите аутентификацию</string>
+    <string name="auth_error">Ошибка аутентификации</string>
+    <string name="auth_error_w_desc">Ошибка аутентификации: <xliff:g id="desc">%1$s</xliff:g></string>
+    <string name="auth_failed">Ошибка аутентификации</string>
+    <string name="auth_unavailable">Аутентификация недоступна</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</string>
+    <string name="auth_retry">Повторить</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
@@ -147,7 +168,7 @@
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="from_gallery_button">Галерея</string>
-    <string name="choose_file">Файлы\n(v2.0)</string>
+    <string name="choose_file">Файлы</string>
 
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Спасибо, что установили <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -219,8 +240,7 @@
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видеозвонка</b>, или ваш контакт может отправить вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
     <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</string>
-
-
+    
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
@@ -231,6 +251,7 @@
     <string name="chat_with_the_founder">Соединиться с разработчиками</string>
     <string name="send_us_an_email">Отправить email</string>
     <string name="private_notifications">Приватные уведомления</string>
+    <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
@@ -294,18 +315,20 @@
     <string name="callstatus_missed">пропущенный звонок</string>
     <string name="callstatus_rejected">отклоненный звонок</string>
     <string name="callstatus_accepted">принятый звонок</string>
-    <string name="callstatus_connecting">соединяется…</string>
+    <string name="callstatus_connecting">звонок соединяется…</string>
     <string name="callstatus_in_progress">активный звонок</string>
     <string name="callstatus_ended">звонок завершён <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-    <string name="callstatus_error">ошибка соединения</string>
+    <string name="callstatus_error">ошибка звонка</string>
 
     <!-- CallState -->
     <string name="callstate_starting">инициализация…</string>
     <string name="callstate_waiting_for_answer">ожидается ответ…</string>
     <string name="callstate_waiting_for_confirmation">ожидается подтверждение…</string>
     <string name="callstate_received_answer">получен ответ…</string>
+    <string name="callstate_received_confirmation">получено подтверждение…</string>
     <string name="callstate_connecting">соединяется…</string>
     <string name="callstate_connected">соединено</string>
+    <string name="callstate_ended">завершен</string>
 
     <!-- SimpleXInfo -->
     <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
@@ -348,10 +371,26 @@
     <string name="encrypted_video_call">e2e зашифрованный видеозвонок</string>
     <string name="audio_call_no_encryption">аудиозвонок (не e2e зашифрованный)</string>
     <string name="encrypted_audio_call">e2e зашифрованный аудиозвонок</string>
-    <string name="answer">Принять</string>
+    <string name="accept">Принять</string>
+    <string name="reject">Отклонить</string>
+    <string name="ignore">Закрыть</string>
     <string name="call_already_ended">Звонок уже завершен!</string>
     <string name="icon_descr_video_call">видеозвонок</string>
     <string name="icon_descr_audio_call">аудиозвонок</string>
+
+    <!-- Call settings -->
+    <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
+    <string name="your_calls">Ваши звонки</string>
+    <string name="connect_calls_via_relay">Соединяться через сервер (relay)</string>
+    <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
+    <string name="accept_call_on_lock_screen">Принимать</string>
+    <string name="show_call_on_lock_screen">Показывать</string>
+    <string name="no_call_on_lock_screen">Выключить</string>
+
+    <!-- Call Lock Screen -->
+    <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
+    <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
+    <string name="open_verb">Открыть</string>
 
     <!-- Call overlay -->
     <string name="status_e2e_encrypted">e2e зашифровано</string>
@@ -375,4 +414,27 @@
     <string name="icon_descr_call_progress">Текущий звонок</string>
     <string name="icon_descr_call_ended">Звонок завершен</string>
     <string name="answer_call">Принять звонок</string>
+
+    <!-- Message integrity -->
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений"</string>
+    <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
+    <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
+    <string name="integrity_msg_duplicate">повторное сообщение</string>
+    <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
+    <string name="alert_text_skipped_messages_it_can_happen_when">Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.</string>
+
+    <!-- Privacy settings -->
+    <string name="privacy_and_security">Конфиденциальность</string>
+    <string name="your_privacy">Конфиденциальность</string>
+    <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="send_link_previews">Отправлять картинки ссылок</string>
+
+    <!-- Settings sections -->
+    <string name="settings_section_title_you">ВЫ</string>
+    <string name="settings_section_title_settings">НАСТРОЙКИ</string>
+    <string name="settings_section_title_help">ПОМОЩЬ</string>
+    <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
+    <string name="settings_section_title_device">УСТРОЙСТВО</string>
+    <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_experimental_features">Экспериментальные функции</string>
 </resources>

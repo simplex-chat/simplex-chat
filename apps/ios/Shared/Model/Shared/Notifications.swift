@@ -50,16 +50,16 @@ func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UNMutable
     )
 }
 
-func createCallInvitationNtf(_ contact: Contact, _ invitation: CallInvitation) -> UNMutableNotificationContent {
+func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificationContent {
     let text = invitation.peerMedia == .video
                 ? NSLocalizedString("Incoming video call", comment: "notification")
                 : NSLocalizedString("Incoming audio call", comment: "notification")
     return createNotification(
         categoryIdentifier: ntfCategoryCallInvitation,
-        title: "\(contact.chatViewName):",
+        title: "\(invitation.contact.chatViewName):",
         body: text,
         targetContentIdentifier: nil,
-        userInfo: ["chatId": contact.id]
+        userInfo: ["chatId": invitation.contact.id]
     )
 }
 

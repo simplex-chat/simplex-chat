@@ -21,6 +21,7 @@ import Data.Int (Int64)
 import Data.Map.Strict (Map)
 import Data.Text (Text)
 import Data.Time (ZonedTime)
+import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
 import GHC.Generics (Generic)
@@ -188,7 +189,7 @@ data ChatResponse
   | CRChatItemDeleted {deletedChatItem :: AChatItem, toChatItem :: AChatItem}
   | CRChatItemDeletedNotFound {contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent MsgContent Int ZonedTime
-  | CRMsgIntegrityError {msgerror :: MsgErrorType} -- TODO make it chat item to support in mobile
+  | CRMsgIntegrityError {msgError :: MsgErrorType}
   | CRCmdAccepted {corr :: CorrId}
   | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
@@ -259,7 +260,7 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key}
+  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key, callTs :: UTCTime}
   | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}

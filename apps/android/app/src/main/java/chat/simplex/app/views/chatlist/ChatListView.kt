@@ -7,7 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,7 +20,6 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.helpers.ModalManager
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
 import chat.simplex.app.views.usersettings.SettingsView
@@ -64,16 +64,14 @@ fun scaffoldController(): ScaffoldController {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel) {
+fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val scaffoldCtrl = scaffoldController()
-  if (chatModel.clearOverlays.value) {
-    scaffoldCtrl.collapse()
-    ModalManager.shared.closeModal()
-    chatModel.clearOverlays.value = false
+  LaunchedEffect(chatModel.clearOverlays.value) {
+    if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
   BottomSheetScaffold(
     scaffoldState = scaffoldCtrl.state,
-    drawerContent = { SettingsView(chatModel) },
+    drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
@@ -100,43 +98,6 @@ fun ChatListView(chatModel: ChatModel) {
           color = Color.Black.copy(alpha = 0.12F)
         ) {}
       }
-    }
-  }
-}
-
-@Composable
-fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState())
-      .fillMaxWidth()
-      .padding(16.dp)
-  ) {
-    val welcomeMsg = if (displayName != null) {
-      String.format(stringResource(R.string.personal_welcome), displayName)
-    } else stringResource(R.string.welcome)
-    Text(
-      text = welcomeMsg,
-      Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
-    )
-    ChatHelpView { scaffoldCtrl.toggleSheet() }
-    Row(
-      Modifier.padding(top = 30.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      Text(
-        stringResource(R.string.this_text_is_available_in_settings),
-        color = MaterialTheme.colors.onBackground
-      )
-      Icon(
-        Icons.Outlined.Settings,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.onBackground,
-        modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
-      )
     }
   }
 }

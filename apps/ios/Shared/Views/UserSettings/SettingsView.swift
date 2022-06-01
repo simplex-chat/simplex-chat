@@ -14,8 +14,27 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
+let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
+let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
+let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
+let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
+
+let appDefaults: [String: Any] = [
+    DEFAULT_SHOW_LA_NOTICE: false,
+    DEFAULT_LA_NOTICE_SHOWN: false,
+    DEFAULT_PERFORM_LA: false,
+    DEFAULT_USE_NOTIFICATIONS: false,
+    DEFAULT_PENDING_CONNECTIONS: true,
+    DEFAULT_WEBRTC_POLICY_RELAY: true,
+    DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
+    DEFAULT_PRIVACY_LINK_PREVIEWS: true,
+    DEFAULT_EXPERIMENTAL_CALLS: false
+]
 
 private var indent: CGFloat = 36
 
@@ -25,6 +44,7 @@ struct SettingsView: View {
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
     @State var showNotificationsAlert: Bool = false
     @State var whichNotificationsAlert = NotificationAlert.enable
 
@@ -38,18 +58,7 @@ struct SettingsView: View {
                         UserProfile()
                             .navigationTitle("Your chat profile")
                     } label: {
-                        HStack {
-                            ProfileImage(imageStr: user.image)
-                                .frame(width: 44, height: 44)
-                                .padding(.trailing, 6)
-                                .padding(.vertical, 6)
-                            VStack(alignment: .leading) {
-                                Text(user.displayName)
-                                    .fontWeight(.bold)
-                                    .font(.title2)
-                                Text(user.fullName)
-                            }
-                        }
+                        ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
                     NavigationLink {
@@ -61,6 +70,20 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    if enableCalls {
+                        NavigationLink {
+                            CallSettings()
+                                .navigationTitle("Your calls")
+                        } label: {
+                            settingsRow("video") { Text("Audio & video calls") }
+                        }
+                    }
+                    NavigationLink {
+                        PrivacySettings()
+                            .navigationTitle("Your privacy")
+                    } label: {
+                        settingsRow("lock") { Text("Privacy & security") }
+                    }
                     settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
@@ -117,8 +140,15 @@ struct SettingsView: View {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
+                            .opacity(0.5)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
+                    }
+                    NavigationLink {
+                        ExperimentalFeaturesView()
+                            .navigationTitle("Experimental features")
+                    } label: {
+                        settingsRow("gauge") { Text("Experimental features") }
                     }
 //                    if let token = chatModel.deviceToken {
 //                        HStack {
@@ -126,22 +156,10 @@ struct SettingsView: View {
 //                            notificationsToggle(token)
 //                        }
 //                    }
-//                    NavigationLink {
-//                        CallViewDebug()
-//                            .frame(maxHeight: .infinity, alignment: .top)
-//                    } label: {
-                        Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
-//                    }
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
-        }
-    }
-
-    private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
-        ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-            content().padding(.leading, indent)
         }
     }
 
@@ -239,6 +257,33 @@ struct SettingsView: View {
                 withAnimation() { useNotifications = false }
             }
         )
+    }
+}
+
+func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
+    ZStack(alignment: .leading) {
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.secondary)
+        content().padding(.leading, indent)
+    }
+}
+
+struct ProfilePreview: View {
+    var profileOf: NamedChat
+    var color = Color(uiColor: .tertiarySystemGroupedBackground)
+
+    var body: some View {
+        HStack {
+            ProfileImage(imageStr: profileOf.image, color: color)
+                .frame(width: 44, height: 44)
+                .padding(.trailing, 6)
+                .padding(.vertical, 6)
+            VStack(alignment: .leading) {
+                Text(profileOf.displayName)
+                    .fontWeight(.bold)
+                    .font(.title2)
+                Text(profileOf.fullName)
+            }
+        }
     }
 }
 

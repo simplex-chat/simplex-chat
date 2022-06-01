@@ -520,6 +520,16 @@ struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "1 skipped message", status, false, false, false),
+            content: .rcvIntegrityError(msgError: .msgSkipped(fromMsgId: fromMsgId, toMsgId: toMsgId)),
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 enum CIDirection: Decodable {
@@ -601,6 +611,7 @@ enum CIContent: Decodable, ItemContent {
     case rcvDeleted(deleteMode: CIDeleteMode)
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
+    case rcvIntegrityError(msgError: MsgErrorType)
 
     var text: String {
         get {
@@ -611,6 +622,7 @@ enum CIContent: Decodable, ItemContent {
             case .rcvDeleted: return NSLocalizedString("deleted", comment: "deleted chat item")
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
+            case let .rcvIntegrityError(msgError): return msgError.text
             }
         }
     }
@@ -879,17 +891,34 @@ enum CICallStatus: String, Decodable {
     func text(_ sec: Int) -> String {
         switch self {
         case .pending: return NSLocalizedString("calling…", comment: "call status")
-        case .missed: return NSLocalizedString("missed", comment: "call status")
-        case .rejected: return NSLocalizedString("rejected", comment: "call status")
-        case .accepted: return NSLocalizedString("accepted", comment: "call status")
-        case .negotiated: return NSLocalizedString("connecting…", comment: "call status")
-        case .progress: return NSLocalizedString("in progress", comment: "call status")
-        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended %@", comment: "call status"), CICallStatus.durationText(sec))
-        case .error: return NSLocalizedString("error", comment: "call status")
+        case .missed: return NSLocalizedString("missed call", comment: "call status")
+        case .rejected: return NSLocalizedString("rejected call", comment: "call status")
+        case .accepted: return NSLocalizedString("accepted call", comment: "call status")
+        case .negotiated: return NSLocalizedString("connecting call…", comment: "call status")
+        case .progress: return NSLocalizedString("call in progress", comment: "call status")
+        case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
+        case .error: return NSLocalizedString("call error", comment: "call status")
         }
     }
 
     static func durationText(_ sec: Int) -> String {
         String(format: "%02d:%02d", sec / 60, sec % 60)
+    }
+}
+
+enum MsgErrorType: Decodable {
+    case msgSkipped(fromMsgId: Int64, toMsgId: Int64)
+    case msgBadId(msgId: Int64)
+    case msgBadHash
+    case msgDuplicate
+
+    var text: String {
+        switch self {
+        case let .msgSkipped(fromMsgId, toMsgId):
+            return String.localizedStringWithFormat(NSLocalizedString("%d skipped message(s)", comment: "integrity error chat item"), toMsgId - fromMsgId + 1)
+        case .msgBadHash: return NSLocalizedString("bad message hash", comment: "integrity error chat item") // not used now
+        case .msgBadId: return NSLocalizedString("bad message ID", comment: "integrity error chat item") // not used now
+        case .msgDuplicate: return NSLocalizedString("duplicate message", comment: "integrity error chat item") // not used now
+        }
     }
 }
