@@ -85,7 +85,7 @@
 		5CE2BA88284532AD00EC33A6 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907F28376BB90076573F /* libgmp.a */; };
 		5CE2BA89284532AD00EC33A6 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907E28376BB90076573F /* libgmpxx.a */; };
 		5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD7228188CFF00503DA2 /* ChatTypes.swift */; };
-		5CE2BA8C284533A300EC33A6 /* GroupDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD5228186F9500503DA2 /* GroupDefaults.swift */; };
+		5CE2BA8C284533A300EC33A6 /* AppGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD5228186F9500503DA2 /* AppGroup.swift */; };
 		5CE2BA8D284533A300EC33A6 /* CallTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5E5D3C282447AB00B0488A /* CallTypes.swift */; };
 		5CE2BA8E284533A300EC33A6 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD7D2818941F00503DA2 /* API.swift */; };
 		5CE2BA8F284533A300EC33A6 /* APITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD7428188D2900503DA2 /* APITypes.swift */; };
@@ -250,7 +250,7 @@
 		5CDCAD472818589900503DA2 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		5CDCAD492818589900503DA2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5CDCAD5128186DE400503DA2 /* SimpleX NSE.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SimpleX NSE.entitlements"; sourceTree = "<group>"; };
-		5CDCAD5228186F9500503DA2 /* GroupDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupDefaults.swift; sourceTree = "<group>"; };
+		5CDCAD5228186F9500503DA2 /* AppGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppGroup.swift; sourceTree = "<group>"; };
 		5CDCAD5E28187D4A00503DA2 /* libiconv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libiconv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/lib/libiconv.tbd; sourceTree = DEVELOPER_DIR; };
 		5CDCAD6028187D7900503DA2 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		5CDCAD7228188CFF00503DA2 /* ChatTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatTypes.swift; sourceTree = "<group>"; };
@@ -398,7 +398,6 @@
 		5C764E87279CBC8E000C6508 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				5CDCAD7128188CEB00503DA2 /* Shared */,
 				5C764E88279CBCB3000C6508 /* ChatModel.swift */,
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
@@ -540,17 +539,10 @@
 			path = "SimpleX NSE";
 			sourceTree = "<group>";
 		};
-		5CDCAD7128188CEB00503DA2 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		5CE2BA692845308900EC33A6 /* SimpleXChat */ = {
 			isa = PBXGroup;
 			children = (
-				5CDCAD5228186F9500503DA2 /* GroupDefaults.swift */,
+				5CDCAD5228186F9500503DA2 /* AppGroup.swift */,
 				5CDCAD7228188CFF00503DA2 /* ChatTypes.swift */,
 				5CDCAD7428188D2900503DA2 /* APITypes.swift */,
 				5C5E5D3C282447AB00B0488A /* CallTypes.swift */,
@@ -887,7 +879,7 @@
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
 				5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */,
 				5CE2BA8F284533A300EC33A6 /* APITypes.swift in Sources */,
-				5CE2BA8C284533A300EC33A6 /* GroupDefaults.swift in Sources */,
+				5CE2BA8C284533A300EC33A6 /* AppGroup.swift in Sources */,
 				5CE2BA8D284533A300EC33A6 /* CallTypes.swift in Sources */,
 				5CE2BA8E284533A300EC33A6 /* API.swift in Sources */,
 			);
