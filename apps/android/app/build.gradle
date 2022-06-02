@@ -11,7 +11,7 @@ android {
         applicationId "chat.simplex.app"
         minSdk 29
         targetSdk 32
-        versionCode 35
+        versionCode 36
         versionName "2.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

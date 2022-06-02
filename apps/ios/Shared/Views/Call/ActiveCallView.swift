@@ -94,9 +94,9 @@ struct ActiveCallView: View {
             case let .connection(state):
                 if let callStatus = WebRTCCallStatus.init(rawValue: state.connectionState),
                    case .connected = callStatus {
-                    if case .outgoing = call.direction {
-                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
-                    }
+//                    if case .outgoing = call.direction {
+//                        CallController.shared.reportOutgoingCall(call: call, connectedAt: nil)
+//                    }
                     call.callState = .connected
                     // CallKit doesn't work well with WKWebView
                     // This is a hack to enable microphone in WKWebView after CallKit takes over it

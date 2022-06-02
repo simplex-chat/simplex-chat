@@ -15,6 +15,7 @@ import SimpleXChat
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var currentUser: User?
+    @Published var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
