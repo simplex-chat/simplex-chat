@@ -11,7 +11,6 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
-//import CallKit
 
 private var chatController: chat_ctrl?
 
