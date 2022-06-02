@@ -7,7 +7,7 @@
 		<key>NSExtensionFileProviderDocumentGroup</key>
 		<string>group.chat.simplex.app</string>
 		<key>NSExtensionFileProviderSupportsEnumeration</key>
-		<true/>
+		<false/>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.fileprovider-nonui</string>
 		<key>NSExtensionPrincipalClass</key>

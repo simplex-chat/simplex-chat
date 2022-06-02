@@ -27,6 +27,11 @@ struct SimpleXApp: App {
         UserDefaults.standard.register(defaults: appDefaults)
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
+
+        // test service comms
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            testFPService()
+        }
     }
 
     var body: some Scene {

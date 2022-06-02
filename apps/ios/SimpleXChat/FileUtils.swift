@@ -18,7 +18,9 @@ public let maxImageSize: Int64 = 236700
 public let maxFileSize: Int64 = 8000000
 
 func getDocumentsDirectory() -> URL {
-//    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+//    let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+//    print(url)
+//    return url
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.chat.simplex.app")!
 }
 

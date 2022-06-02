@@ -7,16 +7,28 @@
 //
 
 import FileProvider
+import OSLog
+
+let logger = Logger()
+var serviceListener = NSXPCListener.service()
+var listenerDelegate = SimpleXFPServiceDelegate()
 
 class FileProviderExtension: NSFileProviderExtension {
-    
     var fileManager = FileManager()
-    
+
     override init() {
+        logger.debug("FileProviderExtension.init")
         super.init()
+
+        let manager = NSFileProviderManager.default
+        logger.debug("FileProviderExtension.init NSFileProviderManager \(manager.documentStorageURL, privacy: .public)")
+
+        serviceListener.delegate = listenerDelegate
+        Task { serviceListener.resume() }
     }
     
     override func item(for identifier: NSFileProviderItemIdentifier) throws -> NSFileProviderItem {
+        logger.debug("FileProviderExtension.item")
         // resolve the given identifier to a record in the model
         
         // TODO: implement the actual lookup
@@ -24,6 +36,7 @@ class FileProviderExtension: NSFileProviderExtension {
     }
     
     override func urlForItem(withPersistentIdentifier identifier: NSFileProviderItemIdentifier) -> URL? {
+        logger.debug("FileProviderExtension.urlForItem")
         // resolve the given identifier to a file on disk
         guard let item = try? item(for: identifier) else {
             return nil
@@ -32,11 +45,17 @@ class FileProviderExtension: NSFileProviderExtension {
         // in this implementation, all paths are structured as <base storage directory>/<item identifier>/<item file name>
         let manager = NSFileProviderManager.default
         let perItemDirectory = manager.documentStorageURL.appendingPathComponent(identifier.rawValue, isDirectory: true)
-        
+
+        logger.debug("FileProviderExtension.urlForItem NSFileProviderManager \(manager.documentStorageURL, privacy: .public)")
+
         return perItemDirectory.appendingPathComponent(item.filename, isDirectory:false)
     }
     
     override func persistentIdentifierForItem(at url: URL) -> NSFileProviderItemIdentifier? {
+        logger.debug("FileProviderExtension.persistentIdentifierForItem")
+//        if url == SERVICE_PROXY_ITEM_URL { return SERVICE_PROXY_ITEM_ID }
+        return SERVICE_PROXY_ITEM_ID
+
         // resolve the given URL to a persistent identifier using a database
         let pathComponents = url.pathComponents
         
@@ -48,6 +67,7 @@ class FileProviderExtension: NSFileProviderExtension {
     }
     
     override func providePlaceholder(at url: URL, completionHandler: @escaping (Error?) -> Void) {
+        logger.debug("FileProviderExtension.providePlaceholder")
         guard let identifier = persistentIdentifierForItem(at: url) else {
             completionHandler(NSFileProviderError(.noSuchItem))
             return
@@ -64,6 +84,13 @@ class FileProviderExtension: NSFileProviderExtension {
     }
 
     override func startProvidingItem(at url: URL, completionHandler: @escaping ((_ error: Error?) -> Void)) {
+        logger.debug("FileProviderExtension.startProvidingItem")
+        completionHandler(nil)
+//        if url == SERVICE_PROXY_ITEM_URL {
+//            completionHandler(nil)
+//            return
+//        }
+
         // Should ensure that the actual file is in the position returned by URLForItemWithIdentifier:, then call the completion handler
         
         /* TODO:
@@ -95,6 +122,7 @@ class FileProviderExtension: NSFileProviderExtension {
     
     
     override func itemChanged(at url: URL) {
+        logger.debug("FileProviderExtension.itemChanged")
         // Called at some point after the file has changed; the provider may then trigger an upload
         
         /* TODO:
@@ -106,6 +134,7 @@ class FileProviderExtension: NSFileProviderExtension {
     }
     
     override func stopProvidingItem(at url: URL) {
+        logger.debug("FileProviderExtension.stopProvidingItem")
         // Called after the last claim to the file has been released. At this point, it is safe for the file provider to remove the content file.
         // Care should be taken that the corresponding placeholder file stays behind after the content file has been deleted.
         
@@ -141,6 +170,8 @@ class FileProviderExtension: NSFileProviderExtension {
     // MARK: - Enumeration
     
     override func enumerator(for containerItemIdentifier: NSFileProviderItemIdentifier) throws -> NSFileProviderEnumerator {
+        logger.debug("FileProviderExtension.enumerator")
+
         let maybeEnumerator: NSFileProviderEnumerator? = nil
         if (containerItemIdentifier == NSFileProviderItemIdentifier.rootContainer) {
             // TODO: instantiate an enumerator for the container root
@@ -156,5 +187,4 @@ class FileProviderExtension: NSFileProviderExtension {
         }
         return enumerator
     }
-    
 }

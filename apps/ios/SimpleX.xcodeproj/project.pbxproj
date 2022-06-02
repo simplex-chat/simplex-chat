@@ -23,7 +23,17 @@
 		5C1CAA1A2847C5C8009E5C72 /* FileProviderExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA192847C5C8009E5C72 /* FileProviderExtension.swift */; };
 		5C1CAA1C2847C5C8009E5C72 /* FileProviderItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA1B2847C5C8009E5C72 /* FileProviderItem.swift */; };
 		5C1CAA1E2847C5C8009E5C72 /* FileProviderEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA1D2847C5C8009E5C72 /* FileProviderEnumerator.swift */; };
-		5C1CAA232847C5C8009E5C72 /* SimpleX Service.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5C1CAA152847C5C8009E5C72 /* SimpleX Service.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5C1CAA282847D7C0009E5C72 /* SimpleXFPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA272847D7C0009E5C72 /* SimpleXFPService.swift */; };
+		5C1CAA322847DDA0009E5C72 /* SimpleXServiceProtocol.docc in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA312847DDA0009E5C72 /* SimpleXServiceProtocol.docc */; };
+		5C1CAA332847DDA0009E5C72 /* SimpleXServiceProtocol.h in Headers */ = {isa = PBXBuildFile; fileRef = 5C1CAA302847DDA0009E5C72 /* SimpleXServiceProtocol.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5C1CAA562847EBC0009E5C72 /* MyService.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA552847EBC0009E5C72 /* MyService.m */; };
+		5C1CAA582847EBC0009E5C72 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA572847EBC0009E5C72 /* main.m */; };
+		5C1CAA5F2847EC81009E5C72 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA5E2847EC81009E5C72 /* main.swift */; };
+		5C1CAA612847EC9C009E5C72 /* MyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA602847EC9C009E5C72 /* MyService.swift */; };
+		5C1CAA632847ECC6009E5C72 /* MyServiceDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA622847ECC6009E5C72 /* MyServiceDelegate.swift */; };
+		5C1CAA652847ED13009E5C72 /* MyServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA642847ED13009E5C72 /* MyServiceProtocol.swift */; };
+		5C1CAA662847F5BD009E5C72 /* FPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA3B2847DE88009E5C72 /* FPService.swift */; };
+		5C1CAA672848168A009E5C72 /* SimpleX Service.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5C1CAA152847C5C8009E5C72 /* SimpleX Service.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
@@ -121,7 +131,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		5C1CAA212847C5C8009E5C72 /* PBXContainerItemProxy */ = {
+		5C1CAA682848168A009E5C72 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
 			proxyType = 1;
@@ -176,7 +186,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				5C1CAA232847C5C8009E5C72 /* SimpleX Service.appex in Embed App Extensions */,
+				5C1CAA672848168A009E5C72 /* SimpleX Service.appex in Embed App Extensions */,
 				5CE2BA9D284555F500EC33A6 /* SimpleX NSE.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
@@ -205,6 +215,22 @@
 		5C1CAA1D2847C5C8009E5C72 /* FileProviderEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileProviderEnumerator.swift; sourceTree = "<group>"; };
 		5C1CAA1F2847C5C8009E5C72 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5C1CAA202847C5C8009E5C72 /* SimpleX_Service.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SimpleX_Service.entitlements; sourceTree = "<group>"; };
+		5C1CAA272847D7C0009E5C72 /* SimpleXFPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXFPService.swift; sourceTree = "<group>"; };
+		5C1CAA2E2847DDA0009E5C72 /* SimpleXServiceProtocol.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SimpleXServiceProtocol.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C1CAA302847DDA0009E5C72 /* SimpleXServiceProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SimpleXServiceProtocol.h; sourceTree = "<group>"; };
+		5C1CAA312847DDA0009E5C72 /* SimpleXServiceProtocol.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = SimpleXServiceProtocol.docc; sourceTree = "<group>"; };
+		5C1CAA3B2847DE88009E5C72 /* FPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FPService.swift; sourceTree = "<group>"; };
+		5C1CAA512847EBC0009E5C72 /* MyService.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = MyService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C1CAA532847EBC0009E5C72 /* MyServiceProtocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MyServiceProtocol.h; sourceTree = "<group>"; };
+		5C1CAA542847EBC0009E5C72 /* MyService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MyService.h; sourceTree = "<group>"; };
+		5C1CAA552847EBC0009E5C72 /* MyService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MyService.m; sourceTree = "<group>"; };
+		5C1CAA572847EBC0009E5C72 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		5C1CAA592847EBC0009E5C72 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5C1CAA5D2847EC81009E5C72 /* MyService-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MyService-Bridging-Header.h"; sourceTree = "<group>"; };
+		5C1CAA5E2847EC81009E5C72 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		5C1CAA602847EC9C009E5C72 /* MyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyService.swift; sourceTree = "<group>"; };
+		5C1CAA622847ECC6009E5C72 /* MyServiceDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyServiceDelegate.swift; sourceTree = "<group>"; };
+		5C1CAA642847ED13009E5C72 /* MyServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyServiceProtocol.swift; sourceTree = "<group>"; };
 		5C2E260627A2941F00F70299 /* SimpleXAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleXAPI.swift; sourceTree = "<group>"; };
 		5C2E260A27A30CFA00F70299 /* ChatListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatListView.swift; sourceTree = "<group>"; };
 		5C2E260E27A30FDC00F70299 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -314,6 +340,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5C1CAA2B2847DDA0009E5C72 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C1CAA4E2847EBC0009E5C72 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CA059C7279559F40002BEB4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -376,10 +416,37 @@
 				5C1CAA192847C5C8009E5C72 /* FileProviderExtension.swift */,
 				5C1CAA1B2847C5C8009E5C72 /* FileProviderItem.swift */,
 				5C1CAA1D2847C5C8009E5C72 /* FileProviderEnumerator.swift */,
+				5C1CAA272847D7C0009E5C72 /* SimpleXFPService.swift */,
 				5C1CAA1F2847C5C8009E5C72 /* Info.plist */,
 				5C1CAA202847C5C8009E5C72 /* SimpleX_Service.entitlements */,
 			);
 			path = "SimpleX Service";
+			sourceTree = "<group>";
+		};
+		5C1CAA2F2847DDA0009E5C72 /* SimpleXServiceProtocol */ = {
+			isa = PBXGroup;
+			children = (
+				5C1CAA302847DDA0009E5C72 /* SimpleXServiceProtocol.h */,
+				5C1CAA312847DDA0009E5C72 /* SimpleXServiceProtocol.docc */,
+			);
+			path = SimpleXServiceProtocol;
+			sourceTree = "<group>";
+		};
+		5C1CAA522847EBC0009E5C72 /* MyService */ = {
+			isa = PBXGroup;
+			children = (
+				5C1CAA5E2847EC81009E5C72 /* main.swift */,
+				5C1CAA602847EC9C009E5C72 /* MyService.swift */,
+				5C1CAA622847ECC6009E5C72 /* MyServiceDelegate.swift */,
+				5C1CAA642847ED13009E5C72 /* MyServiceProtocol.swift */,
+				5C1CAA532847EBC0009E5C72 /* MyServiceProtocol.h */,
+				5C1CAA542847EBC0009E5C72 /* MyService.h */,
+				5C1CAA552847EBC0009E5C72 /* MyService.m */,
+				5C1CAA572847EBC0009E5C72 /* main.m */,
+				5C1CAA592847EBC0009E5C72 /* Info.plist */,
+				5C1CAA5D2847EC81009E5C72 /* MyService-Bridging-Header.h */,
+			);
+			path = MyService;
 			sourceTree = "<group>";
 		};
 		5C2E260D27A30E2400F70299 /* Views */ = {
@@ -439,7 +506,6 @@
 		5C764E87279CBC8E000C6508 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				5CDCAD7128188CEB00503DA2 /* Shared */,
 				5C764E88279CBCB3000C6508 /* ChatModel.swift */,
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
@@ -476,7 +542,9 @@
 				5CE2BA692845308900EC33A6 /* SimpleXChat */,
 				5CDCAD462818589900503DA2 /* SimpleX NSE */,
 				5C1CAA182847C5C8009E5C72 /* SimpleX Service */,
+				5C1CAA2F2847DDA0009E5C72 /* SimpleXServiceProtocol */,
 				5CA059DA279559F40002BEB4 /* Tests iOS */,
+				5C1CAA522847EBC0009E5C72 /* MyService */,
 				5CA059CB279559F40002BEB4 /* Products */,
 				5C764E7A279C71D4000C6508 /* Frameworks */,
 			);
@@ -488,6 +556,7 @@
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5C36027227F47AD5009F19D9 /* AppDelegate.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
+				5C1CAA3B2847DE88009E5C72 /* FPService.swift */,
 				5C764E87279CBC8E000C6508 /* Model */,
 				5C2E260D27A30E2400F70299 /* Views */,
 				5CA059C5279559F40002BEB4 /* Assets.xcassets */,
@@ -504,6 +573,8 @@
 				5CDCAD452818589900503DA2 /* SimpleX NSE.appex */,
 				5CE2BA682845308900EC33A6 /* SimpleXChat.framework */,
 				5C1CAA152847C5C8009E5C72 /* SimpleX Service.appex */,
+				5C1CAA2E2847DDA0009E5C72 /* SimpleXServiceProtocol.framework */,
+				5C1CAA512847EBC0009E5C72 /* MyService.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -574,20 +645,13 @@
 		5CDCAD462818589900503DA2 /* SimpleX NSE */ = {
 			isa = PBXGroup;
 			children = (
-				5CDCAD5128186DE400503DA2 /* SimpleX NSE.entitlements */,
 				5CDCAD472818589900503DA2 /* NotificationService.swift */,
-				5CDCAD492818589900503DA2 /* Info.plist */,
 				5CB0BA892826CB3A00B3292C /* Localizable.strings */,
 				5CB0BA862826CB3A00B3292C /* InfoPlist.strings */,
+				5CDCAD492818589900503DA2 /* Info.plist */,
+				5CDCAD5128186DE400503DA2 /* SimpleX NSE.entitlements */,
 			);
 			path = "SimpleX NSE";
-			sourceTree = "<group>";
-		};
-		5CDCAD7128188CEB00503DA2 /* Shared */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Shared;
 			sourceTree = "<group>";
 		};
 		5CE2BA692845308900EC33A6 /* SimpleXChat */ = {
@@ -642,6 +706,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		5C1CAA292847DDA0009E5C72 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C1CAA332847DDA0009E5C72 /* SimpleXServiceProtocol.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CE2BA632845308900EC33A6 /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -671,6 +743,41 @@
 			productReference = 5C1CAA152847C5C8009E5C72 /* SimpleX Service.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		5C1CAA2D2847DDA0009E5C72 /* SimpleXServiceProtocol */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C1CAA382847DDA0009E5C72 /* Build configuration list for PBXNativeTarget "SimpleXServiceProtocol" */;
+			buildPhases = (
+				5C1CAA292847DDA0009E5C72 /* Headers */,
+				5C1CAA2A2847DDA0009E5C72 /* Sources */,
+				5C1CAA2B2847DDA0009E5C72 /* Frameworks */,
+				5C1CAA2C2847DDA0009E5C72 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimpleXServiceProtocol;
+			productName = SimpleXServiceProtocol;
+			productReference = 5C1CAA2E2847DDA0009E5C72 /* SimpleXServiceProtocol.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		5C1CAA502847EBC0009E5C72 /* MyService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C1CAA5A2847EBC0009E5C72 /* Build configuration list for PBXNativeTarget "MyService" */;
+			buildPhases = (
+				5C1CAA4D2847EBC0009E5C72 /* Sources */,
+				5C1CAA4E2847EBC0009E5C72 /* Frameworks */,
+				5C1CAA4F2847EBC0009E5C72 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MyService;
+			productName = MyService;
+			productReference = 5C1CAA512847EBC0009E5C72 /* MyService.xpc */;
+			productType = "com.apple.product-type.xpc-service";
+		};
 		5CA059C9279559F40002BEB4 /* SimpleX (iOS) */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5CA059F3279559F40002BEB4 /* Build configuration list for PBXNativeTarget "SimpleX (iOS)" */;
@@ -686,7 +793,7 @@
 			dependencies = (
 				5CE2BA6F2845308900EC33A6 /* PBXTargetDependency */,
 				5CE2BA9F284555F500EC33A6 /* PBXTargetDependency */,
-				5C1CAA222847C5C8009E5C72 /* PBXTargetDependency */,
+				5C1CAA692848168A009E5C72 /* PBXTargetDependency */,
 			);
 			name = "SimpleX (iOS)";
 			packageProductDependencies = (
@@ -764,6 +871,13 @@
 					5C1CAA142847C5C8009E5C72 = {
 						CreatedOnToolsVersion = 13.3;
 					};
+					5C1CAA2D2847DDA0009E5C72 = {
+						CreatedOnToolsVersion = 13.3;
+					};
+					5C1CAA502847EBC0009E5C72 = {
+						CreatedOnToolsVersion = 13.3;
+						LastSwiftMigration = 1330;
+					};
 					5CA059C9279559F40002BEB4 = {
 						CreatedOnToolsVersion = 13.2.1;
 						LastSwiftMigration = 1320;
@@ -803,12 +917,28 @@
 				5CE2BA672845308900EC33A6 /* SimpleXChat */,
 				5CDCAD442818589900503DA2 /* SimpleX NSE */,
 				5C1CAA142847C5C8009E5C72 /* SimpleX Service */,
+				5C1CAA2D2847DDA0009E5C72 /* SimpleXServiceProtocol */,
+				5C1CAA502847EBC0009E5C72 /* MyService */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5C1CAA132847C5C8009E5C72 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C1CAA2C2847DDA0009E5C72 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C1CAA4F2847EBC0009E5C72 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -857,9 +987,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C1CAA282847D7C0009E5C72 /* SimpleXFPService.swift in Sources */,
 				5C1CAA1A2847C5C8009E5C72 /* FileProviderExtension.swift in Sources */,
 				5C1CAA1C2847C5C8009E5C72 /* FileProviderItem.swift in Sources */,
 				5C1CAA1E2847C5C8009E5C72 /* FileProviderEnumerator.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C1CAA2A2847DDA0009E5C72 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C1CAA322847DDA0009E5C72 /* SimpleXServiceProtocol.docc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5C1CAA4D2847EBC0009E5C72 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C1CAA582847EBC0009E5C72 /* main.m in Sources */,
+				5C1CAA652847ED13009E5C72 /* MyServiceProtocol.swift in Sources */,
+				5C1CAA632847ECC6009E5C72 /* MyServiceDelegate.swift in Sources */,
+				5C1CAA612847EC9C009E5C72 /* MyService.swift in Sources */,
+				5C1CAA562847EBC0009E5C72 /* MyService.m in Sources */,
+				5C1CAA5F2847EC81009E5C72 /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -924,6 +1076,7 @@
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
+				5C1CAA662847F5BD009E5C72 /* FPService.swift in Sources */,
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
@@ -978,10 +1131,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		5C1CAA222847C5C8009E5C72 /* PBXTargetDependency */ = {
+		5C1CAA692848168A009E5C72 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5C1CAA142847C5C8009E5C72 /* SimpleX Service */;
-			targetProxy = 5C1CAA212847C5C8009E5C72 /* PBXContainerItemProxy */;
+			targetProxy = 5C1CAA682848168A009E5C72 /* PBXContainerItemProxy */;
 		};
 		5CA059D9279559F40002BEB4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1048,7 +1201,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "SimpleX Service/SimpleX_Service.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX Service/Info.plist";
@@ -1060,7 +1213,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-Service";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1076,7 +1229,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "SimpleX Service/SimpleX_Service.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 49;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX Service/Info.plist";
@@ -1088,7 +1241,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-Service";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1097,6 +1250,136 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5C1CAA392847DDA0009E5C72 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 SimpleX Chat. All rights reserved.";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXServiceProtocol;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		5C1CAA3A2847DDA0009E5C72 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 SimpleX Chat. All rights reserved.";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.SimpleXServiceProtocol;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		5C1CAA5B2847EBC0009E5C72 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 SimpleX Chat. All rights reserved.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.MyService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MyService/MyService-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		5C1CAA5C2847EBC0009E5C72 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2022 SimpleX Chat. All rights reserved.";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = chat.simplex.MyService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MyService/MyService-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1520,6 +1803,24 @@
 			buildConfigurations = (
 				5C1CAA242847C5C8009E5C72 /* Debug */,
 				5C1CAA252847C5C8009E5C72 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5C1CAA382847DDA0009E5C72 /* Build configuration list for PBXNativeTarget "SimpleXServiceProtocol" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C1CAA392847DDA0009E5C72 /* Debug */,
+				5C1CAA3A2847DDA0009E5C72 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5C1CAA5A2847EBC0009E5C72 /* Build configuration list for PBXNativeTarget "MyService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C1CAA5B2847EBC0009E5C72 /* Debug */,
+				5C1CAA5C2847EBC0009E5C72 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -13,8 +13,14 @@ class FileProviderEnumerator: NSObject, NSFileProviderEnumerator {
     var enumeratedItemIdentifier: NSFileProviderItemIdentifier
     
     init(enumeratedItemIdentifier: NSFileProviderItemIdentifier) {
+        logger.debug("FileProviderExtension FileProviderEnumerator.init")
         self.enumeratedItemIdentifier = enumeratedItemIdentifier
         super.init()
+    }
+
+    func identifierForItemAtURL(_ url: URL, completionHandler: @escaping (NSFileProviderItemIdentifier) -> Void) {
+//        logger.debug("FileProviderExtension.identifierForItemAtURL")
+        completionHandler(SERVICE_PROXY_ITEM_ID)
     }
 
     func invalidate() {
