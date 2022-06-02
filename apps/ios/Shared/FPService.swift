@@ -9,6 +9,7 @@
 import Foundation
 import FileProvider
 import SimpleX_Service
+import SimpleXChat
 
 let SIMPLEX_SERVICE_NAME = NSFileProviderServiceName("group.chat.simplex.app.service")
 let SERVICE_PROXY_ITEM = "chat.simplex.service:/123"
@@ -24,8 +25,13 @@ func testFPService() {
     let manager = NSFileProviderManager.default
     // TODO try access file
     logger.debug("testFPService NSFileProviderManager.documentStorageURL \(manager.documentStorageURL, privacy: .public)")
+    
+//    let res = machMessenger.sendMessageWithReply(FPS_MACH_PORT, msg: "machMessenger before getFileProviderServicesForItem")
+//    print("reply 1", res)
 
     FileManager.default.getFileProviderServicesForItem(at: URL(string: "\(manager.documentStorageURL)123")!) { (services, error) in
+//        let res = machMessenger.sendMessageWithReply(FPS_MACH_PORT, msg: "machMessenger after getFileProviderServicesForItem")
+//        print("reply 2", res)
 
         // Check to see if an error occurred.
         guard error == nil else {

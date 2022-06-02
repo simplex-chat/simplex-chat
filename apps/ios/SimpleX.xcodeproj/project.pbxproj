@@ -34,6 +34,7 @@
 		5C1CAA652847ED13009E5C72 /* MyServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA642847ED13009E5C72 /* MyServiceProtocol.swift */; };
 		5C1CAA662847F5BD009E5C72 /* FPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C1CAA3B2847DE88009E5C72 /* FPService.swift */; };
 		5C1CAA672848168A009E5C72 /* SimpleX Service.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5C1CAA152847C5C8009E5C72 /* SimpleX Service.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5C1CAA6A2849119A009E5C72 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; platformFilter = ios; };
 		5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260627A2941F00F70299 /* SimpleXAPI.swift */; };
 		5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260A27A30CFA00F70299 /* ChatListView.swift */; };
 		5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C2E260E27A30FDC00F70299 /* ChatView.swift */; };
@@ -137,6 +138,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 5C1CAA142847C5C8009E5C72;
 			remoteInfo = "SimpleX Service";
+		};
+		5C1CAA6C2849119A009E5C72 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5CE2BA672845308900EC33A6;
+			remoteInfo = SimpleXChat;
 		};
 		5CA059D8279559F40002BEB4 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -337,6 +345,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5C1CAA172847C5C8009E5C72 /* UniformTypeIdentifiers.framework in Frameworks */,
+				5C1CAA6A2849119A009E5C72 /* SimpleXChat.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -737,6 +746,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				5C1CAA6D2849119A009E5C72 /* PBXTargetDependency */,
 			);
 			name = "SimpleX Service";
 			productName = "SimpleX Service";
@@ -1136,6 +1146,12 @@
 			target = 5C1CAA142847C5C8009E5C72 /* SimpleX Service */;
 			targetProxy = 5C1CAA682848168A009E5C72 /* PBXContainerItemProxy */;
 		};
+		5C1CAA6D2849119A009E5C72 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = 5CE2BA672845308900EC33A6 /* SimpleXChat */;
+			targetProxy = 5C1CAA6C2849119A009E5C72 /* PBXContainerItemProxy */;
+		};
 		5CA059D9279559F40002BEB4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
@@ -1203,6 +1219,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 51;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX Service/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "SimpleX Service";
@@ -1231,6 +1248,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 51;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SimpleX Service/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "SimpleX Service";

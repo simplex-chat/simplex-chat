@@ -17,6 +17,8 @@ public let NSE_MACH_PORT = "\(APP_GROUP_NAME).nse" as CFString
 
 public let APP_MACH_PORT = "\(APP_GROUP_NAME).app" as CFString
 
+public let FPS_MACH_PORT = "\(APP_GROUP_NAME).fps" as CFString
+
 func getGroupDefaults() -> UserDefaults? {
     UserDefaults(suiteName: APP_GROUP_NAME)
 }
@@ -55,6 +57,7 @@ public class MachMessenger {
         case sndTimeout
         case rcvTimeout
         case portInvalid
+        case portBecameInvalid
         case sendError(Int32)
         case msgError
     }
@@ -75,7 +78,7 @@ public class MachMessenger {
         case kCFMessagePortSendTimeout:  return .sndTimeout
         case kCFMessagePortReceiveTimeout: return .rcvTimeout
         case kCFMessagePortIsInvalid: return .portInvalid
-        case kCFMessagePortBecameInvalidError: return .portInvalid
+        case kCFMessagePortBecameInvalidError: return .portBecameInvalid
         default: return .sendError(code)
         }
     }
@@ -98,6 +101,17 @@ public class MachMessenger {
         if let port = createRemotePort(remotePortName) {
             logger.debug("MachMessenger.sendMessage: sending...")
             return sendMessage(port, msgId: msgId, msg: msg)
+        } else {
+            logger.debug("MachMessenger.sendMessage: no remote port")
+            return .portInvalid
+        }
+    }
+
+    public func sendMessage(_ remotePortName: CFString, msgId: Int32 = 0, data: Data) -> SendError? {
+        logger.debug("MachMessenger.sendMessage")
+        if let port = createRemotePort(remotePortName) {
+            logger.debug("MachMessenger.sendMessage: sending...")
+            return sendMessage(port, msgId: msgId, data: data)
         } else {
             logger.debug("MachMessenger.sendMessage: no remote port")
             return .portInvalid
@@ -149,12 +163,15 @@ public class MachMessenger {
     private func sendMessage(_ remotePort: CFMessagePort, msgId: Int32 = 0, msg: String) -> SendError? {
         if let data = msg.data(using: .utf8) {
             logger.debug("MachMessenger sendMessage")
-            let msgData = data as CFData
-            let code = CFMessagePortSendRequest(remotePort, msgId, msgData, MACH_SEND_TIMEOUT, 0, nil, nil)
-            logger.debug("MachMessenger sendMessage \(code)")
-            return MachMessenger.sendError(code)
+            return sendMessage(remotePort, msgId: msgId, data: data)
         }
         return .msgError
+    }
+
+    private func sendMessage(_ remotePort: CFMessagePort, msgId: Int32 = 0, data: Data) -> SendError? {
+        let code = CFMessagePortSendRequest(remotePort, msgId, data as CFData, MACH_SEND_TIMEOUT, 0, nil, nil)
+        logger.debug("MachMessenger sendMessage \(code)")
+        return MachMessenger.sendError(code)
     }
 
     private func sendMessageWithReply(_ remotePort: CFMessagePort, msgId: Int32 = 0, msg: String) -> Result<String?, SendError> {

@@ -11,11 +11,38 @@ import SimpleXChat
 
 let logger = Logger()
 
-let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedNSEMachMessage)
+let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedMachMessage)
 
-func receivedNSEMachMessage(msgId: Int32, msg: String) -> String? {
-    logger.debug("MachMessenger: receivedNSEMachMessage \"\(msg)\" from NSE, replying")
-    return "reply from App to: \(msg)"
+func receivedMachMessage(msgId: Int32, msg: String) -> String? {
+//    logger.debug("MachMessenger: receivedMachMessage \"\(msg)\" from NSE, replying")
+//    return "reply from App to: \(msg)"
+
+    if let data = msg.data(using: .utf8) {
+        let endpoint = try! NSKeyedUnarchiver.unarchivedObject(ofClass: NSXPCListenerEndpoint.self, from: data)!
+        let connection = NSXPCConnection(listenerEndpoint: endpoint)
+        connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
+
+        // Start the connection.
+        connection.resume()
+
+        // Get the proxy object.
+        let rawProxy = connection.remoteObjectProxyWithErrorHandler({ (errorAccessingRemoteObject) in
+            // Handle the error here...
+        })
+
+        // Cast the proxy object to the interface's protocol.
+        guard let proxy = rawProxy as? SimpleXFPServiceProtocol else {
+            // If the interface is set up properly, this should never fail.
+            fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
+        }
+
+        logger.debug("testFPService calling service")
+        proxy.upperCaseString("hello to service", withReply: { reply in
+            logger.debug("testFPService reply from service \(reply)")
+        })
+
+    }
+    return nil
 }
 
 @main

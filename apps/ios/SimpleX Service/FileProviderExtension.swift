@@ -8,10 +8,17 @@
 
 import FileProvider
 import OSLog
+import SimpleXChat
 
 let logger = Logger()
-var serviceListener = NSXPCListener.service()
-var listenerDelegate = SimpleXFPServiceDelegate()
+let serviceListener = NSXPCListener.service()
+let listenerDelegate = SimpleXFPServiceDelegate()
+var machMessenger = MachMessenger(FPS_MACH_PORT, callback: receivedAppMachMessage)
+
+func receivedAppMachMessage(_ msgId: Int32, msg: String) -> String? {
+    logger.debug("MachMessenger: FileProviderExtension receivedAppMachMessage \"\(msg)\" from App, replying")
+    return "reply from FPS to: \(msg)"
+}
 
 class FileProviderExtension: NSFileProviderExtension {
     var fileManager = FileManager()
@@ -19,6 +26,19 @@ class FileProviderExtension: NSFileProviderExtension {
     override init() {
         logger.debug("FileProviderExtension.init")
         super.init()
+        machMessenger.start()
+        serviceListener.delegate = listenerDelegate
+
+        do {
+            let endPointData = try NSKeyedArchiver.archivedData(withRootObject: serviceListener.endpoint, requiringSecureCoding: true)
+            let err = machMessenger.sendMessage(APP_MACH_PORT, data: endPointData)
+            logger.debug("FileProviderExtension.MachMessenger.sendMessage with endpoint res \(String(describing: err), privacy: .public)")
+    //        let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "machMessenger in FileProviderExtension")
+    //        logger.debug("FileProviderExtension MachMessenger app reply \(String(describing: res), privacy: .public)")
+        } catch let err {
+            logger.debug("FileProviderExtension.MachMessenger.sendMessage error \(String(describing: err), privacy: .public)")
+        }
+
 
         let manager = NSFileProviderManager.default
         logger.debug("FileProviderExtension.init NSFileProviderManager \(manager.documentStorageURL, privacy: .public)")
@@ -40,7 +60,6 @@ class FileProviderExtension: NSFileProviderExtension {
             }
         }
 
-        serviceListener.delegate = listenerDelegate
         Task { serviceListener.resume() }
     }
     
