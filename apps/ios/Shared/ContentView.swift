@@ -48,28 +48,19 @@ struct ContentView: View {
                     }
                 }
             } else if prefPerformLA && laFailed {
-                retryAuthView()
+                Button(action: runAuthenticate) { Label("Retry", systemImage: "arrow.counterclockwise") }
+            } else {
+                Button(action: runAuthenticate) { Image(systemName: "lock.open") }
             }
         }
-        .onChange(of: doAuthenticate) { doAuth in
-            if doAuth, authenticationExpired() {
-                runAuthenticate()
-            }
-        }
+        .onAppear(perform: runAuthenticate)
+        .onChange(of: doAuthenticate) { _ in runAuthenticate() }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
-    private func retryAuthView() -> some View {
-        Button {
-            laFailed = false
-            runAuthenticate()
-        } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
-    }
-
     private func runAuthenticate() {
-        if !prefPerformLA {
-            userAuthorized = true
-        } else {
+        laFailed = false
+        if prefPerformLA && doAuthenticate && authenticationExpired() {
             chatModel.showChatInfo = false
             DispatchQueue.main.async() {
                 userAuthorized = false
@@ -87,6 +78,8 @@ struct ContentView: View {
                     }
                 }
             }
+        } else {
+            userAuthorized = true
         }
     }
 
