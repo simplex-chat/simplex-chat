@@ -12,15 +12,20 @@ import SimpleXChat
 
 let logger = Logger()
 
-class NotificationService: UNNotificationServiceExtension {
+let machMessenger = MachMessenger(NSE_MACH_PORT, callback: receivedAppMachMessage)
 
+class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
+        machMessenger.start()
+        let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "starting NSE didReceive")
+        logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
         if getAppState() != .background {
             contentHandler(request.content)
+            machMessenger.stop()
             return
         }
         logger.debug("NotificationService: app is in the background")
@@ -29,6 +34,7 @@ class NotificationService: UNNotificationServiceExtension {
         if let _ = startChat() {
             let content = receiveMessages()
             contentHandler (content)
+            machMessenger.stop()
             return
         }
 
@@ -38,6 +44,7 @@ class NotificationService: UNNotificationServiceExtension {
             
             contentHandler(bestAttemptContent)
         }
+        machMessenger.stop()
     }
     
     override func serviceExtensionTimeWillExpire() {
@@ -48,7 +55,11 @@ class NotificationService: UNNotificationServiceExtension {
             contentHandler(bestAttemptContent)
         }
     }
+}
 
+func receivedAppMachMessage(msgId: Int32, msg: String) -> String? {
+    logger.debug("MachMessenger: receivedAppMachMessage \"\(msg)\" from App, replying")
+    return "reply from NSE to: \(msg)"
 }
 
 func startChat() -> User? {

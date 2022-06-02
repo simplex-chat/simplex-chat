@@ -11,6 +11,13 @@ import SimpleXChat
 
 let logger = Logger()
 
+let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedNSEMachMessage)
+
+func receivedNSEMachMessage(msgId: Int32, msg: String) -> String? {
+    logger.debug("MachMessenger: receivedNSEMachMessage \"\(msg)\" from NSE, replying")
+    return "reply from App to: \(msg)"
+}
+
 @main
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -27,6 +34,7 @@ struct SimpleXApp: App {
         UserDefaults.standard.register(defaults: appDefaults)
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
+        machMessenger.start()
 
         // test service comms
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -47,14 +55,18 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
+                    let res = machMessenger.sendMessageWithReply(NSE_MACH_PORT, msg: "App scenePhase changed to \(String(describing: scenePhase))")
+                    logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
                     setAppState(phase)
                     switch (phase) {
                     case .background:
                         BGManager.shared.schedule()
                         doAuthenticate = false
                         enteredBackground = ProcessInfo.processInfo.systemUptime
+                        machMessenger.stop()
                     case .active:
                         doAuthenticate = true
+                        machMessenger.start()
                     default:
                         break
                     }
