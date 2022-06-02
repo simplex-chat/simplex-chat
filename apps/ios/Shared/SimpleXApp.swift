@@ -14,12 +14,15 @@ let logger = Logger()
 let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedMachMessage)
 
 func receivedMachMessage(msgId: Int32, msg: String) -> String? {
-//    logger.debug("MachMessenger: receivedMachMessage \"\(msg)\" from NSE, replying")
+    logger.debug("MachMessenger: receivedMachMessage from FPS")
 //    return "reply from App to: \(msg)"
 
     if let data = msg.data(using: .utf8) {
+        logger.debug("receivedMachMessage has data")
         let endpoint = try! NSKeyedUnarchiver.unarchivedObject(ofClass: NSXPCListenerEndpoint.self, from: data)!
+        logger.debug("receivedMachMessage has endpoint")
         let connection = NSXPCConnection(listenerEndpoint: endpoint)
+        logger.debug("receivedMachMessage has connection")
         connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
 
         // Start the connection.
@@ -36,9 +39,9 @@ func receivedMachMessage(msgId: Int32, msg: String) -> String? {
             fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
         }
 
-        logger.debug("testFPService calling service")
+        logger.debug("receivedMachMessage calling service")
         proxy.upperCaseString("hello to service", withReply: { reply in
-            logger.debug("testFPService reply from service \(reply)")
+            logger.debug("receivedMachMessage reply from service \(reply)")
         })
 
     }

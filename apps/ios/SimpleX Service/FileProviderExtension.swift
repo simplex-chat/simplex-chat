@@ -11,7 +11,7 @@ import OSLog
 import SimpleXChat
 
 let logger = Logger()
-let serviceListener = NSXPCListener.service()
+let serviceListener = NSXPCListener.anonymous()
 let listenerDelegate = SimpleXFPServiceDelegate()
 var machMessenger = MachMessenger(FPS_MACH_PORT, callback: receivedAppMachMessage)
 
@@ -28,13 +28,19 @@ class FileProviderExtension: NSFileProviderExtension {
         super.init()
         machMessenger.start()
         serviceListener.delegate = listenerDelegate
+        Task { serviceListener.resume() }
 
         do {
-            let endPointData = try NSKeyedArchiver.archivedData(withRootObject: serviceListener.endpoint, requiringSecureCoding: true)
-            let err = machMessenger.sendMessage(APP_MACH_PORT, data: endPointData)
-            logger.debug("FileProviderExtension.MachMessenger.sendMessage with endpoint res \(String(describing: err), privacy: .public)")
-    //        let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "machMessenger in FileProviderExtension")
-    //        logger.debug("FileProviderExtension MachMessenger app reply \(String(describing: res), privacy: .public)")
+//            logger.debug("FileProviderExtension.endPointData...")
+//            let data = NSMutableData()
+//            let coder = NSXPCCoder()
+//            coder.encodeRootObject(serviceListener.endpoint) //  serviceListener.endpoint.encode(with: <#T##NSCoder#>)
+//            let endPointData = try NSKeyedArchiver.archivedData(withRootObject: serviceListener.endpoint, requiringSecureCoding: true)
+//            logger.debug("FileProviderExtension.endPointData ok")
+//            let err = machMessenger.sendMessage(APP_MACH_PORT, data: endPointData)
+//            logger.debug("FileProviderExtension.MachMessenger.sendMessage with endpoint res \(String(describing: err), privacy: .public)")
+//            let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "machMessenger in FileProviderExtension")
+//            logger.debug("FileProviderExtension MachMessenger app reply \(String(describing: res), privacy: .public)")
         } catch let err {
             logger.debug("FileProviderExtension.MachMessenger.sendMessage error \(String(describing: err), privacy: .public)")
         }
