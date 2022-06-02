@@ -14,24 +14,19 @@ class FileProviderItem: NSObject, NSFileProviderItem {
     // TODO: implement an initializer to create an item from your extension's backing model
     // TODO: implement the accessors to return the values from your extension's backing model
     
-    var itemIdentifier: NSFileProviderItemIdentifier {
-        return NSFileProviderItemIdentifier("")
-    }
+    var itemIdentifier: NSFileProviderItemIdentifier { SERVICE_PROXY_ITEM_ID }
     
-    var parentItemIdentifier: NSFileProviderItemIdentifier {
-        return NSFileProviderItemIdentifier("")
-    }
+    var parentItemIdentifier: NSFileProviderItemIdentifier { NSFileProviderItemIdentifier("1") }
     
     var capabilities: NSFileProviderItemCapabilities {
-        return [.allowsReading, .allowsWriting, .allowsRenaming, .allowsReparenting, .allowsTrashing, .allowsDeleting]
+        [.allowsReading, .allowsWriting, .allowsRenaming, .allowsReparenting, .allowsTrashing, .allowsDeleting]
     }
     
-    var filename: String {
-        return ""
-    }
+    var filename: String { "123" }
     
     var contentType: UTType {
-        return itemIdentifier == NSFileProviderItemIdentifier.rootContainer ? .folder : .plainText
+        itemIdentifier == NSFileProviderItemIdentifier.rootContainer ? .folder : .plainText
     }
-    
+
+    var documentSize: NSNumber? { 1 }
 }

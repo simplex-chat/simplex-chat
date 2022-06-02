@@ -23,6 +23,23 @@ class FileProviderExtension: NSFileProviderExtension {
         let manager = NSFileProviderManager.default
         logger.debug("FileProviderExtension.init NSFileProviderManager \(manager.documentStorageURL, privacy: .public)")
 
+//        FileManager.default.createFile(atPath: "\(manager.documentStorageURL)123", contents: "hello".data(using: .utf8))
+
+        self.providePlaceholder(at: URL(string: "\(manager.documentStorageURL)123")!) { err in
+            if let err = err {
+                logger.debug("FileProviderExtension.providePlaceholder error \(String(describing: err), privacy: .public)")
+            } else {
+                logger.debug("FileProviderExtension.providePlaceholder ok") // <-- this returns ok
+//                self.startProvidingItem(at: URL(string: "\(manager.documentStorageURL)123")!) { err in
+//                    if let err = err {
+//                        logger.debug("FileProviderExtension.startProvidingItem error \(String(describing: err), privacy: .public)")
+//                    } else {
+//                        logger.debug("FileProviderExtension.startProvidingItem ok")
+//                    }
+//                }
+            }
+        }
+
         serviceListener.delegate = listenerDelegate
         Task { serviceListener.resume() }
     }
@@ -50,7 +67,11 @@ class FileProviderExtension: NSFileProviderExtension {
 
         return perItemDirectory.appendingPathComponent(item.filename, isDirectory:false)
     }
-    
+
+    func identifierForItemAtURL(_ url: URL, completionHandler: @escaping (NSFileProviderItemIdentifier?) -> Void) {
+        completionHandler(SERVICE_PROXY_ITEM_ID)
+    }
+
     override func persistentIdentifierForItem(at url: URL) -> NSFileProviderItemIdentifier? {
         logger.debug("FileProviderExtension.persistentIdentifierForItem")
 //        if url == SERVICE_PROXY_ITEM_URL { return SERVICE_PROXY_ITEM_ID }
@@ -76,7 +97,7 @@ class FileProviderExtension: NSFileProviderExtension {
         do {
             let fileProviderItem = try item(for: identifier)
             let placeholderURL = NSFileProviderManager.placeholderURL(for: url)
-            try NSFileProviderManager.writePlaceholder(at: placeholderURL,withMetadata: fileProviderItem)
+            try NSFileProviderManager.writePlaceholder(at: placeholderURL, withMetadata: fileProviderItem)
             completionHandler(nil)
         } catch let error {
             completionHandler(error)

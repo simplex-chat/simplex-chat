@@ -15,13 +15,6 @@ let SIMPLEX_SERVICE_NAME = NSFileProviderServiceName("group.chat.simplex.app.ser
 let SERVICE_PROXY_ITEM_ID = NSFileProviderItemIdentifier("123")
 
 class SimpleXFPService: SimpleXFPServiceProtocol {
-//    override var name: NSFileProviderServiceName { SIMPLEX_SERVICE_NAME }
-//
-//    override func getFileProviderConnection(completionHandler: @escaping (NSXPCConnection?, Error?) -> Void) {
-//        logger.debug("FileProviderExtension SimpleXFPService.getFileProviderConnection")
-//        completionHandler(NSXPCConnection(listenerEndpoint: serviceListener.endpoint), nil)
-//    }
-
     func upperCaseString(_ string: String, withReply reply: @escaping (String) -> Void) {
         logger.debug("FileProviderExtension SimpleXFPService.upperCaseString")
         let response = string.uppercased()

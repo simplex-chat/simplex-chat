@@ -11,26 +11,12 @@ import FileProvider
 import SimpleX_Service
 
 let SIMPLEX_SERVICE_NAME = NSFileProviderServiceName("group.chat.simplex.app.service")
-//let SERVICE_PROXY_ITEM = "chat.simplex.service:/123"
+let SERVICE_PROXY_ITEM = "chat.simplex.service:/123"
 //let SERVICE_PROXY_ITEM_URL = URL(string: SERVICE_PROXY_ITEM)!
-//let SERVICE_PROXY_ITEM_ID = NSFileProviderItemIdentifier(SERVICE_PROXY_ITEM)
+let SERVICE_PROXY_ITEM_ID = NSFileProviderItemIdentifier(SERVICE_PROXY_ITEM)
 
 @objc public protocol SimpleXFPServiceProtocol {
     func upperCaseString(_ string: String, withReply reply: @escaping (String) -> Void)
-}
-
-class EnumObserver: NSObject, NSFileProviderEnumerationObserver {
-    func didEnumerate(_ updatedItems: [NSFileProviderItemProtocol]) {
-
-    }
-
-    func finishEnumerating(upTo nextPage: NSFileProviderPage?) {
-
-    }
-
-    func finishEnumeratingWithError(_ error: Error) {
-
-    }
 }
 
 func testFPService() {
@@ -38,59 +24,57 @@ func testFPService() {
     let manager = NSFileProviderManager.default
     // TODO try access file
     logger.debug("testFPService NSFileProviderManager.documentStorageURL \(manager.documentStorageURL, privacy: .public)")
-//    manager.getUserVisibleURL(for: SERVICE_PROXY_ITEM_ID) { url, error in
-//        logger.debug("testFPService NSFileProviderManager.getUserVisibleURL \(url, privacy: .public)")
-//    return
-        FileManager.default.getFileProviderServicesForItem(at: URL(string: "\(manager.documentStorageURL)123")!) { (services, error) in
 
-            // Check to see if an error occurred.
-            guard error == nil else {
-                logger.debug("testFPService error getting service")
-                print(error!)
-                // Handle the error here...
-                return
-            }
+    FileManager.default.getFileProviderServicesForItem(at: URL(string: "\(manager.documentStorageURL)123")!) { (services, error) in
 
-            if let desiredService = services?[SIMPLEX_SERVICE_NAME] {
-                logger.debug("testFPService has desiredService")
-
-                // The named service is available for the item at the provided URL.
-                // To use the service, get the connection object.
-                desiredService.getFileProviderConnection(completionHandler: { (connectionOrNil, connectionError) in
-
-                    guard connectionError == nil else {
-                        // Handle the error here...
-                        return
-                    }
-
-                    guard let connection = connectionOrNil else {
-                        // No connection object found.
-                        return
-                    }
-
-                    // Set the remote interface.
-                    connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
-
-                    // Start the connection.
-                    connection.resume()
-
-                    // Get the proxy object.
-                    let rawProxy = connection.remoteObjectProxyWithErrorHandler({ (errorAccessingRemoteObject) in
-                        // Handle the error here...
-                    })
-
-                    // Cast the proxy object to the interface's protocol.
-                    guard let proxy = rawProxy as? SimpleXFPServiceProtocol else {
-                        // If the interface is set up properly, this should never fail.
-                        fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
-                    }
-
-                    logger.debug("testFPService calling service")
-                    proxy.upperCaseString("hello to service", withReply: { reply in
-                        logger.debug("testFPService reply from service \(reply)")
-                    })
-                })
-            }
+        // Check to see if an error occurred.
+        guard error == nil else {
+            logger.debug("testFPService error getting service")
+            print(error!) // <-- this prints the error I posted
+            // Handle the error here...
+            return
         }
-//    }
+
+        if let desiredService = services?[SIMPLEX_SERVICE_NAME] {
+            logger.debug("testFPService has desiredService")
+
+            // The named service is available for the item at the provided URL.
+            // To use the service, get the connection object.
+            desiredService.getFileProviderConnection(completionHandler: { (connectionOrNil, connectionError) in
+
+                guard connectionError == nil else {
+                    // Handle the error here...
+                    return
+                }
+
+                guard let connection = connectionOrNil else {
+                    // No connection object found.
+                    return
+                }
+
+                // Set the remote interface.
+                connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
+
+                // Start the connection.
+                connection.resume()
+
+                // Get the proxy object.
+                let rawProxy = connection.remoteObjectProxyWithErrorHandler({ (errorAccessingRemoteObject) in
+                    // Handle the error here...
+                })
+
+                // Cast the proxy object to the interface's protocol.
+                guard let proxy = rawProxy as? SimpleXFPServiceProtocol else {
+                    // If the interface is set up properly, this should never fail.
+                    fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
+                }
+
+                logger.debug("testFPService calling service")
+                proxy.upperCaseString("hello to service", withReply: { reply in
+                    logger.debug("testFPService reply from service \(reply)")
+                })
+            })
+        }
+    }
+
 }
