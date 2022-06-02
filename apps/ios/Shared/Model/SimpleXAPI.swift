@@ -11,7 +11,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
-import CallKit
+//import CallKit
 
 private var chatController: chat_ctrl?
 
@@ -680,7 +680,7 @@ func processReceivedMsg(_ res: ChatResponse) {
             }
             withCall(contact) { call in
                 m.callCommand = .end
-                CallController.shared.reportCallRemoteEnded(call: call)
+//                CallController.shared.reportCallRemoteEnded(call: call)
             }
         default:
             logger.debug("unsupported event: \(res.responseType)")
