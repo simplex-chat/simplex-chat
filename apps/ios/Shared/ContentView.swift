@@ -47,12 +47,8 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
-            } else if prefPerformLA {
-                if laFailed {
-                    Button(action: retryAuth) { Label("Retry", systemImage: "arrow.counterclockwise") }
-                } else {
-                    Button(action: runAuthenticate) { Image(systemName: "lock") }
-                }
+            } else if prefPerformLA && laFailed {
+                Button(action: retryAuth) { Label("Retry", systemImage: "arrow.counterclockwise") }
             }
         }
         .onAppear(perform: initialAuth)
