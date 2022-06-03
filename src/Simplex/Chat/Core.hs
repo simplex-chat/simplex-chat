@@ -29,8 +29,8 @@ simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {manualStart} u cc chat
-  | manualStart = wait =<< async (chat u cc)
+runSimplexChat ChatOpts {maintenance} u cc chat
+  | maintenance = wait =<< async (chat u cc)
   | otherwise = do
     a1 <- async $ chat u cc
     a2 <- runReaderT (startChatController u) cc

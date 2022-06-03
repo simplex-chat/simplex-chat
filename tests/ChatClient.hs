@@ -51,7 +51,8 @@ opts =
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,
-      chatServerPort = Nothing
+      chatServerPort = Nothing,
+      maintenance = False
     }
 
 termSettings :: VirtualTerminalSettings
@@ -101,7 +102,7 @@ startTestChat_ st dbFilePrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
-  chatAsync <- async . runSimplexChat user cc . const $ runChatTerminal ct
+  chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}

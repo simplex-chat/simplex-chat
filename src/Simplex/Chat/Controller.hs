@@ -101,8 +101,9 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat
   | APIStopChat
-  | APIExport ArchiveConfig
-  | APIImport ArchiveConfig
+  | APIExportArchive ArchiveConfig
+  | APIImportArchive ArchiveConfig
+  | APIDeleteStorage
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
@@ -283,7 +284,7 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
-newtype ArchiveConfig = ArchiveConfig {archivePath :: FilePath}
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool}
   deriving (Show, Generic, FromJSON)
 
 data ContactSubStatus = ContactSubStatus

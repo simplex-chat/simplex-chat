@@ -15,11 +15,10 @@ Implement creating archive file and restoring from the archive in Haskell, appli
 
 Archive files structure:
 
-- simplex-chat
-  - simplex_v1_chat.db
-  - simplex_v1_agent.db
-  - app_files
-    - ...
+- simplex_v1_chat.db
+- simplex_v1_agent.db
+- simplex_v1_files
+  - ...
 
 Archive file name (includes UTC time):
 
