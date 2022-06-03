@@ -21,7 +21,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if userAuthorized == true {
+            if userAuthorized == true || !prefPerformLA {
                 if let step = chatModel.onboardingStage {
                     if case .onboardingComplete = step,
                        let user = chatModel.currentUser {
@@ -62,9 +62,7 @@ struct ContentView: View {
 
     private func runAuthenticate() {
         laFailed = false
-        if !prefPerformLA {
-            userAuthorized = true
-        } else if doAuthenticate && authenticationExpired() {
+        if prefPerformLA && doAuthenticate {
             chatModel.showChatInfo = false
             DispatchQueue.main.async() {
                 userAuthorized = false
@@ -82,14 +80,6 @@ struct ContentView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
-        } else {
-            return true
         }
     }
 
