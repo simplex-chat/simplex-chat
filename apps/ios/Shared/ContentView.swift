@@ -12,7 +12,6 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
-    @Binding var enteredBackground: Double?
     @State private var userAuthorized: Bool?
     @State private var laFailed: Bool = false
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false

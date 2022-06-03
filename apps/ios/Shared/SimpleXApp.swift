@@ -30,7 +30,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, enteredBackground: $enteredBackground)
+            ContentView(doAuthenticate: $doAuthenticate)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
