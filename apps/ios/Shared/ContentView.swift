@@ -60,10 +60,10 @@ struct ContentView: View {
     }
 
     private func retryAuthView() -> some View {
-         Button {
-             laFailed = false
-             runAuthenticate()
-         } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
+        Button {
+            laFailed = false
+            runAuthenticate()
+        } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
     }
 
     private func runAuthenticate() {
