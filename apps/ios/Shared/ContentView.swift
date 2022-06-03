@@ -61,14 +61,14 @@ struct ContentView: View {
         } else if showChatInfo {
             showChatInfo = false
             DispatchQueue.main.async {
-                nowDefinitelyRunAuthenticate()
+                justAuthenticate()
             }
         } else {
-            nowDefinitelyRunAuthenticate()
+            justAuthenticate()
         }
     }
 
-    private func nowDefinitelyRunAuthenticate() {
+    private func justAuthenticate() {
         authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
             switch (laResult) {
             case .success:
