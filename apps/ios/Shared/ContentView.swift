@@ -62,7 +62,6 @@ struct ContentView: View {
 
     private func initialAuth() {
         if doAuthenticate && authenticationExpired() {
-            doAuthenticate = false
             runAuthenticate()
         }
     }
