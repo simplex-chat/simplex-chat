@@ -45,9 +45,11 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         BGManager.shared.schedule()
+                        if userAuthorized == true {
+                            enteredBackground = ProcessInfo.processInfo.systemUptime
+                        }
                         doAuthenticate = false
                         userAuthorized = false
-                        enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .active:
                         doAuthenticate = authenticationExpired()
                         if !doAuthenticate { userAuthorized = true }
