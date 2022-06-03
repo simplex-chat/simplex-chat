@@ -58,22 +58,28 @@ struct ContentView: View {
     private func runAuthenticate() {
         if !prefPerformLA {
             userAuthorized = true
-        } else {
+        } else if showChatInfo {
             showChatInfo = false
             DispatchQueue.main.async {
-                userAuthorized = false
-                authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
-                    switch (laResult) {
-                    case .success:
-                        userAuthorized = true
-                    case .failed:
-                        AlertManager.shared.showAlert(laFailedAlert())
-                    case .unavailable:
-                        userAuthorized = true
-                        prefPerformLA = false
-                        AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
-                    }
-                }
+                nowDefinitelyRunAuthenticate()
+            }
+        } else {
+            nowDefinitelyRunAuthenticate()
+        }
+    }
+
+    private func nowDefinitelyRunAuthenticate() {
+        userAuthorized = false
+        authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+            switch (laResult) {
+            case .success:
+                userAuthorized = true
+            case .failed:
+                AlertManager.shared.showAlert(laFailedAlert())
+            case .unavailable:
+                userAuthorized = true
+                prefPerformLA = false
+                AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }
         }
     }
