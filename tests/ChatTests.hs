@@ -18,6 +18,7 @@ import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
 import System.Directory (copyFile, doesFileExist)
@@ -91,6 +92,8 @@ chatTests = do
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+  describe "maintenance mode" $ do
+    it "start/stop/export/import chat" testMaintenanceMode
 
 testAddContact :: IO ()
 testAddContact =
@@ -1962,6 +1965,48 @@ testNegotiateCall =
     alice <## "call with bob ended"
     alice <## "message updated"
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
+
+testMaintenanceMode :: IO ()
+testMaintenanceMode = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+      alice ##> "/c"
+      alice <## "error: chat not started"
+      alice ##> "/_start"
+      alice <## "chat started"
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "error: chat not stopped"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_start"
+      alice <## "chat started"
+      -- chat works after start
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob hi again"
+      bob <# "alice> hi again"
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      -- export / delete / import
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+      doesFileExist "./tests/tmp/alice-chat.zip" `shouldReturn` True
+      alice ##> "/_db delete"
+      alice <## "ok"
+      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+    -- chat should work after import and full restart
+    -- TODO close and re-open database connection so it works without full restart
+    withTestChat "alice" $ \alice -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob hello again"
+      bob <# "alice> hello again"
+      bob #> "@alice hello too"
+      alice <# "bob> hello too"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
