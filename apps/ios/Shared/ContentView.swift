@@ -12,16 +12,16 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
-    @Binding var enteredBackground: Double?
     @State private var userAuthorized: Bool?
-    @State private var laFailed: Bool = false
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         ZStack {
-            if userAuthorized == true {
+            if prefPerformLA && userAuthorized != true {
+                Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+            } else {
                 if let step = chatModel.onboardingStage {
                     if case .onboardingComplete = step,
                        let user = chatModel.currentUser {
@@ -47,23 +47,11 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
-            } else if prefPerformLA && laFailed {
-                retryAuthView()
             }
         }
-        .onChange(of: doAuthenticate) { doAuth in
-            if doAuth, authenticationExpired() {
-                runAuthenticate()
-            }
-        }
+        .onAppear { if doAuthenticate { runAuthenticate() } }
+        .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-    }
-
-    private func retryAuthView() -> some View {
-        Button {
-            laFailed = false
-            runAuthenticate()
-        } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
     }
 
     private func runAuthenticate() {
@@ -78,7 +66,6 @@ struct ContentView: View {
                     case .success:
                         userAuthorized = true
                     case .failed:
-                        laFailed = true
                         AlertManager.shared.showAlert(laFailedAlert())
                     case .unavailable:
                         userAuthorized = true
@@ -87,14 +74,6 @@ struct ContentView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
-        } else {
-            return true
         }
     }
 
