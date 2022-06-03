@@ -13,6 +13,7 @@ struct ContentView: View {
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
     @State private var userAuthorized: Bool?
+    @State private var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -24,9 +25,9 @@ struct ContentView: View {
             } else {
                 if let step = chatModel.onboardingStage {
                     if case .onboardingComplete = step,
-                       let user = chatModel.currentUser {
+                       chatModel.currentUser != nil {
                         ZStack(alignment: .top) {
-                            ChatListView(user: user)
+                            ChatListView(showChatInfo: $showChatInfo)
                             .onAppear {
                                 NtfManager.shared.requestAuthorization(onDeny: {
                                     alertManager.showAlert(notificationAlert())
@@ -58,20 +59,18 @@ struct ContentView: View {
         if !prefPerformLA {
             userAuthorized = true
         } else {
-            chatModel.showChatInfo = false
-            DispatchQueue.main.async() {
-                userAuthorized = false
-                authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
-                    switch (laResult) {
-                    case .success:
-                        userAuthorized = true
-                    case .failed:
-                        AlertManager.shared.showAlert(laFailedAlert())
-                    case .unavailable:
-                        userAuthorized = true
-                        prefPerformLA = false
-                        AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
-                    }
+            showChatInfo = false
+            userAuthorized = false
+            authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+                switch (laResult) {
+                case .success:
+                    userAuthorized = true
+                case .failed:
+                    AlertManager.shared.showAlert(laFailedAlert())
+                case .unavailable:
+                    userAuthorized = true
+                    prefPerformLA = false
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                 }
             }
         }
