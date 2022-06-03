@@ -12,7 +12,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
-    @State private var userAuthorized: Bool?
+    @Binding var userAuthorized: Bool?
     @State private var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
@@ -69,7 +69,6 @@ struct ContentView: View {
     }
 
     private func nowDefinitelyRunAuthenticate() {
-        userAuthorized = false
         authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
             switch (laResult) {
             case .success:

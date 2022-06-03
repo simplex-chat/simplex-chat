@@ -30,7 +30,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -46,9 +46,11 @@ struct SimpleXApp: App {
                     case .background:
                         BGManager.shared.schedule()
                         doAuthenticate = false
+                        userAuthorized = false
                         enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .active:
                         doAuthenticate = authenticationExpired()
+                        if !doAuthenticate { userAuthorized = true }
                     default:
                         break
                     }
