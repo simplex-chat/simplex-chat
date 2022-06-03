@@ -41,6 +41,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
+import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
@@ -195,6 +196,9 @@ processChatCommand = \case
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> startChatController user $> CRChatStarted
+  APIStopChat -> do
+    ask >>= stopChatController
+    pure CRChatStopped
   ResubscribeAllConnections -> withUser (subscribeUserConnections resubscribeConnection) $> CRCmdOk
   SetFilesFolder filesFolder' -> withUser $ \_ -> do
     createDirectoryIfMissing True filesFolder'
@@ -527,6 +531,8 @@ processChatCommand = \case
   APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
   APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
+  APIExport cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
+  APIImport cfg -> checkChatStopped $ importArchive cfg $> CRCmdOk
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -770,6 +776,9 @@ processChatCommand = \case
         CTDirect -> withStore $ \st -> getContactIdByName st userId name
         CTGroup -> withStore $ \st -> getGroupIdByName st user name
         _ -> throwChatError $ CECommandError "not supported"
+    checkChatStopped :: m ChatResponse -> m ChatResponse
+    checkChatStopped a =
+      asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \st -> getDirectChatItemIdByText st userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -2212,6 +2221,7 @@ chatCommandP =
   ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
+    <|> "/_stop" $> APIStopChat
     <|> "/_resubscribe all" $> ResubscribeAllConnections
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
@@ -2239,6 +2249,8 @@ chatCommandP =
     <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
     <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
     <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
+    <|> "/_export " *> (APIExport <$> jsonP)
+    <|> "/_import " *> (APIImport <$> jsonP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers

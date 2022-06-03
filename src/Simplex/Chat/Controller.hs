@@ -100,6 +100,9 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | APIStopChat
+  | APIExport ArchiveConfig
+  | APIImport ArchiveConfig
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
@@ -178,6 +181,7 @@ data ChatResponse
   = CRActiveUser {user :: User}
   | CRChatStarted
   | CRChatRunning
+  | CRChatStopped
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
@@ -279,6 +283,9 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
+newtype ArchiveConfig = ArchiveConfig {archivePath :: FilePath}
+  deriving (Show, Generic, FromJSON)
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -329,6 +336,7 @@ data ChatErrorType
   = CENoActiveUser
   | CEActiveUserExists
   | CEChatNotStarted
+  | CEChatNotStopped
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}

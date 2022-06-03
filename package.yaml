@@ -39,6 +39,17 @@ dependencies:
   - time == 1.9.*
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
+  - zip == 1.7.*
+
+flags:
+  disable-bzip2:
+    description: removes dependency on bzip2 C library (zip package)
+    manual: True
+    default: True
+  disable-zstd:
+    description: Removes dependency on zstd C library (zip package)
+    manual: True
+    default: True
 
 library:
   source-dirs: src
