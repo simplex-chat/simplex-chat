@@ -51,7 +51,7 @@ struct ContentView: View {
                 if laFailed {
                     Button(action: retryAuth) { Label("Retry", systemImage: "arrow.counterclockwise") }
                 } else {
-                    Button(action: runAuthenticate) { Image(systemName: "lock.open") }
+                    Button(action: runAuthenticate) { Image(systemName: "lock") }
                 }
             }
         }
