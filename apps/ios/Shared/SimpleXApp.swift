@@ -49,10 +49,8 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        userAuthorized = false
                     case .active:
                         doAuthenticate = authenticationExpired()
-                        if !doAuthenticate { userAuthorized = true }
                     default:
                         break
                     }
