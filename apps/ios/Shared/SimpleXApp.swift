@@ -48,15 +48,19 @@ struct SimpleXApp: App {
                         doAuthenticate = false
                         enteredBackground = ProcessInfo.processInfo.systemUptime
                     case .active:
-                        if let t = enteredBackground {
-                            doAuthenticate = ProcessInfo.processInfo.systemUptime - t >= 30
-                        } else {
-                            doAuthenticate = true
-                        }
+                        doAuthenticate = authenticationExpired()
                     default:
                         break
                     }
                 }
         }
     }
+
+    private func authenticationExpired() -> Bool {
+         if let enteredBackground = enteredBackground {
+             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
+         } else {
+             return true
+         }
+     }
 }
