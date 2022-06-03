@@ -12,7 +12,6 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
-    @Binding var enteredBackground: Double?
     @State private var userAuthorized: Bool?
     @State private var laFailed: Bool = false
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
@@ -21,7 +20,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if userAuthorized == true {
+            if userAuthorized == true || !prefPerformLA {
                 if let step = chatModel.onboardingStage {
                     if case .onboardingComplete = step,
                        let user = chatModel.currentUser {
@@ -47,24 +46,24 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
-            } else if prefPerformLA && laFailed {
-                Button(action: retryAuth) { Label("Retry", systemImage: "arrow.counterclockwise") }
+            } else if prefPerformLA {
+                if laFailed {
+                    retryAuthView()
+                } else {
+                    Button(action: runAuthenticate) { Image(systemName: "lock") }
+                }
             }
         }
-        .onAppear(perform: initialAuth)
-        .onChange(of: doAuthenticate) { _ in initialAuth() }
+        .onAppear { if doAuthenticate { runAuthenticate() } }
+        .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
 
-    private func initialAuth() {
-        if doAuthenticate && authenticationExpired() {
-            runAuthenticate()
-        }
-    }
-
-    private func retryAuth() {
-        laFailed = false
-        runAuthenticate()
+    private func retryAuthView() -> some View {
+         Button {
+             laFailed = false
+             runAuthenticate()
+         } label: { Label("Retry", systemImage: "arrow.counterclockwise") }
     }
 
     private func runAuthenticate() {
@@ -88,14 +87,6 @@ struct ContentView: View {
                     }
                 }
             }
-        }
-    }
-
-    private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
-        } else {
-            return true
         }
     }
 
