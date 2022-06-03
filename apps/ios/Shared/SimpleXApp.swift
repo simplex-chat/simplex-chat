@@ -20,6 +20,7 @@ struct SimpleXApp: App {
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
     @State private var enteredBackground: Double? = nil
+    @State private var endBGTask: (() -> Void)?
 
     init() {
         hs_init(0, nil)
@@ -49,8 +50,9 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        userAuthorized = false
+                        endBGTask = beginBGTask { userAuthorized = false }
                     case .active:
+                        if let end = endBGTask { end() }
                         doAuthenticate = authenticationExpired()
                         if !doAuthenticate { userAuthorized = true }
                     default:
