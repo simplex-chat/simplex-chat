@@ -46,7 +46,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
-func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
+private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
     let endTask = {
