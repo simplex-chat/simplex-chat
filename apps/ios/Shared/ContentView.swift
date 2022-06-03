@@ -47,10 +47,12 @@ struct ContentView: View {
                         OnboardingView(onboarding: step)
                     }
                 }
-            } else if prefPerformLA && laFailed {
-                Button(action: runAuthenticate) { Label("Retry", systemImage: "arrow.counterclockwise") }
-            } else {
-                Button(action: runAuthenticate) { Image(systemName: "lock.open") }
+            } else if prefPerformLA {
+                if laFailed {
+                    Button(action: runAuthenticate) { Label("Retry", systemImage: "arrow.counterclockwise") }
+                } else {
+                    Button(action: runAuthenticate) { Image(systemName: "lock") }
+                }
             }
         }
         .onAppear(perform: runAuthenticate)
@@ -60,7 +62,9 @@ struct ContentView: View {
 
     private func runAuthenticate() {
         laFailed = false
-        if prefPerformLA && doAuthenticate && authenticationExpired() {
+        if !prefPerformLA {
+            userAuthorized = true
+        } else if doAuthenticate && authenticationExpired() {
             chatModel.showChatInfo = false
             DispatchQueue.main.async() {
                 userAuthorized = false
@@ -78,8 +82,6 @@ struct ContentView: View {
                     }
                 }
             }
-        } else {
-            userAuthorized = true
         }
     }
 
