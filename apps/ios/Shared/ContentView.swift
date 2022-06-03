@@ -61,7 +61,9 @@ struct ContentView: View {
 
     private func runAuthenticate() {
         laFailed = false
-        if prefPerformLA && doAuthenticate {
+        if !prefPerformLA {
+            userAuthorized = true
+        } else if doAuthenticate {
             chatModel.showChatInfo = false
             DispatchQueue.main.async() {
                 userAuthorized = false
