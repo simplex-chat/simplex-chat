@@ -69,6 +69,7 @@ struct ContentView: View {
     }
 
     private func justAuthenticate() {
+        userAuthorized = false
         authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
             switch (laResult) {
             case .success:
