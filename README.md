@@ -63,11 +63,13 @@ If you are considering developing with SimpleX platform please get in touch for 
 
 ## News and updates
 
+[Jun 4, 2022. v2.2: the new Privacy and Security settings](./20220604-simplex-chat-new-privacy-security-settings.md)
+
 [May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
 
-[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md)
-
 [Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
+
+[Jan 12, 2022. SimpleX v1 released: the only messaging and application platform without user identities](./20220112-simplex-chat-v1-released.md)
 
 [All updates](./blog)
 
@@ -113,12 +115,13 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - ✅ Private instant notifications for Android using background service.
 - ✅ Haskell chat bot templates.
 - ✅ v2.0 - supporting images and files in mobile apps.
-- 🏗 End-to-end encrypted audio and video calls via the mobile apps.
-- 🏗 Automatic chat history deletion.
+- ✅ Manual chat history deletion.
+- 🚀 End-to-end encrypted audio and video calls via the mobile apps (enable via Experimental Features).
 - 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
+- 🏗 Chat database portability and encryption.
 - Groups support for mobile apps.
-- Chat database portability and encryption.
+- Disappearing messages, with mutual agreement.
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
   - SMP queue redundancy and rotation.
