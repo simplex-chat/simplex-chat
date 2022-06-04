@@ -10,18 +10,17 @@ import SwiftUI
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Binding var showChatInfo: Bool
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
 
-    var user: User
-
     var body: some View {
         let v = NavigationView {
             List {
                 ForEach(filteredChats()) { chat in
-                    ChatListNavLink(chat: chat)
+                    ChatListNavLink(chat: chat, showChatInfo: $showChatInfo)
                         .padding(.trailing, -16)
                 }
             }
@@ -92,10 +91,11 @@ struct ChatListView_Previews: PreviewProvider {
             )
 
         ]
+        @State var showChatInfo = false
         return Group {
-            ChatListView(user: User.sampleData)
+            ChatListView(showChatInfo: $showChatInfo)
                 .environmentObject(chatModel)
-            ChatListView(user: User.sampleData)
+            ChatListView(showChatInfo: $showChatInfo)
                 .environmentObject(ChatModel())
         }
     }
