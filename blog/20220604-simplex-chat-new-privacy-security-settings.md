@@ -1,10 +1,12 @@
-# SimpleX Chat v2.2 - the first messaging platform without user identities
+# SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!
 
 **Published:** June 4, 2022
 
-See [v2 announcement](./20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it works.
+See [v2 announcement](./20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platfom, has no identity keys or any numbers that identify its users.
 
 ## New Privacy and Security settings in version 2.2
+
+<img src="./images/20220604-privacy-settings.png" width="480">
 
 ### Protect your chats
 
@@ -32,8 +34,6 @@ In case some of the messages are lost, you would see it in the chat. It can happ
 - the messages were removed when the server was restarted. We will add server redundancy later this year to avoid message loss in this case, for now if you see an indication that some messages were lost in the chat, you can check with your contact what it was.
 - some other app error. Please notify us via chat - we will investigate possible root causes.
 - the connection is compromised. This is very unlikely, but not an impossible scenario.
-
-<img src="./images/20220604-privacy-settings.png" width="240">
 
 ## More information
 
