@@ -206,6 +206,9 @@ processChatCommand = \case
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
+  APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
+  APIImportArchive cfg -> checkChatStopped $ importArchive cfg $> CRCmdOk
+  APIDeleteStorage -> checkChatStopped $ deleteStorage $> CRCmdOk
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore $ \st -> getChatPreviews st user withPCC)
   APIGetChat (ChatRef cType cId) pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
@@ -532,9 +535,6 @@ processChatCommand = \case
   APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
   APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
-  APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
-  APIImportArchive cfg -> checkChatStopped $ importArchive cfg $> CRCmdOk
-  APIDeleteStorage -> checkChatStopped $ deleteStorage $> CRCmdOk
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \st -> overwriteSMPServers st user smpServers
@@ -2226,6 +2226,9 @@ chatCommandP =
     <|> "/_stop" $> APIStopChat
     <|> "/_resubscribe all" $> ResubscribeAllConnections
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
+    <|> "/_db export " *> (APIExportArchive <$> jsonP)
+    <|> "/_db import " *> (APIImportArchive <$> jsonP)
+    <|> "/_db delete" $> APIDeleteStorage
     <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
     <|> "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP)
     <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
@@ -2251,9 +2254,6 @@ chatCommandP =
     <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
     <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
     <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
-    <|> "/_db export " *> (APIExportArchive <$> jsonP)
-    <|> "/_db import " *> (APIImportArchive <$> jsonP)
-    <|> "/_db delete" $> APIDeleteStorage
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers

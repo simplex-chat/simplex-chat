@@ -54,7 +54,10 @@ copyDirectoryFiles :: MonadIO m => FilePath -> FilePath -> m ()
 copyDirectoryFiles fromDir toDir = do
   createDirectoryIfMissing False toDir
   fs <- listDirectory fromDir
-  forM_ fs $ \f -> whenM (doesFileExist f) $ copyFile f $ toDir </> takeFileName f
+  forM_ fs $ \f -> do
+    let fn = takeFileName f
+        f' = fromDir </> fn
+    whenM (doesFileExist f') $ copyFile f' $ toDir </> fn
 
 deleteStorage :: ChatMonad m => m ()
 deleteStorage = do

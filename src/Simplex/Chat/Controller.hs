@@ -101,11 +101,11 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat
   | APIStopChat
+  | ResubscribeAllConnections
+  | SetFilesFolder FilePath
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
-  | ResubscribeAllConnections
-  | SetFilesFolder FilePath
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
