@@ -723,6 +723,7 @@ viewChatError = \case
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
+    CEChatStoreChanged -> ["error: chat store changed"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]

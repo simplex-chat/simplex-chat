@@ -1997,18 +1997,21 @@ testMaintenanceMode = withTmpFiles $ do
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       doesFileExist "./tests/tmp/alice-chat.zip" `shouldReturn` True
-      alice ##> "/_db delete"
-      alice <## "ok"
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
-    -- chat should work after import and full restart
-    -- TODO close and re-open database connection so it works without full restart
-    withTestChat "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice #> "@bob hello again"
-      bob <# "alice> hello again"
-      bob #> "@alice hello too"
-      alice <# "bob> hello too"
+      -- cannot start chat after import
+      alice ##> "/_start"
+      alice <## "error: chat store changed"
+    -- works after full restart
+    withTestChat "alice" $ \alice -> testChatWorking alice bob
+
+testChatWorking :: TestCC -> TestCC -> IO ()
+testChatWorking alice bob = do
+  alice <## "1 contacts connected (use /cs for the list)"
+  alice #> "@bob hello again"
+  bob <# "alice> hello again"
+  bob #> "@alice hello too"
+  alice <# "bob> hello too"
 
 testMaintenanceModeWithFiles :: IO ()
 testMaintenanceModeWithFiles = withTmpFiles $ do
@@ -2030,16 +2033,15 @@ testMaintenanceModeWithFiles = withTmpFiles $ do
       alice <## "ok"
       alice ##> "/_db delete"
       alice <## "ok"
+      -- cannot start chat after delete
+      alice ##> "/_start"
+      alice <## "error: chat store changed"
       doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
-    withTestChat "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice #> "@bob hi"
-      bob <# "alice> hi"
-      bob #> "@alice hi there"
-      alice <# "bob> hi there"
+    -- works after full restart
+    withTestChat "alice" $ \alice -> testChatWorking alice bob
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

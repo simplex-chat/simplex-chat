@@ -135,7 +135,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
   filesFolder <- newTVarIO Nothing
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder}
+  chatStoreChanged <- newTVarIO False
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder}
   where
     resolveServers :: InitialAgentServers -> IO InitialAgentServers
     resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
@@ -196,7 +197,11 @@ processChatCommand = \case
   StartChat -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> startChatController user $> CRChatStarted
+      _ ->
+        ifM
+          (asks chatStoreChanged >>= readTVarIO)
+          (throwChatError CEChatStoreChanged)
+          (startChatController user $> CRChatStarted)
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -207,8 +212,8 @@ processChatCommand = \case
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
-  APIImportArchive cfg -> checkChatStopped $ importArchive cfg $> CRCmdOk
-  APIDeleteStorage -> checkChatStopped $ deleteStorage $> CRCmdOk
+  APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
+  APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore $ \st -> getChatPreviews st user withPCC)
   APIGetChat (ChatRef cType cId) pagination -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\st -> getDirectChat st user cId pagination)
@@ -779,8 +784,9 @@ processChatCommand = \case
         CTGroup -> withStore $ \st -> getGroupIdByName st user name
         _ -> throwChatError $ CECommandError "not supported"
     checkChatStopped :: m ChatResponse -> m ChatResponse
-    checkChatStopped a =
-      asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
+    checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
+    setStoreChanged :: m ()
+    setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \st -> getDirectChatItemIdByText st userId cId SMDSnd (safeDecodeUtf8 msg)

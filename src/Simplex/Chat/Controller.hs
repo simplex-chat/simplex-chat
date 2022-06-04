@@ -76,6 +76,7 @@ data ChatController = ChatController
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async ())),
     chatStore :: SQLiteStore,
+    chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
@@ -338,6 +339,7 @@ data ChatErrorType
   | CEActiveUserExists
   | CEChatNotStarted
   | CEChatNotStopped
+  | CEChatStoreChanged
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}
