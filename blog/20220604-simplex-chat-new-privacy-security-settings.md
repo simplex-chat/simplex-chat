@@ -35,6 +35,10 @@ In case some of the messages are lost, you would see it in the chat. It can happ
 - some other app error. Please notify us via chat - we will investigate possible root causes.
 - the connection is compromised. This is very unlikely, but not an impossible scenario.
 
+### There is more
+
+You can discover additional features we are currently testing in Experimental Features - they will be announced later!
+
 ## More information
 
 See [v1 announcement](./20220112-simplex-chat-v1-released.md) for information on how SimpleX protects the security of the messages.

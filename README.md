@@ -115,12 +115,13 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - ✅ Private instant notifications for Android using background service.
 - ✅ Haskell chat bot templates.
 - ✅ v2.0 - supporting images and files in mobile apps.
-- 🏗 End-to-end encrypted audio and video calls via the mobile apps.
-- 🏗 Automatic chat history deletion.
+- ✅ Manual chat history deletion.
+- 🚀 End-to-end encrypted audio and video calls via the mobile apps (enable via Experimental Features).
 - 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
+- 🏗 Chat database portability and encryption.
 - Groups support for mobile apps.
-- Chat database portability and encryption.
+- Disappearing messages, with mutual agreement.
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
   - SMP queue redundancy and rotation.
