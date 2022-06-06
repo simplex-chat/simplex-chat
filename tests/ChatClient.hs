@@ -42,8 +42,8 @@ testDBPrefix = "tests/tmp/test"
 serverPort :: ServiceName
 serverPort = "5001"
 
-opts :: ChatOpts
-opts =
+testOpts :: ChatOpts
+testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
@@ -51,7 +51,8 @@ opts =
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,
-      chatServerPort = Nothing
+      chatServerPort = Nothing,
+      maintenance = False
     }
 
 termSettings :: VirtualTerminalSettings
@@ -82,26 +83,26 @@ cfg =
       testView = True
     }
 
-createTestChat :: String -> Profile -> IO TestCC
-createTestChat dbPrefix profile = do
+createTestChat :: ChatOpts -> String -> Profile -> IO TestCC
+createTestChat opts dbPrefix profile = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Right user <- runExceptT $ createUser st profile True
-  startTestChat_ st dbFilePrefix user
+  startTestChat_ st opts dbFilePrefix user
 
-startTestChat :: String -> IO TestCC
-startTestChat dbPrefix = do
+startTestChat :: ChatOpts -> String -> IO TestCC
+startTestChat opts dbPrefix = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") 1 False
   Just user <- find activeUser <$> getUsers st
-  startTestChat_ st dbFilePrefix user
+  startTestChat_ st opts dbFilePrefix user
 
-startTestChat_ :: SQLiteStore -> FilePath -> User -> IO TestCC
-startTestChat_ st dbFilePrefix user = do
+startTestChat_ :: SQLiteStore -> ChatOpts -> FilePath -> User -> IO TestCC
+startTestChat_ st opts dbFilePrefix user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
-  chatAsync <- async . runSimplexChat user cc . const $ runChatTerminal ct
+  chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}
@@ -113,10 +114,16 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   uninterruptibleCancel chatAsync
 
 withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
-withNewTestChat dbPrefix profile = bracket (createTestChat dbPrefix profile) (\cc -> cc <// 100000 >> stopTestChat cc)
+withNewTestChat = withNewTestChatOpts testOpts
+
+withNewTestChatOpts :: ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
+withNewTestChatOpts opts dbPrefix profile = bracket (createTestChat opts dbPrefix profile) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 withTestChat :: String -> (TestCC -> IO a) -> IO a
-withTestChat dbPrefix = bracket (startTestChat dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
+withTestChat = withTestChatOpts testOpts
+
+withTestChatOpts :: ChatOpts -> String -> (TestCC -> IO a) -> IO a
+withTestChatOpts opts dbPrefix = bracket (startTestChat opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
 readTerminalOutput :: VirtualTerminal -> TQueue String -> IO ()
 readTerminalOutput t termQ = do
@@ -147,8 +154,8 @@ withTmpFiles =
     (createDirectoryIfMissing False "tests/tmp")
     (removePathForcibly "tests/tmp")
 
-testChatN :: [Profile] -> ([TestCC] -> IO ()) -> IO ()
-testChatN ps test = withTmpFiles $ do
+testChatN :: ChatOpts -> [Profile] -> ([TestCC] -> IO ()) -> IO ()
+testChatN opts ps test = withTmpFiles $ do
   tcs <- getTestCCs (zip ps [1 ..]) []
   test tcs
   concurrentlyN_ $ map (<// 100000) tcs
@@ -156,7 +163,7 @@ testChatN ps test = withTmpFiles $ do
   where
     getTestCCs :: [(Profile, Int)] -> [TestCC] -> IO [TestCC]
     getTestCCs [] tcs = pure tcs
-    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat (show db) p <*> getTestCCs envs' tcs
+    getTestCCs ((p, db) : envs') tcs = (:) <$> createTestChat opts (show db) p <*> getTestCCs envs' tcs
 
 (<//) :: TestCC -> Int -> Expectation
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
@@ -176,21 +183,24 @@ userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
 
 testChat2 :: Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
-testChat2 p1 p2 test = testChatN [p1, p2] test_
+testChat2 = testChatOpts2 testOpts
+
+testChatOpts2 :: ChatOpts -> Profile -> Profile -> (TestCC -> TestCC -> IO ()) -> IO ()
+testChatOpts2 opts p1 p2 test = testChatN opts [p1, p2] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2] = test tc1 tc2
     test_ _ = error "expected 2 chat clients"
 
 testChat3 :: Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat3 p1 p2 p3 test = testChatN [p1, p2, p3] test_
+testChat3 p1 p2 p3 test = testChatN testOpts [p1, p2, p3] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3] = test tc1 tc2 tc3
     test_ _ = error "expected 3 chat clients"
 
 testChat4 :: Profile -> Profile -> Profile -> Profile -> (TestCC -> TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
-testChat4 p1 p2 p3 p4 test = testChatN [p1, p2, p3, p4] test_
+testChat4 p1 p2 p3 p4 test = testChatN testOpts [p1, p2, p3, p4] test_
   where
     test_ :: [TestCC] -> IO ()
     test_ [tc1, tc2, tc3, tc4] = test tc1 tc2 tc3 tc4

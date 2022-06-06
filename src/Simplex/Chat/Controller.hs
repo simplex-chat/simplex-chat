@@ -76,6 +76,7 @@ data ChatController = ChatController
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async ())),
     chatStore :: SQLiteStore,
+    chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
@@ -100,8 +101,12 @@ data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
   | StartChat
+  | APIStopChat
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
+  | APIExportArchive ArchiveConfig
+  | APIImportArchive ArchiveConfig
+  | APIDeleteStorage
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
@@ -178,6 +183,7 @@ data ChatResponse
   = CRActiveUser {user :: User}
   | CRChatStarted
   | CRChatRunning
+  | CRChatStopped
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
@@ -279,6 +285,9 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool}
+  deriving (Show, Generic, FromJSON)
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -329,6 +338,8 @@ data ChatErrorType
   = CENoActiveUser
   | CEActiveUserExists
   | CEChatNotStarted
+  | CEChatNotStopped
+  | CEChatStoreChanged
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}

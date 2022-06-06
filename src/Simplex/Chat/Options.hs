@@ -25,7 +25,8 @@ data ChatOpts = ChatOpts
     logAgent :: Bool,
     chatCmd :: String,
     chatCmdDelay :: Int,
-    chatServerPort :: Maybe String
+    chatServerPort :: Maybe String,
+    maintenance :: Bool
   }
 
 chatOpts :: FilePath -> FilePath -> Parser ChatOpts
@@ -88,7 +89,13 @@ chatOpts appDir defaultDbFileName = do
           <> help "Run chat server on specified port"
           <> value Nothing
       )
-  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort}
+  maintenance <-
+    switch
+      ( long "maintenance"
+          <> short 'm'
+          <> help "Run in maintenance mode (/_start to start chat)"
+      )
+  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort, maintenance}
   where
     defaultDbFilePath = combine appDir defaultDbFileName
 

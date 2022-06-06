@@ -18,9 +18,11 @@ import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
 import Simplex.Chat.Util (unlessM)
-import System.Directory (copyFile, doesFileExist)
+import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
+import System.FilePath ((</>))
 import Test.Hspec
 
 aliceProfile :: Profile
@@ -91,6 +93,9 @@ chatTests = do
     it "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
+  describe "maintenance mode" $ do
+    it "start/stop/export/import chat" testMaintenanceMode
+    it "export/import chat with files" testMaintenanceModeWithFiles
 
 testAddContact :: IO ()
 testAddContact =
@@ -1963,6 +1968,81 @@ testNegotiateCall =
     alice <## "message updated"
     alice #$> ("/_get chat @2 count=100", chat, [(1, "outgoing call: ended (00:00)")])
 
+testMaintenanceMode :: IO ()
+testMaintenanceMode = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+      alice ##> "/c"
+      alice <## "error: chat not started"
+      alice ##> "/_start"
+      alice <## "chat started"
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "error: chat not stopped"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_start"
+      alice <## "chat started"
+      -- chat works after start
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice #> "@bob hi again"
+      bob <# "alice> hi again"
+      bob #> "@alice hello"
+      alice <# "bob> hello"
+      -- export / delete / import
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+      doesFileExist "./tests/tmp/alice-chat.zip" `shouldReturn` True
+      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+      -- cannot start chat after import
+      alice ##> "/_start"
+      alice <## "error: chat store changed"
+    -- works after full restart
+    withTestChat "alice" $ \alice -> testChatWorking alice bob
+
+testChatWorking :: TestCC -> TestCC -> IO ()
+testChatWorking alice bob = do
+  alice <## "1 contacts connected (use /cs for the list)"
+  alice #> "@bob hello again"
+  bob <# "alice> hello again"
+  bob #> "@alice hello too"
+  alice <# "bob> hello too"
+
+testMaintenanceModeWithFiles :: IO ()
+testMaintenanceModeWithFiles = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      alice ##> "/_files_folder ./tests/tmp/alice_files"
+      alice <## "ok"
+      connectUsers alice bob
+      startFileTransferWithDest' bob alice "test.jpg" "136.5 KiB / 139737 bytes" Nothing
+      bob <## "completed sending file 1 (test.jpg) to alice"
+      alice <## "completed receiving file 1 (test.jpg) from bob"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+      alice ##> "/_db delete"
+      alice <## "ok"
+      -- cannot start chat after delete
+      alice ##> "/_start"
+      alice <## "error: chat store changed"
+      doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
+      alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
+      alice <## "ok"
+      B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+    -- works after full restart
+    withTestChat "alice" $ \alice -> testChatWorking alice bob
+
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
   withTestChat dbPrefix $ \cc -> do
@@ -1987,16 +2067,21 @@ startFileTransfer alice bob =
   startFileTransfer' alice bob "test.jpg" "136.5 KiB / 139737 bytes"
 
 startFileTransfer' :: TestCC -> TestCC -> String -> String -> IO ()
-startFileTransfer' alice bob fileName fileSize = do
-  alice #> ("/f @bob ./tests/fixtures/" <> fileName)
-  alice <## "use /fc 1 to cancel sending"
-  bob <# ("alice> sends file " <> fileName <> " (" <> fileSize <> ")")
-  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-  bob ##> "/fr 1 ./tests/tmp"
-  bob <## ("saving file 1 from alice to ./tests/tmp/" <> fileName)
+startFileTransfer' cc1 cc2 fileName fileSize = startFileTransferWithDest' cc1 cc2 fileName fileSize $ Just "./tests/tmp"
+
+startFileTransferWithDest' :: TestCC -> TestCC -> String -> String -> Maybe String -> IO ()
+startFileTransferWithDest' cc1 cc2 fileName fileSize fileDest_ = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 #> ("/f @" <> name2 <> " ./tests/fixtures/" <> fileName)
+  cc1 <## "use /fc 1 to cancel sending"
+  cc2 <# (name1 <> "> sends file " <> fileName <> " (" <> fileSize <> ")")
+  cc2 <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  cc2 ##> ("/fr 1" <> maybe "" (" " <>) fileDest_)
+  cc2 <## ("saving file 1 from " <> name1 <> " to " <> maybe id (</>) fileDest_ fileName)
   concurrently_
-    (bob <## ("started receiving file 1 (" <> fileName <> ") from alice"))
-    (alice <## ("started sending file 1 (" <> fileName <> ") to bob"))
+    (cc2 <## ("started receiving file 1 (" <> fileName <> ") from " <> name1))
+    (cc1 <## ("started sending file 1 (" <> fileName <> ") to " <> name2))
 
 checkPartialTransfer :: String -> IO ()
 checkPartialTransfer fileName = do
