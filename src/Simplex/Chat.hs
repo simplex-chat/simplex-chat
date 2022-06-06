@@ -50,7 +50,7 @@ import Simplex.Chat.Options (ChatOpts (..), smpServersP)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (ifM, safeDecodeUtf8, unlessM, whenM)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -60,10 +60,10 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Client (NtfServer)
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), PushProvider (..))
 import Simplex.Messaging.Parsers (base64P, parseAll)
-import Simplex.Messaging.Protocol (ErrorType (..), MsgBody)
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (tryError, (<$?>))
+import Simplex.Messaging.Util (ifM, tryError, unlessM, whenM, (<$?>))
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, openFile, stdout)
@@ -1132,7 +1132,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           allowAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
           saveConnInfo conn connInfo
-        MSG meta msgBody -> do
+        MSG meta _msgFlags msgBody -> do
           _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody
           withAckMessage agentConnId meta $ pure ()
           ackMsgDeliveryEvent conn meta
@@ -1145,7 +1145,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
-        MSG msgMeta msgBody -> do
+        MSG msgMeta msgFlags msgBody -> do
           msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
             case chatMsgEvent of
@@ -1285,7 +1285,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct
-      MSG msgMeta msgBody -> do
+      MSG msgMeta _msgFlags msgBody -> do
         msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody
         withAckMessage agentConnId msgMeta $
           case chatMsgEvent of
@@ -1344,7 +1344,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               ci <- withStore $ \st -> getChatItemByFileId st user fileId
               toView $ CRSndFileRcvCancelled ci ft
             _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ ->
+        MSG meta _ _ ->
           withAckMessage agentConnId meta $ pure ()
         -- TODO print errors
         ERR _ -> pure ()
@@ -1368,7 +1368,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             updateCIFileStatus st user fileId CIFSRcvTransfer
             getChatItemByFileId st user fileId
           toView $ CRRcvFileStart ci
-        MSG meta@MsgMeta {recipient = (msgId, _), integrity} msgBody -> withAckMessage agentConnId meta $ do
+        MSG meta@MsgMeta {recipient = (msgId, _), integrity} _ msgBody -> withAckMessage agentConnId meta $ do
           parseFileChunk msgBody >>= \case
             FileChunkCancel ->
               unless cancelled $ do
@@ -1911,7 +1911,7 @@ sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentCo
 sendFileChunkNo :: ChatMonad m => SndFileTransfer -> Integer -> m ()
 sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
   chunkBytes <- readFileChunk ft chunkNo
-  msgId <- withAgent $ \a -> sendMessage a acId $ smpEncode FileChunk {chunkNo, chunkBytes}
+  msgId <- withAgent $ \a -> sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunk {chunkNo, chunkBytes}
   withStore $ \st -> updateSndFileChunkMsg st ft chunkNo msgId
 
 readFileChunk :: ChatMonad m => SndFileTransfer -> Integer -> m ByteString
@@ -2005,7 +2005,7 @@ cancelSndFileTransfer ft@SndFileTransfer {agentConnId = AgentConnId acId, fileSt
       updateSndFileStatus st ft FSCancelled
       deleteSndFileChunks st ft
     withAgent $ \a -> do
-      void (sendMessage a acId $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
+      void (sendMessage a acId SMP.noMsgFlags $ smpEncode FileChunkCancel) `catchError` \_ -> pure ()
       deleteConnection a acId
 
 closeFileHandle :: ChatMonad m => Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> m ()
@@ -2033,7 +2033,7 @@ sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connS
 sendDirectMessage :: ChatMonad m => Connection -> ChatMsgEvent -> ConnOrGroupId -> m SndMessage
 sendDirectMessage conn chatMsgEvent connOrGroupId = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent connOrGroupId
-  deliverMessage conn msgBody msgId
+  deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
   pure msg
 
 createSndMessage :: ChatMonad m => ChatMsgEvent -> ConnOrGroupId -> m SndMessage
@@ -2046,9 +2046,10 @@ createSndMessage chatMsgEvent connOrGroupId = do
 directMessage :: ChatMsgEvent -> ByteString
 directMessage chatMsgEvent = strEncode ChatMessage {msgId = Nothing, chatMsgEvent}
 
-deliverMessage :: ChatMonad m => Connection -> MsgBody -> MessageId -> m ()
-deliverMessage conn@Connection {connId} msgBody msgId = do
-  agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgBody
+deliverMessage :: ChatMonad m => Connection -> CMEventTag -> MsgBody -> MessageId -> m ()
+deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
+  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+  agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore $ \st -> createSndMsgDelivery st sndMsgDelivery msgId
 
@@ -2068,10 +2069,12 @@ sendGroupMessage' members chatMsgEvent groupId introId_ postDeliver = do
   forM_ (filter memberCurrent members) $ \m@GroupMember {groupMemberId} ->
     case memberConn m of
       Nothing -> withStore $ \st -> createPendingGroupMessage st groupMemberId msgId introId_
-      Just conn@Connection {connStatus} ->
-        if not (connStatus == ConnSndReady || connStatus == ConnReady)
-          then unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
-          else (deliverMessage conn msgBody msgId >> postDeliver) `catchError` const (pure ())
+      Just conn@Connection {connStatus}
+        | connStatus == ConnSndReady || connStatus == ConnReady -> do
+          let tag = toCMEventTag chatMsgEvent
+          (deliverMessage conn tag msgBody msgId >> postDeliver) `catchError` const (pure ())
+        | connStatus == ConnDeleted -> pure ()
+        | otherwise -> unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
   pure msg
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
@@ -2079,7 +2082,7 @@ sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
   pendingMessages <- withStore $ \st -> getPendingGroupMessages st groupMemberId
   -- TODO ensure order - pending messages interleave with user input messages
   forM_ pendingMessages $ \PendingGroupMessage {msgId, cmEventTag, msgBody, introId_} -> do
-    deliverMessage conn msgBody msgId
+    deliverMessage conn cmEventTag msgBody msgId
     withStore (\st -> deletePendingGroupMessage st groupMemberId msgId)
     when (cmEventTag == XGrpMemFwd_) $ case introId_ of
       Nothing -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName

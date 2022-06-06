@@ -206,7 +206,6 @@ import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (eitherToMaybe)
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
@@ -214,7 +213,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
-import Simplex.Messaging.Util (liftIOEither, (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, liftIOEither, (<$$>))
 import UnliftIO.STM
 
 schemaMigrations :: [(String, Query)]
