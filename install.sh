@@ -77,7 +77,7 @@ fi
 
 chmod +x $BIN_PATH
 
-echo "$APP_NAME installed sucesfully!"
+echo "$APP_NAME installed successfully!"
 
 if [ -z "$(command -v $APP_NAME)" ]; then
   if [ -n "$($SHELL -c 'echo $ZSH_VERSION')" ]; then
