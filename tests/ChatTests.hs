@@ -20,7 +20,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
-import Simplex.Chat.Util (unlessM)
+import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
 import Test.Hspec

@@ -6,9 +6,9 @@ module Simplex.Chat.Archive where
 import qualified Codec.Archive.Zip as Z
 import Control.Monad.Reader
 import Simplex.Chat.Controller
-import Simplex.Chat.Util (whenM)
 import Simplex.Messaging.Agent.Client (agentDbPath)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..))
+import Simplex.Messaging.Util (whenM)
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.STM
