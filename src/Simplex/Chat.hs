@@ -1145,7 +1145,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
-        MSG msgMeta msgFlags msgBody -> do
+        MSG msgMeta _msgFlags msgBody -> do
           msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
             case chatMsgEvent of
