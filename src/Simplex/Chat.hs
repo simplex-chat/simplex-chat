@@ -2074,7 +2074,7 @@ sendGroupMessage' members chatMsgEvent groupId introId_ postDeliver = do
           let tag = toCMEventTag chatMsgEvent
           (deliverMessage conn tag msgBody msgId >> postDeliver) `catchError` const (pure ())
         | connStatus == ConnDeleted -> pure ()
-        | otherwise -> unless (connStatus == ConnDeleted) $ withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
+        | otherwise -> withStore (\st -> createPendingGroupMessage st groupMemberId msgId introId_)
   pure msg
 
 sendPendingGroupMessages :: ChatMonad m => GroupMember -> Connection -> m ()
