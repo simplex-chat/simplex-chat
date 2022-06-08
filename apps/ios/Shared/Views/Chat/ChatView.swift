@@ -15,10 +15,10 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
     @ObservedObject var chat: Chat
+    @Binding var showChatInfo: Bool
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
-    @State private var showChatInfo = false
     @State private var showDeleteMessage = false
 
     var body: some View {
@@ -270,7 +270,8 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(8, .directSnd, .now, "👍👍👍👍"),
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+        @State var showChatInfo = false
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
             .environmentObject(chatModel)
     }
 }

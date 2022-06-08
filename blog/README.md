@@ -1,8 +1,10 @@
 # Blog
 
-May 24, 2022 [Clearing messages for better conversation privacy](./20220524-simplex-chat-better-privacy.md)
+Jun 4, 2022 [v2.2: the new Privacy and Security settings](./20220604-simplex-chat-new-privacy-security-settings.md)
 
-May 11, 2022 [Sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files.md)
+May 24, 2022 [v2.1: clearing messages for better conversation privacy](./20220524-simplex-chat-better-privacy.md)
+
+May 11, 2022 [v2.0 released - sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files.md)
 
 Apr 04, 2022 [Instant notifications for SimpleX Chat mobile apps](./20220404-simplex-chat-instant-notifications.md)
 

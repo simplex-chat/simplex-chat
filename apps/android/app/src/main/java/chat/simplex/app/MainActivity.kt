@@ -100,6 +100,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       userAuthorized.value = true
     } else {
       userAuthorized.value = false
+      ModalManager.shared.closeModals()
       authenticate(
         generalGetString(R.string.auth_unlock),
         generalGetString(R.string.auth_log_in_using_credential),
@@ -241,7 +242,9 @@ fun MainPage(
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
   var chatsAccessAuthorized by remember { mutableStateOf(false) }
   LaunchedEffect(userAuthorized.value) {
-    delay(500L)
+    if (chatModel.controller.appPrefs.performLA.get()) {
+      delay(500L)
+    }
     chatsAccessAuthorized = userAuthorized.value == true
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
