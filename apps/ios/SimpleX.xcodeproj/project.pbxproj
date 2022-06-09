@@ -43,6 +43,16 @@
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
+		5C6F2A3C28522C9A00103588 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3728522C9A00103588 /* libgmp.a */; };
+		5C6F2A3D28522C9A00103588 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3728522C9A00103588 /* libgmp.a */; };
+		5C6F2A3E28522C9A00103588 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3828522C9A00103588 /* libffi.a */; };
+		5C6F2A3F28522C9A00103588 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3828522C9A00103588 /* libffi.a */; };
+		5C6F2A4028522C9A00103588 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3928522C9A00103588 /* libgmpxx.a */; };
+		5C6F2A4128522C9A00103588 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3928522C9A00103588 /* libgmpxx.a */; };
+		5C6F2A4228522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3A28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a */; };
+		5C6F2A4328522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3A28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a */; };
+		5C6F2A4428522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3B28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a */; };
+		5C6F2A4528522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C6F2A3B28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a */; };
 		5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
 		5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
@@ -109,16 +119,6 @@
 		648010AB281ADD15009009B9 /* CIFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648010AA281ADD15009009B9 /* CIFileView.swift */; };
 		649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCD9F280460FD00C3A862 /* ComposeImageView.swift */; };
 		649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649BCDA12805D6EF00C3A862 /* CIImageView.swift */; };
-		64A6908128376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907C28376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a */; };
-		64A6908228376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907C28376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a */; };
-		64A6908328376BBA0076573F /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907D28376BB90076573F /* libffi.a */; };
-		64A6908428376BBA0076573F /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907D28376BB90076573F /* libffi.a */; };
-		64A6908528376BBA0076573F /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907E28376BB90076573F /* libgmpxx.a */; };
-		64A6908628376BBA0076573F /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907E28376BB90076573F /* libgmpxx.a */; };
-		64A6908728376BBA0076573F /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907F28376BB90076573F /* libgmp.a */; };
-		64A6908828376BBA0076573F /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6907F28376BB90076573F /* libgmp.a */; };
-		64A6908928376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6908028376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a */; };
-		64A6908A28376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 64A6908028376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a */; };
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64DAE1512809D9F5000DA960 /* FileUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64DAE1502809D9F5000DA960 /* FileUtils.swift */; };
@@ -172,6 +172,11 @@
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
+		5C6F2A3728522C9A00103588 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5C6F2A3828522C9A00103588 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		5C6F2A3928522C9A00103588 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5C6F2A3A28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a"; sourceTree = "<group>"; };
+		5C6F2A3B28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a"; sourceTree = "<group>"; };
 		5C7505A127B65FDB00BE3227 /* CIMetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMetaView.swift; sourceTree = "<group>"; };
 		5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavLinkPlain.swift; sourceTree = "<group>"; };
 		5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoToolbar.swift; sourceTree = "<group>"; };
@@ -237,11 +242,6 @@
 		6493D667280ED77F007A76FB /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		649BCD9F280460FD00C3A862 /* ComposeImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeImageView.swift; sourceTree = "<group>"; };
 		649BCDA12805D6EF00C3A862 /* CIImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIImageView.swift; sourceTree = "<group>"; };
-		64A6907C28376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a"; sourceTree = "<group>"; };
-		64A6907D28376BB90076573F /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
-		64A6907E28376BB90076573F /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		64A6907F28376BB90076573F /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		64A6908028376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a"; sourceTree = "<group>"; };
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
@@ -252,15 +252,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				64A6908928376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a in Frameworks */,
+				5C6F2A4228522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a in Frameworks */,
 				646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */,
-				64A6908528376BBA0076573F /* libgmpxx.a in Frameworks */,
-				64A6908728376BBA0076573F /* libgmp.a in Frameworks */,
+				5C6F2A4428522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a in Frameworks */,
+				5C6F2A3E28522C9A00103588 /* libffi.a in Frameworks */,
+				5C6F2A3C28522C9A00103588 /* libgmp.a in Frameworks */,
 				5C8F01CD27A6F0D8007D2C8D /* CodeScanner in Frameworks */,
 				5C764E83279C748B000C6508 /* libz.tbd in Frameworks */,
 				5C764E82279C748B000C6508 /* libiconv.tbd in Frameworks */,
-				64A6908328376BBA0076573F /* libffi.a in Frameworks */,
-				64A6908128376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a in Frameworks */,
+				5C6F2A4028522C9A00103588 /* libgmpxx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,13 +275,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C6F2A4528522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a in Frameworks */,
+				5C6F2A4328522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a in Frameworks */,
 				5CDCAD5F28187D6900503DA2 /* libiconv.tbd in Frameworks */,
-				64A6908628376BBA0076573F /* libgmpxx.a in Frameworks */,
-				64A6908A28376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a in Frameworks */,
+				5C6F2A4128522C9A00103588 /* libgmpxx.a in Frameworks */,
+				5C6F2A3D28522C9A00103588 /* libgmp.a in Frameworks */,
 				5CDCAD6128187D8000503DA2 /* libz.tbd in Frameworks */,
-				64A6908228376BBA0076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a in Frameworks */,
-				64A6908828376BBA0076573F /* libgmp.a in Frameworks */,
-				64A6908428376BBA0076573F /* libffi.a in Frameworks */,
+				5C6F2A3F28522C9A00103588 /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -334,11 +334,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				64A6907D28376BB90076573F /* libffi.a */,
-				64A6907F28376BB90076573F /* libgmp.a */,
-				64A6907E28376BB90076573F /* libgmpxx.a */,
-				64A6908028376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC-ghc8.10.7.a */,
-				64A6907C28376BB90076573F /* libHSsimplex-chat-2.1.0-KOac7DFCSQz9HzISDnAYtC.a */,
+				5C6F2A3828522C9A00103588 /* libffi.a */,
+				5C6F2A3728522C9A00103588 /* libgmp.a */,
+				5C6F2A3928522C9A00103588 /* libgmpxx.a */,
+				5C6F2A3A28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy-ghc8.10.7.a */,
+				5C6F2A3B28522C9A00103588 /* libHSsimplex-chat-2.2.0-3TOca6xkke4IR3YLgDepFy.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
