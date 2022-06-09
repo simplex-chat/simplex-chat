@@ -53,7 +53,8 @@ responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
   CRChatStarted -> ["chat started"]
-  CRChatRunning -> []
+  CRChatRunning -> ["chat is running"]
+  CRChatStopped -> ["chat stopped"]
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
@@ -721,6 +722,8 @@ viewChatError = \case
     CENoActiveUser -> ["error: active user is required"]
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
+    CEChatNotStopped -> ["error: chat not stopped"]
+    CEChatStoreChanged -> ["error: chat store changed"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]

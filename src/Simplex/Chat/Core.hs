@@ -26,13 +26,15 @@ simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
       st <- createStore f dbPoolSize yesToMigrations
       u <- getCreateActiveUser st
       cc <- newChatController st (Just u) cfg opts sendToast
-      runSimplexChat u cc chat
+      runSimplexChat opts u cc chat
 
-runSimplexChat :: User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat u cc chat = do
-  a1 <- async $ chat u cc
-  a2 <- runReaderT (startChatController u) cc
-  waitEither_ a1 a2
+runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
+runSimplexChat ChatOpts {maintenance} u cc chat
+  | maintenance = wait =<< async (chat u cc)
+  | otherwise = do
+    a1 <- async $ chat u cc
+    a2 <- runReaderT (startChatController u) cc
+    waitEither_ a1 a2
 
 sendChatCmd :: ChatController -> String -> IO ChatResponse
 sendChatCmd cc s = runReaderT (execChatCommand . encodeUtf8 $ T.pack s) cc

@@ -17,9 +17,20 @@ build-type:     Simple
 extra-source-files:
     README.md
 
+flag disable-bzip2
+  description: removes dependency on bzip2 C library (zip package)
+  manual: True
+  default: True
+
+flag disable-zstd
+  description: Removes dependency on zstd C library (zip package)
+  manual: True
+  default: True
+
 library
   exposed-modules:
       Simplex.Chat
+      Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Call
       Simplex.Chat.Controller
@@ -83,6 +94,7 @@ library
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , zip ==1.7.*
   default-language: Haskell2010
 
 executable simplex-bot
@@ -121,6 +133,7 @@ executable simplex-bot
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , zip ==1.7.*
   default-language: Haskell2010
 
 executable simplex-bot-advanced
@@ -159,6 +172,7 @@ executable simplex-bot-advanced
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , zip ==1.7.*
   default-language: Haskell2010
 
 executable simplex-chat
@@ -200,6 +214,7 @@ executable simplex-chat
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
+    , zip ==1.7.*
   default-language: Haskell2010
 
 test-suite simplex-chat-test
@@ -247,4 +262,5 @@ test-suite simplex-chat-test
     , time ==1.9.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , zip ==1.7.*
   default-language: Haskell2010
