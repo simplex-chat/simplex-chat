@@ -9,11 +9,12 @@
 import FileProvider
 import OSLog
 import SimpleXChat
+import SimpleXServiceProtocol
 
 let logger = Logger()
-let serviceListener = NSXPCListener.anonymous()
-let listenerDelegate = SimpleXFPServiceDelegate()
-var machMessenger = MachMessenger(FPS_MACH_PORT, callback: receivedAppMachMessage)
+//let serviceListener = NSXPCListener.anonymous()
+//let listenerDelegate = SimpleXFPServiceDelegate()
+//var machMessenger = MachMessenger(FPS_MACH_PORT, callback: receivedAppMachMessage)
 
 func receivedAppMachMessage(_ msgId: Int32, msg: String) -> String? {
     logger.debug("MachMessenger: FileProviderExtension receivedAppMachMessage \"\(msg)\" from App, replying")
@@ -26,11 +27,11 @@ class FileProviderExtension: NSFileProviderExtension {
     override init() {
         logger.debug("FileProviderExtension.init")
         super.init()
-        machMessenger.start()
-        serviceListener.delegate = listenerDelegate
-        Task { serviceListener.resume() }
+//        machMessenger.start()
+//        serviceListener.delegate = listenerDelegate
+//        Task { serviceListener.resume() }
 
-        do {
+//        do {
 //            logger.debug("FileProviderExtension.endPointData...")
 //            let data = NSMutableData()
 //            let coder = NSXPCCoder()
@@ -41,9 +42,9 @@ class FileProviderExtension: NSFileProviderExtension {
 //            logger.debug("FileProviderExtension.MachMessenger.sendMessage with endpoint res \(String(describing: err), privacy: .public)")
 //            let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "machMessenger in FileProviderExtension")
 //            logger.debug("FileProviderExtension MachMessenger app reply \(String(describing: res), privacy: .public)")
-        } catch let err {
-            logger.debug("FileProviderExtension.MachMessenger.sendMessage error \(String(describing: err), privacy: .public)")
-        }
+//        } catch let err {
+//            logger.debug("FileProviderExtension.MachMessenger.sendMessage error \(String(describing: err), privacy: .public)")
+//        }
 
 
         let manager = NSFileProviderManager.default
@@ -66,7 +67,7 @@ class FileProviderExtension: NSFileProviderExtension {
             }
         }
 
-        Task { serviceListener.resume() }
+//        Task { serviceListener.resume() }
     }
     
     override func item(for identifier: NSFileProviderItemIdentifier) throws -> NSFileProviderItem {

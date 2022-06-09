@@ -8,17 +8,8 @@
 
 import Foundation
 import FileProvider
-import SimpleX_Service
 import SimpleXChat
-
-let SIMPLEX_SERVICE_NAME = NSFileProviderServiceName("group.chat.simplex.app.service")
-let SERVICE_PROXY_ITEM = "chat.simplex.service:/123"
-//let SERVICE_PROXY_ITEM_URL = URL(string: SERVICE_PROXY_ITEM)!
-let SERVICE_PROXY_ITEM_ID = NSFileProviderItemIdentifier(SERVICE_PROXY_ITEM)
-
-@objc public protocol SimpleXFPServiceProtocol {
-    func upperCaseString(_ string: String, withReply reply: @escaping (String) -> Void)
-}
+import SimpleXServiceProtocol
 
 func testFPService() {
     logger.debug("testFPService get services")
@@ -59,7 +50,7 @@ func testFPService() {
                 }
 
                 // Set the remote interface.
-                connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
+                connection.remoteObjectInterface = simpleXServiceInterface
 
                 // Start the connection.
                 connection.resume()

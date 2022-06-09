@@ -11,42 +11,42 @@ import SimpleXChat
 
 let logger = Logger()
 
-let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedMachMessage)
-
-func receivedMachMessage(msgId: Int32, msg: String) -> String? {
-    logger.debug("MachMessenger: receivedMachMessage from FPS")
-//    return "reply from App to: \(msg)"
-
-    if let data = msg.data(using: .utf8) {
-        logger.debug("receivedMachMessage has data")
-        let endpoint = try! NSKeyedUnarchiver.unarchivedObject(ofClass: NSXPCListenerEndpoint.self, from: data)!
-        logger.debug("receivedMachMessage has endpoint")
-        let connection = NSXPCConnection(listenerEndpoint: endpoint)
-        logger.debug("receivedMachMessage has connection")
-        connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
-
-        // Start the connection.
-        connection.resume()
-
-        // Get the proxy object.
-        let rawProxy = connection.remoteObjectProxyWithErrorHandler({ (errorAccessingRemoteObject) in
-            // Handle the error here...
-        })
-
-        // Cast the proxy object to the interface's protocol.
-        guard let proxy = rawProxy as? SimpleXFPServiceProtocol else {
-            // If the interface is set up properly, this should never fail.
-            fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
-        }
-
-        logger.debug("receivedMachMessage calling service")
-        proxy.upperCaseString("hello to service", withReply: { reply in
-            logger.debug("receivedMachMessage reply from service \(reply)")
-        })
-
-    }
-    return nil
-}
+//let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedMachMessage)
+//
+//func receivedMachMessage(msgId: Int32, msg: String) -> String? {
+//    logger.debug("MachMessenger: receivedMachMessage from FPS")
+////    return "reply from App to: \(msg)"
+//
+//    if let data = msg.data(using: .utf8) {
+//        logger.debug("receivedMachMessage has data")
+//        let endpoint = try! NSKeyedUnarchiver.unarchivedObject(ofClass: NSXPCListenerEndpoint.self, from: data)!
+//        logger.debug("receivedMachMessage has endpoint")
+//        let connection = NSXPCConnection(listenerEndpoint: endpoint)
+//        logger.debug("receivedMachMessage has connection")
+//        connection.remoteObjectInterface = NSXPCInterface(with: SimpleXFPServiceProtocol.self)
+//
+//        // Start the connection.
+//        connection.resume()
+//
+//        // Get the proxy object.
+//        let rawProxy = connection.remoteObjectProxyWithErrorHandler({ (errorAccessingRemoteObject) in
+//            // Handle the error here...
+//        })
+//
+//        // Cast the proxy object to the interface's protocol.
+//        guard let proxy = rawProxy as? SimpleXFPServiceProtocol else {
+//            // If the interface is set up properly, this should never fail.
+//            fatalError("*** Unable to cast \(rawProxy) to a DesiredProtocol instance ***")
+//        }
+//
+//        logger.debug("receivedMachMessage calling service")
+//        proxy.upperCaseString("hello to service", withReply: { reply in
+//            logger.debug("receivedMachMessage reply from service \(reply)")
+//        })
+//
+//    }
+//    return nil
+//}
 
 @main
 struct SimpleXApp: App {
@@ -64,7 +64,7 @@ struct SimpleXApp: App {
         UserDefaults.standard.register(defaults: appDefaults)
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
-        machMessenger.start()
+//        machMessenger.start()
 
         // test service comms
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -85,8 +85,8 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
-                    let res = machMessenger.sendMessageWithReply(NSE_MACH_PORT, msg: "App scenePhase changed to \(String(describing: scenePhase))")
-                    logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
+//                    let res = machMessenger.sendMessageWithReply(NSE_MACH_PORT, msg: "App scenePhase changed to \(String(describing: scenePhase))")
+//                    logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
                     setAppState(phase)
                     switch (phase) {
                     case .background:
@@ -95,10 +95,10 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        machMessenger.stop()
+//                        machMessenger.stop()
                     case .active:
                         doAuthenticate = authenticationExpired()
-                        machMessenger.start()
+//                        machMessenger.start()
                     default:
                         break
                     }

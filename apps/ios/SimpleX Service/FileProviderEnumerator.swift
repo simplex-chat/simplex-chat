@@ -7,6 +7,7 @@
 //
 
 import FileProvider
+import SimpleXServiceProtocol
 
 class FileProviderEnumerator: NSObject, NSFileProviderEnumerator {
     

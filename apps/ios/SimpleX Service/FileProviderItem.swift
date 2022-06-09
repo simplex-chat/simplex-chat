@@ -8,6 +8,7 @@
 
 import FileProvider
 import UniformTypeIdentifiers
+import SimpleXServiceProtocol
 
 class FileProviderItem: NSObject, NSFileProviderItem {
 
