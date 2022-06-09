@@ -1808,11 +1808,8 @@ testFullAsync = withTmpFiles $ do
   withNewTestChat "bob" bobProfile $ \bob -> do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat "alice" $ \_ -> pure ()
-  withTestChat "bob" $ \_ -> pure ()
-  withTestChat "alice" $ \alice ->
-    alice <## "1 contacts connected (use /cs for the list)"
-  withTestChat "bob" $ \_ -> pure ()
+  withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
+  withTestChat "bob" $ \_ -> pure () -- connecting... notification in UI
   withTestChat "alice" $ \alice -> do
     alice <## "1 contacts connected (use /cs for the list)"
     alice <## "bob (Bob): contact is connected"
@@ -1836,8 +1833,8 @@ testAsyncFileTransfer = withTmpFiles $ do
     bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
     bob ##> "/fr 1 ./tests/tmp"
     bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-  withTestChatContactConnected' "alice"
-  withTestChatContactConnected' "bob"
+  withTestChatContactConnected' "alice" -- TODO not needed in v2
+  withTestChatContactConnected' "bob" -- TODO not needed in v2
   withTestChatContactConnected' "alice"
   withTestChatContactConnected' "bob"
   withTestChatContactConnected "alice" $ \alice -> do
@@ -1873,9 +1870,9 @@ testAsyncGroupFileTransfer = withTmpFiles $ do
   withTestChatGroup3Connected' "alice"
   withTestChatGroup3Connected' "bob"
   withTestChatGroup3Connected' "cath"
-  withTestChatGroup3Connected' "alice"
-  withTestChatGroup3Connected' "bob"
-  withTestChatGroup3Connected' "cath"
+  -- withTestChatGroup3Connected' "alice" -- TODO not needed in v2
+  -- withTestChatGroup3Connected' "bob" -- TODO not needed in v2
+  -- withTestChatGroup3Connected' "cath" -- TODO not needed in v2
   withTestChatGroup3Connected' "alice"
   withTestChatGroup3Connected "bob" $ \bob -> do
     bob <## "started receiving file 1 (test.jpg) from alice"

@@ -226,7 +226,8 @@ serverCfg =
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",
       logStatsInterval = Just 86400,
-      logStatsStartTime = 0
+      logStatsStartTime = 0,
+      smpServerVRange = supportedSMPServerVRange
     }
 
 withSmpServer :: IO a -> IO a
