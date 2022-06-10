@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXAppShared
 
 struct ProfileImage: View {
     var imageStr: String? = nil

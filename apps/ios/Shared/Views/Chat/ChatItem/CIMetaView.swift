@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct CIMetaView: View {
     var chatItem: ChatItem

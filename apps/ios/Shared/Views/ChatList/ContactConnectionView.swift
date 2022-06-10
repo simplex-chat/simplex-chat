@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct ContactConnectionView: View {
     var contactConnection: PendingContactConnection

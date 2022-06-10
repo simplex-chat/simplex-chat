@@ -7,7 +7,8 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
+import SimpleXAppShared
 
 enum ComposePreview {
     case noPreview
@@ -164,7 +165,7 @@ struct ComposeView: View {
         .onChange(of: composeState.message) { _ in
             if composeState.linkPreviewAllowed() {
                 if composeState.message.count > 0 {
-                    showLinkPreview(composeState.message)
+                    Task { await showLinkPreview(composeState.message) }
                 } else {
                     resetLinkPreview()
                 }
@@ -306,7 +307,7 @@ struct ComposeView: View {
                     case .noPreview:
                         mc = .text(composeState.message)
                     case .linkPreview:
-                        mc = checkLinkPreview()
+                        mc = await checkLinkPreview()
                     case let .imagePreview(imagePreview: image):
                         if let uiImage = chosenImage,
                            let savedFile = saveImage(uiImage) {
@@ -357,12 +358,12 @@ struct ComposeView: View {
         chosenFile = nil
     }
 
-    private func updateMsgContent(_ msgContent: MsgContent) -> MsgContent {
+    private func updateMsgContent(_ msgContent: MsgContent) async -> MsgContent {
         switch msgContent {
         case .text:
-            return checkLinkPreview()
+            return await checkLinkPreview()
         case .link:
-            return checkLinkPreview()
+            return await checkLinkPreview()
         case .image(_, let image):
             return .image(text: composeState.message, image: image)
         case .file:
@@ -372,9 +373,9 @@ struct ComposeView: View {
         }
     }
 
-    private func showLinkPreview(_ s: String) {
+    private func showLinkPreview(_ s: String) async {
         prevLinkUrl = linkUrl
-        linkUrl = parseMessage(s)
+        linkUrl = await parseMessage(s)
         if let url = linkUrl {
             if url != composeState.linkPreview()?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -391,9 +392,9 @@ struct ComposeView: View {
         }
     }
 
-    private func parseMessage(_ msg: String) -> URL? {
+    private func parseMessage(_ msg: String) async -> URL? {
         do {
-            let parsedMsg = try apiParseMarkdown(text: msg)
+            let parsedMsg = try await apiParseMarkdown(text: msg)
             let uri = parsedMsg?.first(where: { ft in
                 ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
             })
@@ -437,10 +438,10 @@ struct ComposeView: View {
         cancelledLinks = []
     }
 
-    private func checkLinkPreview() -> MsgContent {
+    private func checkLinkPreview() async -> MsgContent {
         switch (composeState.preview) {
         case let .linkPreview(linkPreview: linkPreview):
-            if let url = parseMessage(composeState.message),
+            if let url = await parseMessage(composeState.message),
                let linkPreview = linkPreview,
                url == linkPreview.uri {
                 return .link(text: composeState.message, preview: linkPreview)

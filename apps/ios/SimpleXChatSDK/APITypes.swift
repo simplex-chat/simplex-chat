@@ -7,6 +7,9 @@
 //
 
 import Foundation
+import OSLog
+
+let logger = Logger()
 
 let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
@@ -519,4 +522,35 @@ public enum SMPAgentError: Decodable {
     case A_PROHIBITED
     case A_VERSION
     case A_ENCRYPTION
+}
+
+public func chatResponse(_ s: String) -> ChatResponse {
+    let d = s.data(using: .utf8)!
+// TODO is there a way to do it without copying the data? e.g:
+//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    do {
+        let r = try jsonDecoder.decode(APIResponse.self, from: d)
+        return r.resp
+    } catch {
+        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+    }
+
+    var type: String?
+    var json: String?
+    if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
+        if let j1 = j["resp"] as? NSDictionary, j1.count == 1 {
+            type = j1.allKeys[0] as? String
+        }
+        json = prettyJSON(j)
+    }
+    return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
+}
+
+public func responseError(_ err: Error) -> String {
+    if let r = err as? ChatResponse {
+        return String(describing: r)
+    } else {
+        return err.localizedDescription
+    }
 }

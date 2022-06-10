@@ -36,3 +36,10 @@ private func getDateFormatter(_ format: String) -> DateFormatter {
     df.timeZone = TimeZone(secondsFromGMT: 0)
     return df
 }
+
+func prettyJSON(_ obj: NSDictionary) -> String? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
+        return String(decoding: d, as: UTF8.self)
+    }
+    return nil
+}

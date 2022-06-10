@@ -7,7 +7,8 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
+import SimpleXAppShared
 
 let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)

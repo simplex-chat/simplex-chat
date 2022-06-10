@@ -11,9 +11,8 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
-import SimpleXChat
-
-private var chatController: chat_ctrl?
+import SimpleXChatSDK
+import SimpleXAppShared
 
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
@@ -47,7 +46,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
-private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
+private func beginBGTask(_ handler: (() -> Void)? = nil) -> (@Sendable () -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
     let endTask = {
@@ -72,10 +71,10 @@ private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
 let msgDelay: Double = 7.5
 let maxTaskDuration: Double = 15
 
-private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+private func withBGTask(bgDelay: Double? = nil, f: @escaping () async -> ChatResponse) async -> ChatResponse {
     let endTask = beginBGTask()
     DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
-    let r = f()
+    let r = await f()
     if let d = bgDelay {
         DispatchQueue.global().asyncAfter(deadline: .now() + d, execute: endTask)
     } else {
@@ -84,10 +83,10 @@ private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse)
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) async -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
-    let resp = bgTask
-                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
+    let resp = await bgTask
+                ? withBGTask(bgDelay: bgDelay) { await sendSimpleXCmd(cmd) }
                 : sendSimpleXCmd(cmd)
     logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
@@ -102,25 +101,14 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) async -> ChatResponse {
-    await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay))
-    }
-}
-
 func chatRecvMsg() async -> ChatResponse {
-    await withCheckedContinuation { cont in
-        _ = withBGTask(bgDelay: msgDelay) {
-            let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
-            cont.resume(returning: resp)
-            return resp
-        }
+    await withBGTask(bgDelay: msgDelay) {
+        await recvSimpleXMsg()
     }
 }
 
-func apiGetActiveUser() throws -> User? {
-    let _ = getChatCtrl()
-    let r = chatSendCmdSync(.showActiveUser)
+func apiGetActiveUser() async throws -> User? {
+    let r = await chatSendCmd(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
     case .chatCmdError(.error(.noActiveUser)): return nil
@@ -128,14 +116,14 @@ func apiGetActiveUser() throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p))
+func apiCreateActiveUser(_ p: Profile) async throws -> User {
+    let r = await chatSendCmd(.createActiveUser(profile: p))
     if case let .activeUser(user) = r { return user }
     throw r
 }
 
-func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat)
+func apiStartChat() async throws -> Bool {
+    let r = await chatSendCmd(.startChat)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -143,20 +131,20 @@ func apiStartChat() throws -> Bool {
     }
 }
 
-func apiSetFilesFolder(filesFolder: String) throws {
-    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
+func apiSetFilesFolder(filesFolder: String) async throws {
+    let r = await chatSendCmd(.setFilesFolder(filesFolder: filesFolder))
     if case .cmdOk = r { return }
     throw r
 }
 
-func apiGetChats() throws -> [Chat] {
-    let r = chatSendCmdSync(.apiGetChats)
+func apiGetChats() async throws -> [Chat] {
+    let r = await chatSendCmd(.apiGetChats)
     if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64) async throws -> Chat {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
@@ -214,8 +202,8 @@ func apiDeleteToken(token: String) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
-func getUserSMPServers() throws -> [String] {
-    let r = chatSendCmdSync(.getUserSMPServers)
+func getUserSMPServers() async throws -> [String] {
+    let r = await chatSendCmd(.getUserSMPServers)
     if case let .userSMPServers(smpServers) = r { return smpServers }
     throw r
 }
@@ -224,8 +212,8 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
-func apiAddContact() throws -> String {
-    let r = chatSendCmdSync(.addContact, bgTask: false)
+func apiAddContact() async throws -> String {
+    let r = await chatSendCmd(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     throw r
 }
@@ -312,8 +300,8 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
-func apiParseMarkdown(text: String) throws -> [FormattedText]? {
-    let r = chatSendCmdSync(.apiParseMarkdown(text: text))
+func apiParseMarkdown(text: String) async throws -> [FormattedText]? {
+    let r = await sendSimpleXCmd(.apiParseMarkdown(text: text))
     if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
     throw r
 }
@@ -330,8 +318,8 @@ func apiDeleteUserAddress() async throws {
     throw r
 }
 
-func apiGetUserAddress() throws -> String? {
-    let r = chatSendCmdSync(.showMyAddress)
+func apiGetUserAddress() async throws -> String? {
+    let r = await sendSimpleXCmd(.showMyAddress)
     switch r {
     case let .userContactLink(connReq):
         return connReq
@@ -454,36 +442,45 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat() {
+func initializeChat() async {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
-        m.currentUser = try apiGetActiveUser()
-        if m.currentUser == nil {
-            m.onboardingStage = .step1_SimpleXInfo
-        } else {
-            startChat()
+        let user = try await apiGetActiveUser()
+        await MainActor.run {
+            m.currentUser = user
+            if user == nil {
+                m.onboardingStage = .step1_SimpleXInfo
+            }
+        }
+        if user != nil {
+            await startChat()
         }
     } catch {
         fatalError("Failed to initialize chat controller or database: \(error)")
     }
 }
 
-func startChat() {
+func startChat() async {
     logger.debug("startChat")
     do {
-        let m = ChatModel.shared
         // TODO set file folder once, before chat is started
-        let justStarted = try apiStartChat()
+        let justStarted = try await apiStartChat()
         if justStarted {
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            m.userAddress = try apiGetUserAddress()
-            m.userSMPServers = try getUserSMPServers()
-            m.chats = try apiGetChats()
-            withAnimation {
-                m.onboardingStage = m.chats.isEmpty
-                                    ? .step3_MakeConnection
-                                    : .onboardingComplete
+            try await apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            let userAddress = try await apiGetUserAddress()
+            let userSMPServers = try await getUserSMPServers()
+            let chats = try await apiGetChats()
+            DispatchQueue.main.async {
+                let m = ChatModel.shared
+                m.userAddress = userAddress
+                m.userSMPServers = userSMPServers
+                m.chats = chats
+                withAnimation {
+                    m.onboardingStage = m.chats.isEmpty
+                                        ? .step3_MakeConnection
+                                        : .onboardingComplete
+                }
             }
         }
         ChatReceiver.shared.start()
@@ -512,7 +509,7 @@ class ChatReceiver {
     func receiveMsgLoop() async {
         let msg = await chatRecvMsg()
         self._lastMsgTime = .now
-        processReceivedMsg(msg)
+        await processReceivedMsg(msg)
         if self.receiveMessages {
             do { try await Task.sleep(nanoseconds: 7_500_000) }
             catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
@@ -528,7 +525,7 @@ class ChatReceiver {
     }
 }
 
-func processReceivedMsg(_ res: ChatResponse) {
+func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     DispatchQueue.main.async {
         m.terminalItems.append(.resp(.now, res))

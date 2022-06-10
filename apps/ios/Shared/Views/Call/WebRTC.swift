@@ -8,7 +8,7 @@
 
 import Foundation
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 class Call: ObservableObject, Equatable {
     static func == (lhs: Call, rhs: Call) -> Bool {

@@ -9,6 +9,7 @@
 import Foundation
 import UserNotifications
 import SwiftUI
+import SimpleXChatSDK
 
 public let ntfCategoryContactRequest = "NTF_CAT_CONTACT_REQUEST"
 public let ntfCategoryContactConnected = "NTF_CAT_CONTACT_CONNECTED"

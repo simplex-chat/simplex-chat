@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState

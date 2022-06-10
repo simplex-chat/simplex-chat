@@ -52,7 +52,7 @@ class FileProviderExtension: NSFileProviderExtension {
 
 //        FileManager.default.createFile(atPath: "\(manager.documentStorageURL)123", contents: "hello".data(using: .utf8))
 
-        self.providePlaceholder(at: URL(string: "\(manager.documentStorageURL)123")!) { err in
+        self.providePlaceholder(at: SERVICE_PROXY_ITEM_URL) { err in
             if let err = err {
                 logger.debug("FileProviderExtension.providePlaceholder error \(String(describing: err), privacy: .public)")
             } else {

@@ -9,7 +9,7 @@
 import Foundation
 //import CallKit
 import AVFoundation
-import SimpleXChat
+import SimpleXChatSDK
 
 //class CallController: NSObject, CXProviderDelegate, ObservableObject {
 class CallController: NSObject, ObservableObject {

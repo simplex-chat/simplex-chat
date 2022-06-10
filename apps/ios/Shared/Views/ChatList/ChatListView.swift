@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel

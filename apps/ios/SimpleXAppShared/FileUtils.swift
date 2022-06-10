@@ -9,6 +9,7 @@
 import Foundation
 import SwiftUI
 import OSLog
+import SimpleXChatSDK
 
 let logger = Logger()
 
@@ -17,7 +18,7 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
-func getDocumentsDirectory() -> URL {
+public func getDocumentsDirectory() -> URL {
 //    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }

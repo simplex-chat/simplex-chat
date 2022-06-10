@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct CreateProfile: View {
     @EnvironmentObject var m: ChatModel
@@ -43,7 +43,7 @@ struct CreateProfile: View {
                 .focused($focusFullName)
                 .submitLabel(.go)
                 .onSubmit {
-                    if canCreateProfile() { createProfile() }
+                    if canCreateProfile() { Task { await createProfile() } }
                     else { focusFullName = true }
                 }
 
@@ -64,7 +64,7 @@ struct CreateProfile: View {
 
                 HStack {
                     Button {
-                        createProfile()
+                        Task { await createProfile() }
                     } label: {
                         Text("Create")
                         Image(systemName: "greaterthan")
@@ -87,17 +87,19 @@ struct CreateProfile: View {
             .padding(.bottom)
     }
 
-    func createProfile() {
+    func createProfile() async {
         hideKeyboard()
         let profile = Profile(
             displayName: displayName,
             fullName: fullName
         )
         do {
-            m.currentUser = try apiCreateActiveUser(profile)
-            startChat()
-            withAnimation { m.onboardingStage = .step3_MakeConnection }
-
+            let user = try await apiCreateActiveUser(profile)
+            await MainActor.run { m.currentUser = user }
+            await startChat()
+            DispatchQueue.main.async {
+                withAnimation { m.onboardingStage = .step3_MakeConnection }
+            }
         } catch {
             fatalError("Failed to create user: \(error)")
         }

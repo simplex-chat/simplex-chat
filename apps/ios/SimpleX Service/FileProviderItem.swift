@@ -23,7 +23,7 @@ class FileProviderItem: NSObject, NSFileProviderItem {
         [.allowsReading, .allowsWriting, .allowsRenaming, .allowsReparenting, .allowsTrashing, .allowsDeleting]
     }
     
-    var filename: String { "123" }
+    var filename: String { SERVICE_PROXY_ITEM_NAME }
     
     var contentType: UTType {
         itemIdentifier == NSFileProviderItemIdentifier.rootContainer ? .folder : .plainText

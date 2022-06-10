@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 enum NewChatAction: Identifiable {
     case createLink
@@ -27,7 +27,7 @@ struct NewChatButton: View {
             Image(systemName: "person.crop.circle.badge.plus")
         }
         .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Create link / QR code") { addContactAction() }
+            Button("Create link / QR code") { Task { await addContactAction() } }
             Button("Paste received link") { actionSheet = .pasteLink }
             Button("Scan QR code") { actionSheet = .scanQRCode }
         }
@@ -40,9 +40,9 @@ struct NewChatButton: View {
         }
     }
 
-    func addContactAction() {
+    func addContactAction() async {
         do {
-            connReq = try apiAddContact()
+            connReq = try await apiAddContact()
             actionSheet = .createLink
         } catch {
             DispatchQueue.global().async {

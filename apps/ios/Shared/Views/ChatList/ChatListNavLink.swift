@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -31,13 +31,17 @@ struct ChatListNavLink: View {
     private func chatView() -> some View {
         ChatView(chat: chat, showChatInfo: $showChatInfo)
         .onAppear {
-            do {
-                let cInfo = chat.chatInfo
-                let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
-                chatModel.updateChatInfo(chat.chatInfo)
-                chatModel.chatItems = chat.chatItems
-            } catch {
-                logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
+            Task {
+                do {
+                    let cInfo = chat.chatInfo
+                    let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+                    DispatchQueue.main.async {
+                        chatModel.updateChatInfo(chat.chatInfo)
+                        chatModel.chatItems = chat.chatItems
+                    }
+                } catch {
+                    logger.error("ChatListNavLink.chatView apiGetChatItems error: \(String(describing: error))")
+                }
             }
         }
     }

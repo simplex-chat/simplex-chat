@@ -700,7 +700,7 @@ public struct CIFile: Decodable {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
 
-    var loaded: Bool {
+    public var loaded: Bool {
         get {
             switch self.fileStatus {
             case .sndStored: return true

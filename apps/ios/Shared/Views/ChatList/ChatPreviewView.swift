@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct ChatPreviewView: View {
     @ObservedObject var chat: Chat

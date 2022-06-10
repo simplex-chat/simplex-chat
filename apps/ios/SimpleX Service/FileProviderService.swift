@@ -8,14 +8,15 @@
 
 import Foundation
 import FileProvider
+import SimpleXChat
 import SimpleXServiceProtocol
 
 extension FileProviderExtension {
-    class SimpleXFPService: NSObject, NSFileProviderServiceSource, SimpleXFPServiceProtocol, NSXPCListenerDelegate {
+    class FileProviderService: NSObject, NSFileProviderServiceSource, SimpleXServiceProtocol, NSXPCListenerDelegate {
         var serviceName: NSFileProviderServiceName { SIMPLEX_SERVICE_NAME }
 
         func makeListenerEndpoint() throws -> NSXPCListenerEndpoint {
-            logger.debug("SimpleXFPService.makeListenerEndpoint")
+            logger.debug("FileProviderService.makeListenerEndpoint")
             let listener = NSXPCListener.anonymous()
             listener.delegate = self
             synchronized(self) {
@@ -26,7 +27,7 @@ extension FileProviderExtension {
         }
 
         func listener(_ listener: NSXPCListener, shouldAcceptNewConnection newConnection: NSXPCConnection) -> Bool {
-            logger.debug("SimpleXFPService.listener")
+            logger.debug("FileProviderService.listener")
             newConnection.exportedInterface = simpleXServiceInterface
             newConnection.exportedObject = self
 
@@ -43,22 +44,28 @@ extension FileProviderExtension {
 
         init(_ ext: FileProviderExtension) {
             self.ext = ext
+            hs_init(0, nil)
         }
 
-        func upperCaseString(_ string: String, withReply reply: @escaping (String) -> Void) {
-            logger.debug("FileProviderExtension SimpleXFPService.upperCaseString")
-            let response = string.uppercased()
-            reply(response)
+        func chatSendCmd(_ cmd: String) async -> String {
+            logger.debug("chatSendCmd cmd: \(cmd, privacy: .public)")
+            let r = SimpleXChat.chatSendCmd(cmd)
+            logger.debug("chatSendCmd resp: \(r, privacy: .public)")
+            return r
+        }
+
+        func chatRecvMsg() async -> String {
+            SimpleXChat.chatRecvMsg()
         }
     }
 
     override func supportedServiceSources(for itemIdentifier: NSFileProviderItemIdentifier) throws -> [NSFileProviderServiceSource] {
         logger.debug("FileProviderExtension.supportedServiceSources")
-        return [SimpleXFPService(self)]
+        return [FileProviderService(self)]
     }
 }
 
-public func synchronized<T>(_ lock: AnyObject, _ closure: () throws -> T) rethrows -> T {
+private func synchronized<T>(_ lock: AnyObject, _ closure: () throws -> T) rethrows -> T {
   objc_sync_enter(lock)
   defer { objc_sync_exit(lock) }
   return try closure()

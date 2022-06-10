@@ -7,7 +7,7 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
 
 struct MakeConnection: View {
     @EnvironmentObject var m: ChatModel
@@ -38,7 +38,7 @@ struct MakeConnection: View {
                         icon: "link.badge.plus",
                         title: "Create 1-time link / QR code",
                         text: "It's secure to share - only one contact can use it."
-                    ) { addContactAction() }
+                    ) { Task { await addContactAction() } }
 
                     actionRow(
                         icon: "doc.plaintext",
@@ -102,9 +102,9 @@ struct MakeConnection: View {
         }
     }
 
-    private func addContactAction() {
+    private func addContactAction() async {
         do {
-            connReq = try apiAddContact()
+            connReq = try await apiAddContact()
             actionSheet = .createLink
         } catch {
             DispatchQueue.global().async {

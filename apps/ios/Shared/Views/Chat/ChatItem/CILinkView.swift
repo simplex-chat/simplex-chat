@@ -7,7 +7,8 @@
 //
 
 import SwiftUI
-import SimpleXChat
+import SimpleXChatSDK
+import SimpleXAppShared
 
 struct CILinkView: View {
     @Environment(\.colorScheme) var colorScheme
