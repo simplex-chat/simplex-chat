@@ -43,6 +43,34 @@ chatStarted = "{\"resp\":{\"chatStarted\":{}}}"
 chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
 #endif
 
+contactSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+contactSubSummary = "{\"resp\":{\"contactSubSummary\":{\"contactSubscriptions\":[]}}}"
+#else
+contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\",\"contactSubscriptions\":[]}}"
+#endif
+
+memberSubErrors :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+memberSubErrors = "{\"resp\":{\"memberSubErrors\":{\"memberSubErrors\":[]}}}"
+#else
+memberSubErrors = "{\"resp\":{\"type\":\"memberSubErrors\",\"memberSubErrors\":[]}}"
+#endif
+
+pendingSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubStatus\":[]}}}"
+#else
+pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\",\"pendingSubStatus\":[]}}"
+#endif
+
+parsedMarkdown :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello\"}]}"
+#else
+parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
+#endif
+
 testChatApiNoUser :: IO ()
 testChatApiNoUser = withTmpFiles $ do
   cc <- chatInit testDBPrefix
@@ -60,3 +88,9 @@ testChatApi = withTmpFiles $ do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
+  chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` memberSubErrors
+  chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
+  chatRecvMsgWait cc 10000 `shouldReturn` ""
+  chatParseMarkdown "hello" `shouldBe` "{}"
+  chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
