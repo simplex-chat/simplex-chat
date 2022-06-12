@@ -17,16 +17,6 @@ build-type:     Simple
 extra-source-files:
     README.md
 
-flag disable-bzip2
-  description: removes dependency on bzip2 C library (zip package)
-  manual: True
-  default: True
-
-flag disable-zstd
-  description: Removes dependency on zstd C library (zip package)
-  manual: True
-  default: True
-
 library
   exposed-modules:
       Simplex.Chat
