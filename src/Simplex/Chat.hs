@@ -82,10 +82,8 @@ defaultChatConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
             dbFile = "simplex_v1",
-            dbPoolSize = 1,
             yesToMigrations = False
           },
-      dbPoolSize = 1,
       yesToMigrations = False,
       defaultServers = InitialAgentServers {smp = _defaultSMPServers, ntf = _defaultNtfServers},
       tbqSize = 64,

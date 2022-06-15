@@ -99,14 +99,14 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts dbPrefix profile = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  st <- createStore (dbFilePrefix <> "_chat.db") False
   Right user <- runExceptT $ createUser st profile True
   startTestChat_ st cfg opts dbFilePrefix user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat cfg opts dbPrefix = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") 1 False
+  st <- createStore (dbFilePrefix <> "_chat.db") False
   Just user <- find activeUser <$> getUsers st
   startTestChat_ st cfg opts dbFilePrefix user
 
@@ -262,6 +262,7 @@ serverCfg =
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
+      storeMsgsFile = Nothing,
       allowNewQueues = True,
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,

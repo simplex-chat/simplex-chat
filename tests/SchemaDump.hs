@@ -21,7 +21,7 @@ schemaDumpTest =
 testVerifySchemaDump :: IO ()
 testVerifySchemaDump =
   withTmpFiles $ do
-    void $ createStore testDB 1 False
+    void $ createStore testDB False
     void $ readCreateProcess (shell $ "touch " <> schema) ""
     savedSchema <- readFile schema
     savedSchema `seq` pure ()
