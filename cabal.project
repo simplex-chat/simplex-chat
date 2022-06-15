@@ -1,4 +1,4 @@
-packages: . ../simplexmq
+packages: .
 
 constraints: zip +disable-bzip2 +disable-zstd
 
