@@ -101,7 +101,7 @@ chatTests = do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
-    it "export/import chat with files" testMaintenanceModeWithFiles
+    fit "export/import chat with files" testMaintenanceModeWithFiles
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
