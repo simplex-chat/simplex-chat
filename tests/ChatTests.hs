@@ -101,7 +101,7 @@ chatTests = do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
-    fit "export/import chat with files" testMaintenanceModeWithFiles
+    it "export/import chat with files" testMaintenanceModeWithFiles
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -2171,6 +2171,7 @@ testMaintenanceModeWithFiles = withTmpFiles $ do
       alice <## "completed receiving file 1 (test.jpg) from bob"
       src <- B.readFile "./tests/fixtures/test.jpg"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
+      threadDelay 500000
       alice ##> "/_stop"
       alice <## "chat stopped"
       alice ##> "/_db export {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
