@@ -42,3 +42,4 @@ stack.yaml.lock
 
 # Temporary test files
 tests/tmp
+logs/

@@ -90,7 +90,7 @@ getActiveUser_ st = find activeUser <$> getUsers st
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do
   let f = chatStoreFile dbFilePrefix
-  chatStore <- createStore f (dbPoolSize defaultMobileConfig) (yesToMigrations (defaultMobileConfig :: ChatConfig))
+  chatStore <- createStore f (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
   newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
 

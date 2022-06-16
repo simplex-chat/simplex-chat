@@ -15,7 +15,7 @@ import Simplex.Chat.Types
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
+simplexChatCore cfg@ChatConfig {yesToMigrations} opts sendToast chat
   | logAgent opts = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
@@ -23,7 +23,7 @@ simplexChatCore cfg@ChatConfig {dbPoolSize, yesToMigrations} opts sendToast chat
   where
     initRun = do
       let f = chatStoreFile $ dbFilePrefix opts
-      st <- createStore f dbPoolSize yesToMigrations
+      st <- createStore f yesToMigrations
       u <- getCreateActiveUser st
       cc <- newChatController st (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat
