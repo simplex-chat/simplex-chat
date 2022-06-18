@@ -327,8 +327,8 @@ getConnReqContactXContactId db userId cReqHash = do
   where
     getContact' :: IO (Maybe Contact)
     getContact' =
-      fmap toContact . listToMaybe
-        <$> DB.query
+      maybeFirstRow toContact $
+        DB.query
           db
           [sql|
             SELECT
@@ -347,8 +347,8 @@ getConnReqContactXContactId db userId cReqHash = do
           (userId, cReqHash)
     getXContactId :: IO (Maybe XContactId)
     getXContactId =
-      fmap fromOnly . listToMaybe
-        <$> DB.query
+      maybeFirstRow fromOnly $
+        DB.query
           db
           "SELECT xcontact_id FROM connections WHERE user_id = ? AND via_contact_uri_hash = ? LIMIT 1"
           (userId, cReqHash)
@@ -695,8 +695,8 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
           insertedRowId db
     getContact' :: XContactId -> IO (Maybe Contact)
     getContact' xContactId =
-      fmap toContact . listToMaybe
-        <$> DB.query
+      maybeFirstRow toContact $
+        DB.query
           db
           [sql|
             SELECT
@@ -715,8 +715,8 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
           (userId, xContactId)
     getContactRequest' :: XContactId -> IO (Maybe UserContactRequest)
     getContactRequest' xContactId =
-      fmap toContactRequest . listToMaybe
-        <$> DB.query
+      maybeFirstRow toContactRequest $
+        DB.query
           db
           [sql|
             SELECT
@@ -843,7 +843,7 @@ getLiveSndFileTransfers db User {userId} = do
     liveTransfer SndFileTransfer {fileStatus} = fileStatus `elem` [FSNew, FSAccepted, FSConnected]
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
-getLiveRcvFileTransfers db User {userId} = do
+getLiveRcvFileTransfers db user@User {userId} = do
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -855,7 +855,7 @@ getLiveRcvFileTransfers db User {userId} = do
           WHERE f.user_id = ? AND r.file_status IN (?, ?)
         |]
         (userId, FSAccepted, FSConnected)
-  rights <$> mapM (runExceptT . getRcvFileTransfer db userId) fileIds
+  rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
 
 getPendingSndChunks :: DB.Connection -> Int64 -> Int64 -> IO [Integer]
 getPendingSndChunks db fileId connId =
@@ -1064,7 +1064,7 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getConnectionEntity :: DB.Connection -> User -> ConnId -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity db User {userId, userContactId} agentConnId = do
+getConnectionEntity db user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
     Nothing ->
@@ -1076,7 +1076,7 @@ getConnectionEntity db User {userId, userContactId} agentConnId = do
         ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
         ConnContact -> RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
         ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId c
-        ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db userId entId
+        ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db user entId
         ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
   where
     getConnection_ :: ExceptT StoreError IO Connection
@@ -1280,8 +1280,8 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
   where
     getInvitationGroupId_ :: IO (Maybe Int64)
     getInvitationGroupId_ =
-      listToMaybe . map fromOnly
-        <$> DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
+      maybeFirstRow fromOnly $
+        DB.query db "SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1" (connRequest, userId)
     createGroupInvitation_ :: IO (Either StoreError GroupInfo)
     createGroupInvitation_ = do
       let GroupProfile {displayName, fullName, image} = groupProfile
@@ -1969,8 +1969,8 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
     (fileId, FSNew, fileConnReq, groupMemberId, currentTs, currentTs)
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
-getRcvFileTransfer :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db userId fileId =
+getRcvFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO RcvFileTransfer
+getRcvFileTransfer db User {userId} fileId =
   ExceptT . firstRow' rcvFileTransfer (SERcvFileNotFound fileId) $
     DB.query
       db
@@ -2087,22 +2087,22 @@ updateFileTransferChatItemId db fileId ciId = do
   DB.execute db "UPDATE files SET chat_item_id = ?, updated_at = ? WHERE file_id = ?" (ciId, currentTs, fileId)
 
 getFileTransferProgress :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransfer, [Integer])
-getFileTransferProgress db User {userId} fileId = do
-  ft <- getFileTransfer db userId fileId
+getFileTransferProgress db user fileId = do
+  ft <- getFileTransfer db user fileId
   liftIO $
     (ft,) . map fromOnly <$> case ft of
       FTSnd _ [] -> pure [Only 0]
       FTSnd _ _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
       FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
 
-getFileTransfer :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO FileTransfer
-getFileTransfer db userId fileId =
+getFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransfer
+getFileTransfer db user@User {userId} fileId =
   fileTransfer =<< liftIO getFileTransferRow
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> ExceptT StoreError IO FileTransfer
-    fileTransfer [(Nothing, Just _)] = FTRcv <$> getRcvFileTransfer db userId fileId
+    fileTransfer [(Nothing, Just _)] = FTRcv <$> getRcvFileTransfer db user fileId
     fileTransfer _ = do
-      (ftm, fts) <- getSndFileTransfer db userId fileId
+      (ftm, fts) <- getSndFileTransfer db user fileId
       pure $ FTSnd {fileTransferMeta = ftm, sndFileTransfers = fts}
     getFileTransferRow :: IO [(Maybe Int64, Maybe Int64)]
     getFileTransferRow =
@@ -2117,8 +2117,8 @@ getFileTransfer db userId fileId =
         |]
         (userId, fileId)
 
-getSndFileTransfer :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
-getSndFileTransfer db userId fileId = do
+getSndFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
+getSndFileTransfer db User {userId} fileId = do
   fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
   sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
   pure (fileTransferMeta, sndFileTransfers)
@@ -2453,8 +2453,8 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
     ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
     getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
     getDirectChatItemQuote_ contactId userSent = do
-      ciQuoteDirect . listToMaybe . map fromOnly
-        <$> DB.query
+      fmap ciQuoteDirect . maybeFirstRow fromOnly $
+        DB.query
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?"
           (userId, contactId, msgId, userSent)
@@ -2463,15 +2463,15 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteDirect = (`ciQuote` if userSent then CIQDirectSnd else CIQDirectRcv)
     getUserGroupChatItemId_ :: Int64 -> IO (Maybe ChatItemId)
     getUserGroupChatItemId_ groupId =
-      listToMaybe . map fromOnly
-        <$> DB.query
+      maybeFirstRow fromOnly $
+        DB.query
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id IS NULL"
           (userId, groupId, msgId, MDSnd)
     getGroupChatItemId_ :: Int64 -> MemberId -> IO (Maybe ChatItemId)
     getGroupChatItemId_ groupId mId =
-      listToMaybe . map fromOnly
-        <$> DB.query
+      maybeFirstRow fromOnly $
+        DB.query
           db
           "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?"
           (userId, groupId, msgId, MDRcv, mId)
@@ -3077,8 +3077,8 @@ getGroupIdByName db User {userId} gName =
 
 getChatItemIdByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe ChatItemId)
 getChatItemIdByAgentMsgId db connId msgId =
-  join . listToMaybe . map fromOnly
-    <$> DB.query
+  fmap join . maybeFirstRow fromOnly $
+    DB.query
       db
       [sql|
         SELECT chat_item_id
