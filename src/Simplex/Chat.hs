@@ -41,6 +41,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
+import qualified Database.SQLite.Simple as DB
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
@@ -404,6 +405,9 @@ processChatCommand = \case
               withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
+            -- two functions below are called in separate transaction to prevent crashes on android
+            -- (possibly, race condition on integrity check?)
+            withStore $ \st -> deleteContactConnectionsAndFiles st userId ct
             withStore $ \st -> deleteContact st userId ct
             unsetActive $ ActiveC localDisplayName
             pure $ CRContactDeleted ct
@@ -2216,14 +2220,14 @@ withAgent action =
 
 withStore ::
   ChatMonad m =>
-  (forall m'. (MonadUnliftIO m', MonadError StoreError m') => SQLiteStore -> m' a) ->
+  (DB.Connection -> ExceptT StoreError IO a) ->
   m a
-withStore action =
-  asks chatStore
-    >>= runExceptT . action
-    -- use this line instead of above to log query errors
-    -- >>= (\st -> runExceptT $ action st `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
-    >>= liftEither . first ChatErrorStore
+withStore action = do
+  st <- asks chatStore
+  r <- liftIO $ withTransaction st action
+  -- use this line instead of above to log query errors
+  -- \db -> action db `E.catch` `E.catch` \(e :: E.SomeException) -> liftIO (print e) >> E.throwIO e)
+  liftEither $ first ChatErrorStore r
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
