@@ -85,7 +85,7 @@ defaultMobileConfig =
 type CJSONString = CString
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
-getActiveUser_ st = find activeUser <$> getUsers st
+getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatInit :: String -> IO ChatController
 chatInit dbFilePrefix = do

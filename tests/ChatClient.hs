@@ -100,14 +100,14 @@ createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts dbPrefix profile = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") False
-  Right user <- runExceptT $ createUser st profile True
+  Right user <- withTransaction st $ \db -> runExceptT $ createUser db profile True
   startTestChat_ st cfg opts dbFilePrefix user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat cfg opts dbPrefix = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
   st <- createStore (dbFilePrefix <> "_chat.db") False
-  Just user <- find activeUser <$> getUsers st
+  Just user <- find activeUser <$> withTransaction st getUsers
   startTestChat_ st cfg opts dbFilePrefix user
 
 startTestChat_ :: SQLiteStore -> ChatConfig -> ChatOpts -> FilePath -> User -> IO TestCC
