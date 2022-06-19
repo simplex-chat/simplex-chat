@@ -1096,6 +1096,7 @@ processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
 processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
+  PHASE phase -> toView $ CRAppPhase phase
   _ -> pure ()
   where
     serverEvent srv@SMP.ProtocolServer {host, port} conns event str = do

@@ -33,7 +33,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (fromTextField_, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data ConnectionEntity
@@ -45,8 +45,8 @@ data ConnectionEntity
   deriving (Eq, Show, Generic)
 
 instance ToJSON ConnectionEntity where
-  toJSON = J.genericToJSON $ sumTypeJSON id
-  toEncoding = J.genericToEncoding $ sumTypeJSON id
+  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
+  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of

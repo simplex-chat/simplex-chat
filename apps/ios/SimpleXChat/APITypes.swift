@@ -15,6 +15,8 @@ public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
     case startChat
+    case apiStopChat
+    case apiSetAppPhase(appPhase: AgentPhase)
     case setFilesFolder(filesFolder: String)
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
@@ -25,6 +27,7 @@ public enum ChatCommand {
     case apiVerifyToken(token: String, code: String, nonce: String)
     case apiIntervalNofication(token: String, interval: Int)
     case apiDeleteToken(token: String)
+    case apiGetNtfMessage(nonce: String, encNtfInfo: String)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -56,6 +59,8 @@ public enum ChatCommand {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case .startChat: return "/_start"
+            case .apiStopChat: return "/_stop"
+            case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
@@ -68,6 +73,7 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, code, nonce): return "/_ntf verify apns \(token) \(code) \(nonce)"
             case let .apiIntervalNofication(token, interval): return "/_ntf interval apns \(token) \(interval)"
             case let .apiDeleteToken(token): return "/_ntf delete apns \(token)"
+            case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -101,6 +107,8 @@ public enum ChatCommand {
             case .showActiveUser: return "showActiveUser"
             case .createActiveUser: return "createActiveUser"
             case .startChat: return "startChat"
+            case .apiStopChat: return "apiStopChat"
+            case .apiSetAppPhase: return "apiSetAppPhase"
             case .setFilesFolder: return "setFilesFolder"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
@@ -111,6 +119,7 @@ public enum ChatCommand {
             case .apiVerifyToken: return "apiVerifyToken"
             case .apiIntervalNofication: return "apiIntervalNofication"
             case .apiDeleteToken: return "apiDeleteToken"
+            case .apiGetNtfMessage: return "apiGetNtfMessage"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -156,6 +165,8 @@ public enum ChatResponse: Decodable, Error {
     case activeUser(user: User)
     case chatStarted
     case chatRunning
+    case chatStopped
+    case appPhase(appPhase: AgentPhase)
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [String])
@@ -205,6 +216,7 @@ public enum ChatResponse: Decodable, Error {
     case callExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case callEnded(contact: Contact)
     case ntfTokenStatus(status: NtfTknStatus)
+    case ntfMessages(connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(connection: PendingContactConnection)
     case contactConnectionDeleted(connection: PendingContactConnection)
     case cmdOk
@@ -218,6 +230,8 @@ public enum ChatResponse: Decodable, Error {
             case .activeUser: return "activeUser"
             case .chatStarted: return "chatStarted"
             case .chatRunning: return "chatRunning"
+            case .chatStopped: return "chatStopped"
+            case .appPhase: return "appPhase"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .userSMPServers: return "userSMPServers"
@@ -265,6 +279,7 @@ public enum ChatResponse: Decodable, Error {
             case .callExtraInfo: return "callExtraInfo"
             case .callEnded: return "callEnded"
             case .ntfTokenStatus: return "ntfTokenStatus"
+            case .ntfMessages: return "ntfMessages"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
             case .cmdOk: return "cmdOk"
@@ -281,6 +296,8 @@ public enum ChatResponse: Decodable, Error {
             case let .activeUser(user): return String(describing: user)
             case .chatStarted: return noDetails
             case .chatRunning: return noDetails
+            case .chatStopped: return noDetails
+            case let .appPhase(appPhase): return appPhase.rawValue
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .userSMPServers(smpServers): return String(describing: smpServers)
@@ -328,6 +345,7 @@ public enum ChatResponse: Decodable, Error {
             case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
             case let .callEnded(contact): return "contact: \(contact.id)"
             case let .ntfTokenStatus(status): return String(describing: status)
+            case let .ntfMessages(connEntity, msgTs, ntfMessages): return "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))"
             case let .newContactConnection(connection): return String(describing: connection)
             case let .contactConnectionDeleted(connection): return String(describing: connection)
             case .cmdOk: return noDetails
@@ -344,6 +362,12 @@ struct ComposedMessage: Encodable {
     var filePath: String?
     var quotedItemId: Int64?
     var msgContent: MsgContent
+}
+
+public enum AgentPhase: String, Codable {
+    case active = "ACTIVE"
+    case paused = "PAUSED"
+    case suspended = "SUSPENDED"
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

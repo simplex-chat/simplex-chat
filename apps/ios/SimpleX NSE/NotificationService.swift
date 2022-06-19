@@ -12,29 +12,28 @@ import SimpleXChat
 
 let logger = Logger()
 
-let machMessenger = MachMessenger(NSE_MACH_PORT, callback: receivedAppMachMessage)
-
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        machMessenger.start()
-        let res = machMessenger.sendMessageWithReply(APP_MACH_PORT, msg: "starting NSE didReceive")
-        logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
-        if getAppState() != .background {
+        let appState = getAppState()
+        if appState.running  {
             contentHandler(request.content)
-            machMessenger.stop()
             return
         }
         logger.debug("NotificationService: app is in the background")
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
-        if let _ = startChat() {
+        let userInfo = request.content.userInfo
+        if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
+           let nonce = ntfData["nonce"] as? String,
+           let encNtfInfo = ntfData["message"] as? String,
+           let _ = startChat() {
+            apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo)
             let content = receiveMessages()
             contentHandler (content)
-            machMessenger.stop()
             return
         }
 
@@ -44,7 +43,6 @@ class NotificationService: UNNotificationServiceExtension {
             
             contentHandler(bestAttemptContent)
         }
-        machMessenger.stop()
     }
     
     override func serviceExtensionTimeWillExpire() {
@@ -145,3 +143,12 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
+func apiGetNtfMessage(nonce: String, encNtfInfo: String) {
+    let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
+    if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
+        print(connEntity)
+        print(msgTs)
+        print(ntfMessages)
+        return
+    }
+}

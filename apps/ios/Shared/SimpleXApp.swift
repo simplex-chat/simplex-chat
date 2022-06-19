@@ -11,13 +11,6 @@ import SimpleXChat
 
 let logger = Logger()
 
-let machMessenger = MachMessenger(APP_MACH_PORT, callback: receivedNSEMachMessage)
-
-func receivedNSEMachMessage(msgId: Int32, msg: String) -> String? {
-    logger.debug("MachMessenger: receivedNSEMachMessage \"\(msg)\" from NSE, replying")
-    return "reply from App to: \(msg)"
-}
-
 @main
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -34,7 +27,6 @@ struct SimpleXApp: App {
         UserDefaults.standard.register(defaults: appDefaults)
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
-        machMessenger.start()
     }
 
     var body: some Scene {
@@ -50,25 +42,35 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
-                    let res = machMessenger.sendMessageWithReply(NSE_MACH_PORT, msg: "App scenePhase changed to \(String(describing: scenePhase))")
-                    logger.debug("MachMessenger \(String(describing: res), privacy: .public)")
-                    setAppState(phase)
                     switch (phase) {
                     case .background:
+                        pauseApp()
                         BGManager.shared.schedule()
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
-                        machMessenger.stop()
                     case .active:
+                        setAppState(.active)
+                        apiSetAppPhase(appPhase: .active)
                         doAuthenticate = authenticationExpired()
-                        machMessenger.start()
                     default:
                         break
                     }
                 }
         }
+    }
+
+    private func pauseApp() {
+        setAppState(.pausing)
+        apiSetAppPhase(appPhase: .paused)
+        let endTask = beginBGTask {
+            if getAppState() != .active {
+                setAppState(.suspending)
+                apiSetAppPhase(appPhase: .suspended)
+            }
+        }
+        DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
     }
 
     private func authenticationExpired() -> Bool {

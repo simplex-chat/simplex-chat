@@ -47,7 +47,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
-private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
+func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
     let endTask = {
@@ -141,6 +141,20 @@ func apiStartChat() throws -> Bool {
     case .chatRunning: return false
     default: throw r
     }
+}
+
+func apiStopChat() throws {
+    let r = chatSendCmdSync(.apiStopChat)
+    switch r {
+    case .chatStopped: return
+    default: throw r
+    }
+}
+
+func apiSetAppPhase(appPhase: AgentPhase) {
+    let r = chatSendCmdSync(.apiSetAppPhase(appPhase: appPhase))
+    if case .cmdOk = r { return }
+    logger.error("apiSetAppPhase error: \(String(describing: r))")
 }
 
 func apiSetFilesFolder(filesFolder: String) throws {
@@ -512,7 +526,7 @@ class ChatReceiver {
     func receiveMsgLoop() async {
         let msg = await chatRecvMsg()
         self._lastMsgTime = .now
-        processReceivedMsg(msg)
+        await processReceivedMsg(msg)
         if self.receiveMessages {
             do { try await Task.sleep(nanoseconds: 7_500_000) }
             catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
@@ -528,9 +542,9 @@ class ChatReceiver {
     }
 }
 
-func processReceivedMsg(_ res: ChatResponse) {
+func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
-    DispatchQueue.main.async {
+    await MainActor.run {
         m.terminalItems.append(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
@@ -682,6 +696,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .end
 //                CallController.shared.reportCallRemoteEnded(call: call)
             }
+        case let .appPhase(appPhase):
+            setAppState(AppState(appPhase: appPhase))
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }
