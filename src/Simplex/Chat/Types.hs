@@ -99,7 +99,11 @@ data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON UserContact where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
