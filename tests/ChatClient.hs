@@ -209,6 +209,7 @@ serverCfg =
       queueIdBytes = 12,
       msgIdBytes = 6,
       storeLogFile = Nothing,
+      storeMsgsFile = Nothing,
       allowNewQueues = True,
       messageExpiration = Just defaultMessageExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
