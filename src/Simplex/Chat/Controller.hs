@@ -40,7 +40,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Protocol (CorrId)
+import Simplex.Messaging.Protocol (CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
 import System.IO (Handle)
 import UnliftIO.STM
@@ -101,6 +101,7 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat
   | APIStopChat
+  | APISetAppPhase AgentPhase
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIExportArchive ArchiveConfig
@@ -131,6 +132,7 @@ data ChatCommand
   | APIVerifyToken DeviceToken ByteString C.CbNonce
   | APIIntervalNofication DeviceToken Word16
   | APIDeleteToken DeviceToken
+  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -183,6 +185,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
+  | CRAppPhase {appPhase :: AgentPhase}
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
@@ -273,6 +276,7 @@ data ChatResponse
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNtfMessages {connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
@@ -322,6 +326,11 @@ data ComposedMessage = ComposedMessage
     msgContent :: MsgContent
   }
   deriving (Show, Generic, FromJSON)
+
+data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
+  deriving (Show, Generic)
+
+instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

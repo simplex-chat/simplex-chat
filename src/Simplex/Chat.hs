@@ -39,6 +39,7 @@ import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as DB
@@ -204,6 +205,7 @@ processChatCommand = \case
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
+  APISetAppPhase phase -> withAgent (`setAgentPhase` phase) $> CRCmdOk
   ResubscribeAllConnections -> withUser (subscribeUserConnections resubscribeConnection) $> CRCmdOk
   SetFilesFolder filesFolder' -> withUser $ \_ -> do
     createDirectoryIfMissing True filesFolder'
@@ -542,6 +544,12 @@ processChatCommand = \case
   APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
   APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
+  APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
+    (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
+    let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
+        msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
+    connEntity <- withStore (\db -> Just <$> getConnectionEntity db user ntfConnId) `catchError` \_ -> pure Nothing
+    pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore' (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
@@ -2240,6 +2248,7 @@ chatCommandP =
     <|> ("/user" <|> "/u") $> ShowActiveUser
     <|> "/_start" $> StartChat
     <|> "/_stop" $> APIStopChat
+    <|> "/_app phase " *> (APISetAppPhase <$> strP)
     <|> "/_resubscribe all" $> ResubscribeAllConnections
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_db export " *> (APIExportArchive <$> jsonP)
@@ -2270,6 +2279,7 @@ chatCommandP =
     <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
     <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
     <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
+    <|> "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
     <|> "/smp_servers" $> GetUserSMPServers
