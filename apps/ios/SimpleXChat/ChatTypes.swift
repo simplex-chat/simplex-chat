@@ -264,6 +264,9 @@ public struct Connection: Decodable {
     )
 }
 
+public struct UserContact: Decodable {
+}
+
 public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
     var localDisplayName: ContactName
@@ -435,6 +438,18 @@ public struct GroupMember: Decodable {
 public struct MemberSubError: Decodable {
     var member: GroupMember
     var memberError: ChatError
+}
+
+public enum ConnectionEntity: Decodable {
+    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
+    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(entityConnection: Connection, userContact: UserContact)
+}
+
+public struct NtfMsgInfo: Decodable {
+
 }
 
 public struct AChatItem: Decodable {
@@ -898,6 +913,10 @@ public enum NtfTknStatus: String, Decodable {
 }
 
 public struct SndFileTransfer: Decodable {
+
+}
+
+public struct RcvFileTransfer: Decodable {
 
 }
 
