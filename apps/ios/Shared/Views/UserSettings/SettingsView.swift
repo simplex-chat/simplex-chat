@@ -261,9 +261,9 @@ struct SettingsView: View {
     }
 }
 
-func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
+func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.secondary)
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(color)
         content().padding(.leading, indent)
     }
 }

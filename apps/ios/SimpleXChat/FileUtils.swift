@@ -18,8 +18,8 @@ public let maxImageSize: Int64 = 236700
 public let maxFileSize: Int64 = 8000000
 
 func getDocumentsDirectory() -> URL {
-//    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+//    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 
 public func getAppFilesDirectory() -> URL {

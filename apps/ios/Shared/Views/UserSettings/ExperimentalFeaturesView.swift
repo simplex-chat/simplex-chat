@@ -18,6 +18,12 @@ struct ExperimentalFeaturesView: View {
                     Toggle("Audio & video calls", isOn: $enableCalls)
                 }
             }
+            NavigationLink {
+                DatabaseView()
+                    .navigationTitle("Your chat database")
+            } label: {
+                settingsRow("internaldrive") { Text("Your chat database") }
+            }
         }
     }
 }

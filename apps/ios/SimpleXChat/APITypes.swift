@@ -18,6 +18,9 @@ public enum ChatCommand {
     case apiStopChat
     case apiSetAppPhase(appPhase: AgentPhase)
     case setFilesFolder(filesFolder: String)
+    case apiExportArchive(config: ArchiveConfig)
+    case apiImportArchive(config: ArchiveConfig) 
+    case apiDeleteStorage
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
@@ -62,6 +65,9 @@ public enum ChatCommand {
             case .apiStopChat: return "/_stop"
             case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
+            case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
+            case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
@@ -110,6 +116,9 @@ public enum ChatCommand {
             case .apiStopChat: return "apiStopChat"
             case .apiSetAppPhase: return "apiSetAppPhase"
             case .setFilesFolder: return "setFilesFolder"
+            case .apiExportArchive: return "apiExportArchive"
+            case .apiImportArchive: return "apiImportArchive"
+            case .apiDeleteStorage: return "apiDeleteStorage"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
@@ -368,6 +377,11 @@ public enum AgentPhase: String, Codable {
     case active = "ACTIVE"
     case paused = "PAUSED"
     case suspended = "SUSPENDED"
+}
+
+public struct ArchiveConfig: Encodable {
+    var archivePath: String
+    var disableCompression: Bool?
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

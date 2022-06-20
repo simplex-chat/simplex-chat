@@ -143,8 +143,8 @@ func apiStartChat() throws -> Bool {
     }
 }
 
-func apiStopChat() throws {
-    let r = chatSendCmdSync(.apiStopChat)
+func apiStopChat() async throws {
+    let r = await chatSendCmd(.apiStopChat)
     switch r {
     case .chatStopped: return
     default: throw r
@@ -161,6 +161,18 @@ func apiSetFilesFolder(filesFolder: String) throws {
     let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
     if case .cmdOk = r { return }
     throw r
+}
+
+func apiExportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiExportArchive(config: config))
+}
+
+func apiImportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiImportArchive(config: config))
+}
+
+func apiDeleteStorage() async throws {
+    try await sendCommandOkResp(.apiDeleteStorage)
 }
 
 func apiGetChats() throws -> [Chat] {
@@ -501,6 +513,7 @@ func startChat() {
             }
         }
         ChatReceiver.shared.start()
+        m.chatRunning = true
     } catch {
         fatalError("Failed to start or load chats: \(error)")
     }
