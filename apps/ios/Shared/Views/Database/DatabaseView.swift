@@ -36,7 +36,7 @@ struct DatabaseView: View {
                     stopped ? "exclamationmark.octagon.fill" : "play.fill",
                     color: stopped ? .red : .green
                 ) {
-                    return Toggle(
+                    Toggle(
                         stopped ? "Chat is stopped" : "Chat is running",
                         isOn: $runChat
                     )

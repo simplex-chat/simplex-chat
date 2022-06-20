@@ -355,6 +355,7 @@
 				5C5F4AC227A5E9AF00B51EF1 /* Chat */,
 				5CB9250B27A942F300ACCCDD /* ChatList */,
 				5CB924DD27A8622200ACCCDD /* NewChat */,
+				5CFA59C22860B04D00863A68 /* Database */,
 				5CB924DF27A8678B00ACCCDD /* UserSettings */,
 				5C2E261127A30FEA00F70299 /* TerminalView.swift */,
 			);
@@ -512,9 +513,6 @@
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				640F50E227CF991C001E05C2 /* SMPServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
-				5C4B3B09285FB130003915F2 /* DatabaseView.swift */,
-				5CFA59BE2860896600863A68 /* ExportArchiveView.swift */,
-				5CFA59C028608A2700863A68 /* ImportArchiveView.swift */,
 			);
 			path = UserSettings;
 			sourceTree = "<group>";
@@ -591,6 +589,16 @@
 				3CDBCF4127FAE51000354CDD /* ComposeLinkView.swift */,
 			);
 			path = ComposeMessage;
+			sourceTree = "<group>";
+		};
+		5CFA59C22860B04D00863A68 /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				5C4B3B09285FB130003915F2 /* DatabaseView.swift */,
+				5CFA59BE2860896600863A68 /* ExportArchiveView.swift */,
+				5CFA59C028608A2700863A68 /* ImportArchiveView.swift */,
+			);
+			path = Database;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
