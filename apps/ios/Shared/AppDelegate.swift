@@ -42,6 +42,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
+        print("*** userInfo", userInfo)
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            UserDefaults.standard.bool(forKey: "useNotifications") {
             if let verification = ntfData["verification"] as? String,

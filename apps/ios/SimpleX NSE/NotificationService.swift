@@ -18,6 +18,7 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
+        print("*** userInfo", request.content.userInfo)
         let appState = getAppState()
         if appState.running  {
             contentHandler(request.content)
