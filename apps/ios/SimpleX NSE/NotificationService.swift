@@ -18,8 +18,9 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        let appState = getAppState()
+        let appState = appStateGroupDefault.get()
         if appState.running  {
+            print("userInfo", request.content.userInfo)
             contentHandler(request.content)
             return
         }
@@ -146,9 +147,9 @@ func apiSetFilesFolder(filesFolder: String) throws {
 func apiGetNtfMessage(nonce: String, encNtfInfo: String) {
     let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
-        print(connEntity)
-        print(msgTs)
-        print(ntfMessages)
+        if let connEntity = connEntity { print("connEntity", connEntity) }
+        if let msgTs = msgTs { print("msgTs", msgTs) }
+        print("ntfMessages", ntfMessages)
         return
     }
 }

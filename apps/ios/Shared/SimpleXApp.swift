@@ -25,6 +25,7 @@ struct SimpleXApp: App {
     init() {
         hs_init(0, nil)
         UserDefaults.standard.register(defaults: appDefaults)
+        setDbContainer()
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
     }
@@ -38,7 +39,7 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    initializeChat()
+                    initializeChat(start: v3DBMigrationDefault.get().startChat)
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
@@ -51,7 +52,7 @@ struct SimpleXApp: App {
                         }
                         doAuthenticate = false
                     case .active:
-                        setAppState(.active)
+                        appStateGroupDefault.set(.active)
                         apiSetAppPhase(appPhase: .active)
                         doAuthenticate = authenticationExpired()
                     default:
@@ -61,12 +62,26 @@ struct SimpleXApp: App {
         }
     }
 
+    private func setDbContainer() {
+        if hasLegacyDatabase(), case .documents = dbContainerGroupDefault.get() {
+            dbContainerGroupDefault.set(.documents)
+            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath())*.db")
+            if case .postponed = v3DBMigrationDefault.get() {
+                v3DBMigrationDefault.set(.offer)
+            }
+        } else {
+            dbContainerGroupDefault.set(.group)
+            v3DBMigrationDefault.set(.ready)
+            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath())*.db")
+        }
+    }
+
     private func pauseApp() {
-        setAppState(.pausing)
+        appStateGroupDefault.set(.pausing)
         apiSetAppPhase(appPhase: .paused)
         let endTask = beginBGTask {
-            if getAppState() != .active {
-                setAppState(.suspending)
+            if appStateGroupDefault.get() != .active {
+                appStateGroupDefault.set(.suspending)
                 apiSetAppPhase(appPhase: .suspended)
             }
         }

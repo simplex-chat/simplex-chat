@@ -10,12 +10,12 @@ import Foundation
 import SwiftUI
 
 let GROUP_DEFAULT_APP_STATE = "appState"
+let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
+public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 
 let APP_GROUP_NAME = "group.chat.simplex.app"
 
-func getGroupDefaults() -> UserDefaults? {
-    UserDefaults(suiteName: APP_GROUP_NAME)
-}
+public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public enum AppState: String {
     case active
@@ -42,18 +42,44 @@ public enum AppState: String {
     }
 }
 
-public func setAppState(_ state: AppState) {
-    if let defaults = getGroupDefaults() {
-        defaults.set(state.rawValue, forKey: GROUP_DEFAULT_APP_STATE)
-        defaults.synchronize()
-    }
+public enum DBContainer: String {
+    case documents
+    case group
 }
 
-public func getAppState() -> AppState {
-    if let defaults = getGroupDefaults(),
-       let rawValue = defaults.string(forKey: GROUP_DEFAULT_APP_STATE),
-       let state = AppState(rawValue: rawValue) {
-        return state
+public let appStateGroupDefault = EnumDefault<AppState>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_APP_STATE,
+    withDefault: .active
+)
+
+public let dbContainerGroupDefault = EnumDefault<DBContainer>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_DB_CONTAINER,
+    withDefault: .documents
+)
+
+public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: T
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: T) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
     }
-    return .active
+
+    public func get() -> T {
+        if let rawValue = groupDefaults.string(forKey: key),
+           let value = T(rawValue: rawValue) {
+            return value
+        }
+        return defaultValue
+    }
+
+    public func set(_ value: T) {
+        groupDefaults.set(value.rawValue, forKey: key)
+        groupDefaults.synchronize()
+    }
 }

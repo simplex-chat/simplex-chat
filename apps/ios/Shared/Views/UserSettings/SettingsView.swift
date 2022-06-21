@@ -24,6 +24,9 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
+let DEFAULT_CHAT_ARCHIVE_PATH = "chatArchivePath"
+let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
+let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -34,7 +37,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
-    DEFAULT_EXPERIMENTAL_CALLS: false
+    DEFAULT_EXPERIMENTAL_CALLS: false,
+    DEFAULT_CHAT_V3_DB_MIGRATION: "offer"
 ]
 
 private var indent: CGFloat = 36

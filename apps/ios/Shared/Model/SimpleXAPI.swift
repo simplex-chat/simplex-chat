@@ -480,14 +480,14 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat() {
+func initializeChat(start: Bool) {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
-        } else {
+        } else if start {
             startChat()
         }
     } catch {
@@ -537,6 +537,7 @@ class ChatReceiver {
     }
 
     func receiveMsgLoop() async {
+        // TODO use function that has timeout
         let msg = await chatRecvMsg()
         self._lastMsgTime = .now
         await processReceivedMsg(msg)
@@ -710,7 +711,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
 //                CallController.shared.reportCallRemoteEnded(call: call)
             }
         case let .appPhase(appPhase):
-            setAppState(AppState(appPhase: appPhase))
+            appStateGroupDefault.set(AppState(appPhase: appPhase))
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

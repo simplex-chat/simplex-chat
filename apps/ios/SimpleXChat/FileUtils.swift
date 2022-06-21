@@ -17,13 +17,41 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
-func getDocumentsDirectory() -> URL {
+public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-//    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
+}
+
+func getGroupContainerDirectory() -> URL {
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
+}
+
+func getAppDirectory() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory()
+    : getDocumentsDirectory()
+}
+
+let DB_FILE_PREFIX = "simplex_v1"
+
+func getLegacyDatabasePath() -> URL {
+    getAppDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
+}
+
+public func getAppDatabasePath() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
+    : getLegacyDatabasePath()
+}
+
+public func hasLegacyDatabase() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let fm = FileManager.default
+    return fm.isReadableFile(atPath: dbPath.path + "_agent.db") &&
+           fm.isReadableFile(atPath: dbPath.path + "_chat.db")
 }
 
 public func getAppFilesDirectory() -> URL {
-    getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
 func getAppFilePath(_ fileName: String) -> URL {

@@ -382,6 +382,11 @@ public enum AgentPhase: String, Codable {
 public struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
+
+    public init(archivePath: String, disableCompression: Bool? = nil) {
+        self.archivePath = archivePath
+        self.disableCompression = disableCompression
+    }
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

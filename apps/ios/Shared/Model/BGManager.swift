@@ -71,7 +71,7 @@ class BGManager {
         }
         self.completed = false
         DispatchQueue.main.async {
-            initializeChat()
+            initializeChat(start: true)
             if ChatModel.shared.currentUser == nil {
                 completeReceiving("no current user")
                 return
