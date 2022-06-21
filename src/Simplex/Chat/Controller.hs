@@ -99,7 +99,7 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
-  | StartChat
+  | StartChat {subscribeConnections :: Bool}
   | APIStopChat
   | APISetAppPhase AgentPhase
   | ResubscribeAllConnections

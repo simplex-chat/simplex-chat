@@ -33,7 +33,7 @@ runSimplexChat ChatOpts {maintenance} u cc chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
     a1 <- async $ chat u cc
-    a2 <- runReaderT (startChatController u) cc
+    a2 <- runReaderT (startChatController u True) cc
     waitEither_ a1 a2
 
 sendChatCmd :: ChatController -> String -> IO ChatResponse
