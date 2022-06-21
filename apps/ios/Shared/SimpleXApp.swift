@@ -63,6 +63,8 @@ struct SimpleXApp: App {
     }
 
     private func setDbContainer() {
+        dbContainerGroupDefault.set(.documents)
+        v3DBMigrationDefault.set(.offer)
         if hasLegacyDatabase(), case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
             logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath())*.db")

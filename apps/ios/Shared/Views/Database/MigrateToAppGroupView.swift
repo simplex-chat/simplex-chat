@@ -43,54 +43,101 @@ struct MigrateToAppGroupView: View {
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
 
     var body: some View {
-        VStack {
-            Text("Database migration").font(.title)
+        ZStack(alignment: .topLeading) {
+            Text("Database migration").font(.largeTitle)
 
             switch v3DBMigration {
             case .offer:
-                offerMigration()
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("To support instant push notifications we have to relocate the database.")
+                    Text("If you need to use the chat, you can do it later by restarting the app.")
+                }
+                .padding(.top, 56)
+                center {
+                    Button {
+                        migrateDatabaseToV3()
+                    } label: {
+                        Text("Start migration")
+                            .font(.title)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                skipMigration()
             case .exporting:
-                Text("Exporting database archive...")
-                ProgressView(value: 0.33)
+                center {
+                    ProgressView(value: 0.33)
+                    Text("Exporting database archive...")
+                }
             case .export_error:
-                Text("Export error.")
+                center {
+                    Text("Export error:").font(.headline)
+                    Text(migrationError)
+                    Text("Please make the screenshot and send it to the developers to [chat@simplex.chat](mailto:chat@simplex.chat) or via chat.")
+                }
                 skipMigration()
             case .exported:
-                Text("Exported database archive.")
+                center {
+                    Text("Exported database archive.")
+                }
             case .migrating:
-                Text("Migrating database archive...")
-                ProgressView(value: 0.67)
+                center {
+                    ProgressView(value: 0.67)
+                    Text("Migrating database archive...")
+                }
             case .migration_error:
-                Text("Migration error.")
+                center {
+                    Text("Migration error:").font(.headline)
+                    Text(migrationError)
+                }
+                skipMigration()
             case .migrated:
-                Text("Database is migrated.")
-                ProgressView(value: 1.0)
+                center {
+                    ProgressView(value: 1.0)
+                    Text("Migration is completed")
+                }
+                VStack {
+                    Spacer()
+                    Spacer()
+                    Spacer()
+                    Button {
+                        setV3DBMigration(.ready)
+                        dbContainerGroupDefault.set(.group)
+                        startChat()
+                    } label: {
+                        Text("Start using chat")
+                            .font(.title)
+                            .frame(maxWidth: .infinity)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             default:
+                Spacer()
+                Text("Unexpected migration state")
                 Text("\(v3DBMigration.rawValue)")
+                Spacer()
+                skipMigration()
             }
         }
+        .padding()
     }
 
-    func offerMigration() -> some View {
-        VStack {
-            Text("To support instant push notifications we have to relocate the database.")
-            Text("You can do it later by restarting the app.")
-            skipMigration()
+    private func center<Content>(@ViewBuilder c: @escaping () -> Content) -> some View where Content: View {
+        VStack(alignment: .leading, spacing: 8) { c() }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func skipMigration() -> some View {
+        ZStack {
             Button {
-                migrateDatabaseToV3()
+                setV3DBMigration(.postponed)
+                startChat()
             } label: {
-                Text("Start migration")
+                Text("Skip and start using chat")
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
-    }
-
-    func skipMigration() -> some View {
-        Button {
-            setV3DBMigration(.postponed)
-            startChat()
-        } label: {
-            Text("Skip and open chats")
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
     private func setV3DBMigration(_ value: V3DBMigrationState) {
@@ -107,7 +154,7 @@ struct MigrateToAppGroupView: View {
         let config = ArchiveConfig(archivePath: archivePath)
         Task {
             do {
-                try! await Task.sleep(nanoseconds: 1_000_000_000)
+                try! await Task.sleep(nanoseconds: 2_000_000_000)
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -120,14 +167,15 @@ struct MigrateToAppGroupView: View {
 // 1. initialize the new chat controller here that would use the database in the new location
 // 2. import db
 // 3. re-initialize chat controller
-//            do {
-//                await MainActor.run { setV3DBMigration(.migrating) }
+            do {
+                await MainActor.run { setV3DBMigration(.migrating) }
+                try! await Task.sleep(nanoseconds: 2_000_000_000)
 //                try await apiImportArchive(config: config)
-//                await MainActor.run { setV3DBMigration(.migrated) }
-//            } catch let error {
-//                await MainActor.run { setV3DBMigration(.migration_error) }
-//                migrationError = responseError(error)
-//            }
+                await MainActor.run { setV3DBMigration(.migrated) }
+            } catch let error {
+                await MainActor.run { setV3DBMigration(.migration_error) }
+                migrationError = responseError(error)
+            }
         }
     }
 }
