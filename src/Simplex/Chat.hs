@@ -147,17 +147,17 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
           pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
         _ -> pure ss
 
-runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
-runChatController = race_ notificationSubscriber . agentSubscriber
+runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
+runChatController user subConns = race_ notificationSubscriber $ agentSubscriber user subConns
 
-startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m (Async ())
-startChatController user = do
+startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m (Async ())
+startChatController user subConns = do
   asks smpAgent >>= resumeAgentClient
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s) pure
   where
     start s = do
-      a <- async $ runChatController user
+      a <- async $ runChatController user subConns
       atomically . writeTVar s $ Just a
       pure a
 
@@ -194,14 +194,14 @@ processChatCommand = \case
     user <- withStore $ \db -> createUser db p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  StartChat -> withUser' $ \user ->
+  StartChat subConns -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ ->
         ifM
           (asks chatStoreChanged >>= readTVarIO)
           (throwChatError CEChatStoreChanged)
-          (startChatController user $> CRChatStarted)
+          (startChatController user subConns $> CRChatStarted)
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -1000,11 +1000,11 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p xContactId
 
-agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
-agentSubscriber user = do
+agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
+agentSubscriber user subConns = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
-  subscribeUserConnections subscribeConnection user
+  when subConns $ subscribeUserConnections subscribeConnection user
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
@@ -2247,7 +2247,8 @@ chatCommandP :: Parser ChatCommand
 chatCommandP =
   ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
     <|> ("/user" <|> "/u") $> ShowActiveUser
-    <|> "/_start" $> StartChat
+    <|> "/_start subscribe=" *> (StartChat <$> ("on" $> True <|> "off" $> False))
+    <|> "/_start" $> StartChat True
     <|> "/_stop" $> APIStopChat
     <|> "/_app phase " *> (APISetAppPhase <$> strP)
     <|> "/_resubscribe all" $> ResubscribeAllConnections
