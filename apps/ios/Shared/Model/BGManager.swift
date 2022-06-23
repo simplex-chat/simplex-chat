@@ -71,7 +71,11 @@ class BGManager {
         }
         self.completed = false
         DispatchQueue.main.async {
-            initializeChat(start: true)
+            do {
+                try initializeChat(start: true)
+            } catch let error {
+                fatalError("Failed to start or load chats: \(responseError(error))")
+            }
             if ChatModel.shared.currentUser == nil {
                 completeReceiving("no current user")
                 return

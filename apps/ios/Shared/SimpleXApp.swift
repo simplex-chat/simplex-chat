@@ -39,7 +39,11 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    initializeChat(start: v3DBMigrationDefault.get().startChat)
+                    do {
+                        try initializeChat(start: v3DBMigrationDefault.get().startChat)
+                    } catch let error {
+                        fatalError("Failed to start or load chats: \(responseError(error))")
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
@@ -63,6 +67,8 @@ struct SimpleXApp: App {
     }
 
     private func setDbContainer() {
+//        dbContainerGroupDefault.set(.documents)
+//        v3DBMigrationDefault.set(.offer)
         if hasLegacyDatabase(), case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
             logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath())*.db")

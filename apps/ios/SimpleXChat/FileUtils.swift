@@ -25,10 +25,11 @@ func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 
-func getAppDirectory() -> URL {
-    dbContainerGroupDefault.get() == .group
+func getAppDirectory(_ db: DBContainer? = nil) -> URL {
+    (db ?? dbContainerGroupDefault.get()) == .group
     ? getGroupContainerDirectory()
     : getDocumentsDirectory()
+//    getDocumentsDirectory()
 }
 
 let DB_FILE_PREFIX = "simplex_v1"
@@ -37,10 +38,11 @@ func getLegacyDatabasePath() -> URL {
     getAppDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
 }
 
-public func getAppDatabasePath() -> URL {
-    dbContainerGroupDefault.get() == .group
+public func getAppDatabasePath(_ db: DBContainer? = nil) -> URL {
+    (db ?? dbContainerGroupDefault.get()) == .group
     ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
     : getLegacyDatabasePath()
+//    getLegacyDatabasePath()
 }
 
 public func hasLegacyDatabase() -> Bool {
@@ -50,8 +52,8 @@ public func hasLegacyDatabase() -> Bool {
            fm.isReadableFile(atPath: dbPath.path + "_chat.db")
 }
 
-public func getAppFilesDirectory() -> URL {
-    getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
+public func getAppFilesDirectory(_ db: DBContainer? = nil) -> URL {
+    getAppDirectory(db).appendingPathComponent("app_files", isDirectory: true)
 }
 
 func getAppFilePath(_ fileName: String) -> URL {

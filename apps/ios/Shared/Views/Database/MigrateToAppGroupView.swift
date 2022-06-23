@@ -100,9 +100,17 @@ struct MigrateToAppGroupView: View {
                     Spacer()
                     Spacer()
                     Button {
-                        setV3DBMigration(.ready)
-                        dbContainerGroupDefault.set(.group)
-                        startChat()
+                        do {
+                            dbContainerGroupDefault.set(.group)
+                            setV3DBMigration(.ready)
+                            resetChatCtrl()
+                            try initializeChat(start: true)
+                            deleteOldArchive()
+                        } catch let error {
+                            dbContainerGroupDefault.set(.documents)
+                            setV3DBMigration(.offer)
+                            logger.error("Error starting chat \(String(describing: error))")
+                        }
                     } label: {
                         Text("Start using chat")
                             .font(.title)
@@ -131,7 +139,11 @@ struct MigrateToAppGroupView: View {
         ZStack {
             Button {
                 setV3DBMigration(.postponed)
-                startChat()
+                do {
+                    try startChat()
+                } catch let error {
+                    fatalError("Failed to start or load chats: \(responseError(error))")
+                }
             } label: {
                 Text("Skip and start using chat")
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -154,7 +166,6 @@ struct MigrateToAppGroupView: View {
         let config = ArchiveConfig(archivePath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
         Task {
             do {
-                try! await Task.sleep(nanoseconds: 2_000_000_000)
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -163,14 +174,11 @@ struct MigrateToAppGroupView: View {
                 return
             }
 
-// TODO:
-// 1. initialize the new chat controller here that would use the database in the new location
-// 2. import db
-// 3. re-initialize chat controller
             do {
+                resetChatCtrl(dbContainer: .group)
+                try initializeChat(start: false, dbContainer: .group)
                 await MainActor.run { setV3DBMigration(.migrating) }
-                try! await Task.sleep(nanoseconds: 2_000_000_000)
-//                try await apiImportArchive(config: config)
+                try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {
                 await MainActor.run { setV3DBMigration(.migration_error) }
@@ -187,13 +195,23 @@ func exportChatArchive() async throws -> URL {
     let archivePath = getDocumentsDirectory().appendingPathComponent(archiveName)
     let config = ArchiveConfig(archivePath: archivePath.path)
     try await apiExportArchive(config: config)
-    let oldArchiveName = UserDefaults.standard.string(forKey: DEFAULT_CHAT_ARCHIVE_NAME)
-    chatArchiveTimeDefault.set(archiveTime)
+    deleteOldArchive()
     UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
-    if let name = oldArchiveName {
-        try? FileManager.default.removeItem(atPath: getDocumentsDirectory().appendingPathComponent(name).path)
-    }
+    chatArchiveTimeDefault.set(archiveTime)
     return archivePath
+}
+
+func deleteOldArchive() {
+    let d = UserDefaults.standard
+    if let archiveName = d.string(forKey: DEFAULT_CHAT_ARCHIVE_NAME) {
+        do {
+            try FileManager.default.removeItem(atPath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
+            d.set(nil, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+            d.set(0, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
+        } catch let error {
+            logger.error("removeItem error \(String(describing: error))")
+        }
+    }
 }
 
 struct MigrateToGroupView_Previews: PreviewProvider {

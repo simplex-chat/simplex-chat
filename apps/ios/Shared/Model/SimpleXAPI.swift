@@ -472,44 +472,43 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat(start: Bool) {
+func initializeChat(start: Bool, dbContainer: DBContainer? = nil) throws {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
+// TODO uncomment
+//        try apiSetFilesFolder(filesFolder: getAppFilesDirectory(dbContainer).path)
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
         } else if start {
-            startChat()
+            try startChat()
         }
     } catch {
-        fatalError("Failed to initialize chat controller or database: \(error)")
+        fatalError("Failed to initialize chat controller or database: \(responseError(error))")
     }
 }
 
-func startChat() {
+func startChat() throws {
     logger.debug("startChat")
-    do {
-        let m = ChatModel.shared
-        // TODO set file folder once, before chat is started
-        let justStarted = try apiStartChat()
-        if justStarted {
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            m.userAddress = try apiGetUserAddress()
-            m.userSMPServers = try getUserSMPServers()
-            m.chats = try apiGetChats()
-            withAnimation {
-                m.onboardingStage = m.chats.isEmpty
-                                    ? .step3_MakeConnection
-                                    : .onboardingComplete
-            }
+    let m = ChatModel.shared
+    // TODO set file folder once, before chat is started
+    let justStarted = try apiStartChat()
+    if justStarted {
+        // TODO comment, move to initializeChat
+        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+        m.userAddress = try apiGetUserAddress()
+        m.userSMPServers = try getUserSMPServers()
+        m.chats = try apiGetChats()
+        withAnimation {
+            m.onboardingStage = m.chats.isEmpty
+                                ? .step3_MakeConnection
+                                : .onboardingComplete
         }
-        ChatReceiver.shared.start()
-        m.chatRunning = true
-        chatLastStartGroupDefault.set(Date.now)
-    } catch {
-        fatalError("Failed to start or load chats: \(error)")
     }
+    ChatReceiver.shared.start()
+    m.chatRunning = true
+    chatLastStartGroupDefault.set(Date.now)
 }
 
 class ChatReceiver {

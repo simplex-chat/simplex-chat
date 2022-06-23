@@ -106,7 +106,7 @@ struct DatabaseView: View {
                     }
                 }
             } header: {
-                Text("Chat database (BETA)")
+                Text("Chat database")
             } footer: {
                 Text(
                     stopped
@@ -263,12 +263,17 @@ struct DatabaseView: View {
             showSettings = false
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
-                initializeChat(start: true)
-                m.chatDbChanged = false
+                do {
+                    try initializeChat(start: true)
+                    m.chatDbChanged = false
+                } catch let error {
+                    fatalError("Error starting chat \(responseError(error))")
+                }
             }
         } else {
             do {
                 _ = try apiStartChat()
+                runChat = true
                 m.chatRunning = true
                 chatLastStartGroupDefault.set(Date.now)
             } catch let error {
