@@ -15,7 +15,7 @@ enum DatabaseAlert: Identifiable {
     case archiveImported
     case deleteChat
     case chatDeleted
-    case error(title: LocalizedStringKey, error: Error? = nil)
+    case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
         switch self {
@@ -75,20 +75,20 @@ struct DatabaseView: View {
                     Button {
                         exportArchive()
                     } label: {
-                        Text("Export archive")
+                        Text("Export database")
                     }
                 }
                 settingsRow("square.and.arrow.down") {
-                    Button {
+                    Button(role: .destructive) {
                         showFileImporter = true
                     } label: {
-                        Text("Import archive")
+                        Text("Import database")
                     }
                 }
                 if let archiveName = chatArchiveName {
                     let title: LocalizedStringKey = chatArchiveTimeDefault.get() < chatLastStartGroupDefault.get()
-                        ? "Old chat archive"
-                        : "Current chat archive"
+                        ? "Old database archive"
+                        : "New database archive"
                     settingsRow("archivebox") {
                         NavigationLink {
                             ChatArchiveView(archiveName: archiveName)
@@ -99,15 +99,10 @@ struct DatabaseView: View {
                     }
                 }
                 settingsRow("trash.slash") {
-                    Button {
+                    Button(role: .destructive) {
                         alert = .deleteChat
                     } label: {
-                        let v = Text("Delete chat database")
-                        if (stopped) {
-                            v.foregroundColor(.red)
-                        } else {
-                            v
-                        }
+                        Text("Delete database")
                     }
                 }
             } header: {
@@ -115,71 +110,14 @@ struct DatabaseView: View {
             } footer: {
                 Text(
                     stopped
-                     ? "You must use the most recent version of your chat profile on one device ONLY, otherwise you may stop receiving the messages from some contacts."
+                     ? "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts."
                      : "Stop chat to enable database actions"
                 )
             }
             .disabled(!stopped)
         }
         .onAppear { runChat = m.chatRunning ?? true }
-        .alert(item: $alert) {alertItem in
-            switch alertItem {
-            case .stopChat:
-                return Alert(
-                    title: Text("Stop chat?"),
-                    message: Text("Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped."),
-                    primaryButton: .destructive(Text("Stop")) {
-                        stopChat()
-                    },
-                    secondaryButton: .cancel {
-                        runChat = false
-                    }
-                )
-            case .importArchive:
-                if let fileURL = importedArchivePath {
-                    return Alert(
-                        title: Text("Import chat profile?"),
-                        message: Text("Your current chat profile will be replaced with the imported profile. ") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly deleted"),
-                        primaryButton: .destructive(Text("Import")) {
-                            importArchive(fileURL)
-                        },
-                        secondaryButton: .cancel()
-                    )
-                } else {
-                    return Alert(title: Text("Error: no archive file"))
-                }
-            case .archiveImported:
-                return Alert(
-                    title: Text("Chat profile imported"),
-                    message: Text("Restart the app to use imported chat profile"),
-                    primaryButton: .default(Text("Ok")),
-                    secondaryButton: .cancel()
-                )
-
-            case .deleteChat:
-                return Alert(
-                    title: Text("Delete chat profile?"),
-                    message: Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly deleted"),
-                    primaryButton: .destructive(Text("Delete")) {
-                        deleteChat()
-                    },
-                    secondaryButton: .cancel()
-                )
-            case .chatDeleted:
-                return Alert(
-                    title: Text("Chat profile deleted"),
-                    message: Text("Restart the app to create your new profile"),
-                    primaryButton: .default(Text("Ok")),
-                    secondaryButton: .cancel()
-                )
-            case let .error(title, error):
-                if let error = error {
-                    return Alert(title: Text(title), message: Text("\(responseError(error))"))
-                } else {
-                    return Alert(title: Text(title))
-                }
-            }
-        }
+        .alert(item: $alert) { item in databaseAlert(item) }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.zip],
@@ -192,14 +130,71 @@ struct DatabaseView: View {
         }
     }
 
+    private func databaseAlert(_ alertItem: DatabaseAlert) -> Alert {
+        switch alertItem {
+        case .stopChat:
+            return Alert(
+                title: Text("Stop chat?"),
+                message: Text("Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped."),
+                primaryButton: .destructive(Text("Stop")) {
+                    stopChat()
+                },
+                secondaryButton: .cancel {
+                    runChat = false
+                }
+            )
+        case .importArchive:
+            if let fileURL = importedArchivePath {
+                return Alert(
+                    title: Text("Import chat database?"),
+                    message: Text("Your current chat database will be DELETED and REPLACED with the imported one.\n") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
+                    primaryButton: .destructive(Text("Import")) {
+                        importArchive(fileURL)
+                    },
+                    secondaryButton: .cancel()
+                )
+            } else {
+                return Alert(title: Text("Error: no database file"))
+            }
+        case .archiveImported:
+            return Alert(
+                title: Text("Chat database imported"),
+                message: Text("Restart the app to use imported chat database"),
+                primaryButton: .default(Text("Ok")),
+                secondaryButton: .cancel()
+            )
+
+        case .deleteChat:
+            return Alert(
+                title: Text("Delete chat profile?"),
+                message: Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteChat()
+                },
+                secondaryButton: .cancel()
+            )
+        case .chatDeleted:
+            return Alert(
+                title: Text("Chat database deleted"),
+                message: Text("Restart the app to create a new chat profile"),
+                primaryButton: .default(Text("Ok")),
+                secondaryButton: .cancel()
+            )
+        case let .error(title, error):
+            return Alert(title: Text(title), message: Text("\(error)"))
+        }
+    }
+
     private func stopChat() {
         Task {
             do {
                 try await apiStopChat()
                 await MainActor.run { m.chatRunning = false }
             } catch let error {
-                await MainActor.run { runChat = true }
-                alert = .error(title: "Error stopping chat", error: error)
+                await MainActor.run {
+                    runChat = true
+                    alert = .error(title: "Error stopping chat", error: responseError(error))
+                }
             }
         }
     }
@@ -210,10 +205,13 @@ struct DatabaseView: View {
             do {
                 let archivePath = try await exportChatArchive()
                 showShareSheet(items: [archivePath])
+                await MainActor.run { progressIndicator = false }
             } catch let error {
-                alert = .error(title: "Error exporting chat archive", error: error)
+                await MainActor.run {
+                    alert = .error(title: "Error exporting chat database", error: responseError(error))
+                    progressIndicator = false
+                }
             }
-            progressIndicator = false
         }
     }
 
@@ -222,30 +220,41 @@ struct DatabaseView: View {
             progressIndicator = true
             Task {
                 do {
-                    let config = ArchiveConfig(archivePath: archivePath.path)
-                    try await apiImportArchive(config: config)
-                    alert = .archiveImported
+                    try await apiDeleteStorage()
+                    do {
+                        let config = ArchiveConfig(archivePath: archivePath.path)
+                        try await apiImportArchive(config: config)
+                        await operationEnded(.archiveImported)
+                    } catch let error {
+                        await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
+                    }
                 } catch let error {
-                    alert = .error(title: "Error importing chat archive", error: error)
+                    await operationEnded(.error(title: "Error deleting chat database", error: responseError(error)))
                 }
-                m.chatDbChanged = true
-                progressIndicator = false
                 archivePath.stopAccessingSecurityScopedResource()
             }
         } else {
-            alert = .error(title: "Error accessing archive file")
+            alert = .error(title: "Error accessing database file")
         }
     }
 
     private func deleteChat() {
+        progressIndicator = true
         Task {
             do {
                 try await apiDeleteStorage()
-                alert = .chatDeleted
+                await operationEnded(.chatDeleted)
             } catch let error {
-                alert = .error(title: "Error deleting database", error: error)
+                await operationEnded(.error(title: "Error deleting database", error: responseError(error)))
             }
+        }
+    }
+
+    private func operationEnded(_ dbAlert: DatabaseAlert) async {
+        await MainActor.run {
             m.chatDbChanged = true
+            progressIndicator = false
+            alert = dbAlert
         }
     }
 
@@ -255,6 +264,7 @@ struct DatabaseView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 resetChatCtrl()
                 initializeChat(start: true)
+                m.chatDbChanged = false
             }
         } else {
             do {
@@ -263,7 +273,7 @@ struct DatabaseView: View {
                 chatLastStartGroupDefault.set(Date.now)
             } catch let error {
                 runChat = false
-                alert = .error(title: "Error starting chat", error: error)
+                alert = .error(title: "Error starting chat", error: responseError(error))
             }
         }
     }

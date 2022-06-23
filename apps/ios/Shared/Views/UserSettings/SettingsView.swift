@@ -84,7 +84,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("internaldrive") {
                             HStack {
-                                Text("Chat database (BETA)")
+                                Text("Database export & import")
                                 Spacer()
                                 if chatModel.chatRunning == false {
                                     Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
@@ -100,7 +100,9 @@ struct SettingsView: View {
                             CallSettings()
                                 .navigationTitle("Your calls")
                         } label: {
-                            settingsRow("video") { Text("Audio & video calls") }
+                            settingsRow("video") {
+                                Text("Audio & video calls")
+                            }
                         }
                     }
                     NavigationLink {
