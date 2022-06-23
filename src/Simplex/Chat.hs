@@ -207,7 +207,7 @@ processChatCommand = \case
     pure CRChatStopped
   APISetAppPhase phase -> withAgent (`setAgentPhase` phase) $> CRCmdOk
   ResubscribeAllConnections -> withUser (subscribeUserConnections resubscribeConnection) $> CRCmdOk
-  SetFilesFolder filesFolder' -> withUser $ \_ -> do
+  SetFilesFolder filesFolder' -> do
     createDirectoryIfMissing True filesFolder'
     ff <- asks filesFolder
     atomically . writeTVar ff $ Just filesFolder'
