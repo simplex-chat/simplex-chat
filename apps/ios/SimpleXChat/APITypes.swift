@@ -38,7 +38,6 @@ public enum ChatCommand {
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
     case apiUpdateProfile(profile: Profile)
-    case apiParseMarkdown(text: String)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -87,7 +86,6 @@ public enum ChatCommand {
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
-            case let .apiParseMarkdown(text): return "/_parse \(text)"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -136,7 +134,6 @@ public enum ChatCommand {
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
             case .apiUpdateProfile: return "apiUpdateProfile"
-            case .apiParseMarkdown: return "apiParseMarkdown"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -187,7 +184,6 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(chatInfo: ChatInfo)
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
-    case apiParsedMarkdown(formattedText: [FormattedText]?)
     case userContactLink(connReqContact: String)
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
@@ -252,7 +248,6 @@ public enum ChatResponse: Decodable, Error {
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
-            case .apiParsedMarkdown: return "apiParsedMarkdown"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
@@ -318,7 +313,6 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(chatInfo): return String(describing: chatInfo)
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
-            case let .apiParsedMarkdown(formattedText): return String(describing: formattedText)
             case let .userContactLink(connReq): return connReq
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails

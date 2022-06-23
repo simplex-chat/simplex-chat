@@ -24,7 +24,7 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
-let DEFAULT_CHAT_ARCHIVE_PATH = "chatArchivePath"
+let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 
@@ -42,6 +42,8 @@ let appDefaults: [String: Any] = [
 ]
 
 private var indent: CGFloat = 36
+
+let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -73,6 +75,7 @@ struct SettingsView: View {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
                 }
+                .disabled(chatModel.chatRunning != true)
                 
                 Section("Settings") {
                     if enableCalls {
@@ -99,6 +102,7 @@ struct SettingsView: View {
                         settingsRow("server.rack") { Text("SMP servers") }
                     }
                 }
+                .disabled(chatModel.chatRunning != true)
 
                 Section("Help") {
                     NavigationLink {
@@ -132,6 +136,7 @@ struct SettingsView: View {
                             Text("Chat with the developers")
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
@@ -141,6 +146,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
@@ -150,7 +156,7 @@ struct SettingsView: View {
                             .padding(.leading, indent)
                     }
                     NavigationLink {
-                        ExperimentalFeaturesView()
+                        ExperimentalFeaturesView(showSettings: $showSettings)
                             .navigationTitle("Experimental features")
                     } label: {
                         settingsRow("gauge") { Text("Experimental features") }
@@ -160,6 +166,7 @@ struct SettingsView: View {
                             notificationsIcon()
                             notificationsToggle(token)
                         }
+                        .disabled(chatModel.chatRunning != true)
                     }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }

@@ -33,9 +33,10 @@ class NotificationService: UNNotificationServiceExtension {
            let encNtfInfo = ntfData["message"] as? String,
            let _ = startChat() {
             apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo)
-            let content = receiveMessages()
-            contentHandler (content)
-            return
+            if let content = receiveMessages() {
+                contentHandler(content)
+                return
+            }
         }
 
         if let bestAttemptContent = bestAttemptContent {
@@ -68,6 +69,7 @@ func startChat() -> User? {
         do {
             try apiStartChat()
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            chatLastStartGroupDefault.set(Date.now)
             return user
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
@@ -78,40 +80,43 @@ func startChat() -> User? {
     return nil
 }
 
-func receiveMessages() -> UNNotificationContent {
+func receiveMessages() -> UNNotificationContent? {
     logger.debug("NotificationService receiveMessages started")
     while true {
-        let res = chatResponse(chat_recv_msg(getChatCtrl())!)
-        logger.debug("NotificationService receiveMessages: \(res.responseType)")
-        switch res {
-//        case let .newContactConnection(connection):
-//        case let .contactConnectionDeleted(connection):
-        case let .contactConnected(contact):
-            return createContactConnectedNtf(contact)
-//        case let .contactConnecting(contact):
-//            TODO profile update
-        case let .receivedContactRequest(contactRequest):
-            return createContactRequestNtf(contactRequest)
-//        case let .contactUpdated(toContact):
-//            TODO profile updated
-        case let .newChatItem(aChatItem):
-            let cInfo = aChatItem.chatInfo
-            let cItem = aChatItem.chatItem
-            return createMessageReceivedNtf(cInfo, cItem)
-//        case let .chatItemUpdated(aChatItem):
-//            TODO message updated
-//            let cInfo = aChatItem.chatInfo
-//            let cItem = aChatItem.chatItem
-//            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-//        case let .chatItemDeleted(_, toChatItem):
-//            TODO message updated
-//        case let .rcvFileComplete(aChatItem):
-//            TODO file received?
-//            let cInfo = aChatItem.chatInfo
-//            let cItem = aChatItem.chatItem
-//            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-        default:
-            logger.debug("NotificationService ignored event: \(res.responseType)")
+        if let res = recvSimpleXMsg() {
+            logger.debug("NotificationService receiveMessages: \(res.responseType)")
+            switch res {
+    //        case let .newContactConnection(connection):
+    //        case let .contactConnectionDeleted(connection):
+            case let .contactConnected(contact):
+                return createContactConnectedNtf(contact)
+    //        case let .contactConnecting(contact):
+    //            TODO profile update
+            case let .receivedContactRequest(contactRequest):
+                return createContactRequestNtf(contactRequest)
+    //        case let .contactUpdated(toContact):
+    //            TODO profile updated
+            case let .newChatItem(aChatItem):
+                let cInfo = aChatItem.chatInfo
+                let cItem = aChatItem.chatItem
+                return createMessageReceivedNtf(cInfo, cItem)
+    //        case let .chatItemUpdated(aChatItem):
+    //            TODO message updated
+    //            let cInfo = aChatItem.chatInfo
+    //            let cItem = aChatItem.chatItem
+    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+    //        case let .chatItemDeleted(_, toChatItem):
+    //            TODO message updated
+    //        case let .rcvFileComplete(aChatItem):
+    //            TODO file received?
+    //            let cInfo = aChatItem.chatInfo
+    //            let cItem = aChatItem.chatItem
+    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
+            default:
+                logger.debug("NotificationService ignored event: \(res.responseType)")
+            }
+        } else {
+            return nil
         }
     }
 }

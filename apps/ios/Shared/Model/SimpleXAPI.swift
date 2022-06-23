@@ -72,7 +72,7 @@ func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
 let msgDelay: Double = 7.5
 let maxTaskDuration: Double = 15
 
-private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     let endTask = beginBGTask()
     DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
     let r = f()
@@ -93,11 +93,9 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    if case .apiParseMarkdown = cmd {} else {
-        DispatchQueue.main.async {
-            ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
-            ChatModel.shared.terminalItems.append(.resp(.now, resp))
-        }
+    DispatchQueue.main.async {
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.resp(.now, resp))
     }
     return resp
 }
@@ -108,10 +106,10 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
     }
 }
 
-func chatRecvMsg() async -> ChatResponse {
+func chatRecvMsg() async -> ChatResponse? {
     await withCheckedContinuation { cont in
-        _ = withBGTask(bgDelay: msgDelay) {
-            let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
+        _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
+            let resp = recvSimpleXMsg()
             cont.resume(returning: resp)
             return resp
         }
@@ -338,12 +336,6 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
-func apiParseMarkdown(text: String) throws -> [FormattedText]? {
-    let r = chatSendCmdSync(.apiParseMarkdown(text: text))
-    if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
-    throw r
-}
-
 func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }
@@ -514,6 +506,7 @@ func startChat() {
         }
         ChatReceiver.shared.start()
         m.chatRunning = true
+        chatLastStartGroupDefault.set(Date.now)
     } catch {
         fatalError("Failed to start or load chats: \(error)")
     }
@@ -538,9 +531,10 @@ class ChatReceiver {
 
     func receiveMsgLoop() async {
         // TODO use function that has timeout
-        let msg = await chatRecvMsg()
-        self._lastMsgTime = .now
-        await processReceivedMsg(msg)
+        if let msg = await chatRecvMsg() {
+            self._lastMsgTime = .now
+            await processReceivedMsg(msg)
+        }
         if self.receiveMessages {
             do { try await Task.sleep(nanoseconds: 7_500_000) }
             catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }

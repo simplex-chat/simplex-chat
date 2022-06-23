@@ -392,17 +392,12 @@ struct ComposeView: View {
     }
 
     private func parseMessage(_ msg: String) -> URL? {
-        do {
-            let parsedMsg = try apiParseMarkdown(text: msg)
-            let uri = parsedMsg?.first(where: { ft in
-                ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
-            })
-            if let uri = uri { return URL(string: uri.text) }
-            else { return nil }
-        } catch {
-            logger.error("apiParseMarkdown error: \(error.localizedDescription)")
-            return nil
-        }
+        let parsedMsg = parseSimpleXMarkdown(msg)
+        let uri = parsedMsg?.first(where: { ft in
+            ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
+        })
+        if let uri = uri { return URL(string: uri.text) }
+        else { return nil }
     }
 
     private func isSimplexLink(_ link: String) -> Bool {

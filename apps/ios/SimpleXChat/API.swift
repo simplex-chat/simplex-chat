@@ -20,13 +20,53 @@ public func getChatCtrl() -> chat_ctrl {
     return chatController!
 }
 
-public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
-    var c = cmd.cmdString.cString(using: .utf8)!
-    return chatResponse(chat_send_cmd(getChatCtrl(), &c))
+public func resetChatCtrl() {
+    chatController = nil
 }
 
-public func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
-    let s = String.init(cString: cjson)
+public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
+    var c = cmd.cmdString.cString(using: .utf8)!
+    let cjson  = chat_send_cmd(getChatCtrl(), &c)!
+    return chatResponse(fromCString(cjson))
+}
+
+// in microseconds
+let MESSAGE_TIMEOUT: Int32 = 15_000_000
+
+public func recvSimpleXMsg() -> ChatResponse? {
+    if let cjson = chat_recv_msg_wait(getChatCtrl(), MESSAGE_TIMEOUT) {
+        let s = fromCString(cjson)
+        return s == "" ? nil : chatResponse(s)
+    }
+    return nil
+}
+
+public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_markdown(&c) {
+        if let d = fromCString(cjson).data(using: .utf8) {
+            do {
+                let r = try jsonDecoder.decode(ParsedMarkdown.self, from: d)
+                return r.formattedText
+            } catch {
+                logger.error("parseSimpleXMarkdown jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+struct ParsedMarkdown: Decodable {
+    var formattedText: [FormattedText]?
+}
+
+private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
+    let s = String.init(cString: c)
+    free(c)
+    return s
+}
+
+public func chatResponse(_ s: String) -> ChatResponse {
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
@@ -46,7 +86,6 @@ public func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
         }
         json = prettyJSON(j)
     }
-    free(cjson)
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 

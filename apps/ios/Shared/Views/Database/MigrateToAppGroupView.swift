@@ -39,7 +39,7 @@ struct MigrateToAppGroupView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State private var v3DBMigration = v3DBMigrationDefault.get()
     @State private var migrationError = ""
-    @AppStorage(DEFAULT_CHAT_ARCHIVE_PATH) private var chatArchivePath: String?
+    @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
 
     var body: some View {
@@ -148,10 +148,10 @@ struct MigrateToAppGroupView: View {
     func migrateDatabaseToV3() {
         v3DBMigration = .exporting
         let archiveTime = Date.now
-        let archivePath = getDocumentsDirectory().appendingPathComponent("simplex-chat.\(archiveTime.ISO8601Format()).zip").path
+        let archiveName = "simplex-chat.\(archiveTime.ISO8601Format()).zip"
         chatArchiveTime = archiveTime.timeIntervalSince1970
-        chatArchivePath = archivePath
-        let config = ArchiveConfig(archivePath: archivePath)
+        chatArchiveName = archiveName
+        let config = ArchiveConfig(archivePath: getDocumentsDirectory().appendingPathComponent(archiveName).path)
         Task {
             do {
                 try! await Task.sleep(nanoseconds: 2_000_000_000)
@@ -180,6 +180,21 @@ struct MigrateToAppGroupView: View {
     }
 }
 
+func exportChatArchive() async throws -> URL {
+    let archiveTime = Date.now
+    let ts = archiveTime.ISO8601Format(Date.ISO8601FormatStyle(timeSeparator: .omitted))
+    let archiveName = "simplex-chat.\(ts).zip"
+    let archivePath = getDocumentsDirectory().appendingPathComponent(archiveName)
+    let config = ArchiveConfig(archivePath: archivePath.path)
+    try await apiExportArchive(config: config)
+    let oldArchiveName = UserDefaults.standard.string(forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+    chatArchiveTimeDefault.set(archiveTime)
+    UserDefaults.standard.set(archiveName, forKey: DEFAULT_CHAT_ARCHIVE_NAME)
+    if let name = oldArchiveName {
+        try? FileManager.default.removeItem(atPath: getDocumentsDirectory().appendingPathComponent(name).path)
+    }
+    return archivePath
+}
 
 struct MigrateToGroupView_Previews: PreviewProvider {
     static var previews: some View {

@@ -31,7 +31,7 @@ struct ContentView: View {
                     } else {
                         OnboardingView(onboarding: step)
                     }
-                } else {
+                } else if !v3DBMigrationDefault.get().startChat {
                     MigrateToAppGroupView()
                 }
             }

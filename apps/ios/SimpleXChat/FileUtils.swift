@@ -124,25 +124,14 @@ private func saveFile(_ data: Data, _ fileName: String) -> String? {
 
 private func uniqueCombine(_ fileName: String) -> String {
     func tryCombine(_ fileName: String, _ n: Int) -> String {
-        let name = fileName.deletingPathExtension
-        let ext = fileName.pathExtension
+        let ns = fileName as NSString
+        let name = ns.deletingPathExtension
+        let ext = ns.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
         let f = "\(name)\(suffix).\(ext)"
         return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
     }
     return tryCombine(fileName, 0)
-}
-
-private extension String {
-    var ns: NSString {
-        return self as NSString
-    }
-    var pathExtension: String {
-        return ns.pathExtension
-    }
-    var deletingPathExtension: String {
-        return ns.deletingPathExtension
-    }
 }
 
 public func removeFile(_ fileName: String) {

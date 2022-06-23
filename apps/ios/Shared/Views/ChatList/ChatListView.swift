@@ -23,6 +23,7 @@ struct ChatListView: View {
                 ForEach(filteredChats()) { chat in
                     ChatListNavLink(chat: chat, showChatInfo: $showChatInfo)
                         .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -46,7 +47,11 @@ struct ChatListView: View {
                     SettingsButton()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NewChatButton()
+                    switch chatModel.chatRunning {
+                    case .some(true): NewChatButton()
+                    case .some(false): chatStoppedIcon()
+                    case .none: EmptyView()
+                    }
                 }
             }
         }
@@ -71,6 +76,17 @@ struct ChatListView: View {
                 (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
+    }
+}
+
+func chatStoppedIcon() -> some View {
+    Button {
+        AlertManager.shared.showAlertMsg(
+            title: "Chat is stopped",
+            message: "You can start chat via app settings in **Your chat database** page or by restarting the app"
+        )
+    } label: {
+        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
     }
 }
 

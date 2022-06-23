@@ -59,6 +59,28 @@ public let dbContainerGroupDefault = EnumDefault<DBContainer>(
     withDefault: .documents
 )
 
+public let chatLastStartGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_START)
+
+public class DateDefault {
+    var defaults: UserDefaults
+    var key: String
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String) {
+        self.defaults = defaults
+        self.key = forKey
+    }
+
+    public func get() -> Date {
+        let ts = defaults.double(forKey: key)
+        return Date(timeIntervalSince1970: ts)
+    }
+
+    public func set(_ ts: Date) {
+        defaults.set(ts.timeIntervalSince1970, forKey: key)
+        defaults.synchronize()
+    }
+}
+
 public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
     var defaults: UserDefaults
     var key: String
@@ -71,7 +93,7 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
     }
 
     public func get() -> T {
-        if let rawValue = groupDefaults.string(forKey: key),
+        if let rawValue = defaults.string(forKey: key),
            let value = T(rawValue: rawValue) {
             return value
         }
@@ -79,7 +101,7 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
     }
 
     public func set(_ value: T) {
-        groupDefaults.set(value.rawValue, forKey: key)
-        groupDefaults.synchronize()
+        defaults.set(value.rawValue, forKey: key)
+        defaults.synchronize()
     }
 }

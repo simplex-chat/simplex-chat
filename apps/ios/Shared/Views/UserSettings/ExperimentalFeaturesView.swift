@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ExperimentalFeaturesView: View {
     @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
+    @Binding var showSettings: Bool
 
     var body: some View {
         List {
@@ -19,7 +20,7 @@ struct ExperimentalFeaturesView: View {
                 }
             }
             NavigationLink {
-                DatabaseView()
+                DatabaseView(showSettings: $showSettings)
                     .navigationTitle("Your chat database")
             } label: {
                 settingsRow("internaldrive") { Text("Your chat database") }
@@ -30,6 +31,6 @@ struct ExperimentalFeaturesView: View {
 
 struct ExperimentalFeaturesView_Previews: PreviewProvider {
     static var previews: some View {
-        ExperimentalFeaturesView()
+        ExperimentalFeaturesView(showSettings: Binding.constant(false))
     }
 }
