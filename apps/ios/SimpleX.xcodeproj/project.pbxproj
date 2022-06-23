@@ -98,7 +98,6 @@
 		5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE4407827ADB701007B033A /* EmojiItemView.swift */; };
 		5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCE227DE9246000BD591 /* ComposeView.swift */; };
 		5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CEACCEC27DEA495000BD591 /* MsgContentView.swift */; };
-		5CFA59C128608A2700863A68 /* ImportArchiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFA59C028608A2700863A68 /* ImportArchiveView.swift */; };
 		5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */; };
 		5CFA59CA2864464A00863A68 /* libHSsimplex-chat-2.2.0-40J3CUJkXRXAsiR552cpHl-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CFA59C52864464A00863A68 /* libHSsimplex-chat-2.2.0-40J3CUJkXRXAsiR552cpHl-ghc8.10.7.a */; };
 		5CFA59CB2864464A00863A68 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CFA59C62864464A00863A68 /* libffi.a */; };
@@ -269,7 +268,6 @@
 		5CE4407827ADB701007B033A /* EmojiItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmojiItemView.swift; sourceTree = "<group>"; };
 		5CEACCE227DE9246000BD591 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
 		5CEACCEC27DEA495000BD591 /* MsgContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MsgContentView.swift; sourceTree = "<group>"; };
-		5CFA59C028608A2700863A68 /* ImportArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportArchiveView.swift; sourceTree = "<group>"; };
 		5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToAppGroupView.swift; sourceTree = "<group>"; };
 		5CFA59C52864464A00863A68 /* libHSsimplex-chat-2.2.0-40J3CUJkXRXAsiR552cpHl-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-2.2.0-40J3CUJkXRXAsiR552cpHl-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5CFA59C62864464A00863A68 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
@@ -597,7 +595,6 @@
 			isa = PBXGroup;
 			children = (
 				5C4B3B09285FB130003915F2 /* DatabaseView.swift */,
-				5CFA59C028608A2700863A68 /* ImportArchiveView.swift */,
 				5CFA59CF286477B400863A68 /* ChatArchiveView.swift */,
 				5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */,
 			);
@@ -856,7 +853,6 @@
 				5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */,
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
-				5CFA59C128608A2700863A68 /* ImportArchiveView.swift in Sources */,
 				5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */,
 				3C714777281C081000CB4D4B /* WebRTCView.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,

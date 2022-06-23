@@ -58,7 +58,7 @@ struct SettingsView: View {
     var body: some View {
         let user: User = chatModel.currentUser!
 
-        return NavigationView {
+        NavigationView {
             List {
                 Section("You") {
                     NavigationLink {
@@ -68,14 +68,31 @@ struct SettingsView: View {
                         ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
+                    .disabled(chatModel.chatRunning != true)
+
                     NavigationLink {
                         UserAddress()
                             .navigationTitle("Your chat address")
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+
+                    NavigationLink {
+                        DatabaseView(showSettings: $showSettings)
+                            .navigationTitle("Your chat database")
+                    } label: {
+                        settingsRow("internaldrive") {
+                            HStack {
+                                Text("Chat database (BETA)")
+                                Spacer()
+                                if chatModel.chatRunning == false {
+                                    Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                                }
+                            }
+                        }
+                    }
                 }
-                .disabled(chatModel.chatRunning != true)
                 
                 Section("Settings") {
                     if enableCalls {
@@ -156,7 +173,7 @@ struct SettingsView: View {
                             .padding(.leading, indent)
                     }
                     NavigationLink {
-                        ExperimentalFeaturesView(showSettings: $showSettings)
+                        ExperimentalFeaturesView()
                             .navigationTitle("Experimental features")
                     } label: {
                         settingsRow("gauge") { Text("Experimental features") }

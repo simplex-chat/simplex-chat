@@ -210,9 +210,8 @@ struct ComposeView: View {
             allowedContentTypes: [.data],
             allowsMultipleSelection: false
         ) { result in
-            if case .success = result {
+            if case let .success(files) = result, let fileURL = files.first {
                 do {
-                    let fileURL: URL = try result.get().first!
                     var fileSize: Int? = nil
                     if fileURL.startAccessingSecurityScopedResource() {
                         let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
