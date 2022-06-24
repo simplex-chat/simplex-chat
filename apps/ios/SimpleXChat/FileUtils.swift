@@ -17,13 +17,55 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
-func getDocumentsDirectory() -> URL {
-//    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+public func getDocumentsDirectory() -> URL {
+    FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+}
+
+func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 
+func getAppDirectory() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory()
+    : getDocumentsDirectory()
+//    getDocumentsDirectory()
+}
+
+let DB_FILE_PREFIX = "simplex_v1"
+
+func getLegacyDatabasePath() -> URL {
+    getDocumentsDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
+}
+
+public func getAppDatabasePath() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
+    : getLegacyDatabasePath()
+//    getLegacyDatabasePath()
+}
+
+public func hasLegacyDatabase() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let fm = FileManager.default
+    return fm.isReadableFile(atPath: dbPath.path + "_agent.db") &&
+           fm.isReadableFile(atPath: dbPath.path + "_chat.db")
+}
+
+public func removeLegacyDatabaseAndFiles() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let appFiles = getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    let fm = FileManager.default
+    let r1 = nil != (try? fm.removeItem(atPath: dbPath.path + "_agent.db"))
+    let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + "_chat.db"))
+    try? fm.removeItem(atPath: dbPath.path + "_agent.db.bak")
+    try? fm.removeItem(atPath: dbPath.path + "_chat.db.bak")
+    try? fm.removeItem(at: appFiles)
+    return r1 && r2
+}
+
 public func getAppFilesDirectory() -> URL {
-    getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
 func getAppFilePath(_ fileName: String) -> URL {
@@ -96,25 +138,14 @@ private func saveFile(_ data: Data, _ fileName: String) -> String? {
 
 private func uniqueCombine(_ fileName: String) -> String {
     func tryCombine(_ fileName: String, _ n: Int) -> String {
-        let name = fileName.deletingPathExtension
-        let ext = fileName.pathExtension
+        let ns = fileName as NSString
+        let name = ns.deletingPathExtension
+        let ext = ns.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
         let f = "\(name)\(suffix).\(ext)"
         return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
     }
     return tryCombine(fileName, 0)
-}
-
-private extension String {
-    var ns: NSString {
-        return self as NSString
-    }
-    var pathExtension: String {
-        return ns.pathExtension
-    }
-    var deletingPathExtension: String {
-        return ns.deletingPathExtension
-    }
 }
 
 public func removeFile(_ fileName: String) {

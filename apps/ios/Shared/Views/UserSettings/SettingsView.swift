@@ -24,6 +24,9 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
+let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
+let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
+let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -34,10 +37,13 @@ let appDefaults: [String: Any] = [
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
-    DEFAULT_EXPERIMENTAL_CALLS: false
+    DEFAULT_EXPERIMENTAL_CALLS: false,
+    DEFAULT_CHAT_V3_DB_MIGRATION: "offer"
 ]
 
 private var indent: CGFloat = 36
+
+let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -52,7 +58,7 @@ struct SettingsView: View {
     var body: some View {
         let user: User = chatModel.currentUser!
 
-        return NavigationView {
+        NavigationView {
             List {
                 Section("You") {
                     NavigationLink {
@@ -62,11 +68,29 @@ struct SettingsView: View {
                         ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
+                    .disabled(chatModel.chatRunning != true)
+
                     NavigationLink {
                         UserAddress()
                             .navigationTitle("Your chat address")
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
+                    }
+                    .disabled(chatModel.chatRunning != true)
+
+                    NavigationLink {
+                        DatabaseView(showSettings: $showSettings)
+                            .navigationTitle("Your chat database")
+                    } label: {
+                        settingsRow("internaldrive") {
+                            HStack {
+                                Text("Database export & import")
+                                Spacer()
+                                if chatModel.chatRunning == false {
+                                    Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -76,7 +100,9 @@ struct SettingsView: View {
                             CallSettings()
                                 .navigationTitle("Your calls")
                         } label: {
-                            settingsRow("video") { Text("Audio & video calls") }
+                            settingsRow("video") {
+                                Text("Audio & video calls")
+                            }
                         }
                     }
                     NavigationLink {
@@ -95,6 +121,7 @@ struct SettingsView: View {
                         settingsRow("server.rack") { Text("SMP servers") }
                     }
                 }
+                .disabled(chatModel.chatRunning != true)
 
                 Section("Help") {
                     NavigationLink {
@@ -128,6 +155,7 @@ struct SettingsView: View {
                             Text("Chat with the developers")
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
@@ -137,6 +165,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
@@ -156,6 +185,7 @@ struct SettingsView: View {
                             notificationsIcon()
                             notificationsToggle(token)
                         }
+                        .disabled(chatModel.chatRunning != true)
                     }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
@@ -261,9 +291,9 @@ struct SettingsView: View {
     }
 }
 
-func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
+func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.secondary)
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(color)
         content().padding(.leading, indent)
     }
 }

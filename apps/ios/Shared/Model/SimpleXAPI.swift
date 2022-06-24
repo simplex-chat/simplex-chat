@@ -72,7 +72,7 @@ func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
 let msgDelay: Double = 7.5
 let maxTaskDuration: Double = 15
 
-private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     let endTask = beginBGTask()
     DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
     let r = f()
@@ -93,11 +93,9 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    if case .apiParseMarkdown = cmd {} else {
-        DispatchQueue.main.async {
-            ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
-            ChatModel.shared.terminalItems.append(.resp(.now, resp))
-        }
+    DispatchQueue.main.async {
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.resp(.now, resp))
     }
     return resp
 }
@@ -108,10 +106,10 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
     }
 }
 
-func chatRecvMsg() async -> ChatResponse {
+func chatRecvMsg() async -> ChatResponse? {
     await withCheckedContinuation { cont in
-        _ = withBGTask(bgDelay: msgDelay) {
-            let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
+        _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
+            let resp = recvSimpleXMsg()
             cont.resume(returning: resp)
             return resp
         }
@@ -143,8 +141,8 @@ func apiStartChat() throws -> Bool {
     }
 }
 
-func apiStopChat() throws {
-    let r = chatSendCmdSync(.apiStopChat)
+func apiStopChat() async throws {
+    let r = await chatSendCmd(.apiStopChat)
     switch r {
     case .chatStopped: return
     default: throw r
@@ -161,6 +159,18 @@ func apiSetFilesFolder(filesFolder: String) throws {
     let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder))
     if case .cmdOk = r { return }
     throw r
+}
+
+func apiExportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiExportArchive(config: config))
+}
+
+func apiImportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiImportArchive(config: config))
+}
+
+func apiDeleteStorage() async throws {
+    try await sendCommandOkResp(.apiDeleteStorage)
 }
 
 func apiGetChats() throws -> [Chat] {
@@ -326,12 +336,6 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     }
 }
 
-func apiParseMarkdown(text: String) throws -> [FormattedText]? {
-    let r = chatSendCmdSync(.apiParseMarkdown(text: text))
-    if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
-    throw r
-}
-
 func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }
@@ -468,42 +472,42 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat() {
+func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
+        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
+        } else if start {
+            try startChat()
         } else {
-            startChat()
+            m.chatRunning = false
         }
     } catch {
-        fatalError("Failed to initialize chat controller or database: \(error)")
+        fatalError("Failed to initialize chat controller or database: \(responseError(error))")
     }
 }
 
-func startChat() {
+func startChat() throws {
     logger.debug("startChat")
-    do {
-        let m = ChatModel.shared
-        // TODO set file folder once, before chat is started
-        let justStarted = try apiStartChat()
-        if justStarted {
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            m.userAddress = try apiGetUserAddress()
-            m.userSMPServers = try getUserSMPServers()
-            m.chats = try apiGetChats()
-            withAnimation {
-                m.onboardingStage = m.chats.isEmpty
-                                    ? .step3_MakeConnection
-                                    : .onboardingComplete
-            }
+    let m = ChatModel.shared
+    // TODO set file folder once, before chat is started
+    let justStarted = try apiStartChat()
+    if justStarted {
+        m.userAddress = try apiGetUserAddress()
+        m.userSMPServers = try getUserSMPServers()
+        m.chats = try apiGetChats()
+        withAnimation {
+            m.onboardingStage = m.chats.isEmpty
+                                ? .step3_MakeConnection
+                                : .onboardingComplete
         }
-        ChatReceiver.shared.start()
-    } catch {
-        fatalError("Failed to start or load chats: \(error)")
     }
+    ChatReceiver.shared.start()
+    m.chatRunning = true
+    chatLastStartGroupDefault.set(Date.now)
 }
 
 class ChatReceiver {
@@ -524,9 +528,11 @@ class ChatReceiver {
     }
 
     func receiveMsgLoop() async {
-        let msg = await chatRecvMsg()
-        self._lastMsgTime = .now
-        await processReceivedMsg(msg)
+        // TODO use function that has timeout
+        if let msg = await chatRecvMsg() {
+            self._lastMsgTime = .now
+            await processReceivedMsg(msg)
+        }
         if self.receiveMessages {
             do { try await Task.sleep(nanoseconds: 7_500_000) }
             catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
@@ -697,7 +703,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
 //                CallController.shared.reportCallRemoteEnded(call: call)
             }
         case let .appPhase(appPhase):
-            setAppState(AppState(appPhase: appPhase))
+            appStateGroupDefault.set(AppState(appPhase: appPhase))
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

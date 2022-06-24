@@ -18,6 +18,9 @@ public enum ChatCommand {
     case apiStopChat
     case apiSetAppPhase(appPhase: AgentPhase)
     case setFilesFolder(filesFolder: String)
+    case apiExportArchive(config: ArchiveConfig)
+    case apiImportArchive(config: ArchiveConfig) 
+    case apiDeleteStorage
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
@@ -35,7 +38,6 @@ public enum ChatCommand {
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
     case apiUpdateProfile(profile: Profile)
-    case apiParseMarkdown(text: String)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -62,6 +64,9 @@ public enum ChatCommand {
             case .apiStopChat: return "/_stop"
             case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
+            case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
+            case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
@@ -81,7 +86,6 @@ public enum ChatCommand {
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
-            case let .apiParseMarkdown(text): return "/_parse \(text)"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -110,6 +114,9 @@ public enum ChatCommand {
             case .apiStopChat: return "apiStopChat"
             case .apiSetAppPhase: return "apiSetAppPhase"
             case .setFilesFolder: return "setFilesFolder"
+            case .apiExportArchive: return "apiExportArchive"
+            case .apiImportArchive: return "apiImportArchive"
+            case .apiDeleteStorage: return "apiDeleteStorage"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
@@ -127,7 +134,6 @@ public enum ChatCommand {
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
             case .apiUpdateProfile: return "apiUpdateProfile"
-            case .apiParseMarkdown: return "apiParseMarkdown"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -178,7 +184,6 @@ public enum ChatResponse: Decodable, Error {
     case chatCleared(chatInfo: ChatInfo)
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
-    case apiParsedMarkdown(formattedText: [FormattedText]?)
     case userContactLink(connReqContact: String)
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
@@ -243,7 +248,6 @@ public enum ChatResponse: Decodable, Error {
             case .chatCleared: return "chatCleared"
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
-            case .apiParsedMarkdown: return "apiParsedMarkdown"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
@@ -309,7 +313,6 @@ public enum ChatResponse: Decodable, Error {
             case let .chatCleared(chatInfo): return String(describing: chatInfo)
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
-            case let .apiParsedMarkdown(formattedText): return String(describing: formattedText)
             case let .userContactLink(connReq): return connReq
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
@@ -368,6 +371,16 @@ public enum AgentPhase: String, Codable {
     case active = "ACTIVE"
     case paused = "PAUSED"
     case suspended = "SUSPENDED"
+}
+
+public struct ArchiveConfig: Encodable {
+    var archivePath: String
+    var disableCompression: Bool?
+
+    public init(archivePath: String, disableCompression: Bool? = nil) {
+        self.archivePath = archivePath
+        self.disableCompression = disableCompression
+    }
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

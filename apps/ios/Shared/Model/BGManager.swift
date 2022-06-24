@@ -8,6 +8,7 @@
 
 import Foundation
 import BackgroundTasks
+import SimpleXChat
 
 private let receiveTaskId = "chat.simplex.app.receive"
 
@@ -71,7 +72,11 @@ class BGManager {
         }
         self.completed = false
         DispatchQueue.main.async {
-            initializeChat()
+            do {
+                try initializeChat(start: true)
+            } catch let error {
+                fatalError("Failed to start or load chats: \(responseError(error))")
+            }
             if ChatModel.shared.currentUser == nil {
                 completeReceiving("no current user")
                 return

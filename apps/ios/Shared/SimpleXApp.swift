@@ -25,6 +25,7 @@ struct SimpleXApp: App {
     init() {
         hs_init(0, nil)
         UserDefaults.standard.register(defaults: appDefaults)
+        setDbContainer()
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
     }
@@ -38,7 +39,11 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    initializeChat()
+                    do {
+                        try initializeChat(start: v3DBMigrationDefault.get().startChat)
+                    } catch let error {
+                        fatalError("Failed to start or load chats: \(responseError(error))")
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase \(String(describing: scenePhase))")
@@ -51,7 +56,7 @@ struct SimpleXApp: App {
                         }
                         doAuthenticate = false
                     case .active:
-                        setAppState(.active)
+                        appStateGroupDefault.set(.active)
                         apiSetAppPhase(appPhase: .active)
                         doAuthenticate = authenticationExpired()
                     default:
@@ -61,12 +66,34 @@ struct SimpleXApp: App {
         }
     }
 
+    private func setDbContainer() {
+// Uncomment and run once to open DB in app documents folder:
+        // dbContainerGroupDefault.set(.documents)
+        // v3DBMigrationDefault.set(.offer)
+// to create database in app documents folder also uncomment:
+        //  let legacyDatabase = true
+        let legacyDatabase = hasLegacyDatabase()
+        if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
+            dbContainerGroupDefault.set(.documents)
+            switch v3DBMigrationDefault.get() {
+            case .migrated: ()
+            default: v3DBMigrationDefault.set(.offer)
+            }
+            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
+        } else {
+            dbContainerGroupDefault.set(.group)
+            v3DBMigrationDefault.set(.ready)
+            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
+            logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
+        }
+    }
+
     private func pauseApp() {
-        setAppState(.pausing)
+        appStateGroupDefault.set(.pausing)
         apiSetAppPhase(appPhase: .paused)
         let endTask = beginBGTask {
-            if getAppState() != .active {
-                setAppState(.suspending)
+            if appStateGroupDefault.get() != .active {
+                appStateGroupDefault.set(.suspending)
                 apiSetAppPhase(appPhase: .suspended)
             }
         }

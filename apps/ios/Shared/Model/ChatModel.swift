@@ -15,6 +15,8 @@ import SimpleXChat
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var currentUser: User?
+    @Published var chatRunning: Bool?
+    @Published var chatDbChanged = false
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
