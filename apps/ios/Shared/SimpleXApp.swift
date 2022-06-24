@@ -67,19 +67,19 @@ struct SimpleXApp: App {
     }
 
     private func setDbContainer() {
-// Uncomment and run once to open DB in app documents
-//        dbContainerGroupDefault.set(.documents)
-//        v3DBMigrationDefault.set(.offer)
+// Uncomment and run once to open DB in app documents folder:
+        // dbContainerGroupDefault.set(.documents)
+        // v3DBMigrationDefault.set(.offer)
+// to create database in app documents folder also uncomment:
+        //  let legacyDatabase = true
         let legacyDatabase = hasLegacyDatabase()
         if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
-            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
             switch v3DBMigrationDefault.get() {
-            case .postponed: v3DBMigrationDefault.set(.offer)
-            case .exporting: v3DBMigrationDefault.set(.export_error)
-            case .migrating: v3DBMigrationDefault.set(.migration_error)
-            default: ()
+            case .migrated: ()
+            default: v3DBMigrationDefault.set(.offer)
             }
+            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
         } else {
             dbContainerGroupDefault.set(.group)
             v3DBMigrationDefault.set(.ready)

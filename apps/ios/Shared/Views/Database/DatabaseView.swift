@@ -163,7 +163,7 @@ struct DatabaseView: View {
                     stopChat()
                 },
                 secondaryButton: .cancel {
-                    runChat = false
+                    withAnimation { runChat = true }
                 }
             )
         case .importArchive:

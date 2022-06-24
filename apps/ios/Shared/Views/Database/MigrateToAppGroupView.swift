@@ -49,8 +49,8 @@ struct MigrateToAppGroupView: View {
             switch v3DBMigration {
             case .offer:
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("To support instant push notifications we have to relocate the database.")
-                    Text("If you need to use the chat, you can do it later by restarting the app.")
+                    Text("To support instant push notifications the chat database has to be migrated.")
+                    Text("If you need to use the chat now tap **Skip** below (you will be offered to migrate the database when you restart the app).")
                 }
                 .padding(.top, 56)
                 center {
@@ -70,10 +70,10 @@ struct MigrateToAppGroupView: View {
                 }
                 migrationProgress()
             case .export_error:
+                migrationFailed().padding(.top, 56)
                 center {
                     Text("Export error:").font(.headline)
                     Text(migrationError)
-                    Text("Please make the screenshot and send it to the developers to [chat@simplex.chat](mailto:chat@simplex.chat) or via chat.")
                 }
                 skipMigration()
             case .exported:
@@ -87,6 +87,11 @@ struct MigrateToAppGroupView: View {
                 }
                 migrationProgress()
             case .migration_error:
+                VStack(alignment: .leading, spacing: 16) {
+                    migrationFailed()
+                    Text("The created archive is available via app Settings / Database / Old database archive.")
+                }
+                .padding(.top, 56)
                 center {
                     Text("Migration error:").font(.headline)
                     Text(migrationError)
@@ -108,8 +113,8 @@ struct MigrateToAppGroupView: View {
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
-                            setV3DBMigration(.postponed)
-                            logger.error("Error starting chat \(String(describing: error))")
+                            setV3DBMigration(.migration_error)
+                            migrationError = "Error starting chat: \(responseError(error))"
                         }
                         deleteOldArchive()
                     } label: {
@@ -147,6 +152,10 @@ struct MigrateToAppGroupView: View {
         .frame(maxWidth: .infinity)
     }
 
+    private func migrationFailed() -> some View {
+        Text("Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat).")
+    }
+
     private func skipMigration() -> some View {
         ZStack {
             Button {
@@ -170,7 +179,7 @@ struct MigrateToAppGroupView: View {
     }
 
     func migrateDatabaseToV3() {
-        v3DBMigration = .exporting
+        setV3DBMigration(.exporting)
         let archiveTime = Date.now
         let archiveName = "simplex-chat.\(archiveTime.ISO8601Format()).zip"
         chatArchiveTime = archiveTime.timeIntervalSince1970
@@ -189,10 +198,10 @@ struct MigrateToAppGroupView: View {
             }
 
             do {
+                await MainActor.run { setV3DBMigration(.migrating) }
                 dbContainerGroupDefault.set(.group)
                 resetChatCtrl()
                 try initializeChat(start: false)
-                await MainActor.run { setV3DBMigration(.migrating) }
                 try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {

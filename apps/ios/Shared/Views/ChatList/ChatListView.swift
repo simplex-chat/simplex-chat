@@ -83,7 +83,7 @@ func chatStoppedIcon() -> some View {
     Button {
         AlertManager.shared.showAlertMsg(
             title: "Chat is stopped",
-            message: "You can start chat via app Settings / Chat database or by restarting the app"
+            message: "You can start chat via app Settings / Database or by restarting the app"
         )
     } label: {
         Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
