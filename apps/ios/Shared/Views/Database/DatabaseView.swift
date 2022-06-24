@@ -15,6 +15,7 @@ enum DatabaseAlert: Identifiable {
     case archiveImported
     case deleteChat
     case chatDeleted
+    case deleteLegacyDatabase
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -24,6 +25,7 @@ enum DatabaseAlert: Identifiable {
         case .archiveImported: return "archiveImported"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
+        case .deleteLegacyDatabase: return "deleteLegacyDatabase"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -39,6 +41,8 @@ struct DatabaseView: View {
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
+    @State private var dbContainer = dbContainerGroupDefault.get()
+    @State private var legacyDatabase = hasLegacyDatabase()
 
     var body: some View {
         ZStack {
@@ -52,7 +56,7 @@ struct DatabaseView: View {
     private func chatDatabaseView() -> some View {
         List {
             let stopped = m.chatRunning == false
-            Section("Run chat") {
+            Section {
                 settingsRow(
                     stopped ? "exclamationmark.octagon.fill" : "play.fill",
                     color: stopped ? .red : .green
@@ -69,7 +73,14 @@ struct DatabaseView: View {
                         }
                     }
                 }
+            } header: {
+                Text("Run chat")
+            } footer: {
+                if case .documents = dbContainer {
+                    Text("Database will be migrated when the app restarts")
+                }
             }
+
             Section {
                 settingsRow("square.and.arrow.up") {
                     Button {
@@ -115,6 +126,18 @@ struct DatabaseView: View {
                 )
             }
             .disabled(!stopped)
+
+            if case .group = dbContainer, legacyDatabase {
+                Section("Old database") {
+                    settingsRow("trash") {
+                        Button {
+                            alert = .deleteLegacyDatabase
+                        } label: {
+                            Text("Delete old database")
+                        }
+                    }
+                }
+            }
         }
         .onAppear { runChat = m.chatRunning ?? true }
         .alert(item: $alert) { item in databaseAlert(item) }
@@ -178,6 +201,15 @@ struct DatabaseView: View {
                 title: Text("Chat database deleted"),
                 message: Text("Restart the app to create a new chat profile"),
                 primaryButton: .default(Text("Ok")),
+                secondaryButton: .cancel()
+            )
+        case .deleteLegacyDatabase:
+            return Alert(
+                title: Text("Delete old database?"),
+                message: Text("The old database was not removed during the migration, it can be deleted."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteLegacyDatabase()
+                },
                 secondaryButton: .cancel()
             )
         case let .error(title, error):
@@ -247,6 +279,14 @@ struct DatabaseView: View {
             } catch let error {
                 await operationEnded(.error(title: "Error deleting database", error: responseError(error)))
             }
+        }
+    }
+
+    private func deleteLegacyDatabase() {
+        if removeLegacyDatabaseAndFiles() {
+            legacyDatabase = false
+        } else {
+            alert = .error(title: "Error deleting old database")
         }
     }
 

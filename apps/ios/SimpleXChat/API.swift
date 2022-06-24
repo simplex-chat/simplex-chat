@@ -10,9 +10,9 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
-public func getChatCtrl(_ db: DBContainer? = nil) -> chat_ctrl {
+public func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dbPath = getAppDatabasePath(db).path
+    let dbPath = getAppDatabasePath().path
     logger.debug("getChatCtrl DB path: \(dbPath)")
     var cstr = dbPath.cString(using: .utf8)!
     chatController = chat_init(&cstr)
@@ -20,9 +20,8 @@ public func getChatCtrl(_ db: DBContainer? = nil) -> chat_ctrl {
     return chatController!
 }
 
-public func resetChatCtrl(dbContainer: DBContainer? = nil) {
+public func resetChatCtrl() {
     chatController = nil
-    chatController = getChatCtrl(dbContainer)
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {

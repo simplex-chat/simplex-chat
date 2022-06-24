@@ -25,8 +25,8 @@ func getGroupContainerDirectory() -> URL {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
 }
 
-func getAppDirectory(_ db: DBContainer? = nil) -> URL {
-    (db ?? dbContainerGroupDefault.get()) == .group
+func getAppDirectory() -> URL {
+    dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory()
     : getDocumentsDirectory()
 //    getDocumentsDirectory()
@@ -35,11 +35,11 @@ func getAppDirectory(_ db: DBContainer? = nil) -> URL {
 let DB_FILE_PREFIX = "simplex_v1"
 
 func getLegacyDatabasePath() -> URL {
-    getAppDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
+    getDocumentsDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
 }
 
-public func getAppDatabasePath(_ db: DBContainer? = nil) -> URL {
-    (db ?? dbContainerGroupDefault.get()) == .group
+public func getAppDatabasePath() -> URL {
+    dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
     : getLegacyDatabasePath()
 //    getLegacyDatabasePath()
@@ -52,8 +52,20 @@ public func hasLegacyDatabase() -> Bool {
            fm.isReadableFile(atPath: dbPath.path + "_chat.db")
 }
 
-public func getAppFilesDirectory(_ db: DBContainer? = nil) -> URL {
-    getAppDirectory(db).appendingPathComponent("app_files", isDirectory: true)
+public func removeLegacyDatabaseAndFiles() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let appFiles = getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    let fm = FileManager.default
+    let r1 = nil != (try? fm.removeItem(atPath: dbPath.path + "_agent.db"))
+    let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + "_chat.db"))
+    try? fm.removeItem(atPath: dbPath.path + "_agent.db.bak")
+    try? fm.removeItem(atPath: dbPath.path + "_chat.db.bak")
+    try? fm.removeItem(at: appFiles)
+    return r1 && r2
+}
+
+public func getAppFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
 func getAppFilePath(_ fileName: String) -> URL {

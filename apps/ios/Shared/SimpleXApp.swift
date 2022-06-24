@@ -67,18 +67,24 @@ struct SimpleXApp: App {
     }
 
     private func setDbContainer() {
+// Uncomment and run once to open DB in app documents
 //        dbContainerGroupDefault.set(.documents)
 //        v3DBMigrationDefault.set(.offer)
-        if hasLegacyDatabase(), case .documents = dbContainerGroupDefault.get() {
+        let legacyDatabase = hasLegacyDatabase()
+        if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
-            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath())*.db")
-            if case .postponed = v3DBMigrationDefault.get() {
-                v3DBMigrationDefault.set(.offer)
+            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
+            switch v3DBMigrationDefault.get() {
+            case .postponed: v3DBMigrationDefault.set(.offer)
+            case .exporting: v3DBMigrationDefault.set(.export_error)
+            case .migrating: v3DBMigrationDefault.set(.migration_error)
+            default: ()
             }
         } else {
             dbContainerGroupDefault.set(.group)
             v3DBMigrationDefault.set(.ready)
-            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath())*.db")
+            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
+            logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
         }
     }
 

@@ -472,17 +472,18 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat(start: Bool, dbContainer: DBContainer? = nil) throws {
+func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
-// TODO uncomment
-//        try apiSetFilesFolder(filesFolder: getAppFilesDirectory(dbContainer).path)
+        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
         } else if start {
             try startChat()
+        } else {
+            m.chatRunning = false
         }
     } catch {
         fatalError("Failed to initialize chat controller or database: \(responseError(error))")
@@ -495,8 +496,6 @@ func startChat() throws {
     // TODO set file folder once, before chat is started
     let justStarted = try apiStartChat()
     if justStarted {
-        // TODO comment, move to initializeChat
-        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()

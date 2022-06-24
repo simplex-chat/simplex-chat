@@ -68,6 +68,7 @@ struct MigrateToAppGroupView: View {
                     ProgressView(value: 0.33)
                     Text("Exporting database archive...")
                 }
+                migrationProgress()
             case .export_error:
                 center {
                     Text("Export error:").font(.headline)
@@ -84,6 +85,7 @@ struct MigrateToAppGroupView: View {
                     ProgressView(value: 0.67)
                     Text("Migrating database archive...")
                 }
+                migrationProgress()
             case .migration_error:
                 center {
                     Text("Migration error:").font(.headline)
@@ -101,16 +103,15 @@ struct MigrateToAppGroupView: View {
                     Spacer()
                     Button {
                         do {
-                            dbContainerGroupDefault.set(.group)
-                            setV3DBMigration(.ready)
                             resetChatCtrl()
                             try initializeChat(start: true)
-                            deleteOldArchive()
+                            setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
-                            setV3DBMigration(.offer)
+                            setV3DBMigration(.postponed)
                             logger.error("Error starting chat \(String(describing: error))")
                         }
+                        deleteOldArchive()
                     } label: {
                         Text("Start using chat")
                             .font(.title)
@@ -133,6 +134,17 @@ struct MigrateToAppGroupView: View {
     private func center<Content>(@ViewBuilder c: @escaping () -> Content) -> some View where Content: View {
         VStack(alignment: .leading, spacing: 8) { c() }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func migrationProgress() -> some View {
+        VStack {
+            Spacer()
+            ProgressView().scaleEffect(2)
+            Spacer()
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func skipMigration() -> some View {
@@ -169,20 +181,26 @@ struct MigrateToAppGroupView: View {
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
-                await MainActor.run { setV3DBMigration(.export_error) }
-                migrationError = responseError(error)
+                await MainActor.run {
+                    setV3DBMigration(.export_error)
+                    migrationError = responseError(error)
+                }
                 return
             }
 
             do {
-                resetChatCtrl(dbContainer: .group)
-                try initializeChat(start: false, dbContainer: .group)
+                dbContainerGroupDefault.set(.group)
+                resetChatCtrl()
+                try initializeChat(start: false)
                 await MainActor.run { setV3DBMigration(.migrating) }
                 try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {
-                await MainActor.run { setV3DBMigration(.migration_error) }
-                migrationError = responseError(error)
+                dbContainerGroupDefault.set(.documents)
+                await MainActor.run {
+                    setV3DBMigration(.migration_error)
+                    migrationError = responseError(error)
+                }
             }
         }
     }
