@@ -8,6 +8,7 @@
 
 import Foundation
 import BackgroundTasks
+import SimpleXChat
 
 private let receiveTaskId = "chat.simplex.app.receive"
 
