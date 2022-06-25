@@ -540,9 +540,9 @@ processChatCommand = \case
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
-  APIRegisterToken token -> CRNtfTokenStatus <$> withUser (\_ -> withAgent (`registerNtfToken` token))
+  APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
+  APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
   APIVerifyToken token code nonce -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token code nonce) $> CRCmdOk
-  APIIntervalNofication token interval -> withUser $ \_ -> withAgent (\a -> enableNtfCron a token interval) $> CRCmdOk
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) $> CRCmdOk
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \user -> do
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
@@ -2277,10 +2277,10 @@ chatCommandP =
     <|> "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
-    <|> "/_ntf register " *> (APIRegisterToken <$> tokenP)
-    <|> "/_ntf verify " *> (APIVerifyToken <$> tokenP <* A.space <*> strP <* A.space <*> strP)
-    <|> "/_ntf interval " *> (APIIntervalNofication <$> tokenP <* A.space <*> A.decimal)
-    <|> "/_ntf delete " *> (APIDeleteToken <$> tokenP)
+    <|> "/_ntf get " $> APIGetNtfToken
+    <|> "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP)
+    <|> "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP)
+    <|> "/_ntf delete " *> (APIDeleteToken <$> strP)
     <|> "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP)
     <|> "/smp_servers default" $> SetUserSMPServers []
     <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
@@ -2346,10 +2346,6 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    tokenP = "apns " *> (DeviceToken PPApns <$> hexStringP)
-    hexStringP =
-      A.takeWhile (\c -> (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) >>= \s ->
-        if even (B.length s) then pure s else fail "odd number of hex characters"
     displayName = safeDecodeUtf8 <$> (B.cons <$> A.satisfy refChar <*> A.takeTill (== ' '))
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> A.takeByteString
     quotedMsg = A.char '(' *> A.takeTill (== ')') <* A.char ')' <* optional A.space

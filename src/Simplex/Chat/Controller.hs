@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
@@ -23,7 +24,6 @@ import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
-import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -128,9 +128,9 @@ data ChatCommand
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
-  | APIRegisterToken DeviceToken
+  | APIGetNtfToken
+  | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken ByteString C.CbNonce
-  | APIIntervalNofication DeviceToken Word16
   | APIDeleteToken DeviceToken
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | GetUserSMPServers
@@ -276,6 +276,7 @@ data ChatResponse
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
@@ -331,6 +332,9 @@ data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
   deriving (Show, Generic)
 
 instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
+crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}

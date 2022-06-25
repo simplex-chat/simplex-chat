@@ -1,5 +1,5 @@
 {
-  "https://github.com/simplex-chat/simplexmq.git"."c2f1dabcd0a2b8f7959b6946623c9620e036a103" = "1sa0b1hl8vcr43w2zqiab2lnssdbl0jpj5gd9n5mh59b5ynvlmdr";
+  "https://github.com/simplex-chat/simplexmq.git"."a8260290e7896a1e75ae595c255171175237cb06" = "0nmndbxzskyg7cmc7m8nviwalrq8144bzz6y7ywpaai36fdjmj5l";
   "https://github.com/simplex-chat/aeson.git"."3eb66f9a68f103b5f1489382aad89f5712a64db7" = "0kilkx59fl6c3qy3kjczqvm8c3f4n3p0bdk9biyflf51ljnzp4yp";
   "https://github.com/simplex-chat/haskell-terminal.git"."f708b00009b54890172068f168bf98508ffcd495" = "0zmq7lmfsk8m340g47g5963yba7i88n4afa6z93sg9px5jv1mijj";
   "https://github.com/zw3rk/android-support.git"."3c3a5ab0b8b137a072c98d3d0937cbdc96918ddb" = "1r6jyxbim3dsvrmakqfyxbd6ms6miaghpbwyl0sr6dzwpgaprz97";
