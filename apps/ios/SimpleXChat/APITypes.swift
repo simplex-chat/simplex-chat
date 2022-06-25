@@ -14,7 +14,7 @@ let jsonEncoder = getJSONEncoder()
 public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
-    case startChat
+    case startChat(subscribe: Bool)
     case apiStopChat
     case apiSetAppPhase(appPhase: AgentPhase)
     case setFilesFolder(filesFolder: String)
@@ -60,9 +60,9 @@ public enum ChatCommand {
             switch self {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
-            case .startChat: return "/_start"
+            case let .startChat(subscribe): return "/_start subscribe=\(subscribe ? "on" : "off")"
             case .apiStopChat: return "/_stop"
-            case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase)"
+            case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase.rawValue)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -367,7 +367,7 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
-public enum AgentPhase: String, Codable {
+public enum AgentPhase: String, Decodable {
     case active = "ACTIVE"
     case paused = "PAUSED"
     case suspended = "SUSPENDED"

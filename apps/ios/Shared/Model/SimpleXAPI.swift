@@ -133,7 +133,7 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat)
+    let r = chatSendCmdSync(.startChat(subscribe: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false

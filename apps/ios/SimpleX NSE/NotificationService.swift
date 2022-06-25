@@ -135,7 +135,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws {
-    let r = sendSimpleXCmd(.startChat)
+    let r = sendSimpleXCmd(.startChat(subscribe: false))
     switch r {
     case .chatStarted: return
     case .chatRunning: return
