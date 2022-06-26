@@ -95,14 +95,21 @@ struct SettingsView: View {
                 }
                 
                 Section("Settings") {
+                    NavigationLink {
+                        NotificationsView()
+                            .navigationTitle("Notifications")
+                    } label: {
+                        HStack {
+                            notificationsIcon()
+                            Text("Notifications")
+                        }
+                    }
                     if enableCalls {
                         NavigationLink {
                             CallSettings()
                                 .navigationTitle("Your calls")
                         } label: {
-                            settingsRow("video") {
-                                Text("Audio & video calls")
-                            }
+                            settingsRow("video") { Text("Audio & video calls") }
                         }
                     }
                     NavigationLink {
@@ -269,7 +276,7 @@ struct SettingsView: View {
             primaryButton: .destructive(Text("Confirm")) {
                 Task {
                     do {
-                        chatModel.tokenStatus = try await apiRegisterToken(token: token)
+                        chatModel.tokenStatus = try await apiRegisterToken(token: token, notificationMode: .instant)
                     } catch {
                         DispatchQueue.main.async {
                             useNotifications = false

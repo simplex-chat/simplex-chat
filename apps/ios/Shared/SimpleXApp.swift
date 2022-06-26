@@ -49,15 +49,20 @@ struct SimpleXApp: App {
                     logger.debug("scenePhase \(String(describing: scenePhase))")
                     switch (phase) {
                     case .background:
-                        pauseApp()
+                        suspendChat()
+                        if chatModel.chatRunning == true {
+                            ChatReceiver.shared.stop()
+                        }
                         BGManager.shared.schedule()
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
                     case .active:
-                        appStateGroupDefault.set(.active)
-                        apiSetAppPhase(appPhase: .active)
+                        activateChat()
+                        if chatModel.chatRunning == true {
+                            ChatReceiver.shared.start()
+                        }
                         doAuthenticate = authenticationExpired()
                     default:
                         break
@@ -86,18 +91,6 @@ struct SimpleXApp: App {
             logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
             logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
         }
-    }
-
-    private func pauseApp() {
-        appStateGroupDefault.set(.pausing)
-        apiSetAppPhase(appPhase: .paused)
-        let endTask = beginBGTask {
-            if appStateGroupDefault.get() != .active {
-                appStateGroupDefault.set(.suspending)
-                apiSetAppPhase(appPhase: .suspended)
-            }
-        }
-        DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
     }
 
     private func authenticationExpired() -> Bool {

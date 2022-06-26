@@ -30,6 +30,8 @@ final class ChatModel: ObservableObject {
     @Published var appOpenUrl: URL?
     @Published var deviceToken: String?
     @Published var tokenStatus = NtfTknStatus.new
+    @Published var notificationMode = NotificationMode.off
+    @Published var notificationPreview: NotificationPreviewMode? = .message
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
     @Published var activeCall: Call?

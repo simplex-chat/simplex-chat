@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
@@ -16,7 +17,8 @@ public enum ChatCommand {
     case createActiveUser(profile: Profile)
     case startChat(subscribe: Bool)
     case apiStopChat
-    case apiSetAppPhase(appPhase: AgentPhase)
+    case apiActivateChat
+    case apiSuspendChat(timeoutMicroseconds: Int)
     case setFilesFolder(filesFolder: String)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig) 
@@ -26,7 +28,7 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
-    case apiRegisterToken(token: String)
+    case apiRegisterToken(token: String, notificationMode: NotificationMode)
     case apiVerifyToken(token: String, code: String, nonce: String)
     case apiIntervalNofication(token: String, interval: Int)
     case apiDeleteToken(token: String)
@@ -62,7 +64,8 @@ public enum ChatCommand {
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
             case let .startChat(subscribe): return "/_start subscribe=\(subscribe ? "on" : "off")"
             case .apiStopChat: return "/_stop"
-            case let .apiSetAppPhase(appPhase): return "/_app phase \(appPhase.rawValue)"
+            case .apiActivateChat: return "/_app activate"
+            case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -74,7 +77,7 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
-            case let .apiRegisterToken(token): return "/_ntf register apns \(token)"
+            case let .apiRegisterToken(token, notificationMode): return "/_ntf register apns \(token) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, code, nonce): return "/_ntf verify apns \(token) \(code) \(nonce)"
             case let .apiIntervalNofication(token, interval): return "/_ntf interval apns \(token) \(interval)"
             case let .apiDeleteToken(token): return "/_ntf delete apns \(token)"
@@ -112,7 +115,8 @@ public enum ChatCommand {
             case .createActiveUser: return "createActiveUser"
             case .startChat: return "startChat"
             case .apiStopChat: return "apiStopChat"
-            case .apiSetAppPhase: return "apiSetAppPhase"
+            case .apiActivateChat: return "apiActivateChat"
+            case .apiSuspendChat: return "apiSuspendChat"
             case .setFilesFolder: return "setFilesFolder"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
@@ -172,7 +176,7 @@ public enum ChatResponse: Decodable, Error {
     case chatStarted
     case chatRunning
     case chatStopped
-    case appPhase(appPhase: AgentPhase)
+    case chatSuspended
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [String])
@@ -236,7 +240,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatStarted: return "chatStarted"
             case .chatRunning: return "chatRunning"
             case .chatStopped: return "chatStopped"
-            case .appPhase: return "appPhase"
+            case .chatSuspended: return "chatSuspended"
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .userSMPServers: return "userSMPServers"
@@ -301,7 +305,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatStarted: return noDetails
             case .chatRunning: return noDetails
             case .chatStopped: return noDetails
-            case let .appPhase(appPhase): return appPhase.rawValue
+            case .chatSuspended: return noDetails
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .userSMPServers(smpServers): return String(describing: smpServers)
@@ -367,12 +371,6 @@ struct ComposedMessage: Encodable {
     var msgContent: MsgContent
 }
 
-public enum AgentPhase: String, Decodable {
-    case active = "ACTIVE"
-    case paused = "PAUSED"
-    case suspended = "SUSPENDED"
-}
-
 public struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
@@ -381,6 +379,47 @@ public struct ArchiveConfig: Encodable {
         self.archivePath = archivePath
         self.disableCompression = disableCompression
     }
+}
+
+public protocol SelectableItem: Hashable, Identifiable {
+    var label: LocalizedStringKey { get }
+    static var values: [Self] { get }
+}
+
+public enum NotificationMode: String, SelectableItem {
+    case off = "OFF"
+    case periodic = "PERIODIC"
+    case instant = "INSTANT"
+
+    public var label: LocalizedStringKey {
+        switch self {
+        case .off: return "Off"
+        case .periodic: return "Periodically"
+        case .instant: return "Instantly"
+        }
+    }
+
+    public var id: String { self.rawValue }
+
+    public static var values: [NotificationMode] = [.instant, .periodic, .off]
+}
+
+public enum NotificationPreviewMode: String, SelectableItem {
+    case hidden
+    case contact
+    case message
+
+    public var label: LocalizedStringKey {
+        switch self {
+        case .hidden: return "Hidden"
+        case .contact: return "Contact"
+        case .message: return "Message"
+        }
+    }
+
+    public var id: String { self.rawValue }
+
+    public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
 public func decodeJSON<T: Decodable>(_ json: String) -> T? {

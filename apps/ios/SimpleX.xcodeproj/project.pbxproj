@@ -63,6 +63,8 @@
 		5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA91282713FD00B3292C /* CreateProfile.swift */; };
 		5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA952827143500B3292C /* MakeConnection.swift */; };
 		5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA992827FD8800B3292C /* HowItWorks.swift */; };
+		5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E42868AA7F001FD2EF /* SuspendChat.swift */; };
+		5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E62868D76D001FD2EF /* NotificationsView.swift */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
@@ -236,6 +238,8 @@
 		5CB0BA91282713FD00B3292C /* CreateProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateProfile.swift; sourceTree = "<group>"; };
 		5CB0BA952827143500B3292C /* MakeConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MakeConnection.swift; sourceTree = "<group>"; };
 		5CB0BA992827FD8800B3292C /* HowItWorks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorks.swift; sourceTree = "<group>"; };
+		5CB346E42868AA7F001FD2EF /* SuspendChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendChat.swift; sourceTree = "<group>"; };
+		5CB346E62868D76D001FD2EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -405,6 +409,7 @@
 				5C2E260627A2941F00F70299 /* SimpleXAPI.swift */,
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
 				5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */,
+				5CB346E42868AA7F001FD2EF /* SuspendChat.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -506,6 +511,7 @@
 			children = (
 				5CB924D327A853F100ACCCDD /* SettingsButton.swift */,
 				5CB924D627A8563F00ACCCDD /* SettingsView.swift */,
+				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
 				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
 				5CB924E327A8683A00ACCCDD /* UserAddress.swift */,
@@ -832,6 +838,7 @@
 				5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */,
 				5CB0BA962827143500B3292C /* MakeConnection.swift in Sources */,
 				5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */,
+				5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */,
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,
@@ -847,6 +854,7 @@
 				5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */,
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
+				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
 				5CCD403A27A5F9BE00368C90 /* CreateGroupView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
