@@ -60,7 +60,6 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Client (NtfServer)
-import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), PushProvider (..))
 import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..))
 import qualified Simplex.Messaging.Protocol as SMP
@@ -205,7 +204,8 @@ processChatCommand = \case
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
-  APISetAppPhase phase -> withAgent (`setAgentPhase` phase) $> CRCmdOk
+  APIActivateChat -> withAgent activateAgent $> CRCmdOk
+  APISuspendChat t -> withAgent (`suspendAgent` t) $> CRCmdOk
   ResubscribeAllConnections -> withUser (subscribeUserConnections resubscribeConnection) $> CRCmdOk
   SetFilesFolder filesFolder' -> do
     createDirectoryIfMissing True filesFolder'
@@ -1096,7 +1096,7 @@ processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
 processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
-  PHASE phase -> toView $ CRAppPhase phase
+  SUSPENDED -> toView CRChatSuspended
   _ -> pure ()
   where
     serverEvent srv@SMP.ProtocolServer {host, port} conns event str = do
@@ -2250,7 +2250,8 @@ chatCommandP =
     <|> "/_start subscribe=" *> (StartChat <$> ("on" $> True <|> "off" $> False))
     <|> "/_start" $> StartChat True
     <|> "/_stop" $> APIStopChat
-    <|> "/_app phase " *> (APISetAppPhase <$> strP)
+    <|> "/_app activate" $> APIActivateChat
+    <|> "/_app suspend " *> (APISuspendChat <$> A.decimal)
     <|> "/_resubscribe all" $> ResubscribeAllConnections
     <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
     <|> "/_db export " *> (APIExportArchive <$> jsonP)
