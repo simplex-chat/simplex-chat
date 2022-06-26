@@ -101,7 +101,8 @@ data ChatCommand
   | CreateActiveUser Profile
   | StartChat {subscribeConnections :: Bool}
   | APIStopChat
-  | APISetAppPhase AgentPhase
+  | APIActivateChat
+  | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
   | APIExportArchive ArchiveConfig
@@ -185,7 +186,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
-  | CRAppPhase {appPhase :: AgentPhase}
+  | CRChatSuspended
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
