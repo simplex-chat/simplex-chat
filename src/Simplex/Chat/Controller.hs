@@ -147,7 +147,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
-  | AddressAutoAccept Bool
+  | AddressAutoAccept Bool (Maybe MsgContent)
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
@@ -206,8 +206,8 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool}
-  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool}
+  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
+  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}

@@ -79,8 +79,8 @@ responseToView testView = \case
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink cReqUri _ -> connReqContact_ "Your chat address:" cReqUri
-  CRUserContactLinkUpdated _ autoAccept -> ["auto_accept " <> if autoAccept then "on" else "off"]
+  CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
+  CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
@@ -360,6 +360,11 @@ connReqContact_ intro cReq =
     "to show it again: " <> highlight' "/sa",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+
+autoAcceptStatus_ :: Bool -> Maybe MsgContent -> [StyledString]
+autoAcceptStatus_ autoAccept autoReply =
+  ("auto_accept " <> if autoAccept then "on" else "off") :
+  maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
