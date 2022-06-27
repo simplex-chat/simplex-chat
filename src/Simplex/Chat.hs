@@ -52,7 +52,7 @@ import Simplex.Chat.Options (ChatOpts (..), smpServersP)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -592,9 +592,9 @@ processChatCommand = \case
       withStore' (`deleteUserContactLink` userId)
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
-    uncurry CRUserContactLink <$> withStore (`getUserContactLink` userId)
-  AddressAutoAccept onOff -> withUser $ \User {userId} -> do
-    uncurry CRUserContactLinkUpdated <$> withStore (\db -> updateUserContactLinkAutoAccept db userId onOff)
+    uncurry3 CRUserContactLink <$> withStore (`getUserContactLink` userId)
+  AddressAutoAccept onOff msgContent -> withUser $ \User {userId} -> do
+    uncurry3 CRUserContactLinkUpdated <$> withStore (\db -> updateUserContactLinkAutoAccept db userId onOff msgContent)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -996,9 +996,9 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
-acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, xContactId} = do
+acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
-  withStore' $ \db -> createAcceptedContact db userId connId cName profileId p xContactId
+  withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
 agentSubscriber user subConns = do
@@ -1136,7 +1136,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId} = \case
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink} = \case
       Nothing -> case agentMsg of
         CONF confId connInfo -> do
           saveConnInfo conn connInfo
@@ -1205,6 +1205,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               toView $ CRContactConnected ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
+              forM_ viaUserContactLink $ \userContactLinkId -> do
+                withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
+                  Just (_, True, Just mc) -> do
+                    msg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
+                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
+                    toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+                  _ -> pure ()
             Just (gInfo, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m
@@ -1438,7 +1445,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withStore (\db -> createOrUpdateContactRequest db userId userContactLinkId invId p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
-              (_, autoAccept) <- withStore $ \db -> getUserContactLink db userId
+              (_, autoAccept, _) <- withStore $ \db -> getUserContactLink db userId
               if autoAccept
                 then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
                 else do
@@ -2325,7 +2332,7 @@ chatCommandP =
     <|> ("/address" <|> "/ad") $> CreateMyAddress
     <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
     <|> ("/show_address" <|> "/sa") $> ShowMyAddress
-    <|> "/auto_accept " *> (AddressAutoAccept <$> onOffP)
+    <|> "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> optional (A.space *> msgContentP))
     <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
     <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
     <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown

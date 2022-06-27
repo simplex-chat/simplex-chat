@@ -79,8 +79,8 @@ responseToView testView = \case
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink cReqUri _ -> connReqContact_ "Your chat address:" cReqUri
-  CRUserContactLinkUpdated _ autoAccept -> ["auto_accept " <> if autoAccept then "on" else "off"]
+  CRUserContactLink cReqUri _ _ -> connReqContact_ "Your chat address:" cReqUri
+  CRUserContactLinkUpdated _ autoAccept _ -> ["auto_accept " <> if autoAccept then "on" else "off"]
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
