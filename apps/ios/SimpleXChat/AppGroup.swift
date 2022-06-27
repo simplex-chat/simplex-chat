@@ -19,27 +19,9 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public enum AppState: String {
     case active
-    case pausing
-    case paused
+    case bgRefresh
     case suspending
     case suspended
-
-    public init(appPhase: AgentPhase) {
-        switch appPhase {
-        case .active: self = .active
-        case .paused: self = .paused
-        case .suspended: self = .suspended
-        }
-    }
-
-    public var running: Bool {
-        switch self {
-        case .paused: return false
-        case .suspending: return false
-        case .suspended: return false
-        default: return true
-        }
-    }
 }
 
 public enum DBContainer: String {

@@ -26,7 +26,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if useNotifications {
             Task {
                 do {
-                    m.tokenStatus = try await apiRegisterToken(token: token)
+                    m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: .instant)
                 } catch {
                     logger.error("apiRegisterToken error: \(responseError(error))")
                 }

@@ -17,11 +17,14 @@ private let waitForMessages: TimeInterval = 6
 
 private let bgRefreshInterval: TimeInterval = 450
 
+private let maxTimerCount = 9
+
 class BGManager {
     static let shared = BGManager()
     var chatReceiver: ChatReceiver?
     var bgTimer: Timer?
     var completed = true
+    var timerCount = 0
 
     func register() {
         logger.debug("BGManager.register")
@@ -60,6 +63,8 @@ class BGManager {
                 self.chatReceiver = nil
                 self.bgTimer?.invalidate()
                 self.bgTimer = nil
+                self.timerCount = 0
+                suspendBgRefresh()
                 complete()
             }
         }
@@ -82,14 +87,18 @@ class BGManager {
                 return
             }
             logger.debug("BGManager.receiveMessages: starting chat")
+            activateChat(appState: .bgRefresh)
             let cr = ChatReceiver()
             self.chatReceiver = cr
             cr.start()
             RunLoop.current.add(Timer(timeInterval: 2, repeats: true) { timer in
                 logger.debug("BGManager.receiveMessages: timer")
                 self.bgTimer = timer
+                self.timerCount += 1
                 if cr.lastMsgTime.distance(to: Date.now) >= waitForMessages {
                     completeReceiving("timer (no messages after \(waitForMessages) seconds)")
+                } else if self.timerCount >= maxTimerCount {
+                    completeReceiving("timer (called \(maxTimerCount) times")
                 }
             }, forMode: .default)
         }

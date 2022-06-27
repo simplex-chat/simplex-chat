@@ -149,10 +149,16 @@ func apiStopChat() async throws {
     }
 }
 
-func apiSetAppPhase(appPhase: AgentPhase) {
-    let r = chatSendCmdSync(.apiSetAppPhase(appPhase: appPhase))
+func apiActivateChat() {
+    let r = chatSendCmdSync(.apiActivateChat)
     if case .cmdOk = r { return }
-    logger.error("apiSetAppPhase error: \(String(describing: r))")
+    logger.error("apiActivateChat error: \(String(describing: r))")
+}
+
+func apiSuspendChat(timeoutMicroseconds: Int) {
+    let r = chatSendCmdSync(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
+    if case .cmdOk = r { return }
+    logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
 func apiSetFilesFolder(filesFolder: String) throws {
@@ -220,8 +226,8 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: String) async throws -> NtfTknStatus {
-    let r = await chatSendCmd(.apiRegisterToken(token: token))
+func apiRegisterToken(token: String, notificationMode: NotificationMode) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
     if case let .ntfTokenStatus(status) = r { return status }
     throw r
 }
@@ -702,8 +708,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.callCommand = .end
 //                CallController.shared.reportCallRemoteEnded(call: call)
             }
-        case let .appPhase(appPhase):
-            appStateGroupDefault.set(AppState(appPhase: appPhase))
+        case .chatSuspended:
+            chatSuspended()
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

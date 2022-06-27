@@ -221,6 +221,7 @@ struct DatabaseView: View {
         Task {
             do {
                 try await apiStopChat()
+                ChatReceiver.shared.stop()
                 await MainActor.run { m.chatRunning = false }
             } catch let error {
                 await MainActor.run {
@@ -315,6 +316,7 @@ struct DatabaseView: View {
                 _ = try apiStartChat()
                 runChat = true
                 m.chatRunning = true
+                ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
             } catch let error {
                 runChat = false
