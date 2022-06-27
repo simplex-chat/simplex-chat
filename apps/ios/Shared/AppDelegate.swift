@@ -21,12 +21,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
-        m.deviceToken = token
+        let deviceToken = DeviceToken(env: pushEnvironment, token: token)
+        m.deviceToken = deviceToken
         let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
         if useNotifications {
             Task {
                 do {
-                    m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: .instant)
+                    m.tokenStatus = try await apiRegisterToken(token: deviceToken, notificationMode: .instant)
                 } catch {
                     logger.error("apiRegisterToken error: \(responseError(error))")
                 }
@@ -53,7 +54,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                         let m = ChatModel.shared
                         do {
                             if case .active = m.tokenStatus {} else { m.tokenStatus = .confirmed }
-                            try await apiVerifyToken(token: token, code: verification, nonce: nonce)
+                            try await apiVerifyToken(token: token, nonce: nonce, code: verification)
                             m.tokenStatus = .active
                             try await apiIntervalNofication(token: token, interval: 20)
                         } catch {

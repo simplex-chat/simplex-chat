@@ -65,6 +65,7 @@
 		5CB0BA9A2827FD8800B3292C /* HowItWorks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB0BA992827FD8800B3292C /* HowItWorks.swift */; };
 		5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E42868AA7F001FD2EF /* SuspendChat.swift */; };
 		5CB346E72868D76D001FD2EF /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E62868D76D001FD2EF /* NotificationsView.swift */; };
+		5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */; };
 		5CB924D427A853F100ACCCDD /* SettingsButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D327A853F100ACCCDD /* SettingsButton.swift */; };
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
@@ -240,6 +241,7 @@
 		5CB0BA992827FD8800B3292C /* HowItWorks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowItWorks.swift; sourceTree = "<group>"; };
 		5CB346E42868AA7F001FD2EF /* SuspendChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendChat.swift; sourceTree = "<group>"; };
 		5CB346E62868D76D001FD2EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
+		5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushEnvironment.swift; sourceTree = "<group>"; };
 		5CB924D327A853F100ACCCDD /* SettingsButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsButton.swift; sourceTree = "<group>"; };
 		5CB924D627A8563F00ACCCDD /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5CB924E027A867BA00ACCCDD /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
@@ -410,6 +412,7 @@
 				5C35CFC727B2782E00FB6C6D /* BGManager.swift */,
 				5C35CFCA27B2E91D00FB6C6D /* NtfManager.swift */,
 				5CB346E42868AA7F001FD2EF /* SuspendChat.swift */,
+				5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -850,6 +853,7 @@
 				5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
+				5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */,
 				5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */,
 				5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */,
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,

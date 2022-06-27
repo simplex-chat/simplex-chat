@@ -131,7 +131,7 @@ data ChatCommand
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
-  | APIVerifyToken DeviceToken ByteString C.CbNonce
+  | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | GetUserSMPServers

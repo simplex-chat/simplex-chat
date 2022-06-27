@@ -28,10 +28,10 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
-    case apiRegisterToken(token: String, notificationMode: NotificationMode)
-    case apiVerifyToken(token: String, code: String, nonce: String)
-    case apiIntervalNofication(token: String, interval: Int)
-    case apiDeleteToken(token: String)
+    case apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode)
+    case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
+    case apiIntervalNofication(token: DeviceToken, interval: Int)
+    case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
@@ -77,10 +77,10 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
-            case let .apiRegisterToken(token, notificationMode): return "/_ntf register apns \(token) \(notificationMode.rawValue)"
-            case let .apiVerifyToken(token, code, nonce): return "/_ntf verify apns \(token) \(code) \(nonce)"
-            case let .apiIntervalNofication(token, interval): return "/_ntf interval apns \(token) \(interval)"
-            case let .apiDeleteToken(token): return "/_ntf delete apns \(token)"
+            case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
+            case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
+            case let .apiIntervalNofication(token, interval): return "/_ntf interval \(token.cmdString) \(interval)"
+            case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
@@ -384,6 +384,32 @@ public struct ArchiveConfig: Encodable {
 public protocol SelectableItem: Hashable, Identifiable {
     var label: LocalizedStringKey { get }
     static var values: [Self] { get }
+}
+
+public struct DeviceToken {
+    var env: PushEnvironment
+    var token: String
+
+    public init(env: PushEnvironment, token: String) {
+        self.env = env
+        self.token = token
+    }
+
+    public var cmdString: String {
+        "\(env.pushProvider) \(token)"
+    }
+}
+
+public enum PushEnvironment: String {
+    case development
+    case production
+
+    public var pushProvider: String {
+        switch self {
+        case .development: return "apns_dev"
+        case .production: return "apns_prod"
+        }
+    }
 }
 
 public enum NotificationMode: String, SelectableItem {
