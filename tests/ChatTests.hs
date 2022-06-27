@@ -82,6 +82,7 @@ chatTests = do
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
+    it "auto-reply message" testAutoReplyMessage
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -1772,6 +1773,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
 
     alice ##> "/sa"
     cLink' <- getContactLink alice False
+    alice <## "auto_accept off"
     cLink' `shouldBe` cLink
 
     alice ##> "/da"
@@ -1802,6 +1804,28 @@ testDeleteConnectionRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? bob
     cath ##> ("/c " <> cLink')
     alice <#? cath
+
+testAutoReplyMessage :: IO ()
+testAutoReplyMessage = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    alice ##> "/auto_accept on text hello!"
+    alice <## "auto_accept on"
+    alice <## "auto reply:"
+    alice <## "hello!"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting contact request..."
+    concurrentlyN_
+      [ do
+          bob <## "alice (Alice): contact is connected"
+          bob <# "alice> hello!",
+        do
+          alice <## "bob (Bob): contact is connected"
+          alice <# "@bob hello!"
+      ]
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
