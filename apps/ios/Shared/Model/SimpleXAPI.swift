@@ -226,21 +226,21 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: String, notificationMode: NotificationMode) async throws -> NtfTknStatus {
+func apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode) async throws -> NtfTknStatus {
     let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
     if case let .ntfTokenStatus(status) = r { return status }
     throw r
 }
 
-func apiVerifyToken(token: String, code: String, nonce: String) async throws {
-    try await sendCommandOkResp(.apiVerifyToken(token: token, code: code, nonce: nonce))
+func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throws {
+    try await sendCommandOkResp(.apiVerifyToken(token: token, nonce: nonce, code: code))
 }
 
-func apiIntervalNofication(token: String, interval: Int) async throws {
+func apiIntervalNofication(token: DeviceToken, interval: Int) async throws {
     try await sendCommandOkResp(.apiIntervalNofication(token: token, interval: interval))
 }
 
-func apiDeleteToken(token: String) async throws {
+func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 

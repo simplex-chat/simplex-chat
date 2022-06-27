@@ -234,7 +234,7 @@ struct SettingsView: View {
             .foregroundColor(color)
     }
 
-    private func notificationsToggle(_ token:  String) -> some View {
+    private func notificationsToggle(_ token: DeviceToken) -> some View {
         Toggle("Check messages", isOn: $useNotifications)
             .onChange(of: useNotifications) { enable in
                 if enable {
@@ -269,7 +269,7 @@ struct SettingsView: View {
             }
     }
 
-    private func enableNotificationsAlert(_ token: String) -> Alert {
+    private func enableNotificationsAlert(_ token: DeviceToken) -> Alert {
         Alert(
             title: Text("Enable notifications? (BETA)"),
             message: Text("The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server."),

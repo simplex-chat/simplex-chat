@@ -28,7 +28,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
     @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
-    @Published var deviceToken: String?
+    @Published var deviceToken: DeviceToken?
     @Published var tokenStatus = NtfTknStatus.new
     @Published var notificationMode = NotificationMode.off
     @Published var notificationPreview: NotificationPreviewMode? = .message
