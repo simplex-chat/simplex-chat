@@ -236,10 +236,6 @@ func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throw
     try await sendCommandOkResp(.apiVerifyToken(token: token, nonce: nonce, code: code))
 }
 
-func apiIntervalNofication(token: DeviceToken, interval: Int) async throws {
-    try await sendCommandOkResp(.apiIntervalNofication(token: token, interval: interval))
-}
-
 func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
