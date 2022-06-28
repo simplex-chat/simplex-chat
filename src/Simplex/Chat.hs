@@ -103,7 +103,7 @@ _defaultSMPServers =
     ]
 
 _defaultNtfServers :: [NtfServer]
-_defaultNtfServers = ["smp://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@139.162.221.251"]
+_defaultNtfServers = ["smp://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im"]
 
 maxImageSize :: Integer
 maxImageSize = 236700
