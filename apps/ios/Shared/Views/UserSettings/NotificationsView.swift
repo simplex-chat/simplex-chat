@@ -12,7 +12,8 @@ import SimpleXChat
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
     @State private var notificationMode: NotificationMode?
-    @State private var alert: NotificationMode?
+    @State private var showAlert: NotificationAlert?
+    @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
 
     var body: some View {
         List {
@@ -21,7 +22,7 @@ struct NotificationsView: View {
                     List {
                         Section {
                             SelectionListView(list: NotificationMode.values, selection: $notificationMode) { mode in
-                                alert = mode
+                                showAlert = .setMode(mode: mode)
                             }
                         } footer: {
                             VStack(alignment: .leading) {
@@ -35,7 +36,13 @@ struct NotificationsView: View {
                     }
                     .navigationTitle("Send notifications")
                     .navigationBarTitleDisplayMode(.inline)
-                    .alert(item: $alert) { notificationAlert($0) }
+                    .alert(item: $showAlert) { alert in
+                        if let token = m.deviceToken {
+                            return notificationAlert(alert, token)
+                        } else {
+                            return  Alert(title: Text("No device token!"))
+                        }
+                    }
                     .onAppear { notificationMode = m.notificationMode }
                 } label: {
                     HStack {
@@ -68,44 +75,67 @@ struct NotificationsView: View {
         }
     }
 
-    private func notificationAlert(_ mode: NotificationMode) -> Alert {
+    private func notificationAlert(_ alert: NotificationAlert, _ token: DeviceToken) -> Alert {
+        switch alert {
+        case let .setMode(mode):
+            return Alert(
+                title: Text(ntfModeAlertTitle(mode)),
+                message: Text(ntfModeDescription(mode)),
+                primaryButton: .default(Text(mode == .off ? "Turn off" : "Enable")) {
+                    setNotificationsMode(mode, token)
+                },
+                secondaryButton: .cancel() {
+                    notificationMode = m.notificationMode
+                }
+            )
+        case let .error(title, error):
+            return Alert(title: Text(title), message: Text(error))
+        }
+    }
+
+    private func ntfModeAlertTitle(_ mode: NotificationMode) -> LocalizedStringKey {
         switch mode {
-        case .off:
-            return Alert(
-                title: Text("Turn off notifications?"),
-                message: Text(ntfModeDescription(mode)),
-                primaryButton: .default(Text("Turn off")) {
-                    notificationMode = mode
-                    m.notificationMode = mode
-                },
-                secondaryButton: .cancel() {
-                    notificationMode = m.notificationMode
+        case .off: return "Turn off notifications?"
+        case .periodic: return "Enable periodic notifications?"
+        case .instant: return "Enable instant notifications?"
+        }
+    }
+
+    private func setNotificationsMode(_ mode: NotificationMode, _ token: DeviceToken) {
+        Task {
+            switch mode {
+            case .off:
+                do {
+                    try await apiDeleteToken(token: token)
+                    useNotifications = false
+                    m.tokenStatus = .new
+                    notificationMode = .off
+                    m.notificationMode = .off
                 }
-            )
-        case .periodic:
-            return Alert(
-                title: Text("Enable periodic notifcations?"),
-                message: Text(ntfModeDescription(mode)),
-                primaryButton: .default(Text("Enable")) {
-                    notificationMode = mode
-                    m.notificationMode = mode
-                },
-                secondaryButton: .cancel() {
-                    notificationMode = m.notificationMode
+                catch let error {
+                    DispatchQueue.main.async {
+                        let err = responseError(error)
+                        logger.error("apiDeleteToken error: \(err)")
+                        showAlert = .error(title: "Error deleting token", error: err)
+                    }
                 }
-            )
-        case .instant:
-            return Alert(
-                title: Text("Enable instant notifications?"),
-                message: Text(ntfModeDescription(mode)),
-                primaryButton: .default(Text("Enable")) {
-                    notificationMode = mode
-                    m.notificationMode = mode
-                },
-                secondaryButton: .cancel() {
-                    notificationMode = m.notificationMode
+            default:
+                do {
+                    do {
+                        m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
+                        useNotifications = true
+                        notificationMode = mode
+                        m.notificationMode = mode
+                    } catch let error {
+                        DispatchQueue.main.async {
+                            useNotifications = notificationMode != .off
+                            let err = responseError(error)
+                            logger.error("apiRegisterToken error: \(err)")
+                            showAlert = .error(title: "Error enabling notifications", error: err)
+                        }
+                    }
                 }
-            )
+            }
         }
     }
 }
@@ -153,6 +183,18 @@ struct SelectionListView<Item: SelectableItem>: View {
             } perform: {}
         }
         .environment(\.editMode, .constant(.active))
+    }
+}
+
+enum NotificationAlert: Identifiable {
+    case setMode(mode: NotificationMode)
+    case error(title: LocalizedStringKey, error: String)
+
+    var id: String {
+        switch self {
+        case let .setMode(mode): return "enable \(mode.rawValue)"
+        case let .error(title, error): return "error \(title): \(error)"
+        }
     }
 }
 
