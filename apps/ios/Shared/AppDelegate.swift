@@ -56,7 +56,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                             if case .active = m.tokenStatus {} else { m.tokenStatus = .confirmed }
                             try await apiVerifyToken(token: token, nonce: nonce, code: verification)
                             m.tokenStatus = .active
-                            try await apiIntervalNofication(token: token, interval: 20)
                         } catch {
                             if let cr = error as? ChatResponse, case .chatCmdError(.errorAgent(.NTF(.AUTH))) = cr {
                                 m.tokenStatus = .expired

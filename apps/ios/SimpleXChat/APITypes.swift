@@ -30,7 +30,6 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
-    case apiIntervalNofication(token: DeviceToken, interval: Int)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
     case getUserSMPServers
@@ -79,7 +78,6 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
-            case let .apiIntervalNofication(token, interval): return "/_ntf interval \(token.cmdString) \(interval)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
             case .getUserSMPServers: return "/smp_servers"
@@ -128,7 +126,6 @@ public enum ChatCommand {
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
-            case .apiIntervalNofication: return "apiIntervalNofication"
             case .apiDeleteToken: return "apiDeleteToken"
             case .apiGetNtfMessage: return "apiGetNtfMessage"
             case .getUserSMPServers: return "getUserSMPServers"
