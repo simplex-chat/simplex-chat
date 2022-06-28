@@ -96,7 +96,7 @@ struct NotificationsView: View {
     private func ntfModeAlertTitle(_ mode: NotificationMode) -> LocalizedStringKey {
         switch mode {
         case .off: return "Turn off notifications?"
-        case .periodic: return "Enable periodic notifcations?"
+        case .periodic: return "Enable periodic notifications?"
         case .instant: return "Enable instant notifications?"
         }
     }
@@ -122,7 +122,7 @@ struct NotificationsView: View {
             default:
                 do {
                     do {
-                        m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: .instant)
+                        m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
                         useNotifications = true
                         notificationMode = mode
                         m.notificationMode = mode
