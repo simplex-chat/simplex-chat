@@ -49,11 +49,8 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
     @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
-    @State var showNotificationsAlert: Bool = false
-    @State var whichNotificationsAlert = NotificationAlert.enable
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -187,13 +184,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("gauge") { Text("Experimental features") }
                     }
-                    if let token = chatModel.deviceToken {
-                        HStack {
-                            notificationsIcon()
-                            notificationsToggle(token)
-                        }
-                        .disabled(chatModel.chatRunning != true)
-                    }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
@@ -232,69 +222,6 @@ struct SettingsView: View {
         return Image(systemName: icon)
             .padding(.trailing, 9)
             .foregroundColor(color)
-    }
-
-    private func notificationsToggle(_ token: DeviceToken) -> some View {
-        Toggle("Check messages", isOn: $useNotifications)
-            .onChange(of: useNotifications) { enable in
-                if enable {
-                    showNotificationsAlert = true
-                    whichNotificationsAlert = .enable
-                } else {
-                    Task {
-                        do {
-                            try await apiDeleteToken(token: token)
-                            chatModel.tokenStatus = .new
-                        }
-                        catch {
-                            DispatchQueue.main.async {
-                                if let cr = error as? ChatResponse {
-                                    let err = String(describing: cr)
-                                    logger.error("apiDeleteToken error: \(err)")
-                                    showNotificationsAlert = true
-                                    whichNotificationsAlert = .error("Error deleting token", err)
-                                } else {
-                                    logger.error("apiDeleteToken unknown error: \(error.localizedDescription)")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .alert(isPresented: $showNotificationsAlert) {
-                switch (whichNotificationsAlert) {
-                case .enable: return enableNotificationsAlert(token)
-                case let .error(title, err): return Alert(title: Text(title), message: Text(err))
-                }
-            }
-    }
-
-    private func enableNotificationsAlert(_ token: DeviceToken) -> Alert {
-        Alert(
-            title: Text("Enable notifications? (BETA)"),
-            message: Text("The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server."),
-            primaryButton: .destructive(Text("Confirm")) {
-                Task {
-                    do {
-                        chatModel.tokenStatus = try await apiRegisterToken(token: token, notificationMode: .instant)
-                    } catch {
-                        DispatchQueue.main.async {
-                            useNotifications = false
-                            if let cr = error as? ChatResponse {
-                                let err = String(describing: cr)
-                                logger.error("apiRegisterToken error: \(err)")
-                                showNotificationsAlert = true
-                                whichNotificationsAlert = .error("Error registering token", err)
-                            } else {
-                                logger.error("apiRegisterToken unknown error: \(error.localizedDescription)")
-                            }
-                        }
-                    }
-                }
-            }, secondaryButton: .cancel() {
-                withAnimation() { useNotifications = false }
-            }
-        )
     }
 }
 
