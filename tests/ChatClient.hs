@@ -27,6 +27,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
+import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -90,7 +91,8 @@ testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
     { smpAgentVersion = 1,
-      smpAgentVRange = mkVersionRange 1 1
+      smpAgentVRange = mkVersionRange 1 1,
+      smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
     }
 
 testCfgV1 :: ChatConfig
