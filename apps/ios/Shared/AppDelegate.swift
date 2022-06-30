@@ -24,7 +24,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
         m.deviceToken = deviceToken
         if m.savedToken != nil {
-//            Task { await setNotificationsMode(token: deviceToken, mode: m.notificationMode) }
+//            registerToken(token: deviceToken)
         }
     }
 

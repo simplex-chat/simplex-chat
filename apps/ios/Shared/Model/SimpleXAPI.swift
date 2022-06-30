@@ -241,24 +241,17 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
     throw r
 }
 
-func setNotificationsMode(token: DeviceToken, mode: NotificationsMode) async {
-    logger.debug("setNotificationsMode \(mode.rawValue)")
+func registerToken(token: DeviceToken) async {
     let m = ChatModel.shared
-    switch mode {
-    case .off:
-        do {
-            try await apiDeleteToken(token: token)
-            m.tokenStatus = nil
-            m.notificationMode = .off
-        } catch let error {
-            logger.error("setNotificationsMode apiDeleteToken error: \(responseError(error))")
-        }
-    default:
-        do {
-            m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
-            m.notificationMode = mode
-        } catch let error {
-            logger.error("setNotificationsMode apiRegisterToken error: \(responseError(error))")
+    let mode = m.notificationMode
+    if mode != .off {
+        logger.debug("registerToken \(mode.rawValue)")
+        Task {
+            do {
+                m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
+            } catch let error {
+                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+            }
         }
     }
 }
@@ -534,7 +527,7 @@ func startChat() throws {
         m.chats = try apiGetChats()
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
-//            Task { await setNotificationsMode(token: token, mode: m.notificationMode) }
+//            registerToken(token: token)
         }
         withAnimation {
             m.onboardingStage = m.chats.isEmpty
