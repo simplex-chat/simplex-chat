@@ -226,10 +226,41 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode) async throws -> NtfTknStatus {
+func apiGetNtfToken() throws -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+    let r = chatSendCmdSync(.apiGetNtfToken)
+    switch r {
+    case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
+    case .chatCmdError(.errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
+    default: throw r
+    }
+}
+
+func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) async throws -> NtfTknStatus {
     let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
     if case let .ntfTokenStatus(status) = r { return status }
     throw r
+}
+
+func setNotificationsMode(token: DeviceToken, mode: NotificationsMode) async {
+    logger.debug("setNotificationsMode \(mode.rawValue)")
+    let m = ChatModel.shared
+    switch mode {
+    case .off:
+        do {
+            try await apiDeleteToken(token: token)
+            m.tokenStatus = nil
+            m.notificationMode = .off
+        } catch let error {
+            logger.error("setNotificationsMode apiDeleteToken error: \(responseError(error))")
+        }
+    default:
+        do {
+            m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
+            m.notificationMode = mode
+        } catch let error {
+            logger.error("setNotificationsMode apiRegisterToken error: \(responseError(error))")
+        }
+    }
 }
 
 func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throws {
@@ -501,6 +532,10 @@ func startChat() throws {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()
+        (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
+        if let token = m.deviceToken {
+//            Task { await setNotificationsMode(token: token, mode: m.notificationMode) }
+        }
         withAnimation {
             m.onboardingStage = m.chats.isEmpty
                                 ? .step3_MakeConnection

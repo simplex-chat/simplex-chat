@@ -18,7 +18,6 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
-let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
@@ -32,7 +31,6 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
-    DEFAULT_USE_NOTIFICATIONS: false,
     DEFAULT_PENDING_CONNECTIONS: true,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
@@ -217,6 +215,9 @@ struct SettingsView: View {
             color = .green
         case .expired:
             icon = "bolt.slash.fill"
+            color = .primary
+        case .none:
+            icon = "bolt"
             color = .primary
         }
         return Image(systemName: icon)
