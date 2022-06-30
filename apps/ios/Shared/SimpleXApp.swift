@@ -73,8 +73,8 @@ struct SimpleXApp: App {
 
     private func setDbContainer() {
 // Uncomment and run once to open DB in app documents folder:
-        // dbContainerGroupDefault.set(.documents)
-        // v3DBMigrationDefault.set(.offer)
+//         dbContainerGroupDefault.set(.documents)
+//         v3DBMigrationDefault.set(.offer)
 // to create database in app documents folder also uncomment:
         //  let legacyDatabase = true
         let legacyDatabase = hasLegacyDatabase()

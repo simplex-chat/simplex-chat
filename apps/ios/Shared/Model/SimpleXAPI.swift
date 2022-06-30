@@ -241,7 +241,7 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
     throw r
 }
 
-func registerToken(token: DeviceToken) async {
+func registerToken(token: DeviceToken) {
     let m = ChatModel.shared
     let mode = m.notificationMode
     if mode != .off {
@@ -527,7 +527,7 @@ func startChat() throws {
         m.chats = try apiGetChats()
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
-//            registerToken(token: token)
+            registerToken(token: token)
         }
         withAnimation {
             m.onboardingStage = m.chats.isEmpty
