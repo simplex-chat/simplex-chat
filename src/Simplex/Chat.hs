@@ -2285,7 +2285,7 @@ chatCommandP =
     <|> "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP)
     <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
     <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
-    <|> "/_ntf get " $> APIGetNtfToken
+    <|> "/_ntf get" $> APIGetNtfToken
     <|> "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP)
     <|> "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP)
     <|> "/_ntf delete " *> (APIDeleteToken <$> strP)
