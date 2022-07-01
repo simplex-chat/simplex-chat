@@ -40,7 +40,8 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     do {
-                        try initializeChat(start: v3DBMigrationDefault.get().startChat)
+                        chatModel.v3DBMigration = v3DBMigrationDefault.get()
+                        try initializeChat(start: chatModel.v3DBMigration.startChat)
                     } catch let error {
                         fatalError("Failed to start or load chats: \(responseError(error))")
                     }
@@ -59,11 +60,15 @@ struct SimpleXApp: App {
                         }
                         doAuthenticate = false
                     case .active:
-                        activateChat()
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()
+                        }
+                        let appState = appStateGroupDefault.get()
+                        activateChat()
+                        if appState.inactive && chatModel.chatRunning == true {
                             do {
-                                chatModel.chats = try apiGetChats()
+                                let chats = try apiGetChats()
+                                chatModel.replaceChats(with: chats)
                             } catch let error {
                                 logger.error("apiGetChats: cannot update chats \(responseError(error))")
                             }
