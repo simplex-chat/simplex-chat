@@ -62,6 +62,11 @@ struct SimpleXApp: App {
                         activateChat()
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()
+                            do {
+                                chatModel.chats = try apiGetChats()
+                            } catch let error {
+                                logger.error("apiGetChats: cannot update chats \(responseError(error))")
+                            }
                         }
                         doAuthenticate = authenticationExpired()
                     default:
