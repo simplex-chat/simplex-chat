@@ -28,7 +28,8 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
-    case apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode)
+    case apiGetNtfToken
+    case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
@@ -76,6 +77,7 @@ public enum ChatCommand {
                 return "/_send \(ref(type, id)) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc): return "/_update item \(ref(type, id)) \(itemId) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
+            case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
@@ -124,6 +126,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
             case .apiDeleteToken: return "apiDeleteToken"
@@ -222,6 +225,7 @@ public enum ChatResponse: Decodable, Error {
     case callExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case callEnded(contact: Contact)
     case ntfTokenStatus(status: NtfTknStatus)
+    case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
     case ntfMessages(connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(connection: PendingContactConnection)
     case contactConnectionDeleted(connection: PendingContactConnection)
@@ -284,6 +288,7 @@ public enum ChatResponse: Decodable, Error {
             case .callExtraInfo: return "callExtraInfo"
             case .callEnded: return "callEnded"
             case .ntfTokenStatus: return "ntfTokenStatus"
+            case .ntfToken: return "ntfToken"
             case .ntfMessages: return "ntfMessages"
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
@@ -349,6 +354,7 @@ public enum ChatResponse: Decodable, Error {
             case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
             case let .callEnded(contact): return "contact: \(contact.id)"
             case let .ntfTokenStatus(status): return String(describing: status)
+            case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
             case let .ntfMessages(connEntity, msgTs, ntfMessages): return "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))"
             case let .newContactConnection(connection): return String(describing: connection)
             case let .contactConnectionDeleted(connection): return String(describing: connection)
@@ -383,33 +389,38 @@ public protocol SelectableItem: Hashable, Identifiable {
     static var values: [Self] { get }
 }
 
-public struct DeviceToken {
-    var env: PushEnvironment
+public struct DeviceToken: Decodable {
+    var pushProvider: PushProvider
     var token: String
 
-    public init(env: PushEnvironment, token: String) {
-        self.env = env
+    public init(pushProvider: PushProvider, token: String) {
+        self.pushProvider = pushProvider
         self.token = token
     }
 
     public var cmdString: String {
-        "\(env.pushProvider) \(token)"
+        "\(pushProvider) \(token)"
     }
 }
 
 public enum PushEnvironment: String {
     case development
     case production
+}
 
-    public var pushProvider: String {
-        switch self {
-        case .development: return "apns_dev"
-        case .production: return "apns_prod"
+public enum PushProvider: String, Decodable {
+    case apns_dev
+    case apns_prod
+
+    public init(env: PushEnvironment) {
+        switch env {
+        case .development: self = .apns_dev
+        case .production: self = .apns_prod
         }
     }
 }
 
-public enum NotificationMode: String, SelectableItem {
+public enum NotificationsMode: String, Decodable, SelectableItem {
     case off = "OFF"
     case periodic = "PERIODIC"
     case instant = "INSTANT"
@@ -424,7 +435,7 @@ public enum NotificationMode: String, SelectableItem {
 
     public var id: String { self.rawValue }
 
-    public static var values: [NotificationMode] = [.instant, .periodic, .off]
+    public static var values: [NotificationsMode] = [.instant, .periodic, .off]
 }
 
 public enum NotificationPreviewMode: String, SelectableItem {

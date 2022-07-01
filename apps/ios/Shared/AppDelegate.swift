@@ -21,17 +21,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
-        let deviceToken = DeviceToken(env: pushEnvironment, token: token)
+        let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
         m.deviceToken = deviceToken
-        let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
-        if useNotifications {
-            Task {
-                do {
-                    m.tokenStatus = try await apiRegisterToken(token: deviceToken, notificationMode: .instant)
-                } catch {
-                    logger.error("apiRegisterToken error: \(responseError(error))")
-                }
-            }
+        if m.savedToken != nil {
+            registerToken(token: deviceToken)
         }
     }
 
@@ -44,14 +37,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
         print("*** userInfo", userInfo)
+        let m = ChatModel.shared
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
-           UserDefaults.standard.bool(forKey: "useNotifications") {
+           m.notificationMode != .off {
             if let verification = ntfData["verification"] as? String,
                let nonce = ntfData["nonce"] as? String {
                 if let token = ChatModel.shared.deviceToken {
                     logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
                     Task {
-                        let m = ChatModel.shared
                         do {
                             if case .active = m.tokenStatus {} else { m.tokenStatus = .confirmed }
                             try await apiVerifyToken(token: token, nonce: nonce, code: verification)

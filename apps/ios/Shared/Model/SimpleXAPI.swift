@@ -226,10 +226,35 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: DeviceToken, notificationMode: NotificationMode) async throws -> NtfTknStatus {
+func apiGetNtfToken() throws -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+    let r = chatSendCmdSync(.apiGetNtfToken)
+    switch r {
+    case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
+    case .chatCmdError(.errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
+    default: throw r
+    }
+}
+
+func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) async throws -> NtfTknStatus {
     let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
     if case let .ntfTokenStatus(status) = r { return status }
     throw r
+}
+
+func registerToken(token: DeviceToken) {
+    let m = ChatModel.shared
+    let mode = m.notificationMode
+    if mode != .off {
+        logger.debug("registerToken \(mode.rawValue)")
+        Task {
+            do {
+                let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                await MainActor.run { m.tokenStatus = status }
+            } catch let error {
+                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+            }
+        }
+    }
 }
 
 func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throws {
@@ -501,6 +526,10 @@ func startChat() throws {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
         m.chats = try apiGetChats()
+        (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
+        if let token = m.deviceToken {
+            registerToken(token: token)
+        }
         withAnimation {
             m.onboardingStage = m.chats.isEmpty
                                 ? .step3_MakeConnection

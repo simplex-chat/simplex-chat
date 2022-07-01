@@ -11,9 +11,8 @@ import SimpleXChat
 
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
-    @State private var notificationMode: NotificationMode?
+    @State private var notificationMode: NotificationsMode?
     @State private var showAlert: NotificationAlert?
-    @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
 
     var body: some View {
         List {
@@ -21,7 +20,7 @@ struct NotificationsView: View {
                 NavigationLink {
                     List {
                         Section {
-                            SelectionListView(list: NotificationMode.values, selection: $notificationMode) { mode in
+                            SelectionListView(list: NotificationsMode.values, selection: $notificationMode) { mode in
                                 showAlert = .setMode(mode: mode)
                             }
                         } footer: {
@@ -93,7 +92,7 @@ struct NotificationsView: View {
         }
     }
 
-    private func ntfModeAlertTitle(_ mode: NotificationMode) -> LocalizedStringKey {
+    private func ntfModeAlertTitle(_ mode: NotificationsMode) -> LocalizedStringKey {
         switch mode {
         case .off: return "Turn off notifications?"
         case .periodic: return "Enable periodic notifications?"
@@ -101,18 +100,16 @@ struct NotificationsView: View {
         }
     }
 
-    private func setNotificationsMode(_ mode: NotificationMode, _ token: DeviceToken) {
+    private func setNotificationsMode(_ mode: NotificationsMode, _ token: DeviceToken) {
         Task {
             switch mode {
             case .off:
                 do {
                     try await apiDeleteToken(token: token)
-                    useNotifications = false
                     m.tokenStatus = .new
                     notificationMode = .off
                     m.notificationMode = .off
-                }
-                catch let error {
+                } catch let error {
                     DispatchQueue.main.async {
                         let err = responseError(error)
                         logger.error("apiDeleteToken error: \(err)")
@@ -123,12 +120,10 @@ struct NotificationsView: View {
                 do {
                     do {
                         m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
-                        useNotifications = true
                         notificationMode = mode
                         m.notificationMode = mode
                     } catch let error {
                         DispatchQueue.main.async {
-                            useNotifications = notificationMode != .off
                             let err = responseError(error)
                             logger.error("apiRegisterToken error: \(err)")
                             showAlert = .error(title: "Error enabling notifications", error: err)
@@ -140,7 +135,7 @@ struct NotificationsView: View {
     }
 }
 
-func ntfModeDescription(_ mode: NotificationMode) -> LocalizedStringKey {
+func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
     switch mode {
     case .off: return "**Maximum privacy**: push notifications are off.\nNo meta-data is shared with SimpleX Chat notification server."
     case .periodic: return "**High privacy**: new messages are checked every 20 minutes.\nYour device token is shared with SimpleX Chat notification server, but it cannot see how many connections you have or how many messages you receive."
@@ -187,7 +182,7 @@ struct SelectionListView<Item: SelectableItem>: View {
 }
 
 enum NotificationAlert: Identifiable {
-    case setMode(mode: NotificationMode)
+    case setMode(mode: NotificationsMode)
     case error(title: LocalizedStringKey, error: String)
 
     var id: String {

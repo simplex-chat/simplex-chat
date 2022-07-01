@@ -29,8 +29,9 @@ final class ChatModel: ObservableObject {
     @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
     @Published var deviceToken: DeviceToken?
-    @Published var tokenStatus = NtfTknStatus.new
-    @Published var notificationMode = NotificationMode.off
+    @Published var savedToken: DeviceToken?
+    @Published var tokenStatus: NtfTknStatus?
+    @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = .message
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
