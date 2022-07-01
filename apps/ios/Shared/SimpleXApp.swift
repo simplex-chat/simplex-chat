@@ -81,7 +81,7 @@ struct SimpleXApp: App {
 //         dbContainerGroupDefault.set(.documents)
 //         v3DBMigrationDefault.set(.offer)
 // to create database in app documents folder also uncomment:
-        //  let legacyDatabase = true
+//         let legacyDatabase = true
         let legacyDatabase = hasLegacyDatabase()
         if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
