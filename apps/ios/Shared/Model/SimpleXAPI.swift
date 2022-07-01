@@ -248,7 +248,8 @@ func registerToken(token: DeviceToken) {
         logger.debug("registerToken \(mode.rawValue)")
         Task {
             do {
-                m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
+                let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                await MainActor.run { m.tokenStatus = status }
             } catch let error {
                 logger.error("registerToken apiRegisterToken error: \(responseError(error))")
             }
