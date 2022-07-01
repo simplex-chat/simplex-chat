@@ -13,7 +13,7 @@ struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
     @State private var notificationMode: NotificationsMode?
     @State private var showAlert: NotificationAlert?
-    @State private var dbContainer: DBContainer = dbContainerGroupDefault.get()
+    @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
 
     var body: some View {
         List {
@@ -72,11 +72,13 @@ struct NotificationsView: View {
             } header: {
                 Text("Push notifications")
             } footer: {
-                if dbContainer == .documents {
-                    Text("Please restart the app and migrate database to enable notifications")
+                if legacyDatabase {
+                    Text("Please restart the app and migrate the database to enable push notifications.")
+                        .font(.callout)
+                        .padding(.top, 1)
                 }
             }
-            .disabled(dbContainer == .documents)
+            .disabled(legacyDatabase)
         }
     }
 
