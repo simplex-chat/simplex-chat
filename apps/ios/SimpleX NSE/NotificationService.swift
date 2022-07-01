@@ -35,6 +35,10 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+        if case .documents = dbContainerGroupDefault.get() {
+            contentHandler(request.content)
+            return
+        }
         let userInfo = request.content.userInfo
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            let nonce = ntfData["nonce"] as? String,
