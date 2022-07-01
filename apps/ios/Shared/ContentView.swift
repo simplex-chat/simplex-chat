@@ -14,7 +14,6 @@ struct ContentView: View {
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
     @State private var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
-    @State private var v3DBMigration = v3DBMigrationDefault.get()
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -23,16 +22,14 @@ struct ContentView: View {
         ZStack {
             if prefPerformLA && userAuthorized != true {
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
-            } else {
-                if let step = chatModel.onboardingStage {
-                    if case .onboardingComplete = step,
-                       chatModel.currentUser != nil {
-                        mainView()
-                    } else {
-                        OnboardingView(onboarding: step)
-                    }
-                } else if !v3DBMigrationDefault.get().startChat {
-                    MigrateToAppGroupView()
+            } else if !chatModel.v3DBMigration.startChat {
+                MigrateToAppGroupView()
+            } else if let step = chatModel.onboardingStage  {
+                if case .onboardingComplete = step,
+                   chatModel.currentUser != nil {
+                    mainView()
+                } else {
+                    OnboardingView(onboarding: step)
                 }
             }
         }

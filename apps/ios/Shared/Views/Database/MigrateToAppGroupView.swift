@@ -37,7 +37,6 @@ let v3DBMigrationDefault = EnumDefault<V3DBMigrationState>(
 
 struct MigrateToAppGroupView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var v3DBMigration = v3DBMigrationDefault.get()
     @State private var migrationError = ""
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
@@ -46,7 +45,7 @@ struct MigrateToAppGroupView: View {
         ZStack(alignment: .topLeading) {
             Text("Database migration").font(.largeTitle)
 
-            switch v3DBMigration {
+            switch chatModel.v3DBMigration {
             case .offer:
                 VStack(alignment: .leading, spacing: 16) {
                     Text("To support instant push notifications the chat database has to be migrated.")
@@ -128,7 +127,7 @@ struct MigrateToAppGroupView: View {
             default:
                 Spacer()
                 Text("Unexpected migration state")
-                Text("\(v3DBMigration.rawValue)")
+                Text("\(chatModel.v3DBMigration.rawValue)")
                 Spacer()
                 skipMigration()
             }
@@ -174,7 +173,7 @@ struct MigrateToAppGroupView: View {
     }
 
     private func setV3DBMigration(_ value: V3DBMigrationState) {
-        v3DBMigration = value
+        chatModel.v3DBMigration = value
         v3DBMigrationDefault.set(value)
     }
 
@@ -201,7 +200,7 @@ struct MigrateToAppGroupView: View {
                 await MainActor.run { setV3DBMigration(.migrating) }
                 dbContainerGroupDefault.set(.group)
                 resetChatCtrl()
-                try initializeChat(start: false)
+                try await MainActor.run { try initializeChat(start: false) }
                 try await apiImportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.migrated) }
             } catch let error {
