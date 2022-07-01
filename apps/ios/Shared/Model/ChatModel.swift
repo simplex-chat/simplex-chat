@@ -17,7 +17,6 @@ final class ChatModel: ObservableObject {
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
     @Published var chatRunning: Bool?
-    @Published var justStarted = true
     @Published var chatDbChanged = false
     // list of chat "previews"
     @Published var chats: [Chat] = []
