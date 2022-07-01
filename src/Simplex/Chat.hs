@@ -2247,7 +2247,7 @@ withStore action = do
   liftEitherError ChatErrorStore $
     withTransaction st (runExceptT . action) `E.catch` handleInternal
   where
-    handleInternal :: DB.SQLError -> IO (Either StoreError a)
+    handleInternal :: E.SomeException -> IO (Either StoreError a)
     handleInternal = pure . Left . SEInternalError . show
 
 chatCommandP :: Parser ChatCommand
