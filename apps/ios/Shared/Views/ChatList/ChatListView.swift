@@ -20,7 +20,7 @@ struct ChatListView: View {
     var body: some View {
         let v = NavigationView {
             List {
-                ForEach(filteredChats()) { chat in
+                ForEach(filteredChats(), id: \.viewId) { chat in
                     ChatListNavLink(chat: chat, showChatInfo: $showChatInfo)
                         .padding(.trailing, -16)
                         .disabled(chatModel.chatRunning != true)

@@ -17,6 +17,7 @@ final class ChatModel: ObservableObject {
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
     @Published var chatRunning: Bool?
+    @Published var justStarted = true
     @Published var chatDbChanged = false
     // list of chat "previews"
     @Published var chats: [Chat] = []
@@ -93,10 +94,18 @@ final class ChatModel: ObservableObject {
 
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
+            let serverInfo = chats[i].serverInfo
             chats[i] = chat
+            chats[i].serverInfo = serverInfo
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
+        }
+    }
+
+    func replaceChats(with newChats: [Chat]) {
+        for chat in newChats {
+            replaceChat(chat.id, chat)
         }
     }
 
@@ -249,6 +258,7 @@ final class Chat: ObservableObject, Identifiable {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     @Published var serverInfo = ServerInfo(networkStatus: .unknown)
+    var created = Date.now
 
     struct ServerInfo: Decodable {
         var networkStatus: NetworkStatus
@@ -306,4 +316,6 @@ final class Chat: ObservableObject, Identifiable {
     }
 
     var id: ChatId { get { chatInfo.id } }
+
+    var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 }

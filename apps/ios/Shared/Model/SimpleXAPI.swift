@@ -520,7 +520,6 @@ func initializeChat(start: Bool) throws {
 func startChat() throws {
     logger.debug("startChat")
     let m = ChatModel.shared
-    // TODO set file folder once, before chat is started
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()

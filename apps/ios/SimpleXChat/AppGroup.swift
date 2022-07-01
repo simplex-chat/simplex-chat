@@ -22,6 +22,14 @@ public enum AppState: String {
     case bgRefresh
     case suspending
     case suspended
+
+    public var inactive: Bool {
+        switch self {
+        case .suspending: return true
+        case .suspended: return true
+        default: return false
+        }
+    }
 }
 
 public enum DBContainer: String {
