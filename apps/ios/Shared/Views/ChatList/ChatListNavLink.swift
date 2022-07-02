@@ -30,16 +30,7 @@ struct ChatListNavLink: View {
 
     private func chatView() -> some View {
         ChatView(chat: chat, showChatInfo: $showChatInfo)
-        .onAppear {
-            do {
-                let cInfo = chat.chatInfo
-                let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
-                chatModel.updateChatInfo(chat.chatInfo)
-                chatModel.chatItems = chat.chatItems
-            } catch {
-                logger.error("ChatListNavLink.chatView apiGetChatItems error: \(error.localizedDescription)")
-            }
-        }
+            .onAppear { loadChat(chat: chat) }
     }
 
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
