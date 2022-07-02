@@ -64,6 +64,7 @@ struct SimpleXApp: App {
                         activateChat()
                         if appState.inactive && chatModel.chatRunning == true {
                             do {
+                                // TODO refresh call invitation
                                 let chats = try apiGetChats()
                                 chatModel.replaceChats(with: chats)
                             } catch let error {

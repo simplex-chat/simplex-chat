@@ -12,15 +12,22 @@ import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (UTCTime)
+import Database.SQLite.Simple.FromField (FromField (..))
+import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
+import Simplex.Chat.Types (Contact, ContactId)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
 
 data Call = Call
-  { contactId :: Int64,
+  { contactId :: ContactId,
     callId :: CallId,
     chatItemId :: Int64,
     callState :: CallState
@@ -75,6 +82,21 @@ data CallState
         peerCallSession :: WebRTCSession,
         sharedKey :: Maybe C.Key
       }
+  deriving (Generic)
+
+-- database representation
+instance FromJSON CallState where
+  parseJSON = J.genericParseJSON $ singleFieldJSON fstToLower
+
+instance ToJSON CallState where
+  toJSON = J.genericToJSON $ singleFieldJSON fstToLower
+  toEncoding = J.genericToEncoding $ singleFieldJSON fstToLower
+
+instance ToField CallState where
+  toField = toField . safeDecodeUtf8 . LB.toStrict . J.encode
+
+instance FromField CallState where
+  fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
 
 newtype CallId = CallId ByteString
   deriving (Eq, Show)
@@ -90,6 +112,22 @@ instance FromJSON CallId where
 instance ToJSON CallId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+instance FromField CallId where fromField f = CallId <$> fromField f
+
+instance ToField CallId where toField (CallId m) = toField m
+
+data RcvCallInvitation = RcvCallInvitation
+  { contact :: Contact,
+    callType :: CallType,
+    sharedKey :: Maybe C.Key,
+    callTs :: UTCTime
+  }
+  deriving (Show, Generic)
+
+instance ToJSON RcvCallInvitation where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data CallType = CallType
   { media :: CallMedia,

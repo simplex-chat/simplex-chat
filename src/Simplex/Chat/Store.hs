@@ -160,6 +160,9 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
+    createCall,
+    deleteCalls,
+    getCalls,
     getPendingContactConnection,
     deletePendingContactConnection,
     withTransaction,
@@ -193,6 +196,7 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError,
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
@@ -207,6 +211,7 @@ import Simplex.Chat.Migrations.M20220321_chat_item_edited
 import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Migrations.M20220626_auto_reply
+import Simplex.Chat.Migrations.M20220702_calls
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -232,7 +237,8 @@ schemaMigrations =
     ("20220321_chat_item_edited", m20220321_chat_item_edited),
     ("20220404_files_status_fields", m20220404_files_status_fields),
     ("20220514_profiles_user_id", m20220514_profiles_user_id),
-    ("20220626_auto_reply", m20220626_auto_reply)
+    ("20220626_auto_reply", m20220626_auto_reply),
+    ("20220702_calls", m20220702_calls)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3660,6 +3666,60 @@ overwriteSMPServers db User {userId} smpServers =
         |]
         (host, port, keyHash, userId, currentTs, currentTs)
     pure $ Right ()
+
+createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
+createCall db User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO calls
+        (contact_id, shared_call_id, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?)
+    |]
+    (contactId, callId, chatItemId, callState, callTs, userId, currentTs, currentTs)
+
+deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
+deleteCalls db User {userId} contactId = do
+  DB.execute db "DELETE FROM calls WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
+getCalls :: DB.Connection -> User -> IO [(Call, UTCTime, Contact)]
+getCalls db User {userId} = do
+  map toCall
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          -- Call
+          cl.contact_id, cl.shared_call_id, cl.chat_item_id, cl.call_state, cl.call_ts,
+          -- Contact
+          ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.conn_status, c.conn_type,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM calls cl
+        JOIN contacts ct ON ct.contact_id = cl.contact_id
+        JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE cl.user_id = ?
+          AND c.connection_id = (
+            SELECT cc_connection_id FROM (
+              SELECT
+                cc.connection_id AS cc_connection_id,
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+              FROM connections cc
+              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              LIMIT 1
+            )
+          )
+      |]
+      (userId, ConnReady, ConnSndReady)
+  where
+    toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) :. ContactRow :. ConnectionRow -> (Call, UTCTime, Contact)
+    toCall ((contactId, callId, chatItemId, callState, callTs) :. contactRow :. connRow) =
+      let contact = toContact $ contactRow :. connRow
+       in (Call {contactId, callId, chatItemId, callState}, callTs, contact)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

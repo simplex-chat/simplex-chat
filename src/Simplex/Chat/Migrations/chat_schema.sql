@@ -369,3 +369,15 @@ CREATE UNIQUE INDEX idx_messages_group_shared_msg_id ON messages(
   shared_msg_id
 );
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
+CREATE TABLE calls(
+  -- stores call invitations state for communicating state between NSE and app when call notification comes
+  call_id INTEGER PRIMARY KEY,
+  contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
+  shared_call_id BLOB NOT NULL,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  call_state BLOB NOT NULL,
+  call_ts TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);

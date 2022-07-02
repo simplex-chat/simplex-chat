@@ -99,7 +99,7 @@ chatTests = do
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
-    it "negotiate call" testNegotiateCall
+    fit "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
@@ -2093,6 +2093,8 @@ testNegotiateCall :: IO ()
 testNegotiateCall =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
+    -- just for testing db query
+    alice ##> "/_call get"
     -- alice invite bob to call
     alice ##> ("/_call invite @2 " <> serialize testCallType)
     alice <## "ok"
