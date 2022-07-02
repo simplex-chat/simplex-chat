@@ -47,7 +47,7 @@ class BGManager {
     private func handleRefresh(_ task: BGAppRefreshTask) {
         logger.debug("BGManager.handleRefresh")
         schedule()
-        if appStateGroupDefault.get().inactive {
+        if isAppInactive() {
             let completeRefresh = completionHandler {
                 task.setTaskCompleted(success: true)
             }

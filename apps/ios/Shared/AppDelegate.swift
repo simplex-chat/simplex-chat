@@ -62,7 +62,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive {
+                if isAppInactive() {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)

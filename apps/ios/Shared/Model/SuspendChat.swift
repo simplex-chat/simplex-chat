@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 import SimpleXChat
 
 private let suspendLockQueue = DispatchQueue(label: "chat.simplex.app.suspend.lock")
@@ -53,4 +54,8 @@ func activateChat(appState: AppState = .active) {
         appStateGroupDefault.set(appState)
         apiActivateChat()
     }
+}
+
+func isAppInactive() -> Bool {
+    UIApplication.shared.applicationState != .active && appStateGroupDefault.get().inactive
 }
