@@ -1150,9 +1150,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
-        -- TODO print errors
-        MERR _ _ -> pure () -- ? updateDirectChatItemStatus
-        ERR _ -> pure ()
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
+        ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
@@ -1235,7 +1234,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Just chatItemId -> do
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId chatItemId (agentErrToItemStatus err)
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-        ERR _ -> pure ()
+        ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1325,9 +1324,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
-      -- TODO print errors
-      MERR _ _ -> pure ()
-      ERR _ -> pure ()
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      ERR err -> toView . CRChatError $ ChatErrorAgent err
       -- TODO add debugging output
       _ -> pure ()
 
@@ -1364,8 +1362,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             _ -> throwChatError $ CEFileSend fileId err
         MSG meta _ _ ->
           withAckMessage agentConnId meta $ pure ()
-        -- TODO print errors
-        ERR _ -> pure ()
+        ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1419,9 +1416,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                       withAgent (`deleteConnection` agentConnId)
                 RcvChunkDuplicate -> pure ()
                 RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
-        -- TODO print errors
-        MERR _ _ -> pure ()
-        ERR _ -> pure ()
+        MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+        ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1434,9 +1430,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           XInfo p -> profileContactRequest invId p Nothing
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      -- TODO print errors
-      MERR _ _ -> pure ()
-      ERR _ -> pure ()
+      MERR _ err -> toView . CRChatError $ ChatErrorAgent err
+      ERR err -> toView . CRChatError $ ChatErrorAgent err
       -- TODO add debugging output
       _ -> pure ()
       where
