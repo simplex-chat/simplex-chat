@@ -99,7 +99,7 @@ chatTests = do
       it "v1" testAsyncFileTransferV1
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
-    fit "negotiate call" testNegotiateCall
+    it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
