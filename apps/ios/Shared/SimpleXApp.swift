@@ -51,9 +51,6 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         suspendChat()
-                        if chatModel.chatRunning == true {
-                            ChatReceiver.shared.stop()
-                        }
                         BGManager.shared.schedule()
                         if userAuthorized == true {
                             enteredBackground = ProcessInfo.processInfo.systemUptime

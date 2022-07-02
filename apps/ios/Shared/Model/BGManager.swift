@@ -47,11 +47,16 @@ class BGManager {
     private func handleRefresh(_ task: BGAppRefreshTask) {
         logger.debug("BGManager.handleRefresh")
         schedule()
-        let completeRefresh = completionHandler {
+        if isAppInactive() {
+            let completeRefresh = completionHandler {
+                task.setTaskCompleted(success: true)
+            }
+            task.expirationHandler = { completeRefresh("expirationHandler") }
+            receiveMessages(completeRefresh)
+        } else {
+            logger.debug("BGManager.completionHandler: already active, not started")
             task.setTaskCompleted(success: true)
         }
-        task.expirationHandler = { completeRefresh("expirationHandler") }
-        receiveMessages(completeRefresh)
     }
 
     func completionHandler(_ complete: @escaping () -> Void) -> ((String) -> Void) {
