@@ -564,8 +564,7 @@ class ChatReceiver {
             await processReceivedMsg(msg)
         }
         if self.receiveMessages {
-            do { try await Task.sleep(nanoseconds: 7_500_000) }
-            catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
+            _ = try? await Task.sleep(nanoseconds: 7_500_000)
             await receiveMsgLoop()
         }
     }

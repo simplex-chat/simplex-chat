@@ -61,17 +61,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                     completionHandler(.noData)
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
-                // TODO check if app in background
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                // TODO remove
-                // NtfManager.shared.notifyCheckingMessages()
-                completionHandler(.noData)
-//                receiveMessages(completionHandler)
-            } else if let smpQueue = ntfData["checkMessage"] as? String {
-                // TODO check if app in background
-                logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessage \(smpQueue)")
-                completionHandler(.noData)
-//                receiveMessages(completionHandler)
+                if appStateGroupDefault.get().inactive {
+                    receiveMessages(completionHandler)
+                } else {
+                    completionHandler(.noData)
+                }
             } else {
                 completionHandler(.noData)
             }
