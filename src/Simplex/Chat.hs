@@ -146,24 +146,26 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
           pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
         _ -> pure ss
 
-runChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
-runChatController user subConns = race_ notificationSubscriber $ agentSubscriber user subConns
-
 startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m (Async ())
 startChatController user subConns = do
   asks smpAgent >>= resumeAgentClient
   s <- asks agentAsync
-  readTVarIO s >>= maybe (start s) pure
+  readTVarIO s >>= maybe (start s) (pure . fst)
   where
     start s = do
-      a <- async $ runChatController user subConns
-      atomically . writeTVar s $ Just a
-      pure a
+      a1 <- async $ race_ notificationSubscriber agentSubscriber
+      a2 <-
+        if subConns
+          then Just <$> async (subscribeUserConnections subscribeConnection user)
+          else pure Nothing
+      atomically . writeTVar s $ Just (a1, a2)
+      pure a1
 
 stopChatController :: MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s} = do
   disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ uninterruptibleCancel >> atomically (writeTVar s Nothing)
+  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
+  atomically (writeTVar s Nothing)
 
 withLock :: MonadUnliftIO m => TMVar () -> m a -> m a
 withLock lock =
@@ -1000,11 +1002,10 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId
 
-agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m ()
-agentSubscriber user subConns = do
+agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
+agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
-  when subConns $ subscribeUserConnections subscribeConnection user
   forever $ do
     (_, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
