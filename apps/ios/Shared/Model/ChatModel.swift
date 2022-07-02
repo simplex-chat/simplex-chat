@@ -102,9 +102,15 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func replaceChats(with newChats: [Chat]) {
-        for chat in newChats {
-            replaceChat(chat.id, chat)
+    func updateChats(with newChats: [ChatData]) {
+        for c in newChats {
+            if let chat = getChat(c.id) {
+                chat.chatInfo = c.chatInfo
+                chat.chatItems = c.chatItems
+                chat.chatStats = c.chatStats
+            } else {
+                addChat(Chat(c))
+            }
         }
     }
 

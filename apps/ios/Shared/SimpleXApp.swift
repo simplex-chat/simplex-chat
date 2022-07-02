@@ -63,12 +63,7 @@ struct SimpleXApp: App {
                         let appState = appStateGroupDefault.get()
                         activateChat()
                         if appState.inactive && chatModel.chatRunning == true {
-                            do {
-                                let chats = try apiGetChats()
-                                chatModel.replaceChats(with: chats)
-                            } catch let error {
-                                logger.error("apiGetChats: cannot update chats \(responseError(error))")
-                            }
+                            updateChats()
                         }
                         doAuthenticate = authenticationExpired()
                     default:
@@ -105,6 +100,24 @@ struct SimpleXApp: App {
             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
         } else {
             return true
+        }
+    }
+
+    private func updateChats() {
+        do {
+            let chats = try apiGetChats()
+            chatModel.updateChats(with: chats)
+            if let id = chatModel.chatId,
+               let chat = chatModel.getChat(id) {
+                loadChat(chat: chat)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    if chatModel.chatId == chat.id {
+                        Task { await markChatRead(chat) }
+                    }
+                }
+            }
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
     }
 }
