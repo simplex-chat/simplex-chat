@@ -73,7 +73,7 @@ data ChatController = ChatController
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
-    agentAsync :: TVar (Maybe (Async ())),
+    agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
