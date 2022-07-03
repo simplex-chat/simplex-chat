@@ -200,13 +200,13 @@ struct SettingsView: View {
         switch (chatModel.tokenStatus) {
         case .new:
             icon = "bolt"
-            color = .primary
+            color = .secondary
         case .registered:
             icon = "bolt.fill"
-            color = .primary
+            color = .secondary
         case .invalid:
             icon = "bolt.slash"
-            color = .primary
+            color = .secondary
         case .confirmed:
             icon = "bolt.fill"
             color = .yellow
@@ -215,10 +215,10 @@ struct SettingsView: View {
             color = .green
         case .expired:
             icon = "bolt.slash.fill"
-            color = .primary
+            color = .secondary
         case .none:
             icon = "bolt"
-            color = .primary
+            color = .secondary
         }
         return Image(systemName: icon)
             .padding(.trailing, 9)

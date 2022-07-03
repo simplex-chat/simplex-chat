@@ -82,17 +82,19 @@ struct SimpleXApp: App {
         let legacyDatabase = hasLegacyDatabase()
         if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
-            switch v3DBMigrationDefault.get() {
-            case .migrated: ()
-            default: v3DBMigrationDefault.set(.offer)
-            }
+            setMigrationState(.offer)
             logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
         } else {
             dbContainerGroupDefault.set(.group)
-            v3DBMigrationDefault.set(.ready)
+            setMigrationState(.ready)
             logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
             logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
         }
+    }
+
+    private func setMigrationState(_ state: V3DBMigrationState) {
+        if case .migrated = v3DBMigrationDefault.get() { return }
+        v3DBMigrationDefault.set(state)
     }
 
     private func authenticationExpired() -> Bool {

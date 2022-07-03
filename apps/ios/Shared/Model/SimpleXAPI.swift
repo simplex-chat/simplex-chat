@@ -543,8 +543,10 @@ func startChat() throws {
             registerToken(token: token)
         }
         withAnimation {
-            m.onboardingStage = m.chats.isEmpty
-                                ? .step3_MakeConnection
+            m.onboardingStage = m.onboardingStage == .step2_CreateProfile
+                                ? .step3_SetNotificationsMode
+                                : m.chats.isEmpty
+                                ? .step4_MakeConnection
                                 : .onboardingComplete
         }
     }

@@ -427,7 +427,7 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
 
     public var label: LocalizedStringKey {
         switch self {
-        case .off: return "Off"
+        case .off: return "Off (Local)"
         case .periodic: return "Periodically"
         case .instant: return "Instantly"
         }
