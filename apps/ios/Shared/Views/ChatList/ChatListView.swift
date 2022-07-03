@@ -34,7 +34,7 @@ struct ChatListView: View {
             }
             .onChange(of: chatModel.chats.isEmpty) { empty in
                 if !empty { return }
-                withAnimation { chatModel.onboardingStage = .step3_MakeConnection }
+                withAnimation { chatModel.onboardingStage = .step4_MakeConnection }
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onAppear() { connectViaUrl() }
