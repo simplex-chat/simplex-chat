@@ -48,7 +48,6 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
-    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -99,13 +98,11 @@ struct SettingsView: View {
                             Text("Notifications")
                         }
                     }
-                    if enableCalls {
-                        NavigationLink {
-                            CallSettings()
-                                .navigationTitle("Your calls")
-                        } label: {
-                            settingsRow("video") { Text("Audio & video calls") }
-                        }
+                    NavigationLink {
+                        CallSettings()
+                            .navigationTitle("Your calls")
+                    } label: {
+                        settingsRow("video") { Text("Audio & video calls") }
                     }
                     NavigationLink {
                         PrivacySettings()
@@ -176,12 +173,12 @@ struct SettingsView: View {
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
                     }
-                    NavigationLink {
-                        ExperimentalFeaturesView()
-                            .navigationTitle("Experimental features")
-                    } label: {
-                        settingsRow("gauge") { Text("Experimental features") }
-                    }
+//                    NavigationLink {
+//                        ExperimentalFeaturesView()
+//                            .navigationTitle("Experimental features")
+//                    } label: {
+//                        settingsRow("gauge") { Text("Experimental features") }
+//                    }
                     Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
