@@ -42,13 +42,13 @@ class CallManager {
             contact: invitation.contact,
             callkitUUID: invitation.callkitUUID,
             callState: .invitationAccepted,
-            localMedia: invitation.peerMedia,
+            localMedia: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         logger.debug("answerIncomingCall useRelay \(useRelay)")
-        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
+        m.callCommand = .start(media: invitation.callType.media, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {

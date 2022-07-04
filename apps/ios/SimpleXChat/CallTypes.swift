@@ -37,23 +37,37 @@ public struct WebRTCExtraInfo: Codable {
     public var rtcIceCandidates: String
 }
 
-public struct CallInvitation {
-    public init(contact: Contact, callkitUUID: UUID? = nil, peerMedia: CallMediaType, sharedKey: String? = nil, callTs: Date) {
+//public struct RcvCallInvitation: Decodable {
+//    public init(contact: Contact, callType: CallType, sharedKey: String? = nil, callTs: Date) {
+//        self.contact = contact
+//        self.callType = callType
+//        self.sharedKey = sharedKey
+//        self.callTs = callTs
+//    }
+//
+//    public var contact: Contact
+//    public var callType: CallType
+//    public var sharedKey: String?
+//    public var callTs: Date
+//}
+
+public struct CallInvitation: Decodable {
+    public init(contact: Contact, callkitUUID: UUID? = UUID(), callType: CallType, sharedKey: String? = nil, callTs: Date) {
         self.contact = contact
         self.callkitUUID = callkitUUID
-        self.peerMedia = peerMedia
+        self.callType = callType
         self.sharedKey = sharedKey
         self.callTs = callTs
     }
 
     public var contact: Contact
     public var callkitUUID: UUID?
-    public var peerMedia: CallMediaType
+    public var callType: CallType
     public var sharedKey: String?
     public var callTs: Date
     public var callTypeText: LocalizedStringKey {
         get {
-            switch peerMedia {
+            switch callType.media {
             case .video: return sharedKey == nil ? "video call (not e2e encrypted)" : "**e2e encrypted** video call"
             case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)" : "**e2e encrypted** audio call"
             }
@@ -62,7 +76,7 @@ public struct CallInvitation {
 
     public static let sampleData = CallInvitation(
         contact: Contact.sampleData,
-        peerMedia: .audio,
+        callType: CallType(media: .audio, capabilities: CallCapabilities(encryption: false)),
         callTs: .now
     )
 }

@@ -476,6 +476,12 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
+func apiGetCallInvitations() throws -> [CallInvitation] {
+    let r = chatSendCmdSync(.apiGetCallInvitations)
+    if case let .callInvitations(invs) = r { return invs }
+    throw r
+}
+
 func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     if let callStatus = WebRTCCallStatus.init(rawValue: status) {
         try await sendCommandOkResp(.apiCallStatus(contact: contact, callStatus: callStatus))
@@ -538,6 +544,8 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
+        let callInvitations = try apiGetCallInvitations()
+        m.callInvitations = callInvitations.reduce(into: [ChatId: CallInvitation]()) { result, inv in result[inv.contact.id] = inv }
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
@@ -694,14 +702,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
-        case let .callInvitation(contact, callType, sharedKey, callTs):
-            let uuid = UUID()
-            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey, callTs: callTs)
-            m.callInvitations[contact.id] = invitation
+        case let .callInvitation(invitation):
+            m.callInvitations[invitation.contact.id] = invitation
             CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
                 if let error = error {
-                    invitation.callkitUUID = nil
-                    m.callInvitations[contact.id] = invitation
+                    // invitation.callkitUUID = nil
+                    m.callInvitations[invitation.contact.id] = invitation
                     logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
                 } else {
                     logger.debug("reportNewIncomingCall success")

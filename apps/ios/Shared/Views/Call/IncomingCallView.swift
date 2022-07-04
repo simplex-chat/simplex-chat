@@ -29,7 +29,7 @@ struct IncomingCallView: View {
     private func incomingCall(_ invitation: CallInvitation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Image(systemName: invitation.peerMedia == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
+                Image(systemName: invitation.callType.media == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
                 Text(invitation.callTypeText)
             }
             HStack {
