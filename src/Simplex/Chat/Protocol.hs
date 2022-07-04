@@ -31,10 +31,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
-import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Parsers (fromTextField_, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -42,7 +42,11 @@ data ConnectionEntity
   | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ConnectionEntity where
+  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
+  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
@@ -436,6 +440,16 @@ serializeCMEventTag = decodeLatin1 . strEncode
 instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
 
 instance ToField CMEventTag where toField = toField . serializeCMEventTag
+
+hasNotification :: CMEventTag -> Bool
+hasNotification = \case
+  XMsgNew_ -> True
+  XFile_ -> True
+  XContact_ -> True
+  XGrpInv_ -> True
+  XGrpDel_ -> True
+  XCallInv_ -> True
+  _ -> False
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {msgId, event, params} = do

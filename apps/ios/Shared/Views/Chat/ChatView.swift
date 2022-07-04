@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let memberImageSize: CGFloat = 34
 
@@ -224,7 +225,7 @@ struct ChatView: View {
     }
 
     func markAllRead() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             if chatModel.chatId == chat.id {
                 Task { await markChatRead(chat) }
             }

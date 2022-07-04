@@ -9,18 +9,18 @@
 import Foundation
 import SwiftUI
 
-struct User: Decodable, NamedChat {
+public struct User: Decodable, NamedChat {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
-    var profile: Profile
+    public var profile: Profile
     var activeUser: Bool
 
-    var displayName: String { get { profile.displayName } }
-    var fullName: String { get { profile.fullName } }
-    var image: String? { get { profile.image } }
+    public var displayName: String { get { profile.displayName } }
+    public var fullName: String { get { profile.fullName } }
+    public var image: String? { get { profile.image } }
 
-    static let sampleData = User(
+    public static let sampleData = User(
         userId: 1,
         userContactId: 1,
         localDisplayName: "alice",
@@ -29,14 +29,20 @@ struct User: Decodable, NamedChat {
     )
 }
 
-typealias ContactName = String
+public typealias ContactName = String
 
-typealias GroupName = String
+public typealias GroupName = String
 
-struct Profile: Codable, NamedChat {
-    var displayName: String
-    var fullName: String
-    var image: String?
+public struct Profile: Codable, NamedChat {
+    public init(displayName: String, fullName: String, image: String? = nil) {
+        self.displayName = displayName
+        self.fullName = fullName
+        self.image = image
+    }
+
+    public var displayName: String
+    public var fullName: String
+    public var image: String?
 
     static let sampleData = Profile(
         displayName: "alice",
@@ -44,34 +50,34 @@ struct Profile: Codable, NamedChat {
     )
 }
 
-enum ChatType: String {
+public enum ChatType: String {
     case direct = "@"
     case group = "#"
     case contactRequest = "<@"
     case contactConnection = ":"
 }
 
-protocol NamedChat {
+public protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
     var image: String? { get }
 }
 
 extension NamedChat {
-    var chatViewName: String {
+    public var chatViewName: String {
         get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
     }
 }
 
-typealias ChatId = String
+public typealias ChatId = String
 
-enum ChatInfo: Identifiable, Decodable, NamedChat {
+public enum ChatInfo: Identifiable, Decodable, NamedChat {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     case contactRequest(contactRequest: UserContactRequest)
     case contactConnection(contactConnection: PendingContactConnection)
 
-    var localDisplayName: String {
+    public var localDisplayName: String {
         get {
             switch self {
             case let .direct(contact): return contact.localDisplayName
@@ -82,7 +88,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var displayName: String {
+    public var displayName: String {
         get {
             switch self {
             case let .direct(contact): return contact.displayName
@@ -93,7 +99,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var fullName: String {
+    public var fullName: String {
         get {
             switch self {
             case let .direct(contact): return contact.fullName
@@ -104,7 +110,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var image: String? {
+    public var image: String? {
         get {
             switch self {
             case let .direct(contact): return contact.image
@@ -115,7 +121,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var id: ChatId {
+    public var id: ChatId {
         get {
             switch self {
             case let .direct(contact): return contact.id
@@ -126,7 +132,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var chatType: ChatType {
+    public var chatType: ChatType {
         get {
             switch self {
             case .direct: return .direct
@@ -137,7 +143,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var apiId: Int64 {
+    public var apiId: Int64 {
         get {
             switch self {
             case let .direct(contact): return contact.apiId
@@ -148,7 +154,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var ready: Bool {
+    public var ready: Bool {
         get {
             switch self {
             case let .direct(contact): return contact.ready
@@ -168,7 +174,7 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    var updatedAt: Date {
+    public var updatedAt: Date {
         switch self {
         case let .direct(contact): return contact.updatedAt
         case let .group(groupInfo): return groupInfo.updatedAt
@@ -177,49 +183,54 @@ enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    struct SampleData {
-        var direct: ChatInfo
-        var group: ChatInfo
-        var contactRequest: ChatInfo
+    public struct SampleData {
+        public var direct: ChatInfo
+        public var group: ChatInfo
+        public var contactRequest: ChatInfo
     }
 
-    static var sampleData: ChatInfo.SampleData = SampleData(
+    public static var sampleData: ChatInfo.SampleData = SampleData(
         direct: ChatInfo.direct(contact: Contact.sampleData),
         group: ChatInfo.group(groupInfo: GroupInfo.sampleData),
         contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData)
     )
 }
 
-struct ChatData: Decodable, Identifiable {
-    var chatInfo: ChatInfo
-    var chatItems: [ChatItem]
-    var chatStats: ChatStats
+public struct ChatData: Decodable, Identifiable {
+    public var chatInfo: ChatInfo
+    public var chatItems: [ChatItem]
+    public var chatStats: ChatStats
 
-    var id: ChatId { get { chatInfo.id } }
+    public var id: ChatId { get { chatInfo.id } }
 }
 
-struct ChatStats: Decodable {
-    var unreadCount: Int = 0
-    var minUnreadItemId: Int64 = 0
+public struct ChatStats: Decodable {
+    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0) {
+        self.unreadCount = unreadCount
+        self.minUnreadItemId = minUnreadItemId
+    }
+
+    public var unreadCount: Int = 0
+    public var minUnreadItemId: Int64 = 0
 }
 
-struct Contact: Identifiable, Decodable, NamedChat {
+public struct Contact: Identifiable, Decodable, NamedChat {
     var contactId: Int64
     var localDisplayName: ContactName
-    var profile: Profile
-    var activeConn: Connection
+    public var profile: Profile
+    public var activeConn: Connection
     var viaGroup: Int64?
     var createdAt: Date
     var updatedAt: Date
 
-    var id: ChatId { get { "@\(contactId)" } }
-    var apiId: Int64 { get { contactId } }
-    var ready: Bool { get { activeConn.connStatus == .ready } }
-    var displayName: String { get { profile.displayName } }
-    var fullName: String { get { profile.fullName } }
-    var image: String? { get { profile.image } }
+    public var id: ChatId { get { "@\(contactId)" } }
+    public var apiId: Int64 { get { contactId } }
+    public var ready: Bool { get { activeConn.connStatus == .ready } }
+    public var displayName: String { get { profile.displayName } }
+    public var fullName: String { get { profile.fullName } }
+    public var image: String? { get { profile.image } }
 
-    static let sampleData = Contact(
+    public static let sampleData = Contact(
         contactId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
@@ -229,23 +240,23 @@ struct Contact: Identifiable, Decodable, NamedChat {
     )
 }
 
-struct ContactRef: Decodable, Equatable {
+public struct ContactRef: Decodable, Equatable {
     var contactId: Int64
     var localDisplayName: ContactName
 
-    var id: ChatId { get { "@\(contactId)" } }
+    public var id: ChatId { get { "@\(contactId)" } }
 }
 
-struct ContactSubStatus: Decodable {
-    var contact: Contact
-    var contactError: ChatError?
+public struct ContactSubStatus: Decodable {
+    public var contact: Contact
+    public var contactError: ChatError?
 }
 
-struct Connection: Decodable {
+public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
 
-    var id: ChatId { get { ":\(connId)" } }
+    public var id: ChatId { get { ":\(connId)" } }
 
     static let sampleData = Connection(
         connId: 1,
@@ -253,21 +264,24 @@ struct Connection: Decodable {
     )
 }
 
-struct UserContactRequest: Decodable, NamedChat {
+public struct UserContact: Decodable {
+}
+
+public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
-    var updatedAt: Date
+    public var updatedAt: Date
 
-    var id: ChatId { get { "<@\(contactRequestId)" } }
-    var apiId: Int64 { get { contactRequestId } }
+    public var id: ChatId { get { "<@\(contactRequestId)" } }
+    public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
-    var displayName: String { get { profile.displayName } }
-    var fullName: String { get { profile.fullName } }
-    var image: String? { get { profile.image } }
+    public var displayName: String { get { profile.displayName } }
+    public var fullName: String { get { profile.fullName } }
+    public var image: String? { get { profile.image } }
 
-    static let sampleData = UserContactRequest(
+    public static let sampleData = UserContactRequest(
         contactRequestId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
@@ -276,21 +290,21 @@ struct UserContactRequest: Decodable, NamedChat {
     )
 }
 
-struct PendingContactConnection: Decodable, NamedChat {
+public struct PendingContactConnection: Decodable, NamedChat {
     var pccConnId: Int64
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
-    var viaContactUri: Bool
+    public var viaContactUri: Bool
     var createdAt: Date
-    var updatedAt: Date
+    public var updatedAt: Date
 
-    var id: ChatId { get { ":\(pccConnId)" } }
-    var apiId: Int64 { get { pccConnId } }
+    public var id: ChatId { get { ":\(pccConnId)" } }
+    public var apiId: Int64 { get { pccConnId } }
     var ready: Bool { get { false } }
     var localDisplayName: String {
         get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
     }
-    var displayName: String {
+    public var displayName: String {
         get {
             if let initiated = pccConnStatus.initiated {
                 return initiated && !viaContactUri
@@ -302,11 +316,11 @@ struct PendingContactConnection: Decodable, NamedChat {
             }
         }
     }
-    var fullName: String { get { "" } }
-    var image: String? { get { nil } }
-    var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
+    public var fullName: String { get { "" } }
+    public var image: String? { get { nil } }
+    public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
-    var description: String {
+    public var description: String {
         get {
             if let initiated = pccConnStatus.initiated {
                 return initiated && !viaContactUri
@@ -320,7 +334,7 @@ struct PendingContactConnection: Decodable, NamedChat {
         }
     }
 
-    static func getSampleData(_ status: ConnStatus = .new, viaContactUri: Bool = false) -> PendingContactConnection {
+    public static func getSampleData(_ status: ConnStatus = .new, viaContactUri: Bool = false) -> PendingContactConnection {
         PendingContactConnection(
             pccConnId: 1,
             pccAgentConnId: "abcd",
@@ -332,7 +346,7 @@ struct PendingContactConnection: Decodable, NamedChat {
     }
 }
 
-enum ConnStatus: String, Decodable {
+public enum ConnStatus: String, Decodable {
     case new = "new"
     case joined = "joined"
     case requested = "requested"
@@ -356,19 +370,19 @@ enum ConnStatus: String, Decodable {
     }
 }
 
-struct GroupInfo: Identifiable, Decodable, NamedChat {
+public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
     var createdAt: Date
     var updatedAt: Date
 
-    var id: ChatId { get { "#\(groupId)" } }
+    public var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
-    var ready: Bool { get { true } }
-    var displayName: String { get { groupProfile.displayName } }
-    var fullName: String { get { groupProfile.fullName } }
-    var image: String? { get { groupProfile.image } }
+    public var ready: Bool { get { true } }
+    public var displayName: String { get { groupProfile.displayName } }
+    public var fullName: String { get { groupProfile.fullName } }
+    public var image: String? { get { groupProfile.image } }
 
     static let sampleData = GroupInfo(
         groupId: 1,
@@ -379,10 +393,10 @@ struct GroupInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
-struct GroupProfile: Codable, NamedChat {
-    var displayName: String
-    var fullName: String
-    var image: String?
+public struct GroupProfile: Codable, NamedChat {
+    public var displayName: String
+    public var fullName: String
+    public var image: String?
 
     static let sampleData = GroupProfile(
         displayName: "team",
@@ -390,15 +404,15 @@ struct GroupProfile: Codable, NamedChat {
     )
 }
 
-struct GroupMember: Decodable {
-    var groupMemberId: Int64
+public struct GroupMember: Decodable {
+    public var groupMemberId: Int64
     var memberId: String
 //    var memberRole: GroupMemberRole
 //    var memberCategory: GroupMemberCategory
 //    var memberStatus: GroupMemberStatus
 //    var invitedBy: InvitedBy
     var localDisplayName: ContactName
-    var memberProfile: Profile
+    public var memberProfile: Profile
     var memberContactId: Int64?
 //    var activeConn: Connection?
 
@@ -412,7 +426,7 @@ struct GroupMember: Decodable {
         }
     }
 
-    static let sampleData = GroupMember(
+    public static let sampleData = GroupMember(
         groupMemberId: 1,
         memberId: "abcd",
         localDisplayName: "alice",
@@ -421,29 +435,50 @@ struct GroupMember: Decodable {
     )
 }
 
-struct MemberSubError: Decodable {
+public struct MemberSubError: Decodable {
     var member: GroupMember
     var memberError: ChatError
 }
 
-struct AChatItem: Decodable {
-    var chatInfo: ChatInfo
-    var chatItem: ChatItem
+public enum ConnectionEntity: Decodable {
+    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
+    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(entityConnection: Connection, userContact: UserContact)
 }
 
-struct ChatItem: Identifiable, Decodable {
-    var chatDir: CIDirection
-    var meta: CIMeta
-    var content: CIContent
-    var formattedText: [FormattedText]?
-    var quotedItem: CIQuote?
-    var file: CIFile?
+public struct NtfMsgInfo: Decodable {
 
-    var id: Int64 { get { meta.itemId } }
+}
 
-    var timestampText: Text { get { meta.timestampText } }
+public struct AChatItem: Decodable {
+    public var chatInfo: ChatInfo
+    public var chatItem: ChatItem
+}
 
-    var text: String {
+public struct ChatItem: Identifiable, Decodable {
+    public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, file: CIFile? = nil) {
+        self.chatDir = chatDir
+        self.meta = meta
+        self.content = content
+        self.formattedText = formattedText
+        self.quotedItem = quotedItem
+        self.file = file
+    }
+    
+    public var chatDir: CIDirection
+    public var meta: CIMeta
+    public var content: CIContent
+    public var formattedText: [FormattedText]?
+    public var quotedItem: CIQuote?
+    public var file: CIFile?
+
+    public var id: Int64 { get { meta.itemId } }
+
+    public var timestampText: Text { get { meta.timestampText } }
+
+    public var text: String {
         get {
             switch (content.text, file) {
             case let ("", .some(file)): return file.fileName
@@ -452,12 +487,12 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    func isRcvNew() -> Bool {
+    public func isRcvNew() -> Bool {
         if case .rcvNew = meta.itemStatus { return true }
         return false
     }
 
-    func isMsgContent() -> Bool {
+    public func isMsgContent() -> Bool {
         switch content {
         case .sndMsgContent: return true
         case .rcvMsgContent: return true
@@ -465,7 +500,7 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    func isDeletedContent() -> Bool {
+    public func isDeletedContent() -> Bool {
         switch content {
         case .sndDeleted: return true
         case .rcvDeleted: return true
@@ -473,7 +508,7 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    func isCall() -> Bool {
+    public func isCall() -> Bool {
         switch content {
         case .sndCall: return true
         case .rcvCall: return true
@@ -481,7 +516,7 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    var memberDisplayName: String? {
+    public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
                 return groupMember.memberProfile.displayName
@@ -491,7 +526,7 @@ struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
+    public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> ChatItem {
         ChatItem(
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, itemDeleted, itemEdited, editable),
@@ -501,7 +536,7 @@ struct ChatItem: Identifiable, Decodable {
        )
     }
 
-    static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
+    public static func getFileMsgContentSample (id: Int64 = 1, text: String = "", fileName: String = "test.txt", fileSize: Int64 = 100, fileStatus: CIFileStatus = .rcvComplete) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
             meta: CIMeta.getSample(id, .now, text, .rcvRead, false, false, false),
@@ -511,7 +546,7 @@ struct ChatItem: Identifiable, Decodable {
        )
     }
 
-    static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
+    public static func getDeletedContentSample (_ id: Int64 = 1, dir: CIDirection = .directRcv, _ ts: Date = .now, _ text: String = "this item is deleted", _ status: CIStatus = .rcvRead) -> ChatItem {
         ChatItem(
             chatDir: dir,
             meta: CIMeta.getSample(id, ts, text, status, false, false, false),
@@ -521,7 +556,7 @@ struct ChatItem: Identifiable, Decodable {
        )
     }
 
-    static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
+    public static func getIntegrityErrorSample (_ status: CIStatus = .rcvRead, fromMsgId: Int64 = 1, toMsgId: Int64 = 2) -> ChatItem {
         ChatItem(
             chatDir: .directRcv,
             meta: CIMeta.getSample(1, .now, "1 skipped message", status, false, false, false),
@@ -532,13 +567,13 @@ struct ChatItem: Identifiable, Decodable {
     }
 }
 
-enum CIDirection: Decodable {
+public enum CIDirection: Decodable {
     case directSnd
     case directRcv
     case groupSnd
     case groupRcv(groupMember: GroupMember)
 
-    var sent: Bool {
+    public var sent: Bool {
         get {
             switch self {
             case .directSnd: return true
@@ -550,19 +585,19 @@ enum CIDirection: Decodable {
     }
 }
 
-struct CIMeta: Decodable {
+public struct CIMeta: Decodable {
     var itemId: Int64
     var itemTs: Date
     var itemText: String
-    var itemStatus: CIStatus
+    public var itemStatus: CIStatus
     var createdAt: Date
-    var itemDeleted: Bool
-    var itemEdited: Bool
-    var editable: Bool
+    public var itemDeleted: Bool
+    public var itemEdited: Bool
+    public var editable: Bool
 
     var timestampText: Text { get { formatTimestampText(itemTs) } }
 
-    static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
+    public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, _ itemDeleted: Bool = false, _ itemEdited: Bool = false, _ editable: Bool = true) -> CIMeta {
         CIMeta(
             itemId: id,
             itemTs: ts,
@@ -579,14 +614,14 @@ struct CIMeta: Decodable {
 let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
-func formatTimestampText(_ date: Date) -> Text {
+public func formatTimestampText(_ date: Date) -> Text {
     let now = Calendar.current.dateComponents([.day, .hour], from: .now)
     let dc = Calendar.current.dateComponents([.day, .hour], from: date)
     let recent = now.day == dc.day || ((now.day ?? 0) - (dc.day ?? 0) == 1 && (dc.hour ?? 0) >= 18 && (now.hour ?? 0) < 12)
     return Text(date, format: recent ? msgTimeFormat : msgDateFormat)
 }
 
-enum CIStatus: Decodable {
+public enum CIStatus: Decodable {
     case sndNew
     case sndSent
     case sndErrorAuth
@@ -595,7 +630,7 @@ enum CIStatus: Decodable {
     case rcvRead
 }
 
-enum CIDeleteMode: String, Decodable {
+public enum CIDeleteMode: String, Decodable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
 }
@@ -604,7 +639,7 @@ protocol ItemContent {
     var text: String { get }
 }
 
-enum CIContent: Decodable, ItemContent {
+public enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     case sndDeleted(deleteMode: CIDeleteMode)
@@ -613,7 +648,7 @@ enum CIContent: Decodable, ItemContent {
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
 
-    var text: String {
+    public var text: String {
         get {
             switch self {
             case let .sndMsgContent(mc): return mc.text
@@ -627,7 +662,7 @@ enum CIContent: Decodable, ItemContent {
         }
     }
 
-    var msgContent: MsgContent? {
+    public var msgContent: MsgContent? {
         get {
             switch self {
             case let .sndMsgContent(mc): return mc
@@ -638,17 +673,17 @@ enum CIContent: Decodable, ItemContent {
     }
 }
 
-struct CIQuote: Decodable, ItemContent {
+public struct CIQuote: Decodable, ItemContent {
     var chatDir: CIDirection?
     var itemId: Int64?
     var sharedMsgId: String? = nil
     var sentAt: Date
-    var content: MsgContent
-    var formattedText: [FormattedText]?
+    public var content: MsgContent
+    public var formattedText: [FormattedText]?
 
-    var text: String { get { content.text } }
+    public var text: String { get { content.text } }
 
-    func getSender(_ currentUser: User?) -> String? {
+    public func getSender(_ currentUser: User?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
@@ -658,7 +693,7 @@ struct CIQuote: Decodable, ItemContent {
         }
     }
 
-    static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?, image: String? = nil) -> CIQuote {
+    public static func getSample(_ itemId: Int64?, _ sentAt: Date, _ text: String, chatDir: CIDirection?, image: String? = nil) -> CIQuote {
         let mc: MsgContent
         if let image = image {
             mc = .image(text: text, image: image)
@@ -669,14 +704,14 @@ struct CIQuote: Decodable, ItemContent {
     }
 }
 
-struct CIFile: Decodable {
-    var fileId: Int64
-    var fileName: String
-    var fileSize: Int64
-    var filePath: String?
-    var fileStatus: CIFileStatus
+public struct CIFile: Decodable {
+    public var fileId: Int64
+    public var fileName: String
+    public var fileSize: Int64
+    public var filePath: String?
+    public var fileStatus: CIFileStatus
 
-    static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
+    public static func getSample(fileId: Int64 = 1, fileName: String = "test.txt", fileSize: Int64 = 100, filePath: String? = "test.txt", fileStatus: CIFileStatus = .rcvComplete) -> CIFile {
         CIFile(fileId: fileId, fileName: fileName, fileSize: fileSize, filePath: filePath, fileStatus: fileStatus)
     }
 
@@ -697,7 +732,7 @@ struct CIFile: Decodable {
     }
 }
 
-enum CIFileStatus: String, Decodable {
+public enum CIFileStatus: String, Decodable {
     case sndStored = "snd_stored"
     case sndTransfer = "snd_transfer"
     case sndComplete = "snd_complete"
@@ -709,7 +744,7 @@ enum CIFileStatus: String, Decodable {
     case rcvCancelled = "rcv_cancelled"
 }
 
-enum MsgContent {
+public enum MsgContent {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
@@ -738,7 +773,7 @@ enum MsgContent {
         }
     }
 
-    func isFile() -> Bool {
+    public func isFile() -> Bool {
         switch self {
         case .file: return true
         default: return false
@@ -754,7 +789,7 @@ enum MsgContent {
 }
 
 extension MsgContent: Decodable {
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         do {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             let type = try container.decode(String.self, forKey: CodingKeys.type)
@@ -784,7 +819,7 @@ extension MsgContent: Decodable {
 }
 
 extension MsgContent: Encodable {
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case let .text(text):
@@ -809,12 +844,12 @@ extension MsgContent: Encodable {
     }
 }
 
-struct FormattedText: Decodable {
-    var text: String
-    var format: Format?
+public struct FormattedText: Decodable {
+    public var text: String
+    public var format: Format?
 }
 
-enum Format: Decodable, Equatable {
+public enum Format: Decodable, Equatable {
     case bold
     case italic
     case strikeThrough
@@ -826,7 +861,7 @@ enum Format: Decodable, Equatable {
     case phone
 }
 
-enum FormatColor: String, Decodable {
+public enum FormatColor: String, Decodable {
     case red = "red"
     case green = "green"
     case blue = "blue"
@@ -836,7 +871,7 @@ enum FormatColor: String, Decodable {
     case black = "black"
     case white = "white"
 
-    var uiColor: Color {
+    public var uiColor: Color {
         get {
             switch (self) {
             case .red: return .red
@@ -853,15 +888,22 @@ enum FormatColor: String, Decodable {
 }
 
 // Struct to use with simplex API
-struct LinkPreview: Codable {
-    var uri: URL
-    var title: String
+public struct LinkPreview: Codable {
+    public init(uri: URL, title: String, description: String = "", image: String) {
+        self.uri = uri
+        self.title = title
+        self.description = description
+        self.image = image
+    }
+    
+    public var uri: URL
+    public var title: String
     // TODO remove once optional in haskell
-    var description: String = ""
-    var image: String
+    public var description: String = ""
+    public var image: String
 }
 
-enum NtfTknStatus: String, Decodable {
+public enum NtfTknStatus: String, Decodable {
     case new = "NEW"
     case registered = "REGISTERED"
     case invalid = "INVALID"
@@ -870,15 +912,19 @@ enum NtfTknStatus: String, Decodable {
     case expired = "EXPIRED"
 }
 
-struct SndFileTransfer: Decodable {
+public struct SndFileTransfer: Decodable {
 
 }
 
-struct FileTransferMeta: Decodable {
+public struct RcvFileTransfer: Decodable {
+
+}
+
+public struct FileTransferMeta: Decodable {
     
 }
 
-enum CICallStatus: String, Decodable {
+public enum CICallStatus: String, Decodable {
     case pending
     case missed
     case rejected
@@ -901,12 +947,12 @@ enum CICallStatus: String, Decodable {
         }
     }
 
-    static func durationText(_ sec: Int) -> String {
+    public static func durationText(_ sec: Int) -> String {
         String(format: "%02d:%02d", sec / 60, sec % 60)
     }
 }
 
-enum MsgErrorType: Decodable {
+public enum MsgErrorType: Decodable {
     case msgSkipped(fromMsgId: Int64, toMsgId: Int64)
     case msgBadId(msgId: Int64)
     case msgBadHash

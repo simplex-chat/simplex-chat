@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CIImageView: View {
     @Environment(\.colorScheme) var colorScheme

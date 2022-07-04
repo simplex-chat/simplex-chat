@@ -11,6 +11,7 @@ import UIKit
 import Dispatch
 import BackgroundTasks
 import SwiftUI
+import SimpleXChat
 
 private var chatController: chat_ctrl?
 
@@ -46,7 +47,7 @@ enum TerminalItem: Identifiable {
     }
 }
 
-private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
+func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
     var id: UIBackgroundTaskIdentifier!
     var running = true
     let endTask = {
@@ -71,7 +72,7 @@ private func beginBGTask(_ handler: (() -> Void)? = nil) -> (() -> Void) {
 let msgDelay: Double = 7.5
 let maxTaskDuration: Double = 15
 
-private func withBGTask(bgDelay: Double? = nil, f: @escaping () -> ChatResponse) -> ChatResponse {
+private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     let endTask = beginBGTask()
     DispatchQueue.global().asyncAfter(deadline: .now() + maxTaskDuration, execute: endTask)
     let r = f()
@@ -92,11 +93,9 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     if case let .response(_, json) = resp {
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
-    if case .apiParseMarkdown = cmd {} else {
-        DispatchQueue.main.async {
-            ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
-            ChatModel.shared.terminalItems.append(.resp(.now, resp))
-        }
+    DispatchQueue.main.async {
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.resp(.now, resp))
     }
     return resp
 }
@@ -107,10 +106,10 @@ func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil
     }
 }
 
-func chatRecvMsg() async -> ChatResponse {
+func chatRecvMsg() async -> ChatResponse? {
     await withCheckedContinuation { cont in
-        _ = withBGTask(bgDelay: msgDelay) {
-            let resp = chatResponse(chat_recv_msg(getChatCtrl())!)
+        _  = withBGTask(bgDelay: msgDelay) { () -> ChatResponse? in
+            let resp = recvSimpleXMsg()
             cont.resume(returning: resp)
             return resp
         }
@@ -134,12 +133,32 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat)
+    let r = chatSendCmdSync(.startChat(subscribe: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
     default: throw r
     }
+}
+
+func apiStopChat() async throws {
+    let r = await chatSendCmd(.apiStopChat)
+    switch r {
+    case .chatStopped: return
+    default: throw r
+    }
+}
+
+func apiActivateChat() {
+    let r = chatSendCmdSync(.apiActivateChat)
+    if case .cmdOk = r { return }
+    logger.error("apiActivateChat error: \(String(describing: r))")
+}
+
+func apiSuspendChat(timeoutMicroseconds: Int) {
+    let r = chatSendCmdSync(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
+    if case .cmdOk = r { return }
+    logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
 func apiSetFilesFolder(filesFolder: String) throws {
@@ -148,9 +167,21 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
-func apiGetChats() throws -> [Chat] {
+func apiExportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiExportArchive(config: config))
+}
+
+func apiImportArchive(config: ArchiveConfig) async throws {
+    try await sendCommandOkResp(.apiImportArchive(config: config))
+}
+
+func apiDeleteStorage() async throws {
+    try await sendCommandOkResp(.apiDeleteStorage)
+}
+
+func apiGetChats() throws -> [ChatData] {
     let r = chatSendCmdSync(.apiGetChats)
-    if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
+    if case let .apiChats(chats) = r { return chats }
     throw r
 }
 
@@ -158,6 +189,18 @@ func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
     let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
+}
+
+func loadChat(chat: Chat) {
+    do {
+        let cInfo = chat.chatInfo
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+        let m = ChatModel.shared
+        m.updateChatInfo(chat.chatInfo)
+        m.chatItems = chat.chatItems
+    } catch let error {
+        logger.error("loadChat error: \(responseError(error))")
+    }
 }
 
 func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
@@ -195,21 +238,42 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiRegisterToken(token: String) async throws -> NtfTknStatus {
-    let r = await chatSendCmd(.apiRegisterToken(token: token))
+func apiGetNtfToken() throws -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+    let r = chatSendCmdSync(.apiGetNtfToken)
+    switch r {
+    case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
+    case .chatCmdError(.errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
+    default: throw r
+    }
+}
+
+func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) async throws -> NtfTknStatus {
+    let r = await chatSendCmd(.apiRegisterToken(token: token, notificationMode: notificationMode))
     if case let .ntfTokenStatus(status) = r { return status }
     throw r
 }
 
-func apiVerifyToken(token: String, code: String, nonce: String) async throws {
-    try await sendCommandOkResp(.apiVerifyToken(token: token, code: code, nonce: nonce))
+func registerToken(token: DeviceToken) {
+    let m = ChatModel.shared
+    let mode = m.notificationMode
+    if mode != .off {
+        logger.debug("registerToken \(mode.rawValue)")
+        Task {
+            do {
+                let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                await MainActor.run { m.tokenStatus = status }
+            } catch let error {
+                logger.error("registerToken apiRegisterToken error: \(responseError(error))")
+            }
+        }
+    }
 }
 
-func apiIntervalNofication(token: String, interval: Int) async throws {
-    try await sendCommandOkResp(.apiIntervalNofication(token: token, interval: interval))
+func apiVerifyToken(token: DeviceToken, nonce: String, code: String) async throws {
+    try await sendCommandOkResp(.apiVerifyToken(token: token, nonce: nonce, code: code))
 }
 
-func apiDeleteToken(token: String) async throws {
+func apiDeleteToken(token: DeviceToken) async throws {
     try await sendCommandOkResp(.apiDeleteToken(token: token))
 }
 
@@ -309,12 +373,6 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     case let .userProfileUpdated(_, toProfile): return toProfile
     default: throw r
     }
-}
-
-func apiParseMarkdown(text: String) throws -> [FormattedText]? {
-    let r = chatSendCmdSync(.apiParseMarkdown(text: text))
-    if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
-    throw r
 }
 
 func apiCreateUserAddress() async throws -> String {
@@ -453,42 +511,48 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func initializeChat() {
+func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
         let m = ChatModel.shared
+        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
+        } else if start {
+            try startChat()
         } else {
-            startChat()
+            m.chatRunning = false
         }
     } catch {
-        fatalError("Failed to initialize chat controller or database: \(error)")
+        fatalError("Failed to initialize chat controller or database: \(responseError(error))")
     }
 }
 
-func startChat() {
+func startChat() throws {
     logger.debug("startChat")
-    do {
-        let m = ChatModel.shared
-        // TODO set file folder once, before chat is started
-        let justStarted = try apiStartChat()
-        if justStarted {
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            m.userAddress = try apiGetUserAddress()
-            m.userSMPServers = try getUserSMPServers()
-            m.chats = try apiGetChats()
-            withAnimation {
-                m.onboardingStage = m.chats.isEmpty
-                                    ? .step3_MakeConnection
-                                    : .onboardingComplete
-            }
+    let m = ChatModel.shared
+    let justStarted = try apiStartChat()
+    if justStarted {
+        m.userAddress = try apiGetUserAddress()
+        m.userSMPServers = try getUserSMPServers()
+        let chats = try apiGetChats()
+        m.chats = chats.map { Chat.init($0) }
+        (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
+        if let token = m.deviceToken {
+            registerToken(token: token)
         }
-        ChatReceiver.shared.start()
-    } catch {
-        fatalError("Failed to start or load chats: \(error)")
+        withAnimation {
+            m.onboardingStage = m.onboardingStage == .step2_CreateProfile
+                                ? .step3_SetNotificationsMode
+                                : m.chats.isEmpty
+                                ? .step4_MakeConnection
+                                : .onboardingComplete
+        }
     }
+    ChatReceiver.shared.start()
+    m.chatRunning = true
+    chatLastStartGroupDefault.set(Date.now)
 }
 
 class ChatReceiver {
@@ -509,12 +573,13 @@ class ChatReceiver {
     }
 
     func receiveMsgLoop() async {
-        let msg = await chatRecvMsg()
-        self._lastMsgTime = .now
-        processReceivedMsg(msg)
+        // TODO use function that has timeout
+        if let msg = await chatRecvMsg() {
+            self._lastMsgTime = .now
+            await processReceivedMsg(msg)
+        }
         if self.receiveMessages {
-            do { try await Task.sleep(nanoseconds: 7_500_000) }
-            catch { logger.error("receiveMsgLoop: Task.sleep error: \(error.localizedDescription)") }
+            _ = try? await Task.sleep(nanoseconds: 7_500_000)
             await receiveMsgLoop()
         }
     }
@@ -527,9 +592,9 @@ class ChatReceiver {
     }
 }
 
-func processReceivedMsg(_ res: ChatResponse) {
+func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
-    DispatchQueue.main.async {
+    await MainActor.run {
         m.terminalItems.append(.resp(.now, res))
         logger.debug("processReceivedMsg: \(res.responseType)")
         switch res {
@@ -681,6 +746,8 @@ func processReceivedMsg(_ res: ChatResponse) {
                 m.callCommand = .end
 //                CallController.shared.reportCallRemoteEnded(call: call)
             }
+        case .chatSuspended:
+            chatSuspended()
         default:
             logger.debug("unsupported event: \(res.responseType)")
         }

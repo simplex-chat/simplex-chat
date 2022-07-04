@@ -22,37 +22,43 @@ struct ContentView: View {
         ZStack {
             if prefPerformLA && userAuthorized != true {
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
-            } else {
-                if let step = chatModel.onboardingStage {
-                    if case .onboardingComplete = step,
-                       chatModel.currentUser != nil {
-                        ZStack(alignment: .top) {
-                            ChatListView(showChatInfo: $showChatInfo)
-                            .onAppear {
-                                NtfManager.shared.requestAuthorization(onDeny: {
-                                    alertManager.showAlert(notificationAlert())
-                                })
-                                // Local Authentication notice is to be shown on next start after onboarding is complete
-                                if (!prefLANoticeShown && prefShowLANotice) {
-                                    prefLANoticeShown = true
-                                    alertManager.showAlert(laNoticeAlert())
-                                }
-                                prefShowLANotice = true
-                            }
-                            if chatModel.showCallView, let call = chatModel.activeCall {
-                                ActiveCallView(call: call)
-                            }
-                            IncomingCallView()
-                        }
-                    } else {
-                        OnboardingView(onboarding: step)
-                    }
+            } else if !chatModel.v3DBMigration.startChat {
+                MigrateToAppGroupView()
+            } else if let step = chatModel.onboardingStage  {
+                if case .onboardingComplete = step,
+                   chatModel.currentUser != nil {
+                    mainView()
+                } else {
+                    OnboardingView(onboarding: step)
                 }
             }
         }
-        .onAppear { if doAuthenticate { runAuthenticate() } }
+        .onAppear {
+            if doAuthenticate { runAuthenticate() }
+        }
         .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    private func mainView() -> some View {
+        ZStack(alignment: .top) {
+            ChatListView(showChatInfo: $showChatInfo)
+            .onAppear {
+                NtfManager.shared.requestAuthorization(onDeny: {
+                    alertManager.showAlert(notificationAlert())
+                })
+                // Local Authentication notice is to be shown on next start after onboarding is complete
+                if (!prefLANoticeShown && prefShowLANotice) {
+                    prefLANoticeShown = true
+                    alertManager.showAlert(laNoticeAlert())
+                }
+                prefShowLANotice = true
+            }
+            if chatModel.showCallView, let call = chatModel.activeCall {
+                ActiveCallView(call: call)
+            }
+            IncomingCallView()
+        }
     }
 
     private func runAuthenticate() {

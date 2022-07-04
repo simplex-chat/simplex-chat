@@ -1,8 +1,9 @@
 //
 //  dummy.m
-//  SimpleX
+//  SimpleXChat
 //
-//  Created by Evgeny Poberezkin on 22/01/2022.
+//  Created by Evgeny on 30/05/2022.
+//  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

@@ -16,6 +16,7 @@ import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtocolServer (..), smpClientVRange)
+import Simplex.Messaging.Version
 import Test.Hspec
 
 protocolTests :: Spec
@@ -42,7 +43,7 @@ connReqData :: ConnReqUriData
 connReqData =
   ConnReqUriData
     { crScheme = simplexChat,
-      crAgentVRange = smpAgentVRange,
+      crAgentVRange = mkVersionRange 1 1,
       crSmpQueues = [queue]
     }
 
