@@ -883,7 +883,9 @@ processChatCommand = \case
             | ctId == contactId -> do
               call_ <- action userId ct call
               case call_ of
-                Just call' -> atomically $ TM.insert ctId call' calls
+                Just call' -> do
+                  unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId
+                  atomically $ TM.insert ctId call' calls
                 _ -> do
                   withStore' $ \db -> deleteCalls db user ctId
                   atomically $ TM.delete ctId calls
@@ -1805,7 +1807,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           | otherwise -> do
             (call_, aciContent_) <- action call
             case call_ of
-              Just call' -> atomically $ TM.insert ctId' call' calls
+              Just call' -> do
+                unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId'
+                atomically $ TM.insert ctId' call' calls
               _ -> do
                 withStore' $ \db -> deleteCalls db user ctId'
                 atomically $ TM.delete ctId' calls

@@ -33,6 +33,11 @@ data Call = Call
     callState :: CallState
   }
 
+isRcvInvitation :: Call -> Bool
+isRcvInvitation Call {callState} = case callState of
+  CallInvitationReceived {} -> True
+  _ -> False
+
 data CallStateTag
   = CSTCallInvitationSent
   | CSTCallInvitationReceived
@@ -126,8 +131,8 @@ data RcvCallInvitation = RcvCallInvitation
   deriving (Show, Generic)
 
 instance ToJSON RcvCallInvitation where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CallType = CallType
   { media :: CallMedia,
