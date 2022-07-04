@@ -150,7 +150,7 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
     switch mode {
     case .off: return "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)."
     case .periodic: return "**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have."
-    case .instant: return "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who is it from."
+    case .instant: return "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from."
     }
 }
 
