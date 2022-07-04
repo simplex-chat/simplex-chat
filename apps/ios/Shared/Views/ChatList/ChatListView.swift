@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -19,9 +20,10 @@ struct ChatListView: View {
     var body: some View {
         let v = NavigationView {
             List {
-                ForEach(filteredChats()) { chat in
+                ForEach(filteredChats(), id: \.viewId) { chat in
                     ChatListNavLink(chat: chat, showChatInfo: $showChatInfo)
                         .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -32,7 +34,7 @@ struct ChatListView: View {
             }
             .onChange(of: chatModel.chats.isEmpty) { empty in
                 if !empty { return }
-                withAnimation { chatModel.onboardingStage = .step3_MakeConnection }
+                withAnimation { chatModel.onboardingStage = .step4_MakeConnection }
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onAppear() { connectViaUrl() }
@@ -45,7 +47,11 @@ struct ChatListView: View {
                     SettingsButton()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NewChatButton()
+                    switch chatModel.chatRunning {
+                    case .some(true): NewChatButton()
+                    case .some(false): chatStoppedIcon()
+                    case .none: EmptyView()
+                    }
                 }
             }
         }
@@ -70,6 +76,17 @@ struct ChatListView: View {
                 (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
+    }
+}
+
+func chatStoppedIcon() -> some View {
+    Button {
+        AlertManager.shared.showAlertMsg(
+            title: "Chat is stopped",
+            message: "You can start chat via app Settings / Database or by restarting the app"
+        )
+    } label: {
+        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
     }
 }
 

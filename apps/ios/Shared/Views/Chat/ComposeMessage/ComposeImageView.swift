@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ComposeImageView: View {
     @Environment(\.colorScheme) var colorScheme

@@ -10,23 +10,63 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
-func getChatCtrl() -> chat_ctrl {
+public func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dataDir = getDocumentsDirectory().path + "/mobile_v1"
-    logger.debug("documents directory \(dataDir)")
-    var cstr = dataDir.cString(using: .utf8)!
+    let dbPath = getAppDatabasePath().path
+    logger.debug("getChatCtrl DB path: \(dbPath)")
+    var cstr = dbPath.cString(using: .utf8)!
     chatController = chat_init(&cstr)
     logger.debug("getChatCtrl: chat_init")
     return chatController!
 }
 
-func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
-    var c = cmd.cmdString.cString(using: .utf8)!
-    return chatResponse(chat_send_cmd(getChatCtrl(), &c))
+public func resetChatCtrl() {
+    chatController = nil
 }
 
-func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
-    let s = String.init(cString: cjson)
+public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
+    var c = cmd.cmdString.cString(using: .utf8)!
+    let cjson  = chat_send_cmd(getChatCtrl(), &c)!
+    return chatResponse(fromCString(cjson))
+}
+
+// in microseconds
+let MESSAGE_TIMEOUT: Int32 = 15_000_000
+
+public func recvSimpleXMsg() -> ChatResponse? {
+    if let cjson = chat_recv_msg_wait(getChatCtrl(), MESSAGE_TIMEOUT) {
+        let s = fromCString(cjson)
+        return s == "" ? nil : chatResponse(s)
+    }
+    return nil
+}
+
+public func parseSimpleXMarkdown(_ s: String) -> [FormattedText]? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_markdown(&c) {
+        if let d = fromCString(cjson).data(using: .utf8) {
+            do {
+                let r = try jsonDecoder.decode(ParsedMarkdown.self, from: d)
+                return r.formattedText
+            } catch {
+                logger.error("parseSimpleXMarkdown jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+struct ParsedMarkdown: Decodable {
+    var formattedText: [FormattedText]?
+}
+
+private func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
+    let s = String.init(cString: c)
+    free(c)
+    return s
+}
+
+public func chatResponse(_ s: String) -> ChatResponse {
     let d = s.data(using: .utf8)!
 // TODO is there a way to do it without copying the data? e.g:
 //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
@@ -46,7 +86,6 @@ func chatResponse(_ cjson: UnsafeMutablePointer<CChar>) -> ChatResponse {
         }
         json = prettyJSON(j)
     }
-    free(cjson)
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
 
@@ -57,7 +96,7 @@ func prettyJSON(_ obj: NSDictionary) -> String? {
     return nil
 }
 
-func responseError(_ err: Error) -> String {
+public func responseError(_ err: Error) -> String {
     if let r = err as? ChatResponse {
         return String(describing: r)
     } else {

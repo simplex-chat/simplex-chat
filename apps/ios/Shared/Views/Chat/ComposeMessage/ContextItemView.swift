@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ContextItemView: View {
     @Environment(\.colorScheme) var colorScheme

@@ -32,12 +32,12 @@ import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Show, Generic)

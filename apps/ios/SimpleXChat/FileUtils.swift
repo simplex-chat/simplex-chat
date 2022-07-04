@@ -8,25 +8,71 @@
 
 import Foundation
 import SwiftUI
+import OSLog
+
+let logger = Logger()
 
 // maximum image file size to be auto-accepted
-let maxImageSize: Int64 = 236700
+public let maxImageSize: Int64 = 236700
 
-let maxFileSize: Int64 = 8000000
+public let maxFileSize: Int64 = 8000000
 
-func getDocumentsDirectory() -> URL {
+public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
 
-func getAppFilesDirectory() -> URL {
-    getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+func getGroupContainerDirectory() -> URL {
+    FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_NAME)!
+}
+
+func getAppDirectory() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory()
+    : getDocumentsDirectory()
+//    getDocumentsDirectory()
+}
+
+let DB_FILE_PREFIX = "simplex_v1"
+
+func getLegacyDatabasePath() -> URL {
+    getDocumentsDirectory().appendingPathComponent("mobile_v1", isDirectory: false)
+}
+
+public func getAppDatabasePath() -> URL {
+    dbContainerGroupDefault.get() == .group
+    ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
+    : getLegacyDatabasePath()
+//    getLegacyDatabasePath()
+}
+
+public func hasLegacyDatabase() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let fm = FileManager.default
+    return fm.isReadableFile(atPath: dbPath.path + "_agent.db") &&
+           fm.isReadableFile(atPath: dbPath.path + "_chat.db")
+}
+
+public func removeLegacyDatabaseAndFiles() -> Bool {
+    let dbPath = getLegacyDatabasePath()
+    let appFiles = getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
+    let fm = FileManager.default
+    let r1 = nil != (try? fm.removeItem(atPath: dbPath.path + "_agent.db"))
+    let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + "_chat.db"))
+    try? fm.removeItem(atPath: dbPath.path + "_agent.db.bak")
+    try? fm.removeItem(atPath: dbPath.path + "_chat.db.bak")
+    try? fm.removeItem(at: appFiles)
+    return r1 && r2
+}
+
+public func getAppFilesDirectory() -> URL {
+    getAppDirectory().appendingPathComponent("app_files", isDirectory: true)
 }
 
 func getAppFilePath(_ fileName: String) -> URL {
     getAppFilesDirectory().appendingPathComponent(fileName)
 }
 
-func getLoadedFilePath(_ file: CIFile?) -> String? {
+public func getLoadedFilePath(_ file: CIFile?) -> String? {
     if let file = file,
        file.loaded,
        let savedFile = file.filePath {
@@ -35,14 +81,14 @@ func getLoadedFilePath(_ file: CIFile?) -> String? {
     return nil
 }
 
-func getLoadedImage(_ file: CIFile?) -> UIImage? {
+public func getLoadedImage(_ file: CIFile?) -> UIImage? {
     if let filePath = getLoadedFilePath(file) {
         return UIImage(contentsOfFile: filePath)
     }
     return nil
 }
 
-func saveFileFromURL(_ url: URL) -> String? {
+public func saveFileFromURL(_ url: URL) -> String? {
     let savedFile: String?
     if url.startAccessingSecurityScopedResource() {
         do {
@@ -61,7 +107,7 @@ func saveFileFromURL(_ url: URL) -> String? {
     return savedFile
 }
 
-func saveImage(_ uiImage: UIImage) -> String? {
+public func saveImage(_ uiImage: UIImage) -> String? {
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: maxImageSize) {
         let timestamp = Date().getFormattedDate("yyyyMMdd_HHmmss")
         let fileName = uniqueCombine("IMG_\(timestamp).jpg")
@@ -92,8 +138,9 @@ private func saveFile(_ data: Data, _ fileName: String) -> String? {
 
 private func uniqueCombine(_ fileName: String) -> String {
     func tryCombine(_ fileName: String, _ n: Int) -> String {
-        let name = fileName.deletingPathExtension
-        let ext = fileName.pathExtension
+        let ns = fileName as NSString
+        let name = ns.deletingPathExtension
+        let ext = ns.pathExtension
         let suffix = (n == 0) ? "" : "_\(n)"
         let f = "\(name)\(suffix).\(ext)"
         return (FileManager.default.fileExists(atPath: getAppFilePath(f).path)) ? tryCombine(fileName, n + 1) : f
@@ -101,19 +148,7 @@ private func uniqueCombine(_ fileName: String) -> String {
     return tryCombine(fileName, 0)
 }
 
-private extension String {
-    var ns: NSString {
-        return self as NSString
-    }
-    var pathExtension: String {
-        return ns.pathExtension
-    }
-    var deletingPathExtension: String {
-        return ns.deletingPathExtension
-    }
-}
-
-func removeFile(_ fileName: String) {
+public func removeFile(_ fileName: String) {
     do {
         try FileManager.default.removeItem(atPath: getAppFilePath(fileName).path)
     } catch {
@@ -123,7 +158,7 @@ func removeFile(_ fileName: String) {
 
 // image utils
 
-func dropImagePrefix(_ s: String) -> String {
+public func dropImagePrefix(_ s: String) -> String {
     dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
 }
 
@@ -131,7 +166,7 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
 }
 
-func cropToSquare(_ image: UIImage) -> UIImage {
+public func cropToSquare(_ image: UIImage) -> UIImage {
     let size = image.size
     let side = min(size.width, size.height)
     let newSize = CGSize(width: side, height: side)
@@ -159,7 +194,7 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64) -> Data? {
     return data
 }
 
-func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     var str = compressImageStr(img)
     var dataSize = str?.count ?? 0
