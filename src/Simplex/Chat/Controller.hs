@@ -126,6 +126,7 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
+  | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
@@ -269,11 +270,12 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key, callTs :: UTCTime}
+  | CRCallInvitation {callInvitation :: RcvCallInvitation}
   | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {contact :: Contact}
+  | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}

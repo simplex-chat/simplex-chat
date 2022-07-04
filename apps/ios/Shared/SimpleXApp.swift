@@ -63,6 +63,7 @@ struct SimpleXApp: App {
                         let appState = appStateGroupDefault.get()
                         activateChat()
                         if appState.inactive && chatModel.chatRunning == true {
+                            // TODO refresh call invitation
                             updateChats()
                         }
                         doAuthenticate = authenticationExpired()

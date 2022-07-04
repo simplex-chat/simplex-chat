@@ -152,11 +152,12 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
+  CRCallInvitation RcvCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
   CRCallOffer {contact, callType, offer, sharedKey} -> viewCallOffer contact callType offer sharedKey
   CRCallAnswer {contact, answer} -> viewCallAnswer contact answer
   CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
   CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
+  CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection _ -> []

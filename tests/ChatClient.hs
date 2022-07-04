@@ -14,7 +14,7 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
 import Data.List (dropWhileEnd, find)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
@@ -118,6 +118,7 @@ startTestChat_ st cfg opts dbFilePrefix user = do
   ct <- newChatTerminal t
   cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
   chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
+  atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
   pure TestCC {chatController = cc, virtualTerminal = t, chatAsync, termAsync, termQ}

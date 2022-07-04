@@ -160,6 +160,9 @@ module Simplex.Chat.Store
     updateGroupChatItemsRead,
     getSMPServers,
     overwriteSMPServers,
+    createCall,
+    deleteCalls,
+    getCalls,
     getPendingContactConnection,
     deletePendingContactConnection,
     withTransaction,
@@ -193,6 +196,7 @@ import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), SQLError,
 import qualified Database.SQLite.Simple as DB
 import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
+import Simplex.Chat.Call
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Migrations.M20220101_initial
@@ -207,6 +211,7 @@ import Simplex.Chat.Migrations.M20220321_chat_item_edited
 import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Migrations.M20220626_auto_reply
+import Simplex.Chat.Migrations.M20220702_calls
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -232,7 +237,8 @@ schemaMigrations =
     ("20220321_chat_item_edited", m20220321_chat_item_edited),
     ("20220404_files_status_fields", m20220404_files_status_fields),
     ("20220514_profiles_user_id", m20220514_profiles_user_id),
-    ("20220626_auto_reply", m20220626_auto_reply)
+    ("20220626_auto_reply", m20220626_auto_reply),
+    ("20220702_calls", m20220702_calls)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -3660,6 +3666,38 @@ overwriteSMPServers db User {userId} smpServers =
         |]
         (host, port, keyHash, userId, currentTs, currentTs)
     pure $ Right ()
+
+createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
+createCall db User {userId} Call {contactId, callId, chatItemId, callState} callTs = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO calls
+        (contact_id, shared_call_id, chat_item_id, call_state, call_ts, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?)
+    |]
+    (contactId, callId, chatItemId, callState, callTs, userId, currentTs, currentTs)
+
+deleteCalls :: DB.Connection -> User -> ContactId -> IO ()
+deleteCalls db User {userId} contactId = do
+  DB.execute db "DELETE FROM calls WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+
+getCalls :: DB.Connection -> User -> IO [Call]
+getCalls db User {userId} = do
+  map toCall
+    <$> DB.query
+      db
+      [sql|
+        SELECT
+          contact_id, shared_call_id, chat_item_id, call_state, call_ts
+        FROM calls
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
+    toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
