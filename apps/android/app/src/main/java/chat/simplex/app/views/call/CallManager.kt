@@ -47,12 +47,12 @@ class CallManager(val chatModel: ChatModel) {
       activeCall.value = Call(
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
-        localMedia = invitation.peerMedia,
+        localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
-      callCommand.value = WCallCommand.Start (media = invitation.peerMedia, aesKey = invitation.sharedKey, relay = useRelay)
+      callCommand.value = WCallCommand.Start (media = invitation.callType.media, aesKey = invitation.sharedKey, relay = useRelay)
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null

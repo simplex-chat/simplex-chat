@@ -212,7 +212,7 @@ fun PreviewIncomingCallLockScreenAlert() {
       IncomingCallLockScreenAlertLayout(
         invitation = CallInvitation(
           contact = Contact.sampleData,
-          peerMedia = CallMediaType.Audio,
+          callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
           sharedKey = null,
           callTs = Clock.System.now()
         ),

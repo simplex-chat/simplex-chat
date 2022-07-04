@@ -63,7 +63,7 @@ fun IncomingCallAlertLayout(
 fun IncomingCallInfo(invitation: CallInvitation) {
   @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row {
-    if (invitation.peerMedia == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
+    if (invitation.callType.media == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
     else CallIcon(Icons.Filled.Phone, stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
     Text(invitation.callTypeText)
@@ -96,7 +96,7 @@ fun PreviewIncomingCallAlertLayout() {
     IncomingCallAlertLayout(
       invitation = CallInvitation(
         contact = Contact.sampleData,
-        peerMedia = CallMediaType.Audio,
+        callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
         callTs = Clock.System.now()
       ),
