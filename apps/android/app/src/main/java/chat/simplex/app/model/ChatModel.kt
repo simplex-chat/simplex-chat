@@ -45,8 +45,8 @@ class ChatModel(val controller: ChatController) {
 
   // current WebRTC call
   val callManager = CallManager(this)
-  val callInvitations = mutableStateMapOf<String, CallInvitation>()
-  val activeCallInvitation = mutableStateOf<CallInvitation?>(null)
+  val callInvitations = mutableStateMapOf<String, RcvCallInvitation>()
+  val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)

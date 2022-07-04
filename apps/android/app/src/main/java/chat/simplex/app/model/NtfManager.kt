@@ -102,7 +102,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  fun notifyCallInvitation(invitation: CallInvitation) {
+  fun notifyCallInvitation(invitation: RcvCallInvitation) {
     if (isAppOnForeground(context)) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
