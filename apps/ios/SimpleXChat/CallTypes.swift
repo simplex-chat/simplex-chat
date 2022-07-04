@@ -37,6 +37,20 @@ public struct WebRTCExtraInfo: Codable {
     public var rtcIceCandidates: String
 }
 
+public struct RcvCallInvitation: Decodable {
+    public init(contact: Contact, callType: CallType, sharedKey: String? = nil, callTs: Date) {
+        self.contact = contact
+        self.callType = callType
+        self.sharedKey = sharedKey
+        self.callTs = callTs
+    }
+
+    public var contact: Contact
+    public var callType: CallType
+    public var sharedKey: String?
+    public var callTs: Date
+}
+
 public struct CallInvitation {
     public init(contact: Contact, callkitUUID: UUID? = nil, peerMedia: CallMediaType, sharedKey: String? = nil, callTs: Date) {
         self.contact = contact

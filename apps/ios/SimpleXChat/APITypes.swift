@@ -52,6 +52,7 @@ public enum ChatCommand {
     case apiSendCallAnswer(contact: Contact, answer: WebRTCSession)
     case apiSendCallExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case apiEndCall(contact: Contact)
+    case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case receiveFile(fileId: Int64)
@@ -100,6 +101,7 @@ public enum ChatCommand {
             case let .apiSendCallAnswer(contact, answer): return "/_call answer @\(contact.apiId) \(encodeJSON(answer))"
             case let .apiSendCallExtraInfo(contact, extraInfo): return "/_call extra @\(contact.apiId) \(encodeJSON(extraInfo))"
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
+            case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .receiveFile(fileId): return "/freceive \(fileId)"
@@ -149,6 +151,7 @@ public enum ChatCommand {
             case .apiSendCallAnswer: return "apiSendCallAnswer"
             case .apiSendCallExtraInfo: return "apiSendCallExtraInfo"
             case .apiEndCall: return "apiEndCall"
+            case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
             case .apiChatRead: return "apiChatRead"
             case .receiveFile: return "receiveFile"
@@ -219,11 +222,12 @@ public enum ChatResponse: Decodable, Error {
     case sndFileCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileRcvCancelled(chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndGroupFileCancelled(chatItem: AChatItem, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
-    case callInvitation(contact: Contact, callType: CallType, sharedKey: String?, callTs: Date)
+    case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
     case callAnswer(contact: Contact, answer: WebRTCSession)
     case callExtraInfo(contact: Contact, extraInfo: WebRTCExtraInfo)
     case callEnded(contact: Contact)
+    case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
     case ntfMessages(connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
@@ -287,6 +291,7 @@ public enum ChatResponse: Decodable, Error {
             case .callAnswer: return "callAnswer"
             case .callExtraInfo: return "callExtraInfo"
             case .callEnded: return "callEnded"
+            case .callInvitations: return "callInvitations"
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
             case .ntfMessages: return "ntfMessages"
@@ -348,11 +353,12 @@ public enum ChatResponse: Decodable, Error {
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndFileRcvCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndGroupFileCancelled(chatItem, _, _): return String(describing: chatItem)
-            case let .callInvitation(contact, callType, sharedKey, _): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")"
+            case let .callInvitation(inv): return "contact: \(inv.contact.id)\ncallType: \(String(describing: inv.callType))\nsharedKey: \(inv.sharedKey ?? "")"
             case let .callOffer(contact, callType, offer, sharedKey, askConfirmation): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))"
             case let .callAnswer(contact, answer): return "contact: \(contact.id)\nanswer: \(String(describing: answer))"
             case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
             case let .callEnded(contact): return "contact: \(contact.id)"
+            case let .callInvitations(invs): return String(describing: invs)
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
             case let .ntfMessages(connEntity, msgTs, ntfMessages): return "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))"

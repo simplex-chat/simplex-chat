@@ -63,8 +63,8 @@ struct SimpleXApp: App {
                         let appState = appStateGroupDefault.get()
                         activateChat()
                         if appState.inactive && chatModel.chatRunning == true {
-                            // TODO refresh call invitation
                             updateChats()
+                            updateCallInvitations()
                         }
                         doAuthenticate = authenticationExpired()
                     default:
@@ -121,6 +121,19 @@ struct SimpleXApp: App {
             }
         } catch let error {
             logger.error("apiGetChats: cannot update chats \(responseError(error))")
+        }
+    }
+
+    private func updateCallInvitations() {
+        do {
+            let callInvitations = try apiGetCallInvitations()
+            chatModel.callInvitations = callInvitations.reduce(into: [ChatId: CallInvitation]()) { result, inv in
+                let uuid = UUID()
+                result[inv.contact.id] = CallInvitation(contact: inv.contact, callkitUUID: uuid, peerMedia: inv.callType.media, sharedKey: inv.sharedKey, callTs: inv.callTs)
+            }
+        }
+        catch let error {
+            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
     }
 }
