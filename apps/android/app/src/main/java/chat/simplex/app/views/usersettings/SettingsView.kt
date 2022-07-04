@@ -45,7 +45,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = ::setRunServiceInBackground,
       setPerformLA = setPerformLA,
-      enableCalls = remember { mutableStateOf(chatModel.controller.appPrefs.experimentalCalls.get()) },
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
         ModalView(close = close, modifier = Modifier,
@@ -69,7 +68,6 @@ fun SettingsLayout(
   runServiceInBackground: MutableState<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
   setPerformLA: (Boolean) -> Unit,
-  enableCalls: MutableState<Boolean>,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
@@ -103,10 +101,8 @@ fun SettingsLayout(
       spacer()
 
       SettingsSectionView(stringResource(R.string.settings_section_title_settings)) {
-        if (enableCalls.value) {
-          SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) })
-          divider()
-        }
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) })
+        divider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) })
         divider()
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground)
@@ -133,8 +129,8 @@ fun SettingsLayout(
         divider()
         InstallTerminalAppItem(uriHandler)
         divider()
-        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
-        divider()
+//        SettingsActionItem(Icons.Outlined.Science, stringResource(R.string.settings_experimental_features), showSettingsModal { ExperimentalFeaturesView(it, enableCalls) })
+//        divider()
         AppVersionItem()
       }
     }
@@ -302,7 +298,6 @@ fun PreviewSettingsLayout() {
       runServiceInBackground = remember { mutableStateOf(true) },
       setRunServiceInBackground = {},
       setPerformLA = {},
-      enableCalls = remember { mutableStateOf(true) },
       showModal = { {} },
       showSettingsModal = { {} },
       showCustomModal = { {} },
