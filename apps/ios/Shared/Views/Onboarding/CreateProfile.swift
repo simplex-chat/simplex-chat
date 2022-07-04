@@ -96,7 +96,7 @@ struct CreateProfile: View {
         do {
             m.currentUser = try apiCreateActiveUser(profile)
             try startChat()
-            withAnimation { m.onboardingStage = .step3_MakeConnection }
+            withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
 
         } catch {
             fatalError("Failed to create user or start chat: \(responseError(error))")

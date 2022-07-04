@@ -63,13 +63,8 @@ struct SimpleXApp: App {
                         let appState = appStateGroupDefault.get()
                         activateChat()
                         if appState.inactive && chatModel.chatRunning == true {
-                            do {
-                                // TODO refresh call invitation
-                                let chats = try apiGetChats()
-                                chatModel.replaceChats(with: chats)
-                            } catch let error {
-                                logger.error("apiGetChats: cannot update chats \(responseError(error))")
-                            }
+                            // TODO refresh call invitation
+                            updateChats()
                         }
                         doAuthenticate = authenticationExpired()
                     default:
@@ -88,17 +83,19 @@ struct SimpleXApp: App {
         let legacyDatabase = hasLegacyDatabase()
         if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
-            switch v3DBMigrationDefault.get() {
-            case .migrated: ()
-            default: v3DBMigrationDefault.set(.offer)
-            }
+            setMigrationState(.offer)
             logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
         } else {
             dbContainerGroupDefault.set(.group)
-            v3DBMigrationDefault.set(.ready)
+            setMigrationState(.ready)
             logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
             logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
         }
+    }
+
+    private func setMigrationState(_ state: V3DBMigrationState) {
+        if case .migrated = v3DBMigrationDefault.get() { return }
+        v3DBMigrationDefault.set(state)
     }
 
     private func authenticationExpired() -> Bool {
@@ -106,6 +103,24 @@ struct SimpleXApp: App {
             return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
         } else {
             return true
+        }
+    }
+
+    private func updateChats() {
+        do {
+            let chats = try apiGetChats()
+            chatModel.updateChats(with: chats)
+            if let id = chatModel.chatId,
+               let chat = chatModel.getChat(id) {
+                loadChat(chat: chat)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    if chatModel.chatId == chat.id {
+                        Task { await markChatRead(chat) }
+                    }
+                }
+            }
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
     }
 }

@@ -179,9 +179,9 @@ func apiDeleteStorage() async throws {
     try await sendCommandOkResp(.apiDeleteStorage)
 }
 
-func apiGetChats() throws -> [Chat] {
+func apiGetChats() throws -> [ChatData] {
     let r = chatSendCmdSync(.apiGetChats)
-    if case let .apiChats(chats) = r { return chats.map { Chat.init($0) } }
+    if case let .apiChats(chats) = r { return chats }
     throw r
 }
 
@@ -189,6 +189,18 @@ func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
     let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
+}
+
+func loadChat(chat: Chat) {
+    do {
+        let cInfo = chat.chatInfo
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+        let m = ChatModel.shared
+        m.updateChatInfo(chat.chatInfo)
+        m.chatItems = chat.chatItems
+    } catch let error {
+        logger.error("loadChat error: \(responseError(error))")
+    }
 }
 
 func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
@@ -524,14 +536,17 @@ func startChat() throws {
     if justStarted {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
-        m.chats = try apiGetChats()
+        let chats = try apiGetChats()
+        m.chats = chats.map { Chat.init($0) }
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
         }
         withAnimation {
-            m.onboardingStage = m.chats.isEmpty
-                                ? .step3_MakeConnection
+            m.onboardingStage = m.onboardingStage == .step2_CreateProfile
+                                ? .step3_SetNotificationsMode
+                                : m.chats.isEmpty
+                                ? .step4_MakeConnection
                                 : .onboardingComplete
         }
     }

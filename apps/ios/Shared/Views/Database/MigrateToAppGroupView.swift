@@ -43,13 +43,13 @@ struct MigrateToAppGroupView: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            Text("Database migration").font(.largeTitle)
+            Text("Push notifications").font(.largeTitle)
 
             switch chatModel.v3DBMigration {
             case .offer:
                 VStack(alignment: .leading, spacing: 16) {
                     Text("To support instant push notifications the chat database has to be migrated.")
-                    Text("If you need to use the chat now tap **Skip** below (you will be offered to migrate the database when you restart the app).")
+                    Text("If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app).")
                 }
                 .padding(.top, 56)
                 center {
@@ -109,6 +109,7 @@ struct MigrateToAppGroupView: View {
                         do {
                             resetChatCtrl()
                             try initializeChat(start: true)
+                            chatModel.onboardingStage = .step3_SetNotificationsMode
                             setV3DBMigration(.ready)
                         } catch let error {
                             dbContainerGroupDefault.set(.documents)
@@ -117,7 +118,7 @@ struct MigrateToAppGroupView: View {
                         }
                         deleteOldArchive()
                     } label: {
-                        Text("Start using chat")
+                        Text("Start chat")
                             .font(.title)
                             .frame(maxWidth: .infinity)
                     }
@@ -165,16 +166,16 @@ struct MigrateToAppGroupView: View {
                     fatalError("Failed to start or load chats: \(responseError(error))")
                 }
             } label: {
-                Text("Skip and start using chat")
+                Text("Do it later")
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
     }
 
-    private func setV3DBMigration(_ value: V3DBMigrationState) {
-        chatModel.v3DBMigration = value
-        v3DBMigrationDefault.set(value)
+    private func setV3DBMigration(_ state: V3DBMigrationState) {
+        chatModel.v3DBMigration = state
+        v3DBMigrationDefault.set(state)
     }
 
     func migrateDatabaseToV3() {
@@ -242,6 +243,9 @@ func deleteOldArchive() {
 
 struct MigrateToGroupView_Previews: PreviewProvider {
     static var previews: some View {
-        MigrateToAppGroupView()
+        let chatModel = ChatModel()
+        chatModel.v3DBMigration = .migrated
+        return MigrateToAppGroupView()
+            .environmentObject(chatModel)
     }
 }

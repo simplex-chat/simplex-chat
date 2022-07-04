@@ -89,7 +89,7 @@ struct NotificationsView: View {
                 title: Text(ntfModeAlertTitle(mode)),
                 message: Text(ntfModeDescription(mode)),
                 primaryButton: .default(Text(mode == .off ? "Turn off" : "Enable")) {
-                    setNotificationsMode(mode, token)
+                    setNotificationsMode(token, mode)
                 },
                 secondaryButton: .cancel() {
                     notificationMode = m.notificationMode
@@ -108,17 +108,19 @@ struct NotificationsView: View {
         }
     }
 
-    private func setNotificationsMode(_ mode: NotificationsMode, _ token: DeviceToken) {
+    private func setNotificationsMode(_ token: DeviceToken, _ mode: NotificationsMode) {
         Task {
             switch mode {
             case .off:
                 do {
                     try await apiDeleteToken(token: token)
-                    m.tokenStatus = .new
-                    notificationMode = .off
-                    m.notificationMode = .off
+                    await MainActor.run {
+                        m.tokenStatus = .new
+                        notificationMode = .off
+                        m.notificationMode = .off
+                    }
                 } catch let error {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         let err = responseError(error)
                         logger.error("apiDeleteToken error: \(err)")
                         showAlert = .error(title: "Error deleting token", error: err)
@@ -126,16 +128,17 @@ struct NotificationsView: View {
                 }
             default:
                 do {
-                    do {
-                        m.tokenStatus = try await apiRegisterToken(token: token, notificationMode: mode)
+                    let status = try await apiRegisterToken(token: token, notificationMode: mode)
+                    await MainActor.run {
+                        m.tokenStatus = status
                         notificationMode = mode
                         m.notificationMode = mode
-                    } catch let error {
-                        DispatchQueue.main.async {
-                            let err = responseError(error)
-                            logger.error("apiRegisterToken error: \(err)")
-                            showAlert = .error(title: "Error enabling notifications", error: err)
-                        }
+                    }
+                } catch let error {
+                    await MainActor.run {
+                        let err = responseError(error)
+                        logger.error("apiRegisterToken error: \(err)")
+                        showAlert = .error(title: "Error enabling notifications", error: err)
                     }
                 }
             }
@@ -145,9 +148,9 @@ struct NotificationsView: View {
 
 func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
     switch mode {
-    case .off: return "**Maximum privacy**: push notifications are off.\nNo meta-data is shared with SimpleX Chat notification server."
-    case .periodic: return "**High privacy**: new messages are checked every 20 minutes.\nYour device token is shared with SimpleX Chat notification server, but it cannot see how many connections you have or how many messages you receive."
-    case .instant: return "**Medium privacy** (recommended): notifications are sent instantly.\nYour device token and notifications are sent to SimpleX Chat notification server, but it cannot access the message content, size or who is it from."
+    case .off: return "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)."
+    case .periodic: return "**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have."
+    case .instant: return "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who is it from."
     }
 }
 
@@ -171,6 +174,7 @@ struct SelectionListView<Item: SelectableItem>: View {
             .contentShape(Rectangle())
             .listRowBackground(Color(uiColor: tapped == item ? .secondarySystemFill : .systemBackground))
             .onTapGesture {
+                if selection == item { return }
                 if let f = onSelection {
                     f(item)
                 } else {
