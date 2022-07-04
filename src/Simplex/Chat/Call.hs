@@ -30,7 +30,8 @@ data Call = Call
   { contactId :: ContactId,
     callId :: CallId,
     chatItemId :: Int64,
-    callState :: CallState
+    callState :: CallState,
+    callTs :: UTCTime
   }
 
 isRcvInvitation :: Call -> Bool
