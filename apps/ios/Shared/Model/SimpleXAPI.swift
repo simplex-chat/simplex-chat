@@ -703,11 +703,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 removeFile(fileName)
             }
         case let .callInvitation(invitation):
-            m.callInvitations[invitation.contact.id] = invitation
-            CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
+            var inv = invitation
+            m.callInvitations[inv.contact.id] = inv
+            CallController.shared.reportNewIncomingCall(invitation: inv) { error in
                 if let error = error {
-                    // invitation.callkitUUID = nil
-                    m.callInvitations[invitation.contact.id] = invitation
+                    inv.callkitUUID = nil
+                    m.callInvitations[inv.contact.id] = inv
                     logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
                 } else {
                     logger.debug("reportNewIncomingCall success")
