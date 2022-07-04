@@ -566,10 +566,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
           removeFile(appContext, fileName)
         }
       }
-      is CR.CallInvitation -> {
-        val invitation = r.callInvitation
-        chatModel.callManager.reportNewIncomingCall(invitation)
-      }
+      is CR.CallInvitation ->
+        chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       is CR.CallOffer -> {
         // TODO askConfirmation?
         // TODO check encryption is compatible
