@@ -3690,9 +3690,9 @@ getCalls db User {userId} = do
       db
       [sql|
         SELECT
-          cl.contact_id, cl.shared_call_id, cl.chat_item_id, cl.call_state, cl.call_ts
-        FROM calls cl
-        WHERE cl.user_id = ?
+          contact_id, shared_call_id, chat_item_id, call_state, call_ts
+        FROM calls
+        WHERE user_id = ?
       |]
       (Only userId)
   where
