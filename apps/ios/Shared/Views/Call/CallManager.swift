@@ -34,7 +34,7 @@ class CallManager {
         return false
     }
 
-    func answerIncomingCall(invitation: CallInvitation) {
+    func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
         m.callInvitations.removeValue(forKey: invitation.contact.id)
         m.activeCall = Call(
@@ -86,7 +86,7 @@ class CallManager {
         }
     }
 
-    func endCall(invitation: CallInvitation, completed: @escaping () -> Void) {
+    func endCall(invitation: RcvCallInvitation, completed: @escaping () -> Void) {
         ChatModel.shared.callInvitations.removeValue(forKey: invitation.contact.id)
         Task {
             do {
@@ -98,7 +98,7 @@ class CallManager {
         }
     }
 
-    private func getCallInvitation(_ callUUID: UUID) -> CallInvitation? {
+    private func getCallInvitation(_ callUUID: UUID) -> RcvCallInvitation? {
         if let (_, invitation) = ChatModel.shared.callInvitations.first(where: { (_, inv) in inv.callkitUUID == callUUID }) {
             return invitation
         }

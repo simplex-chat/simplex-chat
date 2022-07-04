@@ -127,7 +127,7 @@ struct SimpleXApp: App {
     private func updateCallInvitations() {
         do {
             let callInvitations = try apiGetCallInvitations()
-            chatModel.callInvitations = callInvitations.reduce(into: [ChatId: CallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+            chatModel.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
         }
         catch let error {
             logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")

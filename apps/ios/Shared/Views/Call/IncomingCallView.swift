@@ -26,7 +26,7 @@ struct IncomingCallView: View {
         }
     }
 
-    private func incomingCall(_ invitation: CallInvitation) -> some View {
+    private func incomingCall(_ invitation: RcvCallInvitation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Image(systemName: invitation.callType.media == .video ? "video.fill" : "phone.fill").foregroundColor(.green)
@@ -81,7 +81,7 @@ struct IncomingCallView: View {
 
 struct IncomingCallView_Previews: PreviewProvider {
     static var previews: some View {
-        CallController.shared.activeCallInvitation = CallInvitation.sampleData
+        CallController.shared.activeCallInvitation = RcvCallInvitation.sampleData
         return IncomingCallView()
     }
 }

@@ -50,7 +50,7 @@ public func createMessageReceivedNtf(_ cInfo: ChatInfo, _ cItem: ChatItem) -> UN
     )
 }
 
-public func createCallInvitationNtf(_ invitation: CallInvitation) -> UNMutableNotificationContent {
+public func createCallInvitationNtf(_ invitation: RcvCallInvitation) -> UNMutableNotificationContent {
     let text = invitation.callType.media == .video
                 ? NSLocalizedString("Incoming video call", comment: "notification")
                 : NSLocalizedString("Incoming audio call", comment: "notification")

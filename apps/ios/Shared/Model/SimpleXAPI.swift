@@ -476,7 +476,7 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
-func apiGetCallInvitations() throws -> [CallInvitation] {
+func apiGetCallInvitations() throws -> [RcvCallInvitation] {
     let r = chatSendCmdSync(.apiGetCallInvitations)
     if case let .callInvitations(invs) = r { return invs }
     throw r
@@ -545,7 +545,7 @@ func startChat() throws {
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         let callInvitations = try apiGetCallInvitations()
-        m.callInvitations = callInvitations.reduce(into: [ChatId: CallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+        m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
