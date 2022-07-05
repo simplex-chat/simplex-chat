@@ -34,7 +34,7 @@ class CallManager {
         return false
     }
 
-    func answerIncomingCall(invitation: CallInvitation) {
+    func answerIncomingCall(invitation: RcvCallInvitation) {
         let m = ChatModel.shared
         m.callInvitations.removeValue(forKey: invitation.contact.id)
         m.activeCall = Call(
@@ -42,13 +42,13 @@ class CallManager {
             contact: invitation.contact,
             callkitUUID: invitation.callkitUUID,
             callState: .invitationAccepted,
-            localMedia: invitation.peerMedia,
+            localMedia: invitation.callType.media,
             sharedKey: invitation.sharedKey
         )
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
         logger.debug("answerIncomingCall useRelay \(useRelay)")
-        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
+        m.callCommand = .start(media: invitation.callType.media, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
@@ -86,7 +86,7 @@ class CallManager {
         }
     }
 
-    func endCall(invitation: CallInvitation, completed: @escaping () -> Void) {
+    func endCall(invitation: RcvCallInvitation, completed: @escaping () -> Void) {
         ChatModel.shared.callInvitations.removeValue(forKey: invitation.contact.id)
         Task {
             do {
@@ -98,7 +98,7 @@ class CallManager {
         }
     }
 
-    private func getCallInvitation(_ callUUID: UUID) -> CallInvitation? {
+    private func getCallInvitation(_ callUUID: UUID) -> RcvCallInvitation? {
         if let (_, invitation) = ChatModel.shared.callInvitations.first(where: { (_, inv) in inv.callkitUUID == callUUID }) {
             return invitation
         }

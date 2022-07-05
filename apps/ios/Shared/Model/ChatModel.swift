@@ -35,7 +35,7 @@ final class ChatModel: ObservableObject {
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = .message
     // current WebRTC call
-    @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
+    @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false

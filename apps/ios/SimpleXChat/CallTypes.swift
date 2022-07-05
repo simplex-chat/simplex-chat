@@ -37,32 +37,24 @@ public struct WebRTCExtraInfo: Codable {
     public var rtcIceCandidates: String
 }
 
-public struct CallInvitation {
-    public init(contact: Contact, callkitUUID: UUID? = nil, peerMedia: CallMediaType, sharedKey: String? = nil, callTs: Date) {
-        self.contact = contact
-        self.callkitUUID = callkitUUID
-        self.peerMedia = peerMedia
-        self.sharedKey = sharedKey
-        self.callTs = callTs
-    }
-
+public struct RcvCallInvitation: Decodable {
     public var contact: Contact
-    public var callkitUUID: UUID?
-    public var peerMedia: CallMediaType
+    public var callkitUUID: UUID? = UUID()
+    public var callType: CallType
     public var sharedKey: String?
     public var callTs: Date
     public var callTypeText: LocalizedStringKey {
         get {
-            switch peerMedia {
+            switch callType.media {
             case .video: return sharedKey == nil ? "video call (not e2e encrypted)" : "**e2e encrypted** video call"
             case .audio: return sharedKey == nil ? "audio call (not e2e encrypted)" : "**e2e encrypted** audio call"
             }
         }
     }
 
-    public static let sampleData = CallInvitation(
+    public static let sampleData = RcvCallInvitation(
         contact: Contact.sampleData,
-        peerMedia: .audio,
+        callType: CallType(media: .audio, capabilities: CallCapabilities(encryption: false)),
         callTs: .now
     )
 }

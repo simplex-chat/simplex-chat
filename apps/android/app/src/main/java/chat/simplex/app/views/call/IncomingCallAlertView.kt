@@ -24,7 +24,7 @@ import chat.simplex.app.views.usersettings.ProfilePreview
 import kotlinx.datetime.Clock
 
 @Composable
-fun IncomingCallAlertView(invitation: CallInvitation, chatModel: ChatModel) {
+fun IncomingCallAlertView(invitation: RcvCallInvitation, chatModel: ChatModel) {
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
@@ -40,7 +40,7 @@ fun IncomingCallAlertView(invitation: CallInvitation, chatModel: ChatModel) {
 
 @Composable
 fun IncomingCallAlertLayout(
-  invitation: CallInvitation,
+  invitation: RcvCallInvitation,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
@@ -60,10 +60,10 @@ fun IncomingCallAlertLayout(
 }
 
 @Composable
-fun IncomingCallInfo(invitation: CallInvitation) {
+fun IncomingCallInfo(invitation: RcvCallInvitation) {
   @Composable fun CallIcon(icon: ImageVector, descr: String) = Icon(icon, descr, tint = SimplexGreen)
   Row {
-    if (invitation.peerMedia == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
+    if (invitation.callType.media == CallMediaType.Video) CallIcon(Icons.Filled.Videocam, stringResource(R.string.icon_descr_video_call))
     else CallIcon(Icons.Filled.Phone, stringResource(R.string.icon_descr_audio_call))
     Spacer(Modifier.width(4.dp))
     Text(invitation.callTypeText)
@@ -94,9 +94,9 @@ private fun CallButton(text: String, icon: ImageVector, color: Color, action: ()
 fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
-      invitation = CallInvitation(
+      invitation = RcvCallInvitation(
         contact = Contact.sampleData,
-        peerMedia = CallMediaType.Audio,
+        callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
         sharedKey = null,
         callTs = Clock.System.now()
       ),

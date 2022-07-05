@@ -9,11 +9,10 @@ import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
 class CallManager(val chatModel: ChatModel) {
-  fun reportNewIncomingCall(invitation: CallInvitation) {
+  fun reportNewIncomingCall(invitation: RcvCallInvitation) {
     Log.d(TAG, "CallManager.reportNewIncomingCall")
     with (chatModel) {
       callInvitations[invitation.contact.id] = invitation
-      if (!chatModel.controller.appPrefs.experimentalCalls.get()) return
       if (Clock.System.now() - invitation.callTs <= 3.minutes) {
         activeCallInvitation.value = invitation
         controller.ntfManager.notifyCallInvitation(invitation)
@@ -24,7 +23,7 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun acceptIncomingCall(invitation: CallInvitation) {
+  fun acceptIncomingCall(invitation: RcvCallInvitation) {
     ModalManager.shared.closeModals()
     val call = chatModel.activeCall.value
     if (call == null) {
@@ -42,17 +41,17 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  private fun justAcceptIncomingCall(invitation: CallInvitation) {
+  private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
     with (chatModel) {
       activeCall.value = Call(
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
-        localMedia = invitation.peerMedia,
+        localMedia = invitation.callType.media,
         sharedKey = invitation.sharedKey
       )
       showCallView.value = true
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
-      callCommand.value = WCallCommand.Start (media = invitation.peerMedia, aesKey = invitation.sharedKey, relay = useRelay)
+      callCommand.value = WCallCommand.Start (media = invitation.callType.media, aesKey = invitation.sharedKey, relay = useRelay)
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null
@@ -77,7 +76,7 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun endCall(invitation: CallInvitation) {
+  fun endCall(invitation: RcvCallInvitation) {
     with (chatModel) {
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
@@ -92,7 +91,7 @@ class CallManager(val chatModel: ChatModel) {
     }
   }
 
-  fun reportCallRemoteEnded(invitation: CallInvitation) {
+  fun reportCallRemoteEnded(invitation: RcvCallInvitation) {
     if (chatModel.activeCallInvitation.value?.contact?.id == invitation.contact.id) {
       chatModel.activeCallInvitation.value = null
       chatModel.controller.ntfManager.cancelCallNotification()

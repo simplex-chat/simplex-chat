@@ -476,6 +476,12 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
+func apiGetCallInvitations() throws -> [RcvCallInvitation] {
+    let r = chatSendCmdSync(.apiGetCallInvitations)
+    if case let .callInvitations(invs) = r { return invs }
+    throw r
+}
+
 func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     if let callStatus = WebRTCCallStatus.init(rawValue: status) {
         try await sendCommandOkResp(.apiCallStatus(contact: contact, callStatus: callStatus))
@@ -538,6 +544,7 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
+        try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
@@ -694,19 +701,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                let fileName = cItem.file?.filePath {
                 removeFile(fileName)
             }
-        case let .callInvitation(contact, callType, sharedKey, callTs):
-            let uuid = UUID()
-            var invitation = CallInvitation(contact: contact, callkitUUID: uuid, peerMedia: callType.media, sharedKey: sharedKey, callTs: callTs)
-            m.callInvitations[contact.id] = invitation
-            CallController.shared.reportNewIncomingCall(invitation: invitation) { error in
-                if let error = error {
-                    invitation.callkitUUID = nil
-                    m.callInvitations[contact.id] = invitation
-                    logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
-                } else {
-                    logger.debug("reportNewIncomingCall success")
-                }
-            }
+        case let .callInvitation(invitation):
+            m.callInvitations[invitation.contact.id] = invitation
+            activateCall(invitation)
 
 // This will be called from notification service extension
 //            CXProvider.reportNewIncomingVoIPPushPayload([
@@ -788,6 +785,27 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     default: err = String(describing: chatError)
     }
     m.updateNetworkStatus(contact.id, .error(err))
+}
+
+func refreshCallInvitations() throws {
+    let m = ChatModel.shared
+    let callInvitations = try apiGetCallInvitations()
+    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    if let inv = callInvitations.last {
+        activateCall(inv)
+    }
+}
+
+func activateCall(_ callInvitation: RcvCallInvitation) {
+    let m = ChatModel.shared
+    CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
+        if let error = error {
+            m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+            logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
+        } else {
+            logger.debug("reportNewIncomingCall success")
+        }
+    }
 }
 
 private struct UserResponse: Decodable {

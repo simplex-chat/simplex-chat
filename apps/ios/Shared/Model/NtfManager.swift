@@ -184,7 +184,7 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         addNotification(createMessageReceivedNtf(cInfo, cItem))
     }
 
-    func notifyCallInvitation(_ invitation: CallInvitation) {
+    func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
         addNotification(createCallInvitationNtf(invitation))
     }

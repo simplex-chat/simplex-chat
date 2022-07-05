@@ -90,12 +90,12 @@ sealed class WCallResponse {
 @Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
 @Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
-@Serializable class CallInvitation(val contact: Contact, val peerMedia: CallMediaType, val sharedKey: String?, val callTs: Instant) {
-  val callTypeText: String get() = generalGetString(when(peerMedia) {
+@Serializable class RcvCallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String?, val callTs: Instant) {
+  val callTypeText: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
     CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
   })
-  val callTitle: String get() = generalGetString(when(peerMedia) {
+  val callTitle: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> R.string.incoming_video_call
     CallMediaType.Audio -> R.string.incoming_audio_call
   })

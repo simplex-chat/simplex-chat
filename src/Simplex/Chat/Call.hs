@@ -33,6 +33,7 @@ data Call = Call
     callState :: CallState,
     callTs :: UTCTime
   }
+  deriving (Show)
 
 isRcvInvitation :: Call -> Bool
 isRcvInvitation Call {callState} = case callState of
@@ -88,7 +89,7 @@ data CallState
         peerCallSession :: WebRTCSession,
         sharedKey :: Maybe C.Key
       }
-  deriving (Generic)
+  deriving (Show, Generic)
 
 -- database representation
 instance FromJSON CallState where

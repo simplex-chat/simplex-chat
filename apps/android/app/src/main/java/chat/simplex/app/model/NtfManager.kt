@@ -102,7 +102,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     }
   }
 
-  fun notifyCallInvitation(invitation: CallInvitation) {
+  fun notifyCallInvitation(invitation: RcvCallInvitation) {
     if (isAppOnForeground(context)) return
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
@@ -124,7 +124,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
           .setSound(soundUri)
       }
     val text = generalGetString(
-      if (invitation.peerMedia == CallMediaType.Video) {
+      if (invitation.callType.media == CallMediaType.Video) {
         if (invitation.sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
       } else {
         if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
