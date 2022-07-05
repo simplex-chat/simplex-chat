@@ -544,8 +544,7 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
-        let callInvitations = try apiGetCallInvitations()
-        m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+        try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
@@ -703,17 +702,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 removeFile(fileName)
             }
         case let .callInvitation(invitation):
-            var inv = invitation
-            m.callInvitations[inv.contact.id] = inv
-            CallController.shared.reportNewIncomingCall(invitation: inv) { error in
-                if let error = error {
-                    inv.callkitUUID = nil
-                    m.callInvitations[inv.contact.id] = inv
-                    logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
-                } else {
-                    logger.debug("reportNewIncomingCall success")
-                }
-            }
+            m.callInvitations[invitation.contact.id] = invitation
+            activateCall(invitation)
 
 // This will be called from notification service extension
 //            CXProvider.reportNewIncomingVoIPPushPayload([
@@ -795,6 +785,27 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     default: err = String(describing: chatError)
     }
     m.updateNetworkStatus(contact.id, .error(err))
+}
+
+func refreshCallInvitations() throws {
+    let m = ChatModel.shared
+    let callInvitations = try apiGetCallInvitations()
+    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    if let inv = callInvitations.last {
+        activateCall(inv)
+    }
+}
+
+func activateCall(_ callInvitation: RcvCallInvitation) {
+    let m = ChatModel.shared
+    CallController.shared.reportNewIncomingCall(invitation: callInvitation) { error in
+        if let error = error {
+            m.callInvitations[callInvitation.contact.id]?.callkitUUID = nil
+            logger.error("reportNewIncomingCall error: \(error.localizedDescription)")
+        } else {
+            logger.debug("reportNewIncomingCall success")
+        }
+    }
 }
 
 private struct UserResponse: Decodable {

@@ -3693,6 +3693,7 @@ getCalls db User {userId} = do
           contact_id, shared_call_id, chat_item_id, call_state, call_ts
         FROM calls
         WHERE user_id = ?
+        ORDER BY call_ts ASC
       |]
       (Only userId)
   where
