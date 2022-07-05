@@ -353,7 +353,7 @@ public enum ChatResponse: Decodable, Error {
             case let .sndFileCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndFileRcvCancelled(chatItem, _): return String(describing: chatItem)
             case let .sndGroupFileCancelled(chatItem, _, _): return String(describing: chatItem)
-            case let .callInvitation(inv): return "contact: \(inv.contact.id)\ncallType: \(String(describing: inv.callType))\nsharedKey: \(inv.sharedKey ?? "")"
+            case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(contact, callType, offer, sharedKey, askConfirmation): return "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))"
             case let .callAnswer(contact, answer): return "contact: \(contact.id)\nanswer: \(String(describing: answer))"
             case let .callExtraInfo(contact, extraInfo): return "contact: \(contact.id)\nextraInfo: \(String(describing: extraInfo))"
