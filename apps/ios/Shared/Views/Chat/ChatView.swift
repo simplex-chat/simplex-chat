@@ -14,7 +14,6 @@ private let memberImageSize: CGFloat = 34
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
-    @AppStorage(DEFAULT_EXPERIMENTAL_CALLS) private var enableCalls = false
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
     @State private var composeState = ComposeState()
@@ -108,7 +107,7 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if enableCalls, case let .direct(contact) = cInfo {
+                if case let .direct(contact) = cInfo {
                     HStack {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")

@@ -122,7 +122,6 @@ class CallController: NSObject, ObservableObject {
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
         logger.debug("CallController.reportNewIncomingCall")
-        if !UserDefaults.standard.bool(forKey: DEFAULT_EXPERIMENTAL_CALLS) { return }
 //        if CallController.useCallKit, let uuid = invitation.callkitUUID {
 //            let update = CXCallUpdate()
 //            update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.displayName)
