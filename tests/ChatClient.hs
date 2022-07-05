@@ -273,6 +273,7 @@ serverCfg =
       certificateFile = "tests/fixtures/tls/server.crt",
       logStatsInterval = Just 86400,
       logStatsStartTime = 0,
+      serverStatsFile = Nothing,
       smpServerVRange = supportedSMPServerVRange
     }
 
