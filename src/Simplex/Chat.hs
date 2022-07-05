@@ -150,7 +150,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
 startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m (Async ())
 startChatController user subConns = do
   asks smpAgent >>= resumeAgentClient
-  restoreCalls
+  restoreCalls user
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s) (pure . fst)
   where
@@ -162,11 +162,13 @@ startChatController user subConns = do
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       pure a1
-    restoreCalls = do
-      savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db user)
-      let callsMap = M.fromList $ map (\(call@Call {contactId}) -> (contactId, call)) savedCalls
-      calls <- asks currentCalls
-      atomically $ writeTVar calls callsMap
+
+restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
+restoreCalls user = do
+  savedCalls <- fromRight [] <$> runExceptT (withStore' $ \db -> getCalls db user)
+  let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
+  calls <- asks currentCalls
+  atomically $ writeTVar calls callsMap
 
 stopChatController :: MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s} = do
@@ -213,7 +215,9 @@ processChatCommand = \case
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
-  APIActivateChat -> withAgent activateAgent $> CRCmdOk
+  APIActivateChat -> do
+    withUser $ \user -> restoreCalls user
+    withAgent activateAgent $> CRCmdOk
   APISuspendChat t -> withAgent (`suspendAgent` t) $> CRCmdOk
   ResubscribeAllConnections -> withUser (subscribeUserConnections resubscribeConnection) $> CRCmdOk
   SetFilesFolder filesFolder' -> do
@@ -544,8 +548,9 @@ processChatCommand = \case
       SndMessage {msgId} <- sendDirectContactMessage ct (XCallEnd callId)
       updateCallItemStatus userId ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations -> withUser $ \user@User {userId} -> do
-    invs <- mapMaybe callInvitation <$> withStore' (`getCalls` user)
+  APIGetCallInvitations -> withUser $ \User {userId} -> do
+    calls <- asks currentCalls >>= readTVarIO
+    let invs = mapMaybe callInvitation $ M.elems calls
     CRCallInvitations <$> mapM (rcvCallInvitation userId) invs
     where
       callInvitation Call {contactId, callState, callTs} = case callState of
