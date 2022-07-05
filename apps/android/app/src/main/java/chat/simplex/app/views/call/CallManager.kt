@@ -13,7 +13,6 @@ class CallManager(val chatModel: ChatModel) {
     Log.d(TAG, "CallManager.reportNewIncomingCall")
     with (chatModel) {
       callInvitations[invitation.contact.id] = invitation
-      if (!chatModel.controller.appPrefs.experimentalCalls.get()) return
       if (Clock.System.now() - invitation.callTs <= 3.minutes) {
         activeCallInvitation.value = invitation
         controller.ntfManager.notifyCallInvitation(invitation)

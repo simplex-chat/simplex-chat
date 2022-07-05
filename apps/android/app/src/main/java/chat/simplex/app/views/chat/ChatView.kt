@@ -45,7 +45,6 @@ fun ChatView(chatModel: ChatModel) {
   val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val enableCalls = chatModel.controller.appPrefs.experimentalCalls.get()
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
   val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -86,7 +85,6 @@ fun ChatView(chatModel: ChatModel) {
       attachmentBottomSheetState,
       chatModel.chatItems,
       useLinkPreviews = useLinkPreviews,
-      enableCalls = enableCalls,
       back = { chatModel.chatId.value = null },
       info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
       openDirectChat = { contactId ->
@@ -141,7 +139,6 @@ fun ChatLayout(
   attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
   useLinkPreviews: Boolean,
-  enableCalls: Boolean = false,
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -169,7 +166,7 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, enableCalls, back, info, startCall) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
@@ -183,7 +180,7 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, enableCalls: Boolean, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
   @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
     IconButton(onClick, modifier = modifier) {
       Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
@@ -200,7 +197,7 @@ fun ChatInfoToolbar(chat: Chat, enableCalls: Boolean, back: () -> Unit, info: ()
     ) {
       val cInfo = chat.chatInfo
       toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
-      if (cInfo is ChatInfo.Direct && enableCalls) {
+      if (cInfo is ChatInfo.Direct) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
           Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
             toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
