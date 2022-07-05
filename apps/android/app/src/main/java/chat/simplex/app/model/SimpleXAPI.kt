@@ -566,10 +566,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
           removeFile(appContext, fileName)
         }
       }
-      is CR.CallInvitation -> {
-        val invitation = CallInvitation(r.contact, r.callType.media, r.sharedKey, r.callTs)
-        chatModel.callManager.reportNewIncomingCall(invitation)
-      }
+      is CR.CallInvitation ->
+        chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       is CR.CallOffer -> {
         // TODO askConfirmation?
         // TODO check encryption is compatible
@@ -1022,7 +1020,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
@@ -1139,7 +1137,7 @@ sealed class CR {
     is SndFileRcvCancelled -> json.encodeToString(chatItem)
     is SndFileStart -> json.encodeToString(chatItem)
     is SndGroupFileCancelled -> json.encodeToString(chatItem)
-    is CallInvitation -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}"
+    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}"
     is CallAnswer -> "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}"
     is CallExtraInfo -> "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}"
