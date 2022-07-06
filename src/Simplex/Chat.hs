@@ -5,6 +5,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -60,9 +61,8 @@ import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Notifications.Types (NtfServer)
 import Simplex.Messaging.Parsers (base64P, parseAll)
-import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..))
+import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (ifM, liftEitherError, tryError, unlessM, whenM, (<$?>))
@@ -104,7 +104,7 @@ _defaultSMPServers =
     ]
 
 _defaultNtfServers :: [NtfServer]
-_defaultNtfServers = ["smp://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im"]
+_defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im"]
 
 maxImageSize :: Integer
 maxImageSize = 236700
@@ -1126,7 +1126,7 @@ processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
   SUSPENDED -> toView CRChatSuspended
   _ -> pure ()
   where
-    serverEvent srv@SMP.ProtocolServer {host, port} conns event str = do
+    serverEvent srv@(SMPServer host port _) conns event str = do
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 . strEncode $ SrvLoc host port)
