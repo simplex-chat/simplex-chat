@@ -24,8 +24,8 @@ archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
-exportArchive ArchiveConfig {archivePath, disableCompression} =
-  withSystemTempDirectory "simplex-chat." $ \dir -> do
+exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
+  withTempDir cfg "simplex-chat." $ \dir -> do
     StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
     copyFile chatDb $ dir </> archiveChatDbFile
     copyFile agentDb $ dir </> archiveAgentDbFile
@@ -35,8 +35,8 @@ exportArchive ArchiveConfig {archivePath, disableCompression} =
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
 
 importArchive :: ChatMonad m => ArchiveConfig -> m ()
-importArchive ArchiveConfig {archivePath} =
-  withSystemTempDirectory "simplex-chat." $ \dir -> do
+importArchive cfg@ArchiveConfig {archivePath} =
+  withTempDir cfg "simplex-chat." $ \dir -> do
     Z.withArchive archivePath $ Z.unpackInto dir
     StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
     backup chatDb
@@ -49,6 +49,10 @@ importArchive ArchiveConfig {archivePath} =
         copyDirectoryFiles filesDir fp
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
+
+withTempDir :: ChatMonad m => ArchiveConfig -> String -> (FilePath -> m ()) -> m ()
+withTempDir ArchiveConfig {parentTempDirectory = Just tmpDir} = withTempDirectory tmpDir
+withTempDir ArchiveConfig {parentTempDirectory = Nothing} = withSystemTempDirectory
 
 copyDirectoryFiles :: MonadIO m => FilePath -> FilePath -> m ()
 copyDirectoryFiles fromDir toDir = do
