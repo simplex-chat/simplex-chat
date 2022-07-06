@@ -23,6 +23,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
@@ -97,6 +98,8 @@ fun SettingsLayout(
         }
         divider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) })
+        divider()
+        SettingsActionItem(Icons.Outlined.Archive, stringResource(R.string.database_export_and_import), showSettingsModal { DatabaseView(it, showSettingsModal) })
       }
       spacer()
 
@@ -251,13 +254,13 @@ fun SettingsLayout(
 }
 
 @Composable
-fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, content: (@Composable () -> Unit)) {
+fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: Boolean = false, content: (@Composable () -> Unit)) {
   val modifier = Modifier
     .padding(start = 8.dp)
     .fillMaxWidth()
     .height(height)
   Row(
-    if (click == null) modifier else modifier.clickable(onClick = click),
+    if (click == null || disabled) modifier else modifier.clickable(onClick = click),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -265,11 +268,11 @@ fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, content: (
 }
 
 @Composable
-fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified) {
+fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, disabled: Boolean = false) {
   SettingsItemView(click) {
     Icon(icon, text, tint = HighOrLowlight)
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(text, color = textColor)
+    Text(text, color = if (disabled) HighOrLowlight else textColor)
   }
 }
 

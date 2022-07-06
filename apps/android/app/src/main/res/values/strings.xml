@@ -250,6 +250,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="database_export_and_import">Database export &amp; import</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
@@ -441,4 +442,22 @@
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
   <string name="settings_experimental_features">Experimental features</string>
+
+  <!-- DatabaseView.kt -->
+  <string name="your_chat_database">Your chat database</string>
+  <string name="run_chat_section">RUN CHAT</string>
+  <string name="chat_is_running">Chat is running</string>
+  <string name="chat_is_stopped">Chat is stopped</string>
+  <string name="chat_database_section">CHAT DATABASE</string>
+  <string name="export_database">Export database</string>
+  <string name="import_database">Import database</string>
+  <string name="new_database_archive">New database archive</string>
+  <string name="old_database_archive">Old database archive</string>
+  <string name="delete_database">Delete database</string>
+  <string name="error_starting_chat">Error starting chat</string>
+  <string name="stop_chat_question">Stop chat?</string>
+  <string name="stop_chat_to_export_import_or_delete_chat_database">Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</string>
+  <string name="stop_chat_confirmation">Stop</string>
+  <string name="error_stopping_chat">Error stopping chat</string>
+  <string name="error_exporting_chat_database">Error exporting chat database</string>
 </resources>

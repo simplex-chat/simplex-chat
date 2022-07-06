@@ -244,6 +244,7 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
+    <string name="database_export_and_import">Экспорт и импорт базы данных</string>
     <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
@@ -439,4 +440,22 @@
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
+
+    <!-- DatabaseView.kt -->
+    <string name="your_chat_database">База данных</string>
+    <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
+    <string name="chat_is_running">Чат запущен</string>
+    <string name="chat_is_stopped">Чат остановлен</string>
+    <string name="chat_database_section">БАЗА ДАННЫХ</string>
+    <string name="export_database">Экспорт базы данных</string>
+    <string name="import_database">Импорт базы данных</string>
+    <string name="new_database_archive">Новый архив базы данных</string>
+    <string name="old_database_archive">Старый архив базы данных</string>
+    <string name="delete_database">Удалить базу данных</string>
+    <string name="error_starting_chat">Ошибка при запуске чата</string>
+    <string name="stop_chat_question">Остановить чат?</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать, импортировать или удалить базу данных. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
+    <string name="stop_chat_confirmation">Остановить</string>
+    <string name="error_stopping_chat">Ошибка при остановке чата</string>
+    <string name="error_exporting_chat_database">Ошибка экспорта базы данных</string>
 </resources>
