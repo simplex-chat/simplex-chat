@@ -51,8 +51,9 @@ importArchive cfg@ArchiveConfig {archivePath} =
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
 
 withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m ()) -> m ())
-withTempDir ArchiveConfig {parentTempDirectory = Just tmpDir} = withTempDirectory tmpDir
-withTempDir ArchiveConfig {parentTempDirectory = Nothing} = withSystemTempDirectory
+withTempDir cfg = case parentTempDirectory cfg of
+  Just tmpDir -> withTempDirectory tmpDir
+  _ -> withSystemTempDirectory
 
 copyDirectoryFiles :: MonadIO m => FilePath -> FilePath -> m ()
 copyDirectoryFiles fromDir toDir = do
