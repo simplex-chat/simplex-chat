@@ -34,11 +34,13 @@ class NotificationService: UNNotificationServiceExtension {
                 for _ in 1...5 {
                     _ = try await Task.sleep(nanoseconds: suspendingDelay)
                     state = appStateGroupDefault.get()
-                    if case .suspended = state { break }
+                    if state == .suspended || state != .suspending { break }
                 }
                 logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
                 if state.inactive {
                     receiveNtfMessages(request, contentHandler)
+                } else {
+                    contentHandler(request.content)
                 }
             }
         default:
