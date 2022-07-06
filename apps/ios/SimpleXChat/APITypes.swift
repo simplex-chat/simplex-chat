@@ -383,10 +383,12 @@ struct ComposedMessage: Encodable {
 public struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
+    var parentTempDirectory: String?
 
-    public init(archivePath: String, disableCompression: Bool? = nil) {
+    public init(archivePath: String, disableCompression: Bool? = nil, parentTempDirectory: String? = nil) {
         self.archivePath = archivePath
         self.disableCompression = disableCompression
+        self.parentTempDirectory = parentTempDirectory
     }
 }
 
