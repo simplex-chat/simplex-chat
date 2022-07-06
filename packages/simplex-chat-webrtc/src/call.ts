@@ -217,8 +217,8 @@ const processCommand = (function () {
   }
 
   const defaultIceServers: RTCIceServer[] = [
-    {urls: ["stun:stun.simplex.chat:5349"]},
-    {urls: ["turn:turn.simplex.chat:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+    {urls: ["stun:stun.simplex.im:5349"]},
+    {urls: ["turn:turn.simplex.im:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
   ]
 
   function getCallConfig(encodedInsertableStreams: boolean, iceServers?: RTCIceServer[], relay?: boolean): CallConfig {
