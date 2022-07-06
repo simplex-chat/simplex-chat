@@ -1,6 +1,8 @@
 package chat.simplex.app.views.call
 
 import android.Manifest
+import android.content.Context
+import android.media.AudioManager
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
@@ -35,6 +37,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -44,6 +47,8 @@ fun ActiveCallView(chatModel: ChatModel) {
     val call = chatModel.activeCall.value
     if (call != null) withApi { chatModel.callManager.endCall(call) }
   })
+  val cxt = LocalContext.current
+  val scope = rememberCoroutineScope()
   Box(Modifier.fillMaxSize()) {
     WebRTCView(chatModel.callCommand) { apiMsg ->
       Log.d(TAG, "received from WebRTCView: $apiMsg")
@@ -79,6 +84,10 @@ fun ActiveCallView(chatModel: ChatModel) {
             }
           is WCallResponse.Connected -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
+            scope.launch {
+              delay(2000L)
+              setCallSound(cxt, call)
+            }
           }
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
@@ -117,13 +126,34 @@ fun ActiveCallView(chatModel: ChatModel) {
 
 @Composable
 private fun ActiveCallOverlay(call: Call, chatModel: ChatModel) {
+  var cxt = LocalContext.current
   ActiveCallOverlayLayout(
     call = call,
     dismiss = { withApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled) },
     toggleVideo = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled) },
+    toggleSound = {
+      var call = chatModel.activeCall.value
+      if (call != null) {
+        call = call.copy(soundSpeaker = !call.soundSpeaker)
+        chatModel.activeCall.value = call
+        setCallSound(cxt, call)
+      }
+    },
     flipCamera = { chatModel.callCommand.value = WCallCommand.Camera(call.localCamera.flipped) }
   )
+}
+
+private fun setCallSound(cxt: Context, call: Call) {
+  Log.d(TAG, "setCallSound: set audio mode")
+  val am = cxt.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+  if (call.soundSpeaker) {
+    am.mode = AudioManager.MODE_NORMAL
+    am.isSpeakerphoneOn = true
+  } else {
+    am.mode = AudioManager.MODE_IN_CALL
+    am.isSpeakerphoneOn = false
+  }
 }
 
 @Composable
@@ -132,6 +162,7 @@ private fun ActiveCallOverlayLayout(
   dismiss: () -> Unit,
   toggleAudio: () -> Unit,
   toggleVideo: () -> Unit,
+  toggleSound: () -> Unit,
   flipCamera: () -> Unit
 ) {
   Column(Modifier.padding(16.dp)) {
@@ -174,6 +205,11 @@ private fun ActiveCallOverlayLayout(
           Box(Modifier.padding(start = 32.dp)) {
             ToggleAudioButton(call, toggleAudio)
           }
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            Box(Modifier.padding(end = 32.dp)) {
+              ToggleSoundButton(call, toggleSound)
+            }
+          }
         }
       }
     }
@@ -194,9 +230,18 @@ private fun ControlButton(call: Call, icon: ImageVector, @StringRes iconText: In
 @Composable
 private fun ToggleAudioButton(call: Call, toggleAudio: () -> Unit) {
   if (call.audioEnabled) {
-    ControlButton(call, Icons.Outlined.Mic, R.string.icon_descr_video_off, toggleAudio)
+    ControlButton(call, Icons.Outlined.Mic, R.string.icon_descr_audio_off, toggleAudio)
   } else {
     ControlButton(call, Icons.Outlined.MicOff, R.string.icon_descr_audio_on, toggleAudio)
+  }
+}
+
+@Composable
+private fun ToggleSoundButton(call: Call, toggleSound: () -> Unit) {
+  if (call.soundSpeaker) {
+    ControlButton(call, Icons.Outlined.VolumeUp, R.string.icon_descr_speaker_off, toggleSound)
+  } else {
+    ControlButton(call, Icons.Outlined.VolumeDown, R.string.icon_descr_speaker_on, toggleSound)
   }
 }
 
@@ -393,6 +438,7 @@ fun PreviewActiveCallOverlayVideo() {
       dismiss = {},
       toggleAudio = {},
       toggleVideo = {},
+      toggleSound = {},
       flipCamera = {}
     )
   }
@@ -413,6 +459,7 @@ fun PreviewActiveCallOverlayAudio() {
       dismiss = {},
       toggleAudio = {},
       toggleVideo = {},
+      toggleSound = {},
       flipCamera = {}
     )
   }
