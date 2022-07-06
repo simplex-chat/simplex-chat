@@ -12,23 +12,37 @@ import SimpleXChat
 
 let logger = Logger()
 
+let suspendingDelay: UInt64 = 2_000_000_000
+
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptContent: UNMutableNotificationContent?
+    var bestAttemptContent: UNNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+        bestAttemptContent = request.content
+        self.contentHandler = contentHandler
         let appState = appStateGroupDefault.get()
         switch appState {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
-            self.contentHandler = contentHandler
             receiveNtfMessages(request, contentHandler)
         case .suspending:
             logger.debug("NotificationService: app is suspending")
-            self.contentHandler = contentHandler
-            receiveNtfMessages(request, contentHandler)
+            Task {
+                var state = appState
+                for _ in 1...5 {
+                    _ = try await Task.sleep(nanoseconds: suspendingDelay)
+                    state = appStateGroupDefault.get()
+                    if state == .suspended || state != .suspending { break }
+                }
+                logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
+                if state.inactive {
+                    receiveNtfMessages(request, contentHandler)
+                } else {
+                    contentHandler(request.content)
+                }
+            }
         default:
             logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
             contentHandler(request.content)
