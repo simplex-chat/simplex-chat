@@ -50,7 +50,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
 
-withTempDir :: ChatMonad m => ArchiveConfig -> String -> (FilePath -> m ()) -> m ()
+withTempDir :: ChatMonad m => ArchiveConfig -> (String -> (FilePath -> m ()) -> m ())
 withTempDir ArchiveConfig {parentTempDirectory = Just tmpDir} = withTempDirectory tmpDir
 withTempDir ArchiveConfig {parentTempDirectory = Nothing} = withSystemTempDirectory
 
