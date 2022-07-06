@@ -3,8 +3,13 @@
   inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable"; #angerman/nixpkgs/patch-1"; # based on 21.11, still need this, until everything is merged into 21.11.
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix?ref=angerman/try-no-libcharset";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hackage = {
+    url = "github:input-output-hk/hackage.nix";
+    flake = false;
+  };
+  inputs.haskellNix.inputs.hackage.follows = "hackage";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, haskellNix, nixpkgs, flake-utils }:
+  outputs = { self, haskellNix, nixpkgs, flake-utils, ... }:
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
       let pkgs = haskellNix.legacyPackages.${system}; in
