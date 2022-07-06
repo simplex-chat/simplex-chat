@@ -23,6 +23,7 @@ public enum AppState: String {
     case bgRefresh
     case suspending
     case suspended
+    case stopped
 
     public var inactive: Bool {
         switch self {
