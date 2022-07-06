@@ -404,6 +404,8 @@
     <string name="icon_descr_video_on">Включить видео</string>
     <string name="icon_descr_audio_off">Выключить звук</string>
     <string name="icon_descr_audio_on">Включить звук</string>
+    <string name="icon_descr_speaker_off">Выключить спикер</string>
+    <string name="icon_descr_speaker_on">Включить спикер</string>
     <string name="icon_descr_flip_camera">Перевернуть камеру</string>
 
     <!-- Call items -->
