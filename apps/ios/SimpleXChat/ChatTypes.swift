@@ -426,6 +426,13 @@ public struct GroupMember: Decodable {
         }
     }
 
+    public var chatViewName: String {
+        get {
+            let p = memberProfile
+            return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+        }
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
         memberId: "abcd",

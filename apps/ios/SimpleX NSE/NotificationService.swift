@@ -45,23 +45,14 @@ class NotificationService: UNNotificationServiceExtension {
            let encNtfInfo = ntfData["message"] as? String,
            let _ = startChat() {
             if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-               if let content = receiveMessageForNotification() {
-                   contentHandler(content)
-               } else if let connEntity = ntfMsgInfo.connEntity {
-                   switch connEntity {
-                   case let .rcvDirectMsgConnection(_, contact):
-                       ()
-                   case let .rcvGroupMsgConnection(_, groupInfo, groupMember):
-                       ()
-                   case let .sndFileConnection(_, sndFileTransfer):
-                       ()
-                   case let .rcvFileConnection(_, rcvFileTransfer):
-                       ()
-                   case let .userContactConnection(_, userContact):
-                       ()
-                   }
-                   contentHandler(request.content)
-               }
+                if let connEntity = ntfMsgInfo.connEntity {
+                    bestAttemptContent = createConnectionEventNtf(connEntity)
+                }
+                if let content = receiveMessageForNotification() {
+                    contentHandler(content)
+                } else if let content = bestAttemptContent {
+                    contentHandler(content)
+                }
             }
         }
     }
@@ -70,8 +61,8 @@ class NotificationService: UNNotificationServiceExtension {
         logger.debug("NotificationService.serviceExtensionTimeWillExpire")
         // Called just before the extension will be terminated by the system.
         // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
-        if let contentHandler = self.contentHandler, let bestAttemptContent = self.bestAttemptContent {
-            contentHandler(bestAttemptContent)
+        if let contentHandler = self.contentHandler, let content = bestAttemptContent {
+            contentHandler(content)
         }
     }
 }
