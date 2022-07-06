@@ -292,7 +292,7 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
-data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool}
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
 
 data ContactSubStatus = ContactSubStatus

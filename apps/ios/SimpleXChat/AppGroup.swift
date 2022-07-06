@@ -12,6 +12,7 @@ import SwiftUI
 let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
+let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 
 let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -22,6 +23,7 @@ public enum AppState: String {
     case bgRefresh
     case suspending
     case suspended
+    case stopped
 
     public var inactive: Bool {
         switch self {
@@ -50,6 +52,12 @@ public let dbContainerGroupDefault = EnumDefault<DBContainer>(
 )
 
 public let chatLastStartGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_START)
+
+public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NTF_PREVIEW_MODE,
+    withDefault: .message
+)
 
 public class DateDefault {
     var defaults: UserDefaults

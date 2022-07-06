@@ -16,6 +16,8 @@ let appSuspendTimeout: Int = 15 // seconds
 
 let bgSuspendTimeout: Int = 5 // seconds
 
+let terminationTimeout: Int = 3 // seconds
+
 private func _suspendChat(timeout: Int) {
     appStateGroupDefault.set(.suspending)
     apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
@@ -25,7 +27,9 @@ private func _suspendChat(timeout: Int) {
 
 func suspendChat() {
     suspendLockQueue.sync {
-        _suspendChat(timeout: appSuspendTimeout)
+        if appStateGroupDefault.get() != .stopped {
+            _suspendChat(timeout: appSuspendTimeout)
+        }
     }
 }
 
@@ -37,15 +41,33 @@ func suspendBgRefresh() {
     }
 }
 
+func terminateChat() {
+    suspendLockQueue.sync {
+        switch appStateGroupDefault.get() {
+        case .suspending:
+            // suspend instantly if already suspending
+            _chatSuspended()
+            apiSuspendChat(timeoutMicroseconds: 0)
+        case .stopped: ()
+        default:
+            _suspendChat(timeout: terminationTimeout)
+        }
+    }
+}
+
 func chatSuspended() {
     suspendLockQueue.sync {
         if case .suspending = appStateGroupDefault.get() {
-            logger.debug("chatSuspended")
-            appStateGroupDefault.set(.suspended)
-            if ChatModel.shared.chatRunning == true {
-                ChatReceiver.shared.stop()
-            }
+            _chatSuspended()
         }
+    }
+}
+
+private func _chatSuspended() {
+    logger.debug("_chatSuspended")
+    appStateGroupDefault.set(.suspended)
+    if ChatModel.shared.chatRunning == true {
+        ChatReceiver.shared.stop()
     }
 }
 

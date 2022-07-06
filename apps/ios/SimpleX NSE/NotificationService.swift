@@ -12,29 +12,45 @@ import SimpleXChat
 
 let logger = Logger()
 
+let suspendingDelay: UInt64 = 2_000_000_000
+
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptContent: UNMutableNotificationContent?
+    var bestAttemptContent: UNNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+        bestAttemptContent = request.content
+        self.contentHandler = contentHandler
         let appState = appStateGroupDefault.get()
         switch appState {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
-            self.contentHandler = contentHandler
             receiveNtfMessages(request, contentHandler)
         case .suspending:
-            self.contentHandler = contentHandler
-            receiveNtfMessages(request, contentHandler)
+            logger.debug("NotificationService: app is suspending")
+            Task {
+                var state = appState
+                for _ in 1...5 {
+                    _ = try await Task.sleep(nanoseconds: suspendingDelay)
+                    state = appStateGroupDefault.get()
+                    if state == .suspended || state != .suspending { break }
+                }
+                logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
+                if state.inactive {
+                    receiveNtfMessages(request, contentHandler)
+                } else {
+                    contentHandler(request.content)
+                }
+            }
         default:
-            print("userInfo", request.content.userInfo)
+            logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
             contentHandler(request.content)
         }
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+        logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             contentHandler(request.content)
             return
@@ -44,24 +60,19 @@ class NotificationService: UNNotificationServiceExtension {
            let nonce = ntfData["nonce"] as? String,
            let encNtfInfo = ntfData["message"] as? String,
            let _ = startChat() {
+            logger.debug("NotificationService: receiveNtfMessages: chat is started")
             if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-               if let content = receiveMessageForNotification() {
-                   contentHandler(content)
-               } else if let connEntity = ntfMsgInfo.connEntity {
-                   switch connEntity {
-                   case let .rcvDirectMsgConnection(_, contact):
-                       ()
-                   case let .rcvGroupMsgConnection(_, groupInfo, groupMember):
-                       ()
-                   case let .sndFileConnection(_, sndFileTransfer):
-                       ()
-                   case let .rcvFileConnection(_, rcvFileTransfer):
-                       ()
-                   case let .userContactConnection(_, userContact):
-                       ()
-                   }
-                   contentHandler(request.content)
-               }
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
+                if let connEntity = ntfMsgInfo.connEntity {
+                    bestAttemptContent = createConnectionEventNtf(connEntity)
+                }
+                if let content = receiveMessageForNotification() {
+                    logger.debug("NotificationService: receiveMessageForNotification: has message")
+                    contentHandler(content)
+                } else if let content = bestAttemptContent {
+                    logger.debug("NotificationService: receiveMessageForNotification: no message")
+                    contentHandler(content)
+                }
             }
         }
     }
@@ -70,8 +81,8 @@ class NotificationService: UNNotificationServiceExtension {
         logger.debug("NotificationService.serviceExtensionTimeWillExpire")
         // Called just before the extension will be terminated by the system.
         // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
-        if let contentHandler = self.contentHandler, let bestAttemptContent = self.bestAttemptContent {
-            contentHandler(bestAttemptContent)
+        if let contentHandler = self.contentHandler, let content = bestAttemptContent {
+            contentHandler(content)
         }
     }
 }

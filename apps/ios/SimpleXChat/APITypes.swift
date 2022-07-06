@@ -383,10 +383,12 @@ struct ComposedMessage: Encodable {
 public struct ArchiveConfig: Encodable {
     var archivePath: String
     var disableCompression: Bool?
+    var parentTempDirectory: String?
 
-    public init(archivePath: String, disableCompression: Bool? = nil) {
+    public init(archivePath: String, disableCompression: Bool? = nil, parentTempDirectory: String? = nil) {
         self.archivePath = archivePath
         self.disableCompression = disableCompression
+        self.parentTempDirectory = parentTempDirectory
     }
 }
 
@@ -452,8 +454,8 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .hidden: return "Hidden"
-        case .contact: return "Contact"
-        case .message: return "Message"
+        case .contact: return "Contact name"
+        case .message: return "Message text"
         }
     }
 

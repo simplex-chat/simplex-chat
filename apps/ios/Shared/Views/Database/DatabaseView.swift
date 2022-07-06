@@ -223,6 +223,7 @@ struct DatabaseView: View {
                 try await apiStopChat()
                 ChatReceiver.shared.stop()
                 await MainActor.run { m.chatRunning = false }
+                appStateGroupDefault.set(.stopped)
             } catch let error {
                 await MainActor.run {
                     runChat = true
@@ -307,6 +308,7 @@ struct DatabaseView: View {
                 do {
                     try initializeChat(start: true)
                     m.chatDbChanged = false
+                    appStateGroupDefault.set(.active)
                 } catch let error {
                     fatalError("Error starting chat \(responseError(error))")
                 }
@@ -318,6 +320,7 @@ struct DatabaseView: View {
                 m.chatRunning = true
                 ChatReceiver.shared.start()
                 chatLastStartGroupDefault.set(Date.now)
+                appStateGroupDefault.set(.active)
             } catch let error {
                 runChat = false
                 alert = .error(title: "Error starting chat", error: responseError(error))

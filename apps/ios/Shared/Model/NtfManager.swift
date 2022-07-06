@@ -136,12 +136,11 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("Incoming call", comment: "notification")
             ),
-            // TODO remove
             UNNotificationCategory(
-                identifier: ntfCategoryCheckingMessages,
+                identifier: ntfCategoryConnectionEvent,
                 actions: [],
                 intentIdentifiers: [],
-                hiddenPreviewsBodyPlaceholder: NSLocalizedString("Checking new messages...", comment: "notification")
+                hiddenPreviewsBodyPlaceholder: NSLocalizedString("SimpleX encrypted message or connection event", comment: "notification")
             )
         ])
     }
@@ -187,16 +186,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
         addNotification(createCallInvitationNtf(invitation))
-    }
-
-    // TODO remove
-    func notifyCheckingMessages() {
-        logger.debug("NtfManager.notifyCheckingMessages")
-        let content = createNotification(
-            categoryIdentifier: ntfCategoryCheckingMessages,
-            title: NSLocalizedString("Checking new messages...", comment: "notification")
-        )
-        addNotification(content)
     }
 
     private func addNotification(_ content: UNMutableNotificationContent) {
