@@ -452,8 +452,8 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .hidden: return "Hidden"
-        case .contact: return "Contact"
-        case .message: return "Message"
+        case .contact: return "Contact name"
+        case .message: return "Message text"
         }
     }
 

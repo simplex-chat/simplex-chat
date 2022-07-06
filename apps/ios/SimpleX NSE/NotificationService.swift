@@ -48,19 +48,7 @@ class NotificationService: UNNotificationServiceExtension {
                if let content = receiveMessageForNotification() {
                    contentHandler(content)
                } else if let connEntity = ntfMsgInfo.connEntity {
-                   switch connEntity {
-                   case let .rcvDirectMsgConnection(_, contact):
-                       ()
-                   case let .rcvGroupMsgConnection(_, groupInfo, groupMember):
-                       ()
-                   case let .sndFileConnection(_, sndFileTransfer):
-                       ()
-                   case let .rcvFileConnection(_, rcvFileTransfer):
-                       ()
-                   case let .userContactConnection(_, userContact):
-                       ()
-                   }
-                   contentHandler(request.content)
+                   contentHandler(createConnectionEventNtf(connEntity))
                }
             }
         }
