@@ -26,15 +26,17 @@ class NotificationService: UNNotificationServiceExtension {
             self.contentHandler = contentHandler
             receiveNtfMessages(request, contentHandler)
         case .suspending:
+            logger.debug("NotificationService: app is suspending")
             self.contentHandler = contentHandler
             receiveNtfMessages(request, contentHandler)
         default:
-            print("userInfo", request.content.userInfo)
+            logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
             contentHandler(request.content)
         }
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+        logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             contentHandler(request.content)
             return
@@ -44,13 +46,17 @@ class NotificationService: UNNotificationServiceExtension {
            let nonce = ntfData["nonce"] as? String,
            let encNtfInfo = ntfData["message"] as? String,
            let _ = startChat() {
+            logger.debug("NotificationService: receiveNtfMessages: chat is started")
             if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     bestAttemptContent = createConnectionEventNtf(connEntity)
                 }
                 if let content = receiveMessageForNotification() {
+                    logger.debug("NotificationService: receiveMessageForNotification: has message")
                     contentHandler(content)
                 } else if let content = bestAttemptContent {
+                    logger.debug("NotificationService: receiveMessageForNotification: no message")
                     contentHandler(content)
                 }
             }
