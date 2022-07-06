@@ -46,7 +46,7 @@ func terminateChat() {
         switch appStateGroupDefault.get() {
         case .suspending:
             // suspend instantly if already suspending
-            appStateGroupDefault.set(.suspended)
+            _chatSuspended()
             apiSuspendChat(timeoutMicroseconds: 0)
         case .stopped: ()
         default:
@@ -58,12 +58,16 @@ func terminateChat() {
 func chatSuspended() {
     suspendLockQueue.sync {
         if case .suspending = appStateGroupDefault.get() {
-            logger.debug("chatSuspended")
-            appStateGroupDefault.set(.suspended)
-            if ChatModel.shared.chatRunning == true {
-                ChatReceiver.shared.stop()
-            }
+            _chatSuspended()
         }
+    }
+}
+
+private func _chatSuspended() {
+    logger.debug("_chatSuspended")
+    appStateGroupDefault.set(.suspended)
+    if ChatModel.shared.chatRunning == true {
+        ChatReceiver.shared.stop()
     }
 }
 
