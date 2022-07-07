@@ -20,6 +20,7 @@ class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
   private var isServiceStarted = false
   private var isStartingService = false
+  private var isStoppingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
   private val chatController by lazy { (application as SimplexApp).chatController }
@@ -71,7 +72,6 @@ class SimplexService: Service() {
         } else {
           Log.w(TAG, "Starting foreground service")
           chatController.startChat(user)
-          chatController.startReceiver()
           isServiceStarted = true
           saveServiceState(self, ServiceState.STARTED)
           wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
@@ -88,6 +88,8 @@ class SimplexService: Service() {
 
   private fun stopService() {
     Log.d(TAG, "Stopping foreground service")
+    if (!isServiceStarted || isStoppingService) return
+    isStoppingService = true
     try {
       wakeLock?.let {
         while (it.isHeld) it.release() // release all, in case acquired more than once
@@ -98,7 +100,7 @@ class SimplexService: Service() {
     } catch (e: Exception) {
       Log.d(TAG, "Service stopped without being started: ${e.message}")
     }
-
+    isStoppingService = false
     isServiceStarted = false
     saveServiceState(this, ServiceState.STOPPED)
   }
@@ -121,7 +123,7 @@ class SimplexService: Service() {
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
     return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-      .setSmallIcon(R.drawable.ntf_icon)
+      .setSmallIcon(R.drawable.ntf_service_icon)
       .setColor(0x88FFFF)
       .setContentTitle(title)
       .setContentText(text)
