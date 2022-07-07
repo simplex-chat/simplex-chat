@@ -74,15 +74,7 @@ fun DatabaseView(
     startChat = { startChat(m, runChat) },
     stopChatAlert = { stopChatAlert(m, runChat) },
     exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveFile) },
-    openChatArchiveView = {
-      val chatArchiveNameVal = chatArchiveName.value
-      val chatArchiveTimeVal = chatArchiveTime.value
-      val chatLastStartVal = chatLastStart.value
-      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
-        showSettingsModal { ChatArchiveView(m, chatArchiveNameVal, stringResource(title)) }
-      }
-    },
+    openChatArchiveView = { openChatArchive(m, chatArchiveName, chatArchiveTime, chatLastStart, showSettingsModal) },
     deleteChatAlert = { deleteChatAlert(m, progressIndicator) }
   )
 }
@@ -374,6 +366,22 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
       }
     }
   )
+
+private fun openChatArchive(
+  m: ChatModel,
+  chatArchiveName: MutableState<String?>,
+  chatArchiveTime: MutableState<Instant?>,
+  chatLastStart: MutableState<Instant?>,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+) {
+  val chatArchiveNameVal = chatArchiveName.value
+  val chatArchiveTimeVal = chatArchiveTime.value
+  val chatLastStartVal = chatLastStart.value
+  if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
+    val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
+    showSettingsModal { ChatArchiveView(m, stringResource(title), chatArchiveNameVal) }
+  }
+}
 
 @Composable
 private fun rememberImportArchiveLauncher(importedArchiveUri: MutableState<Uri?>): ManagedActivityResultLauncher<String, Uri?> =

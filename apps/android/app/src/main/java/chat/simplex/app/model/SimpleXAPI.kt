@@ -156,6 +156,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+      chatModel.chatRunning.value = true
+      chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
       Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
