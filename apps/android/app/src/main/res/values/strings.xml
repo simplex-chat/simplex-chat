@@ -460,4 +460,16 @@
   <string name="stop_chat_confirmation">Stop</string>
   <string name="error_stopping_chat">Error stopping chat</string>
   <string name="error_exporting_chat_database">Error exporting chat database</string>
+  <string name="import_database_question">Import chat database?</string>
+  <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Your current chat database will be DELETED and REPLACED with the imported one.\nThis action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="import_database_confirmation">Import</string>
+  <string name="error_deleting_database">Error deleting chat database</string>
+  <string name="error_importing_database">Error importing chat database</string>
+  <string name="imported_archive_not_found">Imported archive not found</string>
+  <string name="chat_database_imported">Chat database imported</string>
+  <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
+  <string name="delete_chat_profile_question">Delete chat profile?</string>
+  <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="chat_database_deleted">Chat database deleted</string>
+  <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
 </resources>

@@ -458,4 +458,16 @@
     <string name="stop_chat_confirmation">Остановить</string>
     <string name="error_stopping_chat">Ошибка при остановке чата</string>
     <string name="error_exporting_chat_database">Ошибка экспорта базы данных</string>
+    <string name="import_database_question">Импортировать базу данных?</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ваша текущая база данных будет УДАЛЕНА и ЗАМЕНЕНА импортированной.\nЭто действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</string>
+    <string name="import_database_confirmation">Импортировать</string>
+    <string name="error_deleting_database">Ошибка при удалении базы данных</string>
+    <string name="error_importing_database">Ошибка при импорте базы данных</string>
+    <string name="imported_archive_not_found">Импортированный архив не найден</string>
+    <string name="chat_database_imported">База данных импортирована</string>
+    <string name="restart_the_app_to_use_imported_chat_database">Перезапустите приложение, чтобы использовать импортированную базу данных.</string>
+    <string name="delete_chat_profile_question">Удалить профиль?</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</string>
+    <string name="chat_database_deleted">База данных удалена</string>
+    <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
 </resources>
