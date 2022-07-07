@@ -123,7 +123,7 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String, chatArchiveNam
   name = "Dark Mode"
 )
 @Composable
-fun PreviewChatHelpLayout() {
+fun PreviewChatArchiveLayout() {
   SimpleXTheme {
     ChatArchiveLayout(
       title = "New database archive",
