@@ -89,6 +89,7 @@ class SimplexService: Service() {
   private fun stopService() {
     Log.d(TAG, "Stopping foreground service")
     if (!isServiceStarted || isStoppingService) return
+    isStoppingService = true
     try {
       wakeLock?.let {
         while (it.isHeld) it.release() // release all, in case acquired more than once
