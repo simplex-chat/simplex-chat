@@ -33,6 +33,8 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 import kotlinx.datetime.*
 import java.io.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun DatabaseView(
@@ -73,7 +75,7 @@ fun DatabaseView(
     chatLastStart,
     startChat = { startChat(m, runChat) },
     stopChatAlert = { stopChatAlert(m, runChat) },
-    exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveFile) },
+    exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile) },
     openChatArchiveView = { openChatArchive(m, chatArchiveName, chatArchiveTime, chatLastStart, showSettingsModal) },
     deleteChatAlert = { deleteChatAlert(m, progressIndicator) }
   )
@@ -295,12 +297,14 @@ private fun exportArchive(
   context: Context,
   m: ChatModel,
   progressIndicator: MutableState<Boolean>,
+  chatArchiveName: MutableState<String?>,
+  chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>
 ) {
   progressIndicator.value = true
   withApi {
     try {
-      chatArchiveFile.value = exportChatArchive(m, context, chatArchiveFile)
+      chatArchiveFile.value = exportChatArchive(m, context, chatArchiveName, chatArchiveTime, chatArchiveFile)
       progressIndicator.value = false
     } catch (e: Error) {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_exporting_chat_database), e.toString())
@@ -309,19 +313,25 @@ private fun exportArchive(
   }
 }
 
-private suspend fun exportChatArchive(m: ChatModel, context: Context, chatArchiveFile: MutableState<String?>): String {
+private suspend fun exportChatArchive(
+  m: ChatModel,
+  context: Context,
+  chatArchiveName: MutableState<String?>,
+  chatArchiveTime: MutableState<Instant?>,
+  chatArchiveFile: MutableState<String?>
+): String {
   val archiveTime = Clock.System.now()
-  //  val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-  //  val ts = formatter.format(archiveTime.toJavaInstant())
-  //  val ts = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
-  val ts = archiveTime.toString()
+  val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
+  //  val ts = archiveTime.toString()
   val archiveName = "simplex-chat.$ts.zip"
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
   m.controller.apiExportArchive(config)
   deleteOldArchive(m, context)
   m.controller.appPrefs.chatArchiveName.set(archiveName)
+  chatArchiveName.value = archiveName
   m.controller.appPrefs.chatArchiveTime.set(archiveTime)
+  chatArchiveTime.value = archiveTime
   chatArchiveFile.value = archivePath
   return archivePath
 }
@@ -379,6 +389,7 @@ private fun openChatArchive(
   val chatLastStartVal = chatLastStart.value
   if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
     val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
+    Log.d(TAG, "################################## 1")
     showSettingsModal { ChatArchiveView(m, stringResource(title), chatArchiveNameVal) }
   }
 }
