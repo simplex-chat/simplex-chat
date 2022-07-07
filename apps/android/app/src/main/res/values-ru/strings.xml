@@ -472,4 +472,11 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию базы данных и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с базой данных.</string>
+
+    <!-- ChatArchiveView.kt -->
+    <string name="chat_archive_header">Архив чата</string>
+    <string name="save_archive">Сохранить архив</string>
+    <string name="delete_archive">Удалить архив</string>
+    <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="delete_chat_archive_question">Удалить архив чата?</string>
 </resources>

@@ -474,4 +474,11 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
+
+  <!-- ChatArchiveView.kt -->
+  <string name="chat_archive_header">Chat archive</string>
+  <string name="save_archive">Save archive</string>
+  <string name="delete_archive">Delete archive</string>
+  <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>
+  <string name="delete_chat_archive_question">Delete chat archive?</string>
 </resources>

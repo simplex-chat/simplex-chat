@@ -42,6 +42,9 @@ fun DatabaseView(
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
   val runChat = remember { mutableStateOf(false) }
+  val chatArchiveName = remember { mutableStateOf(m.controller.appPrefs.chatArchiveName.get()) }
+  val chatArchiveTime = remember { mutableStateOf(m.controller.appPrefs.chatArchiveTime.get()) }
+  val chatLastStart = remember { mutableStateOf(m.controller.appPrefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, chatArchiveFile)
   val importedArchiveUri = remember { mutableStateOf<Uri?>(null) }
@@ -65,13 +68,21 @@ fun DatabaseView(
     runChat,
     importedArchiveUri,
     chatRunning = m.chatRunning,
-    chatArchiveName = remember { mutableStateOf(m.controller.appPrefs.chatArchiveName.get()) },
-    chatArchiveTime = remember { mutableStateOf(m.controller.appPrefs.chatArchiveTime.get()) },
-    chatLastStart = remember { mutableStateOf(m.controller.appPrefs.chatLastStart.get()) },
-    showSettingsModal,
+    chatArchiveName,
+    chatArchiveTime,
+    chatLastStart,
     startChat = { startChat(m, runChat) },
     stopChatAlert = { stopChatAlert(m, runChat) },
     exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveFile) },
+    openChatArchiveView = {
+      val chatArchiveNameVal = chatArchiveName.value
+      val chatArchiveTimeVal = chatArchiveTime.value
+      val chatLastStartVal = chatLastStart.value
+      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
+        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
+        showSettingsModal { ChatArchiveView(m, chatArchiveNameVal, stringResource(title)) }
+      }
+    },
     deleteChatAlert = { deleteChatAlert(m, progressIndicator) }
   )
 }
@@ -85,10 +96,10 @@ fun DatabaseLayout(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
+  openChatArchiveView: () -> Unit,
   deleteChatAlert: () -> Unit
 ) {
   Box(
@@ -102,10 +113,10 @@ fun DatabaseLayout(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      showSettingsModal,
       startChat,
       stopChatAlert,
       exportArchive,
+      openChatArchiveView,
       deleteChatAlert
     )
     if (progressIndicator.value) {
@@ -134,10 +145,10 @@ fun ChatDatabaseView(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
+  openChatArchiveView: () -> Unit,
   deleteChatAlert: () -> Unit
 ) {
   val stopped = chatRunning.value == false
@@ -208,11 +219,11 @@ fun ChatDatabaseView(
       val chatArchiveTimeVal = chatArchiveTime.value
       val chatLastStartVal = chatLastStart.value
       if (chatArchiveName.value != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-        val title = if (chatArchiveTimeVal < chatLastStartVal) stringResource(R.string.old_database_archive) else stringResource(R.string.new_database_archive)
+        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
           Icons.Outlined.Inventory2,
-          title,
-          showSettingsModal { ChatArchiveView() },
+          stringResource(title),
+          openChatArchiveView,
           disabled = !stopped || progressIndicator
         )
         divider()
@@ -233,6 +244,10 @@ fun ChatDatabaseView(
       }
     )
   }
+}
+
+fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): Int {
+  return if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive
 }
 
 @Composable
@@ -334,7 +349,7 @@ private fun deleteOldArchive(m: ChatModel, context: Context) {
 }
 
 @Composable
-fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
+private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
@@ -480,10 +495,10 @@ fun PreviewDatabaseLayout() {
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
-      showSettingsModal = { {} },
       startChat = {},
       stopChatAlert = {},
       exportArchive = {},
+      openChatArchiveView = { },
       deleteChatAlert = {}
     )
   }
