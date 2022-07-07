@@ -113,7 +113,6 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
-
   }
 }
 
