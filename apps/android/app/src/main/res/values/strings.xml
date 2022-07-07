@@ -475,6 +475,10 @@
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
 
+  <!-- ChatModel.chatRunning interactions -->
+  <string name="chat_is_stopped_indication">Chat is stopped</string>
+  <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+
   <!-- ChatArchiveView.kt -->
   <string name="chat_archive_header">Chat archive</string>
   <string name="save_archive">Save archive</string>

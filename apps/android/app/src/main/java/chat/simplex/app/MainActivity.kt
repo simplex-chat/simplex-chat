@@ -305,7 +305,8 @@ fun MainPage(
           if (chatModel.showCallView.value) ActiveCallView(chatModel)
           else {
             showAdvertiseLAAlert = true
-            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) })
+            val stopped = chatModel.chatRunning.value == false
+            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA = { setPerformLA(it) }, stopped)
             else ChatView(chatModel)
           }
         }
