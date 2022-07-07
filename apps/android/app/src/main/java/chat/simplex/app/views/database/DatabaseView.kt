@@ -94,6 +94,7 @@ fun DatabaseLayout(
     Modifier.fillMaxSize(),
   ) {
     ChatDatabaseView(
+      progressIndicator.value,
       runChat,
       importedArchiveUri,
       chatRunning,
@@ -125,6 +126,7 @@ fun DatabaseLayout(
 
 @Composable
 fun ChatDatabaseView(
+  progressIndicator: Boolean,
   runChat: MutableState<Boolean>,
   importedArchiveUri: MutableState<Uri?>,
   chatRunning: MutableState<Boolean?>,
@@ -191,7 +193,7 @@ fun ChatDatabaseView(
         stringResource(R.string.export_database),
         { exportArchive() },
         textColor = MaterialTheme.colors.primary,
-        disabled = !stopped
+        disabled = !stopped || progressIndicator
       )
       divider()
       SettingsActionItem(
@@ -199,7 +201,7 @@ fun ChatDatabaseView(
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
-        disabled = !stopped
+        disabled = !stopped || progressIndicator
       )
       divider()
       val chatArchiveTimeVal = chatArchiveTime.value
@@ -210,7 +212,7 @@ fun ChatDatabaseView(
           Icons.Outlined.Inventory2,
           title,
           showSettingsModal { ChatArchiveView() },
-          disabled = !stopped
+          disabled = !stopped || progressIndicator
         )
         divider()
       }
@@ -219,7 +221,7 @@ fun ChatDatabaseView(
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
-        disabled = !stopped
+        disabled = !stopped || progressIndicator
       )
     }
   }
