@@ -232,7 +232,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
-  private suspend fun apiStartChat(): Boolean {
+  suspend fun apiStartChat(): Boolean {
     val r = sendCmd(CC.StartChat())
     when (r) {
       is CR.ChatStarted -> return true
