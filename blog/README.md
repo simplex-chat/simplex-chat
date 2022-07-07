@@ -1,6 +1,11 @@
 # Blog
 
-Jul 11, 2022 [SimpleX Chat v3 released: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export and import, low level protocol privacy and performance improvements](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
+Jul 11, 2022 [SimpleX Chat v3 released](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
+
+- instant push notifications for iOS
+- e2e encrypted WebRTC audio/video calls
+- chat database export and import
+- protocol privacy and performance improvements
 
 Jun 4, 2022 [v2.2: the new Privacy and Security settings](./20220604-simplex-chat-new-privacy-security-settings.md)
 

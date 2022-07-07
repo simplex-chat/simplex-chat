@@ -26,6 +26,12 @@ Some important limitations:
 
 You can think about some helpful use cases of this feature - e.g. the full chat profile can be forwarded to another person via some cloud storage, or you can store it for youself to pick up later - e.g. if you want to temporarily remove the app from the phone.
 
+### Protocol privacy and performance improvement
+
+Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and in addition to that there is no message timestamp inside TLS.
+
+We also improved the protocol for establishing bidirectional connection between to users - it is substantially faster now, consuming much less network traffic and battery. It would improve both the time it takes to connect to your contacts and the time it takes to start delivering images and files.
+
 ## SimpleX platform
 
 We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a messaging application built on the SimpleX platform.
