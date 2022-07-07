@@ -269,7 +269,7 @@ fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: 
 
 @Composable
 fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, disabled: Boolean = false) {
-  SettingsItemView(click) {
+  SettingsItemView(click, disabled = disabled) {
     Icon(icon, text, tint = HighOrLowlight)
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(text, color = if (disabled) HighOrLowlight else textColor)

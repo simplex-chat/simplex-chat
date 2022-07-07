@@ -313,10 +313,8 @@ private suspend fun exportChatArchive(m: ChatModel, context: Context, chatArchiv
   val ts = archiveTime.toString()
   val archiveName = "simplex-chat.$ts.zip"
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
-  val config = ArchiveConfig(archivePath)
-  Log.d(TAG,"############################## 1")
+  val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
   m.controller.apiExportArchive(config)
-  Log.d(TAG,"############################## 2")
   deleteOldArchive(m, context)
   m.controller.appPrefs.chatArchiveName.set(archiveName)
   m.controller.appPrefs.chatArchiveTime.set(archiveTime)

@@ -999,7 +999,7 @@ sealed class CC {
 class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgContent: MsgContent)
 
 @Serializable
-class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null)
+class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
 
 val json = Json {
   prettyPrint = true
