@@ -117,8 +117,11 @@ class AppPreferences(val context: Context) {
   }
 }
 
+private const val MESSAGE_TIMEOUT: Int = 15_000_000
+
 open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
+  private var receiverStarted = false
 
   init {
     chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
@@ -142,6 +145,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+      startReceiver()
       Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -149,8 +153,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  fun startReceiver() {
+  private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
+    if (receiverStarted) return
     thread(name="receiver") {
       GlobalScope.launch { withContext(Dispatchers.IO) { recvMspLoop() } }
     }
@@ -176,18 +181,23 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun recvMsg(): CR {
+  private suspend fun recvMsg(): CR? {
     return withContext(Dispatchers.IO) {
-      val json = chatRecvMsg(ctrl)
-      val r = APIResponse.decodeStr(json).resp
-      Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-      if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
-      r
+      val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+      if (json == "") {
+        null
+      } else {
+        val r = APIResponse.decodeStr(json).resp
+        Log.d(TAG, "chatRecvMsg: ${r.responseType}")
+        if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
+        r
+      }
     }
   }
 
-  suspend fun recvMspLoop() {
-    processReceivedMsg(recvMsg())
+  private suspend fun recvMspLoop() {
+    val msg = recvMsg()
+    if (msg != null) processReceivedMsg(msg)
     recvMspLoop()
   }
 
@@ -206,7 +216,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("user not created ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStartChat(): Boolean {
+  private suspend fun apiStartChat(): Boolean {
     val r = sendCmd(CC.StartChat())
     when (r) {
       is CR.ChatStarted -> return true
@@ -215,13 +225,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun apiSetFilesFolder(filesFolder: String) {
+  private suspend fun apiSetFilesFolder(filesFolder: String) {
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChats(): List<Chat> {
+  private suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
     if (r is CR.ApiChats ) return r.chats
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
@@ -256,7 +266,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
-  suspend fun getUserSMPServers(): List<String>? {
+  private suspend fun getUserSMPServers(): List<String>? {
     val r = sendCmd(CC.GetUserSMPServers())
     if (r is CR.UserSMPServers) return r.smpServers
     Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
@@ -383,7 +393,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return false
   }
 
-  suspend fun apiGetUserAddress(): String? {
+  private suspend fun apiGetUserAddress(): String? {
     val r = sendCmd(CC.ShowMyAddress())
     if (r is CR.UserContactLink) return r.connReqContact
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore

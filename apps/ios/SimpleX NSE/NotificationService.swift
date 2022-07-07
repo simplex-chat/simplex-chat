@@ -179,6 +179,7 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
         return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
     }
+    logger.debug("apiGetNtfMessage ignored response: \(String.init(describing: r), privacy: .public)")
     return nil
 }
 
