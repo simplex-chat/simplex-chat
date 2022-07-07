@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
@@ -224,12 +225,25 @@ fun ChatDatabaseView(
         disabled = !stopped || progressIndicator
       )
     }
+    SettingsSectionFooter(
+      if (stopped) {
+        stringResource(R.string.you_must_use_the_most_recent_version_of_database)
+      } else {
+        stringResource(R.string.stop_chat_to_enable_database_actions)
+      }
+    )
   }
+}
+
+@Composable
+fun SettingsSectionFooter(text: String) {
+  Text(text, color = HighOrLowlight, modifier = Modifier.padding(start = 16.dp, top = 5.dp).fillMaxWidth(0.9F), fontSize = 12.sp)
 }
 
 private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
   if (m.chatDbChanged.value) {
-    // TODO
+    ModalManager.shared.closeModals()
+    // TODO resetChatCtrl, initializeChat
   } else {
     withApi {
       try {

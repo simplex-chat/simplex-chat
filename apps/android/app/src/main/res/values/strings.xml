@@ -472,4 +472,6 @@
   <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
   <string name="chat_database_deleted">Chat database deleted</string>
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
+  <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
+  <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
 </resources>
