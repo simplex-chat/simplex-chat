@@ -76,8 +76,8 @@ fun DatabaseView(
     startChat = { startChat(m, runChat) },
     stopChatAlert = { stopChatAlert(m, runChat) },
     exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile) },
-    openChatArchiveView = { openChatArchive(m, chatArchiveName, chatArchiveTime, chatLastStart, showSettingsModal) },
-    deleteChatAlert = { deleteChatAlert(m, progressIndicator) }
+    deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
+    showSettingsModal
   )
 }
 
@@ -93,8 +93,8 @@ fun DatabaseLayout(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
-  openChatArchiveView: () -> Unit,
-  deleteChatAlert: () -> Unit
+  deleteChatAlert: () -> Unit,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   Box(
     Modifier.fillMaxSize(),
@@ -110,8 +110,8 @@ fun DatabaseLayout(
       startChat,
       stopChatAlert,
       exportArchive,
-      openChatArchiveView,
-      deleteChatAlert
+      deleteChatAlert,
+      showSettingsModal
     )
     if (progressIndicator.value) {
       Box(
@@ -142,8 +142,8 @@ fun ChatDatabaseView(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
-  openChatArchiveView: () -> Unit,
-  deleteChatAlert: () -> Unit
+  deleteChatAlert: () -> Unit,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = chatRunning.value == false
   val importArchiveLauncher = rememberImportArchiveLauncher(importedArchiveUri)
@@ -210,14 +210,15 @@ fun ChatDatabaseView(
         disabled = !stopped || progressIndicator
       )
       divider()
+      val chatArchiveNameVal = chatArchiveName.value
       val chatArchiveTimeVal = chatArchiveTime.value
       val chatLastStartVal = chatLastStart.value
-      if (chatArchiveName.value != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
+      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
         val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
           Icons.Outlined.Inventory2,
           stringResource(title),
-          openChatArchiveView,
+          click = showSettingsModal { ChatArchiveView(it, stringResource(title), chatArchiveNameVal) },
           disabled = !stopped || progressIndicator
         )
         divider()
@@ -322,7 +323,6 @@ private suspend fun exportChatArchive(
 ): String {
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
-  //  val ts = archiveTime.toString()
   val archiveName = "simplex-chat.$ts.zip"
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
   val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
@@ -376,23 +376,6 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
       }
     }
   )
-
-private fun openChatArchive(
-  m: ChatModel,
-  chatArchiveName: MutableState<String?>,
-  chatArchiveTime: MutableState<Instant?>,
-  chatLastStart: MutableState<Instant?>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
-) {
-  val chatArchiveNameVal = chatArchiveName.value
-  val chatArchiveTimeVal = chatArchiveTime.value
-  val chatLastStartVal = chatLastStart.value
-  if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-    val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
-    Log.d(TAG, "################################## 1")
-    showSettingsModal { ChatArchiveView(m, stringResource(title), chatArchiveNameVal) }
-  }
-}
 
 @Composable
 private fun rememberImportArchiveLauncher(importedArchiveUri: MutableState<Uri?>): ManagedActivityResultLauncher<String, Uri?> =
@@ -517,8 +500,8 @@ fun PreviewDatabaseLayout() {
       startChat = {},
       stopChatAlert = {},
       exportArchive = {},
-      openChatArchiveView = { },
-      deleteChatAlert = {}
+      deleteChatAlert = {},
+      showSettingsModal = { {} }
     )
   }
 }

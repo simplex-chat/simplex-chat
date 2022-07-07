@@ -3,6 +3,7 @@ package chat.simplex.app.views.database
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
@@ -67,14 +69,14 @@ fun ChatArchiveLayout(
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.save_archive),
-        deleteArchiveAlert,
+        saveArchive,
         textColor = MaterialTheme.colors.primary
       )
       divider()
       SettingsActionItem(
         Icons.Outlined.Delete,
         stringResource(R.string.delete_archive),
-        saveArchive,
+        deleteArchiveAlert,
         textColor = Color.Red
       )
     }
@@ -109,9 +111,16 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String, chatArchiveNam
     title = generalGetString(R.string.delete_chat_archive_question),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
-      File(archivePath).delete()
-      chatArchiveName.value = null
-      chatArchiveTime.value = null
+      val fileDeleted = File(archivePath).delete()
+      if (fileDeleted) {
+        m.controller.appPrefs.chatArchiveName.set(null)
+        chatArchiveName.value = null
+        m.controller.appPrefs.chatArchiveTime.set(null)
+        chatArchiveTime.value = null
+        ModalManager.shared.closeModal()
+      } else {
+        Log.e(TAG, "deleteArchiveAlert delete() error")
+      }
     }
   )
 }
