@@ -221,7 +221,7 @@ fun ChatDatabaseView(
         SettingsActionItem(
           Icons.Outlined.Inventory2,
           stringResource(title),
-          click = showSettingsModal { ChatArchiveView(it, stringResource(title), chatArchiveNameVal) },
+          click = showSettingsModal { ChatArchiveView(it, stringResource(title), chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = !stopped || progressIndicator || chatDbChanged
         )
         divider()
@@ -267,7 +267,6 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
         m.controller.apiStartChat()
         runChat.value = true
         m.chatRunning.value = true
-        m.controller.appPrefs.chatWasStopped.set(false)
         // TODO start recvMspLoop
         m.controller.appPrefs.chatLastStart.set(Clock.System.now())
       } catch (e: Error) {
@@ -295,7 +294,6 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>) {
       // TODO stop recvMspLoop
       runChat.value = false
       m.chatRunning.value = false
-      m.controller.appPrefs.chatWasStopped.set(true)
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())

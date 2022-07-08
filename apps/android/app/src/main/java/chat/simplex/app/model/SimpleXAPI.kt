@@ -84,7 +84,6 @@ class AppPreferences(val context: Context) {
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkInstantPreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkInstantPreference(SHARED_PREFS_CHAT_LAST_START, null)
-  val chatWasStopped = mkBoolPreference(SHARED_PREFS_CHAT_WAS_STOPPED, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -129,7 +128,6 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
-    private const val SHARED_PREFS_CHAT_WAS_STOPPED = "ChatWasStopped"
   }
 }
 

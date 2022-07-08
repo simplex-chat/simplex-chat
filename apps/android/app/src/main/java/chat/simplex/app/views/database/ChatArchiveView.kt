@@ -34,24 +34,22 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun ChatArchiveView(m: ChatModel, title: String, archiveName: String) {
+fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
-  val chatArchiveName = remember { mutableStateOf(m.controller.appPrefs.chatArchiveName.get()) }
-  val chatArchiveTime = remember { mutableStateOf(m.controller.appPrefs.chatArchiveTime.get()) }
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
   ChatArchiveLayout(
     title,
-    chatArchiveTime,
+    archiveTime,
     saveArchive = { saveArchiveLauncher.launch(archivePath.substringAfterLast("/")) },
-    deleteArchiveAlert = { deleteArchiveAlert(m, archivePath, chatArchiveName, chatArchiveTime) }
+    deleteArchiveAlert = { deleteArchiveAlert(m, archivePath) }
   )
 }
 
 @Composable
 fun ChatArchiveLayout(
   title: String,
-  chatArchiveTime: MutableState<Instant?>,
+  archiveTime: Instant,
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
 ) {
@@ -81,13 +79,10 @@ fun ChatArchiveLayout(
         textColor = Color.Red
       )
     }
-    val chatArchiveTimeVal = chatArchiveTime.value
-    if (chatArchiveTimeVal != null) {
-      val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(chatArchiveTimeVal.toJavaInstant()))
-      SettingsSectionFooter(
-        String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
-      )
-    }
+    val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
+    SettingsSectionFooter(
+      String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
+    )
   }
 }
 
@@ -109,7 +104,7 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchivePath: String): 
     }
   )
 
-private fun deleteArchiveAlert(m: ChatModel, archivePath: String, chatArchiveName: MutableState<String?>, chatArchiveTime: MutableState<Instant?>) {
+private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_chat_archive_question),
     confirmText = generalGetString(R.string.delete_verb),
@@ -117,9 +112,7 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String, chatArchiveNam
       val fileDeleted = File(archivePath).delete()
       if (fileDeleted) {
         m.controller.appPrefs.chatArchiveName.set(null)
-        chatArchiveName.value = null
         m.controller.appPrefs.chatArchiveTime.set(null)
-        chatArchiveTime.value = null
         ModalManager.shared.closeModal()
       } else {
         Log.e(TAG, "deleteArchiveAlert delete() error")
@@ -139,7 +132,7 @@ fun PreviewChatArchiveLayout() {
   SimpleXTheme {
     ChatArchiveLayout(
       title = "New database archive",
-      chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
+      archiveTime = Clock.System.now(),
       saveArchive = {},
       deleteArchiveAlert = {}
     )
