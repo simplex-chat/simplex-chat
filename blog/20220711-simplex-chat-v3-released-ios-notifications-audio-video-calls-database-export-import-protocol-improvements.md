@@ -6,17 +6,21 @@
 
 ### Instant notifications for iOS
 
-I wrote previously about our design for iOS notifications, and this is now released. Users will need to migrate the database for it to work - the app offers it when updated - and they can then choose which notifications mode they want to use – instant or periodic push notifications or previously available periodic background refresh that does not rely on push notifications. There information about the differences and limitations is available in the app.
+<img src="./images/20220711-onboarding.png" width="480"> <img src="./images/20220711-notifications.png" width="480">
 
-TODO notification modes screen
+I wrote previously about our [design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. If you used the chat before you will need to migrate the database for it to work, the app offers it when updated. Then you need to choose which notifications mode you want to use – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
 
 ### End-to-end encrypted audio/video calls
 
-You can now call your contacts via WebRTC, connecting via SimpleX Chat relay servers or peer-to-peer, and in the near future you will be able to configure your own STUN/TURN servers used to establish the connection. The calls are end-to-end encrypted using the key that is negotiated via the connection you already have with your contact in the chat, that is also used as a signalling layer for WebRTC - in most cases only three messages in total have to be sent by your and your contact clients, including the initial call invitation, for the call to start.
+<img src="./images/20220711-incoming-call.png" width="480"> <img src="./images/20220711-call-in-progress.png" width="480">
 
-TODO in-progress call picture
+You can now call your contacts via WebRTC, connecting via SimpleX Chat relay servers or peer-to-peer, and in the near future you will be able to configure your own STUN/TURN servers used to establish the connection. The calls are end-to-end encrypted - the key is negotiated via the connection you already have with your contact in the chat, that is also used as a signalling layer for WebRTC - in most cases only three messages in total have to be sent by your and your contact clients for the call to start, including the initial call invitation.
+
+The calls are still quite limited, especially on iOS - e.g., you cannot continue the call while the app is in the background.
 
 ### Database export and import
+
+<img src="./images/20220711-database-chat-running.png" width="480"> <img src="./images/20220711-database-chat-stopped.png" width="480">
 
 Quite a few users asked - how can I move my chat profile to a new device? V3 has a solution to that - you can now export chat database from one device and import it into another - even if this other device is another platform, e.g. you can move chat database from Android phone to iOS or to our terminal (console) client.
 
@@ -28,9 +32,11 @@ You can think about some helpful use cases of this feature - e.g. the full chat 
 
 ### Protocol privacy and performance improvement
 
-Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and in addition to that there is no message timestamp inside TLS.
+Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and in addition to that there is no message timestamp inside TLS as well.
 
-We also improved the protocol for establishing bidirectional connection between to users - it is substantially faster now, consuming much less network traffic and battery. It would improve both the time it takes to connect to your contacts and the time it takes to start delivering images and files.
+We also improved the protocol flow for establishing bidirectional connection between to users - it is substantially faster now, consuming much less network traffic and battery. It would improve both the time it takes to connect to your contacts and the time it takes to start delivering images and files.
+
+All these changes did not affect backward compatibility - if your contact has the previous version of the client, or you are connecting to a previous version of the server, the old versions of the protocol will be negotiated - SimpleX has independent version negotiation in 4 protocol layers [since v1](./20220112-simplex-chat-v1-released.md#stable-protocol-implementation), allowing us to evolve the protocols without any disruption to the users.
 
 ## SimpleX platform
 
