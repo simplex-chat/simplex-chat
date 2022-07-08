@@ -295,18 +295,9 @@ fun ChatListNavLinkLayout(
   showMenu: MutableState<Boolean>,
   stopped: Boolean
 ) {
-  Surface(
-    modifier = if (stopped)
-      Modifier.fillMaxWidth().height(88.dp)
-    else
-      Modifier
-        .fillMaxWidth()
-        .combinedClickable(
-          onClick = click,
-          onLongClick = { showMenu.value = true }
-        )
-        .height(88.dp)
-  ) {
+  var modifier = Modifier.fillMaxWidth().height(88.dp)
+  if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+  Surface(modifier) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
