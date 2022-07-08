@@ -189,8 +189,8 @@ fun DatabaseLayout(
         val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
         SettingsActionItem(
           Icons.Outlined.Inventory2,
-          stringResource(title),
-          click = showSettingsModal { ChatArchiveView(it, stringResource(title), chatArchiveNameVal, chatArchiveTimeVal) },
+          title,
+          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = !stopped || progressIndicator || chatDbChanged
         )
         divider()
@@ -217,8 +217,9 @@ fun DatabaseLayout(
   }
 }
 
-fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): Int {
-  return if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive
+@Composable
+fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
+  return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
 }
 
 @Composable
