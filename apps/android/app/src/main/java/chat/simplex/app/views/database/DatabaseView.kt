@@ -44,9 +44,10 @@ fun DatabaseView(
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
   val runChat = remember { mutableStateOf(false) }
-  val chatArchiveName = remember { mutableStateOf(m.controller.appPrefs.chatArchiveName.get()) }
-  val chatArchiveTime = remember { mutableStateOf(m.controller.appPrefs.chatArchiveTime.get()) }
-  val chatLastStart = remember { mutableStateOf(m.controller.appPrefs.chatLastStart.get()) }
+  val prefs = m.controller.appPrefs
+  val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
+  val chatArchiveTime = remember { mutableStateOf(prefs.chatArchiveTime.get()) }
+  val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, chatArchiveFile)
   val importedArchiveUri = remember { mutableStateOf<Uri?>(null) }
