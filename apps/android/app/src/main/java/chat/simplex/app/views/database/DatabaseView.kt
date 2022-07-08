@@ -66,52 +66,21 @@ fun DatabaseView(
       importArchiveAlert(m, context, importedArchiveUri, progressIndicator)
     }
   }
-  DatabaseLayout(
-    progressIndicator,
-    runChat.value,
-    m.chatDbChanged.value,
-    importedArchiveUri,
-    chatArchiveName,
-    chatArchiveTime,
-    chatLastStart,
-    startChat = { startChat(m, runChat) },
-    stopChatAlert = { stopChatAlert(m, runChat) },
-    exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile) },
-    deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
-    showSettingsModal
-  )
-}
-
-@Composable
-fun DatabaseLayout(
-  progressIndicator: MutableState<Boolean>,
-  runChat: Boolean,
-  chatDbChanged: Boolean,
-  importedArchiveUri: MutableState<Uri?>,
-  chatArchiveName: MutableState<String?>,
-  chatArchiveTime: MutableState<Instant?>,
-  chatLastStart: MutableState<Instant?>,
-  startChat: () -> Unit,
-  stopChatAlert: () -> Unit,
-  exportArchive: () -> Unit,
-  deleteChatAlert: () -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
-) {
   Box(
     Modifier.fillMaxSize(),
   ) {
-    ChatDatabaseView(
+    DatabaseLayout(
       progressIndicator.value,
-      runChat,
-      chatDbChanged,
+      runChat.value,
+      m.chatDbChanged.value,
       importedArchiveUri,
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      startChat,
-      stopChatAlert,
-      exportArchive,
-      deleteChatAlert,
+      startChat = { startChat(m, runChat) },
+      stopChatAlert = { stopChatAlert(m, runChat) },
+      exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile) },
+      deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       showSettingsModal
     )
     if (progressIndicator.value) {
@@ -132,7 +101,7 @@ fun DatabaseLayout(
 }
 
 @Composable
-fun ChatDatabaseView(
+fun DatabaseLayout(
   progressIndicator: Boolean,
   runChat: Boolean,
   chatDbChanged: Boolean,
@@ -497,7 +466,7 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
 fun PreviewDatabaseLayout() {
   SimpleXTheme {
     DatabaseLayout(
-      progressIndicator = remember { mutableStateOf(false) },
+      progressIndicator = false,
       runChat = true,
       chatDbChanged = false,
       importedArchiveUri = remember { mutableStateOf(null) },
