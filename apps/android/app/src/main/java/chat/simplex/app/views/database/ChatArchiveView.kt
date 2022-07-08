@@ -91,15 +91,20 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchivePath: String): 
   rememberLauncherForActivityResult(
     contract = ActivityResultContracts.CreateDocument(),
     onResult = { destination ->
-      destination?.let {
-        val contentResolver = cxt.contentResolver
-        contentResolver.openOutputStream(destination)?.let { stream ->
-          val outputStream = BufferedOutputStream(stream)
-          val file = File(chatArchivePath)
-          outputStream.write(file.readBytes())
-          outputStream.close()
-          Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+      try {
+        destination?.let {
+          val contentResolver = cxt.contentResolver
+          contentResolver.openOutputStream(destination)?.let { stream ->
+            val outputStream = BufferedOutputStream(stream)
+            val file = File(chatArchivePath)
+            outputStream.write(file.readBytes())
+            outputStream.close()
+            Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
+          }
         }
+      } catch (e: Error) {
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       }
     }
   )

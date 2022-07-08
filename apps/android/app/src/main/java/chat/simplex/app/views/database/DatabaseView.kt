@@ -58,13 +58,6 @@ fun DatabaseView(
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
-  LaunchedEffect(chatArchiveFile.value) {
-    val chatArchiveFileVal = chatArchiveFile.value
-    if (chatArchiveFileVal != null) {
-      saveArchiveLauncher.launch(chatArchiveFileVal.substringAfterLast("/"))
-      progressIndicator.value = false
-    }
-  }
   Box(
     Modifier.fillMaxSize(),
   ) {
@@ -78,7 +71,7 @@ fun DatabaseView(
       chatLastStart,
       startChat = { startChat(m, runChat) },
       stopChatAlert = { stopChatAlert(m, runChat) },
-      exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile) },
+      exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       showSettingsModal
     )
@@ -280,12 +273,15 @@ private fun exportArchive(
   progressIndicator: MutableState<Boolean>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
-  chatArchiveFile: MutableState<String?>
+  chatArchiveFile: MutableState<String?>,
+  saveArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>
 ) {
   progressIndicator.value = true
   withApi {
     try {
-      chatArchiveFile.value = exportChatArchive(m, context, chatArchiveName, chatArchiveTime, chatArchiveFile)
+      val archiveFile = exportChatArchive(m, context, chatArchiveName, chatArchiveTime, chatArchiveFile)
+      chatArchiveFile.value = archiveFile
+      saveArchiveLauncher.launch(archiveFile.substringAfterLast("/"))
       progressIndicator.value = false
     } catch (e: Error) {
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_exporting_chat_database), e.toString())
@@ -351,6 +347,9 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
             Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
           }
         }
+      } catch (e: Error) {
+        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
+        Log.e(TAG, "rememberSaveArchiveLauncher error saving archive $e")
       } finally {
         chatArchiveFile.value = null
       }
