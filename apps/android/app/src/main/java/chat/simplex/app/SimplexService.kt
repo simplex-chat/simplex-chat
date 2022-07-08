@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
+import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
@@ -48,7 +49,6 @@ class SimplexService: Service() {
     val text = getString(R.string.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
     serviceNotification = createNotification(title, text)
-
     startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
   }
 
@@ -88,7 +88,7 @@ class SimplexService: Service() {
 
   private fun stopService() {
     Log.d(TAG, "Stopping foreground service")
-    if (!isServiceStarted || isStoppingService) return
+    if (isStoppingService) return
     isStoppingService = true
     try {
       wakeLock?.let {
@@ -215,6 +215,7 @@ class SimplexService: Service() {
     suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
 
     private suspend fun serviceAction(context: Context, action: Action) {
+      if (!AppPreferences(context).runServiceInBackground.get()) { return }
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
         Intent(context, SimplexService::class.java).also {
