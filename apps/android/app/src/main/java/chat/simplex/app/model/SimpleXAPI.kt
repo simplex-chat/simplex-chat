@@ -145,15 +145,14 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      val chatStarted = apiStartChat()
+      val justStarted = apiStartChat()
       apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       val chats = apiGetChats()
-      if (chatStarted) {
+      if (justStarted) {
         chatModel.chats.clear()
         chatModel.chats.addAll(chats)
-        chatModel.chatRunning.value = true
       } else {
         chatModel.updateChats(chats)
       }
@@ -161,6 +160,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
       chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
+      chatModel.chatRunning.value = true
       startReceiver()
       Log.d(TAG, "chat started")
     } catch (e: Error) {
