@@ -82,8 +82,8 @@ class AppPreferences(val context: Context) {
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
-  val chatArchiveTime = mkInstantPreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
-  val chatLastStart = mkInstantPreference(SHARED_PREFS_CHAT_LAST_START, null)
+  val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
+  val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -103,7 +103,7 @@ class AppPreferences(val context: Context) {
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
 
-  private fun mkInstantPreference(prefName: String, default: Instant?): Preference<Instant?> =
+  private fun mkDatePreference(prefName: String, default: Instant?): Preference<Instant?> =
     Preference(
       get = {
         val pref = sharedPreferences.getString(prefName, default?.toEpochMilliseconds()?.toString())
