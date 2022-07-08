@@ -195,38 +195,37 @@ fun RunChatSetting(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
-  Row(
-    Modifier.padding(start = 10.dp).fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
-    Icon(
-      if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
-      chatRunningText,
-      tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
-    )
-    Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(
-      chatRunningText,
-      Modifier.padding(end = 24.dp),
-      color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
-    )
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-    Switch(
-      checked = runChat,
-      onCheckedChange = { runChatSwitch ->
-        if (runChatSwitch) {
-          startChat()
-        } else {
-          stopChatAlert()
-        }
-      },
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
-      enabled = !chatDbChanged
-    )
+  SettingsItemView() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
+      Icon(
+        if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
+        chatRunningText,
+        tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        chatRunningText,
+        Modifier.padding(end = 24.dp),
+        color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
+      )
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      Switch(
+        checked = runChat,
+        onCheckedChange = { runChatSwitch ->
+          if (runChatSwitch) {
+            startChat()
+          } else {
+            stopChatAlert()
+          }
+        },
+        colors = SwitchDefaults.colors(
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
+        ),
+        enabled = !chatDbChanged
+      )
+    }
   }
 }
 
