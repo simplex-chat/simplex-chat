@@ -261,6 +261,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
         m.controller.apiStartChat()
         runChat.value = true
         m.chatRunning.value = true
+        m.chatWasStopped.value = false
         // TODO start recvMspLoop
         m.controller.appPrefs.chatLastStart.set(Clock.System.now())
       } catch (e: Error) {
