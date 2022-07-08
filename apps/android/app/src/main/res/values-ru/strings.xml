@@ -463,7 +463,6 @@
     <string name="import_database_confirmation">Импортировать</string>
     <string name="error_deleting_database">Ошибка при удалении данных чата</string>
     <string name="error_importing_database">Ошибка при импорте архива чата</string>
-    <string name="imported_archive_not_found">Импортированный архив не найден</string>
     <string name="chat_database_imported">Архив чата импортирован</string>
     <string name="restart_the_app_to_use_imported_chat_database">Перезапустите приложение, чтобы использовать импортированный архив.</string>
     <string name="delete_chat_profile_question">Удалить профиль?</string>

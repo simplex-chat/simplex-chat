@@ -465,7 +465,6 @@
   <string name="import_database_confirmation">Import</string>
   <string name="error_deleting_database">Error deleting chat database</string>
   <string name="error_importing_database">Error importing chat database</string>
-  <string name="imported_archive_not_found">Imported archive not found</string>
   <string name="chat_database_imported">Chat database imported</string>
   <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
   <string name="delete_chat_profile_question">Delete chat profile?</string>

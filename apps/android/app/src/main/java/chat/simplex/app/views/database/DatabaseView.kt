@@ -50,7 +50,11 @@ fun DatabaseView(
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, chatArchiveFile)
-  val importedArchiveUri = remember { mutableStateOf<Uri?>(null) }
+  val importArchiveLauncher = rememberGetContentLauncher { uri: Uri? ->
+    if (uri != null) {
+      importArchiveAlert(m, context, uri, progressIndicator)
+    }
+  }
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
@@ -61,12 +65,6 @@ fun DatabaseView(
       progressIndicator.value = false
     }
   }
-  LaunchedEffect(importedArchiveUri.value) {
-    val importedArchiveUriVal = importedArchiveUri.value
-    if (importedArchiveUriVal != null) {
-      importArchiveAlert(m, context, importedArchiveUri, progressIndicator)
-    }
-  }
   Box(
     Modifier.fillMaxSize(),
   ) {
@@ -74,7 +72,7 @@ fun DatabaseView(
       progressIndicator.value,
       runChat.value,
       m.chatDbChanged.value,
-      importedArchiveUri,
+      importArchiveLauncher,
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
@@ -106,7 +104,7 @@ fun DatabaseLayout(
   progressIndicator: Boolean,
   runChat: Boolean,
   chatDbChanged: Boolean,
-  importedArchiveUri: MutableState<Uri?>,
+  importArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
@@ -118,7 +116,6 @@ fun DatabaseLayout(
 ) {
   val stopped = !runChat
   val operationsDisabled = !stopped || progressIndicator || chatDbChanged
-  val importArchiveLauncher = rememberImportArchiveLauncher(importedArchiveUri)
 
   Column(
     Modifier.fillMaxWidth(),
@@ -360,15 +357,7 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
     }
   )
 
-@Composable
-private fun rememberImportArchiveLauncher(importedArchiveUri: MutableState<Uri?>): ManagedActivityResultLauncher<String, Uri?> =
-  rememberGetContentLauncher { uri: Uri? ->
-    if (uri != null) {
-      importedArchiveUri.value = uri
-    }
-  }
-
-private fun importArchiveAlert(m: ChatModel, context: Context, importedArchiveUri: MutableState<Uri?>, progressIndicator: MutableState<Boolean>) {
+private fun importArchiveAlert(m: ChatModel, context: Context, importedArchiveUri: Uri, progressIndicator: MutableState<Boolean>) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.import_database_question),
     text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
@@ -377,40 +366,33 @@ private fun importArchiveAlert(m: ChatModel, context: Context, importedArchiveUr
   )
 }
 
-private fun importArchive(m: ChatModel, context: Context, importedArchiveUri: MutableState<Uri?>, progressIndicator: MutableState<Boolean>) {
+private fun importArchive(m: ChatModel, context: Context, importedArchiveUri: Uri, progressIndicator: MutableState<Boolean>) {
   progressIndicator.value = true
-  val importedArchiveUriVal = importedArchiveUri.value
-  if (importedArchiveUriVal != null) {
-    val archivePath = saveArchiveFromUri(context, importedArchiveUriVal)
-    if (archivePath != null) {
-      withApi {
+  val archivePath = saveArchiveFromUri(context, importedArchiveUri)
+  if (archivePath != null) {
+    withApi {
+      try {
+        m.controller.apiDeleteStorage()
         try {
-          m.controller.apiDeleteStorage()
-          try {
-            val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
-            m.controller.apiImportArchive(config)
-            operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
-            }
-          } catch (e: Error) {
-            operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.error_importing_database), e.toString())
-            }
+          val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
+          m.controller.apiImportArchive(config)
+          operationEnded(m, progressIndicator) {
+            AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
           }
         } catch (e: Error) {
           operationEnded(m, progressIndicator) {
-            AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_database), e.toString())
+            AlertManager.shared.showAlertMsg(generalGetString(R.string.error_importing_database), e.toString())
           }
-        } finally {
-          importedArchiveUri.value = null
-          File(archivePath).delete()
         }
+      } catch (e: Error) {
+        operationEnded(m, progressIndicator) {
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_database), e.toString())
+        }
+      } finally {
+        File(archivePath).delete()
       }
     }
-  } else {
-    AlertManager.shared.showAlertMsg(generalGetString(R.string.error_importing_database), generalGetString(R.string.imported_archive_not_found))
   }
-  importedArchiveUri.value = null
 }
 
 private fun saveArchiveFromUri(context: Context, importedArchiveUri: Uri): String? {
@@ -476,7 +458,7 @@ fun PreviewDatabaseLayout() {
       progressIndicator = false,
       runChat = true,
       chatDbChanged = false,
-      importedArchiveUri = remember { mutableStateOf(null) },
+      importArchiveLauncher = rememberGetContentLauncher {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
