@@ -26,7 +26,7 @@ import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 
 @Composable
-fun ChatPreviewView(chat: Chat) {
+fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   Row {
     val cInfo = chat.chatInfo
     ChatInfoImage(cInfo, size = 72.dp)
@@ -80,7 +80,7 @@ fun ChatPreviewView(chat: Chat) {
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -131,6 +131,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData)
+    ChatPreviewView(Chat.sampleData, stopped = false)
   }
 }

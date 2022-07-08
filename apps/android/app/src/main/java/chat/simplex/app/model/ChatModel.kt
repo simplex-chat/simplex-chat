@@ -23,6 +23,8 @@ class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
   val userCreated = mutableStateOf<Boolean?>(null)
+  val chatRunning = mutableStateOf<Boolean?>(null)
+  val chatDbChanged = mutableStateOf<Boolean>(false)
   val chats = mutableStateListOf<Chat>()
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
