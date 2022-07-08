@@ -68,9 +68,9 @@ fun DatabaseView(
   }
   DatabaseLayout(
     progressIndicator,
-    runChat,
+    runChat.value,
+    m.chatDbChanged.value,
     importedArchiveUri,
-    chatRunning = m.chatRunning,
     chatArchiveName,
     chatArchiveTime,
     chatLastStart,
@@ -85,9 +85,9 @@ fun DatabaseView(
 @Composable
 fun DatabaseLayout(
   progressIndicator: MutableState<Boolean>,
-  runChat: MutableState<Boolean>,
+  runChat: Boolean,
+  chatDbChanged: Boolean,
   importedArchiveUri: MutableState<Uri?>,
-  chatRunning: MutableState<Boolean?>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
@@ -103,8 +103,8 @@ fun DatabaseLayout(
     ChatDatabaseView(
       progressIndicator.value,
       runChat,
+      chatDbChanged,
       importedArchiveUri,
-      chatRunning,
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
@@ -134,9 +134,9 @@ fun DatabaseLayout(
 @Composable
 fun ChatDatabaseView(
   progressIndicator: Boolean,
-  runChat: MutableState<Boolean>,
+  runChat: Boolean,
+  chatDbChanged: Boolean,
   importedArchiveUri: MutableState<Uri?>,
-  chatRunning: MutableState<Boolean?>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
@@ -146,7 +146,7 @@ fun ChatDatabaseView(
   deleteChatAlert: () -> Unit,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
-  val stopped = chatRunning.value == false
+  val stopped = !runChat
   val importArchiveLauncher = rememberImportArchiveLauncher(importedArchiveUri)
 
   Column(
@@ -168,16 +168,17 @@ fun ChatDatabaseView(
         Icon(
           if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
           chatRunningText,
-          tint = if (stopped) Color.Red else MaterialTheme.colors.primary
+          tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
         Text(
           chatRunningText,
-          Modifier.padding(end = 24.dp)
+          Modifier.padding(end = 24.dp),
+          color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
         )
         Spacer(Modifier.fillMaxWidth().weight(1f))
         Switch(
-          checked = runChat.value,
+          checked = runChat,
           onCheckedChange = { runChatSwitch ->
             if (runChatSwitch) {
               startChat()
@@ -189,6 +190,7 @@ fun ChatDatabaseView(
             checkedThumbColor = MaterialTheme.colors.primary,
             uncheckedThumbColor = HighOrLowlight
           ),
+          enabled = !chatDbChanged
         )
       }
     }
@@ -200,7 +202,7 @@ fun ChatDatabaseView(
         stringResource(R.string.export_database),
         { exportArchive() },
         textColor = MaterialTheme.colors.primary,
-        disabled = !stopped || progressIndicator
+        disabled = !stopped || progressIndicator || chatDbChanged
       )
       divider()
       SettingsActionItem(
@@ -208,7 +210,7 @@ fun ChatDatabaseView(
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
-        disabled = !stopped || progressIndicator
+        disabled = !stopped || progressIndicator || chatDbChanged
       )
       divider()
       val chatArchiveNameVal = chatArchiveName.value
@@ -220,7 +222,7 @@ fun ChatDatabaseView(
           Icons.Outlined.Inventory2,
           stringResource(title),
           click = showSettingsModal { ChatArchiveView(it, stringResource(title), chatArchiveNameVal) },
-          disabled = !stopped || progressIndicator
+          disabled = !stopped || progressIndicator || chatDbChanged
         )
         divider()
       }
@@ -229,14 +231,18 @@ fun ChatDatabaseView(
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
-        disabled = !stopped || progressIndicator
+        disabled = !stopped || progressIndicator || chatDbChanged
       )
     }
     SettingsSectionFooter(
-      if (stopped) {
-        stringResource(R.string.you_must_use_the_most_recent_version_of_database)
+      if (chatDbChanged) {
+        stringResource(R.string.restart_the_app_to_use_new_chat_database)
       } else {
-        stringResource(R.string.stop_chat_to_enable_database_actions)
+        if (stopped) {
+          stringResource(R.string.you_must_use_the_most_recent_version_of_database)
+        } else {
+          stringResource(R.string.stop_chat_to_enable_database_actions)
+        }
       }
     )
   }
@@ -261,7 +267,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
         m.controller.apiStartChat()
         runChat.value = true
         m.chatRunning.value = true
-        m.chatWasStopped.value = false
+        m.controller.appPrefs.chatWasStopped.set(false)
         // TODO start recvMspLoop
         m.controller.appPrefs.chatLastStart.set(Clock.System.now())
       } catch (e: Error) {
@@ -289,7 +295,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>) {
       // TODO stop recvMspLoop
       runChat.value = false
       m.chatRunning.value = false
-      m.chatWasStopped.value = true
+      m.controller.appPrefs.chatWasStopped.set(true)
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
@@ -494,9 +500,9 @@ fun PreviewDatabaseLayout() {
   SimpleXTheme {
     DatabaseLayout(
       progressIndicator = remember { mutableStateOf(false) },
-      runChat = remember { mutableStateOf(true) },
+      runChat = true,
+      chatDbChanged = false,
       importedArchiveUri = remember { mutableStateOf(null) },
-      chatRunning = remember { mutableStateOf(true) },
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },

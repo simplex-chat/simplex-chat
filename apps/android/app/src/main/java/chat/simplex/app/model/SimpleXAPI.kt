@@ -84,6 +84,7 @@ class AppPreferences(val context: Context) {
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkInstantPreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkInstantPreference(SHARED_PREFS_CHAT_LAST_START, null)
+  val chatWasStopped = mkBoolPreference(SHARED_PREFS_CHAT_WAS_STOPPED, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -128,6 +129,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
+    private const val SHARED_PREFS_CHAT_WAS_STOPPED = "ChatWasStopped"
   }
 }
 
@@ -145,26 +147,24 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      if (!chatModel.chatWasStopped.value) {
-        val chatStarted = apiStartChat()
-        apiSetFilesFolder(getAppFilesDirectory(appContext))
-        chatModel.userAddress.value = apiGetUserAddress()
-        chatModel.userSMPServers.value = getUserSMPServers()
-        val chats = apiGetChats()
-        if (chatStarted) {
-          chatModel.chats.clear()
-          chatModel.chats.addAll(chats)
-          chatModel.chatRunning.value = true
-        } else {
-          chatModel.updateChats(chats)
-        }
-        chatModel.currentUser.value = user
-        chatModel.userCreated.value = true
-        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-        chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
-        startReceiver()
-        Log.d(TAG, "chat started")
+      val chatStarted = apiStartChat()
+      apiSetFilesFolder(getAppFilesDirectory(appContext))
+      chatModel.userAddress.value = apiGetUserAddress()
+      chatModel.userSMPServers.value = getUserSMPServers()
+      val chats = apiGetChats()
+      if (chatStarted) {
+        chatModel.chats.clear()
+        chatModel.chats.addAll(chats)
+        chatModel.chatRunning.value = true
+      } else {
+        chatModel.updateChats(chats)
       }
+      chatModel.currentUser.value = user
+      chatModel.userCreated.value = true
+      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+      chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
+      startReceiver()
+      Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e

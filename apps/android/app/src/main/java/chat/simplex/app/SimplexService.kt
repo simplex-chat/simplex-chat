@@ -215,7 +215,7 @@ class SimplexService: Service() {
     suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
 
     private suspend fun serviceAction(context: Context, action: Action) {
-      if (!AppPreferences(context).runServiceInBackground.get()) { return }
+      if (!AppPreferences(context).runServiceInBackground.get() || AppPreferences(context).chatWasStopped.get()) { return }
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
         Intent(context, SimplexService::class.java).also {
