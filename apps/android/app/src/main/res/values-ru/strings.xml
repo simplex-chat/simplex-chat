@@ -454,7 +454,7 @@
     <string name="delete_database">Удалить данные чата</string>
     <string name="error_starting_chat">Ошибка при запуске чата</string>
     <string name="stop_chat_question">Остановить чат?</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать, импортировать или удалить его архив. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
     <string name="stop_chat_confirmation">Остановить</string>
     <string name="error_stopping_chat">Ошибка при остановке чата</string>
     <string name="error_exporting_chat_database">Ошибка экспорта архива чата</string>
