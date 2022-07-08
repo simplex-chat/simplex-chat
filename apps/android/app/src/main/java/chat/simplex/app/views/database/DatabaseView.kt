@@ -117,6 +117,7 @@ fun DatabaseLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
+  val operationsDisabled = !stopped || progressIndicator || chatDbChanged
   val importArchiveLauncher = rememberImportArchiveLauncher(importedArchiveUri)
 
   Column(
@@ -139,9 +140,9 @@ fun DatabaseLayout(
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
-        { exportArchive() },
+        exportArchive,
         textColor = MaterialTheme.colors.primary,
-        disabled = !stopped || progressIndicator || chatDbChanged
+        disabled = operationsDisabled
       )
       divider()
       SettingsActionItem(
@@ -149,7 +150,7 @@ fun DatabaseLayout(
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
-        disabled = !stopped || progressIndicator || chatDbChanged
+        disabled = operationsDisabled
       )
       divider()
       val chatArchiveNameVal = chatArchiveName.value
@@ -161,7 +162,7 @@ fun DatabaseLayout(
           Icons.Outlined.Inventory2,
           title,
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
-          disabled = !stopped || progressIndicator || chatDbChanged
+          disabled = operationsDisabled
         )
         divider()
       }
@@ -170,7 +171,7 @@ fun DatabaseLayout(
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
-        disabled = !stopped || progressIndicator || chatDbChanged
+        disabled = operationsDisabled
       )
     }
     SettingsSectionFooter(
