@@ -6,23 +6,25 @@
 
 ### Instant notifications for iOS
 
+I wrote previously about our [design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. If you used the chat before you will need to migrate the database for it to work, the app offers it when updated. Then you need to choose which notifications mode you want to use – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
+
 <img src="./images/20220711-notifications.png" width="480">
 
-I wrote previously about our [design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. If you used the chat before you will need to migrate the database for it to work, the app offers it when updated. Then you need to choose which notifications mode you want to use – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
+**Please note**: for periodic notifications to work the app has to be in the background - if the app is completely stopped (removed from the recent apps), it will not check the new messages and you will not receive notifications. Instant notifications work even when the app is completely stopped.
 
 ### End-to-end encrypted audio/video calls
 
-<img src="./images/20220711-call-in-progress.png" width="480">
-
 You can now call your contacts via WebRTC, connecting via SimpleX Chat relay servers or peer-to-peer, and in the near future you will be able to configure your own STUN/TURN servers used to establish the connection. The calls are end-to-end encrypted - the key is negotiated via the connection you already have with your contact in the chat, that is also used as a signalling layer for WebRTC - in most cases only three messages in total have to be sent by your and your contact clients for the call to start, including the initial call invitation.
+
+<img src="./images/20220711-call-in-progress.png" width="480">
 
 The calls are still quite limited, especially on iOS - e.g., you cannot continue the call while the app is in the background.
 
 ### Database export and import
 
-<img src="./images/20220711-database-chat-stopped.png" width="480">
-
 Quite a few users asked - how can I move my chat profile to a new device? V3 has a solution to that - you can now export chat database from one device and import it into another - even if this other device is another platform, e.g. you can move chat database from Android phone to iOS or to our terminal (console) client.
+
+<img src="./images/20220711-database-chat-stopped.png" width="480">
 
 Some important limitations:
 
