@@ -129,40 +129,9 @@ fun DatabaseLayout(
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
+
     SettingsSectionView(stringResource(R.string.run_chat_section)) {
-      Row(
-        Modifier.padding(start = 10.dp).fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
-        Icon(
-          if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
-          chatRunningText,
-          tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
-        )
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(
-          chatRunningText,
-          Modifier.padding(end = 24.dp),
-          color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
-        )
-        Spacer(Modifier.fillMaxWidth().weight(1f))
-        Switch(
-          checked = runChat,
-          onCheckedChange = { runChatSwitch ->
-            if (runChatSwitch) {
-              startChat()
-            } else {
-              stopChatAlert()
-            }
-          },
-          colors = SwitchDefaults.colors(
-            checkedThumbColor = MaterialTheme.colors.primary,
-            uncheckedThumbColor = HighOrLowlight
-          ),
-          enabled = !chatDbChanged
-        )
-      }
+      RunChatSetting(runChat, stopped, chatDbChanged, startChat, stopChatAlert)
     }
     Spacer(Modifier.height(30.dp))
 
@@ -214,6 +183,49 @@ fun DatabaseLayout(
           stringResource(R.string.stop_chat_to_enable_database_actions)
         }
       }
+    )
+  }
+}
+
+@Composable
+fun RunChatSetting(
+  runChat: Boolean,
+  stopped: Boolean,
+  chatDbChanged: Boolean,
+  startChat: () -> Unit,
+  stopChatAlert: () -> Unit
+) {
+  Row(
+    Modifier.padding(start = 10.dp).fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
+    Icon(
+      if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
+      chatRunningText,
+      tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.padding(horizontal = 4.dp))
+    Text(
+      chatRunningText,
+      Modifier.padding(end = 24.dp),
+      color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
+    )
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = runChat,
+      onCheckedChange = { runChatSwitch ->
+        if (runChatSwitch) {
+          startChat()
+        } else {
+          stopChatAlert()
+        }
+      },
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      ),
+      enabled = !chatDbChanged
     )
   }
 }
