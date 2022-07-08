@@ -145,24 +145,26 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      val chatStarted = apiStartChat()
-      apiSetFilesFolder(getAppFilesDirectory(appContext))
-      chatModel.userAddress.value = apiGetUserAddress()
-      chatModel.userSMPServers.value = getUserSMPServers()
-      val chats = apiGetChats()
-      if (chatStarted) {
-        chatModel.chats.clear()
-        chatModel.chats.addAll(chats)
-      } else {
-        chatModel.updateChats(chats)
+      if (!chatModel.chatWasStopped.value) {
+        val chatStarted = apiStartChat()
+        apiSetFilesFolder(getAppFilesDirectory(appContext))
+        chatModel.userAddress.value = apiGetUserAddress()
+        chatModel.userSMPServers.value = getUserSMPServers()
+        val chats = apiGetChats()
+        if (chatStarted) {
+          chatModel.chats.clear()
+          chatModel.chats.addAll(chats)
+          chatModel.chatRunning.value = true
+        } else {
+          chatModel.updateChats(chats)
+        }
+        chatModel.currentUser.value = user
+        chatModel.userCreated.value = true
+        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+        chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
+        startReceiver()
+        Log.d(TAG, "chat started")
       }
-      chatModel.currentUser.value = user
-      chatModel.userCreated.value = true
-      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-      chatModel.chatRunning.value = true
-      chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
-      startReceiver()
-      Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e

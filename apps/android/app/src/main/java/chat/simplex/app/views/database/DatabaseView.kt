@@ -57,6 +57,7 @@ fun DatabaseView(
     val chatArchiveFileVal = chatArchiveFile.value
     if (chatArchiveFileVal != null) {
       saveArchiveLauncher.launch(chatArchiveFileVal.substringAfterLast("/"))
+      progressIndicator.value = false
     }
   }
   LaunchedEffect(importedArchiveUri.value) {
@@ -224,7 +225,7 @@ fun ChatDatabaseView(
         divider()
       }
       SettingsActionItem(
-        Icons.Outlined.Delete,
+        Icons.Outlined.DeleteForever,
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
@@ -287,6 +288,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>) {
       // TODO stop recvMspLoop
       runChat.value = false
       m.chatRunning.value = false
+      m.chatWasStopped.value = true
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
