@@ -244,6 +244,7 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
+    <string name="database_export_and_import">Экспорт и импорт архива чата</string>
     <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
@@ -404,6 +405,8 @@
     <string name="icon_descr_video_on">Включить видео</string>
     <string name="icon_descr_audio_off">Выключить звук</string>
     <string name="icon_descr_audio_on">Включить звук</string>
+    <string name="icon_descr_speaker_off">Выключить спикер</string>
+    <string name="icon_descr_speaker_on">Включить спикер</string>
     <string name="icon_descr_flip_camera">Перевернуть камеру</string>
 
     <!-- Call items -->
@@ -437,4 +440,47 @@
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
+
+    <!-- DatabaseView.kt -->
+    <string name="your_chat_database">Архив чата</string>
+    <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
+    <string name="chat_is_running">Чат запущен</string>
+    <string name="chat_is_stopped">Чат остановлен</string>
+    <string name="chat_database_section">АРХИВ ЧАТА</string>
+    <string name="export_database">Экспорт архива чата</string>
+    <string name="import_database">Импорт архива чата</string>
+    <string name="new_database_archive">Новый архив чата</string>
+    <string name="old_database_archive">Старый архив чата</string>
+    <string name="delete_database">Удалить данные чата</string>
+    <string name="error_starting_chat">Ошибка при запуске чата</string>
+    <string name="stop_chat_question">Остановить чат?</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
+    <string name="stop_chat_confirmation">Остановить</string>
+    <string name="error_stopping_chat">Ошибка при остановке чата</string>
+    <string name="error_exporting_chat_database">Ошибка экспорта архива чата</string>
+    <string name="import_database_question">Импортировать архив чата?</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.\nЭто действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</string>
+    <string name="import_database_confirmation">Импортировать</string>
+    <string name="error_deleting_database">Ошибка при удалении данных чата</string>
+    <string name="error_importing_database">Ошибка при импорте архива чата</string>
+    <string name="chat_database_imported">Архив чата импортирован</string>
+    <string name="restart_the_app_to_use_imported_chat_database">Перезапустите приложение, чтобы использовать импортированный архив.</string>
+    <string name="delete_chat_profile_question">Удалить профиль?</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.</string>
+    <string name="chat_database_deleted">Данные чата удалены</string>
+    <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
+    <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
+    <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом.</string>
+    <string name="restart_the_app_to_use_new_chat_database">Перезапустите приложение, чтобы использовать новый архив чата.</string>
+
+    <!-- ChatModel.chatRunning interactions -->
+    <string name="chat_is_stopped_indication">Чат остановлен</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Вы можете стартовать чат через Настройки приложения или перезапустив приложение.</string>
+
+    <!-- ChatArchiveView.kt -->
+    <string name="chat_archive_header">Архив чата</string>
+    <string name="save_archive">Сохранить архив</string>
+    <string name="delete_archive">Удалить архив</string>
+    <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
+    <string name="delete_chat_archive_question">Удалить архив чата?</string>
 </resources>

@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,12 +24,14 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.TerminalView
+import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
 fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
+  val stopped = chatModel.chatRunning.value == false
 
   fun setRunServiceInBackground(on: Boolean) {
     chatModel.controller.appPrefs.runServiceInBackground.set(on)
@@ -42,6 +45,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
+      stopped,
       runServiceInBackground = chatModel.runServiceInBackground,
       setRunServiceInBackground = ::setRunServiceInBackground,
       setPerformLA = setPerformLA,
@@ -65,6 +69,7 @@ val simplexTeamUri =
 @Composable
 fun SettingsLayout(
   profile: Profile,
+  stopped: Boolean,
   runServiceInBackground: MutableState<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
   setPerformLA: (Boolean) -> Unit,
@@ -92,40 +97,42 @@ fun SettingsLayout(
       Spacer(Modifier.height(30.dp))
 
       SettingsSectionView(stringResource(R.string.settings_section_title_you)) {
-        SettingsItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp) {
-          ProfilePreview(profile)
+        SettingsItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
+          ProfilePreview(profile, stopped = stopped)
         }
         divider()
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) })
+        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
+        divider()
+        DatabaseItem(showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       spacer()
 
       SettingsSectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) })
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
         divider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) })
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         divider()
-        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground)
+        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         divider()
-        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
+        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
       }
       spacer()
 
       SettingsSectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(it) })
+        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(it) }, disabled = stopped)
         divider()
         SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         divider()
         SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal { MarkdownHelpView() })
         divider()
-        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary)
+        SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         divider()
         SettingsActionItem(Icons.Outlined.Email, stringResource(R.string.send_us_an_email), { uriHandler.openUri("mailto:chat@simplex.chat") }, textColor = MaterialTheme.colors.primary)
       }
       spacer()
 
       SettingsSectionView(stringResource(R.string.settings_section_title_develop)) {
-        ChatConsoleItem(showTerminal)
+        ChatConsoleItem(showTerminal, stopped)
         divider()
         InstallTerminalAppItem(uriHandler)
         divider()
@@ -139,19 +146,49 @@ fun SettingsLayout(
 
 @Composable fun SettingsSectionView(title: String, content: (@Composable () -> Unit)) {
   Column {
-    Text(title, color = HighOrLowlight, style = MaterialTheme.typography.body2,
-      modifier = Modifier.padding(start = 16.dp, bottom = 5.dp), fontSize = 12.sp)
+    Text(
+      title, color = HighOrLowlight, style = MaterialTheme.typography.body2,
+      modifier = Modifier.padding(start = 16.dp, bottom = 5.dp), fontSize = 12.sp
+    )
     Surface(color = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
       Column(Modifier.padding(horizontal = 6.dp)) { content() }
     }
   }
 }
 
+@Composable private fun DatabaseItem(openDatabaseView: () -> Unit, stopped: Boolean) {
+  SettingsItemView(openDatabaseView) {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Row {
+        Icon(
+          Icons.Outlined.Archive,
+          contentDescription = stringResource(R.string.database_export_and_import),
+          tint = HighOrLowlight,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(R.string.database_export_and_import))
+      }
+      if (stopped) {
+        Icon(
+          Icons.Filled.Report,
+          contentDescription = stringResource(R.string.chat_is_stopped),
+          tint = Color.Red,
+          modifier = Modifier.padding(end = 6.dp)
+        )
+      }
+    }
+  }
+}
+
 @Composable private fun PrivateNotificationsItem(
   runServiceInBackground: MutableState<Boolean>,
-  setRunServiceInBackground: (Boolean) -> Unit
+  setRunServiceInBackground: (Boolean) -> Unit,
+  stopped: Boolean
 ) {
-  SettingsItemView() {
+  SettingsItemView(disabled = stopped) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
         Icons.Outlined.Bolt,
@@ -164,7 +201,8 @@ fun SettingsLayout(
         Modifier
           .padding(end = 24.dp)
           .fillMaxWidth()
-          .weight(1f)
+          .weight(1f),
+        color = if (stopped) HighOrLowlight else Color.Unspecified
       )
       Switch(
         checked = runServiceInBackground.value,
@@ -173,7 +211,8 @@ fun SettingsLayout(
           checkedThumbColor = MaterialTheme.colors.primary,
           uncheckedThumbColor = HighOrLowlight
         ),
-        modifier = Modifier.padding(end = 6.dp)
+        modifier = Modifier.padding(end = 6.dp),
+        enabled = !stopped
       )
     }
   }
@@ -207,15 +246,18 @@ fun SettingsLayout(
   }
 }
 
-@Composable private fun ChatConsoleItem(showTerminal: () -> Unit) {
-  SettingsItemView(showTerminal) {
+@Composable private fun ChatConsoleItem(showTerminal: () -> Unit, stopped: Boolean) {
+  SettingsItemView(showTerminal, disabled = stopped) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
       tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(stringResource(R.string.chat_console))
+    Text(
+      stringResource(R.string.chat_console),
+      color = if (stopped) HighOrLowlight else Color.Unspecified
+    )
   }
 }
 
@@ -237,7 +279,7 @@ fun SettingsLayout(
   }
 }
 
-@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary) {
+@Composable fun ProfilePreview(profileOf: NamedChat, size: Dp = 60.dp, color: Color = MaterialTheme.colors.secondary, stopped: Boolean = false) {
   ProfileImage(size = size, image = profileOf.image, color = color)
   Spacer(Modifier.padding(horizontal = 4.dp))
   Column {
@@ -245,19 +287,23 @@ fun SettingsLayout(
       profileOf.displayName,
       style = MaterialTheme.typography.caption,
       fontWeight = FontWeight.Bold,
+      color = if (stopped) HighOrLowlight else Color.Unspecified
     )
-    Text(profileOf.fullName)
+    Text(
+      profileOf.fullName,
+      color = if (stopped) HighOrLowlight else Color.Unspecified
+    )
   }
 }
 
 @Composable
-fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, content: (@Composable () -> Unit)) {
+fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: Boolean = false, content: (@Composable () -> Unit)) {
   val modifier = Modifier
     .padding(start = 8.dp)
     .fillMaxWidth()
     .height(height)
   Row(
-    if (click == null) modifier else modifier.clickable(onClick = click),
+    if (click == null || disabled) modifier else modifier.clickable(onClick = click),
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
@@ -265,11 +311,11 @@ fun SettingsItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, content: (
 }
 
 @Composable
-fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified) {
-  SettingsItemView(click) {
+fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, disabled: Boolean = false) {
+  SettingsItemView(click, disabled = disabled) {
     Icon(icon, text, tint = HighOrLowlight)
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(text, color = textColor)
+    Text(text, color = if (disabled) HighOrLowlight else textColor)
   }
 }
 
@@ -295,6 +341,7 @@ fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
       profile = Profile.sampleData,
+      stopped = false,
       runServiceInBackground = remember { mutableStateOf(true) },
       setRunServiceInBackground = {},
       setPerformLA = {},

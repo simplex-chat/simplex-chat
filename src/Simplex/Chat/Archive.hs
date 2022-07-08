@@ -24,48 +24,28 @@ archiveFilesFolder :: String
 archiveFilesFolder = "simplex_v1_files"
 
 exportArchive :: ChatMonad m => ArchiveConfig -> m ()
-exportArchive cfg@ArchiveConfig {archivePath, disableCompression} = do
-  liftIO . print $ "exportArchive 1"
+exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
-    liftIO . print $ "exportArchive 2, dir = " <> dir
     StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    liftIO . print $ "exportArchive 3"
     copyFile chatDb $ dir </> archiveChatDbFile
-    liftIO . print $ "exportArchive 4"
     copyFile agentDb $ dir </> archiveAgentDbFile
-    liftIO . print $ "exportArchive 5"
-    forM_ filesPath $ \fp -> do
-      liftIO . print $ "exportArchive 6, fp = " <> fp
+    forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
-    liftIO . print $ "exportArchive 7"
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
-    liftIO . print $ "exportArchive 8, method = " <> show method
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
-    liftIO . print $ "exportArchive 9"
 
 importArchive :: ChatMonad m => ArchiveConfig -> m ()
-importArchive cfg@ArchiveConfig {archivePath} = do
-  liftIO . print $ "importArchive 1"
+importArchive cfg@ArchiveConfig {archivePath} =
   withTempDir cfg "simplex-chat." $ \dir -> do
-    liftIO . print $ "importArchive 2, dir = " <> dir
     Z.withArchive archivePath $ Z.unpackInto dir
-    liftIO . print $ "importArchive 3"
     StorageFiles {chatDb, agentDb, filesPath} <- storageFiles
-    liftIO . print $ "importArchive 4"
     backup chatDb
-    liftIO . print $ "importArchive 5"
     backup agentDb
-    liftIO . print $ "importArchive 6"
     copyFile (dir </> archiveChatDbFile) chatDb
-    liftIO . print $ "importArchive 7"
     copyFile (dir </> archiveAgentDbFile) agentDb
-    liftIO . print $ "importArchive 8"
     let filesDir = dir </> archiveFilesFolder
-    liftIO . print $ "importArchive 9, filesDir = " <> filesDir
-    forM_ filesPath $ \fp -> do
-      liftIO . print $ "importArchive 10, fp = " <> fp
-      whenM (doesDirectoryExist filesDir) $ do
-        liftIO . print $ "importArchive 11"
+    forM_ filesPath $ \fp ->
+      whenM (doesDirectoryExist filesDir) $
         copyDirectoryFiles filesDir fp
   where
     backup f = whenM (doesFileExist f) $ copyFile f $ f <> ".bak"
