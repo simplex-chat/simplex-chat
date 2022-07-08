@@ -20,7 +20,7 @@ The calls are still quite limited, especially on iOS - e.g., you cannot continue
 
 ### Database export and import
 
-<img src="./images/20220711-database-chat-running.png" width="480"> <img src="./images/20220711-database-chat-stopped.png" width="480">
+<img src="./images/20220711-database-chat-stopped.png" width="480">
 
 Quite a few users asked - how can I move my chat profile to a new device? V3 has a solution to that - you can now export chat database from one device and import it into another - even if this other device is another platform, e.g. you can move chat database from Android phone to iOS or to our terminal (console) client.
 
