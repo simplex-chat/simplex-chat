@@ -41,7 +41,16 @@
 "**e2e encrypted** video call" = "**e2e зашифрованный** видеозвонок";
 
 /* No comment provided by engineer. */
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Более конфиденциально**: проверять новые сообщения каждые 20 минут. Токен устройства будет отправлен на сервер уведомлений SimpleX Chat, но у сервера не будет информации о количестве контактов и сообщений.";
+
+/* No comment provided by engineer. */
+"**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Самый конфиденциальный**: не использовать сервер уведомлений SimpleX Chat, проверять сообщения периодически в фоновом режиме (зависит от того насколько часто вы используете приложение).";
+
+/* No comment provided by engineer. */
 "**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.";
+
+/* No comment provided by engineer. */
+"**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Рекомендовано**: токен устройства и уведомления отправляются на сервер SimpleX Chat, но сервер не получает сами сообщения, их размер или от кого они.";
 
 /* No comment provided by engineer. */
 "**Scan QR code**: to connect to your contact in person or via video call." = "**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.";
@@ -51,6 +60,9 @@
 
 /* No comment provided by engineer. */
 "#secret#" = "#секрет#";
+
+/* No comment provided by engineer. */
+"%@" = "%@";
 
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / %@";
@@ -78,6 +90,9 @@
 
 /* No comment provided by engineer. */
 "6" = "6";
+
+/* notification title */
+"A new contact" = "Новый контакт";
 
 /* No comment provided by engineer. */
 "About SimpleX" = "О SimpleX";
@@ -159,19 +174,31 @@
 "Cancel" = "Отменить";
 
 /* No comment provided by engineer. */
+"Chat archive" = "Архив чата";
+
+/* No comment provided by engineer. */
 "Chat console" = "Консоль";
+
+/* No comment provided by engineer. */
+"Chat database" = "Архив чата";
+
+/* No comment provided by engineer. */
+"Chat database deleted" = "Данные чата удалены";
+
+/* No comment provided by engineer. */
+"Chat database imported" = "Архив чата импортирован";
+
+/* No comment provided by engineer. */
+"Chat is running" = "Чат запущен";
+
+/* No comment provided by engineer. */
+"Chat is stopped" = "Чат остановлен";
 
 /* No comment provided by engineer. */
 "Chat with the developers" = "Соединиться с разработчиками";
 
 /* back button to return to chats list */
 "Chats" = "Чаты";
-
-/* No comment provided by engineer. */
-"Check messages" = "Проверять сообщения";
-
-/* notification */
-"Checking new messages..." = "Проверяются новые сообщения...";
 
 /* No comment provided by engineer. */
 "Choose file" = "Выбрать файл";
@@ -270,10 +297,16 @@
 "contact has no e2e encryption" = "у контакта нет e2e шифрования";
 
 /* notification */
+"Contact hidden:" = "Контакт скрыт:";
+
+/* notification */
 "Contact is connected" = "Соединение с контактом установлено";
 
 /* No comment provided by engineer. */
 "Contact is not connected yet!" = "Соединение еще не установлено!";
+
+/* No comment provided by engineer. */
+"Contact name" = "Имена контактов";
 
 /* No comment provided by engineer. */
 "Copy" = "Скопировать";
@@ -294,7 +327,16 @@
 "Create your profile" = "Создать профиль";
 
 /* No comment provided by engineer. */
+"Created on %@" = "Дата создания %@";
+
+/* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Максимальный размер файла - %@.";
+
+/* No comment provided by engineer. */
+"Database export & import" = "Экспорт и импорт архива чата";
+
+/* No comment provided by engineer. */
+"Database will be migrated when the app restarts" = "Данные чата будут мигрированы при перезапуске";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Децентрализованный";
@@ -309,6 +351,15 @@
 "Delete address?" = "Удалить адрес?";
 
 /* No comment provided by engineer. */
+"Delete archive" = "Удалить архив";
+
+/* No comment provided by engineer. */
+"Delete chat archive?" = "Удалить архив чата?";
+
+/* No comment provided by engineer. */
+"Delete chat profile?" = "Удалить профиль?";
+
+/* No comment provided by engineer. */
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
@@ -316,6 +367,9 @@
 
 /* No comment provided by engineer. */
 "Delete contact?" = "Удалить контакт?";
+
+/* No comment provided by engineer. */
+"Delete database" = "Удалить данные чата";
 
 /* No comment provided by engineer. */
 "Delete for everyone" = "Удалить для всех";
@@ -328,6 +382,12 @@
 
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
+
+/* No comment provided by engineer. */
+"Delete old database" = "Удалить предыдущую версию данных";
+
+/* No comment provided by engineer. */
+"Delete old database?" = "Удалить предыдущую версию данных?";
 
 /* No comment provided by engineer. */
 "Delete pending connection" = "Удалить соединение";
@@ -357,6 +417,9 @@
 "Display name" = "Имя профиля";
 
 /* No comment provided by engineer. */
+"Do it later" = "Отложить";
+
+/* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Не используйте SimpleX для экстренных звонков";
 
 /* integrity error chat item */
@@ -369,7 +432,16 @@
 "Edit" = "Редактировать";
 
 /* No comment provided by engineer. */
-"Enable notifications? (BETA)" = "Включить уведомления? (БЕТА)";
+"Enable" = "Включить";
+
+/* No comment provided by engineer. */
+"Enable instant notifications?" = "Включить мгновенные уведомления?";
+
+/* No comment provided by engineer. */
+"Enable notifications" = "Включить уведомления";
+
+/* No comment provided by engineer. */
+"Enable periodic notifications?" = "Включить периодические уведомления?";
 
 /* authentication reason */
 "Enable SimpleX Lock" = "Включить блокировку SimpleX";
@@ -381,22 +453,58 @@
 "ended call %@" = "завершённый звонок %@";
 
 /* No comment provided by engineer. */
-"Enter one SMP server per line:" = "Введите SMP серверы, каждый на отдельной строке:";
+"Error accessing database file" = "Ошибка при доступе к данным чата";
+
+/* No comment provided by engineer. */
+"Error deleting chat database" = "Ошибка при удалении данных чата";
+
+/* No comment provided by engineer. */
+"Error deleting database" = "Ошибка при удалении данных чата";
+
+/* No comment provided by engineer. */
+"Error deleting old database" = "Ошибка при удалении предыдущей версии данных чата";
 
 /* No comment provided by engineer. */
 "Error deleting token" = "Ошибка удаления токена";
 
 /* No comment provided by engineer. */
-"Error registering token" = "Ошибка регистрации токена";
+"Error enabling notifications" = "Ошибка при включении уведомлений";
+
+/* No comment provided by engineer. */
+"Error exporting chat database" = "Ошибка при экспорте архива чата";
+
+/* No comment provided by engineer. */
+"Error importing chat database" = "Ошибка при импорте архива чата";
 
 /* No comment provided by engineer. */
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
 
 /* No comment provided by engineer. */
+"Error starting chat" = "Ошибка при запуске чата";
+
+/* No comment provided by engineer. */
+"Error stopping chat" = "Ошибка при остановке чата";
+
+/* No comment provided by engineer. */
 "Error: %@" = "Ошибка: %@";
 
 /* No comment provided by engineer. */
+"Error: no database file" = "Ошибка: данные чата не найдены";
+
+/* No comment provided by engineer. */
 "Error: URL is invalid" = "Ошибка: неверная ссылка";
+
+/* No comment provided by engineer. */
+"Export database" = "Экспорт архива чата";
+
+/* No comment provided by engineer. */
+"Export error:" = "Ошибка при экспорте:";
+
+/* No comment provided by engineer. */
+"Exported database archive." = "Архив чата экспортирован.";
+
+/* No comment provided by engineer. */
+"Exporting database archive..." = "Архив чата экспортируется...";
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!";
@@ -407,8 +515,14 @@
 /* No comment provided by engineer. */
 "Group deletion is not supported" = "Удаление групп не поддерживается";
 
+/* notification */
+"Group message:" = "Групповое сообщение:";
+
 /* No comment provided by engineer. */
 "Help" = "Помощь";
+
+/* No comment provided by engineer. */
+"Hidden" = "Скрытое";
 
 /* No comment provided by engineer. */
 "How it works" = "Как это работает";
@@ -435,6 +549,9 @@
 "If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." = "Если вы не можете встретиться лично, вы можете **сосканировать QR код во время видеозвонка**, или ваш контакт может отправить вам ссылку.";
 
 /* No comment provided by engineer. */
+"If you need to use the chat now tap **Do it later** below (you will be offered to migrate the database when you restart the app)." = "Если сейчас вам нужно использовать чат, нажмите **Отложить** внизу (вы сможете мигрировать данные чата при следующем запуске приложения).";
+
+/* No comment provided by engineer. */
 "Ignore" = "Не отвечать";
 
 /* No comment provided by engineer. */
@@ -442,6 +559,15 @@
 
 /* No comment provided by engineer. */
 "Immune to spam and abuse" = "Защищен от спама";
+
+/* No comment provided by engineer. */
+"Import" = "Импортировать";
+
+/* No comment provided by engineer. */
+"Import chat database?" = "Импортировать архив чата?";
+
+/* No comment provided by engineer. */
+"Import database" = "Импорт архива чата";
 
 /* No comment provided by engineer. */
 "In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке – самый безопасный способ установить соединение";
@@ -457,6 +583,9 @@
 
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"Instantly" = "Мгновенно";
 
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ошибка в ссылке контакта";
@@ -497,6 +626,24 @@
 /* No comment provided by engineer. */
 "Message delivery error" = "Ошибка доставки сообщения";
 
+/* notification */
+"message received" = "получено сообщение";
+
+/* No comment provided by engineer. */
+"Message text" = "Текст сообщения";
+
+/* No comment provided by engineer. */
+"Migrating database archive..." = "Данные чата перемещаются...";
+
+/* No comment provided by engineer. */
+"Migration error:" = "Ошибка при перемещении данных:";
+
+/* No comment provided by engineer. */
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Ошибка при перемещении данных. Нажмите **Отложить** внизу чтобы продолжить использовать предыдущую версию данных. Пожалуйста, сообщите об этой ошибке разработчикам через чат или email [chat@simplex.chat](mailto:chat@simplex.chat).";
+
+/* No comment provided by engineer. */
+"Migration is completed" = "Перемещение данных завершено";
+
 /* call status */
 "missed call" = "пропущенный звонок";
 
@@ -507,13 +654,37 @@
 "New contact request" = "Новый запрос на соединение";
 
 /* notification */
+"New contact:" = "Новый контакт:";
+
+/* No comment provided by engineer. */
+"New database archive" = "Новый архив чата";
+
+/* notification */
+"new message" = "новое сообщение";
+
+/* notification */
 "New message" = "Новое сообщение";
+
+/* No comment provided by engineer. */
+"No device token!" = "Отсутствует токен устройства!";
 
 /* No comment provided by engineer. */
 "no e2e encryption" = "нет e2e шифрования";
 
 /* No comment provided by engineer. */
+"Notifications" = "Уведомления";
+
+/* No comment provided by engineer. */
 "Notifications are disabled!" = "Уведомления выключены";
+
+/* No comment provided by engineer. */
+"Off (Local)" = "Выключить (Локальные)";
+
+/* No comment provided by engineer. */
+"Old database" = "Предыдущая версия данных чата";
+
+/* No comment provided by engineer. */
+"Old database archive" = "Старый архив чата";
 
 /* No comment provided by engineer. */
 "One-time invitation link" = "Одноразовая ссылка";
@@ -537,6 +708,9 @@
 "Paste" = "Вставить";
 
 /* No comment provided by engineer. */
+"Paste image" = "Вставить изображение";
+
+/* No comment provided by engineer. */
 "Paste received link" = "Вставить полученную ссылку";
 
 /* No comment provided by engineer. */
@@ -552,13 +726,16 @@
 "People can connect to you only via the links you share." = "С вами можно соединиться только через созданные вами ссылки.";
 
 /* No comment provided by engineer. */
+"Periodically" = "Периодически";
+
+/* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
 /* No comment provided by engineer. */
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
-"Pre-arrange the calls, as notifications arrive with a delay (we are improving it)." = "Назначайте звонки заранее, поскольку уведомления приходят с задержкой (мы улучшаем это)";
+"Please restart the app and migrate the database to enable push notifications." = "Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфиденциальность";
@@ -568,6 +745,9 @@
 
 /* No comment provided by engineer. */
 "Profile image" = "Аватар";
+
+/* No comment provided by engineer. */
+"Push notifications" = "Доставка уведомлений";
 
 /* No comment provided by engineer. */
 "Read" = "Прочитано";
@@ -583,6 +763,9 @@
 
 /* No comment provided by engineer. */
 "received confirmation…" = "получено подтверждение…";
+
+/* notification */
+"Received file event" = "Загрузка файла";
 
 /* reject incoming call via notification */
 "Reject" = "Отклонить";
@@ -600,13 +783,22 @@
 "Reply" = "Ответить";
 
 /* No comment provided by engineer. */
-"Retry" = "Повторить";
+"Restart the app to create a new chat profile" = "Перезапустите приложение, чтобы создать новый профиль.";
+
+/* No comment provided by engineer. */
+"Restart the app to use imported chat database" = "Перезапустите приложение, чтобы использовать импортированные данные чата.";
+
+/* No comment provided by engineer. */
+"Run chat" = "Запустить chat";
 
 /* No comment provided by engineer. */
 "Save" = "Сохранить";
 
 /* No comment provided by engineer. */
 "Save (and notify contacts)" = "Сохранить (и уведомить контакты)";
+
+/* No comment provided by engineer. */
+"Save archive" = "Сохранить архив";
 
 /* No comment provided by engineer. */
 "Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
@@ -622,6 +814,15 @@
 
 /* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
+
+/* No comment provided by engineer. */
+"Send notifications" = "Отправлять уведомления";
+
+/* No comment provided by engineer. */
+"Send notifications:" = "Отправлять уведомления:";
+
+/* notification */
+"Sent file event" = "Отправка файла";
 
 /* No comment provided by engineer. */
 "Server connected" = "Установлено соединение с сервером";
@@ -642,6 +843,12 @@
 "Show pending connections" = "Показать ожидаемые соединения";
 
 /* No comment provided by engineer. */
+"Show preview" = "Показывать уведомления";
+
+/* notification */
+"SimpleX encrypted message or connection event" = "SimpleX: зашифрованное сообщение или соединение контакта";
+
+/* No comment provided by engineer. */
 "SimpleX Lock" = "Блокировка SimpleX";
 
 /* No comment provided by engineer. */
@@ -654,7 +861,31 @@
 "SMP servers" = "SMP серверы";
 
 /* No comment provided by engineer. */
+"SMP servers (one per line)" = "SMP серверы (один на строке)";
+
+/* notification title */
+"Somebody" = "Контакт";
+
+/* No comment provided by engineer. */
+"Start chat" = "Запустить чат";
+
+/* No comment provided by engineer. */
+"Start migration" = "Запустить перемещение данных";
+
+/* No comment provided by engineer. */
 "starting…" = "инициализация…";
+
+/* No comment provided by engineer. */
+"Stop" = "Остановить";
+
+/* No comment provided by engineer. */
+"Stop chat to enable database actions" = "Остановите чат, чтобы разблокировать операции с архивом чата";
+
+/* No comment provided by engineer. */
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.";
+
+/* No comment provided by engineer. */
+"Stop chat?" = "Остановить чат?";
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
@@ -675,13 +906,13 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
 
 /* No comment provided by engineer. */
-"The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server." = "Приложение может получать скрытые уведомления каждые 20 минут чтобы проверить новые сообщения.\n*Обратите внимание*: если вы подтвердите, токен вашего устройства будет послан на сервер SimpleX Chat.";
-
-/* No comment provided by engineer. */
 "The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
 
 /* No comment provided by engineer. */
 "The contact you shared this link with will NOT be able to connect!" = "Контакт, которому вы отправили эту ссылку, не сможет соединиться!";
+
+/* No comment provided by engineer. */
+"The created archive is available via app Settings / Database / Old database archive." = "Созданный архив доступен через Настройки приложения.";
 
 /* No comment provided by engineer. */
 "The microphone does not work when the app is in the background." = "Микрофон не работает, когда приложение в фоновом режиме.";
@@ -690,10 +921,19 @@
 "The next generation of private messaging" = "Новое поколение приватных сообщений";
 
 /* No comment provided by engineer. */
+"The old database was not removed during the migration, it can be deleted." = "Предыдущая версия данных чата не удалена при перемещении, её можно удалить.";
+
+/* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Профиль отправляется только вашим контактам.";
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";
+
+/* notification title */
+"this contact" = "этот контакт";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive SimpleX Chat updates." = "Чтобы задать вопросы и получать уведомления о SimpleX Chat.";
@@ -717,16 +957,28 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Чтобы защитить вашу информацию, включите блокировку SimpleX Chat.\nВам будет нужно пройти аутентификацию для включения блокировки.";
 
 /* No comment provided by engineer. */
+"To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
+
+/* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: %@).";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
+"Turn off" = "Выключить";
+
+/* No comment provided by engineer. */
+"Turn off notifications?" = "Выключить уведомления?";
+
+/* No comment provided by engineer. */
 "Turn on" = "Включить";
 
 /* No comment provided by engineer. */
 "Unexpected error: %@" = "Неожиданная ошибка: %@";
+
+/* No comment provided by engineer. */
+"Unexpected migration state" = "Неожиданная ошибка при перемещении данных чата";
 
 /* connection info */
 "unknown" = "неизвестно";
@@ -736,6 +988,9 @@
 
 /* authentication reason */
 "Unlock" = "Разблокировать";
+
+/* No comment provided by engineer. */
+"Use chat" = "Использовать чат";
 
 /* No comment provided by engineer. */
 "Use SimpleX Chat servers?" = "Использовать серверы предосталенные SimpleX Chat?";
@@ -795,7 +1050,13 @@
 "You can now send messages to %@" = "Вы теперь можете отправлять сообщения %@";
 
 /* No comment provided by engineer. */
+"You can set lock screen notification preview via settings." = "Вы можете установить просмотр уведомлений на экране блокировки в настройках.";
+
+/* No comment provided by engineer. */
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";
+
+/* No comment provided by engineer. */
+"You can start chat via app Settings / Database or by restarting the app" = "Вы можете запустить чат через Настройки приложения или перезапустив приложение.";
 
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Вы можете форматировать сообщения:";
@@ -808,6 +1069,9 @@
 
 /* No comment provided by engineer. */
 "You invited your contact" = "Вы пригласили ваш контакт";
+
+/* No comment provided by engineer. */
+"You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Вы должны всегда использовать самую новую версию данных чата, ТОЛЬКО на одном устройстве, инача вы можете перестать получать сообщения от каких то контактов.";
 
 /* chat list item description */
 "you shared one-time link" = "вы создали ссылку";
@@ -828,6 +1092,9 @@
 "Your chat address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
+"Your chat database" = "Данные чата";
+
+/* No comment provided by engineer. */
 "Your chat profile" = "Ваш профиль";
 
 /* No comment provided by engineer. */
@@ -844,6 +1111,9 @@
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";
+
+/* No comment provided by engineer. */
+"Your current chat database will be DELETED and REPLACED with the imported one." = "Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.";
 
 /* No comment provided by engineer. */
 "Your privacy" = "Конфиденциальность";

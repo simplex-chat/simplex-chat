@@ -170,7 +170,7 @@ struct DatabaseView: View {
             if let fileURL = importedArchivePath {
                 return Alert(
                     title: Text("Import chat database?"),
-                    message: Text("Your current chat database will be DELETED and REPLACED with the imported one.\n") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
+                    message: Text("Your current chat database will be DELETED and REPLACED with the imported one.") + Text("This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost."),
                     primaryButton: .destructive(Text("Import")) {
                         importArchive(fileURL)
                     },
@@ -182,9 +182,7 @@ struct DatabaseView: View {
         case .archiveImported:
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database"),
-                primaryButton: .default(Text("Ok")),
-                secondaryButton: .cancel()
+                message: Text("Restart the app to use imported chat database")
             )
 
         case .deleteChat:
@@ -199,9 +197,7 @@ struct DatabaseView: View {
         case .chatDeleted:
             return Alert(
                 title: Text("Chat database deleted"),
-                message: Text("Restart the app to create a new chat profile"),
-                primaryButton: .default(Text("Ok")),
-                secondaryButton: .cancel()
+                message: Text("Restart the app to create a new chat profile")
             )
         case .deleteLegacyDatabase:
             return Alert(
