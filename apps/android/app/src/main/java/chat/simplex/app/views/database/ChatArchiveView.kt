@@ -27,10 +27,11 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
 import chat.simplex.app.views.usersettings.SettingsSectionView
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import kotlinx.datetime.*
 import java.io.BufferedOutputStream
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 @Composable
 fun ChatArchiveView(m: ChatModel, title: String, archiveName: String) {
@@ -80,9 +81,11 @@ fun ChatArchiveLayout(
         textColor = Color.Red
       )
     }
-    if (chatArchiveTime.value != null) {
+    val chatArchiveTimeVal = chatArchiveTime.value
+    if (chatArchiveTimeVal != null) {
+      val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(chatArchiveTimeVal.toJavaInstant()))
       SettingsSectionFooter(
-        String.format(generalGetString(R.string.archive_created_on_ts), chatArchiveTime.value.toString())
+        String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
       )
     }
   }
