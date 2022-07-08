@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -102,7 +103,7 @@ fun SettingsLayout(
         divider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         divider()
-        SettingsActionItem(Icons.Outlined.Archive, stringResource(R.string.database_export_and_import), showSettingsModal { DatabaseView(it, showSettingsModal) })
+        DatabaseItem(showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       spacer()
 
@@ -151,6 +152,33 @@ fun SettingsLayout(
     )
     Surface(color = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
       Column(Modifier.padding(horizontal = 6.dp)) { content() }
+    }
+  }
+}
+
+@Composable private fun DatabaseItem(openDatabaseView: () -> Unit, stopped: Boolean) {
+  SettingsItemView(openDatabaseView) {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+      Row {
+        Icon(
+          Icons.Outlined.Archive,
+          contentDescription = stringResource(R.string.database_export_and_import),
+          tint = HighOrLowlight,
+        )
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(R.string.database_export_and_import))
+      }
+      if (stopped) {
+        Icon(
+          Icons.Filled.Report,
+          contentDescription = stringResource(R.string.chat_is_stopped),
+          tint = Color.Red,
+          modifier = Modifier.padding(end = 6.dp)
+        )
+      }
     }
   }
 }
