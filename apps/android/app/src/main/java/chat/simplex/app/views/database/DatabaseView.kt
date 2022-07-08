@@ -229,21 +229,15 @@ fun SettingsSectionFooter(text: String) {
 }
 
 private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
-  if (m.chatDbChanged.value) {
-    ModalManager.shared.closeModals()
-    // TODO resetChatCtrl, initializeChat
-  } else {
-    withApi {
-      try {
-        m.controller.apiStartChat()
-        runChat.value = true
-        m.chatRunning.value = true
-        // TODO start recvMspLoop
-        m.controller.appPrefs.chatLastStart.set(Clock.System.now())
-      } catch (e: Error) {
-        runChat.value = false
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
-      }
+  withApi {
+    try {
+      m.controller.apiStartChat()
+      runChat.value = true
+      m.chatRunning.value = true
+      m.controller.appPrefs.chatLastStart.set(Clock.System.now())
+    } catch (e: Error) {
+      runChat.value = false
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
     }
   }
 }
@@ -262,7 +256,6 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>) {
   withApi {
     try {
       m.controller.apiStopChat()
-      // TODO stop recvMspLoop
       runChat.value = false
       m.chatRunning.value = false
     } catch (e: Error) {
