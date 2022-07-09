@@ -64,7 +64,7 @@ fun ChatArchiveLayout(
       style = MaterialTheme.typography.h1
     )
 
-    SettingsSectionView(stringResource(R.string.chat_database_section)) {
+    SettingsSectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.save_archive),

@@ -43,7 +43,7 @@ fun DatabaseView(
 ) {
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
-  val runChat = remember { mutableStateOf(false) }
+  val runChat = remember { mutableStateOf(m.chatRunning.value ?: true) }
   val prefs = m.controller.appPrefs
   val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
   val chatArchiveTime = remember { mutableStateOf(prefs.chatArchiveTime.get()) }
@@ -69,7 +69,7 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      startChat = { startChat(m, runChat) },
+      startChat = { startChat(m, runChat, chatLastStart) },
       stopChatAlert = { stopChatAlert(m, runChat) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
@@ -230,13 +230,15 @@ fun SettingsSectionFooter(text: String) {
   Text(text, color = HighOrLowlight, modifier = Modifier.padding(start = 16.dp, top = 5.dp).fillMaxWidth(0.9F), fontSize = 12.sp)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean>) {
+private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>) {
   withApi {
     try {
       m.controller.apiStartChat()
       runChat.value = true
       m.chatRunning.value = true
-      m.controller.appPrefs.chatLastStart.set(Clock.System.now())
+      val ts = Clock.System.now()
+      m.controller.appPrefs.chatLastStart.set(ts)
+      chatLastStart.value = ts
     } catch (e: Error) {
       runChat.value = false
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
