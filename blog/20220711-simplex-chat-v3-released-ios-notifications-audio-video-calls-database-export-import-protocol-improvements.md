@@ -71,17 +71,19 @@ Many people asked: _if SimpleX has no user identifiers, how can it deliver messa
 
 I wrote about it in [v2 release announcement](./20220511-simplex-chat-v2-images-files.md) and you can get more information about SimpleX platform objectives and technical design in [the whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).
 
-## We ask you to help
+## We ask you to help us pay for 3rd party security audit
 
-I will get straight to the point: I ask you to support SimpleX Chat independence with donations.
+I will get straight to the point: I ask you to support SimpleX Chat with donations.
 
-We are prioritizing users privacy and security over the business growth - it would be impossible without your support we were lucky to have so far.
+We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.
 
-Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain - so anybody can build the future implementations for the clients and the servers. We intend to build the network on the same principles as email and web, but much more private and secure.
+We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20000+ expense could be covered with donations.
 
-If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to keep going and to raise more funds. Donating the price of the cup of coffee would make a huge difference for us.
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations for the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
 
-Currently it is possible to [donate via GitHub](https://github.com/sponsors/simplex-chat), which is commission-free for us, or [via OpenCollective](https://opencollective.com/simplex-chat) that also accepts donations in crypto-currencies.
+If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.
+
+It is possible to [donate via GitHub](https://github.com/sponsors/simplex-chat), which is commission-free for us, or [via OpenCollective](https://opencollective.com/simplex-chat), that also accepts donations in crypto-currencies, but charges a commission.
 
 Thank you,
 Evgeny
