@@ -8,6 +8,7 @@
 
 import SwiftUI
 import WebKit
+import SimpleXChat
 
 class WebRTCCoordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate {
     var rtcWebView: Binding<WKWebView?>

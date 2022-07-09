@@ -4,6 +4,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Controller where
@@ -23,7 +24,6 @@ import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Time.Clock (UTCTime)
 import Data.Version (showVersion)
-import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -40,7 +40,7 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Protocol (CorrId)
+import Simplex.Messaging.Protocol (CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
 import System.IO (Handle)
 import UnliftIO.STM
@@ -56,7 +56,6 @@ updateStr = "To update run: curl -o- https://raw.githubusercontent.com/simplex-c
 
 data ChatConfig = ChatConfig
   { agentConfig :: AgentConfig,
-    dbPoolSize :: Int,
     yesToMigrations :: Bool,
     defaultServers :: InitialAgentServers,
     tbqSize :: Natural,
@@ -74,8 +73,9 @@ data ChatController = ChatController
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
-    agentAsync :: TVar (Maybe (Async ())),
+    agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
     chatStore :: SQLiteStore,
+    chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
@@ -99,9 +99,15 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
-  | StartChat
+  | StartChat {subscribeConnections :: Bool}
+  | APIStopChat
+  | APIActivateChat
+  | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
+  | APIExportArchive ArchiveConfig
+  | APIImportArchive ArchiveConfig
+  | APIDeleteStorage
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination
   | APIGetChatItems Int
@@ -120,13 +126,15 @@ data ChatCommand
   | APISendCallAnswer ContactId WebRTCSession
   | APISendCallExtraInfo ContactId WebRTCExtraInfo
   | APIEndCall ContactId
+  | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APIParseMarkdown Text
-  | APIRegisterToken DeviceToken
-  | APIVerifyToken DeviceToken ByteString C.CbNonce
-  | APIIntervalNofication DeviceToken Word16
+  | APIGetNtfToken
+  | APIRegisterToken DeviceToken NotificationsMode
+  | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
+  | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -140,7 +148,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
-  | AddressAutoAccept Bool
+  | AddressAutoAccept Bool (Maybe MsgContent)
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
@@ -178,6 +186,8 @@ data ChatResponse
   = CRActiveUser {user :: User}
   | CRChatStarted
   | CRChatRunning
+  | CRChatStopped
+  | CRChatSuspended
   | CRApiChats {chats :: [AChat]}
   | CRApiChat {chat :: AChat}
   | CRLastMessages {chatItems :: [AChatItem]}
@@ -197,8 +207,8 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool}
-  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool}
+  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
+  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
@@ -260,14 +270,17 @@ data ChatResponse
   | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
-  | CRCallInvitation {contact :: Contact, callType :: CallType, sharedKey :: Maybe C.Key, callTs :: UTCTime}
+  | CRCallInvitation {callInvitation :: RcvCallInvitation}
   | CRCallOffer {contact :: Contact, callType :: CallType, offer :: WebRTCSession, sharedKey :: Maybe C.Key, askConfirmation :: Bool}
   | CRCallAnswer {contact :: Contact, answer :: WebRTCSession}
   | CRCallExtraInfo {contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {contact :: Contact}
+  | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError {chatError :: ChatError}
   | CRNtfTokenStatus {status :: NtfTknStatus}
+  | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
+  | CRNtfMessages {connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
   | CRMessageError {severity :: Text, errorMessage :: Text}
@@ -278,6 +291,9 @@ data ChatResponse
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
+  deriving (Show, Generic, FromJSON)
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
@@ -315,6 +331,14 @@ data ComposedMessage = ComposedMessage
   }
   deriving (Show, Generic, FromJSON)
 
+data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
+  deriving (Show, Generic)
+
+instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
+crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
+
 data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType}
@@ -329,6 +353,8 @@ data ChatErrorType
   = CENoActiveUser
   | CEActiveUserExists
   | CEChatNotStarted
+  | CEChatNotStopped
+  | CEChatStoreChanged
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}

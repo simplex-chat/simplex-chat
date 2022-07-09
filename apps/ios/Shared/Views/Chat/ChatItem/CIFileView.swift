@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CIFileView: View {
     @Environment(\.colorScheme) var colorScheme
@@ -133,7 +134,7 @@ struct CIFileView: View {
 
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
-        let sentFile = ChatItem(
+        let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, .now, "", .sndSent, false, true, false),
             content: .sndMsgContent(msgContent: .file("")),

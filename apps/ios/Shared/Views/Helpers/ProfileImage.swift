@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ProfileImage: View {
     var imageStr: String? = nil

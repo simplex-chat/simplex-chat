@@ -15,19 +15,15 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
-import Simplex.Messaging.Protocol (ProtocolServer (..), smpClientVRange)
+import Simplex.Messaging.Protocol (smpClientVRange)
+import Simplex.Messaging.Version
 import Test.Hspec
 
 protocolTests :: Spec
 protocolTests = decodeChatMessageTest
 
 srv :: SMPServer
-srv =
-  ProtocolServer
-    { host = "smp.simplex.im",
-      port = "5223",
-      keyHash = C.KeyHash "\215m\248\251"
-    }
+srv = SMPServer "smp.simplex.im" "5223" (C.KeyHash "\215m\248\251")
 
 queue :: SMPQueueUri
 queue =
@@ -42,7 +38,7 @@ connReqData :: ConnReqUriData
 connReqData =
   ConnReqUriData
     { crScheme = simplexChat,
-      crAgentVRange = smpAgentVRange,
+      crAgentVRange = mkVersionRange 1 1,
       crSmpQueues = [queue]
     }
 

@@ -89,6 +89,13 @@ instance IsString FormattedText where
 
 type MarkdownList = [FormattedText]
 
+data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe MarkdownList}
+  deriving (Generic)
+
+instance ToJSON ParsedMarkdown where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
 unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
@@ -183,6 +190,6 @@ markdownP = mconcat <$> A.many' fragmentP
       | isUri s = markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
-    isUri s = "http://" `T.isPrefixOf` s || "https://" `T.isPrefixOf` s || "simplex:/" `T.isPrefixOf` s
+    isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked

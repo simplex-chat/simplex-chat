@@ -81,6 +81,9 @@ class AppPreferences(val context: Context) {
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
+  val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
+  val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
+  val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -100,6 +103,15 @@ class AppPreferences(val context: Context) {
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
 
+  private fun mkDatePreference(prefName: String, default: Instant?): Preference<Instant?> =
+    Preference(
+      get = {
+        val pref = sharedPreferences.getString(prefName, default?.toEpochMilliseconds()?.toString())
+        pref?.let { Instant.fromEpochMilliseconds(pref.toLong()) }
+      },
+      set = fun(value) = sharedPreferences.edit().putString(prefName, value?.toEpochMilliseconds()?.toString()).apply()
+    )
+
   companion object {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
@@ -113,12 +125,17 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
-
+    private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
+    private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
+    private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
   }
 }
 
+private const val MESSAGE_TIMEOUT: Int = 15_000_000
+
 open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
+  private var receiverStarted = false
 
   init {
     chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
@@ -128,12 +145,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      val chatStarted = apiStartChat()
+      val justStarted = apiStartChat()
       apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
       chatModel.userSMPServers.value = getUserSMPServers()
       val chats = apiGetChats()
-      if (chatStarted) {
+      if (justStarted) {
         chatModel.chats.clear()
         chatModel.chats.addAll(chats)
       } else {
@@ -142,6 +159,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       chatModel.currentUser.value = user
       chatModel.userCreated.value = true
       chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+      chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
+      chatModel.chatRunning.value = true
+      startReceiver()
       Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
@@ -149,8 +169,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  fun startReceiver() {
+  private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
+    if (receiverStarted) return
     thread(name="receiver") {
       GlobalScope.launch { withContext(Dispatchers.IO) { recvMspLoop() } }
     }
@@ -176,18 +197,23 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun recvMsg(): CR {
+  private suspend fun recvMsg(): CR? {
     return withContext(Dispatchers.IO) {
-      val json = chatRecvMsg(ctrl)
-      val r = APIResponse.decodeStr(json).resp
-      Log.d(TAG, "chatRecvMsg: ${r.responseType}")
-      if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
-      r
+      val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
+      if (json == "") {
+        null
+      } else {
+        val r = APIResponse.decodeStr(json).resp
+        Log.d(TAG, "chatRecvMsg: ${r.responseType}")
+        if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
+        r
+      }
     }
   }
 
-  suspend fun recvMspLoop() {
-    processReceivedMsg(recvMsg())
+  private suspend fun recvMspLoop() {
+    val msg = recvMsg()
+    if (msg != null) processReceivedMsg(msg)
     recvMspLoop()
   }
 
@@ -215,13 +241,39 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun apiSetFilesFolder(filesFolder: String) {
+  suspend fun apiStopChat(): Boolean {
+    val r = sendCmd(CC.ApiStopChat())
+    when (r) {
+      is CR.ChatStopped -> return true
+      else -> throw Error("failed stopping chat: ${r.responseType} ${r.details}")
+    }
+  }
+
+  private suspend fun apiSetFilesFolder(filesFolder: String) {
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChats(): List<Chat> {
+  suspend fun apiExportArchive(config: ArchiveConfig) {
+    val r = sendCmd(CC.ApiExportArchive(config))
+    if (r is CR.CmdOk) return
+    throw Error("failed to export archive: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiImportArchive(config: ArchiveConfig) {
+    val r = sendCmd(CC.ApiImportArchive(config))
+    if (r is CR.CmdOk) return
+    throw Error("failed to import archive: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiDeleteStorage() {
+    val r = sendCmd(CC.ApiDeleteStorage())
+    if (r is CR.CmdOk) return
+    throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+  }
+
+  private suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
     if (r is CR.ApiChats ) return r.chats
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
@@ -256,7 +308,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
-  suspend fun getUserSMPServers(): List<String>? {
+  private suspend fun getUserSMPServers(): List<String>? {
     val r = sendCmd(CC.GetUserSMPServers())
     if (r is CR.UserSMPServers) return r.smpServers
     Log.e(TAG, "getUserSMPServers bad response: ${r.responseType} ${r.details}")
@@ -383,7 +435,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return false
   }
 
-  suspend fun apiGetUserAddress(): String? {
+  private suspend fun apiGetUserAddress(): String? {
     val r = sendCmd(CC.ShowMyAddress())
     if (r is CR.UserContactLink) return r.connReqContact
     if (r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore
@@ -566,10 +618,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
           removeFile(appContext, fileName)
         }
       }
-      is CR.CallInvitation -> {
-        val invitation = CallInvitation(r.contact, r.callType.media, r.sharedKey, r.callTs)
-        chatModel.callManager.reportNewIncomingCall(invitation)
-      }
+      is CR.CallInvitation ->
+        chatModel.callManager.reportNewIncomingCall(r.callInvitation)
       is CR.CallOffer -> {
         // TODO askConfirmation?
         // TODO check encryption is compatible
@@ -837,7 +887,11 @@ sealed class CC {
   class ShowActiveUser: CC()
   class CreateActiveUser(val profile: Profile): CC()
   class StartChat: CC()
+  class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class ApiExportArchive(val config: ArchiveConfig): CC()
+  class ApiImportArchive(val config: ArchiveConfig): CC()
+  class ApiDeleteStorage: CC()
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
@@ -871,7 +925,11 @@ sealed class CC {
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
     is StartChat -> "/_start"
+    is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
+    is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
+    is ApiDeleteStorage -> "/_db delete"
     is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
@@ -906,7 +964,11 @@ sealed class CC {
     is ShowActiveUser -> "showActiveUser"
     is CreateActiveUser -> "createActiveUser"
     is StartChat -> "startChat"
+    is ApiStopChat -> "apiStopChat"
     is SetFilesFolder -> "setFilesFolder"
+    is ApiExportArchive -> "apiExportArchive"
+    is ApiImportArchive -> "apiImportArchive"
+    is ApiDeleteStorage -> "apiDeleteStorage"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
@@ -948,6 +1010,9 @@ sealed class CC {
 @Serializable
 class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgContent: MsgContent)
 
+@Serializable
+class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
+
 val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
@@ -981,6 +1046,7 @@ sealed class CR {
   @Serializable @SerialName("activeUser") class ActiveUser(val user: User): CR()
   @Serializable @SerialName("chatStarted") class ChatStarted: CR()
   @Serializable @SerialName("chatRunning") class ChatRunning: CR()
+  @Serializable @SerialName("chatStopped") class ChatStopped: CR()
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
@@ -1022,7 +1088,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndGroupFileCancelled") class SndGroupFileCancelled(val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
-  @Serializable @SerialName("callInvitation") class CallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant): CR()
+  @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
@@ -1039,6 +1105,7 @@ sealed class CR {
     is ActiveUser -> "activeUser"
     is ChatStarted -> "chatStarted"
     is ChatRunning -> "chatRunning"
+    is ChatStopped -> "chatStopped"
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is UserSMPServers -> "userSMPServers"
@@ -1098,6 +1165,7 @@ sealed class CR {
     is ActiveUser -> json.encodeToString(user)
     is ChatStarted -> noDetails()
     is ChatRunning -> noDetails()
+    is ChatStopped -> noDetails()
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
     is UserSMPServers -> json.encodeToString(smpServers)
@@ -1139,7 +1207,7 @@ sealed class CR {
     is SndFileRcvCancelled -> json.encodeToString(chatItem)
     is SndFileStart -> json.encodeToString(chatItem)
     is SndGroupFileCancelled -> json.encodeToString(chatItem)
-    is CallInvitation -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}"
+    is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}"
     is CallAnswer -> "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}"
     is CallExtraInfo -> "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}"

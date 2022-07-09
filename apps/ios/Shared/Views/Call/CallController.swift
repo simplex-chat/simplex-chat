@@ -9,6 +9,7 @@
 import Foundation
 //import CallKit
 import AVFoundation
+import SimpleXChat
 
 //class CallController: NSObject, CXProviderDelegate, ObservableObject {
 class CallController: NSObject, ObservableObject {
@@ -17,7 +18,7 @@ class CallController: NSObject, ObservableObject {
 //    private let provider = CXProvider(configuration: CallController.configuration)
 //    private let controller = CXCallController()
     private let callManager = CallManager()
-    @Published var activeCallInvitation: CallInvitation?
+    @Published var activeCallInvitation: RcvCallInvitation?
 
 // PKPushRegistry will be used from notification service extension
 //    let registry = PKPushRegistry(queue: nil)
@@ -119,9 +120,8 @@ class CallController: NSObject, ObservableObject {
 //        }
 //    }
 
-    func reportNewIncomingCall(invitation: CallInvitation, completion: @escaping (Error?) -> Void) {
+    func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
         logger.debug("CallController.reportNewIncomingCall")
-        if !UserDefaults.standard.bool(forKey: DEFAULT_EXPERIMENTAL_CALLS) { return }
 //        if CallController.useCallKit, let uuid = invitation.callkitUUID {
 //            let update = CXCallUpdate()
 //            update.remoteHandle = CXHandle(type: .generic, value: invitation.contact.displayName)
@@ -141,7 +141,7 @@ class CallController: NSObject, ObservableObject {
 //        }
 //    }
 
-    func reportCallRemoteEnded(invitation: CallInvitation) {
+    func reportCallRemoteEnded(invitation: RcvCallInvitation) {
 //        if CallController.useCallKit, let uuid = invitation.callkitUUID {
 //            provider.reportCall(with: uuid, endedAt: nil, reason: .remoteEnded)
 //        } else if invitation.contact.id == activeCallInvitation?.contact.id {
@@ -171,7 +171,7 @@ class CallController: NSObject, ObservableObject {
         }
     }
 
-    func answerCall(invitation: CallInvitation) {
+    func answerCall(invitation: RcvCallInvitation) {
         callManager.answerIncomingCall(invitation: invitation)
         if invitation.contact.id == self.activeCallInvitation?.contact.id {
             self.activeCallInvitation = nil
@@ -192,7 +192,7 @@ class CallController: NSObject, ObservableObject {
 //        }
     }
 
-    func endCall(invitation: CallInvitation) {
+    func endCall(invitation: RcvCallInvitation) {
         callManager.endCall(invitation: invitation) {
             if invitation.contact.id == self.activeCallInvitation?.contact.id {
                 DispatchQueue.main.async {

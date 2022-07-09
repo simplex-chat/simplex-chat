@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/webrtc",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "WebRTC call in browser and webview for SimpleX Chat clients",
   "main": "dist/call.js",
   "types": "dist/call.d.ts",

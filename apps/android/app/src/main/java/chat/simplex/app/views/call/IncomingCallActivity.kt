@@ -112,7 +112,7 @@ fun IncomingCallActivityView(m: ChatModel, activity: IncomingCallActivity) {
 }
 
 @Composable
-fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel, activity: IncomingCallActivity) {
+fun IncomingCallLockScreenAlert(invitation: RcvCallInvitation, chatModel: ChatModel, activity: IncomingCallActivity) {
   val cm = chatModel.callManager
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
@@ -141,7 +141,7 @@ fun IncomingCallLockScreenAlert(invitation: CallInvitation, chatModel: ChatModel
 
 @Composable
 fun IncomingCallLockScreenAlertLayout(
-  invitation: CallInvitation,
+  invitation: RcvCallInvitation,
   callOnLockScreen: CallOnLockScreen?,
   rejectCall: () -> Unit,
   ignoreCall: () -> Unit,
@@ -210,9 +210,9 @@ fun PreviewIncomingCallLockScreenAlert() {
         .background(MaterialTheme.colors.background)
         .fillMaxSize()) {
       IncomingCallLockScreenAlertLayout(
-        invitation = CallInvitation(
+        invitation = RcvCallInvitation(
           contact = Contact.sampleData,
-          peerMedia = CallMediaType.Audio,
+          callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),
           sharedKey = null,
           callTs = Clock.System.now()
         ),

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
 private let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2                                                     )

@@ -250,6 +250,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="database_export_and_import">Database export &amp; import</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
@@ -406,6 +407,8 @@
   <string name="icon_descr_video_on">Video on</string>
   <string name="icon_descr_audio_off">Audio off</string>
   <string name="icon_descr_audio_on">Audio on</string>
+  <string name="icon_descr_speaker_off">Speaker off</string>
+  <string name="icon_descr_speaker_on">Speaker on</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 
   <!-- Call items -->
@@ -439,4 +442,47 @@
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
   <string name="settings_experimental_features">Experimental features</string>
+
+  <!-- DatabaseView.kt -->
+  <string name="your_chat_database">Your chat database</string>
+  <string name="run_chat_section">RUN CHAT</string>
+  <string name="chat_is_running">Chat is running</string>
+  <string name="chat_is_stopped">Chat is stopped</string>
+  <string name="chat_database_section">CHAT DATABASE</string>
+  <string name="export_database">Export database</string>
+  <string name="import_database">Import database</string>
+  <string name="new_database_archive">New database archive</string>
+  <string name="old_database_archive">Old database archive</string>
+  <string name="delete_database">Delete database</string>
+  <string name="error_starting_chat">Error starting chat</string>
+  <string name="stop_chat_question">Stop chat?</string>
+  <string name="stop_chat_to_export_import_or_delete_chat_database">Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</string>
+  <string name="stop_chat_confirmation">Stop</string>
+  <string name="error_stopping_chat">Error stopping chat</string>
+  <string name="error_exporting_chat_database">Error exporting chat database</string>
+  <string name="import_database_question">Import chat database?</string>
+  <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Your current chat database will be DELETED and REPLACED with the imported one.\nThis action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="import_database_confirmation">Import</string>
+  <string name="error_deleting_database">Error deleting chat database</string>
+  <string name="error_importing_database">Error importing chat database</string>
+  <string name="chat_database_imported">Chat database imported</string>
+  <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
+  <string name="delete_chat_profile_question">Delete chat profile?</string>
+  <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="chat_database_deleted">Chat database deleted</string>
+  <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
+  <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
+  <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
+  <string name="restart_the_app_to_use_new_chat_database">Restart the app to use new chat database.</string>
+
+  <!-- ChatModel.chatRunning interactions -->
+  <string name="chat_is_stopped_indication">Chat is stopped</string>
+  <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+
+  <!-- ChatArchiveView.kt -->
+  <string name="chat_archive_header">Chat archive</string>
+  <string name="save_archive">Save archive</string>
+  <string name="delete_archive">Delete archive</string>
+  <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>
+  <string name="delete_chat_archive_question">Delete chat archive?</string>
 </resources>

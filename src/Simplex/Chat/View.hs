@@ -53,7 +53,9 @@ responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
   CRActiveUser User {profile} -> viewUserProfile profile
   CRChatStarted -> ["chat started"]
-  CRChatRunning -> []
+  CRChatRunning -> ["chat is running"]
+  CRChatStopped -> ["chat stopped"]
+  CRChatSuspended -> ["chat suspended"]
   CRApiChats chats -> if testView then testViewChats chats else [plain . bshow $ J.encode chats]
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
@@ -77,8 +79,8 @@ responseToView testView = \case
     HSMarkdown -> markdownInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink cReqUri _ -> connReqContact_ "Your chat address:" cReqUri
-  CRUserContactLinkUpdated _ autoAccept -> ["auto_accept " <> if autoAccept then "on" else "off"]
+  CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
+  CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
@@ -150,16 +152,19 @@ responseToView testView = \case
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CRRcvFileSubError RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
     ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-  CRCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
+  CRCallInvitation RcvCallInvitation {contact, callType, sharedKey} -> viewCallInvitation contact callType sharedKey
   CRCallOffer {contact, callType, offer, sharedKey} -> viewCallOffer contact callType offer sharedKey
   CRCallAnswer {contact, answer} -> viewCallAnswer contact answer
   CRCallExtraInfo {contact} -> ["call extra info from " <> ttyContact' contact]
   CRCallEnded {contact} -> ["call with " <> ttyContact' contact <> " ended"]
+  CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
   CRNewContactConnection _ -> []
   CRContactConnectionDeleted PendingContactConnection {pccConnId} -> ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
+  CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
+  CRNtfMessages {} -> []
   CRMessageError prefix err -> [plain prefix <> ": " <> plain err]
   CRChatError e -> viewChatError e
   where
@@ -356,6 +361,11 @@ connReqContact_ intro cReq =
     "to show it again: " <> highlight' "/sa",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+
+autoAcceptStatus_ :: Bool -> Maybe MsgContent -> [StyledString]
+autoAcceptStatus_ autoAccept autoReply =
+  ("auto_accept " <> if autoAccept then "on" else "off") :
+  maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
@@ -721,6 +731,8 @@ viewChatError = \case
     CENoActiveUser -> ["error: active user is required"]
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
+    CEChatNotStopped -> ["error: chat not stopped"]
+    CEChatStoreChanged -> ["error: chat store changed"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]

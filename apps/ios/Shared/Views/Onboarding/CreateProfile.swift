@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CreateProfile: View {
     @EnvironmentObject var m: ChatModel
@@ -94,11 +95,11 @@ struct CreateProfile: View {
         )
         do {
             m.currentUser = try apiCreateActiveUser(profile)
-            startChat()
-            withAnimation { m.onboardingStage = .step3_MakeConnection }
+            try startChat()
+            withAnimation { m.onboardingStage = .step3_SetNotificationsMode }
 
         } catch {
-            fatalError("Failed to create user: \(error)")
+            fatalError("Failed to create user or start chat: \(responseError(error))")
         }
     }
 

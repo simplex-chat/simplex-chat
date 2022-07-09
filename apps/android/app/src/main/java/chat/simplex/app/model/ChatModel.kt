@@ -23,6 +23,8 @@ class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
   val userCreated = mutableStateOf<Boolean?>(null)
+  val chatRunning = mutableStateOf<Boolean?>(null)
+  val chatDbChanged = mutableStateOf<Boolean>(false)
   val chats = mutableStateListOf<Chat>()
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
@@ -45,8 +47,8 @@ class ChatModel(val controller: ChatController) {
 
   // current WebRTC call
   val callManager = CallManager(this)
-  val callInvitations = mutableStateMapOf<String, CallInvitation>()
-  val activeCallInvitation = mutableStateOf<CallInvitation?>(null)
+  val callInvitations = mutableStateMapOf<String, RcvCallInvitation>()
+  val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)

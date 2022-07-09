@@ -10,10 +10,14 @@ import Foundation
 import Combine
 import SwiftUI
 import WebKit
+import SimpleXChat
 
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
+    @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
     @Published var currentUser: User?
+    @Published var chatRunning: Bool?
+    @Published var chatDbChanged = false
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
@@ -25,10 +29,14 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: String?
     @Published var userSMPServers: [String]?
     @Published var appOpenUrl: URL?
-    @Published var deviceToken: String?
-    @Published var tokenStatus = NtfTknStatus.new
+    @Published var deviceToken: DeviceToken?
+    @Published var savedToken: DeviceToken?
+    @Published var tokenRegistered = false
+    @Published var tokenStatus: NtfTknStatus?
+    @Published var notificationMode = NotificationsMode.off
+    @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
     // current WebRTC call
-    @Published var callInvitations: Dictionary<ChatId, CallInvitation> = [:]
+    @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
@@ -86,10 +94,24 @@ final class ChatModel: ObservableObject {
 
     func replaceChat(_ id: String, _ chat: Chat) {
         if let i = getChatIndex(id) {
+            let serverInfo = chats[i].serverInfo
             chats[i] = chat
+            chats[i].serverInfo = serverInfo
         } else {
             // invalid state, correcting
             chats.insert(chat, at: 0)
+        }
+    }
+
+    func updateChats(with newChats: [ChatData]) {
+        for c in newChats {
+            if let chat = getChat(c.id) {
+                chat.chatInfo = c.chatInfo
+                chat.chatItems = c.chatItems
+                chat.chatStats = c.chatStats
+            } else {
+                addChat(Chat(c))
+            }
         }
     }
 
@@ -242,6 +264,7 @@ final class Chat: ObservableObject, Identifiable {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     @Published var serverInfo = ServerInfo(networkStatus: .unknown)
+    var created = Date.now
 
     struct ServerInfo: Decodable {
         var networkStatus: NetworkStatus
@@ -299,4 +322,6 @@ final class Chat: ObservableObject, Identifiable {
     }
 
     var id: ChatId { get { chatInfo.id } }
+
+    var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 }

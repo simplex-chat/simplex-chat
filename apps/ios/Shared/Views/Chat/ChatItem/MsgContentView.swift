@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 private let linkColor = Color(uiColor: uiLinkColor)

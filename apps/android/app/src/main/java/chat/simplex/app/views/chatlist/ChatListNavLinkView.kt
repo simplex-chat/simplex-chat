@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chatlist
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -28,6 +29,7 @@ import kotlinx.datetime.Clock
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
   var showMarkRead by remember { mutableStateOf(false) }
+  val stopped = chatModel.chatRunning.value == false
   LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
     showMenu.value = false
     delay(500L)
@@ -36,31 +38,35 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat) },
+        chatLinkPreview = { ChatPreviewView(chat, stopped) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
-        showMenu
+        showMenu,
+        stopped
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat) },
+        chatLinkPreview = { ChatPreviewView(chat, stopped) },
         click = { openOrPendingChat(chat.chatInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu, showMarkRead) },
-        showMenu
+        showMenu,
+        stopped
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactRequestView(chat.chatInfo) },
         click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
-        showMenu
+        showMenu,
+        stopped
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
         click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
-        showMenu
+        showMenu,
+        stopped
       )
   }
 }
@@ -286,17 +292,12 @@ fun ChatListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
-  showMenu: MutableState<Boolean>
+  showMenu: MutableState<Boolean>,
+  stopped: Boolean
 ) {
-  Surface(
-    modifier = Modifier
-      .fillMaxWidth()
-      .combinedClickable(
-        onClick = click,
-        onLongClick = { showMenu.value = true }
-      )
-      .height(88.dp)
-  ) {
+  var modifier = Modifier.fillMaxWidth().height(88.dp)
+  if (!stopped) modifier = modifier.combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
+  Surface(modifier) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
@@ -345,12 +346,14 @@ fun PreviewChatListNavLinkDirect() {
               )
             ),
             chatStats = Chat.ChatStats()
-          )
+          ),
+          stopped = false
         )
       },
       click = {},
       dropdownMenuItems = null,
-      showMenu = remember { mutableStateOf(false) }
+      showMenu = remember { mutableStateOf(false) },
+      stopped = false
     )
   }
 }
@@ -378,12 +381,14 @@ fun PreviewChatListNavLinkGroup() {
               )
             ),
             chatStats = Chat.ChatStats()
-          )
+          ),
+          stopped = false
         )
       },
       click = {},
       dropdownMenuItems = null,
-      showMenu = remember { mutableStateOf(false) }
+      showMenu = remember { mutableStateOf(false) },
+      stopped = false
     )
   }
 }
@@ -403,7 +408,8 @@ fun PreviewChatListNavLinkContactRequest() {
       },
       click = {},
       dropdownMenuItems = null,
-      showMenu = remember { mutableStateOf(false) }
+      showMenu = remember { mutableStateOf(false) },
+      stopped = false
     )
   }
 }

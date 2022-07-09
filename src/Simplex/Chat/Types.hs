@@ -99,7 +99,11 @@ data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON UserContact where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
@@ -665,7 +669,8 @@ data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
     connLevel :: Int,
-    viaContact :: Maybe Int64,
+    viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
+    viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID

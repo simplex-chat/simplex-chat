@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct MakeConnection: View {
     @EnvironmentObject var m: ChatModel
@@ -15,7 +16,14 @@ struct MakeConnection: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            SettingsButton().padding(.bottom, 1)
+            HStack {
+                SettingsButton()
+                if m.chatRunning == false {
+                    Spacer()
+                    chatStoppedIcon()
+                }
+            }
+            .padding(.bottom, 1)
 
             if let user = m.currentUser {
                 Text("Welcome \(user.displayName)!")
@@ -65,6 +73,7 @@ struct MakeConnection: View {
                         }
                     }
                 }
+                .disabled(m.chatRunning != true)
             }
 
             Spacer()
