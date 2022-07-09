@@ -238,12 +238,14 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiGetNtfToken() throws -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
     case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
     case .chatCmdError(.errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
-    default: throw r
+    default:
+        logger.debug("apiGetNtfToken response: \(String(describing: r), privacy: .public)")
+        return (nil, nil, .off)
     }
 }
 
@@ -256,7 +258,8 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
 func registerToken(token: DeviceToken) {
     let m = ChatModel.shared
     let mode = m.notificationMode
-    if mode != .off {
+    if mode != .off && !m.tokenRegistered {
+        m.tokenRegistered = true
         logger.debug("registerToken \(mode.rawValue)")
         Task {
             do {
@@ -545,7 +548,7 @@ func startChat() throws {
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         try refreshCallInvitations()
-        (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
+        (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
         }
