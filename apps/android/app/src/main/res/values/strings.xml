@@ -481,6 +481,7 @@
 
   <!-- ChatArchiveView.kt -->
   <string name="chat_archive_header">Chat archive</string>
+  <string name="chat_archive_section">CHAT ARCHIVE</string>
   <string name="save_archive">Save archive</string>
   <string name="delete_archive">Delete archive</string>
   <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>

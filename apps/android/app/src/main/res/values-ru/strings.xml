@@ -479,6 +479,7 @@
 
     <!-- ChatArchiveView.kt -->
     <string name="chat_archive_header">Архив чата</string>
+    <string name="chat_archive_section">АРХИВ ЧАТА</string>
     <string name="save_archive">Сохранить архив</string>
     <string name="delete_archive">Удалить архив</string>
     <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
