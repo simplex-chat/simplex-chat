@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
@@ -21,6 +22,7 @@ struct PrivacySettings: View {
                 Section("Chats") {
                     settingsRow("photo") {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
+                            .onChange(of: autoAcceptImages) { privacyAcceptImagesGroupDefault.set($0) }
                     }
                     settingsRow("network") {
                         Toggle("Send link previews", isOn: $useLinkPreviews)

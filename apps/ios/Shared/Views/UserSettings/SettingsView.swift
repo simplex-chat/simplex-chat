@@ -43,6 +43,10 @@ private var indent: CGFloat = 36
 
 let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
 
+func setGroupDefaults() {
+    privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
+}
+
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel

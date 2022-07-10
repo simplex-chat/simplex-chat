@@ -123,7 +123,14 @@ func receiveMessageForNotification() -> UNNotificationContent? {
     //            TODO profile updated
             case let .newChatItem(aChatItem):
                 let cInfo = aChatItem.chatInfo
-                let cItem = aChatItem.chatItem
+                var cItem = aChatItem.chatItem
+                if case .image = cItem.content.msgContent {
+                   if let file = cItem.file,
+                      file.fileSize <= maxImageSize,
+                      privacyAcceptImagesGroupDefault.get() {
+                       cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+                   }
+                }
                 return createMessageReceivedNtf(cInfo, cItem)
     //        case let .chatItemUpdated(aChatItem):
     //            TODO message updated
@@ -180,6 +187,13 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
         return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
     }
     logger.debug("apiGetNtfMessage ignored response: \(String.init(describing: r), privacy: .public)")
+    return nil
+}
+
+func apiReceiveFile(fileId: Int64) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId))
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
+    logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 

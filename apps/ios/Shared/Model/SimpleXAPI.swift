@@ -428,7 +428,7 @@ func receiveFile(fileId: Int64) async {
 
 func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
-    if case .rcvFileAccepted(let chatItem) = r { return chatItem }
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     throw r
 }
 
