@@ -59,7 +59,7 @@ struct ChatView: View {
                                 }
                                 markAllRead()
                             }
-                            .onChange(of: chatModel.chatItems.count) { _ in
+                            .onChange(of: chatModel.chatItems.last?.id) { _ in
                                 scrollToBottom(proxy)
                             }
                             .onChange(of: keyboardVisible) { _ in

@@ -111,27 +111,23 @@ func receiveMessageForNotification() -> UNNotificationContent? {
         if let res = recvSimpleXMsg() {
             logger.debug("NotificationService receiveMessages: \(res.responseType)")
             switch res {
-    //        case let .newContactConnection(connection):
-    //        case let .contactConnectionDeleted(connection):
             case let .contactConnected(contact):
                 return createContactConnectedNtf(contact)
     //        case let .contactConnecting(contact):
     //            TODO profile update
             case let .receivedContactRequest(contactRequest):
                 return createContactRequestNtf(contactRequest)
-    //        case let .contactUpdated(toContact):
-    //            TODO profile updated
             case let .newChatItem(aChatItem):
                 let cInfo = aChatItem.chatInfo
-                let cItem = aChatItem.chatItem
+                var cItem = aChatItem.chatItem
+                if case .image = cItem.content.msgContent {
+                   if let file = cItem.file,
+                      file.fileSize <= maxImageSize,
+                      privacyAcceptImagesGroupDefault.get() {
+                       cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+                   }
+                }
                 return createMessageReceivedNtf(cInfo, cItem)
-    //        case let .chatItemUpdated(aChatItem):
-    //            TODO message updated
-    //            let cInfo = aChatItem.chatInfo
-    //            let cItem = aChatItem.chatItem
-    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-    //        case let .chatItemDeleted(_, toChatItem):
-    //            TODO message updated
     //        case let .rcvFileComplete(aChatItem):
     //            TODO file received?
     //            let cInfo = aChatItem.chatInfo
@@ -180,6 +176,13 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
         return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
     }
     logger.debug("apiGetNtfMessage ignored response: \(String.init(describing: r), privacy: .public)")
+    return nil
+}
+
+func apiReceiveFile(fileId: Int64) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId))
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
+    logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 
