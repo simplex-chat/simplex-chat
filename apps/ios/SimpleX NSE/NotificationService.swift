@@ -111,16 +111,12 @@ func receiveMessageForNotification() -> UNNotificationContent? {
         if let res = recvSimpleXMsg() {
             logger.debug("NotificationService receiveMessages: \(res.responseType)")
             switch res {
-    //        case let .newContactConnection(connection):
-    //        case let .contactConnectionDeleted(connection):
             case let .contactConnected(contact):
                 return createContactConnectedNtf(contact)
     //        case let .contactConnecting(contact):
     //            TODO profile update
             case let .receivedContactRequest(contactRequest):
                 return createContactRequestNtf(contactRequest)
-    //        case let .contactUpdated(toContact):
-    //            TODO profile updated
             case let .newChatItem(aChatItem):
                 let cInfo = aChatItem.chatInfo
                 var cItem = aChatItem.chatItem
@@ -132,13 +128,6 @@ func receiveMessageForNotification() -> UNNotificationContent? {
                    }
                 }
                 return createMessageReceivedNtf(cInfo, cItem)
-    //        case let .chatItemUpdated(aChatItem):
-    //            TODO message updated
-    //            let cInfo = aChatItem.chatInfo
-    //            let cItem = aChatItem.chatItem
-    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-    //        case let .chatItemDeleted(_, toChatItem):
-    //            TODO message updated
     //        case let .rcvFileComplete(aChatItem):
     //            TODO file received?
     //            let cInfo = aChatItem.chatInfo
