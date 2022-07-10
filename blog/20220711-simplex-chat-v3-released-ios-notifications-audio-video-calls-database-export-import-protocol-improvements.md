@@ -47,7 +47,7 @@ This feature can be useful in some other scenarios:
 
 Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and now there is no message timestamp inside TLS as well.
 
-We also improved the protocol flow for establishing bidirectional connection between to users - it is substantially faster now, consuming much less network traffic and battery. It improves the time it takes to connect to your contacts and to start delivering images and files.
+We also improved the protocol flow for establishing bidirectional connection between two users - it is substantially faster now, consuming much less network traffic and battery. It improves the time it takes to connect to your contacts and to start delivering images and files.
 
 All these changes did not affect backward compatibility - if your contact has the previous version of the client, or you are connecting to a previous version of the server, the previous version of the protocol will be used - SimpleX has independent version negotiation in 4 protocol layers [since v1](./20220112-simplex-chat-v1-released.md#stable-protocol-implementation), allowing us to evolve the protocols without any disruption to the users.
 
