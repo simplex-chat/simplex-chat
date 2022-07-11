@@ -117,12 +117,10 @@ struct SimpleXApp: App {
     }
 
     private func lastActive() -> Double? {
-        if let eb = enteredBackground {
-            if let ei = enteredInactive {
-                return min(eb, ei)
-            } else {
-                return eb
-            }
+        if let eb = enteredBackground, let ei = enteredInactive {
+            return min(eb, ei)
+        } else if let eb = enteredBackground {
+            return eb
         } else {
             return enteredInactive
         }
