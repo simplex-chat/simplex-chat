@@ -18,7 +18,6 @@ struct SimpleXApp: App {
     @ObservedObject var alertManager = AlertManager.shared
     @Environment(\.scenePhase) var scenePhase
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
     @State private var enteredBackground: Double? = nil
     @State private var enteredInactive: Double? = nil
@@ -34,7 +33,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, firstAuthentication: $firstAuthentication)
+            ContentView(doAuthenticate: $doAuthenticate, firstAuthentication: $firstAuthentication)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")

@@ -12,8 +12,8 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
-    @Binding var userAuthorized: Bool?
     @Binding var firstAuthentication: Bool
+    @State private var userAuthorized: Bool?
     @State private var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
