@@ -21,6 +21,7 @@ struct SimpleXApp: App {
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
     @State private var enteredBackground: Double? = nil
+    @State private var firstAuthentication: Bool = true
 
     init() {
         hs_init(0, nil)
@@ -32,7 +33,7 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         return WindowGroup {
-            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized)
+            ContentView(doAuthenticate: $doAuthenticate, userAuthorized: $userAuthorized, firstAuthentication: $firstAuthentication)
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
@@ -67,6 +68,7 @@ struct SimpleXApp: App {
                             updateCallInvitations()
                         }
                         doAuthenticate = authenticationExpired()
+                        enteredBackground = nil
                     default:
                         break
                     }
@@ -99,10 +101,12 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= 30
-        } else {
+        if firstAuthentication {
             return true
+        } else if let eb = enteredBackground {
+            return ProcessInfo.processInfo.systemUptime - eb >= 30
+        } else {
+            return false
         }
     }
 
