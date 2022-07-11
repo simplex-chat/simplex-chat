@@ -21,6 +21,7 @@ struct SimpleXApp: App {
     @State private var userAuthorized: Bool?
     @State private var doAuthenticate = false
     @State private var enteredBackground: Double? = nil
+    @State private var enteredInactive: Double? = nil
     @State private var firstAuthentication: Bool = true
 
     init() {
@@ -57,6 +58,10 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
+                    case .inactive:
+                        if userAuthorized == true {
+                            enteredInactive = ProcessInfo.processInfo.systemUptime
+                        }
                     case .active:
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()
@@ -69,6 +74,7 @@ struct SimpleXApp: App {
                         }
                         doAuthenticate = authenticationExpired()
                         enteredBackground = nil
+                        enteredInactive = nil
                     default:
                         break
                     }
@@ -103,10 +109,22 @@ struct SimpleXApp: App {
     private func authenticationExpired() -> Bool {
         if firstAuthentication {
             return true
-        } else if let eb = enteredBackground {
-            return ProcessInfo.processInfo.systemUptime - eb >= 30
+        } else if let lastActive = lastActive() {
+            return ProcessInfo.processInfo.systemUptime - lastActive >= 30
         } else {
             return false
+        }
+    }
+
+    private func lastActive() -> Double? {
+        if let eb = enteredBackground {
+            if let ei = enteredInactive {
+                return min(eb, ei)
+            } else {
+                return eb
+            }
+        } else {
+            return enteredInactive
         }
     }
 
