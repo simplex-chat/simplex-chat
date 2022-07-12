@@ -704,6 +704,7 @@ processChatCommand = \case
         updateGroupMemberStatus db userId fromMember GSMemAccepted
         updateGroupMemberStatus db userId (membership g) GSMemAccepted
       pure $ CRUserAcceptedGroupSent g
+  APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
   APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId) members of
@@ -716,7 +717,6 @@ processChatCommand = \case
           deleteMemberConnection m
           withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m
-  APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock . procCmd $ do

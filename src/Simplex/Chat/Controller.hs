@@ -137,8 +137,8 @@ data ChatCommand
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
-  | APIRemoveMember GroupId GroupMemberId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
+  | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | GetUserSMPServers
@@ -165,8 +165,8 @@ data ChatCommand
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
-  | RemoveMember GroupName ContactName
   | MemberRole GroupName ContactName GroupMemberRole
+  | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
