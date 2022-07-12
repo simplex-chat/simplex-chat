@@ -584,62 +584,6 @@ processChatCommand = \case
         msgTs' = systemToUTCTime . (SMP.msgTs :: SMP.NMsgMeta -> SystemTime) <$> ntfMsgMeta
     connEntity <- withStore (\db -> Just <$> getConnectionEntity db user ntfConnId) `catchError` \_ -> pure Nothing
     pure CRNtfMessages {connEntity, msgTs = msgTs', ntfMessages}
-  APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
-    -- TODO for large groups: no need to load all members to determine if contact is a member
-    (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
-    let Group gInfo@GroupInfo {localDisplayName = gName, groupProfile, membership} members = group
-        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-        Contact {localDisplayName = cName} = contact
-    when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
-    when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
-    unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    let sendInvitation memberId cReq = do
-          void . sendDirectContactMessage contact $
-            XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-          setActive $ ActiveG gName
-          pure $ CRSentGroupInvitation gInfo contact
-    case contactMember contact members of
-      Nothing -> do
-        gVar <- asks idsDrg
-        (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
-        sendInvitation memberId cReq
-      Just GroupMember {groupMemberId, memberId, memberStatus}
-        | memberStatus == GSMemInvited ->
-          withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> sendInvitation memberId cReq
-            Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
-        | otherwise -> throwChatError $ CEGroupDuplicateMember cName
-  APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
-    ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g} <- withStore $ \db -> getGroupInvitation db user groupId
-    withChatLock . procCmd $ do
-      agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId (membership g :: GroupMember)
-      withStore' $ \db -> do
-        createMemberConnection db userId fromMember agentConnId
-        updateGroupMemberStatus db userId fromMember GSMemAccepted
-        updateGroupMemberStatus db userId (membership g) GSMemAccepted
-      pure $ CRUserAcceptedGroupSent g
-  APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
-    case find ((== memberId) . groupMemberId) members of
-      Nothing -> throwChatError CEGroupMemberNotFound
-      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
-        let userRole = memberRole (membership :: GroupMember)
-        when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
-        withChatLock . procCmd $ do
-          when (mStatus /= GSMemInvited) . void . sendGroupMessage gInfo members $ XGrpMemDel mId
-          deleteMemberConnection m
-          withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
-          pure $ CRUserDeletedMember gInfo m
-  APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
-  APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
-    withChatLock . procCmd $ do
-      void $ sendGroupMessage gInfo members XGrpLeave
-      mapM_ deleteMemberConnection members
-      withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-      pure $ CRLeftMemberUser gInfo
-  APIListMembers groupId -> CRGroupMembers <$> withUser (\user -> withStore (\db -> getGroup db user groupId))
   GetUserSMPServers -> CRUserSMPServers <$> withUser (\user -> withStore' (`getSMPServers` user))
   SetUserSMPServers smpServers -> withUser $ \user -> withChatLock $ do
     withStore $ \db -> overwriteSMPServers db user smpServers
@@ -725,6 +669,62 @@ processChatCommand = \case
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     CRGroupCreated <$> withStore (\db -> createNewGroup db gVar user gProfile)
+  APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
+    -- TODO for large groups: no need to load all members to determine if contact is a member
+    (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
+    let Group gInfo@GroupInfo {localDisplayName = gName, groupProfile, membership} members = group
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+        Contact {localDisplayName = cName} = contact
+    when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
+    when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
+    unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
+    let sendInvitation memberId cReq = do
+          void . sendDirectContactMessage contact $
+            XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+          setActive $ ActiveG gName
+          pure $ CRSentGroupInvitation gInfo contact
+    case contactMember contact members of
+      Nothing -> do
+        gVar <- asks idsDrg
+        (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
+        GroupMember {memberId} <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
+        sendInvitation memberId cReq
+      Just GroupMember {groupMemberId, memberId, memberStatus}
+        | memberStatus == GSMemInvited ->
+          withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
+            Just cReq -> sendInvitation memberId cReq
+            Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
+        | otherwise -> throwChatError $ CEGroupDuplicateMember cName
+  APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
+    ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g} <- withStore $ \db -> getGroupInvitation db user groupId
+    withChatLock . procCmd $ do
+      agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage . XGrpAcpt $ memberId (membership g :: GroupMember)
+      withStore' $ \db -> do
+        createMemberConnection db userId fromMember agentConnId
+        updateGroupMemberStatus db userId fromMember GSMemAccepted
+        updateGroupMemberStatus db userId (membership g) GSMemAccepted
+      pure $ CRUserAcceptedGroupSent g
+  APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
+    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
+    case find ((== memberId) . groupMemberId) members of
+      Nothing -> throwChatError CEGroupMemberNotFound
+      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
+        let userRole = memberRole (membership :: GroupMember)
+        when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
+        withChatLock . procCmd $ do
+          when (mStatus /= GSMemInvited) . void . sendGroupMessage gInfo members $ XGrpMemDel mId
+          deleteMemberConnection m
+          withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
+          pure $ CRUserDeletedMember gInfo m
+  APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
+  APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
+    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
+    withChatLock . procCmd $ do
+      void $ sendGroupMessage gInfo members XGrpLeave
+      mapM_ deleteMemberConnection members
+      withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
+      pure $ CRLeftMemberUser gInfo
+  APIListMembers groupId -> CRGroupMembers <$> withUser (\user -> withStore (\db -> getGroup db user groupId))
   AddMember gName cName memRole -> withUser $ \user@User {userId} -> do
     (groupId, contactId) <- withStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db userId cName
     processChatCommand $ APIAddMember groupId contactId memRole
