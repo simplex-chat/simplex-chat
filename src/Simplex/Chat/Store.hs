@@ -1325,6 +1325,8 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) currentTs
         pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
+-- TODO return the last connection that is ready, not any last connection
+-- requires updating connection status
 getGroup :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO Group
 getGroup db user groupId = do
   gInfo <- getGroupInfo db user groupId
