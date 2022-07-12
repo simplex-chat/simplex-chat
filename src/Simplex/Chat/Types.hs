@@ -171,8 +171,10 @@ data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
 
 instance ToJSON Group where toEncoding = J.genericToEncoding J.defaultOptions
 
+type GroupId = Int64
+
 data GroupInfo = GroupInfo
-  { groupId :: Int64,
+  { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
@@ -268,9 +270,11 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
+type GroupMemberId = Int64
+
 data GroupMember = GroupMember
-  { groupMemberId :: Int64,
-    groupId :: Int64,
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,

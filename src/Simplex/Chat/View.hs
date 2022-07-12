@@ -744,7 +744,7 @@ viewChatError = \case
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
-    CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
+    CEGroupMemberNotFound -> ["group doesn't have this member"]
     CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
