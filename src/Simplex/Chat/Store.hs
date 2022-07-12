@@ -63,7 +63,7 @@ module Simplex.Chat.Store
     getGroup,
     getGroupInfo,
     getGroupIdByName,
-    getGroupByName,
+    getGroupMemberIdByName,
     getGroupInfoByName,
     getGroupMembers,
     deleteGroup,
@@ -1325,14 +1325,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) currentTs
         pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
--- TODO return the last connection that is ready, not any last connection
--- requires updating connection status
-getGroupByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO Group
-getGroupByName db user gName = do
-  groupId <- getGroupIdByName db user gName
-  getGroup db user groupId
-
-getGroup :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Group
+getGroup :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO Group
 getGroup db user groupId = do
   gInfo <- getGroupInfo db user groupId
   members <- liftIO $ getGroupMembers db user gInfo
@@ -1416,12 +1409,11 @@ getGroupMembers db User {userId, userContactId} GroupInfo {groupId} = do
     toContactMember (memberRow :. connRow) =
       (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
 
--- TODO no need to load all members to find the member who invited the used,
+-- TODO no need to load all members to find the member who invited the user,
 -- instead of findFromContact there could be a query
-getGroupInvitation :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO ReceivedGroupInvitation
-getGroupInvitation db user localDisplayName = do
+getGroupInvitation :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ReceivedGroupInvitation
+getGroupInvitation db user groupId = do
   cReq <- getConnRec_ user
-  groupId <- getGroupIdByName db user localDisplayName
   Group groupInfo@GroupInfo {membership} members <- getGroup db user groupId
   when (memberStatus membership /= GSMemInvited) $ throwError SEGroupAlreadyJoined
   case (cReq, findFromContact (invitedBy membership) members) of
@@ -1431,8 +1423,8 @@ getGroupInvitation db user localDisplayName = do
   where
     getConnRec_ :: User -> ExceptT StoreError IO (Maybe ConnReqInvitation)
     getConnRec_ User {userId} = ExceptT $ do
-      firstRow fromOnly (SEGroupNotFoundByName localDisplayName) $
-        DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.local_display_name = ? AND g.user_id = ?" (localDisplayName, userId)
+      firstRow fromOnly (SEGroupNotFound groupId) $
+        DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?" (groupId, userId)
     findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember
     findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
@@ -3094,10 +3086,15 @@ getAllChatItemsLast_ db user@User {userId} count = do
           (userId, count)
   mapM (uncurry $ getAChatItem_ db user) itemRefs
 
-getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO Int64
+getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
 getGroupIdByName db User {userId} gName =
   ExceptT . firstRow fromOnly (SEGroupNotFoundByName gName) $
     DB.query db "SELECT group_id FROM groups WHERE user_id = ? AND local_display_name = ?" (userId, gName)
+
+getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> ExceptT StoreError IO GroupMemberId
+getGroupMemberIdByName db User {userId} groupId groupMemberName =
+  ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupId groupMemberName) $
+    DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
 
 getChatItemIdByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe ChatItemId)
 getChatItemIdByAgentMsgId db connId msgId =
@@ -3770,8 +3767,9 @@ data StoreError
   | SEUserContactLinkNotFound
   | SEContactRequestNotFound {contactRequestId :: Int64}
   | SEContactRequestNotFoundByName {contactName :: ContactName}
-  | SEGroupNotFound {groupId :: Int64}
+  | SEGroupNotFound {groupId :: GroupId}
   | SEGroupNotFoundByName {groupName :: GroupName}
+  | SEGroupMemberNotFound {groupId :: GroupId, groupMemberName :: ContactName}
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
