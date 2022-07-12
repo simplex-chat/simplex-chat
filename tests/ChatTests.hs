@@ -55,6 +55,8 @@ chatTests = do
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
     it "group message delete" testGroupMessageDelete
+  describe "async group connections" $ do
+    it "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
@@ -1015,6 +1017,143 @@ testGroupMessageDelete =
       alice #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+
+testGroupAsync :: IO ()
+testGroupAsync = withTmpFiles $ do
+  withNewTestChat "alice" aliceProfile $ \alice -> do
+    withNewTestChat "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello bob"
+      bob <# "#team alice> hello bob"
+  withTestChat "alice" $ \alice -> do
+    withNewTestChat "cath" cathProfile $ \cath -> do
+      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "#team: connected to server(s)"
+      connectUsers alice cath
+      alice ##> "/a team cath"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to cath",
+          do
+            cath <## "#team: alice invites you to join the group as admin"
+            cath <## "use /j team to accept"
+        ]
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath <## "#team: you joined the group"
+        ]
+      alice #> "#team hello cath"
+      cath <# "#team alice> hello cath"
+  withTestChat "bob" $ \bob -> do
+    withTestChat "cath" $ \cath -> do
+      concurrentlyN_
+        [ do
+            bob <## "1 contacts connected (use /cs for the list)"
+            bob <## "#team: connected to server(s)"
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <# "#team alice> hello cath"
+            bob <## "#team: new member cath is connected",
+          do
+            cath <## "2 contacts connected (use /cs for the list)"
+            cath <## "#team: connected to server(s)"
+            cath <## "#team: member bob (Bob) is connected"
+        ]
+  withTestChat "bob" $ \bob -> do
+    withNewTestChat "dan" danProfile $ \dan -> do
+      bob <## "2 contacts connected (use /cs for the list)"
+      bob <## "#team: connected to server(s)"
+      connectUsers bob dan
+      bob ##> "/a team dan"
+      concurrentlyN_
+        [ bob <## "invitation to join the group #team sent to dan",
+          do
+            dan <## "#team: bob invites you to join the group as admin"
+            dan <## "use /j team to accept"
+        ]
+      dan ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: dan joined the group",
+          dan <## "#team: you joined the group"
+        ]
+  withTestChat "alice" $ \alice -> do
+    withTestChat "cath" $ \cath -> do
+      withTestChat "dan" $ \dan -> do
+        concurrentlyN_
+          [ do
+              alice <## "2 contacts connected (use /cs for the list)"
+              alice <## "#team: connected to server(s)"
+              alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              alice <## "#team: new member dan is connected",
+            do
+              cath <## "2 contacts connected (use /cs for the list)"
+              cath <## "#team: connected to server(s)"
+              cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+              cath <## "#team: new member dan is connected",
+            do
+              dan <## "3 contacts connected (use /cs for the list)"
+              dan <## "#team: connected to server(s)"
+              dan <## "#team: member alice (Alice) is connected"
+              dan <## "#team: member cath (Catherine) is connected"
+          ]
+  withTestChat "alice" $ \alice -> do
+    withTestChat "bob" $ \bob -> do
+      withTestChat "cath" $ \cath -> do
+        withTestChat "dan" $ \dan -> do
+          concurrentlyN_
+            [ do
+                alice <## "3 contacts connected (use /cs for the list)"
+                alice <## "#team: connected to server(s)",
+              do
+                bob <## "3 contacts connected (use /cs for the list)"
+                bob <## "#team: connected to server(s)",
+              do
+                cath <## "3 contacts connected (use /cs for the list)"
+                cath <## "#team: connected to server(s)",
+              do
+                dan <## "3 contacts connected (use /cs for the list)"
+                dan <## "#team: connected to server(s)"
+            ]
+          alice #> "#team hello"
+          concurrentlyN_
+            [ bob <# "#team alice> hello",
+              cath <# "#team alice> hello",
+              dan <# "#team alice> hello"
+            ]
+          bob #> "#team hi there"
+          concurrentlyN_
+            [ alice <# "#team bob> hi there",
+              cath <# "#team bob> hi there",
+              dan <# "#team bob> hi there"
+            ]
+          cath #> "#team hey"
+          concurrentlyN_
+            [ alice <# "#team cath> hey",
+              bob <# "#team cath> hey",
+              dan <# "#team cath> hey"
+            ]
+          dan #> "#team how is it going?"
+          concurrentlyN_
+            [ alice <# "#team dan> how is it going?",
+              bob <# "#team dan> how is it going?",
+              cath <# "#team dan> how is it going?"
+            ]
+          bob <##> cath
+          dan <##> cath
+          dan <##> alice
 
 testUpdateProfile :: IO ()
 testUpdateProfile =
