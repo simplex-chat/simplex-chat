@@ -461,25 +461,25 @@ public enum GroupMemberRole: String, Decodable {
 }
 
 public enum GroupMemberCategory: String, Decodable {
-    case userMember = "userMember"
-    case inviteeMember = "inviteeMember"
-    case hostMember = "hostMember"
-    case preMember = "preMember"
-    case postMember = "postMember"
+    case userMember = "user"
+    case inviteeMember = "invitee"
+    case hostMember = "host"
+    case preMember = "pre"
+    case postMember = "post"
 }
 
 public enum GroupMemberStatus: String, Decodable {
-    case memRemoved = "memRemoved"
-    case memLeft = "memLeft"
-    case memGroupDeleted = "memGroupDeleted"
-    case memInvited = "memInvited"
-    case memIntroduced = "memIntroduced"
-    case memIntroInvited = "memIntroInvited"
-    case memAccepted = "memAccepted"
-    case memAnnounced = "memAnnounced"
-    case memConnected = "memConnected"
-    case memComplete = "memComplete"
-    case memCreator = "memCreator"
+    case memRemoved = "removed"
+    case memLeft = "left"
+    case memGroupDeleted = "deleted"
+    case memInvited = "invited"
+    case memIntroduced = "introduced"
+    case memIntroInvited = "intro-inv"
+    case memAccepted = "accepted"
+    case memAnnounced = "announced"
+    case memConnected = "connected"
+    case memComplete = "complete"
+    case memCreator = "creator"
 }
 
 public enum InvitedBy: Decodable {

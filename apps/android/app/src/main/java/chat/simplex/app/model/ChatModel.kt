@@ -563,26 +563,26 @@ enum class GroupMemberRole {
 
 @Serializable
 enum class GroupMemberCategory {
-  @SerialName("userMember") UserMember,
-  @SerialName("inviteeMember") InviteeMember,
-  @SerialName("hostMember") HostMember,
-  @SerialName("preMember") PreMember,
-  @SerialName("postMember") PostMember;
+  @SerialName("user") UserMember,
+  @SerialName("invitee") InviteeMember,
+  @SerialName("host") HostMember,
+  @SerialName("pre") PreMember,
+  @SerialName("post") PostMember;
 }
 
 @Serializable
 enum class GroupMemberStatus {
-  @SerialName("memRemoved") MemRemoved,
-  @SerialName("memLeft") MemLeft,
-  @SerialName("memGroupDeleted") MemGroupDeleted,
-  @SerialName("memInvited") MemInvited,
-  @SerialName("memIntroduced") MemIntroduced,
-  @SerialName("memIntroInvited") MemIntroInvited,
-  @SerialName("memAccepted") MemAccepted,
-  @SerialName("memAnnounced") MemAnnounced,
-  @SerialName("memConnected") MemConnected,
-  @SerialName("memComplete") MemComplete,
-  @SerialName("memCreator") MemCreator;
+  @SerialName("removed") MemRemoved,
+  @SerialName("left") MemLeft,
+  @SerialName("deleted") MemGroupDeleted,
+  @SerialName("invited") MemInvited,
+  @SerialName("introduced") MemIntroduced,
+  @SerialName("intro-inv") MemIntroInvited,
+  @SerialName("accepted") MemAccepted,
+  @SerialName("announced") MemAnnounced,
+  @SerialName("connected") MemConnected,
+  @SerialName("complete") MemComplete,
+  @SerialName("creator") MemCreator;
 }
 
 @Serializable
