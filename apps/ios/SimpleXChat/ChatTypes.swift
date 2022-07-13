@@ -370,6 +370,11 @@ public enum ConnStatus: String, Decodable {
     }
 }
 
+public struct Group: Decodable {
+    var groupInfo: GroupInfo
+    var members: [GroupMember]
+}
+
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
@@ -406,15 +411,16 @@ public struct GroupProfile: Codable, NamedChat {
 
 public struct GroupMember: Decodable {
     public var groupMemberId: Int64
+    var groupId: Int64
     var memberId: String
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+    var memberRole: GroupMemberRole
+    var memberCategory: GroupMemberCategory
+    var memberStatus: GroupMemberStatus
+    var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
     var memberContactId: Int64?
-//    var activeConn: Connection?
+    var activeConn: Connection?
 
     var directChatId: ChatId? {
         get {
@@ -435,11 +441,51 @@ public struct GroupMember: Decodable {
 
     public static let sampleData = GroupMember(
         groupMemberId: 1,
+        groupId: 1,
         memberId: "abcd",
+        memberRole: .admin,
+        memberCategory: .inviteeMember,
+        memberStatus: .memComplete,
+        invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: Profile.sampleData,
-        memberContactId: 1
+        memberContactId: 1,
+        activeConn: Connection.sampleData
     )
+}
+
+public enum GroupMemberRole: String, Decodable {
+    case member = "member"
+    case admin = "admin"
+    case owner = "owner"
+}
+
+public enum GroupMemberCategory: String, Decodable {
+    case userMember = "userMember"
+    case inviteeMember = "inviteeMember"
+    case hostMember = "hostMember"
+    case preMember = "preMember"
+    case postMember = "postMember"
+}
+
+public enum GroupMemberStatus: String, Decodable {
+    case memRemoved = "memRemoved"
+    case memLeft = "memLeft"
+    case memGroupDeleted = "memGroupDeleted"
+    case memInvited = "memInvited"
+    case memIntroduced = "memIntroduced"
+    case memIntroInvited = "memIntroInvited"
+    case memAccepted = "memAccepted"
+    case memAnnounced = "memAnnounced"
+    case memConnected = "memConnected"
+    case memComplete = "memComplete"
+    case memCreator = "memCreator"
+}
+
+public enum InvitedBy: Decodable {
+    case contact(byContactId: Int64)
+    case user
+    case unknown
 }
 
 public struct MemberSubError: Decodable {
