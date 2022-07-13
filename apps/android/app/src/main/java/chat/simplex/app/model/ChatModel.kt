@@ -534,8 +534,8 @@ class GroupMember (
   var invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: Profile,
-  val memberContactId: Long?,
-  var activeConn: Connection?
+  val memberContactId: Long? = null,
+  var activeConn: Connection? = null
 ) {
   companion object {
     val sampleData = GroupMember(
