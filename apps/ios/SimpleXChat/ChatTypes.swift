@@ -399,6 +399,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
 }
 
 public struct GroupProfile: Codable, NamedChat {
+    public init(displayName: String, fullName: String, image: String? = nil) {
+        self.displayName = displayName
+        self.fullName = fullName
+        self.image = image
+    }
+
     public var displayName: String
     public var fullName: String
     public var image: String?
