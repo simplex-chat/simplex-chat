@@ -255,7 +255,7 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-fun decodeSampledBitmapFromFileDescriptor(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
+private fun decodeSampledBitmapFromFileDescriptor(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
@@ -269,7 +269,7 @@ fun decodeSampledBitmapFromFileDescriptor(fileDescriptor: FileDescriptor?, reqWi
   }
 }
 
-fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
   // Raw height and width of image
   val (height: Int, width: Int) = options.run { outHeight to outWidth }
   var inSampleSize = 1
