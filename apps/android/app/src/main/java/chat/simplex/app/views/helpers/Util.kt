@@ -262,7 +262,7 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
 
 fun scaleBitmap(bitmap: Bitmap): Bitmap {
   val aspectRatio: Float = bitmap.width / bitmap.height.toFloat()
-  val width = 480
+  val width = 1000
   val height = (width / aspectRatio).roundToInt()
   return Bitmap.createScaledBitmap(bitmap, width, height, false)
 }
