@@ -245,20 +245,13 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
       val fileDescriptor = parcelFileDescriptor?.fileDescriptor
       val image = decodeSampledBitmapFromResource(fileDescriptor, 1000, 1000)
       parcelFileDescriptor?.close()
-      scaleBitmap(image)
+      image
     } catch (e: Exception) {
       null
     }
   } else {
     null
   }
-}
-
-fun scaleBitmap(bitmap: Bitmap): Bitmap {
-  val aspectRatio: Float = bitmap.width / bitmap.height.toFloat()
-  val width = 1000
-  val height = (width / aspectRatio).roundToInt()
-  return Bitmap.createScaledBitmap(bitmap, width, height, false)
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
