@@ -1,5 +1,5 @@
 //
-//  DirectChatInfoView.swift
+//  GroupChatInfoView.swift
 //  SimpleX (iOS)
 //
 //  Created by JRoberts on 14.07.2022.
