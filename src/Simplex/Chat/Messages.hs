@@ -496,14 +496,8 @@ ciDeleteModeToText = \case
   CIDMInternal -> "this item is deleted (internal)"
 
 ciGroupInvitationToText :: CIGroupInfo -> GroupMemberRole -> Text
-ciGroupInvitationToText CIGroupInfo {groupProfile = GroupProfile {displayName, fullName}} memberRole =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> memberRoleToText memberRole
-  where
-    memberRoleToText :: GroupMemberRole -> Text
-    memberRoleToText = \case
-      GRMember -> "member"
-      GRAdmin -> "admin"
-      GROwner -> "owner"
+ciGroupInvitationToText CIGroupInfo {groupProfile = GroupProfile {displayName, fullName}} role =
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (safeDecodeUtf8 . strEncode $ role)
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 data CIContent (d :: MsgDirection) where
