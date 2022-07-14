@@ -31,8 +31,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.log2
-import kotlin.math.pow
+import kotlin.math.*
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
 
@@ -245,15 +244,27 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
       val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
       val fileDescriptor = parcelFileDescriptor?.fileDescriptor
+//      val options = BitmapFactory.Options().apply {
+//        inScaled = false
+////        inJustDecodeBounds = true
+//      }
+//      val image = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options)
       val image = BitmapFactory.decodeFileDescriptor(fileDescriptor)
       parcelFileDescriptor?.close()
-      image
+      scaleBitmap(image)
     } catch (e: Exception) {
       null
     }
   } else {
     null
   }
+}
+
+fun scaleBitmap(bitmap: Bitmap): Bitmap {
+  val aspectRatio: Float = bitmap.width / bitmap.height.toFloat()
+  val width = 480
+  val height = (width / aspectRatio).roundToInt()
+  return Bitmap.createScaledBitmap(bitmap, width, height, false)
 }
 
 fun getFileName(context: Context, uri: Uri): String? {
