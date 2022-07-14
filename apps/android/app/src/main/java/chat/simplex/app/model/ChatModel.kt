@@ -477,6 +477,12 @@ class Profile(
 }
 
 @Serializable
+class Group (
+  val groupInfo: GroupInfo,
+  var members: List<GroupMember>
+)
+
+@Serializable
 class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
@@ -520,25 +526,70 @@ class GroupProfile (
 @Serializable
 class GroupMember (
   val groupMemberId: Long,
+  val groupId: Long,
   val memberId: String,
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+  var memberRole: GroupMemberRole,
+  var memberCategory: GroupMemberCategory,
+  var memberStatus: GroupMemberStatus,
+  var invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: Profile,
-  val memberContactId: Long?
-//    var activeConn: Connection?
+  val memberContactId: Long? = null,
+  var activeConn: Connection? = null
 ) {
   companion object {
     val sampleData = GroupMember(
       groupMemberId = 1,
+      groupId = 1,
       memberId = "abcd",
+      memberRole = GroupMemberRole.Member,
+      memberCategory = GroupMemberCategory.InviteeMember,
+      memberStatus = GroupMemberStatus.MemComplete,
+      invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = Profile.sampleData,
-      memberContactId = 1
+      memberContactId = 1,
+      activeConn = Connection.sampleData
     )
   }
+}
+
+@Serializable
+enum class GroupMemberRole {
+  @SerialName("member") Member,
+  @SerialName("admin") Admin,
+  @SerialName("owner") Owner;
+}
+
+@Serializable
+enum class GroupMemberCategory {
+  @SerialName("user") UserMember,
+  @SerialName("invitee") InviteeMember,
+  @SerialName("host") HostMember,
+  @SerialName("pre") PreMember,
+  @SerialName("post") PostMember;
+}
+
+@Serializable
+enum class GroupMemberStatus {
+  @SerialName("removed") MemRemoved,
+  @SerialName("left") MemLeft,
+  @SerialName("deleted") MemGroupDeleted,
+  @SerialName("invited") MemInvited,
+  @SerialName("introduced") MemIntroduced,
+  @SerialName("intro-inv") MemIntroInvited,
+  @SerialName("accepted") MemAccepted,
+  @SerialName("announced") MemAnnounced,
+  @SerialName("connected") MemConnected,
+  @SerialName("complete") MemComplete,
+  @SerialName("creator") MemCreator;
+}
+
+@Serializable
+sealed class InvitedBy {
+  @Serializable @SerialName("contact") class IBContact(val byContactId: Long): InvitedBy()
+  @Serializable @SerialName("user") class IBUser: InvitedBy()
+  @Serializable @SerialName("unknown") class IBUnknown: InvitedBy()
 }
 
 @Serializable

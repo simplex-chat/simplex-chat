@@ -897,6 +897,13 @@ sealed class CC {
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
+  class NewGroup(val groupProfile: GroupProfile): CC()
+  class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiJoinGroup(val groupId: Long): CC()
+  // class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
+  class ApiLeaveGroup(val groupId: Long): CC()
+  class ApiListMembers(val groupId: Long): CC()
   class GetUserSMPServers(): CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class AddContact: CC()
@@ -935,6 +942,12 @@ sealed class CC {
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
+    is NewGroup -> "/group ${groupProfile.displayName} ${groupProfile.fullName}"
+    is ApiAddMember -> "/_add #$groupId $contactId $memberRole"
+    is ApiJoinGroup -> "/_join #$groupId"
+    is ApiRemoveMember -> "/_remove #$groupId $memberId"
+    is ApiLeaveGroup -> "/_leave #$groupId"
+    is ApiListMembers -> "/_members #$groupId"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is AddContact -> "/connect"
@@ -974,6 +987,12 @@ sealed class CC {
     is ApiSendMessage -> "apiSendMessage"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
+    is NewGroup -> "newGroup"
+    is ApiAddMember -> "apiAddMember"
+    is ApiJoinGroup -> "apiJoinGroup"
+    is ApiRemoveMember -> "apiRemoveMember"
+    is ApiLeaveGroup -> "apiLeaveGroup"
+    is ApiListMembers -> "apiListMembers"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is AddContact -> "addContact"
@@ -1080,9 +1099,31 @@ sealed class CR {
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
+  // group events
+  @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact): CR()
+  @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupMembers") class GroupMembers(val group: Group): CR()
+  @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
+  @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
+  @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("deletedMember") class DeletedMember(val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
+  @Serializable @SerialName("leftMember") class LeftMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("groupDeleted") class GroupDeleted(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("contactsMerged") class ContactsMerged(val intoContact: Contact, val mergedContact: Contact): CR()
+  @Serializable @SerialName("groupInvitation") class GroupInvitation(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
+  @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR()
+  // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
+  // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
@@ -1139,6 +1180,25 @@ sealed class CR {
     is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemDeleted -> "chatItemDeleted"
+    is GroupCreated -> "groupCreated"
+    is SentGroupInvitation -> "sentGroupInvitation"
+    is UserAcceptedGroupSent -> "userAcceptedGroupSent"
+    is UserDeletedMember -> "userDeletedMember"
+    is LeftMemberUser -> "leftMemberUser"
+    is GroupMembers -> "groupMembers"
+    is ReceivedGroupInvitation -> "receivedGroupInvitation"
+    is GroupDeletedUser -> "groupDeletedUser"
+    is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
+    is DeletedMemberUser -> "deletedMemberUser"
+    is DeletedMember -> "deletedMember"
+    is LeftMember -> "leftMember"
+    is GroupDeleted -> "groupDeleted"
+    is ContactsMerged -> "contactsMerged"
+    is GroupInvitation -> "groupInvitation"
+    is UserJoinedGroup -> "userJoinedGroup"
+    is JoinedGroupMember -> "joinedGroupMember"
+    is ConnectedToGroupMember -> "connectedToGroupMember"
+    is GroupRemoved -> "groupRemoved"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
@@ -1199,6 +1259,25 @@ sealed class CR {
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
+    is GroupCreated -> json.encodeToString(groupInfo)
+    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact"
+    is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
+    is UserDeletedMember -> "groupInfo: $groupInfo\nmember: $member"
+    is LeftMemberUser -> json.encodeToString(groupInfo)
+    is GroupMembers -> json.encodeToString(group)
+    is ReceivedGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole"
+    is GroupDeletedUser -> json.encodeToString(groupInfo)
+    is JoinedGroupMemberConnecting -> "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member"
+    is DeletedMemberUser -> "groupInfo: $groupInfo\nmember: $member"
+    is DeletedMember -> "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember"
+    is LeftMember -> "groupInfo: $groupInfo\nmember: $member"
+    is GroupDeleted -> "groupInfo: $groupInfo\nmember: $member"
+    is ContactsMerged -> "intoContact: $intoContact\nmergedContact: $mergedContact"
+    is GroupInvitation -> json.encodeToString(groupInfo)
+    is UserJoinedGroup -> json.encodeToString(groupInfo)
+    is JoinedGroupMember -> "groupInfo: $groupInfo\nmember: $member"
+    is ConnectedToGroupMember -> "groupInfo: $groupInfo\nmember: $member"
+    is GroupRemoved -> json.encodeToString(groupInfo)
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)
