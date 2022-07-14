@@ -497,7 +497,7 @@ ciDeleteModeToText = \case
 
 ciGroupInvitationToText :: CIGroupInfo -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInfo {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (safeDecodeUtf8 . strEncode $ role)
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 data CIContent (d :: MsgDirection) where
