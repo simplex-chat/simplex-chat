@@ -1,22 +1,21 @@
 //
-//  ChatInfoView.swift
-//  SimpleX
+//  DirectChatInfoView.swift
+//  SimpleX (iOS)
 //
-//  Created by Evgeny Poberezkin on 05/02/2022.
+//  Created by JRoberts on 14.07.2022.
 //  Copyright © 2022 SimpleX Chat. All rights reserved.
 //
 
 import SwiftUI
 import SimpleXChat
 
-struct ChatInfoView: View {
+struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var showChatInfo: Bool
     @State var alert: ChatInfoViewAlert? = nil
     @State var deletingContact: Contact?
-    var contact: Contact
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
@@ -36,17 +35,6 @@ struct ChatInfoView: View {
             Text(chat.chatInfo.fullName).font(.title)
                 .padding(.bottom)
 
-            HStack {
-                serverImage()
-                Text(chat.serverInfo.networkStatus.statusString)
-                    .foregroundColor(.primary)
-            }
-            Text(chat.serverInfo.networkStatus.statusExplanation)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 64)
-                .padding(.vertical, 8)
-
             Spacer()
             Button() {
                 alert = .clearChatAlert
@@ -54,12 +42,6 @@ struct ChatInfoView: View {
                 Label("Clear conversation", systemImage: "gobackward")
             }
             .tint(Color.orange)
-            Button(role: .destructive) {
-                deletingContact = contact
-                alert = .deleteContactAlert
-            } label: {
-                Label("Delete contact", systemImage: "trash")
-            }
             .padding()
         }
         .alert(item: $alert) { alertItem in
@@ -98,6 +80,7 @@ struct ChatInfoView: View {
         )
     }
 
+    // TODO reuse between this and ChatInfoView
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -115,9 +98,9 @@ struct ChatInfoView: View {
     }
 }
 
-struct ChatInfoView_Previews: PreviewProvider {
+struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         @State var showChatInfo = true
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo, contact: Contact.sampleData)
+        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
     }
 }

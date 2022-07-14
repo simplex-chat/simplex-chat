@@ -31,7 +31,7 @@ struct NewChatButton: View {
             Button("Create link / QR code") { addContactAction() }
             Button("Paste received link") { actionSheet = .pasteLink }
             Button("Scan QR code") { actionSheet = .scanQRCode }
-            Button("Create group") { actionSheet = .createGroup }
+            // Button("Create group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {

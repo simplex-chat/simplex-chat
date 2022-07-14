@@ -53,6 +53,7 @@ struct AddGroupView: View {
                 Image(systemName: "greaterthan")
             }
             .disabled(!canCreateProfile())
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .onAppear() {
             focusDisplayName = true

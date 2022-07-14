@@ -111,8 +111,8 @@
 		5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		5CFE0922282EEAF60002594B /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */; };
 		640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640F50E227CF991C001E05C2 /* SMPServers.swift */; };
-		6442E0B8287F165B00CEC0F9 /* CreateGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0B7287F165B00CEC0F9 /* CreateGroupView.swift */; };
 		6442E0BA287F169300CEC0F9 /* AddGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0B9287F169300CEC0F9 /* AddGroupView.swift */; };
+		6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */; };
 		6454036F2822A9750090DDFF /* ComposeFileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6454036E2822A9750090DDFF /* ComposeFileView.swift */; };
 		646BB38C283BEEB9001CE359 /* LocalAuthentication.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 646BB38B283BEEB9001CE359 /* LocalAuthentication.framework */; };
 		646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */; };
@@ -285,8 +285,8 @@
 		5CFA59CF286477B400863A68 /* ChatArchiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatArchiveView.swift; sourceTree = "<group>"; };
 		5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ZoomableScrollView.swift; path = Shared/Views/ZoomableScrollView.swift; sourceTree = SOURCE_ROOT; };
 		640F50E227CF991C001E05C2 /* SMPServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMPServers.swift; sourceTree = "<group>"; };
-		6442E0B7287F165B00CEC0F9 /* CreateGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateGroupView.swift; sourceTree = "<group>"; };
 		6442E0B9287F169300CEC0F9 /* AddGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGroupView.swift; sourceTree = "<group>"; };
+		6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupChatInfoView.swift; sourceTree = "<group>"; };
 		6454036E2822A9750090DDFF /* ComposeFileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeFileView.swift; sourceTree = "<group>"; };
 		646BB38B283BEEB9001CE359 /* LocalAuthentication.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = LocalAuthentication.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS15.4.sdk/System/Library/Frameworks/LocalAuthentication.framework; sourceTree = DEVELOPER_DIR; };
 		646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAuthenticationUtils.swift; sourceTree = "<group>"; };
@@ -382,6 +382,7 @@
 				5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */,
 				5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */,
 				5CE4407127ADB1D0007B033A /* Emoji.swift */,
+				6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -509,7 +510,6 @@
 				5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */,
 				3C8C548828133C84000A3EC7 /* PasteToConnectView.swift */,
 				5CC1C99127A6C7F5000D9FF6 /* QRCode.swift */,
-				6442E0B7287F165B00CEC0F9 /* CreateGroupView.swift */,
 				6442E0B9287F169300CEC0F9 /* AddGroupView.swift */,
 			);
 			path = NewChat;
@@ -835,6 +835,7 @@
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,
 				5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */,
 				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
+				6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
@@ -867,7 +868,6 @@
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
 				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
-				6442E0B8287F165B00CEC0F9 /* CreateGroupView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,
