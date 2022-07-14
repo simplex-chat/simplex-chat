@@ -27,8 +27,7 @@ import chat.simplex.app.BuildConfig
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
-import java.io.File
-import java.io.FileOutputStream
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.*
@@ -244,12 +243,7 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
       val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
       val fileDescriptor = parcelFileDescriptor?.fileDescriptor
-//      val options = BitmapFactory.Options().apply {
-//        inScaled = false
-////        inJustDecodeBounds = true
-//      }
-//      val image = BitmapFactory.decodeFileDescriptor(fileDescriptor, null, options)
-      val image = BitmapFactory.decodeFileDescriptor(fileDescriptor)
+      val image = decodeSampledBitmapFromResource(fileDescriptor, 1000, 1000)
       parcelFileDescriptor?.close()
       scaleBitmap(image)
     } catch (e: Exception) {
@@ -265,6 +259,39 @@ fun scaleBitmap(bitmap: Bitmap): Bitmap {
   val width = 1000
   val height = (width / aspectRatio).roundToInt()
   return Bitmap.createScaledBitmap(bitmap, width, height, false)
+}
+
+// https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
+fun decodeSampledBitmapFromResource(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
+  // First decode with inJustDecodeBounds=true to check dimensions
+  return BitmapFactory.Options().run {
+    inJustDecodeBounds = true
+    BitmapFactory.decodeFileDescriptor(fileDescriptor, null, this)
+    // Calculate inSampleSize
+    inSampleSize = calculateInSampleSize(this, reqWidth, reqHeight)
+    // Decode bitmap with inSampleSize set
+    inJustDecodeBounds = false
+
+    BitmapFactory.decodeFileDescriptor(fileDescriptor, null, this)
+  }
+}
+
+fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+  // Raw height and width of image
+  val (height: Int, width: Int) = options.run { outHeight to outWidth }
+  var inSampleSize = 1
+
+  if (height > reqHeight || width > reqWidth) {
+    val halfHeight: Int = height / 2
+    val halfWidth: Int = width / 2
+    // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+    // height and width larger than the requested height and width.
+    while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+      inSampleSize *= 2
+    }
+  }
+
+  return inSampleSize
 }
 
 fun getFileName(context: Context, uri: Uri): String? {
