@@ -243,7 +243,7 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
       val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
       val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
       val fileDescriptor = parcelFileDescriptor?.fileDescriptor
-      val image = decodeSampledBitmapFromResource(fileDescriptor, 1000, 1000)
+      val image = decodeSampledBitmapFromFileDescriptor(fileDescriptor, 1000, 1000)
       parcelFileDescriptor?.close()
       image
     } catch (e: Exception) {
@@ -255,7 +255,7 @@ fun getLoadedImage(context: Context, file: CIFile?): Bitmap? {
 }
 
 // https://developer.android.com/topic/performance/graphics/load-bitmap#load-bitmap
-fun decodeSampledBitmapFromResource(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
+fun decodeSampledBitmapFromFileDescriptor(fileDescriptor: FileDescriptor?, reqWidth: Int, reqHeight: Int): Bitmap {
   // First decode with inJustDecodeBounds=true to check dimensions
   return BitmapFactory.Options().run {
     inJustDecodeBounds = true
