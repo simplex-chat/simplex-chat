@@ -520,6 +520,12 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
+func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
+    let r = chatSendCmdSync(.newGroup(groupProfile: gp))
+    if case let .groupCreated(groupInfo) = r { return groupInfo }
+    throw r
+}
+
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {

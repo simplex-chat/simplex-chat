@@ -24,6 +24,7 @@ final class ChatModel: ObservableObject {
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
     @Published var chatToTop: String?
+//    @Published var groups: Dictionary<ChatId, SimpleXChat.Group> = [:]
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -123,6 +124,10 @@ final class ChatModel: ObservableObject {
             }
         }
     }
+
+//    func addGroup(_ group: SimpleXChat.Group) {
+//        groups[group.groupInfo.id] = group
+//    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
