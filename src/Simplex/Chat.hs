@@ -1219,7 +1219,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileCancel sharedMsgId -> xFileCancel ct sharedMsgId msgMeta
               XInfo p -> xInfo ct p
-              XGrpInv gInv -> processGroupInvitation ct gInv
+              XGrpInv gInv -> processGroupInvitation ct gInv msg msgMeta
               XInfoProbe probe -> xInfoProbe ct probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
               XInfoProbeOk probe -> xInfoProbeOk ct probe
@@ -1709,13 +1709,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
-    processGroupInvitation :: Contact -> GroupInvitation -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) = do
+    processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
+    processGroupInvitation ct@Contact {localDisplayName = c} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) msg msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-      gInfo@GroupInfo {localDisplayName = gName} <- withStore $ \db -> createGroupInvitation db user ct inv
-      toView $ CRReceivedGroupInvitation gInfo ct memRole
-      showToast ("#" <> gName <> " " <> c <> "> ") "invited you to join the group"
+      GroupInfo {groupId, localDisplayName, groupProfile} <- withStore $ \db -> createGroupInvitation db user ct inv
+      let content = CIGroupInvitation (CIGroupInfo {groupId, localDisplayName, groupProfile}) memRole
+      ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
+      toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+      showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of

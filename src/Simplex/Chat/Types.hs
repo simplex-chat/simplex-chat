@@ -23,6 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -165,6 +166,11 @@ data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
 type ContactName = Text
 
 type GroupName = Text
+
+optionalFullName :: ContactName -> Text -> Text
+optionalFullName localDisplayName fullName
+  | T.null fullName || localDisplayName == fullName = ""
+  | otherwise = " (" <> fullName <> ")"
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show, Generic)

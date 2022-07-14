@@ -459,9 +459,9 @@ testGroup = versionTestMatrix3 runTestGroup
       alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
-      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "")]
+      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "")]
+      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
       bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
@@ -942,7 +942,7 @@ testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      -- msg id 1
+      -- alice: msg id 1, bob, cath: msg id 2 (1 is group invitation)
       alice #> "#team hello!"
       concurrently_
         (bob <# "#team alice> hello!")
@@ -958,7 +958,7 @@ testGroupMessageDelete =
       alice #$> ("/_send #1 json {\"quotedItemId\": 1, \"msgContent\": {\"type\": \"text\", \"text\": \"quoting deleted message\"}}", id, "cannot reply to this message")
 
       threadDelay 1000000
-      -- msg id 2
+      -- alice: msg id 2, bob, cath: msg id 3
       bob `send` "> #team @alice (hello) hi alic"
       bob <# "#team > alice hello!"
       bob <## "      hi alic"
@@ -987,7 +987,7 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      bob #$> ("/_update item #1 2 text hi alice", id, "message updated")
+      bob #$> ("/_update item #1 3 text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
         ( do
@@ -1000,13 +1000,13 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 
       threadDelay 1000000
-      -- msg id 3
+      -- alice: msg id 3, bob, cath: msg id 4
       cath #> "#team how are you?"
       concurrently_
         (alice <# "#team cath> how are you?")
         (bob <# "#team cath> how are you?")
 
-      cath #$> ("/_delete item #1 3 broadcast", id, "message deleted")
+      cath #$> ("/_delete item #1 4 broadcast", id, "message deleted")
       concurrently_
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
@@ -1698,9 +1698,9 @@ testGroupSendImageWithTextAndQuote =
       alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
       alice @@@ [("#team", "hey bob"), ("@bob", ""), ("@cath", "")]
       bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
-      bob @@@ [("#team", "hey bob"), ("@alice", ""), ("@cath", "")]
+      bob @@@ [("#team", "hey bob"), ("@cath",""), ("@alice","invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
-      cath @@@ [("#team", "hey bob"), ("@alice", ""), ("@bob", "")]
+      cath @@@ [("#team", "hey bob"), ("@bob",""), ("@alice","invitation to join group team as admin")]
 
 testUserContactLink :: Spec
 testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do

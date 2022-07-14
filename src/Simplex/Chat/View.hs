@@ -133,7 +133,6 @@ responseToView testView = \case
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation ldn fullName]
-  CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
   CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
@@ -214,6 +213,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIGroupInvitation g role -> viewReceivedGroupInvitation g c role
       where
         from = ttyFromContact' c
     where
@@ -230,6 +230,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIGroupInvitation {} -> [] -- should be not possible
       where
         from = ttyFromGroup' g m
     where
@@ -386,10 +387,10 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
-viewReceivedGroupInvitation g c role =
-  [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
-    "use " <> highlight ("/j " <> groupName' g) <> " to accept"
+viewReceivedGroupInvitation :: CIGroupInfo -> Contact -> GroupMemberRole -> [StyledString]
+viewReceivedGroupInvitation CIGroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName}} c role =
+  [ ttyGroup g <> optFullName g fullName <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
+    "use " <> highlight ("/j " <> g) <> " to accept"
   ]
 
 groupPreserved :: GroupInfo -> [StyledString]
@@ -877,9 +878,7 @@ ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
-optFullName localDisplayName fullName
-  | T.null fullName || localDisplayName == fullName = ""
-  | otherwise = plain (" (" <> fullName <> ")")
+optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
 
 highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan
