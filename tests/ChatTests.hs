@@ -1022,6 +1022,7 @@ testGroupMessageDelete =
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
+  print (0 :: Integer)
   withNewTestChat "alice" aliceProfile $ \alice -> do
     withNewTestChat "bob" bobProfile $ \bob -> do
       connectUsers alice bob
