@@ -1041,6 +1041,7 @@ testGroupAsync = withTmpFiles $ do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
+  print (1 :: Integer)
   withTestChat "alice" $ \alice -> do
     withNewTestChat "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -1060,6 +1061,7 @@ testGroupAsync = withTmpFiles $ do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
+  print (2 :: Integer)
   withTestChat "bob" $ \bob -> do
     withTestChat "cath" $ \cath -> do
       concurrentlyN_
@@ -1074,6 +1076,7 @@ testGroupAsync = withTmpFiles $ do
             cath <## "#team: connected to server(s)"
             cath <## "#team: member bob (Bob) is connected"
         ]
+  print (3 :: Integer)
   withTestChat "bob" $ \bob -> do
     withNewTestChat "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
@@ -1091,6 +1094,7 @@ testGroupAsync = withTmpFiles $ do
         [ bob <## "#team: dan joined the group",
           dan <## "#team: you joined the group"
         ]
+  print (4 :: Integer)
   withTestChat "alice" $ \alice -> do
     withTestChat "cath" $ \cath -> do
       withTestChat "dan" $ \dan -> do
@@ -1111,6 +1115,7 @@ testGroupAsync = withTmpFiles $ do
               dan <## "#team: member alice (Alice) is connected"
               dan <## "#team: member cath (Catherine) is connected"
           ]
+  print (5 :: Integer)
   withTestChat "alice" $ \alice -> do
     withTestChat "bob" $ \bob -> do
       withTestChat "cath" $ \cath -> do
