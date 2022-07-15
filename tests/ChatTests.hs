@@ -1700,9 +1700,9 @@ testGroupSendImageWithTextAndQuote =
       alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
       alice @@@ [("#team", "hey bob"), ("@bob", "sent invitation to join group team as admin"), ("@cath", "sent invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
-      bob @@@ [("#team", "hey bob"), ("@cath",""), ("@alice","received invitation to join group team as admin")]
+      bob @@@ [("#team", "hey bob"), ("@alice","received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
-      cath @@@ [("#team", "hey bob"), ("@bob",""), ("@alice","received invitation to join group team as admin")]
+      cath @@@ [("#team", "hey bob"), ("@alice","received invitation to join group team as admin")]
 
 testUserContactLink :: Spec
 testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do
