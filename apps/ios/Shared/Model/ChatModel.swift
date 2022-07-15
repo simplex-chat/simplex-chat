@@ -24,6 +24,7 @@ final class ChatModel: ObservableObject {
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
     @Published var chatToTop: String?
+//    @Published var groups: Dictionary<ChatId, SimpleXChat.Group> = [:]
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -58,9 +59,9 @@ final class ChatModel: ObservableObject {
         chats.firstIndex(where: { $0.id == id })
     }
 
-    func addChat(_ chat: Chat) {
+    func addChat(_ chat: Chat, at position: Int = 0) {
         withAnimation {
-            chats.insert(chat, at: 0)
+            chats.insert(chat, at: position)
         }
     }
 
@@ -104,16 +105,29 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChats(with newChats: [ChatData]) {
-        for c in newChats {
-            if let chat = getChat(c.id) {
+        for i in 0..<newChats.count {
+            let c = newChats[i]
+            if let j = getChatIndex(c.id)   {
+                let chat = chats[j]
                 chat.chatInfo = c.chatInfo
                 chat.chatItems = c.chatItems
                 chat.chatStats = c.chatStats
+                if i != j {
+                    if chatId != c.chatInfo.id  {
+                        popChat_(j, to: i)
+                    }  else if i == 0 {
+                        chatToTop = c.chatInfo.id
+                    }
+                }
             } else {
-                addChat(Chat(c))
+                addChat(Chat(c), at: i)
             }
         }
     }
+
+//    func addGroup(_ group: SimpleXChat.Group) {
+//        groups[group.groupInfo.id] = group
+//    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
@@ -247,9 +261,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    private func popChat_(_ i: Int) {
+    private func popChat_(_ i: Int, to position: Int = 0) {
         let chat = chats.remove(at: i)
-        chats.insert(chat, at: 0)
+        chats.insert(chat, at: position)
     }
 
     func removeChat(_ id: String) {

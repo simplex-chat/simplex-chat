@@ -81,7 +81,7 @@ struct ContentView: View {
             case .success:
                 userAuthorized = true
             case .failed:
-                AlertManager.shared.showAlert(laFailedAlert())
+                break
             case .unavailable:
                 userAuthorized = true
                 prefPerformLA = false

@@ -112,7 +112,7 @@ public func createConnectionEventNtf(_ connEntity: ConnectionEntity) -> UNMutabl
         title = NSLocalizedString("New contact request", comment: "notification")
     }
     return createNotification(
-        categoryIdentifier: ntfCategoryCallInvitation,
+        categoryIdentifier: ntfCategoryConnectionEvent,
         title: title,
         body: body,
         targetContentIdentifier: targetContentIdentifier

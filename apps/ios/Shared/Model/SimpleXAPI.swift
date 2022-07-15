@@ -428,7 +428,7 @@ func receiveFile(fileId: Int64) async {
 
 func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
-    if case .rcvFileAccepted(let chatItem) = r { return chatItem }
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     throw r
 }
 
@@ -517,6 +517,12 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
 private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     let r = await chatSendCmd(cmd)
     if case .cmdOk = r { return }
+    throw r
+}
+
+func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
+    let r = chatSendCmdSync(.newGroup(groupProfile: gp))
+    if case let .groupCreated(groupInfo) = r { return groupInfo }
     throw r
 }
 

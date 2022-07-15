@@ -370,6 +370,11 @@ public enum ConnStatus: String, Decodable {
     }
 }
 
+public struct Group: Decodable {
+    var groupInfo: GroupInfo
+    var members: [GroupMember]
+}
+
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
@@ -394,6 +399,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
 }
 
 public struct GroupProfile: Codable, NamedChat {
+    public init(displayName: String, fullName: String, image: String? = nil) {
+        self.displayName = displayName
+        self.fullName = fullName
+        self.image = image
+    }
+
     public var displayName: String
     public var fullName: String
     public var image: String?
@@ -406,15 +417,16 @@ public struct GroupProfile: Codable, NamedChat {
 
 public struct GroupMember: Decodable {
     public var groupMemberId: Int64
+    var groupId: Int64
     var memberId: String
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+    var memberRole: GroupMemberRole
+    var memberCategory: GroupMemberCategory
+    var memberStatus: GroupMemberStatus
+    var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
     var memberContactId: Int64?
-//    var activeConn: Connection?
+    var activeConn: Connection?
 
     var directChatId: ChatId? {
         get {
@@ -435,11 +447,51 @@ public struct GroupMember: Decodable {
 
     public static let sampleData = GroupMember(
         groupMemberId: 1,
+        groupId: 1,
         memberId: "abcd",
+        memberRole: .admin,
+        memberCategory: .inviteeMember,
+        memberStatus: .memComplete,
+        invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: Profile.sampleData,
-        memberContactId: 1
+        memberContactId: 1,
+        activeConn: Connection.sampleData
     )
+}
+
+public enum GroupMemberRole: String, Decodable {
+    case member = "member"
+    case admin = "admin"
+    case owner = "owner"
+}
+
+public enum GroupMemberCategory: String, Decodable {
+    case userMember = "user"
+    case inviteeMember = "invitee"
+    case hostMember = "host"
+    case preMember = "pre"
+    case postMember = "post"
+}
+
+public enum GroupMemberStatus: String, Decodable {
+    case memRemoved = "removed"
+    case memLeft = "left"
+    case memGroupDeleted = "deleted"
+    case memInvited = "invited"
+    case memIntroduced = "introduced"
+    case memIntroInvited = "intro-inv"
+    case memAccepted = "accepted"
+    case memAnnounced = "announced"
+    case memConnected = "connected"
+    case memComplete = "complete"
+    case memCreator = "creator"
+}
+
+public enum InvitedBy: Decodable {
+    case contact(byContactId: Int64)
+    case user
+    case unknown
 }
 
 public struct MemberSubError: Decodable {

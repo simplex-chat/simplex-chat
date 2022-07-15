@@ -135,6 +135,12 @@ data ChatCommand
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIAddMember GroupId ContactId GroupMemberRole
+  | APIJoinGroup GroupId
+  | APIMemberRole GroupId GroupMemberId GroupMemberRole
+  | APIRemoveMember GroupId GroupMemberId
+  | APILeaveGroup GroupId
+  | APIListMembers GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -159,8 +165,8 @@ data ChatCommand
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
-  | RemoveMember GroupName ContactName
   | MemberRole GroupName ContactName GroupMemberRole
+  | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
@@ -253,7 +259,6 @@ data ChatResponse
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {groupInfo :: GroupInfo}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
@@ -366,7 +371,7 @@ data ChatErrorType
   | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
-  | CEGroupMemberNotFound {contactName :: ContactName}
+  | CEGroupMemberNotFound
   | CEGroupMemberIntroNotFound {contactName :: ContactName}
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}

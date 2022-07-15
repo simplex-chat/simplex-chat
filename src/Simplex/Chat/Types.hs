@@ -23,6 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -166,13 +167,20 @@ type ContactName = Text
 
 type GroupName = Text
 
+optionalFullName :: ContactName -> Text -> Text
+optionalFullName localDisplayName fullName
+  | T.null fullName || localDisplayName == fullName = ""
+  | otherwise = " (" <> fullName <> ")"
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show, Generic)
 
 instance ToJSON Group where toEncoding = J.genericToEncoding J.defaultOptions
 
+type GroupId = Int64
+
 data GroupInfo = GroupInfo
-  { groupId :: Int64,
+  { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
@@ -268,9 +276,11 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
+type GroupMemberId = Int64
+
 data GroupMember = GroupMember
-  { groupMemberId :: Int64,
-    groupId :: Int64,
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,

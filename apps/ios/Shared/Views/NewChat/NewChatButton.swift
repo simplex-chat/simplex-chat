@@ -13,6 +13,7 @@ enum NewChatAction: Identifiable {
     case createLink
     case pasteLink
     case scanQRCode
+    case createGroup
 
     var id: NewChatAction { get { self } }
 }
@@ -30,12 +31,14 @@ struct NewChatButton: View {
             Button("Create link / QR code") { addContactAction() }
             Button("Paste received link") { actionSheet = .pasteLink }
             Button("Scan QR code") { actionSheet = .scanQRCode }
+            // Button("Create group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
             case .createLink: AddContactView(connReqInvitation: connReq)
             case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
             case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
+            case .createGroup: AddGroupView(openedSheet: $actionSheet)
             }
         }
     }
