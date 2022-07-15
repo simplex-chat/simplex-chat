@@ -259,6 +259,7 @@ data ChatResponse
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
+  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {groupInfo :: GroupInfo}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}

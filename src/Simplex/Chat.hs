@@ -672,16 +672,19 @@ processChatCommand = \case
   APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
-    let Group gInfo@GroupInfo {localDisplayName = gName, groupProfile, membership} members = group
+    let Group gInfo@GroupInfo {localDisplayName, groupProfile, membership} members = group
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         Contact {localDisplayName = cName} = contact
     when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation memberId cReq = do
-          void . sendDirectContactMessage contact $
-            XGrpInv $ GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-          setActive $ ActiveG gName
+          let groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+          msg <- sendDirectContactMessage contact $ XGrpInv groupInv
+          let content = CISndGroupInvitation (CIGroupInvitation {groupId, localDisplayName, groupProfile, status = CISGroupInvitationPending}) memRole
+          ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
+          toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
+          setActive $ ActiveG localDisplayName
           pure $ CRSentGroupInvitation gInfo contact
     case contactMember contact members of
       Nothing -> do
@@ -703,7 +706,16 @@ processChatCommand = \case
         createMemberConnection db userId fromMember agentConnId
         updateGroupMemberStatus db userId fromMember GSMemAccepted
         updateGroupMemberStatus db userId (membership g) GSMemAccepted
+      updateCIGroupInvitationStatus user
       pure $ CRUserAcceptedGroupSent g
+    where
+      updateCIGroupInvitationStatus user@User {userId} = do
+        AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db user groupId
+        case (cInfo, content) of
+          (DirectChat ct, CIRcvGroupInvitation ciGroupInv memRole) -> do
+            let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = CISGroupInvitationAccepted} memRole
+            updateDirectChatItemView userId ct itemId aciContent Nothing
+          _ -> pure () -- prohibited
   APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
   APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -1714,10 +1726,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-      GroupInfo {groupId, localDisplayName, groupProfile} <- withStore $ \db -> createGroupInvitation db user ct inv
-      let content = CIGroupInvitation (CIGroupInfo {groupId, localDisplayName, groupProfile}) memRole
+      gInfo@GroupInfo {groupId, localDisplayName, groupProfile} <- withStore $ \db -> createGroupInvitation db user ct inv
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, localDisplayName, groupProfile, status = CISGroupInvitationPending}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
+      withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
+      toView $ CRReceivedGroupInvitation gInfo ct memRole
       showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()

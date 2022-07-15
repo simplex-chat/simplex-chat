@@ -41,6 +41,7 @@ library
       Simplex.Chat.Migrations.M20220514_profiles_user_id
       Simplex.Chat.Migrations.M20220626_auto_reply
       Simplex.Chat.Migrations.M20220702_calls
+      Simplex.Chat.Migrations.M20220715_groups_chat_item_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.Protocol
