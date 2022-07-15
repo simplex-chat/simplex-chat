@@ -515,6 +515,7 @@ deriving instance Show (CIContent d)
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
+    grpMemberId :: GroupMemberId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     status :: CIGroupInvitationStatus
@@ -526,18 +527,18 @@ instance ToJSON CIGroupInvitation where
   toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIGroupInvitationStatus
-  = CISGroupInvitationPending
-  | CISGroupInvitationAccepted
-  | CISGroupInvitationRejected
-  | CISGroupInvitationExpired
+  = CIGISPending
+  | CIGISAccepted
+  | CIGISRejected
+  | CIGISExpired
   deriving (Eq, Show, Generic)
 
 instance FromJSON CIGroupInvitationStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CISGroupInvitation"
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIGIS"
 
 instance ToJSON CIGroupInvitationStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CISGroupInvitation"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CISGroupInvitation"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIGIS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIGIS"
 
 ciContentToText :: CIContent d -> Text
 ciContentToText = \case

@@ -678,10 +678,10 @@ processChatCommand = \case
     when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    let sendInvitation memberId cReq = do
+    let sendInvitation grpMemberId memberId cReq = do
           let groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
-          let content = CISndGroupInvitation (CIGroupInvitation {groupId, localDisplayName, groupProfile, status = CISGroupInvitationPending}) memRole
+          let content = CISndGroupInvitation (CIGroupInvitation {groupId, grpMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
           setActive $ ActiveG localDisplayName
@@ -690,12 +690,12 @@ processChatCommand = \case
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId} <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
-        sendInvitation memberId cReq
+        GroupMember {memberId, groupMemberId} <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
+        sendInvitation groupMemberId memberId cReq
       Just GroupMember {groupMemberId, memberId, memberStatus}
         | memberStatus == GSMemInvited ->
           withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> sendInvitation memberId cReq
+            Just cReq -> sendInvitation groupMemberId memberId cReq
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
@@ -713,7 +713,7 @@ processChatCommand = \case
         AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db user groupId
         case (cInfo, content) of
           (DirectChat ct, CIRcvGroupInvitation ciGroupInv memRole) -> do
-            let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = CISGroupInvitationAccepted} memRole
+            let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = CIGISAccepted} memRole
             updateDirectChatItemView userId ct itemId aciContent Nothing
           _ -> pure () -- prohibited
   APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
@@ -1727,7 +1727,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile} <- withStore $ \db -> createGroupInvitation db user ct inv
-      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, localDisplayName, groupProfile, status = CISGroupInvitationPending}) memRole
+      let grpMemberId = groupMemberId $ membership gInfo
+          content = CIRcvGroupInvitation (CIGroupInvitation {groupId, grpMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
