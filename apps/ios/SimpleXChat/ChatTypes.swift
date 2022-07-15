@@ -379,6 +379,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
+    var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
 
@@ -393,6 +394,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
+        membership: GroupMember.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -442,6 +444,24 @@ public struct GroupMember: Decodable {
         get {
             let p = memberProfile
             return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+        }
+    }
+
+    public var memberActive: Bool {
+        get {
+            switch self.memberStatus {
+            case .memRemoved: return false
+            case .memLeft: return false
+            case .memGroupDeleted: return false
+            case .memInvited: return false
+            case .memIntroduced: return false
+            case .memIntroInvited: return false
+            case .memAccepted: return false
+            case .memAnnounced: return false
+            case .memConnected: return true
+            case .memComplete: return true
+            case .memCreator: return true
+            }
         }
     }
 
