@@ -515,7 +515,7 @@ deriving instance Show (CIContent d)
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
-    grpMemberId :: GroupMemberId,
+    groupMemberId :: GroupMemberId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     status :: CIGroupInvitationStatus

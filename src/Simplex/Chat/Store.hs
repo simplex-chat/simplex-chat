@@ -1344,7 +1344,7 @@ getGroup db user groupId = do
 
 deleteGroup :: DB.Connection -> User -> Group -> IO ()
 deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} members) = do
-  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
+  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute
     db
@@ -1547,7 +1547,7 @@ deleteGroupMemberConnection db userId GroupMember {groupMemberId} =
 
 createIntroductions :: DB.Connection -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
 createIntroductions db members toMember = do
-  let reMembers = filter (\m -> memberCurrent m && groupMemberId m /= groupMemberId toMember) members
+  let reMembers = filter (\m -> memberCurrent m && groupMemberId' m /= groupMemberId' toMember) members
   if null reMembers
     then pure []
     else do
@@ -1563,7 +1563,7 @@ createIntroductions db members toMember = do
             (re_group_member_id, to_group_member_id, intro_status, created_at, updated_at)
           VALUES (?,?,?,?,?)
         |]
-        (groupMemberId reMember, groupMemberId toMember, GMIntroPending, ts, ts)
+        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, ts, ts)
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
@@ -1632,7 +1632,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       |]
-      (groupMemberId reMember, groupMemberId toMember)
+      (groupMemberId' reMember, groupMemberId' toMember)
   where
     toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
     toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
@@ -1658,7 +1658,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
               memProfileId
             }
     member <- createNewMember_ db user gInfo newMember currentTs
-    conn <- createMemberConnection_ db userId (groupMemberId member) groupAgentConnId memberContactId cLevel currentTs
+    conn <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
     pure (member :: GroupMember) {activeConn = Just conn}
 
 createIntroToMemberContact :: DB.Connection -> UserId -> GroupMember -> GroupMember -> ConnId -> ConnId -> IO ()

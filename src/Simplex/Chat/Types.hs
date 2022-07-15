@@ -303,6 +303,9 @@ memberConn = activeConn
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
+groupMemberId' :: GroupMember -> GroupMemberId
+groupMemberId' GroupMember {groupMemberId} = groupMemberId
+
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
