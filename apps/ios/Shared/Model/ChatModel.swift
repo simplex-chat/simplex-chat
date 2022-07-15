@@ -79,6 +79,10 @@ final class ChatModel: ObservableObject {
         updateChat(.direct(contact: contact))
     }
 
+    func updateGroup(_ groupInfo: GroupInfo) {
+        updateChat(.group(groupInfo: groupInfo))
+    }
+
     private func updateChat(_ cInfo: ChatInfo) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)

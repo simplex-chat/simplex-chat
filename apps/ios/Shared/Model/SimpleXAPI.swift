@@ -526,6 +526,21 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
+func joinGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiJoinGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("joinGroup error: \(responseError(error))")
+    }
+}
+
+func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
+    if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
+    throw r
+}
+
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
@@ -695,6 +710,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = m.upsertChatItem(cInfo, cItem)
             }
+        case let .receivedGroupInvitation(groupInfo, _, _):
+            m.addChat(Chat(
+                chatInfo: .group(groupInfo: groupInfo),
+                chatItems: []
+            ))
+            // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userJoinedGroup(groupInfo):
+            m.updateGroup(groupInfo)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):

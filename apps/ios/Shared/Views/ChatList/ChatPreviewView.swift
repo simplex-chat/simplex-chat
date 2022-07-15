@@ -73,6 +73,13 @@ struct ChatPreviewView: View {
                 .padding(.trailing, 8)
             }
         }
+        .disabled(disabled())
+    }
+
+    private func disabled() -> Bool {
+        if case let .group(groupInfo) = chat.chatInfo {
+            return true
+        }
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {
