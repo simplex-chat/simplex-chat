@@ -77,9 +77,7 @@ struct ChatPreviewView: View {
     }
 
     private func disabled() -> Bool {
-        if case let .group(groupInfo) = chat.chatInfo {
-            return true
-        }
+        return false
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {
