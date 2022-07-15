@@ -132,7 +132,8 @@ responseToView testView = \case
     where
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
-    [groupInvitation ldn fullName]
+    [groupInvitation' ldn fullName]
+  CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
   CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
@@ -206,6 +207,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndCall {} -> []
+      CISndGroupInvitation {} -> []
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
@@ -213,7 +215,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIGroupInvitation g role -> viewReceivedGroupInvitation g c role
+      CIRcvGroupInvitation {} -> []
       where
         from = ttyFromContact' c
     where
@@ -223,6 +225,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndCall {} -> []
+      CISndGroupInvitation {} -> [] -- prohibited
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
@@ -230,7 +233,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIGroupInvitation {} -> [] -- should be not possible
+      CIRcvGroupInvitation {} -> [] -- prohibited
       where
         from = ttyFromGroup' g m
     where
@@ -387,10 +390,10 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewReceivedGroupInvitation :: CIGroupInfo -> Contact -> GroupMemberRole -> [StyledString]
-viewReceivedGroupInvitation CIGroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName}} c role =
-  [ ttyGroup g <> optFullName g fullName <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
-    "use " <> highlight ("/j " <> g) <> " to accept"
+viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
+viewReceivedGroupInvitation g c role =
+  [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
+    "use " <> highlight ("/j " <> groupName' g) <> " to accept"
   ]
 
 groupPreserved :: GroupInfo -> [StyledString]
@@ -429,11 +432,11 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation ldn fullName
+        GSMemInvited -> groupInvitation' ldn fullName
         _ -> ttyGroup ldn <> optFullName ldn fullName
 
-groupInvitation :: GroupName -> Text -> StyledString
-groupInvitation displayName fullName =
+groupInvitation' :: GroupName -> Text -> StyledString
+groupInvitation' displayName fullName =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
     <> " - you are invited ("
