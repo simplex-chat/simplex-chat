@@ -117,7 +117,8 @@ CREATE TABLE groups(
   group_profile_id INTEGER REFERENCES group_profiles ON DELETE SET NULL, -- shared group profile
   inv_queue_info BLOB,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- received
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

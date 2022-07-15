@@ -455,13 +455,15 @@ testGroup = versionTestMatrix3 runTestGroup
       cath #$> ("/_get chat #1 count=100", chat, [])
     getReadChats :: TestCC -> TestCC -> TestCC -> IO ()
     getReadChats alice bob cath = do
-      alice @@@ [("#team", "hey team"), ("@cath", ""), ("@bob", "")]
+      alice @@@ [("#team", "hey team"), ("@cath", "sent invitation to join group team as admin"), ("@bob", "sent invitation to join group team as admin")]
       alice #$> ("/_get chat #1 count=100", chat, [(1, "hello"), (0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 after=1 count=100", chat, [(0, "hi there"), (0, "hey team")])
-      alice #$> ("/_get chat #1 before=3 count=100", chat, [(1, "hello"), (0, "hi there")])
-      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "invitation to join group team as admin")]
+      -- "before" and "after" define a chat item id across all chats,
+      -- so we take into account sent group invitations in direct chats
+      alice #$> ("/_get chat #1 after=3 count=100", chat, [(0, "hi there"), (0, "hey team")])
+      alice #$> ("/_get chat #1 before=5 count=100", chat, [(1, "hello"), (0, "hi there")])
+      bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (1, "hi there"), (0, "hey team")])
-      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "invitation to join group team as admin")]
+      cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello"), (0, "hi there"), (1, "hey team")])
       alice #$> ("/_read chat #1 from=1 to=100", id, "ok")
       bob #$> ("/_read chat #1 from=1 to=100", id, "ok")
@@ -576,7 +578,7 @@ testGroup2 =
         <##? [ "dan> hi",
                "@dan hey"
              ]
-      alice ##> "/t 6"
+      alice ##> "/t 8"
       alice
         <##? [ "#club hello",
                "#club bob> hi there",
@@ -878,13 +880,13 @@ testGroupMessageUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      -- msg id 1
+      -- alice: msg id 3, bob, cath: msg id 2 (after group invitations)
       alice #> "#team hello!"
       concurrently_
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_update item #1 1 text hey 👋", id, "message updated")
+      alice #$> ("/_update item #1 3 text hey 👋", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] hey 👋")
         (cath <# "#team alice> [edited] hey 👋")
@@ -894,7 +896,7 @@ testGroupMessageUpdate =
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing)])
 
       threadDelay 1000000
-      -- msg id 2
+      -- alice: msg id 4, bob, cath: msg id 3
       bob `send` "> #team @alice (hey) hi alice"
       bob <# "#team > alice hey 👋"
       bob <## "      hi alice"
@@ -912,12 +914,12 @@ testGroupMessageUpdate =
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((1, "hi alice"), Just (0, "hey 👋"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hey 👋"), Nothing), ((0, "hi alice"), Just (0, "hey 👋"))])
 
-      alice #$> ("/_update item #1 1 text greetings 🤝", id, "message updated")
+      alice #$> ("/_update item #1 3 text greetings 🤝", id, "message updated")
       concurrently_
         (bob <# "#team alice> [edited] greetings 🤝")
         (cath <# "#team alice> [edited] greetings 🤝")
 
-      alice #$> ("/_update item #1 2 text updating bob's message", id, "cannot update this item")
+      alice #$> ("/_update item #1 4 text updating bob's message", id, "cannot update this item")
 
       threadDelay 1000000
       cath `send` "> #team @alice (greetings) greetings!"
@@ -942,23 +944,23 @@ testGroupMessageDelete =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
-      -- alice: msg id 1, bob, cath: msg id 2 (1 is group invitation)
+      -- alice: msg id 3, bob, cath: msg id 2 (after group invitations)
       alice #> "#team hello!"
       concurrently_
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
-      alice #$> ("/_delete item #1 1 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 3 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=100", chat, [])
       bob #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
       cath #$> ("/_get chat #1 count=100", chat, [(0, "hello!")])
 
-      alice #$> ("/_update item #1 1 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send #1 json {\"quotedItemId\": 1, \"msgContent\": {\"type\": \"text\", \"text\": \"quoting deleted message\"}}", id, "cannot reply to this message")
+      alice #$> ("/_update item #1 3 text updating deleted message", id, "cannot update this item")
+      alice #$> ("/_send #1 json {\"quotedItemId\": 3, \"msgContent\": {\"type\": \"text\", \"text\": \"quoting deleted message\"}}", id, "cannot reply to this message")
 
       threadDelay 1000000
-      -- alice: msg id 2, bob, cath: msg id 3
+      -- alice: msg id 4, bob, cath: msg id 3
       bob `send` "> #team @alice (hello) hi alic"
       bob <# "#team > alice hello!"
       bob <## "      hi alic"
@@ -976,12 +978,12 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=100", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      alice #$> ("/_delete item #1 1 broadcast", id, "message deleted")
+      alice #$> ("/_delete item #1 3 broadcast", id, "message deleted")
       concurrently_
         (bob <# "#team alice> [deleted] hello!")
         (cath <# "#team alice> [deleted] hello!")
 
-      alice #$> ("/_delete item #1 2 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 4 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=100", chat', [])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
@@ -1000,7 +1002,7 @@ testGroupMessageDelete =
       cath #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 
       threadDelay 1000000
-      -- alice: msg id 3, bob, cath: msg id 4
+      -- alice: msg id 5, bob, cath: msg id 4
       cath #> "#team how are you?"
       concurrently_
         (alice <# "#team cath> how are you?")
@@ -1011,8 +1013,8 @@ testGroupMessageDelete =
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
 
-      alice #$> ("/_delete item #1 2 broadcast", id, "cannot delete this item")
-      alice #$> ("/_delete item #1 2 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 4 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 4 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=100", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
@@ -1020,6 +1022,7 @@ testGroupMessageDelete =
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
+  print (0 :: Integer)
   withNewTestChat "alice" aliceProfile $ \alice -> do
     withNewTestChat "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -1039,6 +1042,7 @@ testGroupAsync = withTmpFiles $ do
         (bob <## "#team: you joined the group")
       alice #> "#team hello bob"
       bob <# "#team alice> hello bob"
+  print (1 :: Integer)
   withTestChat "alice" $ \alice -> do
     withNewTestChat "cath" cathProfile $ \cath -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -1058,6 +1062,7 @@ testGroupAsync = withTmpFiles $ do
         ]
       alice #> "#team hello cath"
       cath <# "#team alice> hello cath"
+  print (2 :: Integer)
   withTestChat "bob" $ \bob -> do
     withTestChat "cath" $ \cath -> do
       concurrentlyN_
@@ -1072,6 +1077,7 @@ testGroupAsync = withTmpFiles $ do
             cath <## "#team: connected to server(s)"
             cath <## "#team: member bob (Bob) is connected"
         ]
+  print (3 :: Integer)
   withTestChat "bob" $ \bob -> do
     withNewTestChat "dan" danProfile $ \dan -> do
       bob <## "2 contacts connected (use /cs for the list)"
@@ -1089,6 +1095,7 @@ testGroupAsync = withTmpFiles $ do
         [ bob <## "#team: dan joined the group",
           dan <## "#team: you joined the group"
         ]
+  print (4 :: Integer)
   withTestChat "alice" $ \alice -> do
     withTestChat "cath" $ \cath -> do
       withTestChat "dan" $ \dan -> do
@@ -1109,6 +1116,7 @@ testGroupAsync = withTmpFiles $ do
               dan <## "#team: member alice (Alice) is connected"
               dan <## "#team: member cath (Catherine) is connected"
           ]
+  print (5 :: Integer)
   withTestChat "alice" $ \alice -> do
     withTestChat "bob" $ \bob -> do
       withTestChat "cath" $ \cath -> do
@@ -1653,7 +1661,7 @@ testGroupSendImageWithTextAndQuote =
         (alice <# "#team bob> hi team")
         (cath <# "#team bob> hi team")
       threadDelay 1000000
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": 1, \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send #1 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": 3, \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
       alice <# "#team > bob hi team"
       alice <## "      hey bob"
       alice <# "/f #team ./tests/fixtures/test.jpg"
@@ -1696,11 +1704,11 @@ testGroupSendImageWithTextAndQuote =
       dest2 <- B.readFile "./tests/tmp/test_1.jpg"
       dest2 `shouldBe` src
       alice #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
-      alice @@@ [("#team", "hey bob"), ("@bob", ""), ("@cath", "")]
+      alice @@@ [("#team", "hey bob"), ("@bob", "sent invitation to join group team as admin"), ("@cath", "sent invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
-      bob @@@ [("#team", "hey bob"), ("@cath",""), ("@alice","invitation to join group team as admin")]
+      bob @@@ [("#team", "hey bob"), ("@alice","received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=100", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
-      cath @@@ [("#team", "hey bob"), ("@bob",""), ("@alice","invitation to join group team as admin")]
+      cath @@@ [("#team", "hey bob"), ("@alice","received invitation to join group team as admin")]
 
 testUserContactLink :: Spec
 testUserContactLink = versionTestMatrix3 $ \alice bob cath -> do

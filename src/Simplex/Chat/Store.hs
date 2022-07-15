@@ -60,6 +60,7 @@ module Simplex.Chat.Store
     updateConnectionStatus,
     createNewGroup,
     createGroupInvitation,
+    setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
     getGroupIdByName,
@@ -147,6 +148,7 @@ module Simplex.Chat.Store
     getDirectChatItemIdByText,
     getGroupChatItemIdByText,
     getChatItemByFileId,
+    getChatItemByGroupId,
     updateDirectChatItemStatus,
     updateDirectCIFileStatus,
     updateDirectChatItem,
@@ -212,6 +214,7 @@ import Simplex.Chat.Migrations.M20220404_files_status_fields
 import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Migrations.M20220626_auto_reply
 import Simplex.Chat.Migrations.M20220702_calls
+import Simplex.Chat.Migrations.M20220715_groups_chat_item_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -238,7 +241,8 @@ schemaMigrations =
     ("20220404_files_status_fields", m20220404_files_status_fields),
     ("20220514_profiles_user_id", m20220514_profiles_user_id),
     ("20220626_auto_reply", m20220626_auto_reply),
-    ("20220702_calls", m20220702_calls)
+    ("20220702_calls", m20220702_calls),
+    ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1325,6 +1329,11 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
         membership <- createContactMember_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) currentTs
         pure $ GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
+setGroupInvitationChatItemId :: DB.Connection -> User -> GroupId -> ChatItemId -> IO ()
+setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET chat_item_id = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (chatItemId, currentTs, userId, groupId)
+
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
 getGroup :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO Group
@@ -1335,7 +1344,7 @@ getGroup db user groupId = do
 
 deleteGroup :: DB.Connection -> User -> Group -> IO ()
 deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} members) = do
-  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId m)
+  forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute
     db
@@ -1538,7 +1547,7 @@ deleteGroupMemberConnection db userId GroupMember {groupMemberId} =
 
 createIntroductions :: DB.Connection -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
 createIntroductions db members toMember = do
-  let reMembers = filter (\m -> memberCurrent m && groupMemberId m /= groupMemberId toMember) members
+  let reMembers = filter (\m -> memberCurrent m && groupMemberId' m /= groupMemberId' toMember) members
   if null reMembers
     then pure []
     else do
@@ -1554,7 +1563,7 @@ createIntroductions db members toMember = do
             (re_group_member_id, to_group_member_id, intro_status, created_at, updated_at)
           VALUES (?,?,?,?,?)
         |]
-        (groupMemberId reMember, groupMemberId toMember, GMIntroPending, ts, ts)
+        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, ts, ts)
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
@@ -1623,7 +1632,7 @@ getIntroduction_ db reMember toMember = ExceptT $ do
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       |]
-      (groupMemberId reMember, groupMemberId toMember)
+      (groupMemberId' reMember, groupMemberId' toMember)
   where
     toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
     toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
@@ -1649,7 +1658,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
               memProfileId
             }
     member <- createNewMember_ db user gInfo newMember currentTs
-    conn <- createMemberConnection_ db userId (groupMemberId member) groupAgentConnId memberContactId cLevel currentTs
+    conn <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
     pure (member :: GroupMember) {activeConn = Just conn}
 
 createIntroToMemberContact :: DB.Connection -> UserId -> GroupMember -> GroupMember -> ConnId -> ConnId -> IO ()
@@ -2572,6 +2581,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
+          AND (c.conn_level = 0 OR i.chat_item_id IS NOT NULL)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -3470,6 +3480,22 @@ getChatItemByFileId db user@User {userId} fileId = do
         (userId, fileId)
   getAChatItem_ db user itemId chatRef
 
+getChatItemByGroupId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO AChatItem
+getChatItemByGroupId db user@User {userId} groupId = do
+  (itemId, chatRef) <-
+    ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByGroupId groupId) $
+      DB.query
+        db
+        [sql|
+          SELECT i.chat_item_id, i.contact_id, i.group_id
+          FROM chat_items i
+          JOIN groups g ON g.chat_item_id = i.chat_item_id
+          WHERE g.user_id = ? AND g.group_id = ?
+          LIMIT 1
+        |]
+        (userId, groupId)
+  getAChatItem_ db user itemId chatRef
+
 getAChatItem_ :: DB.Connection -> User -> ChatItemId -> ChatRef -> ExceptT StoreError IO AChatItem
 getAChatItem_ db user@User {userId} itemId = \case
   ChatRef CTDirect contactId -> do
@@ -3794,6 +3820,7 @@ data StoreError
   | SEQuotedChatItemNotFound
   | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
+  | SEChatItemNotFoundByGroupId {groupId :: GroupId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
