@@ -486,4 +486,15 @@
   <string name="delete_archive">Delete archive</string>
   <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>
   <string name="delete_chat_archive_question">Delete chat archive?</string>
+
+  <!-- Groups -->
+  <string name="rcv_group_invitation_item_description">received group invitation</string>
+  <string name="snd_group_invitation_item_description">sent group invitation</string>
+
+  <!-- GroupInvitationItemView.kt -->
+  <string name="you_sent_group_invitation">You sent group invitation</string>
+  <string name="group_invitation_tap_to_accept">Group invitation - tap to accept</string>
+  <string name="accepted_group_invitation">Accepted group invitation</string>
+  <string name="rejected_group_invitation">Rejected group invitation</string>
+  <string name="expired_group_invitation">Expired group invitation</string>
 </resources>

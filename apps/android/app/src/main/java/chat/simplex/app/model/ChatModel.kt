@@ -75,6 +75,8 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
 
+  fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
+
   private fun updateChat(cInfo: ChatInfo) {
     if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
@@ -811,6 +813,15 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getGroupInvitationSample(status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending) =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
@@ -901,6 +912,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -910,6 +923,8 @@ sealed class CIContent: ItemContent {
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
     is RcvIntegrityError -> msgError.text
+    is RcvGroupInvitation -> generalGetString(R.string.rcv_group_invitation_item_description)
+    is SndGroupInvitation -> generalGetString(R.string.snd_group_invitation_item_description)
   }
 }
 
@@ -1001,6 +1016,35 @@ sealed class MsgContent {
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
+}
+
+@Serializable
+class CIGroupInvitation (
+  val groupId: Long,
+  val groupMemberId: Long,
+  val localDisplayName: String,
+  val groupProfile: GroupProfile,
+  val status: CIGroupInvitationStatus
+  ) {
+
+  companion object {
+    fun getSample(
+      groupId: Long = 1,
+      groupMemberId: Long = 1,
+      localDisplayName: String = "team",
+      groupProfile: GroupProfile = GroupProfile.sampleData,
+      status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending
+    ): CIGroupInvitation =
+      CIGroupInvitation(groupId = groupId, groupMemberId = groupMemberId, localDisplayName = localDisplayName, groupProfile = groupProfile, status = status)
+  }
+}
+
+@Serializable
+enum class CIGroupInvitationStatus {
+  @SerialName("pending") Pending,
+  @SerialName("accepted") Accepted,
+  @SerialName("rejected") Rejected,
+  @SerialName("expired") Expired;
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {

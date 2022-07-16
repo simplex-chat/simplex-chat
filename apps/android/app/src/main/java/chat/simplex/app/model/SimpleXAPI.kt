@@ -509,7 +509,14 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun apiReceiveFile(fileId: Long): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId))
     if (r is CR.RcvFileAccepted) return r.chatItem
-    Log.e(TAG, "receiveFile bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiReceiveFile bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiJoinGroup(groupId: Long): GroupInfo? {
+    val r = sendCmd(CC.ApiJoinGroup(groupId))
+    if (r is CR.UserAcceptedGroupSent) return r.groupInfo
+    Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -599,6 +606,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
           chatModel.upsertChatItem(cInfo, cItem)
         }
       }
+      is CR.ReceivedGroupInvitation -> {
+        chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
+        // TODO NtfManager.shared.notifyGroupInvitation
+      }
+      is CR.UserJoinedGroup ->
+        chatModel.updateGroup(r.groupInfo)
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.RcvFileComplete ->
@@ -671,6 +684,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val chatItem = apiReceiveFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(chatItem)
+    }
+  }
+
+  suspend fun joinGroup(groupId: Long) {
+    val groupInfo = apiJoinGroup(groupId)
+    if (groupInfo != null) {
+      chatModel.updateGroup(groupInfo)
     }
   }
 

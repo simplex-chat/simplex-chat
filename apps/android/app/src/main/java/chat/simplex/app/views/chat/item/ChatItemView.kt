@@ -39,6 +39,7 @@ fun ChatItemView(
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit
 ) {
   val context = LocalContext.current
@@ -146,6 +147,8 @@ fun ChatItemView(
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
+        is CIContent.RcvGroupInvitation -> GroupInvitationItemView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.SndGroupInvitation -> GroupInvitationItemView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
       }
     }
   }
@@ -209,6 +212,7 @@ fun PreviewChatItemView() {
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       acceptCall = { _ -> }
     )
   }
@@ -227,6 +231,7 @@ fun PreviewChatItemViewDeletedContent() {
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       acceptCall = { _ -> }
     )
   }

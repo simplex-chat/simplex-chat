@@ -56,7 +56,7 @@ fun IntegrityErrorItemView(ci: ChatItem, showMember: Boolean = false) {
   name = "Dark Mode"
 )
 @Composable
-fun IntegrityErrorItemViewView() {
+fun IntegrityErrorItemViewPreview() {
   SimpleXTheme {
     IntegrityErrorItemView(
       ChatItem.getDeletedContentSampleData()

@@ -484,4 +484,15 @@
     <string name="delete_archive">Удалить архив</string>
     <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="delete_chat_archive_question">Удалить архив чата?</string>
+
+    <!-- Groups -->
+    <string name="rcv_group_invitation_item_description">полученное приглашение в группу</string>
+    <string name="snd_group_invitation_item_description">отправленное приглашение в группу</string>
+
+    <!-- GroupInvitationItemView.kt -->
+    <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
+    <string name="group_invitation_tap_to_accept">Приглашение в группу — нажмите, чтобы принять</string>
+    <string name="accepted_group_invitation">Принятое приглашение в группу</string>
+    <string name="rejected_group_invitation">Отклоненное приглашение в группу</string>
+    <string name="expired_group_invitation">Истекшее приглашение в группу</string>
 </resources>
