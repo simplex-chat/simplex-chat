@@ -50,18 +50,18 @@ contactSubSummary = "{\"resp\":{\"contactSubSummary\":{\"contactSubscriptions\":
 contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\",\"contactSubscriptions\":[]}}"
 #endif
 
-memberSubErrors :: String
+memberSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-memberSubErrors = "{\"resp\":{\"memberSubErrors\":{\"memberSubErrors\":[]}}}"
+memberSubSummary = "{\"resp\":{\"memberSubSummary\":{\"memberSubscriptions\":[]}}}"
 #else
-memberSubErrors = "{\"resp\":{\"type\":\"memberSubErrors\",\"memberSubErrors\":[]}}"
+memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\",\"memberSubscriptions\":[]}}"
 #endif
 
 pendingSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubStatus\":[]}}}"
+pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubscriptions\":[]}}}"
 #else
-pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\",\"pendingSubStatus\":[]}}"
+pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\",\"pendingSubscriptions\":[]}}"
 #endif
 
 parsedMarkdown :: String
@@ -89,7 +89,7 @@ testChatApi = withTmpFiles $ do
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
-  chatRecvMsg cc `shouldReturn` memberSubErrors
+  chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"

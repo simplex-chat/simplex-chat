@@ -34,10 +34,11 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (fromTextField_, fstToLower, sumTypeJSON)
-import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, tshow, (<$?>))
 
 data ConnectionEntity
-  = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
+  = RcvDirectMsgConnection {entityConnection :: Connection}
+  | RcvDirectMsgContact {entityConnection :: Connection, contact :: Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
   | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
@@ -50,13 +51,23 @@ instance ToJSON ConnectionEntity where
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
-  RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = st c}) <$> ct_)
+  RcvDirectMsgConnection c -> RcvDirectMsgConnection (st c)
+  RcvDirectMsgContact c ct -> RcvDirectMsgContact (st c) (ct :: Contact) {activeConn = st c}
   RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
   SndFileConnection c ft -> SndFileConnection (st c) ft
   RcvFileConnection c ft -> RcvFileConnection (st c) ft
   UserContactConnection c uc -> UserContactConnection (st c) uc
   where
     st c = c {connStatus}
+
+connEntityDescription :: ConnectionEntity -> Text
+connEntityDescription = \case
+  RcvDirectMsgConnection c -> "pending connection " <> tshow (aConnId c)
+  RcvDirectMsgContact _ Contact {localDisplayName} -> "contact " <> localDisplayName
+  RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> "member " <> m <> " of the group " <> g
+  SndFileConnection _ SndFileTransfer {fileId} -> "sent file " <> tshow fileId
+  RcvFileConnection _ RcvFileTransfer {fileId} -> "received file " <> tshow fileId
+  UserContactConnection _ _ -> "user contact address"
 
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage

@@ -541,6 +541,9 @@ data SndFileTransfer = SndFileTransfer
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
+sndFileTransferConnId :: SndFileTransfer -> ConnId
+sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
+
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation
@@ -585,6 +588,14 @@ data RcvFileInfo = RcvFileInfo
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> acId fi
+  RFSConnected fi -> acId fi
+  _ -> Nothing
+  where
+    acId RcvFileInfo {agentConnId = AgentConnId cId} = Just cId
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -703,6 +714,7 @@ data PendingContactConnection = PendingContactConnection
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
+    viaUserContactLink :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
