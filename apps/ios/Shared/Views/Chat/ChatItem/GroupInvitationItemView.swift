@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct GroupInvitationItemView: View {
+    @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
@@ -21,7 +22,7 @@ struct GroupInvitationItemView: View {
                 HStack {
                     ProfileImage(
                         iconName: "person.2.circle.fill",
-                        color: accent(sent) ? .white : Color(uiColor: .tertiaryLabel)
+                        color: accent(sent) ? .accentColor : Color(uiColor: .tertiaryLabel)
                     )
                     .frame(width: 44, height: 44)
                     .padding(.trailing, 6)
@@ -32,7 +33,7 @@ struct GroupInvitationItemView: View {
                     }
                 }
                 Divider()
-                    .frame(width: 300)
+                    .frame(width: 240)
                 groupInvitationText(sent)
                     .padding(.bottom, 18)
             }
@@ -41,7 +42,7 @@ struct GroupInvitationItemView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(accent(sent) ? .accentColor : Color(uiColor: .tertiarySystemGroupedBackground))
+        .background(chatItemFrameColor(chatItem, colorScheme))
         .cornerRadius(18)
         .textSelection(.disabled)
         .onTapGesture { groupInvitationAction(sent) }
@@ -50,7 +51,7 @@ struct GroupInvitationItemView: View {
     @ViewBuilder private func groupInvitationText(_ sent: Bool) -> some View {
         switch (sent, groupInvitation.status) {
         case (true, _): Text("You sent group invitation")
-        case (false, .pending): Text("Invitation to join group. Tap to accept")
+        case (false, .pending): Text("Group invitation - tap to accept")
         case (false, .accepted): Text("Accepted group invitation")
         case (false, .rejected): Text("Rejected group invitation")
         case (false, .expired): Text("Expired group invitation")

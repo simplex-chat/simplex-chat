@@ -95,6 +95,7 @@ struct ChatListNavLink: View {
             }
         }
         .frame(height: 80)
+        .disabled(!groupInfo.ready) // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
     }
 
     private func markReadButton() -> some View {

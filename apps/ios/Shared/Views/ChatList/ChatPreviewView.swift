@@ -73,18 +73,6 @@ struct ChatPreviewView: View {
                 .padding(.trailing, 8)
             }
         }
-        .disabled(disabled())
-    }
-
-    // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
-    private func disabled() -> Bool {
-//        if case let .group(groupInfo) = chat.chatInfo,
-//           !groupInfo.membership.memberActive {
-//            return true
-//        } else {
-//            return false
-//        }
-        return false
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {

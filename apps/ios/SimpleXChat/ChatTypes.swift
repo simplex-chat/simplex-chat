@@ -379,13 +379,13 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
-    var membership: GroupMember
+    public var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
 
     public var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
-    public var ready: Bool { get { true } }
+    public var ready: Bool { get { membership.memberActive } }
     public var displayName: String { get { groupProfile.displayName } }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
