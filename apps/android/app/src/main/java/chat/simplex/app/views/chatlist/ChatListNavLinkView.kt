@@ -72,10 +72,16 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 }
 
 fun openOrPendingChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+  // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
+  // TODO fix parallel ifs here and in ChatPreviewView
   if (chatInfo.ready) {
     withApi { openChat(chatInfo, chatModel) }
   } else {
-    pendingContactAlertDialog(chatInfo, chatModel)
+    when (chatInfo) {
+      is ChatInfo.Direct ->
+        pendingContactAlertDialog(chatInfo, chatModel)
+      else -> {}
+    }
   }
 }
 

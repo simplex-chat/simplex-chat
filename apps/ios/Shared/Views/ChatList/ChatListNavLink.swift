@@ -77,7 +77,7 @@ struct ChatListNavLink: View {
             selection: $chatModel.chatId,
             destination: { chatView() },
             label: { ChatPreviewView(chat: chat) },
-            disabled: !groupInfo.ready
+            disabled: !groupInfo.ready // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
         )
         .swipeActions(edge: .leading) {
             if chat.chatStats.unreadCount > 0 {
@@ -95,7 +95,6 @@ struct ChatListNavLink: View {
             }
         }
         .frame(height: 80)
-        .disabled(!groupInfo.ready) // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
     }
 
     private func markReadButton() -> some View {

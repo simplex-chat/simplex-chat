@@ -489,13 +489,14 @@ class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val membership: GroupMember,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
   override val apiId get() = groupId
-  override val ready get() = true
+  override val ready get() = membership.memberActive
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
@@ -505,6 +506,7 @@ class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      membership = GroupMember.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -539,6 +541,20 @@ class GroupMember (
   val memberContactId: Long? = null,
   var activeConn: Connection? = null
 ) {
+  val memberActive: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRemoved -> false
+    GroupMemberStatus.MemLeft -> false
+    GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemIntroduced -> false
+    GroupMemberStatus.MemIntroInvited -> false
+    GroupMemberStatus.MemAccepted -> false
+    GroupMemberStatus.MemAnnounced -> false
+    GroupMemberStatus.MemConnected -> true
+    GroupMemberStatus.MemComplete -> true
+    GroupMemberStatus.MemCreator -> true
+  }
+
   companion object {
     val sampleData = GroupMember(
       groupMemberId = 1,

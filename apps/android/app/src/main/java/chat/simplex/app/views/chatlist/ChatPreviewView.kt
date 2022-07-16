@@ -55,7 +55,11 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           )
         }
       } else {
-        Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+        when (chat.chatInfo) {
+          is ChatInfo.Direct ->
+            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+          else -> {}
+        }
       }
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
