@@ -43,13 +43,14 @@ struct CIGroupInvitationView: View {
 
                 Divider().frame(width: frameWidth)
 
-                let t = Text(groupInvitationText(sent))
+                Text(groupInvitationText(sent))
+                    .font(.callout)
                     .padding(.trailing, 60)
                     .overlay(DetermineWidth())
                 if action {
-                    t.foregroundColor(.accentColor)
-                } else {
-                    t
+                    Text("Join group")
+                        .padding(.trailing, 60)
+                        .foregroundColor(.accentColor)
                 }
             }
             CIMetaView(chatItem: chatItem)
@@ -70,12 +71,12 @@ struct CIGroupInvitationView: View {
 
     private func groupInvitationText(_ sent: Bool) -> LocalizedStringKey {
         if sent {
-            return "You invited to group"
+            return "You sent group invitation"
         } else {
             switch groupInvitation.status {
-            case .pending: return "Join group"
-            case .accepted: return "Joined group"
-            case .rejected: return "Group invitation rejected"
+            case .pending: return "You are invitied to group"
+            case .accepted: return "You joined this group"
+            case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
         }
