@@ -144,7 +144,7 @@ responseToView testView = \case
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
-  CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
+  CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRPendingSubSummary _ -> []
