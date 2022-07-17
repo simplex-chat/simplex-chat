@@ -158,7 +158,7 @@ startChatController user subConns = do
       a1 <- async $ race_ notificationSubscriber agentSubscriber
       a2 <-
         if subConns
-          then Just <$> async (subscribeUserConnections' Agent.subscribeConnections user)
+          then Just <$> async (subscribeUserConnections Agent.subscribeConnections user)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       pure a1
@@ -219,7 +219,7 @@ processChatCommand = \case
     withUser $ \user -> restoreCalls user
     withAgent activateAgent $> CRCmdOk
   APISuspendChat t -> withAgent (`suspendAgent` t) $> CRCmdOk
-  ResubscribeAllConnections -> withUser (subscribeUserConnections' Agent.resubscribeConnections) $> CRCmdOk
+  ResubscribeAllConnections -> withUser (subscribeUserConnections Agent.resubscribeConnections) $> CRCmdOk
   SetFilesFolder filesFolder' -> do
     createDirectoryIfMissing True filesFolder'
     ff <- asks filesFolder
@@ -1077,13 +1077,13 @@ agentSubscriber = do
     withLock l . void . runExceptT $
       processAgentMessage u connId msg `catchError` (toView . CRChatError)
 
-subscribeUserConnections' ::
+subscribeUserConnections ::
   forall m.
   (MonadUnliftIO m, MonadReader ChatController m) =>
   (forall m'. ChatMonad m' => AgentClient -> [ConnId] -> ExceptT AgentErrorType m' (Map ConnId (Either AgentErrorType ()))) ->
   User ->
   m ()
-subscribeUserConnections' agentBatchSubscribe user = void . runExceptT $ do
+subscribeUserConnections agentBatchSubscribe user = void . runExceptT $ do
   ce <- asks $ subscriptionEvents . config
   -- contacts
   cts <- withStore_ getUserContacts
@@ -1165,86 +1165,6 @@ subscribeUserConnections' agentBatchSubscribe user = void . runExceptT $ do
           Just (Left e) -> Just $ ChatErrorAgent e
           Just _ -> Nothing
           _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
-
--- subscribeUserConnections ::
---   (MonadUnliftIO m, MonadReader ChatController m) =>
---   (forall m'. ChatMonad m' => AgentClient -> ConnId -> ExceptT AgentErrorType m' ()) ->
---   User ->
---   m ()
--- subscribeUserConnections agentSubscribe user = do
---   n <- asks $ subscriptionConcurrency . config
---   ce <- asks $ subscriptionEvents . config
---   void . runExceptT $ do
---     catchErr $ subscribeContacts n ce
---     catchErr $ subscribeUserContactLink n
---     catchErr $ subscribeGroups n ce
---     catchErr $ subscribeFiles n
---     catchErr $ subscribePendingConnections n
---   where
---     catchErr a = a `catchError` \_ -> pure ()
---     subscribeContacts n ce = do
---       contacts <- withStore' (`getUserContacts` user)
---       toView . CRContactSubSummary =<< pooledForConcurrentlyN n contacts (\ct -> ContactSubStatus ct <$> subscribeContact ce ct)
---     subscribeContact ce ct =
---       (subscribe (contactConnId ct) $> Nothing)
---         `catchError` (\e -> when ce (toView $ CRContactSubError ct e) $> Just e)
---     subscribeGroups n ce = do
---       groups <- withStore' (`getUserGroups` user)
---       toView . CRMemberSubSummary . mconcat =<< forM groups (subscribeGroup n ce)
---     subscribeGroup n ce (Group g@GroupInfo {membership} members) = do
---       let connectedMembers = mapMaybe (\m -> (m,) <$> memberConnId m) members
---       if memberStatus membership == GSMemInvited
---         then do
---           toView $ CRGroupInvitation g
---           pure []
---         else
---           if null connectedMembers
---             then do
---               if memberActive membership
---                 then toView $ CRGroupEmpty g
---                 else toView $ CRGroupRemoved g
---               pure []
---             else do
---               ms <- pooledForConcurrentlyN n connectedMembers $ \(m@GroupMember {localDisplayName = c}, cId) ->
---                 (m,) <$> ((subscribe cId $> Nothing) `catchError` (\e -> when ce (toView $ CRMemberSubError g c e) $> Just e))
---               toView $ CRGroupSubscribed g
---               pure $ map (uncurry MemberSubStatus) ms
---     subscribeFiles n = do
---       sndFileTransfers <- withStore' (`getLiveSndFileTransfers` user)
---       pooledForConcurrentlyN_ n sndFileTransfers $ \sft -> subscribeSndFile sft
---       rcvFileTransfers <- withStore' (`getLiveRcvFileTransfers` user)
---       pooledForConcurrentlyN_ n rcvFileTransfers $ \rft -> subscribeRcvFile rft
---       where
---         subscribeSndFile ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId cId} = do
---           subscribe cId `catchError` (toView . CRSndFileSubError ft)
---           void . forkIO $ do
---             threadDelay 1000000
---             l <- asks chatLock
---             a <- asks smpAgent
---             when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) $
---               withAgentLock a . withLock l $
---                 sendFileChunk user ft
---         subscribeRcvFile ft@RcvFileTransfer {fileStatus} =
---           case fileStatus of
---             RFSAccepted fInfo -> resume fInfo
---             RFSConnected fInfo -> resume fInfo
---             _ -> pure ()
---           where
---             resume RcvFileInfo {agentConnId = AgentConnId cId} =
---               subscribe cId `catchError` (toView . CRRcvFileSubError ft)
---     subscribePendingConnections n = do
---       cs <- withStore' (`getPendingContactConnections` user)
---       summary <- pooledForConcurrentlyN n cs $ \pc@PendingContactConnection {pccAgentConnId = AgentConnId cId} ->
---         PendingSubStatus pc <$> ((subscribe cId $> Nothing) `catchError` (pure . Just))
---       toView $ CRPendingSubSummary summary
---     subscribeUserContactLink n = do
---       cs <- withStore (`getUserContactLinkConnections` user)
---       (subscribeConns n cs >> toView CRUserContactLinkSubscribed)
---         `catchError` (toView . CRUserContactLinkSubError)
---     subscribe cId = withAgent (`agentSubscribe` cId)
---     subscribeConns n conns =
---       withAgent $ \a ->
---         pooledForConcurrentlyN_ n conns $ \c -> agentSubscribe a (aConnId c)
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
