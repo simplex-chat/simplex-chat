@@ -56,7 +56,6 @@ module Simplex.Chat.Store
     getPendingContactConnections,
     getContactConnections,
     getConnectionEntity,
-    getConnection,
     getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
@@ -1098,24 +1097,8 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity db user agentConnId =
-  ExceptT (getConnection db user agentConnId) >>= getConnectionEntity_ db user
-
-getConnection :: DB.Connection -> User -> AgentConnId -> IO (Either StoreError Connection)
-getConnection db User {userId} agentConnId = do
-  firstRow toConnection (SEConnectionNotFound agentConnId) $
-    DB.query
-      db
-      [sql|
-        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link,
-          conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
-        FROM connections
-        WHERE user_id = ? AND agent_conn_id = ?
-      |]
-      (userId, agentConnId)
-
-getConnectionEntity_ :: DB.Connection -> User -> Connection -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity_ db user@User {userId, userContactId} c@Connection {connId, connType, entityId, agentConnId} =
+getConnectionEntity db user@User {userId, userContactId} agentConnId = do
+  c@Connection {connType, entityId} <- getConnection_
   case entityId of
     Nothing ->
       if connType == ConnContact
@@ -1123,14 +1106,26 @@ getConnectionEntity_ db user@User {userId, userContactId} c@Connection {connId, 
         else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
     Just entId ->
       case connType of
-        ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId
-        ConnContact -> RcvDirectMsgContact c <$> getContactRec_ entId
-        ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId
+        ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
+        ConnContact -> RcvDirectMsgContact c <$> getContactRec_ entId c
+        ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId c
         ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db user entId
         ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
   where
-    getContactRec_ :: Int64 -> ExceptT StoreError IO Contact
-    getContactRec_ contactId = ExceptT $ do
+    getConnection_ :: ExceptT StoreError IO Connection
+    getConnection_ = ExceptT $ do
+      firstRow toConnection (SEConnectionNotFound agentConnId) $
+        DB.query
+          db
+          [sql|
+            SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link,
+              conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+            FROM connections
+            WHERE user_id = ? AND agent_conn_id = ?
+          |]
+          (userId, agentConnId)
+    getContactRec_ :: Int64 -> Connection -> ExceptT StoreError IO Contact
+    getContactRec_ contactId c = ExceptT $ do
       toContact' contactId c
         <$> DB.query
           db
@@ -1146,9 +1141,9 @@ getConnectionEntity_ db user@User {userId, userContactId} c@Connection {connId, 
       let profile = Profile {displayName, fullName, image}
        in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
-    getGroupAndMember_ :: Int64 -> ExceptT StoreError IO (GroupInfo, GroupMember)
-    getGroupAndMember_ groupMemberId = ExceptT $ do
-      firstRow toGroupAndMember (SEInternalError "referenced group member not found") $
+    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
+    getGroupAndMember_ groupMemberId c = ExceptT $ do
+      firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
         DB.query
           db
           [sql|
@@ -1172,15 +1167,15 @@ getConnectionEntity_ db user@User {userId, userContactId} c@Connection {connId, 
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
-    toGroupAndMember :: GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
-    toGroupAndMember (groupInfoRow :. memberRow) =
+    toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
+    toGroupAndMember c (groupInfoRow :. memberRow) =
       let groupInfo = toGroupInfo userContactId groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
-    getConnSndFileTransfer_ :: Int64 -> ExceptT StoreError IO SndFileTransfer
-    getConnSndFileTransfer_ fileId =
+    getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
+    getConnSndFileTransfer_ fileId Connection {connId} =
       ExceptT $
-        firstRow' (sndFileTransfer_ fileId) (SESndFileNotFound fileId) $
+        firstRow' (sndFileTransfer_ fileId connId) (SESndFileNotFound fileId) $
           DB.query
             db
             [sql|
@@ -1192,8 +1187,8 @@ getConnectionEntity_ db user@User {userId, userContactId} c@Connection {connId, 
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId (fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_) =
+    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
