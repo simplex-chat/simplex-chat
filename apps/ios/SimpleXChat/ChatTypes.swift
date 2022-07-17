@@ -219,7 +219,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     var localDisplayName: ContactName
     public var profile: Profile
     public var activeConn: Connection
-    var viaGroup: Int64?
+    public var viaGroup: Int64?
     var createdAt: Date
     var updatedAt: Date
 

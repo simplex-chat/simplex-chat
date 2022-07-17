@@ -76,17 +76,17 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact))
+        updateChat(.direct(contact: contact), addMissing: contact.viaGroup == nil)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
         updateChat(.group(groupInfo: groupInfo))
     }
 
-    private func updateChat(_ cInfo: ChatInfo) {
+    private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
-        } else {
+        } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
         }
     }
