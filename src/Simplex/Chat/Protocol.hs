@@ -58,15 +58,6 @@ updateEntityConnStatus connEntity connStatus = case connEntity of
   where
     st c = c {connStatus}
 
--- connEntityDescription :: ConnectionEntity -> Text
--- connEntityDescription = \case
---   RcvDirectMsgConnection _ (Just Contact {localDisplayName}) -> "contact " <> localDisplayName
---   RcvDirectMsgConnection c _ -> "pending connection " <> tshow (aConnId c)
---   RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> "member " <> m <> " of the group " <> g
---   SndFileConnection _ SndFileTransfer {fileId} -> "sent file " <> tshow fileId
---   RcvFileConnection _ RcvFileTransfer {fileId} -> "received file " <> tshow fileId
---   UserContactConnection _ _ -> "user contact address"
-
 -- chat message is sent as JSON with these properties
 data AppMessage = AppMessage
   { msgId :: Maybe SharedMsgId,
