@@ -1206,10 +1206,8 @@ processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
       showToast ("server " <> str) (safeDecodeUtf8 . strEncode $ SrvLoc host port)
 processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
-    RcvDirectMsgConnection conn ->
-      processDirectMessage agentMessage conn
-    RcvDirectMsgContact conn ct ->
-      processDirectContactMessage agentMessage conn ct
+    RcvDirectMsgConnection conn contact_ ->
+      processDirectMessage agentMessage conn contact_
     RcvGroupMsgConnection conn gInfo m ->
       processGroupMessage agentMessage conn gInfo m
     RcvFileConnection conn ft ->
@@ -1238,9 +1236,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       CON -> Just ConnReady
       _ -> Nothing
 
-    processDirectMessage :: ACommand 'Agent -> Connection -> m ()
-    processDirectMessage agentMsg conn@Connection {connId} =
-      case agentMsg of
+    processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink} = \case
+      Nothing -> case agentMsg of
         CONF confId connInfo -> do
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profile
@@ -1257,10 +1255,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
-
-    processDirectContactMessage :: ACommand 'Agent -> Connection -> Contact -> m ()
-    processDirectContactMessage agentMsg conn@Connection {connId, viaUserContactLink} ct@Contact {localDisplayName = c, contactId} =
-      case agentMsg of
+      Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
         MSG msgMeta _msgFlags msgBody -> do
           msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
           withAckMessage agentConnId msgMeta $
@@ -2359,7 +2354,7 @@ withStore action = do
     withTransaction st (runExceptT . action) `E.catch` handleInternal
   where
     handleInternal :: E.SomeException -> IO (Either StoreError a)
-    handleInternal e = print e >> (pure . Left . SEInternalError . show) e
+    handleInternal = pure . Left . SEInternalError . show
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

@@ -1102,12 +1102,12 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
   case entityId of
     Nothing ->
       if connType == ConnContact
-        then pure $ RcvDirectMsgConnection c
+        then pure $ RcvDirectMsgConnection c Nothing
         else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
     Just entId ->
       case connType of
         ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
-        ConnContact -> RcvDirectMsgContact c <$> getContactRec_ entId c
+        ConnContact -> RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
         ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId c
         ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db user entId
         ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
