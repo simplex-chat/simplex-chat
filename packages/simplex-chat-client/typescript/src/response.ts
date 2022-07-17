@@ -37,7 +37,7 @@ export type ChatResponse =
   | CRContactDisconnected
   | CRContactSubscribed
   | CRContactSubError
-  | CRContactSubSummary // TODO remove
+  | CRContactSubSummary
   | CRGroupEmpty
   | CRPendingSubSummary
   | CRUserContactLinkSubscribed
@@ -275,7 +275,6 @@ export interface CRContactSubError extends CR {
   chatError: ChatError
 }
 
-// TODO remove
 export interface CRContactSubSummary extends CR {
   type: "contactSubSummary"
   contactSubscriptions: ContactSubStatus[]
