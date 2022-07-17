@@ -74,7 +74,7 @@ struct CIGroupInvitationView: View {
             return "You sent group invitation"
         } else {
             switch groupInvitation.status {
-            case .pending: return "You are invitied to group"
+            case .pending: return "You are invited to group"
             case .accepted: return "You joined this group"
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
