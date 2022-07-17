@@ -17,42 +17,25 @@ struct CIGroupInvitationView: View {
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
-        let sent = chatItem.chatDir.sent
-        let action = !sent && groupInvitation.status == .pending
+        let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
-                HStack(alignment: .top) {
-                    ProfileImage(
-                        iconName: "person.2.circle.fill",
-                        color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
-                    )
-                    .frame(width: 44, height: 44)
-                    .padding(.trailing, 4)
-                    VStack(alignment: .leading) {
-                        let p = groupInvitation.groupProfile
-                        Text(p.displayName).font(.headline).lineLimit(2)
-                        if p.fullName != "" && p.displayName != p.fullName {
-                            Text(p.fullName).font(.subheadline).lineLimit(2)
-                        }
-                    }
-                    .frame(minHeight: 44)
-                }
-                .padding(.top, 6)
+                groupInfoView(action)
+                .padding(.horizontal, 2)
+                .padding(.top, 8)
                 .padding(.bottom, 6)
                 .overlay(DetermineWidth())
 
                 Divider().frame(width: frameWidth)
 
-                Text(groupInvitationText(sent))
-                    .font(.callout)
-                    .padding(.trailing, 60)
-                    .overlay(DetermineWidth())
                 if action {
-                    Text("Join group")
-                        .padding(.trailing, 60)
-                        .foregroundColor(.accentColor)
+                    groupInvitationText()
+                    Text("Tap to join").foregroundColor(.accentColor)
+                } else {
+                    groupInvitationText().padding(.trailing, 60)
                 }
             }
+            .padding(.bottom, 2)
             CIMetaView(chatItem: chatItem)
         }
         .padding(.horizontal, 12)
@@ -69,8 +52,34 @@ struct CIGroupInvitationView: View {
         }
     }
 
-    private func groupInvitationText(_ sent: Bool) -> LocalizedStringKey {
-        if sent {
+    private func groupInfoView(_ action: Bool) -> some View {
+        HStack(alignment: .top) {
+            ProfileImage(
+                iconName: "person.2.circle.fill",
+                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+            )
+            .frame(width: 44, height: 44)
+            .padding(.trailing, 4)
+            VStack(alignment: .leading) {
+                let p = groupInvitation.groupProfile
+                Text(p.displayName).font(.headline).lineLimit(2)
+                if p.fullName != "" && p.displayName != p.fullName {
+                    Text(p.fullName).font(.subheadline).lineLimit(2)
+                }
+            }
+            .frame(minHeight: 44)
+        }
+
+    }
+
+    private func groupInvitationText() -> some View {
+        Text(groupInvitationStr())
+            .font(.callout)
+            .overlay(DetermineWidth())
+    }
+
+    private func groupInvitationStr() -> LocalizedStringKey {
+        if chatItem.chatDir.sent {
             return "You sent group invitation"
         } else {
             switch groupInvitation.status {
