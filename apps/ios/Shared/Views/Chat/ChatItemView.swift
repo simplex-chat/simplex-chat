@@ -46,7 +46,7 @@ struct ChatItemView: View {
     }
 
     private func groupInvitationItemView(_ groupInvitation: CIGroupInvitation, _ memberRole: GroupMemberRole) -> some View {
-        GroupInvitationItemView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole)
+        CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole)
     }
 }
 
