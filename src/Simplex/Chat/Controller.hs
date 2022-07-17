@@ -270,7 +270,7 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError} -- TODO Contact?  or GroupMember?
+  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
   | CRPendingSubSummary {pendingSubscriptions :: [PendingSubStatus]}
