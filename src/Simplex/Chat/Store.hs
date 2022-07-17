@@ -40,6 +40,7 @@ module Simplex.Chat.Store
     getUserContacts,
     createUserContactLink,
     getUserContactLinkConnections,
+    getUserContactLinks,
     deleteUserContactLink,
     getUserContactLink,
     getUserContactLinkById,
@@ -52,7 +53,7 @@ module Simplex.Chat.Store
     getLiveSndFileTransfers,
     getLiveRcvFileTransfers,
     getPendingSndChunks,
-    getPendingConnections,
+    getPendingContactConnections,
     getContactConnections,
     getConnectionEntity,
     getConnectionsContacts,
@@ -330,7 +331,7 @@ createConnReqConnection db userId acId cReqHash xContactId = do
     |]
     (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt, cReqHash, xContactId)
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, createdAt, updatedAt = createdAt}
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, createdAt, updatedAt = createdAt}
 
 getConnReqContactXContactId :: DB.Connection -> UserId -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId db userId cReqHash = do
@@ -377,7 +378,7 @@ createDirectConnection db userId acId pccConnStatus = do
     |]
     (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt)
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, createdAt, updatedAt = createdAt}
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, createdAt, updatedAt = createdAt}
 
 createMemberContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createMemberContactConnection_ db userId agentConnId viaContact = createConnection_ db userId ConnContact Nothing agentConnId viaContact Nothing
@@ -578,28 +579,33 @@ createUserContactLink db userId agentConnId cReq =
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing 0 currentTs
 
-getUserContactLinkConnections :: DB.Connection -> UserId -> ExceptT StoreError IO [Connection]
-getUserContactLinkConnections db userId =
-  connections =<< liftIO getConnections
-  where
-    getConnections =
-      DB.queryNamed
-        db
-        [sql|
-          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
-            c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
-          FROM connections c
-          JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-          WHERE c.user_id = :user_id
-            AND uc.user_id = :user_id
-            AND uc.local_display_name = ''
-        |]
-        [":user_id" := userId]
-    connections [] = throwError SEUserContactLinkNotFound
-    connections rows = pure $ map toConnection rows
+getUserContactLinkConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
+getUserContactLinkConnections db user = do
+  cs <- liftIO $ getUserContactLinks db user
+  if null cs then throwError SEUserContactLinkNotFound else pure $ map fst cs
 
-deleteUserContactLink :: DB.Connection -> UserId -> IO ()
-deleteUserContactLink db userId = do
+getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
+getUserContactLinks db User {userId} =
+  map toResult
+    <$> DB.queryNamed
+      db
+      [sql|
+        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
+          uc.user_contact_link_id, uc.conn_req_contact
+        FROM connections c
+        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+        WHERE c.user_id = :user_id
+          AND uc.user_id = :user_id
+          AND uc.local_display_name = ''
+      |]
+      [":user_id" := userId]
+  where
+    toResult :: (ConnectionRow :. (Int64, ConnReqContact)) -> (Connection, UserContact)
+    toResult (connRow :. (userContactLinkId, connReqContact)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact})
+
+deleteUserContactLink :: DB.Connection -> User -> IO ()
+deleteUserContactLink db User {userId} = do
   DB.execute
     db
     [sql|
@@ -896,14 +902,13 @@ getPendingSndChunks db fileId connId =
       |]
       (fileId, connId)
 
-getPendingConnections :: DB.Connection -> User -> IO [Connection]
-getPendingConnections db User {userId} =
-  map toConnection
+getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
+getPendingContactConnections db User {userId} = do
+  map toPendingContactConnection
     <$> DB.queryNamed
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link,
-          conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, created_at, updated_at
         FROM connections
         WHERE user_id = :user_id
           AND conn_type = :conn_type
@@ -1091,7 +1096,7 @@ mergeContactRecords db userId Contact {contactId = toContactId} Contact {contact
   DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
   DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
-getConnectionEntity :: DB.Connection -> User -> ConnId -> ExceptT StoreError IO ConnectionEntity
+getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
 getConnectionEntity db user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
@@ -1109,8 +1114,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
   where
     getConnection_ :: ExceptT StoreError IO Connection
     getConnection_ = ExceptT $ do
-      connection
-        <$> DB.query
+      firstRow toConnection (SEConnectionNotFound agentConnId) $
+        DB.query
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link,
@@ -1119,9 +1124,6 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
             WHERE user_id = ? AND agent_conn_id = ?
           |]
           (userId, agentConnId)
-    connection :: [ConnectionRow] -> Either StoreError Connection
-    connection (connRow : _) = Right $ toConnection connRow
-    connection _ = Left . SEConnectionNotFound $ AgentConnId agentConnId
     getContactRec_ :: Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ contactId c = ExceptT $ do
       toContact' contactId c
@@ -1173,8 +1175,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
     getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
     getConnSndFileTransfer_ fileId Connection {connId} =
       ExceptT $
-        sndFileTransfer_ fileId connId
-          <$> DB.query
+        firstRow' (sndFileTransfer_ fileId connId) (SESndFileNotFound fileId) $
+          DB.query
             db
             [sql|
               SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, cs.local_display_name, m.local_display_name
@@ -1185,12 +1187,11 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> [(FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName)] -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId [(fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_)] =
+    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId = AgentConnId agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
-    sndFileTransfer_ fileId _ _ = Left $ SESndFileNotFound fileId
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
       userContact_
@@ -2700,13 +2701,13 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     <$> DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, created_at, updated_at
         FROM connections
         WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
       |]
       (userId, ConnContact)
   where
-    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> AChat
+    toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, UTCTime, UTCTime) -> AChat
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
@@ -2718,7 +2719,7 @@ getPendingContactConnection db userId connId = do
     DB.query
       db
       [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, created_at, updated_at
+        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, created_at, updated_at
         FROM connections
         WHERE user_id = ?
           AND connection_id = ?
@@ -2744,9 +2745,9 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, UTCTime, UTCTime) -> PendingContactConnection
-toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, createdAt, updatedAt) =
-  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, createdAt, updatedAt}
+toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, UTCTime, UTCTime) -> PendingContactConnection
+toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUserContactLink, createdAt, updatedAt) =
+  PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, createdAt, updatedAt}
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChat db user contactId pagination = do

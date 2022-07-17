@@ -270,10 +270,10 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
-  | CRMemberSubErrors {memberSubErrors :: [MemberSubError]}
+  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
+  | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
-  | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
+  | CRPendingSubSummary {pendingSubscriptions :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {callInvitation :: RcvCallInvitation}
@@ -311,17 +311,18 @@ instance ToJSON ContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data MemberSubError = MemberSubError
+data MemberSubStatus = MemberSubStatus
   { member :: GroupMember,
-    memberError :: ChatError
+    memberError :: Maybe ChatError
   }
   deriving (Show, Generic)
 
-instance ToJSON MemberSubError where
-  toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data PendingSubStatus = PendingSubStatus
-  { connId :: AgentConnId,
+  { connection :: PendingContactConnection,
     connError :: Maybe ChatError
   }
   deriving (Show, Generic)
@@ -396,6 +397,7 @@ data ChatErrorType
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
+  | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)
 
