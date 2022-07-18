@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chatlist
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -39,7 +38,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, stopped) },
-        click = { openOrPendingChat(chat.chatInfo, chatModel) },
+        click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped
@@ -47,8 +46,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, stopped) },
-        click = { openOrPendingChat(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat, chatModel, showMenu, showMarkRead) },
+        click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
+        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped
       )
@@ -71,17 +70,19 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun openOrPendingChat(chatInfo: ChatInfo, chatModel: ChatModel) {
-  // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
-  // TODO fix parallel ifs here and in ChatPreviewView
+fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   if (chatInfo.ready) {
     withApi { openChat(chatInfo, chatModel) }
   } else {
-    when (chatInfo) {
-      is ChatInfo.Direct ->
-        pendingContactAlertDialog(chatInfo, chatModel)
-      else -> {}
-    }
+    pendingContactAlertDialog(chatInfo, chatModel)
+  }
+}
+
+fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
+  when (groupInfo.membership.memberStatus) {
+    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
+    GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
+    else -> withApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 
@@ -128,27 +129,40 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 }
 
 @Composable
-fun GroupMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  if (showMarkRead) {
-    ItemAction(
-      stringResource(R.string.mark_read),
-      Icons.Outlined.Check,
-      onClick = {
-        markChatRead(chat, chatModel)
-        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        showMenu.value = false
+fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  when (groupInfo.membership.memberStatus) {
+    GroupMemberStatus.MemInvited ->
+      ItemAction(
+        stringResource(R.string.join_button),
+        Icons.Outlined.Login,
+        onClick = {
+          withApi { chatModel.controller.joinGroup(groupInfo.groupId) }
+          showMenu.value = false
+        }
+      )
+    else -> {
+      if (showMarkRead) {
+        ItemAction(
+          stringResource(R.string.mark_read),
+          Icons.Outlined.Check,
+          onClick = {
+            markChatRead(chat, chatModel)
+            chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+            showMenu.value = false
+          }
+        )
       }
-    )
+      ItemAction(
+        stringResource(R.string.clear_verb),
+        Icons.Outlined.Restore,
+        onClick = {
+          clearChatDialog(chat.chatInfo, chatModel)
+          showMenu.value = false
+        },
+        color = WarningOrange
+      )
+    }
   }
-  ItemAction(
-    stringResource(R.string.clear_verb),
-    Icons.Outlined.Restore,
-    onClick = {
-      clearChatDialog(chat.chatInfo, chatModel)
-      showMenu.value = false
-    },
-    color = WarningOrange
-  )
 }
 
 @Composable
@@ -290,6 +304,22 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
       }
     },
     dismissText = generalGetString(R.string.cancel_verb),
+  )
+}
+
+fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.join_group_question),
+    text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
+    confirmText = generalGetString(R.string.join_button),
+    onConfirm = { withApi { chatModel.controller.joinGroup(groupInfo.groupId) } }
+  )
+}
+
+fun groupInvitationAcceptedAlert() {
+  AlertManager.shared.showAlertMsg(
+    generalGetString(R.string.joining_group),
+    generalGetString(R.string.youve_accepted_group_invitation_connecting_to_inviting_group_member)
   )
 }
 

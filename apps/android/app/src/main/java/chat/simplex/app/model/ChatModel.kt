@@ -499,7 +499,7 @@ class GroupInfo (
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
   override val apiId get() = groupId
-  override val ready get() = membership.memberActive
+  override val ready get() = true
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
@@ -942,8 +942,8 @@ sealed class CIContent: ItemContent {
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
     is RcvIntegrityError -> msgError.text
-    is RcvGroupInvitation -> generalGetString(R.string.rcv_group_invitation_item_description)
-    is SndGroupInvitation -> generalGetString(R.string.snd_group_invitation_item_description)
+    is RcvGroupInvitation -> groupInvitation.text()
+    is SndGroupInvitation -> groupInvitation.text()
   }
 }
 
@@ -1045,6 +1045,7 @@ class CIGroupInvitation (
   val groupProfile: GroupProfile,
   val status: CIGroupInvitationStatus
   ) {
+  fun text(): String = String.format(generalGetString(R.string.group_invitation_item_description), groupProfile.displayName)
 
   companion object {
     fun getSample(
