@@ -230,6 +230,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
 
+    public func isIndirectContact() -> Bool {
+        return activeConn.connLevel > 0 || viaGroup != nil
+    }
+
     public static let sampleData = Contact(
         contactId: 1,
         localDisplayName: "alice",
@@ -255,12 +259,14 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
+    var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
     static let sampleData = Connection(
         connId: 1,
-        connStatus: .ready
+        connStatus: .ready,
+        connLevel: 0
     )
 }
 
