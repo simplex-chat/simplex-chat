@@ -29,10 +29,14 @@ struct CIGroupInvitationView: View {
                 Divider().frame(width: frameWidth)
 
                 if action {
-                    groupInvitationText()
-                    Text("Tap to join").foregroundColor(.accentColor)
+                    groupInvitationText().overlay(DetermineWidth())
+                    Text("Tap to join")
+                        .foregroundColor(.accentColor)
+                        .font(.callout)
                 } else {
-                    groupInvitationText().padding(.trailing, 60)
+                    groupInvitationText()
+                        .padding(.trailing, 60)
+                        .overlay(DetermineWidth())
                 }
             }
             .padding(.bottom, 2)
@@ -75,7 +79,6 @@ struct CIGroupInvitationView: View {
     private func groupInvitationText() -> some View {
         Text(groupInvitationStr())
             .font(.callout)
-            .overlay(DetermineWidth())
     }
 
     private func groupInvitationStr() -> LocalizedStringKey {
