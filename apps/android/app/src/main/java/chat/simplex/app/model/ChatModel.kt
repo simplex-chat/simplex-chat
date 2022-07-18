@@ -73,14 +73,14 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact)
 
   fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
 
-  private fun updateChat(cInfo: ChatInfo) {
+  private fun updateChat(cInfo: ChatInfo, addMissing: Boolean = true) {
     if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
-    } else {
+    } else if (addMissing) {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
   }
@@ -430,6 +430,9 @@ class Contact(
   override val fullName get() = profile.fullName
   override val image get() = profile.image
 
+  val isIndirectContact: Boolean get() =
+    activeConn.connLevel > 0 || viaGroup != null
+
   companion object {
     val sampleData = Contact(
       contactId = 1,
@@ -457,10 +460,10 @@ class ContactSubStatus(
 )
 
 @Serializable
-class Connection(val connId: Long, val connStatus: ConnStatus) {
+class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0)
   }
 }
 
