@@ -24,11 +24,7 @@ struct ChatPreviewView: View {
 
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
-                    Text(chat.chatInfo.chatViewName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
-                        .frame(maxHeight: .infinity, alignment: .topLeading)
+                    chatPreviewTitle()
                     Spacer()
                     (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.updatedAt))
                         .font(.subheadline)
@@ -41,27 +37,7 @@ struct ChatPreviewView: View {
                 .padding(.horizontal, 8)
 
                 ZStack(alignment: .topTrailing) {
-                    if let cItem = cItem {
-                        (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
-                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-                            .padding(.leading, 8)
-                            .padding(.trailing, 36)
-                            .padding(.bottom, 4)
-                        if unread > 0 {
-                            Text(unread > 999 ? "\(unread / 1000)k" : "\(unread)")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 4)
-                                .frame(minWidth: 18, minHeight: 18)
-                                .background(Color.accentColor)
-                                .cornerRadius(10)
-                        }
-                    } else if case let .direct(contact) = chat.chatInfo, !contact.ready {
-                        Text("Connecting...")
-                            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
-                            .padding([.leading, .trailing], 8)
-                            .padding(.bottom, 4)
-                    }
+                    chatPreviewText(cItem, unread)
                     if case .direct = chat.chatInfo {
                         chatStatusImage()
                             .padding(.top, 24)
@@ -73,6 +49,68 @@ struct ChatPreviewView: View {
                 .padding(.trailing, 8)
             }
         }
+    }
+
+    @ViewBuilder private func chatPreviewTitle() -> some View {
+        let v = Text(chat.chatInfo.chatViewName)
+            .font(.title3)
+            .fontWeight(.bold)
+            .frame(maxHeight: .infinity, alignment: .topLeading)
+        switch (chat.chatInfo) {
+        case .direct:
+            v.foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
+        case .group(groupInfo: let groupInfo):
+            switch (groupInfo.membership.memberStatus) {
+            case .memInvited:
+                v.foregroundColor(.accentColor)
+            case .memAccepted:
+                v.foregroundColor(.secondary)
+            default:
+                v.foregroundColor(.primary)
+            }
+        default:
+            v.foregroundColor(.primary)
+        }
+    }
+
+    @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?, _ unread: Int) -> some View {
+        if let cItem = cItem {
+            ZStack(alignment: .topTrailing) {
+                (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
+                    .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                    .padding(.leading, 8)
+                    .padding(.trailing, 36)
+                    .padding(.bottom, 4)
+                if unread > 0 {
+                    Text(unread > 999 ? "\(unread / 1000)k" : "\(unread)")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .frame(minWidth: 18, minHeight: 18)
+                        .background(Color.accentColor)
+                        .cornerRadius(10)
+                }
+            }
+        } else {
+            switch (chat.chatInfo) {
+            case let .direct(contact):
+                if !contact.ready {
+                    connectingText()
+                }
+            case let .group(groupInfo):
+                if groupInfo.membership.memberStatus == .memAccepted {
+                    connectingText()
+                }
+            default: EmptyView()
+            }
+        }
+    }
+
+    @ViewBuilder private func connectingText() -> some View {
+        Text("Connecting...")
+            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+            .padding([.leading, .trailing], 8)
+            .padding(.bottom, 4)
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {

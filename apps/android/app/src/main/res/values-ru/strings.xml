@@ -110,6 +110,7 @@
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
+    <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
@@ -484,4 +485,20 @@
     <string name="delete_archive">Удалить архив</string>
     <string name="archive_created_on_ts">Дата создания <xliff:g id="archive_ts">%1$s</xliff:g></string>
     <string name="delete_chat_archive_question">Удалить архив чата?</string>
+
+    <!-- Groups -->
+    <string name="group_invitation_item_description">приглашение в группу <xliff:g id="group_name">%1$s</xliff:g></string>
+    <string name="join_group_question">Вступить в группу?</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
+    <string name="join_button">Вступить</string>
+    <string name="joining_group">Вступление в группу</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившем членом группы.</string>
+
+    <!-- CIGroupInvitationView.kt -->
+    <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
+    <string name="you_are_invited_to_group">Вы приглашены в группу</string>
+    <string name="group_invitation_tap_to_join">Нажмите, чтобы вступить</string>
+    <string name="you_joined_this_group">Вы вступили в эту группу</string>
+    <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
+    <string name="group_invitation_expired">Приглашение в группу истекло</string>
 </resources>
