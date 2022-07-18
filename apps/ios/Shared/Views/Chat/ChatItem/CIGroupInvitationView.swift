@@ -40,7 +40,9 @@ struct CIGroupInvitationView: View {
                 }
             }
             .padding(.bottom, 2)
-            CIMetaView(chatItem: chatItem)
+            chatItem.timestampText
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -73,7 +75,6 @@ struct CIGroupInvitationView: View {
             }
             .frame(minHeight: 44)
         }
-
     }
 
     private func groupInvitationText() -> some View {

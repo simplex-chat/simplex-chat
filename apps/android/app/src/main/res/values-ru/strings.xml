@@ -489,10 +489,11 @@
     <string name="rcv_group_invitation_item_description">полученное приглашение в группу</string>
     <string name="snd_group_invitation_item_description">отправленное приглашение в группу</string>
 
-    <!-- GroupInvitationItemView.kt -->
+    <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
-    <string name="group_invitation_tap_to_accept">Приглашение в группу — нажмите, чтобы принять</string>
-    <string name="accepted_group_invitation">Принятое приглашение в группу</string>
-    <string name="rejected_group_invitation">Отклоненное приглашение в группу</string>
-    <string name="expired_group_invitation">Истекшее приглашение в группу</string>
+    <string name="you_are_invited_to_group">Вы приглашены в группу</string>
+    <string name="group_invitation_tap_to_join">Нажмите, чтобы присоединиться</string>
+    <string name="you_joined_this_group">Вы присоединились к этой группе</string>
+    <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
+    <string name="group_invitation_expired">Приглашение в группу истекло</string>
 </resources>

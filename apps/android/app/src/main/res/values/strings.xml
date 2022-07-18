@@ -491,10 +491,11 @@
   <string name="rcv_group_invitation_item_description">received group invitation</string>
   <string name="snd_group_invitation_item_description">sent group invitation</string>
 
-  <!-- GroupInvitationItemView.kt -->
+  <!-- CIGroupInvitationView.kt -->
   <string name="you_sent_group_invitation">You sent group invitation</string>
-  <string name="group_invitation_tap_to_accept">Group invitation - tap to accept</string>
-  <string name="accepted_group_invitation">Accepted group invitation</string>
-  <string name="rejected_group_invitation">Rejected group invitation</string>
-  <string name="expired_group_invitation">Expired group invitation</string>
+  <string name="you_are_invited_to_group">You are invited to group</string>
+  <string name="group_invitation_tap_to_join">Tap to join</string>
+  <string name="you_joined_this_group">You joined this group</string>
+  <string name="you_rejected_group_invitation">You rejected group invitation</string>
+  <string name="group_invitation_expired">Group invitation expired</string>
 </resources>
