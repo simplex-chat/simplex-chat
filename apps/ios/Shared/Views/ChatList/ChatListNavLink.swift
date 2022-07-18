@@ -71,30 +71,54 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
-        NavLinkPlain(
+    @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
+        let v = NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
             destination: { chatView() },
             label: { ChatPreviewView(chat: chat) },
             disabled: !groupInfo.ready // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
         )
-        .swipeActions(edge: .leading) {
-            if chat.chatStats.unreadCount > 0 {
-                markReadButton()
-            }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            clearChatButton()
-        }
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-        }
         .frame(height: 80)
+
+        switch (groupInfo.membership.memberStatus) {
+        case .memInvited:
+            v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                joinGroupButton()
+            }
+//            .onTapGesture {
+//                AlertManager.shared.showAlert(acceptGroupInvitationAlert(groupInfo))
+//            }
+//        case .memAccepted:
+//            v.onTapGesture {
+//                AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
+//            }
+        default:
+            v.swipeActions(edge: .leading) {
+                if chat.chatStats.unreadCount > 0 {
+                    markReadButton()
+                }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                clearChatButton()
+            }
+            .swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+    }
+
+    private func joinGroupButton() -> some View {
+        Button {
+            Task { await joinGroup(groupId: chat.chatInfo.apiId) }
+        } label: {
+            Label("Join", systemImage: "iphone.and.arrow.forward")
+        }
+        .tint(Color.accentColor)
     }
 
     private func markReadButton() -> some View {
@@ -240,6 +264,24 @@ struct ChatListNavLink: View {
             secondaryButton: .destructive(Text("Delete Contact")) {
                 removePendingContact(chat, contact)
             }
+        )
+    }
+
+    private func acceptGroupInvitationAlert(_ groupInfo: GroupInfo) -> Alert {
+        Alert(
+            title: Text("Join group?"),
+            message: Text("You are invited to group. Join to connect with group members."),
+            primaryButton: .default(Text("Join")) {
+                Task { await joinGroup(groupId: groupInfo.groupId) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func groupInvitationAcceptedAlert() -> Alert {
+        Alert(
+            title: Text("Joining group"),
+            message: Text("You joined this group. Connecting to inviting group member.")
         )
     }
 

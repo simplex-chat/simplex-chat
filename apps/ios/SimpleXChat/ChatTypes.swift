@@ -382,7 +382,7 @@ public struct Group: Decodable {
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
-    var groupId: Int64
+    public var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
     public var membership: GroupMember
@@ -391,7 +391,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
 
     public var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
-    public var ready: Bool { get { membership.memberActive } }
+    public var ready: Bool { get { true } }
     public var displayName: String { get { groupProfile.displayName } }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
@@ -429,7 +429,7 @@ public struct GroupMember: Decodable {
     var memberId: String
     var memberRole: GroupMemberRole
     var memberCategory: GroupMemberCategory
-    var memberStatus: GroupMemberStatus
+    public var memberStatus: GroupMemberStatus
     var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
@@ -755,8 +755,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
-            case .rcvGroupInvitation: return NSLocalizedString("received group invitation", comment: "group invitation chat item")
-            case .sndGroupInvitation: return NSLocalizedString("sent group invitation", comment: "group invitation chat item")
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text()
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text()
             }
         }
     }
@@ -1074,6 +1074,10 @@ public struct CIGroupInvitation: Decodable {
     public var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var status: CIGroupInvitationStatus
+
+    func text() -> String {
+        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+    }
 
     public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
         CIGroupInvitation(groupId: groupId, groupMemberId: groupMemberId, localDisplayName: localDisplayName, groupProfile: groupProfile, status: status)

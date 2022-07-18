@@ -46,28 +46,27 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
 
   @Composable
   fun chatPreviewText() {
-    when (cInfo) {
-      is ChatInfo.Direct ->
-        if (cInfo.ready) {
-          val ci = chat.chatItems.lastOrNull()
-          if (ci != null) {
-            MarkdownText(
-              ci.text, ci.formattedText, ci.memberDisplayName,
-              metaText = ci.timestampText,
-              maxLines = 2,
-              overflow = TextOverflow.Ellipsis,
-              style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
-            )
+    val ci = chat.chatItems.lastOrNull()
+    if (ci != null) {
+      MarkdownText(
+        ci.text, ci.formattedText, ci.memberDisplayName,
+        metaText = ci.timestampText,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+      )
+    } else {
+      when (cInfo) {
+        is ChatInfo.Direct ->
+          if (!cInfo.ready) {
+            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
           }
-        } else {
-          Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
-        }
-      is ChatInfo.Group ->
-        when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
-          else -> {}
-        }
-      else -> {}
+        is ChatInfo.Group ->
+          if (cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemAccepted) {
+            Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+          }
+        else -> {}
+      }
     }
   }
 
