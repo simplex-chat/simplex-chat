@@ -219,7 +219,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     var localDisplayName: ContactName
     public var profile: Profile
     public var activeConn: Connection
-    var viaGroup: Int64?
+    public var viaGroup: Int64?
     var createdAt: Date
     var updatedAt: Date
 
@@ -229,6 +229,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+
+    public func isIndirectContact() -> Bool {
+        return activeConn.connLevel > 0 || viaGroup != nil
+    }
 
     public static let sampleData = Contact(
         contactId: 1,
@@ -255,12 +259,14 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
+    var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
     static let sampleData = Connection(
         connId: 1,
-        connStatus: .ready
+        connStatus: .ready,
+        connLevel: 0
     )
 }
 
@@ -376,9 +382,10 @@ public struct Group: Decodable {
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
-    var groupId: Int64
+    public var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
+    public var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
 
@@ -393,6 +400,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
+        membership: GroupMember.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
@@ -409,7 +417,7 @@ public struct GroupProfile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
-    static let sampleData = GroupProfile(
+    public static let sampleData = GroupProfile(
         displayName: "team",
         fullName: "My Team"
     )
@@ -421,7 +429,7 @@ public struct GroupMember: Decodable {
     var memberId: String
     var memberRole: GroupMemberRole
     var memberCategory: GroupMemberCategory
-    var memberStatus: GroupMemberStatus
+    public var memberStatus: GroupMemberStatus
     var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
@@ -442,6 +450,24 @@ public struct GroupMember: Decodable {
         get {
             let p = memberProfile
             return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+        }
+    }
+
+    public var memberActive: Bool {
+        get {
+            switch self.memberStatus {
+            case .memRemoved: return false
+            case .memLeft: return false
+            case .memGroupDeleted: return false
+            case .memInvited: return false
+            case .memIntroduced: return false
+            case .memIntroInvited: return false
+            case .memAccepted: return false
+            case .memAnnounced: return false
+            case .memConnected: return true
+            case .memComplete: return true
+            case .memCreator: return true
+            }
         }
     }
 
@@ -624,6 +650,16 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    public static func getGroupInvitationSample (_ status: CIGroupInvitationStatus = .pending) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, false, false, false),
+            content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: status), memberRole: .admin),
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 public enum CIDirection: Decodable {
@@ -706,6 +742,8 @@ public enum CIContent: Decodable, ItemContent {
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
+    case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
 
     public var text: String {
         get {
@@ -717,6 +755,8 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text()
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text()
             }
         }
     }
@@ -1026,4 +1066,27 @@ public enum MsgErrorType: Decodable {
         case .msgDuplicate: return NSLocalizedString("duplicate message", comment: "integrity error chat item") // not used now
         }
     }
+}
+
+public struct CIGroupInvitation: Decodable {
+    public var groupId: Int64
+    public var groupMemberId: Int64
+    public var localDisplayName: GroupName
+    public var groupProfile: GroupProfile
+    public var status: CIGroupInvitationStatus
+
+    func text() -> String {
+        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+    }
+
+    public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
+        CIGroupInvitation(groupId: groupId, groupMemberId: groupMemberId, localDisplayName: localDisplayName, groupProfile: groupProfile, status: status)
+    }
+}
+
+public enum CIGroupInvitationStatus: String, Decodable {
+    case pending
+    case accepted
+    case rejected
+    case expired
 }
