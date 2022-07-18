@@ -41,7 +41,10 @@ fun CIGroupInvitationView(
       else if (isSystemInDarkTheme()) FileDark else FileLight
 
     Row(
-      Modifier.padding(top = 4.dp, bottom = 12.dp).padding(horizontal = 2.dp) // bottom = 12.dp with Divider
+      Modifier
+        .defaultMinSize(minWidth = 220.dp)
+        .padding(top = 4.dp, bottom = 12.dp)
+        .padding(horizontal = 2.dp)
     ) {
       ProfileImage(size = 60.dp, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
       Spacer(Modifier.padding(horizontal = 4.dp))
@@ -76,15 +79,19 @@ fun CIGroupInvitationView(
     color = if (sent) SentColorLight else ReceivedColorLight,
   ) {
     Box(
-      Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
+      Modifier
+        .width(IntrinsicSize.Min)
+        .padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.BottomEnd
     ) {
       Column(
-        Modifier.padding(bottom = 4.dp),
+        Modifier
+          .defaultMinSize(minWidth = 220.dp)
+          .padding(bottom = 4.dp),
         horizontalAlignment = Alignment.Start
       ) {
         groupInfoView()
-        // Divider(Modifier.fillMaxWidth().padding(bottom = 8.dp))
+        Divider(Modifier.fillMaxWidth().padding(bottom = 8.dp))
         if (action) {
           groupInvitationText()
           Text(stringResource(R.string.group_invitation_tap_to_join), color = MaterialTheme.colors.primary)
@@ -127,11 +134,27 @@ fun PendingCIGroupInvitationViewPreview() {
   name = "Dark Mode"
 )
 @Composable
-fun AcceptedCIGroupInvitationViewPreview() {
+fun CIGroupInvitationViewAcceptedPreview() {
   SimpleXTheme {
     CIGroupInvitationView(
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
+      memberRole = GroupMemberRole.Admin,
+      joinGroup = {}
+    )
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun CIGroupInvitationViewLongNamePreview() {
+  SimpleXTheme {
+    CIGroupInvitationView(
+      ci = ChatItem.getGroupInvitationSample(),
+      groupInvitation = CIGroupInvitation.getSample(
+        groupProfile = GroupProfile("group_with_a_really_really_really_long_name", "Group With A Really Really Really Long Name"),
+        status = CIGroupInvitationStatus.Accepted
+      ),
       memberRole = GroupMemberRole.Admin,
       joinGroup = {}
     )
