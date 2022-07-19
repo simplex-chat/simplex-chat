@@ -165,6 +165,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var sendMsgEnabled: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.sendMsgEnabled
+            case let .group(groupInfo): return groupInfo.sendMsgEnabled
+            case let .contactRequest(contactRequest): return contactRequest.sendMsgEnabled
+            case let .contactConnection(contactConnection): return contactConnection.sendMsgEnabled
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -226,6 +237,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
+    public var sendMsgEnabled: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -283,6 +295,7 @@ public struct UserContactRequest: Decodable, NamedChat {
     public var id: ChatId { get { "<@\(contactRequestId)" } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { false } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
@@ -307,6 +320,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     public var id: ChatId { get { ":\(pccConnId)" } }
     public var apiId: Int64 { get { pccConnId } }
     var ready: Bool { get { false } }
+    public var sendMsgEnabled: Bool { get { false } }
     var localDisplayName: String {
         get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
     }
@@ -392,6 +406,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "#\(groupId)" } }
     var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { membership.memberActive } }
     public var displayName: String { get { groupProfile.displayName } }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
