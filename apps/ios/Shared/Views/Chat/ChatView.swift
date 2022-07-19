@@ -59,7 +59,7 @@ struct ChatView: View {
                                 }
                                 markAllRead()
                             }
-                            .onChange(of: chatModel.chatItems.count) { _ in
+                            .onChange(of: chatModel.chatItems.last?.id) { _ in
                                 scrollToBottom(proxy)
                             }
                             .onChange(of: keyboardVisible) { _ in
@@ -103,7 +103,11 @@ struct ChatView: View {
                     ChatInfoToolbar(chat: chat)
                 }
                 .sheet(isPresented: $showChatInfo) {
-                    ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                    if case let .direct(contact) = chat.chatInfo {
+                        ChatInfoView(chat: chat, showChatInfo: $showChatInfo, contact: contact)
+                    } else if case .group = chat.chatInfo {
+                        GroupChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {

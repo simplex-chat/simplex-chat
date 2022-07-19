@@ -75,6 +75,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ application: UIApplication) {
+        logger.debug("AppDelegate: applicationWillTerminate")
+        terminateChat()
+    }
+
     private func receiveMessages(_ completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         let complete = BGManager.shared.completionHandler {
             logger.debug("AppDelegate: completed BGManager.receiveMessages")

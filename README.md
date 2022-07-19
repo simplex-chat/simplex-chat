@@ -39,6 +39,7 @@
 - [SimpleX Platform design](#simplex-platform-design)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
+- [Help us pay for 3rd party security audit](#help-us-pay-for-3rd-party-security-audit)
 - [Disclaimer, License](#disclaimer)
 
 ## Why privacy matters
@@ -71,13 +72,15 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 1. _How SimpleX can deliver messages without any user identifiers?_ See [v2 release annoucement](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) explaining how SimpleX works.
 
-2. _Why should I not just use Signal?_ This [post](https://github.com/dessalines/essays/blob/master/why_not_signal.md) shows why Signal cannot be considered a private messenger. Signal is a centralised platform that uses phone numbers to identify its users and their contacts.
+2. _Why should I not just use Signal?_ Signal is a centralised platform that uses phone numbers to identify its users and their contacts. It means that while the content of your messages on Signal is protected with robust end-to-end encryption, there is a large amount of meta-data visible to Signal - who you talk with and when.
 
 3. _How is it different from Matrix, Session, Ricochet, Cwtch, etc., that also don't require user identites?_ Although these platforms do not require a _real identity_, they do rely on anonymous user identities to deliver messages – it can be, for example, an identity key or a random number. Using a persistent user identity, even anonymous, creates a risk that user's connection graph becomes known to the observers and/or service providers, and it can lead to de-anonymizing some users. If the same user profile is used to connect to two different people via any messenger other than SimpleX, these two people can confirm if they are connected to the same person - they would use the same user identifier in the messages. With SimpleX there is no meta-data in common between your conversations with different contacts - the quality that no other messaging platform has.
 
 ## News and updates
 
-[Jun 4, 2022. v2.2: the new Privacy and Security settings](./blog/20220604-simplex-chat-new-privacy-security-settings.md)
+Selected updates:
+
+[Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
 
 [May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
 
@@ -141,11 +144,13 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Haskell chat bot templates.
 - ✅ v2.0 - supporting images and files in mobile apps.
 - ✅ Manual chat history deletion.
-- 🚀 End-to-end encrypted audio and video calls via the mobile apps (enable via Experimental Features).
-- 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
+- ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
+- ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
+- ✅ Chat database export and import
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- 🏗 Chat database portability and encryption.
-- Groups support for mobile apps.
+- 🏗 Connecting to messaging servers via Tor (in progress).
+- 🏗 Chat groups in mobile apps (in progress).
+- Chat database encryption.
 - Disappearing messages, with mutual agreement.
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
@@ -157,6 +162,26 @@ If you are considering developing with SimpleX platform please get in touch for 
   - the server doesn't have information about your contacts and groups.
 - Media server to optimize sending large files to groups.
 - Channels server for large groups and broadcast channels.
+
+## Help us pay for 3rd party security audit
+
+I will get straight to the point: I ask you to support SimpleX Chat with donations.
+
+We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.
+
+We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20,000+ expense could be covered with donations.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.
+
+It is possible to [donate via GitHub](https://github.com/sponsors/simplex-chat), which is commission-free for us, or [via OpenCollective](https://opencollective.com/simplex-chat), that also accepts donations in crypto-currencies, but charges a commission.
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
 
 ## Disclaimer
 

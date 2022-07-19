@@ -23,6 +23,8 @@ class ChatModel(val controller: ChatController) {
   val onboardingStage = mutableStateOf<OnboardingStage?>(null)
   val currentUser = mutableStateOf<User?>(null)
   val userCreated = mutableStateOf<Boolean?>(null)
+  val chatRunning = mutableStateOf<Boolean?>(null)
+  val chatDbChanged = mutableStateOf<Boolean>(false)
   val chats = mutableStateListOf<Chat>()
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
@@ -71,12 +73,14 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact)
 
-  private fun updateChat(cInfo: ChatInfo) {
+  fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
+
+  private fun updateChat(cInfo: ChatInfo, addMissing: Boolean = true) {
     if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
-    } else {
+    } else if (addMissing) {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
   }
@@ -426,6 +430,9 @@ class Contact(
   override val fullName get() = profile.fullName
   override val image get() = profile.image
 
+  val isIndirectContact: Boolean get() =
+    activeConn.connLevel > 0 || viaGroup != null
+
   companion object {
     val sampleData = Contact(
       contactId = 1,
@@ -453,10 +460,10 @@ class ContactSubStatus(
 )
 
 @Serializable
-class Connection(val connId: Long, val connStatus: ConnStatus) {
+class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0)
   }
 }
 
@@ -475,10 +482,17 @@ class Profile(
 }
 
 @Serializable
+class Group (
+  val groupInfo: GroupInfo,
+  var members: List<GroupMember>
+)
+
+@Serializable
 class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val membership: GroupMember,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -495,6 +509,7 @@ class GroupInfo (
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      membership = GroupMember.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -518,25 +533,84 @@ class GroupProfile (
 @Serializable
 class GroupMember (
   val groupMemberId: Long,
+  val groupId: Long,
   val memberId: String,
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+  var memberRole: GroupMemberRole,
+  var memberCategory: GroupMemberCategory,
+  var memberStatus: GroupMemberStatus,
+  var invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: Profile,
-  val memberContactId: Long?
-//    var activeConn: Connection?
+  val memberContactId: Long? = null,
+  var activeConn: Connection? = null
 ) {
+  val memberActive: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRemoved -> false
+    GroupMemberStatus.MemLeft -> false
+    GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemIntroduced -> false
+    GroupMemberStatus.MemIntroInvited -> false
+    GroupMemberStatus.MemAccepted -> false
+    GroupMemberStatus.MemAnnounced -> false
+    GroupMemberStatus.MemConnected -> true
+    GroupMemberStatus.MemComplete -> true
+    GroupMemberStatus.MemCreator -> true
+  }
+
   companion object {
     val sampleData = GroupMember(
       groupMemberId = 1,
+      groupId = 1,
       memberId = "abcd",
+      memberRole = GroupMemberRole.Member,
+      memberCategory = GroupMemberCategory.InviteeMember,
+      memberStatus = GroupMemberStatus.MemComplete,
+      invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = Profile.sampleData,
-      memberContactId = 1
+      memberContactId = 1,
+      activeConn = Connection.sampleData
     )
   }
+}
+
+@Serializable
+enum class GroupMemberRole {
+  @SerialName("member") Member,
+  @SerialName("admin") Admin,
+  @SerialName("owner") Owner;
+}
+
+@Serializable
+enum class GroupMemberCategory {
+  @SerialName("user") UserMember,
+  @SerialName("invitee") InviteeMember,
+  @SerialName("host") HostMember,
+  @SerialName("pre") PreMember,
+  @SerialName("post") PostMember;
+}
+
+@Serializable
+enum class GroupMemberStatus {
+  @SerialName("removed") MemRemoved,
+  @SerialName("left") MemLeft,
+  @SerialName("deleted") MemGroupDeleted,
+  @SerialName("invited") MemInvited,
+  @SerialName("introduced") MemIntroduced,
+  @SerialName("intro-inv") MemIntroInvited,
+  @SerialName("accepted") MemAccepted,
+  @SerialName("announced") MemAnnounced,
+  @SerialName("connected") MemConnected,
+  @SerialName("complete") MemComplete,
+  @SerialName("creator") MemCreator;
+}
+
+@Serializable
+sealed class InvitedBy {
+  @Serializable @SerialName("contact") class IBContact(val byContactId: Long): InvitedBy()
+  @Serializable @SerialName("user") class IBUser: InvitedBy()
+  @Serializable @SerialName("unknown") class IBUnknown: InvitedBy()
 }
 
 @Serializable
@@ -758,6 +832,15 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getGroupInvitationSample(status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending) =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
@@ -848,6 +931,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -857,6 +942,8 @@ sealed class CIContent: ItemContent {
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
     is RcvIntegrityError -> msgError.text
+    is RcvGroupInvitation -> groupInvitation.text()
+    is SndGroupInvitation -> groupInvitation.text()
   }
 }
 
@@ -948,6 +1035,36 @@ sealed class MsgContent {
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
+}
+
+@Serializable
+class CIGroupInvitation (
+  val groupId: Long,
+  val groupMemberId: Long,
+  val localDisplayName: String,
+  val groupProfile: GroupProfile,
+  val status: CIGroupInvitationStatus
+  ) {
+  fun text(): String = String.format(generalGetString(R.string.group_invitation_item_description), groupProfile.displayName)
+
+  companion object {
+    fun getSample(
+      groupId: Long = 1,
+      groupMemberId: Long = 1,
+      localDisplayName: String = "team",
+      groupProfile: GroupProfile = GroupProfile.sampleData,
+      status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending
+    ): CIGroupInvitation =
+      CIGroupInvitation(groupId = groupId, groupMemberId = groupMemberId, localDisplayName = localDisplayName, groupProfile = groupProfile, status = status)
+  }
+}
+
+@Serializable
+enum class CIGroupInvitationStatus {
+  @SerialName("pending") Pending,
+  @SerialName("accepted") Accepted,
+  @SerialName("rejected") Rejected,
+  @SerialName("expired") Expired;
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {

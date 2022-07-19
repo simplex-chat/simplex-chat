@@ -18,6 +18,7 @@ data class Call(
   val sharedKey: String? = null,
   val audioEnabled: Boolean = true,
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
+  val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null
 ) {

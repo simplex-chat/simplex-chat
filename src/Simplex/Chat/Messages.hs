@@ -495,6 +495,10 @@ ciDeleteModeToText = \case
   CIDMBroadcast -> "this item is deleted (broadcast)"
   CIDMInternal -> "this item is deleted (internal)"
 
+ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
+ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
+
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 data CIContent (d :: MsgDirection) where
   CISndMsgContent :: MsgContent -> CIContent 'MDSnd
@@ -504,8 +508,37 @@ data CIContent (d :: MsgDirection) where
   CISndCall :: CICallStatus -> Int -> CIContent 'MDSnd
   CIRcvCall :: CICallStatus -> Int -> CIContent 'MDRcv
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
+  CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
+  CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
 
 deriving instance Show (CIContent d)
+
+data CIGroupInvitation = CIGroupInvitation
+  { groupId :: GroupId,
+    groupMemberId :: GroupMemberId,
+    localDisplayName :: GroupName,
+    groupProfile :: GroupProfile,
+    status :: CIGroupInvitationStatus
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON CIGroupInvitation where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+data CIGroupInvitationStatus
+  = CIGISPending
+  | CIGISAccepted
+  | CIGISRejected
+  | CIGISExpired
+  deriving (Eq, Show, Generic)
+
+instance FromJSON CIGroupInvitationStatus where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIGIS"
+
+instance ToJSON CIGroupInvitationStatus where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIGIS"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIGIS"
 
 ciContentToText :: CIContent d -> Text
 ciContentToText = \case
@@ -516,6 +549,8 @@ ciContentToText = \case
   CISndCall status duration -> "outgoing call: " <> ciCallInfoText status duration
   CIRcvCall status duration -> "incoming call: " <> ciCallInfoText status duration
   CIRcvIntegrityError err -> msgIntegrityError err
+  CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
+  CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -560,6 +595,8 @@ data JSONCIContent
   | JCISndCall {status :: CICallStatus, duration :: Int} -- duration in seconds
   | JCIRcvCall {status :: CICallStatus, duration :: Int}
   | JCIRcvIntegrityError {msgError :: MsgErrorType}
+  | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   deriving (Generic)
 
 instance FromJSON JSONCIContent where
@@ -578,6 +615,8 @@ jsonCIContent = \case
   CISndCall status duration -> JCISndCall {status, duration}
   CIRcvCall status duration -> JCIRcvCall {status, duration}
   CIRcvIntegrityError err -> JCIRcvIntegrityError err
+  CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
+  CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
 
 aciContentJSON :: JSONCIContent -> ACIContent
 aciContentJSON = \case
@@ -588,6 +627,8 @@ aciContentJSON = \case
   JCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   JCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   JCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
+  JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
 
 -- platform independent
 data DBJSONCIContent
@@ -598,6 +639,8 @@ data DBJSONCIContent
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvIntegrityError {msgError :: MsgErrorType}
+  | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   deriving (Generic)
 
 instance FromJSON DBJSONCIContent where
@@ -616,6 +659,8 @@ dbJsonCIContent = \case
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
+  CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
+  CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -626,6 +671,8 @@ aciContentDBJSON = \case
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
   DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
+  DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
 
 data CICallStatus
   = CISCallPending

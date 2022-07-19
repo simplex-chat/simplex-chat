@@ -16,6 +16,7 @@ struct ChatInfoView: View {
     @Binding var showChatInfo: Bool
     @State var alert: ChatInfoViewAlert? = nil
     @State var deletingContact: Contact?
+    var contact: Contact
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
@@ -35,53 +36,39 @@ struct ChatInfoView: View {
             Text(chat.chatInfo.fullName).font(.title)
                 .padding(.bottom)
 
-            VStack {
-                if case let .direct(contact) = chat.chatInfo {
-                    HStack {
-                        serverImage()
-                        Text(chat.serverInfo.networkStatus.statusString)
-                            .foregroundColor(.primary)
-                    }
-                    Text(chat.serverInfo.networkStatus.statusExplanation)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 64)
-                        .padding(.vertical, 8)
+            HStack {
+                serverImage()
+                Text(chat.serverInfo.networkStatus.statusString)
+                    .foregroundColor(.primary)
+            }
+            Text(chat.serverInfo.networkStatus.statusExplanation)
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 64)
+                .padding(.vertical, 8)
 
-                    Spacer()
-                    Button() {
-                        alert = .clearChatAlert
-                    } label: {
-                        Label("Clear conversation", systemImage: "gobackward")
-                    }
-                    .tint(Color.orange)
-                    Button(role: .destructive) {
-                        deletingContact = contact
-                        alert = .deleteContactAlert
-                    } label: {
-                        Label("Delete contact", systemImage: "trash")
-                    }
-                    .padding()
-                }
-                else if case .group = chat.chatInfo {
-                    Spacer()
-                    Button() {
-                        alert = .clearChatAlert
-                    } label: {
-                        Label("Clear conversation", systemImage: "gobackward")
-                    }
-                    .tint(Color.orange)
-                    .padding()
-                }
+            Spacer()
+            Button() {
+                alert = .clearChatAlert
+            } label: {
+                Label("Clear conversation", systemImage: "gobackward")
             }
-            .alert(item: $alert) { alertItem in
-                switch(alertItem) {
-                case .deleteContactAlert: return deleteContactAlert(deletingContact!)
-                case .clearChatAlert: return clearChatAlert()
-                }
+            .tint(Color.orange)
+            Button(role: .destructive) {
+                deletingContact = contact
+                alert = .deleteContactAlert
+            } label: {
+                Label("Delete contact", systemImage: "trash")
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding()
         }
+        .alert(item: $alert) { alertItem in
+            switch(alertItem) {
+            case .deleteContactAlert: return deleteContactAlert(deletingContact!)
+            case .clearChatAlert: return clearChatAlert()
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     func serverImage() -> some View {
@@ -131,6 +118,6 @@ struct ChatInfoView: View {
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         @State var showChatInfo = true
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
+        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo, contact: Contact.sampleData)
     }
 }

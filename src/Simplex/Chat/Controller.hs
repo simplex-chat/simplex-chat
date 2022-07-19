@@ -135,6 +135,12 @@ data ChatCommand
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIDeleteToken DeviceToken
   | APIGetNtfMessage {nonce :: C.CbNonce, encNtfInfo :: ByteString}
+  | APIAddMember GroupId ContactId GroupMemberRole
+  | APIJoinGroup GroupId
+  | APIMemberRole GroupId GroupMemberId GroupMemberRole
+  | APIRemoveMember GroupId GroupMemberId
+  | APILeaveGroup GroupId
+  | APIListMembers GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | ChatHelp HelpSection
@@ -159,8 +165,8 @@ data ChatCommand
   | NewGroup GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
-  | RemoveMember GroupName ContactName
   | MemberRole GroupName ContactName GroupMemberRole
+  | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName
   | ClearGroup GroupName
@@ -264,10 +270,10 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
-  | CRMemberSubErrors {memberSubErrors :: [MemberSubError]}
+  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
+  | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
-  | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
+  | CRPendingSubSummary {pendingSubscriptions :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {callInvitation :: RcvCallInvitation}
@@ -292,7 +298,7 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
-data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool}
+data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
 
 data ContactSubStatus = ContactSubStatus
@@ -305,17 +311,18 @@ instance ToJSON ContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data MemberSubError = MemberSubError
+data MemberSubStatus = MemberSubStatus
   { member :: GroupMember,
-    memberError :: ChatError
+    memberError :: Maybe ChatError
   }
   deriving (Show, Generic)
 
-instance ToJSON MemberSubError where
-  toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data PendingSubStatus = PendingSubStatus
-  { connId :: AgentConnId,
+  { connection :: PendingContactConnection,
     connError :: Maybe ChatError
   }
   deriving (Show, Generic)
@@ -366,7 +373,7 @@ data ChatErrorType
   | CEGroupNotJoined {groupInfo :: GroupInfo}
   | CEGroupMemberNotActive
   | CEGroupMemberUserRemoved
-  | CEGroupMemberNotFound {contactName :: ContactName}
+  | CEGroupMemberNotFound
   | CEGroupMemberIntroNotFound {contactName :: ContactName}
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
@@ -390,6 +397,7 @@ data ChatErrorType
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
+  | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)
 

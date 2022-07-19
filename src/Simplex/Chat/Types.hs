@@ -23,6 +23,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -166,13 +167,20 @@ type ContactName = Text
 
 type GroupName = Text
 
+optionalFullName :: ContactName -> Text -> Text
+optionalFullName localDisplayName fullName
+  | T.null fullName || localDisplayName == fullName = ""
+  | otherwise = " (" <> fullName <> ")"
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show, Generic)
 
 instance ToJSON Group where toEncoding = J.genericToEncoding J.defaultOptions
 
+type GroupId = Int64
+
 data GroupInfo = GroupInfo
-  { groupId :: Int64,
+  { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
@@ -268,9 +276,11 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
+type GroupMemberId = Int64
+
 data GroupMember = GroupMember
-  { groupMemberId :: Int64,
-    groupId :: Int64,
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
@@ -292,6 +302,9 @@ memberConn = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
+
+groupMemberId' :: GroupMember -> GroupMemberId
+groupMemberId' GroupMember {groupMemberId} = groupMemberId
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -528,6 +541,9 @@ data SndFileTransfer = SndFileTransfer
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
+sndFileTransferConnId :: SndFileTransfer -> ConnId
+sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
+
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation
@@ -572,6 +588,14 @@ data RcvFileInfo = RcvFileInfo
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> acId fi
+  RFSConnected fi -> acId fi
+  _ -> Nothing
+  where
+    acId RcvFileInfo {agentConnId = AgentConnId cId} = Just cId
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -690,6 +714,7 @@ data PendingContactConnection = PendingContactConnection
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
+    viaUserContactLink :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }

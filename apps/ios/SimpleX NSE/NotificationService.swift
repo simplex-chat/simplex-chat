@@ -12,29 +12,45 @@ import SimpleXChat
 
 let logger = Logger()
 
+let suspendingDelay: UInt64 = 2_000_000_000
+
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptContent: UNMutableNotificationContent?
+    var bestAttemptContent: UNNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
+        bestAttemptContent = request.content
+        self.contentHandler = contentHandler
         let appState = appStateGroupDefault.get()
         switch appState {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
-            self.contentHandler = contentHandler
             receiveNtfMessages(request, contentHandler)
         case .suspending:
-            self.contentHandler = contentHandler
-            receiveNtfMessages(request, contentHandler)
+            logger.debug("NotificationService: app is suspending")
+            Task {
+                var state = appState
+                for _ in 1...5 {
+                    _ = try await Task.sleep(nanoseconds: suspendingDelay)
+                    state = appStateGroupDefault.get()
+                    if state == .suspended || state != .suspending { break }
+                }
+                logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
+                if state.inactive {
+                    receiveNtfMessages(request, contentHandler)
+                } else {
+                    contentHandler(request.content)
+                }
+            }
         default:
-            print("userInfo", request.content.userInfo)
+            logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
             contentHandler(request.content)
         }
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+        logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             contentHandler(request.content)
             return
@@ -44,24 +60,19 @@ class NotificationService: UNNotificationServiceExtension {
            let nonce = ntfData["nonce"] as? String,
            let encNtfInfo = ntfData["message"] as? String,
            let _ = startChat() {
+            logger.debug("NotificationService: receiveNtfMessages: chat is started")
             if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-               if let content = receiveMessageForNotification() {
-                   contentHandler(content)
-               } else if let connEntity = ntfMsgInfo.connEntity {
-                   switch connEntity {
-                   case let .rcvDirectMsgConnection(_, contact):
-                       ()
-                   case let .rcvGroupMsgConnection(_, groupInfo, groupMember):
-                       ()
-                   case let .sndFileConnection(_, sndFileTransfer):
-                       ()
-                   case let .rcvFileConnection(_, rcvFileTransfer):
-                       ()
-                   case let .userContactConnection(_, userContact):
-                       ()
-                   }
-                   contentHandler(request.content)
-               }
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
+                if let connEntity = ntfMsgInfo.connEntity {
+                    bestAttemptContent = createConnectionEventNtf(connEntity)
+                }
+                if let content = receiveMessageForNotification() {
+                    logger.debug("NotificationService: receiveMessageForNotification: has message")
+                    contentHandler(content)
+                } else if let content = bestAttemptContent {
+                    logger.debug("NotificationService: receiveMessageForNotification: no message")
+                    contentHandler(content)
+                }
             }
         }
     }
@@ -70,8 +81,8 @@ class NotificationService: UNNotificationServiceExtension {
         logger.debug("NotificationService.serviceExtensionTimeWillExpire")
         // Called just before the extension will be terminated by the system.
         // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
-        if let contentHandler = self.contentHandler, let bestAttemptContent = self.bestAttemptContent {
-            contentHandler(bestAttemptContent)
+        if let contentHandler = self.contentHandler, let content = bestAttemptContent {
+            contentHandler(content)
         }
     }
 }
@@ -100,27 +111,23 @@ func receiveMessageForNotification() -> UNNotificationContent? {
         if let res = recvSimpleXMsg() {
             logger.debug("NotificationService receiveMessages: \(res.responseType)")
             switch res {
-    //        case let .newContactConnection(connection):
-    //        case let .contactConnectionDeleted(connection):
             case let .contactConnected(contact):
                 return createContactConnectedNtf(contact)
     //        case let .contactConnecting(contact):
     //            TODO profile update
             case let .receivedContactRequest(contactRequest):
                 return createContactRequestNtf(contactRequest)
-    //        case let .contactUpdated(toContact):
-    //            TODO profile updated
             case let .newChatItem(aChatItem):
                 let cInfo = aChatItem.chatInfo
-                let cItem = aChatItem.chatItem
+                var cItem = aChatItem.chatItem
+                if case .image = cItem.content.msgContent {
+                   if let file = cItem.file,
+                      file.fileSize <= maxImageSize,
+                      privacyAcceptImagesGroupDefault.get() {
+                       cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+                   }
+                }
                 return createMessageReceivedNtf(cInfo, cItem)
-    //        case let .chatItemUpdated(aChatItem):
-    //            TODO message updated
-    //            let cInfo = aChatItem.chatInfo
-    //            let cItem = aChatItem.chatItem
-    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-    //        case let .chatItemDeleted(_, toChatItem):
-    //            TODO message updated
     //        case let .rcvFileComplete(aChatItem):
     //            TODO file received?
     //            let cInfo = aChatItem.chatInfo
@@ -168,6 +175,14 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     if case let .ntfMessages(connEntity, msgTs, ntfMessages) = r {
         return NtfMessages(connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
     }
+    logger.debug("apiGetNtfMessage ignored response: \(String.init(describing: r), privacy: .public)")
+    return nil
+}
+
+func apiReceiveFile(fileId: Int64) -> AChatItem? {
+    let r = sendSimpleXCmd(.receiveFile(fileId: fileId))
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
+    logger.error("receiveFile error: \(responseError(r))")
     return nil
 }
 

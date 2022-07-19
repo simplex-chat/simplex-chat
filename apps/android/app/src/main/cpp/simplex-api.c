@@ -24,9 +24,11 @@ Java_chat_simplex_app_SimplexAppKt_initHS(__unused JNIEnv *env, __unused jclass 
 // from simplex-chat
 typedef void* chat_ctrl;
 
-extern chat_ctrl chat_init(const char * path);
+extern chat_ctrl chat_init(const char *path);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl);
+extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
+extern char *chat_parse_markdown(const char *str);
 
 JNIEXPORT jlong JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatInit(JNIEnv *env, __unused jclass clazz, jstring datadir) {
@@ -47,4 +49,17 @@ Java_chat_simplex_app_SimplexAppKt_chatSendCmd(JNIEnv *env, __unused jclass claz
 JNIEXPORT jstring JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatRecvMsg(JNIEnv *env, __unused jclass clazz, jlong controller) {
     return (*env)->NewStringUTF(env, chat_recv_msg((void*)controller));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_app_SimplexAppKt_chatRecvMsgWait(JNIEnv *env, __unused jclass clazz, jlong controller, jint wait) {
+    return (*env)->NewStringUTF(env, chat_recv_msg_wait((void*)controller, wait));
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_app_SimplexAppKt_chatParseMarkdown(JNIEnv *env, __unused jclass clazz, jstring str) {
+    const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_parse_markdown(_str));
+    (*env)->ReleaseStringUTFChars(env, str, _str);
+    return res;
 }

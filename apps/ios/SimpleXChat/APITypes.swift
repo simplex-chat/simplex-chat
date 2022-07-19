@@ -33,6 +33,13 @@ public enum ChatCommand {
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
+    case newGroup(groupProfile: GroupProfile)
+    case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
+    case apiJoinGroup(groupId: Int64)
+    // case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
+    case apiRemoveMember(groupId: Int64, memberId: Int64)
+    case apiLeaveGroup(groupId: Int64)
+    case apiListMembers(groupId: Int64)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case addContact
@@ -83,6 +90,12 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
+            case let .newGroup(groupProfile): return "/group \(groupProfile.displayName) \(groupProfile.fullName)"
+            case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
+            case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
+            case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
+            case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
+            case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case .addContact: return "/connect"
@@ -133,6 +146,12 @@ public enum ChatCommand {
             case .apiVerifyToken: return "apiVerifyToken"
             case .apiDeleteToken: return "apiDeleteToken"
             case .apiGetNtfMessage: return "apiGetNtfMessage"
+            case .newGroup: return "newGroup"
+            case .apiAddMember: return "apiAddMember"
+            case .apiJoinGroup: return "apiJoinGroup"
+            case .apiRemoveMember: return "apiRemoveMember"
+            case .apiLeaveGroup: return "apiLeaveGroup"
+            case .apiListMembers: return "apiListMembers"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .addContact: return "addContact"
@@ -212,6 +231,26 @@ public enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    // group events
+    case groupCreated(groupInfo: GroupInfo)
+    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
+    case userAcceptedGroupSent(groupInfo: GroupInfo)
+    case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
+    case leftMemberUser(groupInfo: GroupInfo)
+    case groupMembers(group: Group)
+    case receivedGroupInvitation(groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
+    case groupDeletedUser(groupInfo: GroupInfo)
+    case joinedGroupMemberConnecting(groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
+    case deletedMemberUser(groupInfo: GroupInfo, member: GroupMember)
+    case deletedMember(groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember)
+    case leftMember(groupInfo: GroupInfo, member: GroupMember)
+    case groupDeleted(groupInfo: GroupInfo, member: GroupMember)
+    case contactsMerged(intoContact: Contact, mergedContact: Contact)
+    case groupInvitation(groupInfo: GroupInfo)
+    case userJoinedGroup(groupInfo: GroupInfo)
+    case joinedGroupMember(groupInfo: GroupInfo, member: GroupMember)
+    case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
+    case groupRemoved(groupInfo: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
     case rcvFileStart(chatItem: AChatItem)
@@ -278,6 +317,25 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
+            case .groupCreated: return "groupCreated"
+            case .sentGroupInvitation: return "sentGroupInvitation"
+            case .userAcceptedGroupSent: return "userAcceptedGroupSent"
+            case .userDeletedMember: return "userDeletedMember"
+            case .leftMemberUser: return "leftMemberUser"
+            case .groupMembers: return "groupMembers"
+            case .receivedGroupInvitation: return "receivedGroupInvitation"
+            case .groupDeletedUser: return "groupDeletedUser"
+            case .joinedGroupMemberConnecting: return "joinedGroupMemberConnecting"
+            case .deletedMemberUser: return "deletedMemberUser"
+            case .deletedMember: return "deletedMember"
+            case .leftMember: return "leftMember"
+            case .groupDeleted: return "groupDeleted"
+            case .contactsMerged: return "contactsMerged"
+            case .groupInvitation: return "groupInvitation"
+            case .userJoinedGroup: return "userJoinedGroup"
+            case .joinedGroupMember: return "joinedGroupMember"
+            case .connectedToGroupMember: return "connectedToGroupMember"
+            case .groupRemoved: return "groupRemoved"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
@@ -345,6 +403,25 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case let .groupCreated(groupInfo): return String(describing: groupInfo)
+            case let .sentGroupInvitation(groupInfo, contact): return "groupInfo: \(groupInfo)\ncontact: \(contact)"
+            case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
+            case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .leftMemberUser(groupInfo): return String(describing: groupInfo)
+            case let .groupMembers(group): return String(describing: group)
+            case let .receivedGroupInvitation(groupInfo, contact, memberRole): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)"
+            case let .groupDeletedUser(groupInfo): return String(describing: groupInfo)
+            case let .joinedGroupMemberConnecting(groupInfo, hostMember, member): return "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)"
+            case let .deletedMemberUser(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .deletedMember(groupInfo, byMember, deletedMember): return "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)"
+            case let .leftMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .groupDeleted(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .contactsMerged(intoContact, mergedContact): return "intoContact: \(intoContact)\nmergedContact: \(mergedContact)"
+            case let .groupInvitation(groupInfo): return String(describing: groupInfo)
+            case let .userJoinedGroup(groupInfo): return String(describing: groupInfo)
+            case let .joinedGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .connectedToGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
+            case let .groupRemoved(groupInfo): return String(describing: groupInfo)
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
@@ -452,8 +529,8 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .hidden: return "Hidden"
-        case .contact: return "Contact"
-        case .message: return "Message"
+        case .contact: return "Contact name"
+        case .message: return "Message text"
         }
     }
 

@@ -56,13 +56,13 @@ struct CIFileView: View {
     }
 
     func fileAction() {
-        logger.debug("CIFileView processFile")
+        logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
             case .rcvInvitation:
                 if fileSizeValid() {
                     Task {
-                        logger.debug("CIFileView processFile - in .rcvInvitation, in Task")
+                        logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         await receiveFile(fileId: file.fileId)
                     }
                 } else {
@@ -78,7 +78,7 @@ struct CIFileView: View {
                     message: "File will be received when your contact is online, please wait or check later!"
                 )
             case .rcvComplete:
-                logger.debug("CIFileView processFile - in .rcvComplete")
+                logger.debug("CIFileView fileAction - in .rcvComplete")
                 if let filePath = getLoadedFilePath(file){
                     let url = URL(fileURLWithPath: filePath)
                     showShareSheet(items: [url])

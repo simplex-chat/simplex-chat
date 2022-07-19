@@ -238,12 +238,14 @@ func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteM
     throw r
 }
 
-func apiGetNtfToken() throws -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
+func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     let r = chatSendCmdSync(.apiGetNtfToken)
     switch r {
     case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
     case .chatCmdError(.errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
-    default: throw r
+    default:
+        logger.debug("apiGetNtfToken response: \(String(describing: r), privacy: .public)")
+        return (nil, nil, .off)
     }
 }
 
@@ -256,7 +258,8 @@ func apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode) a
 func registerToken(token: DeviceToken) {
     let m = ChatModel.shared
     let mode = m.notificationMode
-    if mode != .off {
+    if mode != .off && !m.tokenRegistered {
+        m.tokenRegistered = true
         logger.debug("registerToken \(mode.rawValue)")
         Task {
             do {
@@ -425,7 +428,7 @@ func receiveFile(fileId: Int64) async {
 
 func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
-    if case .rcvFileAccepted(let chatItem) = r { return chatItem }
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     throw r
 }
 
@@ -517,6 +520,27 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
+func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
+    let r = chatSendCmdSync(.newGroup(groupProfile: gp))
+    if case let .groupCreated(groupInfo) = r { return groupInfo }
+    throw r
+}
+
+func joinGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiJoinGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("joinGroup error: \(responseError(error))")
+    }
+}
+
+func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
+    if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
+    throw r
+}
+
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
@@ -545,7 +569,7 @@ func startChat() throws {
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         try refreshCallInvitations()
-        (m.savedToken, m.tokenStatus, m.notificationMode) = try apiGetNtfToken()
+        (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
             registerToken(token: token)
         }
@@ -686,6 +710,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = m.upsertChatItem(cInfo, cItem)
             }
+        case let .receivedGroupInvitation(groupInfo, _, _):
+            m.addChat(Chat(
+                chatInfo: .group(groupInfo: groupInfo),
+                chatItems: []
+            ))
+            // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userJoinedGroup(groupInfo):
+            m.updateGroup(groupInfo)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):

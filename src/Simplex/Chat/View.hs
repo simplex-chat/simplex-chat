@@ -132,7 +132,7 @@ responseToView testView = \case
     where
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
-    [groupInvitation ldn fullName]
+    [groupInvitation' ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
   CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
@@ -144,8 +144,8 @@ responseToView testView = \case
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
-  CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
-  CRMemberSubErrors summary -> viewErrorsSummary summary " group member errors"
+  CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
+  CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRPendingSubSummary _ -> []
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
@@ -207,6 +207,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndCall {} -> []
+      CISndGroupInvitation {} -> []
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
@@ -214,6 +215,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvGroupInvitation {} -> []
       where
         from = ttyFromContact' c
     where
@@ -223,6 +225,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
       CISndDeleted _ -> []
       CISndCall {} -> []
+      CISndGroupInvitation {} -> [] -- prohibited
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
@@ -230,6 +233,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvDeleted _ -> []
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvGroupInvitation {} -> [] -- prohibited
       where
         from = ttyFromGroup' g m
     where
@@ -428,11 +432,11 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation ldn fullName
+        GSMemInvited -> groupInvitation' ldn fullName
         _ -> ttyGroup ldn <> optFullName ldn fullName
 
-groupInvitation :: GroupName -> Text -> StyledString
-groupInvitation displayName fullName =
+groupInvitation' :: GroupName -> Text -> StyledString
+groupInvitation' displayName fullName =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
     <> " - you are invited ("
@@ -744,7 +748,7 @@ viewChatError = \case
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]
     CEGroupMemberUserRemoved -> ["you are no longer a member of the group"]
-    CEGroupMemberNotFound c -> ["contact " <> ttyContact c <> " is not a group member"]
+    CEGroupMemberNotFound -> ["group doesn't have this member"]
     CEGroupMemberIntroNotFound c -> ["group member intro not found for " <> ttyContact c]
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
@@ -768,6 +772,7 @@ viewChatError = \case
     CECallContact _ -> []
     CECallState _ -> []
     CEAgentVersion -> ["unsupported agent version"]
+    CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
@@ -877,9 +882,7 @@ ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
-optFullName localDisplayName fullName
-  | T.null fullName || localDisplayName == fullName = ""
-  | otherwise = plain (" (" <> fullName <> ")")
+optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
 
 highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan

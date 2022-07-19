@@ -24,8 +24,10 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 // SimpleX API
 typealias ChatCtrl = Long
 external fun chatInit(path: String): ChatCtrl
-external fun chatSendCmd(ctrl: ChatCtrl, msg: String) : String
-external fun chatRecvMsg(ctrl: ChatCtrl) : String
+external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
+external fun chatRecvMsg(ctrl: ChatCtrl): String
+external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
+external fun chatParseMarkdown(str: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
   val chatController: ChatController by lazy {
@@ -55,7 +57,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
         chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
       } else {
         chatController.startChat(user)
-        SimplexService.start(applicationContext)
         chatController.showBackgroundServiceNoticeIfNeeded()
       }
     }
@@ -66,13 +67,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_STOP ->
-          if (!appPreferences.runServiceInBackground.get()) SimplexService.stop(applicationContext)
+          if (appPreferences.runServiceInBackground.get() && chatModel.chatRunning.value != false) SimplexService.start(applicationContext)
         Lifecycle.Event.ON_START ->
-          SimplexService.start(applicationContext)
+          SimplexService.stop(applicationContext)
         Lifecycle.Event.ON_RESUME ->
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
           }
+        else -> {}
       }
     }
   }

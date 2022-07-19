@@ -26,9 +26,51 @@ import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 
 @Composable
-fun ChatPreviewView(chat: Chat) {
+fun ChatPreviewView(chat: Chat, stopped: Boolean) {
+  val cInfo = chat.chatInfo
+
+  @Composable
+  fun chatPreviewTitleColor(): Color {
+    return when (cInfo) {
+      is ChatInfo.Direct ->
+        if (cInfo.ready) Color.Unspecified else HighOrLowlight
+      is ChatInfo.Group ->
+        when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemInvited -> MaterialTheme.colors.primary
+          GroupMemberStatus.MemAccepted -> HighOrLowlight
+          else -> Color.Unspecified
+        }
+      else -> Color.Unspecified
+    }
+  }
+
+  @Composable
+  fun chatPreviewText() {
+    val ci = chat.chatItems.lastOrNull()
+    if (ci != null) {
+      MarkdownText(
+        ci.text, ci.formattedText, ci.memberDisplayName,
+        metaText = ci.timestampText,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+      )
+    } else {
+      when (cInfo) {
+        is ChatInfo.Direct ->
+          if (!cInfo.ready) {
+            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+          }
+        is ChatInfo.Group ->
+          if (cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemAccepted) {
+            Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+          }
+        else -> {}
+      }
+    }
+  }
+
   Row {
-    val cInfo = chat.chatInfo
     ChatInfoImage(cInfo, size = 72.dp)
     Column(
       modifier = Modifier
@@ -41,22 +83,9 @@ fun ChatPreviewView(chat: Chat) {
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = if (cInfo.ready) Color.Unspecified else HighOrLowlight
+        color = chatPreviewTitleColor()
       )
-      if (cInfo.ready) {
-        val ci = chat.chatItems.lastOrNull()
-        if (ci != null) {
-          MarkdownText(
-            ci.text, ci.formattedText, ci.memberDisplayName,
-            metaText = ci.timestampText,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
-          )
-        }
-      } else {
-        Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
-      }
+      chatPreviewText()
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
@@ -80,7 +109,7 @@ fun ChatPreviewView(chat: Chat) {
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -131,6 +160,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData)
+    ChatPreviewView(Chat.sampleData, stopped = false)
   }
 }
