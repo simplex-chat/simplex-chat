@@ -115,6 +115,7 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
     )
     chatModel.controller.startChat(user)
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+    SimplexService.start(chatModel.controller.appContext)
     chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
   }
 }

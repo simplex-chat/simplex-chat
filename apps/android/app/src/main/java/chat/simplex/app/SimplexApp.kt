@@ -57,6 +57,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
       } else {
         chatController.startChat(user)
+        SimplexService.start(applicationContext)
         chatController.showBackgroundServiceNoticeIfNeeded()
       }
     }
@@ -67,9 +68,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_STOP ->
-          if (appPreferences.runServiceInBackground.get() && chatModel.chatRunning.value != false) SimplexService.start(applicationContext)
+          if (!appPreferences.runServiceInBackground.get()) SimplexService.stop(applicationContext)
         Lifecycle.Event.ON_START ->
-          SimplexService.stop(applicationContext)
+          if (chatModel.chatRunning.value != false)  SimplexService.start(applicationContext)
         Lifecycle.Event.ON_RESUME ->
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()

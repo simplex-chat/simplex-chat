@@ -24,8 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -69,8 +69,8 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      startChat = { startChat(m, runChat, chatLastStart) },
-      stopChatAlert = { stopChatAlert(m, runChat) },
+      startChat = { startChat(m, runChat, chatLastStart, context) },
+      stopChatAlert = { stopChatAlert(m, runChat, context) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       showSettingsModal
@@ -230,7 +230,7 @@ fun SettingsSectionFooter(text: String) {
   Text(text, color = HighOrLowlight, modifier = Modifier.padding(start = 16.dp, top = 5.dp).fillMaxWidth(0.9F), fontSize = 12.sp)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>) {
+private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, context: Context) {
   withApi {
     try {
       m.controller.apiStartChat()
@@ -239,6 +239,7 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
+      SimplexService.start(context)
     } catch (e: Error) {
       runChat.value = false
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
@@ -246,22 +247,23 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
   }
 }
 
-private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean>) {
+private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.stop_chat_question),
     text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
     confirmText = generalGetString(R.string.stop_chat_confirmation),
-    onConfirm = { stopChat(m, runChat) },
+    onConfirm = { stopChat(m, runChat, context) },
     onDismiss = { runChat.value = true }
   )
 }
 
-private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>) {
+private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
   withApi {
     try {
       m.controller.apiStopChat()
       runChat.value = false
       m.chatRunning.value = false
+      SimplexService.stop(context)
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())

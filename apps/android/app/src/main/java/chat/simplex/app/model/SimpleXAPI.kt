@@ -145,6 +145,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
+      if (chatModel.chatRunning.value == true) return
       val justStarted = apiStartChat()
       apiSetFilesFolder(getAppFilesDirectory(appContext))
       chatModel.userAddress.value = apiGetUserAddress()
