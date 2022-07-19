@@ -14,6 +14,7 @@ let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 
 let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -62,6 +63,8 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
+public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
+
 public class DateDefault {
     var defaults: UserDefaults
     var key: String
@@ -107,7 +110,19 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
     }
 }
 
-public class BoolDefault {
+public class BoolDefault: Default<Bool> {
+    public func get() -> Bool {
+        self.defaults.bool(forKey: self.key)
+    }
+}
+
+public class IntDefault: Default<Int> {
+    public func get() -> Int {
+        self.defaults.integer(forKey: self.key)
+    }
+}
+
+public class Default<T> {
     var defaults: UserDefaults
     var key: String
 
@@ -116,11 +131,7 @@ public class BoolDefault {
         self.key = forKey
     }
 
-    public func get() -> Bool {
-        defaults.bool(forKey: key)
-    }
-
-    public func set(_ value: Bool) {
+    public func set(_ value: T) {
         defaults.set(value, forKey: key)
         defaults.synchronize()
     }
