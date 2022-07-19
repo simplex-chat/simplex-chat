@@ -3,14 +3,19 @@
   inputs.nixpkgs.url = "github:angerman/nixpkgs/patch-1"; # based on 21.11, still need this, until everything is merged into 21.11.
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix?ref=angerman/android-static";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
+  inputs.hackage = {
+    url = "github:input-output-hk/hackage.nix";
+    flake = false;
+  };
+  inputs.haskellNix.inputs.hackage.follows = "hackage";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, haskellNix, nixpkgs, flake-utils }:
+  outputs = { self, haskellNix, nixpkgs, flake-utils, ... }:
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
       let pkgs = haskellNix.legacyPackages.${system}; in
       let drv = pkgs': pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc8107";
-        index-state = "2022-01-24T00:00:00Z";
+        index-state = "2022-06-20T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
