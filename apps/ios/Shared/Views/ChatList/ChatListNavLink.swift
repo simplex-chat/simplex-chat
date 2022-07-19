@@ -239,7 +239,7 @@ struct ChatListNavLink: View {
     private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
         Alert(
             title: Text("Leave group"),
-            message: Text("Connections with members will be deleted"),
+            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
             primaryButton: .destructive(Text("Leave")) {
                 Task { await leaveGroup(groupId: groupInfo.groupId) }
             },

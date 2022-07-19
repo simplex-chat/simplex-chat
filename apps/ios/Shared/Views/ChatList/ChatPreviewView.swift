@@ -55,6 +55,7 @@ struct ChatPreviewView: View {
         let v = Text(chat.chatInfo.chatViewName)
             .font(.title3)
             .fontWeight(.bold)
+            .lineLimit(1)
             .frame(maxHeight: .infinity, alignment: .topLeading)
         switch (chat.chatInfo) {
         case .direct:
@@ -67,13 +68,14 @@ struct ChatPreviewView: View {
                 v.foregroundColor(.secondary)
             case .memLeft:
                 HStack {
-                    Text(chat.chatInfo.chatViewName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                    Text(NSLocalizedString("(left)", comment: "group left description"))
+                    Text(NSLocalizedString("[left]", comment: "group left description"))
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.secondary)
+                    Text(chat.chatInfo.chatViewName)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .lineLimit(1)
                 }
                 .frame(maxHeight: .infinity, alignment: .topLeading)
             default: v

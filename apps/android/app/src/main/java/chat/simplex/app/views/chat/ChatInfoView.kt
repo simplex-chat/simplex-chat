@@ -72,6 +72,18 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
   )
 }
 
+// TODO move to GroupChatInfoView
+fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.leave_group_question),
+    text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    confirmText = generalGetString(R.string.leave_group_button),
+    onConfirm = {
+      withApi { chatModel.controller.leaveGroup(groupInfo.groupId) }
+    }
+  )
+}
+
 @Composable
 fun ChatInfoLayout(
   chat: Chat,

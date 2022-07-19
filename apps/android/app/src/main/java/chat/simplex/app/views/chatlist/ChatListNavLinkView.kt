@@ -17,8 +17,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.ui.theme.WarningOrange
-import chat.simplex.app.views.chat.clearChatDialog
-import chat.simplex.app.views.chat.deleteContactDialog
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
@@ -133,7 +132,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited ->
       ItemAction(
-        stringResource(R.string.join_button),
+        stringResource(R.string.join_group_button),
         Icons.Outlined.Login,
         onClick = {
           withApi { chatModel.controller.joinGroup(groupInfo.groupId) }
@@ -161,6 +160,17 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
         },
         color = WarningOrange
       )
+      if (groupInfo.membership.memberStatus != GroupMemberStatus.MemLeft) {
+        ItemAction(
+          stringResource(R.string.leave_group_button),
+          Icons.Outlined.Logout,
+          onClick = {
+            leaveGroupDialog(groupInfo, chatModel)
+            showMenu.value = false
+          },
+          color = Color.Red
+        )
+      }
     }
   }
 }
@@ -311,7 +321,7 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
-    confirmText = generalGetString(R.string.join_button),
+    confirmText = generalGetString(R.string.join_group_button),
     onConfirm = { withApi { chatModel.controller.joinGroup(groupInfo.groupId) } }
   )
 }

@@ -492,9 +492,13 @@
   <string name="group_invitation_item_description">invitation to group <xliff:g id="group_name">%1$s</xliff:g></string>
   <string name="join_group_question">Join group?</string>
   <string name="you_are_invited_to_group_join_to_connect_with_group_members">You are invited to group. Join to connect with group members.</string>
-  <string name="join_button">Join</string>
+  <string name="join_group_button">Join</string>
   <string name="joining_group">Joining group</string>
   <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
+  <string name="leave_group_button">Leave</string>
+  <string name="leave_group_question">Leave group?</string>
+  <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="group_left_description">[left]</string>
 
   <!-- CIGroupInvitationView.kt -->
   <string name="you_sent_group_invitation">You sent group invitation</string>

@@ -30,17 +30,41 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   val cInfo = chat.chatInfo
 
   @Composable
-  fun chatPreviewTitleColor(): Color {
-    return when (cInfo) {
+  fun chatPreviewTitleText(color: Color = Color.Unspecified) {
+    Text(
+      cInfo.chatViewName,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      style = MaterialTheme.typography.h3,
+      fontWeight = FontWeight.Bold,
+      color = color
+    )
+  }
+
+  @Composable
+  fun chatPreviewTitle() {
+    when (cInfo) {
       is ChatInfo.Direct ->
-        if (cInfo.ready) Color.Unspecified else HighOrLowlight
+        chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemInvited -> MaterialTheme.colors.primary
-          GroupMemberStatus.MemAccepted -> HighOrLowlight
-          else -> Color.Unspecified
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
+          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
+          GroupMemberStatus.MemLeft ->
+            Row(
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Text(
+                stringResource(R.string.group_left_description),
+                style = MaterialTheme.typography.h3,
+                fontWeight = FontWeight.Bold,
+                color = HighOrLowlight
+              )
+              chatPreviewTitleText()
+            }
+          else -> chatPreviewTitleText()
         }
-      else -> Color.Unspecified
+      else -> chatPreviewTitleText()
     }
   }
 
@@ -77,14 +101,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
-      Text(
-        cInfo.chatViewName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold,
-        color = chatPreviewTitleColor()
-      )
+      chatPreviewTitle()
       chatPreviewText()
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
