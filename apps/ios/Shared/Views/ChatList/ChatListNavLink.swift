@@ -72,29 +72,32 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
-        let v = NavLinkPlain(
-            tag: chat.chatInfo.id,
-            selection: $chatModel.chatId,
-            destination: { chatView() },
-            label: { ChatPreviewView(chat: chat) },
-            disabled: !groupInfo.ready // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
-        )
-        .frame(height: 80)
-
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
-            v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                joinGroupButton()
-            }
-//            .onTapGesture {
-//                AlertManager.shared.showAlert(acceptGroupInvitationAlert(groupInfo))
-//            }
-//        case .memAccepted:
-//            v.onTapGesture {
-//                AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
-//            }
+            ChatPreviewView(chat: chat)
+                .frame(height: 80)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    joinGroupButton()
+                }
+                .onTapGesture {
+                    AlertManager.shared.showAlert(acceptGroupInvitationAlert(groupInfo))
+                }
+        case .memAccepted:
+            ChatPreviewView(chat: chat)
+                .frame(height: 80)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
+                }
         default:
-            v.swipeActions(edge: .leading) {
+            NavLinkPlain(
+                tag: chat.chatInfo.id,
+                selection: $chatModel.chatId,
+                destination: { chatView() },
+                label: { ChatPreviewView(chat: chat) },
+                disabled: !groupInfo.ready
+            )
+            .frame(height: 80)
+            .swipeActions(edge: .leading) {
                 if chat.chatStats.unreadCount > 0 {
                     markReadButton()
                 }
