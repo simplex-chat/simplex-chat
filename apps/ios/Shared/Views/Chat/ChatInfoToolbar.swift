@@ -32,9 +32,9 @@ struct ChatInfoToolbar: View {
                     Text(cInfo.fullName).font(.subheadline)
                 }
             }
-            .frame(width: 180)
         }
         .foregroundColor(.primary)
+        .frame(width: 220)
     }
 }
 
