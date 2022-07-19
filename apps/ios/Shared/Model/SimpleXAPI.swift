@@ -350,6 +350,7 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
+    if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
@@ -538,6 +539,21 @@ func joinGroup(groupId: Int64) async {
 func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
+    throw r
+}
+
+func leaveGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiLeaveGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("leaveGroup error: \(responseError(error))")
+    }
+}
+
+func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
+    if case let .leftMemberUser(groupInfo) = r { return groupInfo }
     throw r
 }
 

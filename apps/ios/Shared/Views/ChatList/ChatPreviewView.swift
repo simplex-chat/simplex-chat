@@ -65,11 +65,20 @@ struct ChatPreviewView: View {
                 v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
-            default:
-                v.foregroundColor(.primary)
+            case .memLeft:
+                HStack {
+                    Text(chat.chatInfo.chatViewName)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                    Text(NSLocalizedString("(left)", comment: "group left description"))
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxHeight: .infinity, alignment: .topLeading)
+            default: v
             }
-        default:
-            v.foregroundColor(.primary)
+        default: v
         }
     }
 

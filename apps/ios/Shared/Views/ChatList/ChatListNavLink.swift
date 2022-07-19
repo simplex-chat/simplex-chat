@@ -106,6 +106,17 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             .swipeActions(edge: .trailing) {
+                if (groupInfo.membership.memberStatus != .memLeft) {
+                    Button {
+                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+                    } label: {
+                        Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                    .tint(Color.indigo)
+                }
+            }
+            // should only be available for owner or in specific statuses
+            .swipeActions(edge: .trailing) {
                 Button(role: .destructive) {
                     AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
                 } label: {
@@ -119,7 +130,7 @@ struct ChatListNavLink: View {
         Button {
             Task { await joinGroup(groupId: chat.chatInfo.apiId) }
         } label: {
-            Label("Join", systemImage: "iphone.and.arrow.forward")
+            Label("Join", systemImage: "ipad.and.arrow.forward")
         }
         .tint(Color.accentColor)
     }
@@ -222,6 +233,17 @@ struct ChatListNavLink: View {
         Alert(
             title: Text("Delete group"),
             message: Text("Group deletion is not supported")
+        )
+    }
+
+    private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
+        Alert(
+            title: Text("Leave group"),
+            message: Text("Connections with members will be deleted"),
+            primaryButton: .destructive(Text("Leave")) {
+                Task { await leaveGroup(groupId: groupInfo.groupId) }
+            },
+            secondaryButton: .cancel()
         )
     }
 

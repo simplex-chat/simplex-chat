@@ -734,9 +734,10 @@ processChatCommand = \case
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock . procCmd $ do
       void $ sendGroupMessage gInfo members XGrpLeave
+      -- TODO delete direct connections that were unused
       mapM_ deleteMemberConnection members
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
-      pure $ CRLeftMemberUser gInfo
+      pure $ CRLeftMemberUser gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> CRGroupMembers <$> withUser (\user -> withStore (\db -> getGroup db user groupId))
   AddMember gName cName memRole -> withUser $ \user@User {userId} -> do
     (groupId, contactId) <- withStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db userId cName
