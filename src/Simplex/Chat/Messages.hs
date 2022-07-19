@@ -516,17 +516,17 @@ data CIContent (d :: MsgDirection) where
 deriving instance Show (CIContent d)
 
 data RcvGroupEvent
-  = MemberAdded Profile
-  | UserMemberDeleted
-  | MemberDeleted Profile
-  | MemberLeft
-  | GroupDeleted
-  | MemberConnected
+  = RGEMemberAdded Profile
+  | RGEUserDeleted
+  | RGEMemberDeleted Profile
+  | RGEMemberLeft
+  | RGEGroupDeleted
+  | RGEMemberConnected
   deriving (Show)
 
 data SndGroupEvent
-  = UserDeletedMember Profile
-  | UserLeft
+  = SGEMemberDeleted Profile
+  | SGEUserLeft
   deriving (Show)
 
 data CIGroupInvitation = CIGroupInvitation
