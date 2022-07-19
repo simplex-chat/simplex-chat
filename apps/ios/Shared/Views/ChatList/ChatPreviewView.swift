@@ -106,19 +106,21 @@ struct ChatPreviewView: View {
             switch (chat.chatInfo) {
             case let .direct(contact):
                 if !contact.ready {
-                    connectingText()
+                    chatPreviewInfoText("Connecting...")
                 }
             case let .group(groupInfo):
-                if groupInfo.membership.memberStatus == .memAccepted {
-                    connectingText()
+                switch (groupInfo.membership.memberStatus) {
+                case .memInvited: chatPreviewInfoText("You are invited to group")
+                case .memAccepted: chatPreviewInfoText("Connecting...")
+                default: EmptyView()
                 }
             default: EmptyView()
             }
         }
     }
 
-    @ViewBuilder private func connectingText() -> some View {
-        Text("Connecting...")
+    @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
+        Text(text)
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
             .padding(.bottom, 4)

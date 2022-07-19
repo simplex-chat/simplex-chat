@@ -354,6 +354,16 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     throw r
 }
 
+func deleteChat(_ chat: Chat) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
+    } catch {
+        logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
+    }
+}
+
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     let r = await chatSendCmd(.apiClearChat(type: type, id: id), bgTask: false)
     if case let .chatCleared(updatedChatInfo) = r { return updatedChatInfo }

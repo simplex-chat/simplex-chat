@@ -411,6 +411,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
+    public func canDelete() -> Bool {
+        let s = membership.memberStatus
+        return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
+    }
+
     static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",

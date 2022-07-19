@@ -184,6 +184,7 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
+    canDelete :: Bool,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
