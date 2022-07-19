@@ -17,8 +17,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.ui.theme.WarningOrange
-import chat.simplex.app.views.chat.clearChatDialog
-import chat.simplex.app.views.chat.deleteContactDialog
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.delay
@@ -98,16 +97,66 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 @Composable
 fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
-    ItemAction(
-      stringResource(R.string.mark_read),
-      Icons.Outlined.Check,
-      onClick = {
-        markChatRead(chat, chatModel)
-        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        showMenu.value = false
-      }
-    )
+    MarkReadChatAction(chat, chatModel, showMenu)
   }
+  ClearChatAction(chat, chatModel, showMenu)
+  DeleteChatAction(chat, chatModel, showMenu)
+}
+
+@Composable
+fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  when (groupInfo.membership.memberStatus) {
+    GroupMemberStatus.MemInvited -> {
+      ItemAction(
+        stringResource(R.string.join_group_button),
+        Icons.Outlined.Login,
+        onClick = {
+          withApi { chatModel.controller.joinGroup(groupInfo.groupId) }
+          showMenu.value = false
+        }
+      )
+      if (groupInfo.canDelete) {
+        DeleteChatAction(chat, chatModel, showMenu)
+      }
+    }
+    else -> {
+      if (showMarkRead) {
+        MarkReadChatAction(chat, chatModel, showMenu)
+      }
+      ClearChatAction(chat, chatModel, showMenu)
+      if (groupInfo.membership.memberStatus != GroupMemberStatus.MemLeft) {
+        ItemAction(
+          stringResource(R.string.leave_group_button),
+          Icons.Outlined.Logout,
+          onClick = {
+            leaveGroupDialog(groupInfo, chatModel)
+            showMenu.value = false
+          },
+          color = Color.Red
+        )
+      }
+      if (groupInfo.canDelete) {
+        DeleteChatAction(chat, chatModel, showMenu)
+      }
+    }
+  }
+}
+
+@Composable
+fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(R.string.mark_read),
+    Icons.Outlined.Check,
+    onClick = {
+      markChatRead(chat, chatModel)
+      chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.clear_verb),
     Icons.Outlined.Restore,
@@ -117,52 +166,19 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
     },
     color = WarningOrange
   )
+}
+
+@Composable
+fun DeleteChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactDialog(chat.chatInfo as ChatInfo.Direct, chatModel)
+      deleteChatDialog(chat.chatInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
   )
-}
-
-@Composable
-fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  when (groupInfo.membership.memberStatus) {
-    GroupMemberStatus.MemInvited ->
-      ItemAction(
-        stringResource(R.string.join_button),
-        Icons.Outlined.Login,
-        onClick = {
-          withApi { chatModel.controller.joinGroup(groupInfo.groupId) }
-          showMenu.value = false
-        }
-      )
-    else -> {
-      if (showMarkRead) {
-        ItemAction(
-          stringResource(R.string.mark_read),
-          Icons.Outlined.Check,
-          onClick = {
-            markChatRead(chat, chatModel)
-            chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-            showMenu.value = false
-          }
-        )
-      }
-      ItemAction(
-        stringResource(R.string.clear_verb),
-        Icons.Outlined.Restore,
-        onClick = {
-          clearChatDialog(chat.chatInfo, chatModel)
-          showMenu.value = false
-        },
-        color = WarningOrange
-      )
-    }
-  }
 }
 
 @Composable
@@ -311,9 +327,22 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
-    confirmText = generalGetString(R.string.join_button),
-    onConfirm = { withApi { chatModel.controller.joinGroup(groupInfo.groupId) } }
+    confirmText = generalGetString(R.string.join_group_button),
+    onConfirm = { withApi { chatModel.controller.joinGroup(groupInfo.groupId) } },
+    dismissText = generalGetString(R.string.delete_verb),
+    onDismiss = { deleteGroup(groupInfo, chatModel) }
   )
+}
+
+fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
+  withApi {
+    val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
+    if (r) {
+      chatModel.removeChat(groupInfo.id)
+      chatModel.chatId.value = null
+      chatModel.controller.ntfManager.cancelNotificationsForChat(groupInfo.id)
+    }
+  }
 }
 
 fun groupInvitationAcceptedAlert() {

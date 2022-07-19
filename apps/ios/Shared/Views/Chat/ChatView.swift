@@ -84,6 +84,7 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .disabled(!chat.chatInfo.sendMsgEnabled)
         }
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)

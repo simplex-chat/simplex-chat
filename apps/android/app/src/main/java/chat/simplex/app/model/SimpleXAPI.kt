@@ -377,6 +377,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     when {
       r is CR.ContactDeleted && type == ChatType.Direct -> return true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
+      r is CR.GroupDeletedUser && type == ChatType.Group -> return true
       r is CR.ChatCmdError -> {
         val e = r.chatError
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
@@ -517,6 +518,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.ApiJoinGroup(groupId))
     if (r is CR.UserAcceptedGroupSent) return r.groupInfo
     Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiLeaveGroup(groupId: Long): GroupInfo? {
+    val r = sendCmd(CC.ApiLeaveGroup(groupId))
+    if (r is CR.LeftMemberUser) return r.groupInfo
+    Log.e(TAG, "apiLeaveGroup bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -689,6 +697,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   suspend fun joinGroup(groupId: Long) {
     val groupInfo = apiJoinGroup(groupId)
+    if (groupInfo != null) {
+      chatModel.updateGroup(groupInfo)
+    }
+  }
+
+  suspend fun leaveGroup(groupId: Long) {
+    val groupInfo = apiLeaveGroup(groupId)
     if (groupInfo != null) {
       chatModel.updateGroup(groupInfo)
     }

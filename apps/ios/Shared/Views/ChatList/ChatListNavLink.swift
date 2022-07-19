@@ -14,6 +14,7 @@ struct ChatListNavLink: View {
     @State var chat: Chat
     @Binding var showChatInfo: Bool
     @State private var showContactRequestDialog = false
+    @State private var showJoinGroupDialog = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -53,7 +54,7 @@ struct ChatListNavLink: View {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     contact.ready
-                    ? deleteContactAlert(contact)
+                    ? deleteChatAlert(chat.chatInfo)
                     : deletePendingContactAlert(chat, contact)
                 )
             } label: {
@@ -72,29 +73,39 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
-        let v = NavLinkPlain(
-            tag: chat.chatInfo.id,
-            selection: $chatModel.chatId,
-            destination: { chatView() },
-            label: { ChatPreviewView(chat: chat) },
-            disabled: !groupInfo.ready // TODO group has to be accessible for member in other statuses as well, e.g. if he was removed
-        )
-        .frame(height: 80)
-
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
-            v.swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                joinGroupButton()
-            }
-//            .onTapGesture {
-//                AlertManager.shared.showAlert(acceptGroupInvitationAlert(groupInfo))
-//            }
-//        case .memAccepted:
-//            v.onTapGesture {
-//                AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
-//            }
+            ChatPreviewView(chat: chat)
+                .frame(height: 80)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    joinGroupButton()
+                }
+                .swipeActions(edge: .trailing) {
+                    if groupInfo.canDelete() {
+                        deleteGroupChatButton(groupInfo)
+                    }
+                }
+                .onTapGesture { showJoinGroupDialog = true }
+                .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
+                    Button("Join group") { Task { await joinGroup(groupId: groupInfo.groupId) } }
+                    Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
+                }
+        case .memAccepted:
+            ChatPreviewView(chat: chat)
+                .frame(height: 80)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
+                }
         default:
-            v.swipeActions(edge: .leading) {
+            NavLinkPlain(
+                tag: chat.chatInfo.id,
+                selection: $chatModel.chatId,
+                destination: { chatView() },
+                label: { ChatPreviewView(chat: chat) },
+                disabled: !groupInfo.ready
+            )
+            .frame(height: 80)
+            .swipeActions(edge: .leading) {
                 if chat.chatStats.unreadCount > 0 {
                     markReadButton()
                 }
@@ -103,10 +114,18 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
-                    AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
-                } label: {
-                    Label("Delete", systemImage: "trash")
+                if (groupInfo.membership.memberStatus != .memLeft) {
+                    Button {
+                        AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
+                    } label: {
+                        Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                    .tint(Color.indigo)
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                if groupInfo.canDelete() {
+                    deleteGroupChatButton(groupInfo)
                 }
             }
         }
@@ -116,7 +135,7 @@ struct ChatListNavLink: View {
         Button {
             Task { await joinGroup(groupId: chat.chatInfo.apiId) }
         } label: {
-            Label("Join", systemImage: "iphone.and.arrow.forward")
+            Label("Join", systemImage: "ipad.and.arrow.forward")
         }
         .tint(Color.accentColor)
     }
@@ -139,6 +158,14 @@ struct ChatListNavLink: View {
         .tint(Color.orange)
     }
 
+    @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
+        Button(role: .destructive) {
+            AlertManager.shared.showAlert(deleteChatAlert(.group(groupInfo: groupInfo)))
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -155,7 +182,7 @@ struct ChatListNavLink: View {
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
-            Button("Reject contact (sender NOT notified)") { Task { await rejectContactRequest(contactRequest) } }
+            Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
 
@@ -184,21 +211,12 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func deleteContactAlert(_ contact: Contact) -> Alert {
+    private func deleteChatAlert(_ chatInfo: ChatInfo) -> Alert {
         Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete chat?"),
+            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: .direct, id: contact.apiId)
-                        DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
-                        }
-                    } catch let error {
-                        logger.error("ChatListNavLink.deleteContactAlert apiDeleteChat error: \(responseError(error))")
-                    }
-                }
+                Task { await deleteChat(chat) }
             },
             secondaryButton: .cancel()
         )
@@ -215,10 +233,14 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
+    private func leaveGroupAlert(_ groupInfo: GroupInfo) -> Alert {
         Alert(
-            title: Text("Delete group"),
-            message: Text("Group deletion is not supported")
+            title: Text("Leave group?"),
+            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
+            primaryButton: .destructive(Text("Leave")) {
+                Task { await leaveGroup(groupId: groupInfo.groupId) }
+            },
+            secondaryButton: .cancel()
         )
     }
 
@@ -264,17 +286,6 @@ struct ChatListNavLink: View {
             secondaryButton: .destructive(Text("Delete Contact")) {
                 removePendingContact(chat, contact)
             }
-        )
-    }
-
-    private func acceptGroupInvitationAlert(_ groupInfo: GroupInfo) -> Alert {
-        Alert(
-            title: Text("Join group?"),
-            message: Text("You are invited to group. Join to connect with group members."),
-            primaryButton: .default(Text("Join")) {
-                Task { await joinGroup(groupId: groupInfo.groupId) }
-            },
-            secondaryButton: .cancel()
         )
     }
 
