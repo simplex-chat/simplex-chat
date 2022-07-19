@@ -138,8 +138,8 @@
   <string name="error_saving_file">Error saving file</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
-  <string name="delete_contact__question">Delete contact?</string>
-  <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_chat_question">Delete chat?</string>
+  <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Chat and all messages will be deleted - this cannot be undone!</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>

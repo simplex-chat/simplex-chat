@@ -511,6 +511,13 @@ class GroupInfo (
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
 
+  val canDelete: Boolean
+    get() {
+      val s = membership.memberStatus
+      return membership.memberRole == GroupMemberRole.Owner
+          || (s == GroupMemberStatus.MemRemoved || s == GroupMemberStatus.MemLeft || s == GroupMemberStatus.MemGroupDeleted || s == GroupMemberStatus.MemInvited)
+    }
+
   companion object {
     val sampleData = GroupInfo(
       groupId = 1,

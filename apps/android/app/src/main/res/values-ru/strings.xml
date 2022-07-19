@@ -138,8 +138,8 @@
     <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
-    <string name="delete_contact__question">Удалить контакт?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
+    <string name="delete_chat_question">Удалить чат?</string>
+    <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Чат и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>

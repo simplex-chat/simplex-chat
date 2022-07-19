@@ -29,16 +29,16 @@ fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
     ChatInfoLayout(
       chat,
       close = close,
-      deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
+      deleteContact = { deleteChatDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
   }
 }
 
-fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.delete_contact__question),
-    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
+    title = generalGetString(R.string.delete_chat_question),
+    text = generalGetString(R.string.delete_chat_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {

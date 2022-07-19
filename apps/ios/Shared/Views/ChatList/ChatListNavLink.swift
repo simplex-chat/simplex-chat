@@ -81,7 +81,9 @@ struct ChatListNavLink: View {
                     joinGroupButton()
                 }
                 .swipeActions(edge: .trailing) {
-                    deleteGroupChatButton(groupInfo)
+                    if groupInfo.canDelete() {
+                        deleteGroupChatButton(groupInfo)
+                    }
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
@@ -122,7 +124,9 @@ struct ChatListNavLink: View {
                 }
             }
             .swipeActions(edge: .trailing) {
-                deleteGroupChatButton(groupInfo)
+                if groupInfo.canDelete() {
+                    deleteGroupChatButton(groupInfo)
+                }
             }
         }
     }
@@ -155,12 +159,10 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
-        if groupInfo.canDelete() {
-            Button(role: .destructive) {
-                AlertManager.shared.showAlert(deleteChatAlert(.group(groupInfo: groupInfo)))
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
+        Button(role: .destructive) {
+            AlertManager.shared.showAlert(deleteChatAlert(.group(groupInfo: groupInfo)))
+        } label: {
+            Label("Delete", systemImage: "trash")
         }
     }
 
