@@ -510,8 +510,23 @@ data CIContent (d :: MsgDirection) where
   CIRcvIntegrityError :: MsgErrorType -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
+  CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
+  CISndGroupEvent :: SndGroupEvent -> CIContent 'MDRcv
 
 deriving instance Show (CIContent d)
+
+data RcvGroupEvent
+  = DeletedMemberUser
+  | DeletedMember GroupMember
+  | LeftMember
+  | GroupDeleted
+  | ConnectedToGroupMember
+  deriving (Show)
+
+data SndGroupEvent
+  = UserDeletedMember
+  | LeftMemberUser
+  deriving (Show)
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,

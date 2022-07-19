@@ -31,7 +31,7 @@ import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, isSuffixOf, sortBy)
+import Data.List (find, isSuffixOf, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -729,7 +729,7 @@ processChatCommand = \case
           when (mStatus /= GSMemInvited) . void . sendGroupMessage gInfo members $ XGrpMemDel mId
           deleteMemberConnection m
           withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
-          pure $ CRUserDeletedMember gInfo m
+          pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock . procCmd $ do
@@ -1151,7 +1151,7 @@ subscribeUserConnections agentBatchSubscribe user = do
           where
             mErrors :: [(GroupMember, ChatError)]
             mErrors =
-              sortBy (comparing (\(GroupMember {localDisplayName = n}, _) -> n))
+              sortOn (\(GroupMember {localDisplayName = n}, _) -> n)
                 . filterErrors
                 $ filter (\(GroupMember {groupId}, _) -> groupId == gId) mRs
             groupEvent :: ChatResponse
@@ -1986,7 +1986,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         then do
           mapM_ deleteMemberConnection members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
-          toView $ CRDeletedMemberUser gInfo m
+          toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
           Just member -> do
@@ -1996,7 +1996,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               else do
                 deleteMemberConnection member
                 withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
-                toView $ CRDeletedMember gInfo m member
+                toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
 
     sameMemberId :: MemberId -> GroupMember -> Bool
     sameMemberId memId GroupMember {memberId} = memId == memberId
@@ -2005,17 +2005,17 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     xGrpLeave gInfo m = do
       deleteMemberConnection m
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
-      toView $ CRLeftMember gInfo m
+      toView $ CRLeftMember gInfo m {memberStatus = GSMemLeft}
 
     xGrpDel :: GroupInfo -> GroupMember -> m ()
-    xGrpDel gInfo m@GroupMember {memberRole} = do
+    xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} = do
       when (memberRole /= GROwner) $ throwChatError CEGroupUserRole
       ms <- withStore' $ \db -> do
         members <- getGroupMembers db user gInfo
-        updateGroupMemberStatus db userId (membership gInfo) GSMemGroupDeleted
+        updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
       mapM_ deleteMemberConnection ms
-      toView $ CRGroupDeleted gInfo m
+      toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode
