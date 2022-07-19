@@ -511,22 +511,22 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
-  CISndGroupEvent :: SndGroupEvent -> CIContent 'MDRcv
+  CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
 
 deriving instance Show (CIContent d)
 
 data RcvGroupEvent
-  = RGEMemberAdded Profile
-  | RGEUserDeleted
-  | RGEMemberDeleted Profile
-  | RGEMemberLeft
-  | RGEGroupDeleted
-  | RGEMemberConnected
+  = RGEMemberAdded Profile   -- CRJoinedGroupMemberConnecting
+  | RGEMemberConnected       -- CRConnectedToGroupMember
+  | RGEMemberLeft            -- CRLeftMember
+  | RGEMemberDeleted Profile -- CRDeletedMember
+  | RGEUserDeleted           -- CRDeletedMemberUser
+  | RGEGroupDeleted          -- CRGroupDeleted
   deriving (Show)
 
 data SndGroupEvent
-  = SGEMemberDeleted Profile
-  | SGEUserLeft
+  = SGEMemberDeleted Profile -- CRUserDeletedMember
+  | SGEUserLeft              -- CRLeftMemberUser
   deriving (Show)
 
 data CIGroupInvitation = CIGroupInvitation

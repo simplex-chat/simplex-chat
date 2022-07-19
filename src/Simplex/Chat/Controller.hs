@@ -260,7 +260,7 @@ data ChatResponse
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
-  | CRUserJoinedGroup {groupInfo :: GroupInfo}
+  | CRUserJoinedGroup {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}

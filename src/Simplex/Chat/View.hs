@@ -134,7 +134,7 @@ responseToView testView = \case
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation' ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
+  CRUserJoinedGroup g _ -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]

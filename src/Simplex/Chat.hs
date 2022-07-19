@@ -1381,7 +1381,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
-            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}}
+            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
