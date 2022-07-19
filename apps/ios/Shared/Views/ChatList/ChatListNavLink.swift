@@ -88,7 +88,7 @@ struct ChatListNavLink: View {
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
                     Button("Join group") { Task { await joinGroup(groupId: groupInfo.groupId) } }
-                    Button("Delete group") { Task { await deleteChat(chat) } }
+                    Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
             ChatPreviewView(chat: chat)
@@ -182,7 +182,7 @@ struct ChatListNavLink: View {
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
-            Button("Reject contact (sender NOT notified)") { Task { await rejectContactRequest(contactRequest) } }
+            Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
 
