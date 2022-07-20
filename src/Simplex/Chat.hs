@@ -31,7 +31,7 @@ import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, isSuffixOf, sortBy)
+import Data.List (find, isSuffixOf, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -722,18 +722,23 @@ processChatCommand = \case
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
-      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} -> do
+      Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
         let userRole = memberRole (membership :: GroupMember)
         when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
-          when (mStatus /= GSMemInvited) . void . sendGroupMessage gInfo members $ XGrpMemDel mId
+          when (mStatus /= GSMemInvited) $ do
+            msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
+            ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
+            toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
           deleteMemberConnection m
           withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
-          pure $ CRUserDeletedMember gInfo m
+          pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     withChatLock . procCmd $ do
-      void $ sendGroupMessage gInfo members XGrpLeave
+      msg <- sendGroupMessage gInfo members XGrpLeave
+      ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft) Nothing Nothing
+      toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       -- TODO delete direct connections that were unused
       mapM_ deleteMemberConnection members
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
@@ -1151,7 +1156,7 @@ subscribeUserConnections agentBatchSubscribe user = do
           where
             mErrors :: [(GroupMember, ChatError)]
             mErrors =
-              sortBy (comparing (\(GroupMember {localDisplayName = n}, _) -> n))
+              sortOn (\(GroupMember {localDisplayName = n}, _) -> n)
                 . filterErrors
                 $ filter (\(GroupMember {groupId}, _) -> groupId == gId) mRs
             groupEvent :: ChatResponse
@@ -1381,10 +1386,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
-            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}}
+            memberConnectedChatItem gInfo m
+            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
+            memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
@@ -1415,13 +1422,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
-            XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo
+            XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo msg msgMeta
             XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
             XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m memInfo introInv
-            XGrpMemDel memId -> xGrpMemDel gInfo m memId
-            XGrpLeave -> xGrpLeave gInfo m
-            XGrpDel -> xGrpDel gInfo m
+            XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
+            XGrpLeave -> xGrpLeave gInfo m msg msgMeta
+            XGrpDel -> xGrpDel gInfo m msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
@@ -1571,8 +1578,19 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         cancelRcvFileTransfer user ft
         throwChatError $ CEFileRcvChunk err
 
+    memberConnectedChatItem :: GroupInfo -> GroupMember -> m ()
+    memberConnectedChatItem gInfo m = do
+      createdAt <- liftIO getCurrentTime
+      let content = CIRcvGroupEvent RGEMemberConnected
+          cd = CDGroupRcv gInfo m
+      -- first ts should be broker ts but we don't have it for CON
+      ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
+      ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
+      toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+
     notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
+      memberConnectedChatItem gInfo m
       toView $ CRConnectedToGroupMember gInfo m
       let g = groupName' gInfo
       setActive $ ActiveG g
@@ -1925,14 +1943,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure ()
 
-    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> MsgMeta -> m ()
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId _ memberProfile) msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       unless (sameMemberId memId $ membership gInfo) $
         if isMember memId gInfo members
           then messageError "x.grp.mem.new error: member already exists"
           else do
-            newMember <- withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
+            newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
+            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile) Nothing
+            groupMsgToView gInfo m ci msgMeta
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
     xGrpMemIntro :: Connection -> GroupInfo -> GroupMember -> MemberInfo -> m ()
@@ -1979,43 +1999,51 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg
       withStore' $ \db -> createIntroToMemberContact db userId m toMember groupConnId directConnId
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> m ()
-    xGrpMemDel gInfo@GroupInfo {membership} m memId = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
+    xGrpMemDel gInfo@GroupInfo {membership} m memId msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       if memberId (membership :: GroupMember) == memId
         then do
           mapM_ deleteMemberConnection members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
-          toView $ CRDeletedMemberUser gInfo m
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEUserDeleted) Nothing
+          groupMsgToView gInfo m ci msgMeta
+          toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
-          Just member -> do
+          Just member@GroupMember {groupMemberId, memberProfile} -> do
             let mRole = memberRole (m :: GroupMember)
             if mRole < GRAdmin || mRole < memberRole (member :: GroupMember)
               then messageError "x.grp.mem.del with insufficient member permissions"
               else do
                 deleteMemberConnection member
                 withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
-                toView $ CRDeletedMember gInfo m member
+                ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberDeleted groupMemberId memberProfile) Nothing
+                groupMsgToView gInfo m ci msgMeta
+                toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
 
     sameMemberId :: MemberId -> GroupMember -> Bool
     sameMemberId memId GroupMember {memberId} = memId == memberId
 
-    xGrpLeave :: GroupInfo -> GroupMember -> m ()
-    xGrpLeave gInfo m = do
+    xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
+    xGrpLeave gInfo m msg msgMeta = do
       deleteMemberConnection m
       withStore' $ \db -> updateGroupMemberStatus db userId m GSMemLeft
-      toView $ CRLeftMember gInfo m
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
+      groupMsgToView gInfo m ci msgMeta
+      toView $ CRLeftMember gInfo m {memberStatus = GSMemLeft}
 
-    xGrpDel :: GroupInfo -> GroupMember -> m ()
-    xGrpDel gInfo m@GroupMember {memberRole} = do
+    xGrpDel :: GroupInfo -> GroupMember -> RcvMessage -> MsgMeta -> m ()
+    xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg msgMeta = do
       when (memberRole /= GROwner) $ throwChatError CEGroupUserRole
       ms <- withStore' $ \db -> do
         members <- getGroupMembers db user gInfo
-        updateGroupMemberStatus db userId (membership gInfo) GSMemGroupDeleted
+        updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
       mapM_ deleteMemberConnection ms
-      toView $ CRGroupDeleted gInfo m
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
+      groupMsgToView gInfo m ci msgMeta
+      toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode

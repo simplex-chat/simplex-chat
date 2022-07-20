@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
@@ -60,8 +59,8 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
-  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
+  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -134,7 +133,7 @@ responseToView testView = \case
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation' ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
+  CRUserJoinedGroup g _ -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
@@ -200,22 +199,24 @@ responseToView testView = \case
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
-viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
+viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
-      CISndGroupInvitation {} -> []
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItem to
+      CISndGroupEvent {} -> showSndItemProhibited to
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> []
+      CIRcvGroupInvitation {} -> showRcvItem from
+      CIRcvGroupEvent {} -> showRcvItemProhibited from
       where
         from = ttyFromContact' c
     where
@@ -223,17 +224,19 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
-      CISndGroupInvitation {} -> [] -- prohibited
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItemProhibited to
+      CISndGroupEvent {} -> showSndItem to
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> [] -- prohibited
+      CIRcvGroupInvitation {} -> showRcvItemProhibited from
+      CIRcvGroupEvent {} -> showRcvItem from
       where
         from = ttyFromGroup' g m
     where
@@ -249,6 +252,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
+    showSndItem to = showItem $ sentWithTime_ [to <> plainContent content] meta
+    showRcvItem from = showItem $ receivedWithTime_ from [] meta [plainContent content]
+    showSndItemProhibited to = showItem $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
+    showRcvItemProhibited from = showItem $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+    showItem ss = if doShow then ss else []
+    plainContent = plain . ciContentToText
+    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
