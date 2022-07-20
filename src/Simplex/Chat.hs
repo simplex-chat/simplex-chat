@@ -2359,103 +2359,105 @@ withStore action = do
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =
-  ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile)
-    <|> ("/user" <|> "/u") $> ShowActiveUser
-    <|> "/_start subscribe=" *> (StartChat <$> ("on" $> True <|> "off" $> False))
-    <|> "/_start" $> StartChat True
-    <|> "/_stop" $> APIStopChat
-    <|> "/_app activate" $> APIActivateChat
-    <|> "/_app suspend " *> (APISuspendChat <$> A.decimal)
-    <|> "/_resubscribe all" $> ResubscribeAllConnections
-    <|> "/_files_folder " *> (SetFilesFolder <$> filePath)
-    <|> "/_db export " *> (APIExportArchive <$> jsonP)
-    <|> "/_db import " *> (APIImportArchive <$> jsonP)
-    <|> "/_db delete" $> APIDeleteStorage
-    <|> "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False))
-    <|> "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP)
-    <|> "/_get items count=" *> (APIGetChatItems <$> A.decimal)
-    <|> "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP)))
-    <|> "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP)
-    <|> "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode)
-    <|> "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal))))
-    <|> "/_delete " *> (APIDeleteChat <$> chatRefP)
-    <|> "/_clear chat " *> (APIClearChat <$> chatRefP)
-    <|> "/_accept " *> (APIAcceptContact <$> A.decimal)
-    <|> "/_reject " *> (APIRejectContact <$> A.decimal)
-    <|> "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP)
-    <|> ("/call @" <|> "/call ") *> (SendCallInvitation <$> displayName <*> pure defaultCallType)
-    <|> "/_call reject @" *> (APIRejectCall <$> A.decimal)
-    <|> "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP)
-    <|> "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP)
-    <|> "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP)
-    <|> "/_call end @" *> (APIEndCall <$> A.decimal)
-    <|> "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP)
-    <|> "/_call get" $> APIGetCallInvitations
-    <|> "/_profile " *> (APIUpdateProfile <$> jsonP)
-    <|> "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString)
-    <|> "/_ntf get" $> APIGetNtfToken
-    <|> "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP)
-    <|> "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP)
-    <|> "/_ntf delete " *> (APIDeleteToken <$> strP)
-    <|> "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP)
-    <|> "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole)
-    <|> "/_join #" *> (APIJoinGroup <$> A.decimal)
-    <|> "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal)
-    <|> "/_leave #" *> (APILeaveGroup <$> A.decimal)
-    <|> "/_members #" *> (APIListMembers <$> A.decimal)
-    <|> "/smp_servers default" $> SetUserSMPServers []
-    <|> "/smp_servers " *> (SetUserSMPServers <$> smpServersP)
-    <|> "/smp_servers" $> GetUserSMPServers
-    <|> ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles
-    <|> ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups
-    <|> ("/help address" <|> "/ha") $> ChatHelp HSMyAddress
-    <|> ("/help messages" <|> "/hm") $> ChatHelp HSMessages
-    <|> ("/help" <|> "/h") $> ChatHelp HSMain
-    <|> ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile)
-    <|> ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole)
-    <|> ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName)
-    <|> ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName)
-    <|> ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName)
-    <|> ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName)
-    <|> ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName)
-    <|> "/clear #" *> (ClearGroup <$> displayName)
-    <|> ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName)
-    <|> ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName)
-    <|> ("/groups" <|> "/gs") $> ListGroups
-    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString)
-    <|> (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString)
-    <|> ("/contacts" <|> "/cs") $> ListContacts
-    <|> ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing))
-    <|> ("/connect" <|> "/c") $> AddContact
-    <|> (SendMessage <$> chatNameP <* A.space <*> A.takeByteString)
-    <|> (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv)
-    <|> (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd)
-    <|> ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> A.takeByteString)
-    <|> ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString)
-    <|> "/feed " *> (SendMessageBroadcast <$> A.takeByteString)
-    <|> ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP)
-    <|> ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath)
-    <|> ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath)
-    <|> ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal)
-    <|> ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal)
-    <|> ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath))
-    <|> ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal)
-    <|> ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal)
-    <|> "/simplex" $> ConnectSimplex
-    <|> ("/address" <|> "/ad") $> CreateMyAddress
-    <|> ("/delete_address" <|> "/da") $> DeleteMyAddress
-    <|> ("/show_address" <|> "/sa") $> ShowMyAddress
-    <|> "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> optional (A.space *> msgContentP))
-    <|> ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName)
-    <|> ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName)
-    <|> ("/markdown" <|> "/m") $> ChatHelp HSMarkdown
-    <|> ("/welcome" <|> "/w") $> Welcome
-    <|> "/profile_image " *> (UpdateProfileImage . Just . ImageData <$> imageP)
-    <|> "/profile_image" $> UpdateProfileImage Nothing
-    <|> ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames)
-    <|> ("/profile" <|> "/p") $> ShowProfile
-    <|> ("/quit" <|> "/q" <|> "/exit") $> QuitChat
-    <|> ("/version" <|> "/v") $> ShowVersion
+  A.choice
+    [ ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile),
+      ("/user" <|> "/u") $> ShowActiveUser,
+      "/_start subscribe=" *> (StartChat <$> ("on" $> True <|> "off" $> False)),
+      "/_start" $> StartChat True,
+      "/_stop" $> APIStopChat,
+      "/_app activate" $> APIActivateChat,
+      "/_app suspend " *> (APISuspendChat <$> A.decimal),
+      "/_resubscribe all" $> ResubscribeAllConnections,
+      "/_files_folder " *> (SetFilesFolder <$> filePath),
+      "/_db export " *> (APIExportArchive <$> jsonP),
+      "/_db import " *> (APIImportArchive <$> jsonP),
+      "/_db delete" $> APIDeleteStorage,
+      "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP),
+      "/_get items count=" *> (APIGetChatItems <$> A.decimal),
+      "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
+      "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
+      "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
+      "/_delete " *> (APIDeleteChat <$> chatRefP),
+      "/_clear chat " *> (APIClearChat <$> chatRefP),
+      "/_accept " *> (APIAcceptContact <$> A.decimal),
+      "/_reject " *> (APIRejectContact <$> A.decimal),
+      "/_call invite @" *> (APISendCallInvitation <$> A.decimal <* A.space <*> jsonP),
+      ("/call @" <|> "/call ") *> (SendCallInvitation <$> displayName <*> pure defaultCallType),
+      "/_call reject @" *> (APIRejectCall <$> A.decimal),
+      "/_call offer @" *> (APISendCallOffer <$> A.decimal <* A.space <*> jsonP),
+      "/_call answer @" *> (APISendCallAnswer <$> A.decimal <* A.space <*> jsonP),
+      "/_call extra @" *> (APISendCallExtraInfo <$> A.decimal <* A.space <*> jsonP),
+      "/_call end @" *> (APIEndCall <$> A.decimal),
+      "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
+      "/_call get" $> APIGetCallInvitations,
+      "/_profile " *> (APIUpdateProfile <$> jsonP),
+      "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
+      "/_ntf get" $> APIGetNtfToken,
+      "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
+      "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
+      "/_ntf delete " *> (APIDeleteToken <$> strP),
+      "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
+      "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_join #" *> (APIJoinGroup <$> A.decimal),
+      "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
+      "/_leave #" *> (APILeaveGroup <$> A.decimal),
+      "/_members #" *> (APIListMembers <$> A.decimal),
+      "/smp_servers default" $> SetUserSMPServers [],
+      "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
+      "/smp_servers" $> GetUserSMPServers,
+      ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
+      ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
+      ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
+      ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
+      ("/help" <|> "/h") $> ChatHelp HSMain,
+      ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile),
+      ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole),
+      ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName),
+      ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName),
+      ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName),
+      ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
+      ("/delete @" <|> "/delete " <|> "/d @" <|> "/d ") *> (DeleteContact <$> displayName),
+      "/clear #" *> (ClearGroup <$> displayName),
+      ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName),
+      ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
+      ("/groups" <|> "/gs") $> ListGroups,
+      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
+      (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
+      ("/contacts" <|> "/cs") $> ListContacts,
+      ("/connect " <|> "/c ") *> (Connect <$> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      ("/connect" <|> "/c") $> AddContact,
+      (SendMessage <$> chatNameP <* A.space <*> A.takeByteString),
+      (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
+      (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
+      ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> A.takeByteString),
+      ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> A.takeByteString),
+      "/feed " *> (SendMessageBroadcast <$> A.takeByteString),
+      ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP),
+      ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
+      ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
+      ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
+      ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath)),
+      ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
+      ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
+      "/simplex" $> ConnectSimplex,
+      ("/address" <|> "/ad") $> CreateMyAddress,
+      ("/delete_address" <|> "/da") $> DeleteMyAddress,
+      ("/show_address" <|> "/sa") $> ShowMyAddress,
+      "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> optional (A.space *> msgContentP)),
+      ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName),
+      ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName),
+      ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
+      ("/welcome" <|> "/w") $> Welcome,
+      "/profile_image " *> (UpdateProfileImage . Just . ImageData <$> imageP),
+      "/profile_image" $> UpdateProfileImage Nothing,
+      ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
+      ("/profile" <|> "/p") $> ShowProfile,
+      ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
+      ("/version" <|> "/v") $> ShowVersion
+    ]
   where
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
