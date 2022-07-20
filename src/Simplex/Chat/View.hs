@@ -59,6 +59,8 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRContactInfo ct cStats -> viewContactInfo ct cStats
+  CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -483,7 +485,26 @@ viewSMPServers smpServers testView =
     customSMPServers =
       if null smpServers
         then "no custom SMP servers saved"
-        else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
+        else viewServers smpServers
+
+viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
+viewContactInfo Contact {contactId} stats =
+  ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+
+viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats =
+  [ "group ID: " <> sShow groupId,
+    "member ID: " <> sShow groupMemberId
+  ]
+    <> maybe ["member not connected"] viewConnectionStats stats
+
+viewConnectionStats :: ConnectionStats -> [StyledString]
+viewConnectionStats ConnectionStats {rcvServers, sndServers} =
+  ["receiving messages via: " <> viewServers rcvServers | not $ null rcvServers]
+    <> ["sending messages via: " <> viewServers sndServers | not $ null sndServers]
+
+viewServers :: [SMPServer] -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
