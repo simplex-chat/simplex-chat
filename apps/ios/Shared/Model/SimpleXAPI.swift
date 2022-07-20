@@ -350,7 +350,18 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
+    if case .group = type, case .groupDeletedUser = r { return }
     throw r
+}
+
+func deleteChat(_ chat: Chat) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
+    } catch {
+        logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
+    }
 }
 
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
@@ -541,6 +552,21 @@ func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
+func leaveGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiLeaveGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("leaveGroup error: \(responseError(error))")
+    }
+}
+
+func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
+    if case let .leftMemberUser(groupInfo) = r { return groupInfo }
+    throw r
+}
+
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
@@ -568,6 +594,7 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {

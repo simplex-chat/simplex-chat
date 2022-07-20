@@ -127,6 +127,7 @@ final class ChatModel: ObservableObject {
                 addChat(Chat(c), at: i)
             }
         }
+        NtfManager.shared.setNtfBadgeCount(totalUnreadCount())
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
@@ -139,6 +140,7 @@ final class ChatModel: ObservableObject {
             chats[i].chatItems = [cItem]
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
+                NtfManager.shared.incNtfBadgeCount()
             }
             if i > 0 {
                 if chatId == nil {
@@ -203,6 +205,9 @@ final class ChatModel: ObservableObject {
         // remove from current chat
         if chatId == cInfo.id {
             if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                if chatItems[i].isRcvNew() == true {
+                    NtfManager.shared.decNtfBadgeCount()
+                }
                 _ = withAnimation {
                     self.chatItems.remove(at: i)
                 }
@@ -213,6 +218,7 @@ final class ChatModel: ObservableObject {
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         if let chat = getChat(cInfo.id) {
+            NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatStats = ChatStats()
         }
         // update current chat
@@ -230,6 +236,7 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
+            NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatItems = []
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
@@ -249,6 +256,10 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
             chatItems[j].meta.itemStatus = .rcvRead
         }
+    }
+
+    func totalUnreadCount() -> Int {
+        chats.reduce(0, { count, chat in count + chat.chatStats.unreadCount })
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {

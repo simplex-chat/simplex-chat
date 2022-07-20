@@ -16,11 +16,15 @@ let suspendingDelay: UInt64 = 2_000_000_000
 
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptContent: UNNotificationContent?
+    var bestAttemptContent: UNMutableNotificationContent?
+    var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        bestAttemptContent = request.content
+        bestAttemptContent = request.content.mutableCopy() as? UNMutableNotificationContent
+        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+        ntfBadgeCountGroupDefault.set(badgeCount)
+        bestAttemptContent?.badge = badgeCount as NSNumber
         self.contentHandler = contentHandler
         let appState = appStateGroupDefault.get()
         switch appState {
@@ -39,20 +43,22 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
                 if state.inactive {
                     receiveNtfMessages(request, contentHandler)
-                } else {
-                    contentHandler(request.content)
+                } else if let content = bestAttemptContent {
+                    contentHandler(content)
                 }
             }
         default:
             logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
-            contentHandler(request.content)
+            if let content = bestAttemptContent {
+                contentHandler(content)
+            }
         }
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
-            contentHandler(request.content)
+            if let content = bestAttemptContent { contentHandler(content) }
             return
         }
         let userInfo = request.content.userInfo
@@ -65,9 +71,11 @@ class NotificationService: UNNotificationServiceExtension {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     bestAttemptContent = createConnectionEventNtf(connEntity)
+                    bestAttemptContent?.badge = badgeCount as NSNumber
                 }
                 if let content = receiveMessageForNotification() {
                     logger.debug("NotificationService: receiveMessageForNotification: has message")
+                    content.badge = badgeCount as NSNumber
                     contentHandler(content)
                 } else if let content = bestAttemptContent {
                     logger.debug("NotificationService: receiveMessageForNotification: no message")
@@ -105,7 +113,7 @@ func startChat() -> User? {
     return nil
 }
 
-func receiveMessageForNotification() -> UNNotificationContent? {
+func receiveMessageForNotification() -> UNMutableNotificationContent? {
     logger.debug("NotificationService receiveMessages started")
     while true {
         if let res = recvSimpleXMsg() {

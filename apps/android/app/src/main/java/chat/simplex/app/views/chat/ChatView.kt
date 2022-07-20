@@ -75,10 +75,12 @@ fun ChatView(chatModel: ChatModel) {
       chat,
       composeState,
       composeView = {
-        ComposeView(
-          chatModel, chat, composeState, attachmentOption,
-          showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
-        )
+        if (chat.chatInfo.sendMsgEnabled) {
+          ComposeView(
+            chatModel, chat, composeState, attachmentOption,
+            showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+          )
+        }
       },
       attachmentOption,
       scope,

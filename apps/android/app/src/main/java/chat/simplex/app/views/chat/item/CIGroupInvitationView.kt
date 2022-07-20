@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,9 +50,9 @@ fun CIGroupInvitationView(
       ProfileImage(size = 60.dp, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
       Spacer(Modifier.padding(horizontal = 4.dp))
       Column {
-        Text(p.displayName, style = MaterialTheme.typography.caption, fontWeight = FontWeight.Medium, maxLines = 2)
+        Text(p.displayName, style = MaterialTheme.typography.caption, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (p.fullName != "" && p.displayName != p.fullName) {
-          Text(p.fullName, maxLines = 2)
+          Text(p.fullName, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
       }
     }

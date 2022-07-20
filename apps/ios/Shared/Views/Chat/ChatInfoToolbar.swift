@@ -34,6 +34,7 @@ struct ChatInfoToolbar: View {
             }
         }
         .foregroundColor(.primary)
+        .frame(width: 220)
     }
 }
 

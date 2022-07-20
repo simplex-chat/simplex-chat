@@ -55,6 +55,7 @@ struct ChatPreviewView: View {
         let v = Text(chat.chatInfo.chatViewName)
             .font(.title3)
             .fontWeight(.bold)
+            .lineLimit(1)
             .frame(maxHeight: .infinity, alignment: .topLeading)
         switch (chat.chatInfo) {
         case .direct:
@@ -65,11 +66,21 @@ struct ChatPreviewView: View {
                 v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
-            default:
-                v.foregroundColor(.primary)
+            case .memLeft:
+                HStack {
+                    Text(NSLocalizedString("[left]", comment: "group left description"))
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.secondary)
+                    Text(chat.chatInfo.chatViewName)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .lineLimit(1)
+                }
+                .frame(maxHeight: .infinity, alignment: .topLeading)
+            default: v
             }
-        default:
-            v.foregroundColor(.primary)
+        default: v
         }
     }
 
@@ -95,19 +106,21 @@ struct ChatPreviewView: View {
             switch (chat.chatInfo) {
             case let .direct(contact):
                 if !contact.ready {
-                    connectingText()
+                    chatPreviewInfoText("Connecting...")
                 }
             case let .group(groupInfo):
-                if groupInfo.membership.memberStatus == .memAccepted {
-                    connectingText()
+                switch (groupInfo.membership.memberStatus) {
+                case .memInvited: chatPreviewInfoText("You are invited to group")
+                case .memAccepted: chatPreviewInfoText("Connecting...")
+                default: EmptyView()
                 }
             default: EmptyView()
             }
         }
     }
 
-    @ViewBuilder private func connectingText() -> some View {
-        Text("Connecting...")
+    @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
+        Text(text)
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
             .padding(.bottom, 4)
