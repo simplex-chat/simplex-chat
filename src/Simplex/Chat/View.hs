@@ -204,45 +204,41 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showItemConditionally
-      CISndCall {} -> showItemConditionally
-      CISndGroupInvitation {} -> showItemConditionally
-      CISndGroupEvent {} -> showConditionally $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItem to
+      CISndGroupEvent {} -> showSndItemProhibited to
       where
         to = ttyToContact' c
-        showItemConditionally = showConditionally $ sentWithTime_ [to <> plainContent content] meta
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showItemConditionally
-      CIRcvCall {} -> showItemConditionally
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> showItemConditionally
-      CIRcvGroupEvent {} -> showConditionally $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+      CIRcvGroupInvitation {} -> showRcvItem from
+      CIRcvGroupEvent {} -> showRcvItemProhibited from
       where
         from = ttyFromContact' c
-        showItemConditionally = showConditionally $ receivedWithTime_ from [] meta [plainContent content]
     where
       quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> showItemConditionally
-      CISndCall {} -> showItemConditionally
-      CISndGroupInvitation {} -> showConditionally $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
-      CISndGroupEvent {} -> showItemConditionally
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItemProhibited to
+      CISndGroupEvent {} -> showSndItem to
       where
         to = ttyToGroup g
-        showItemConditionally = showConditionally $ sentWithTime_ [to <> plainContent content] meta
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> showItemConditionally
-      CIRcvCall {} -> showItemConditionally
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> showConditionally $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
-      CIRcvGroupEvent {} -> showItemConditionally
+      CIRcvGroupInvitation {} -> showRcvItemProhibited from
+      CIRcvGroupEvent {} -> showRcvItem from
       where
         from = ttyFromGroup' g m
-        showItemConditionally = showConditionally $ receivedWithTime_ from [] meta [plainContent content]
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
@@ -256,8 +252,11 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = c
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
-    showConditionally :: [StyledString] -> [StyledString]
-    showConditionally ss = if doShow then ss else []
+    showSndItem to = showItem $ sentWithTime_ [to <> plainContent content] meta
+    showRcvItem from = showItem $ receivedWithTime_ from [] meta [plainContent content]
+    showSndItemProhibited to = showItem $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
+    showRcvItemProhibited from = showItem $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+    showItem ss = if doShow then ss else []
     plainContent = plain . ciContentToText
     prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
