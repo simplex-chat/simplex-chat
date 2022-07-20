@@ -16,7 +16,10 @@ struct CIGroupEventView: View {
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
             if showMember, let member = chatItem.memberDisplayName {
-                Text(member).fontWeight(.medium) + Text(": ")
+                Text(member)
+                    .foregroundColor(.secondary)
+                    .italic()
+                + Text(" ")
             }
             Text(chatItem.content.text)
                 .foregroundColor(.secondary)
@@ -32,6 +35,9 @@ struct CIGroupEventView: View {
 
 struct CIGroupEventView_Previews: PreviewProvider {
     static var previews: some View {
-        CIGroupEventView(chatItem: ChatItem.getGroupEventSample())
+        Group {
+            CIGroupEventView(chatItem: ChatItem.getGroupEventSample(), showMember: true)
+            CIGroupEventView(chatItem: ChatItem.getGroupEventSample())
+        }
     }
 }
