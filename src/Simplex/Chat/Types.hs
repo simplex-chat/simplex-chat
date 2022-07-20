@@ -168,8 +168,8 @@ type ContactName = Text
 type GroupName = Text
 
 optionalFullName :: ContactName -> Text -> Text
-optionalFullName localDisplayName fullName
-  | T.null fullName || localDisplayName == fullName = ""
+optionalFullName displayName fullName
+  | T.null fullName || displayName == fullName = ""
   | otherwise = " (" <> fullName <> ")"
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}

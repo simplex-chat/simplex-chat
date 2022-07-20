@@ -533,10 +533,10 @@ data CIContent (d :: MsgDirection) where
 deriving instance Show (CIContent d)
 
 data RcvGroupEvent
-  = RGEMemberAdded GroupMemberId Profile -- CRJoinedGroupMemberConnecting
+  = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
-  | RGEMemberDeleted GroupMemberId Profile -- CRDeletedMember
+  | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
   deriving (Show, Generic)
@@ -549,7 +549,7 @@ instance ToJSON RcvGroupEvent where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
 
 data SndGroupEvent
-  = SGEMemberDeleted GroupMemberId Profile -- CRUserDeletedMember
+  = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
   deriving (Show, Generic)
 
