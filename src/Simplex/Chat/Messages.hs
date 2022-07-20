@@ -534,7 +534,7 @@ deriving instance Show (CIContent d)
 
 data RcvGroupEvent
   = RGEMemberAdded GroupMemberId Profile -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRConnectedToGroupMember
+  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberDeleted GroupMemberId Profile -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
