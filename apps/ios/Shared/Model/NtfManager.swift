@@ -188,6 +188,19 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         addNotification(createCallInvitationNtf(invitation))
     }
 
+    func setNtfBadgeCount(_ count: Int) {
+        UIApplication.shared.applicationIconBadgeNumber = count
+        ntfBadgeCountGroupDefault.set(count)
+    }
+
+    func decNtfBadgeCount(by count: Int = 1) {
+        setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber - count))
+    }
+
+    func incNtfBadgeCount(by count: Int = 1) {
+        setNtfBadgeCount(UIApplication.shared.applicationIconBadgeNumber + count)
+    }
+
     private func addNotification(_ content: UNMutableNotificationContent) {
         if !granted { return }
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: ntfTimeInterval, repeats: false)

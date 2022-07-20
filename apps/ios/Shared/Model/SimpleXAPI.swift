@@ -594,6 +594,7 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
