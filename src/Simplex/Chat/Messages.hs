@@ -501,16 +501,16 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
-  RGEMemberAdded p -> "added " <> memberProfileToText p
+  RGEMemberAdded _ p -> "added " <> memberProfileToText p
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
-  RGEMemberDeleted p -> "removed " <> memberProfileToText p
+  RGEMemberDeleted _ p -> "removed " <> memberProfileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberDeleted p -> "removed " <> memberProfileToText p
+  SGEMemberDeleted _ p -> "removed " <> memberProfileToText p
   SGEUserLeft -> "left"
 
 memberProfileToText :: Profile -> Text
@@ -533,10 +533,10 @@ data CIContent (d :: MsgDirection) where
 deriving instance Show (CIContent d)
 
 data RcvGroupEvent
-  = RGEMemberAdded Profile -- CRJoinedGroupMemberConnecting
+  = RGEMemberAdded GroupMemberId Profile -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
-  | RGEMemberDeleted Profile -- CRDeletedMember
+  | RGEMemberDeleted GroupMemberId Profile -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
   deriving (Show, Generic)
@@ -549,7 +549,7 @@ instance ToJSON RcvGroupEvent where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
 
 data SndGroupEvent
-  = SGEMemberDeleted Profile -- CRUserDeletedMember
+  = SGEMemberDeleted GroupMemberId Profile -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
   deriving (Show, Generic)
 
