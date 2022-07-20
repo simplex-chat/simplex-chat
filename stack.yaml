@@ -47,9 +47,9 @@ extra-deps:
   - text-short-0.1.5@sha256:962c6228555debdc46f758d0317dea16e5240d01419b42966674b08a5c3d8fa6,3498
   - time-compat-1.9.6.1@sha256:42d8f2e08e965e1718917d54ad69e1d06bd4b87d66c41dc7410f59313dba4ed1,5033
   # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
-  # - ../simplexmq
-  - github: simplex-chat/simplexmq
-    commit: 1d40bb97c2b2f9b143ca7c1982331cf531786000
+  - ../simplexmq
+  # - github: simplex-chat/simplexmq
+  #   commit: 1d40bb97c2b2f9b143ca7c1982331cf531786000
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/aeson
     commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7

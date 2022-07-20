@@ -591,6 +591,14 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
+  APIContactConnectionStats contactId -> withUser $ \User {userId} -> do
+    ct <- withStore $ \db -> getContact db userId contactId
+    CRConnectionStats <$> withAgent (`getConnectionServers` contactConnId ct)
+  APIMemberConnectionStats _groupMemberId -> pure $ chatCmdError "not implemented"
+  ContactConnectionStats cName -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \db -> getContactIdByName db userId cName
+    processChatCommand $ APIContactConnectionStats contactId
+  MemberConnectionStats _gName _cName -> pure $ chatCmdError "not implemented"
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
@@ -1240,7 +1248,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink} = \case
       Nothing -> case agentMsg of
-        CONF confId connInfo -> do
+        CONF confId _ connInfo -> do
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profile
         INFO connInfo ->
@@ -1279,7 +1287,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               _ -> pure ()
           ackMsgDeliveryEvent conn msgMeta
-        CONF confId connInfo -> do
+        CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
@@ -1342,7 +1350,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
     processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership} m = case agentMsg of
-      CONF confId connInfo -> do
+      CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
           GCInviteeMember ->
@@ -1436,7 +1444,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
-        CONF confId connInfo -> do
+        CONF confId _ connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             -- TODO save XFileAcpt message
@@ -1474,7 +1482,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         -- SMP CONF for RcvFileConnection happens for group file protocol
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
-        CONF confId connInfo -> do
+        CONF confId _ connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
             XOk -> allowAgentConnection conn confId XOk
@@ -1525,7 +1533,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
-      REQ invId connInfo -> do
+      REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
           XContact p xContactId_ -> profileContactRequest invId p xContactId_
@@ -2407,6 +2415,10 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
+      "/_stats #@" *> (APIMemberConnectionStats <$> A.decimal),
+      "/_stats @" *> (APIContactConnectionStats <$> A.decimal),
+      ("/stats #" <|> "/st #") *> (MemberConnectionStats <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
+      ("/stats @" <|> "/stats " <|> "/st @" <|> "/st ") *> (ContactConnectionStats <$> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,

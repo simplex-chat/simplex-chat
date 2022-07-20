@@ -143,6 +143,10 @@ data ChatCommand
   | APIListMembers GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
+  | APIContactConnectionStats ContactId
+  | APIMemberConnectionStats GroupMemberId
+  | ContactConnectionStats ContactName
+  | MemberConnectionStats GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -199,6 +203,7 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRConnectionStats {connectionStats :: ConnectionStats}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
