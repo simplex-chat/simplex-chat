@@ -208,6 +208,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndDeleted _ -> []
       CISndCall {} -> []
       CISndGroupInvitation {} -> []
+      CISndGroupEvent {} -> [] -- prohibited
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
@@ -216,6 +217,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       CIRcvGroupInvitation {} -> []
+      CIRcvGroupEvent {} -> [] -- prohibited
       where
         from = ttyFromContact' c
     where
@@ -226,6 +228,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CISndDeleted _ -> []
       CISndCall {} -> []
       CISndGroupInvitation {} -> [] -- prohibited
+      CISndGroupEvent {} -> []
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
@@ -234,6 +237,7 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       CIRcvCall {} -> []
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
       CIRcvGroupInvitation {} -> [] -- prohibited
+      CIRcvGroupEvent {} -> []
       where
         from = ttyFromGroup' g m
     where
