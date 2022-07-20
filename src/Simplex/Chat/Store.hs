@@ -67,6 +67,7 @@ module Simplex.Chat.Store
     getGroupIdByName,
     getGroupMemberIdByName,
     getGroupInfoByName,
+    getGroupMember,
     getGroupMembers,
     deleteGroup,
     getUserGroups,
@@ -1395,9 +1396,31 @@ toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, im
   let membership = toGroupMember userContactId userMemberRow
    in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, createdAt, updatedAt}
 
+getGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
+getGroupMember db user@User {userId} groupId groupMemberId =
+  ExceptT . firstRow (toContactMember user) (SEGroupMemberNotFound {groupId, groupMemberId}) $
+    DB.query
+      db
+      [sql|
+        SELECT
+          m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
+          m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM group_members m
+        JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.group_member_id = m.group_member_id
+        )
+        WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?
+      |]
+      (groupId, groupMemberId, userId)
+
 getGroupMembers :: DB.Connection -> User -> GroupInfo -> IO [GroupMember]
-getGroupMembers db User {userId, userContactId} GroupInfo {groupId} = do
-  map toContactMember
+getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember user)
     <$> DB.query
       db
       [sql|
@@ -1416,10 +1439,10 @@ getGroupMembers db User {userId, userContactId} GroupInfo {groupId} = do
         WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
       |]
       (groupId, userId, userContactId)
-  where
-    toContactMember :: (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
-    toContactMember (memberRow :. connRow) =
-      (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
+
+toContactMember :: User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
+toContactMember User {userContactId} (memberRow :. connRow) =
+  (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection connRow}
 
 -- TODO no need to load all members to find the member who invited the user,
 -- instead of findFromContact there could be a query
@@ -3106,7 +3129,7 @@ getGroupIdByName db User {userId} gName =
 
 getGroupMemberIdByName :: DB.Connection -> User -> GroupId -> ContactName -> ExceptT StoreError IO GroupMemberId
 getGroupMemberIdByName db User {userId} groupId groupMemberName =
-  ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupId groupMemberName) $
+  ExceptT . firstRow fromOnly (SEGroupMemberNameNotFound groupId groupMemberName) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND local_display_name = ?" (userId, groupId, groupMemberName)
 
 getChatItemIdByAgentMsgId :: DB.Connection -> Int64 -> AgentMsgId -> IO (Maybe ChatItemId)
@@ -3798,7 +3821,8 @@ data StoreError
   | SEContactRequestNotFoundByName {contactName :: ContactName}
   | SEGroupNotFound {groupId :: GroupId}
   | SEGroupNotFoundByName {groupName :: GroupName}
-  | SEGroupMemberNotFound {groupId :: GroupId, groupMemberName :: ContactName}
+  | SEGroupMemberNameNotFound {groupId :: GroupId, groupMemberName :: ContactName}
+  | SEGroupMemberNotFound {groupId :: GroupId, groupMemberId :: GroupMemberId}
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined

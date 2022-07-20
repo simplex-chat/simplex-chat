@@ -591,14 +591,18 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APIContactConnectionStats contactId -> withUser $ \User {userId} -> do
+  APIContactInfo contactId -> withUser $ \User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
-    CRConnectionStats <$> withAgent (`getConnectionServers` contactConnId ct)
-  APIMemberConnectionStats _groupMemberId -> pure $ chatCmdError "not implemented"
-  ContactConnectionStats cName -> withUser $ \User {userId} -> do
+    CRContactInfo ct <$> withAgent (`getConnectionServers` contactConnId ct)
+  APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
+    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    CRGroupMemberInfo g m <$> mapM (withAgent . flip getConnectionServers) (memberConnId m)
+  ContactInfo cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db userId cName
-    processChatCommand $ APIContactConnectionStats contactId
-  MemberConnectionStats _gName _cName -> pure $ chatCmdError "not implemented"
+    processChatCommand $ APIContactInfo contactId
+  GroupMemberInfo gName mName -> withUser $ \user -> do
+    (gId, mId) <- withStore $ \db -> getGroupIdByName db user gName >>= \gId -> (gId,) <$> getGroupMemberIdByName db user gId mName
+    processChatCommand $ APIGroupMemberInfo gId mId
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
@@ -2415,10 +2419,10 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
-      "/_stats #@" *> (APIMemberConnectionStats <$> A.decimal),
-      "/_stats @" *> (APIContactConnectionStats <$> A.decimal),
-      ("/stats #" <|> "/st #") *> (MemberConnectionStats <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
-      ("/stats @" <|> "/stats " <|> "/st @" <|> "/st ") *> (ContactConnectionStats <$> displayName),
+      "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
+      "/_info @" *> (APIContactInfo <$> A.decimal),
+      ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
+      ("/info @" <|> "/info " <|> "/i @" <|> "/i ") *> (ContactInfo <$> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
