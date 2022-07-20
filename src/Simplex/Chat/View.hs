@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
@@ -60,8 +59,8 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
-  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
+  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -200,46 +199,50 @@ responseToView testView = \case
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
-viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
+viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
-      CISndGroupInvitation {} -> []
-      CISndGroupEvent {} -> [] -- prohibited
+      CISndDeleted _ -> showItemConditionally
+      CISndCall {} -> showItemConditionally
+      CISndGroupInvitation {} -> showItemConditionally
+      CISndGroupEvent {} -> showConditionally $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
       where
         to = ttyToContact' c
+        showItemConditionally = showConditionally $ sentWithTime_ [to <> plainContent content] meta
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showItemConditionally
+      CIRcvCall {} -> showItemConditionally
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> []
-      CIRcvGroupEvent {} -> [] -- prohibited
+      CIRcvGroupInvitation {} -> showItemConditionally
+      CIRcvGroupEvent {} -> showConditionally $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
       where
         from = ttyFromContact' c
+        showItemConditionally = showConditionally $ receivedWithTime_ from [] meta [plainContent content]
     where
       quote = maybe [] (directQuote chatDir) quotedItem
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
-      CISndGroupInvitation {} -> [] -- prohibited
-      CISndGroupEvent {} -> []
+      CISndDeleted _ -> showItemConditionally
+      CISndCall {} -> showItemConditionally
+      CISndGroupInvitation {} -> showConditionally $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
+      CISndGroupEvent {} -> showItemConditionally
       where
         to = ttyToGroup g
+        showItemConditionally = showConditionally $ sentWithTime_ [to <> plainContent content] meta
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showItemConditionally
+      CIRcvCall {} -> showItemConditionally
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
-      CIRcvGroupInvitation {} -> [] -- prohibited
-      CIRcvGroupEvent {} -> []
+      CIRcvGroupInvitation {} -> showConditionally $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+      CIRcvGroupEvent {} -> showItemConditionally
       where
         from = ttyFromGroup' g m
+        showItemConditionally = showConditionally $ receivedWithTime_ from [] meta [plainContent content]
     where
       quote = maybe [] (groupQuote g) quotedItem
   _ -> []
@@ -253,6 +256,10 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
+    showConditionally :: [StyledString] -> [StyledString]
+    showConditionally ss = if doShow then ss else []
+    plainContent = plain . ciContentToText
+    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
