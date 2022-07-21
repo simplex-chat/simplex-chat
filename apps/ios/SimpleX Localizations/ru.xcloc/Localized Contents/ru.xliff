@@ -1817,7 +1817,7 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
         <target>соединение установлено</target>
-        <note>rcv group event chat item</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call…" xml:space="preserve">
         <source>connecting call…</source>
@@ -1902,6 +1902,11 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="left" xml:space="preserve">
         <source>left</source>
         <target>покинул(а) группу</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="member connected" xml:space="preserve">
+        <source>member connected</source>
+        <target>соединен(а)</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">

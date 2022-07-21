@@ -251,7 +251,7 @@
 /* No comment provided by engineer. */
 "Connect with the developers" = "Соединиться с разработчиками";
 
-/* rcv group event chat item */
+/* No comment provided by engineer. */
 "connected" = "соединение установлено";
 
 /* call status */
@@ -664,6 +664,9 @@
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
+
+/* rcv group event chat item */
+"member connected" = "соединен(а)";
 
 /* No comment provided by engineer. */
 "Message delivery error" = "Ошибка доставки сообщения";

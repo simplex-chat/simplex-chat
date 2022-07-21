@@ -1817,7 +1817,7 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
         <target>connected</target>
-        <note>rcv group event chat item</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call…" xml:space="preserve">
         <source>connecting call…</source>
@@ -1902,6 +1902,11 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="left" xml:space="preserve">
         <source>left</source>
         <target>left</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="member connected" xml:space="preserve">
+        <source>member connected</source>
+        <target>connected</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
