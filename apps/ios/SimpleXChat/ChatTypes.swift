@@ -44,6 +44,10 @@ public struct Profile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
+    var displayNameWithOptionalFullName: String {
+        (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+    }
+
     static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
@@ -680,6 +684,16 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    public static func getGroupEventSample () -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, false, false, false),
+            content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 public enum CIDirection: Decodable {
@@ -764,6 +778,8 @@ public enum CIContent: Decodable, ItemContent {
     case rcvIntegrityError(msgError: MsgErrorType)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
+    case sndGroupEvent(sndGroupEvent: SndGroupEvent)
 
     public var text: String {
         get {
@@ -775,8 +791,10 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
-            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text()
-            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text()
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
+            case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             }
         }
     }
@@ -1095,7 +1113,7 @@ public struct CIGroupInvitation: Decodable {
     public var groupProfile: GroupProfile
     public var status: CIGroupInvitationStatus
 
-    func text() -> String {
+    var text: String {
         String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
     }
 
@@ -1109,4 +1127,39 @@ public enum CIGroupInvitationStatus: String, Decodable {
     case accepted
     case rejected
     case expired
+}
+
+public enum RcvGroupEvent: Decodable {
+    case memberAdded(groupMemberId: Int64, profile: Profile)
+    case memberConnected
+    case memberLeft
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userDeleted
+    case groupDeleted
+
+    var text: String {
+        switch self {
+        case let .memberAdded(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .memberConnected: return NSLocalizedString("connected", comment: "rcv group event chat item")
+        case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
+        case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        }
+    }
+}
+
+public enum SndGroupEvent: Decodable {
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userLeft
+
+    var text: String {
+        switch self {
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
+        }
+    }
 }

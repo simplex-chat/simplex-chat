@@ -13,6 +13,7 @@ val Inter = FontFamily(
   Font(R.font.inter_bold, weight = FontWeight.Bold),
   Font(R.font.inter_semi_bold, weight = FontWeight.SemiBold),
   Font(R.font.inter_medium, weight = FontWeight.Medium),
+  Font(R.font.inter_light, weight = FontWeight.Light),
 )
 
 // Set of Material typography styles to start with

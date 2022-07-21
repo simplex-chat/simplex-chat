@@ -149,6 +149,8 @@ fun ChatItemView(
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
         is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
         is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
+        is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
       }
     }
   }

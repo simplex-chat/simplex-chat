@@ -420,7 +420,7 @@
     <string name="answer_call">Принять звонок</string>
 
     <!-- Message integrity -->
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений"</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений</string>
     <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
@@ -505,4 +505,14 @@
     <string name="you_joined_this_group">Вы вступили в эту группу</string>
     <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
     <string name="group_invitation_expired">Приглашение в группу истекло</string>
+
+    <!-- Group event chat items -->
+    <string name="rcv_group_event_member_added">пригласил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_connected">соединен(а)</string>
+    <string name="rcv_group_event_member_left">покинул(а) группу</string>
+    <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_user_deleted">удалил(а) вас из группы</string>
+    <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
+    <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_user_left">вы покинули группу</string>
 </resources>
