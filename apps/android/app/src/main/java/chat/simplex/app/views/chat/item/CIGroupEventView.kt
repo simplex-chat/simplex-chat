@@ -20,6 +20,10 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 fun CIGroupEventView(ci: ChatItem) {
   val memberDisplayName = ci.memberDisplayName
 
+  fun withGroupEventStyle(builder: AnnotatedString.Builder, text: String) {
+    return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
+  }
+
   Surface {
     Row(
       Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -28,12 +32,12 @@ fun CIGroupEventView(ci: ChatItem) {
       Text(
         buildAnnotatedString {
           if (memberDisplayName != null) {
-            withStyle(SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(memberDisplayName) }
+            withGroupEventStyle(this, memberDisplayName)
             append(" ")
           }
-          withStyle(SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(ci.content.text) }
+          withGroupEventStyle(this, ci.content.text)
           append(" ")
-          withStyle(SpanStyle(fontSize = 14.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(ci.timestampText) }
+          withGroupEventStyle(this, ci.timestampText)
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )
