@@ -2053,7 +2053,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         updateGroupMemberStatus db userId membership GSMemGroupDeleted
         pure members
       mapM_ deleteMemberConnection ms
-      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEMemberLeft) Nothing
+      ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted) Nothing
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
 
