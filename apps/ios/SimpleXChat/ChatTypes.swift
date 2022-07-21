@@ -283,10 +283,24 @@ public struct Connection: Decodable {
 }
 
 public struct UserContact: Decodable {
+    public var userContactLinkId: Int64
+
+    public init(userContactLinkId: Int64) {
+        self.userContactLinkId = userContactLinkId
+    }
+
+    public init(contactRequest: UserContactRequest) {
+        self.userContactLinkId = contactRequest.userContactLinkId
+    }
+
+    public var id: String {
+        "@>\(userContactLinkId)"
+    }
 }
 
 public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
+    public var userContactLinkId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
@@ -302,6 +316,7 @@ public struct UserContactRequest: Decodable, NamedChat {
 
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
+        userContactLinkId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -404,7 +419,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var updatedAt: Date
 
     public var id: ChatId { get { "#\(groupId)" } }
-    var apiId: Int64 { get { groupId } }
+    public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var sendMsgEnabled: Bool { get { membership.memberActive } }
     public var displayName: String { get { groupProfile.displayName } }
@@ -464,6 +479,10 @@ public struct GroupMember: Decodable {
                 return nil
             }
         }
+    }
+
+    public var id: String {
+        "#\(groupId) @\(groupMemberId)"
     }
 
     public var chatViewName: String {
@@ -546,11 +565,24 @@ public struct MemberSubError: Decodable {
 }
 
 public enum ConnectionEntity: Decodable {
-    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
-    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(entityConnection: Connection, userContact: UserContact)
+    case rcvDirectMsgConnection(contact: Contact?)
+    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(userContact: UserContact)
+
+    public var id: String? {
+        switch self {
+        case let .rcvDirectMsgConnection(contact):
+            return contact?.id ?? nil
+        case let .rcvGroupMsgConnection(_, groupMember):
+            return groupMember.id
+        case let .userContactConnection(userContact):
+            return userContact.id
+        default:
+            return nil
+        }
+    }
 }
 
 public struct NtfMsgInfo: Decodable {
@@ -560,6 +592,13 @@ public struct NtfMsgInfo: Decodable {
 public struct AChatItem: Decodable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
+
+    public var chatId: String {
+        if case let .groupRcv(groupMember) = chatItem.chatDir {
+            return groupMember.id
+        }
+        return chatInfo.id
+    }
 }
 
 public struct ChatItem: Identifiable, Decodable {
