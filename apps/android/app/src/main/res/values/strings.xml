@@ -422,7 +422,7 @@
   <string name="answer_call">Answer call</string>
 
   <!-- Message integrity -->
-  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)"</string>
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)</string>
   <string name="integrity_msg_bad_hash">bad message hash</string>
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
@@ -507,4 +507,14 @@
   <string name="you_joined_this_group">You joined this group</string>
   <string name="you_rejected_group_invitation">You rejected group invitation</string>
   <string name="group_invitation_expired">Group invitation expired</string>
+
+  <!-- Group event chat items -->
+  <string name="rcv_group_event_member_added">invited <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_member_connected">connected</string>
+  <string name="rcv_group_event_member_left">left</string>
+  <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_user_deleted">removed you</string>
+  <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="snd_group_event_user_left">you left</string>
 </resources>

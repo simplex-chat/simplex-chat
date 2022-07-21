@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="en" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id=" " xml:space="preserve">
@@ -231,6 +231,11 @@
         <target>Cancel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat and all messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>Chat and all messages will be deleted - this cannot be undone!</source>
+        <target>Chat and all messages will be deleted - this cannot be undone!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
         <source>Chat archive</source>
         <target>Chat archive</target>
@@ -431,6 +436,11 @@
         <target>Create address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create group" xml:space="preserve">
+        <source>Create group</source>
+        <target>Create group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create link / QR code" xml:space="preserve">
         <source>Create link / QR code</source>
         <target>Create link / QR code</target>
@@ -501,6 +511,11 @@
         <target>Delete chat profile?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete chat?" xml:space="preserve">
+        <source>Delete chat?</source>
+        <target>Delete chat?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete contact" xml:space="preserve">
         <source>Delete contact</source>
         <target>Delete contact</target>
@@ -526,9 +541,9 @@
         <target>Delete for me</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete group" xml:space="preserve">
-        <source>Delete group</source>
-        <target>Delete group</target>
+      <trans-unit id="Delete invitation" xml:space="preserve">
+        <source>Delete invitation</source>
+        <target>Delete invitation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -726,9 +741,14 @@
         <target>Full name (optional)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group deletion is not supported" xml:space="preserve">
-        <source>Group deletion is not supported</source>
-        <target>Group deletion is not supported</target>
+      <trans-unit id="Group invitation" xml:space="preserve">
+        <source>Group invitation</source>
+        <target>Group invitation</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group invitation expired" xml:space="preserve">
+        <source>Group invitation expired</source>
+        <target>Group invitation expired</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -881,9 +901,34 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>It's secure to share - only one contact can use it.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Join" xml:space="preserve">
+        <source>Join</source>
+        <target>Join</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Join group" xml:space="preserve">
+        <source>Join group</source>
+        <target>Join group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Joining group" xml:space="preserve">
+        <source>Joining group</source>
+        <target>Joining group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
         <source>Large file!</source>
         <target>Large file!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave" xml:space="preserve">
+        <source>Leave</source>
+        <target>Leave</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Leave group?" xml:space="preserve">
+        <source>Leave group?</source>
+        <target>Leave group?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Limitations" xml:space="preserve">
@@ -1306,6 +1351,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Tap button </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap to join" xml:space="preserve">
+        <source>Tap to join</source>
+        <target>Tap to join</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
         <source>Thank you for installing SimpleX Chat!</source>
         <target>Thank you for installing SimpleX Chat!</target>
@@ -1505,6 +1555,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>You are connected to the server used to receive messages from this contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
+        <target>You are invited to group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" xml:space="preserve">
         <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</source>
         <target>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button</target>
@@ -1550,9 +1605,29 @@ To connect, please ask your contact to create another connection link and check 
         <target>You invited your contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You joined this group" xml:space="preserve">
+        <source>You joined this group</source>
+        <target>You joined this group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
+        <source>You joined this group. Connecting to inviting group member.</source>
+        <target>You joined this group. Connecting to inviting group member.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
         <target>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You rejected group invitation" xml:space="preserve">
+        <source>You rejected group invitation</source>
+        <target>You rejected group invitation</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You sent group invitation" xml:space="preserve">
+        <source>You sent group invitation</source>
+        <target>You sent group invitation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
@@ -1568,6 +1643,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
         <target>You will be required to authenticate when you start or resume the app after 30 seconds in background.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
+        <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
+        <target>You will stop receiving messages from this group. Chat history will be preserved.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
@@ -1663,6 +1743,11 @@ SimpleX servers cannot see your profile.</target>
         <source>[Send us email](mailto:chat@simplex.chat)</source>
         <target>[Send us email](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="[left]" xml:space="preserve">
+        <source>[left]</source>
+        <target>[left]</target>
+        <note>group left description</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
         <source>\_italic_</source>
@@ -1769,6 +1854,11 @@ SimpleX servers cannot see your profile.</target>
         <target>deleted</target>
         <note>deleted chat item</note>
       </trans-unit>
+      <trans-unit id="deleted group" xml:space="preserve">
+        <source>deleted group</source>
+        <target>deleted group</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
         <source>duplicate message</source>
         <target>duplicate message</target>
@@ -1789,6 +1879,16 @@ SimpleX servers cannot see your profile.</target>
         <target>ended call %@</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="invitation to group %@" xml:space="preserve">
+        <source>invitation to group %@</source>
+        <target>invitation to group %@</target>
+        <note>group name</note>
+      </trans-unit>
+      <trans-unit id="invited %@" xml:space="preserve">
+        <source>invited %@</source>
+        <target>invited %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
         <source>invited to connect</source>
         <target>invited to connect</target>
@@ -1798,6 +1898,16 @@ SimpleX servers cannot see your profile.</target>
         <source>italic</source>
         <target>italic</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="left" xml:space="preserve">
+        <source>left</source>
+        <target>left</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="member connected" xml:space="preserve">
+        <source>member connected</source>
+        <target>connected</target>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
         <source>message received</source>
@@ -1843,6 +1953,16 @@ SimpleX servers cannot see your profile.</target>
         <source>rejected call</source>
         <target>rejected call</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="removed %@" xml:space="preserve">
+        <source>removed %@</source>
+        <target>removed %@</target>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="removed you" xml:space="preserve">
+        <source>removed you</source>
+        <target>removed you</target>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
@@ -1909,6 +2029,16 @@ SimpleX servers cannot see your profile.</target>
         <target>wants to connect to you!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you left" xml:space="preserve">
+        <source>you left</source>
+        <target>you left</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="you removed %@" xml:space="preserve">
+        <source>you removed %@</source>
+        <target>you removed %@</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>
         <target>you shared one-time link</target>
@@ -1923,7 +2053,7 @@ SimpleX servers cannot see your profile.</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="en" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -1955,7 +2085,7 @@ SimpleX servers cannot see your profile.</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="en" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">

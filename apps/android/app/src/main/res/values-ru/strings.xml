@@ -420,7 +420,7 @@
     <string name="answer_call">Принять звонок</string>
 
     <!-- Message integrity -->
-    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений"</string>
+    <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> пропущенных сообщений</string>
     <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
@@ -492,7 +492,7 @@
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
     <string name="join_group_button">Вступить</string>
     <string name="joining_group">Вступление в группу</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившем членом группы.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившим членом группы.</string>
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
@@ -505,4 +505,14 @@
     <string name="you_joined_this_group">Вы вступили в эту группу</string>
     <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
     <string name="group_invitation_expired">Приглашение в группу истекло</string>
+
+    <!-- Group event chat items -->
+    <string name="rcv_group_event_member_added">пригласил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_member_connected">соединен(а)</string>
+    <string name="rcv_group_event_member_left">покинул(а) группу</string>
+    <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="rcv_group_event_user_deleted">удалил(а) вас из группы</string>
+    <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
+    <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+    <string name="snd_group_event_user_left">вы покинули группу</string>
 </resources>

@@ -479,6 +479,11 @@ class Profile(
   override val fullName: String,
   override val image: String? = null
 ): NamedChat {
+  val displayNameWithOptionalFullName: String
+    get() {
+      return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
+    }
+
   companion object {
     val sampleData = Profile(
       displayName = "alice",
@@ -857,6 +862,15 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getGroupEventSample() =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvGroupEventContent(rcvGroupEvent = RcvGroupEvent.MemberAdded(groupMemberId = 1, profile = Profile.sampleData)),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
@@ -949,6 +963,8 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -958,8 +974,10 @@ sealed class CIContent: ItemContent {
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
     is RcvIntegrityError -> msgError.text
-    is RcvGroupInvitation -> groupInvitation.text()
-    is SndGroupInvitation -> groupInvitation.text()
+    is RcvGroupInvitation -> groupInvitation.text
+    is SndGroupInvitation -> groupInvitation.text
+    is RcvGroupEventContent -> rcvGroupEvent.text
+    is SndGroupEventContent -> sndGroupEvent.text
   }
 }
 
@@ -1061,7 +1079,7 @@ class CIGroupInvitation (
   val groupProfile: GroupProfile,
   val status: CIGroupInvitationStatus
   ) {
-  fun text(): String = String.format(generalGetString(R.string.group_invitation_item_description), groupProfile.displayName)
+  val text: String get() = String.format(generalGetString(R.string.group_invitation_item_description), groupProfile.displayName)
 
   companion object {
     fun getSample(
@@ -1266,5 +1284,35 @@ sealed class MsgErrorType() {
     is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
     is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
     is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
+  }
+}
+
+@Serializable
+sealed class RcvGroupEvent() {
+  @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
+  @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
+  @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
+  @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
+
+  val text: String get() = when (this) {
+    is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.displayNameWithOptionalFullName)
+    is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
+    is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
+    is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
+    is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
+  }
+}
+
+@Serializable
+sealed class SndGroupEvent() {
+  @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
+  @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
+
+  val text: String get() = when (this) {
+    is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
   }
 }

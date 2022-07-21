@@ -44,6 +44,10 @@ public struct Profile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
+    var displayNameWithOptionalFullName: String {
+        (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+    }
+
     static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
@@ -283,10 +287,24 @@ public struct Connection: Decodable {
 }
 
 public struct UserContact: Decodable {
+    public var userContactLinkId: Int64
+
+    public init(userContactLinkId: Int64) {
+        self.userContactLinkId = userContactLinkId
+    }
+
+    public init(contactRequest: UserContactRequest) {
+        self.userContactLinkId = contactRequest.userContactLinkId
+    }
+
+    public var id: String {
+        "@>\(userContactLinkId)"
+    }
 }
 
 public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
+    public var userContactLinkId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
@@ -302,6 +320,7 @@ public struct UserContactRequest: Decodable, NamedChat {
 
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
+        userContactLinkId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -404,7 +423,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var updatedAt: Date
 
     public var id: ChatId { get { "#\(groupId)" } }
-    var apiId: Int64 { get { groupId } }
+    public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
     public var sendMsgEnabled: Bool { get { membership.memberActive } }
     public var displayName: String { get { groupProfile.displayName } }
@@ -464,6 +483,10 @@ public struct GroupMember: Decodable {
                 return nil
             }
         }
+    }
+
+    public var id: String {
+        "#\(groupId) @\(groupMemberId)"
     }
 
     public var chatViewName: String {
@@ -546,11 +569,24 @@ public struct MemberSubError: Decodable {
 }
 
 public enum ConnectionEntity: Decodable {
-    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
-    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(entityConnection: Connection, userContact: UserContact)
+    case rcvDirectMsgConnection(contact: Contact?)
+    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(userContact: UserContact)
+
+    public var id: String? {
+        switch self {
+        case let .rcvDirectMsgConnection(contact):
+            return contact?.id ?? nil
+        case let .rcvGroupMsgConnection(_, groupMember):
+            return groupMember.id
+        case let .userContactConnection(userContact):
+            return userContact.id
+        default:
+            return nil
+        }
+    }
 }
 
 public struct NtfMsgInfo: Decodable {
@@ -560,6 +596,13 @@ public struct NtfMsgInfo: Decodable {
 public struct AChatItem: Decodable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
+
+    public var chatId: String {
+        if case let .groupRcv(groupMember) = chatItem.chatDir {
+            return groupMember.id
+        }
+        return chatInfo.id
+    }
 }
 
 public struct ChatItem: Identifiable, Decodable {
@@ -680,6 +723,16 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    public static func getGroupEventSample () -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, false, false, false),
+            content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 public enum CIDirection: Decodable {
@@ -764,6 +817,8 @@ public enum CIContent: Decodable, ItemContent {
     case rcvIntegrityError(msgError: MsgErrorType)
     case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
     case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
+    case sndGroupEvent(sndGroupEvent: SndGroupEvent)
 
     public var text: String {
         get {
@@ -775,8 +830,10 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
-            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text()
-            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text()
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
+            case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             }
         }
     }
@@ -1095,7 +1152,7 @@ public struct CIGroupInvitation: Decodable {
     public var groupProfile: GroupProfile
     public var status: CIGroupInvitationStatus
 
-    func text() -> String {
+    var text: String {
         String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
     }
 
@@ -1109,4 +1166,39 @@ public enum CIGroupInvitationStatus: String, Decodable {
     case accepted
     case rejected
     case expired
+}
+
+public enum RcvGroupEvent: Decodable {
+    case memberAdded(groupMemberId: Int64, profile: Profile)
+    case memberConnected
+    case memberLeft
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userDeleted
+    case groupDeleted
+
+    var text: String {
+        switch self {
+        case let .memberAdded(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
+        case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
+        case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        }
+    }
+}
+
+public enum SndGroupEvent: Decodable {
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userLeft
+
+    var text: String {
+        switch self {
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
+        }
+    }
 }
