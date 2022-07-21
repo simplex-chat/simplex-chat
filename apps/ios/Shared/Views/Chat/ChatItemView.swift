@@ -52,7 +52,7 @@ struct ChatItemView: View {
     }
 
     private func groupEventItemView() -> some View {
-        CIGroupEventView(chatItem: chatItem, showMember: showMember)
+        CIGroupEventView(chatItem: chatItem)
     }
 }
 

@@ -11,33 +11,38 @@ import SimpleXChat
 
 struct CIGroupEventView: View {
     var chatItem: ChatItem
-    var showMember = false
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if showMember, let member = chatItem.memberDisplayName {
+            if let member = chatItem.memberDisplayName {
                 Text(member)
+                    .font(.footnote)
                     .foregroundColor(.secondary)
-                    .italic()
                 + Text(" ")
+                + eventText()
+            } else {
+                eventText()
             }
-            Text(chatItem.content.text)
-                .foregroundColor(.secondary)
-                .italic()
-            CIMetaView(chatItem: chatItem)
-                .padding(.horizontal, 12)
         }
-        .padding(.leading, 12)
-        .padding(.vertical, 6)
+        .padding(.leading, 6)
+        .padding(.bottom, 6)
         .textSelection(.disabled)
+    }
+
+    func eventText() -> Text {
+        Text(chatItem.content.text)
+            .font(.footnote)
+            .foregroundColor(.secondary)
+        + Text(" ")
+        + chatItem.timestampText
+            .font(.caption)
+            .foregroundColor(Color.secondary)
+            .fontWeight(.light)
     }
 }
 
 struct CIGroupEventView_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            CIGroupEventView(chatItem: ChatItem.getGroupEventSample(), showMember: true)
-            CIGroupEventView(chatItem: ChatItem.getGroupEventSample())
-        }
+        CIGroupEventView(chatItem: ChatItem.getGroupEventSample())
     }
 }
