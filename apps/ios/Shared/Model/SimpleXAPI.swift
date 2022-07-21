@@ -669,9 +669,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateContact(contact)
             m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
-            if !m.hasChat(contactRequest.id) {
+            let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+            if m.hasChat(contactRequest.id) {
+                m.updateChatInfo(cInfo)
+            } else {
                 m.addChat(Chat(
-                    chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
+                    chatInfo: cInfo,
                     chatItems: []
                 ))
                 NtfManager.shared.notifyContactRequest(contactRequest)
