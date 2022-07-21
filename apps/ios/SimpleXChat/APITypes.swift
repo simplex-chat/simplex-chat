@@ -546,19 +546,6 @@ public func decodeJSON<T: Decodable>(_ json: String) -> T? {
     return nil
 }
 
-func decodeCJSON<T: Decodable>(_ cjson: UnsafePointer<CChar>) -> T? {
-    // TODO is there a way to do it without copying the data? e.g:
-    //    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
-    //    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
-    decodeJSON(String.init(cString: cjson))
-}
-
-private func getJSONObject(_ cjson: UnsafePointer<CChar>) -> NSDictionary? {
-    let s = String.init(cString: cjson)
-    let d = s.data(using: .utf8)!
-    return try? JSONSerialization.jsonObject(with: d) as? NSDictionary
-}
-
 public func encodeJSON<T: Encodable>(_ value: T) -> String {
     let data = try! jsonEncoder.encode(value)
     return String(decoding: data, as: UTF8.self)
