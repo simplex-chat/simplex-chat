@@ -492,7 +492,7 @@
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
     <string name="join_group_button">Вступить</string>
     <string name="joining_group">Вступление в группу</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившем членом группы.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившим членом группы.</string>
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>

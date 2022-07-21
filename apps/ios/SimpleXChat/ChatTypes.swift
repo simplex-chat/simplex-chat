@@ -1180,7 +1180,7 @@ public enum RcvGroupEvent: Decodable {
         switch self {
         case let .memberAdded(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
-        case .memberConnected: return NSLocalizedString("connected", comment: "rcv group event chat item")
+        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
