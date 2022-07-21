@@ -18,8 +18,6 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
 fun CIGroupEventView(ci: ChatItem) {
-  val memberDisplayName = ci.memberDisplayName
-
   fun withGroupEventStyle(builder: AnnotatedString.Builder, text: String) {
     return builder.withStyle(SpanStyle(fontSize = 12.sp, fontWeight = FontWeight.Light, color = HighOrLowlight)) { append(text) }
   }
@@ -31,6 +29,7 @@ fun CIGroupEventView(ci: ChatItem) {
     ) {
       Text(
         buildAnnotatedString {
+          val memberDisplayName = ci.memberDisplayName
           if (memberDisplayName != null) {
             withGroupEventStyle(this, memberDisplayName)
             append(" ")
