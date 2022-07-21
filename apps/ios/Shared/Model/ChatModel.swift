@@ -36,6 +36,9 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    // pending notification actions
+    @Published var ntfContactRequest: ChatId?
+    @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?

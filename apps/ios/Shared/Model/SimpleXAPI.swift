@@ -669,11 +669,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateContact(contact)
             m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
-            m.addChat(Chat(
-                chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
-                chatItems: []
-            ))
-            NtfManager.shared.notifyContactRequest(contactRequest)
+            if !m.hasChat(contactRequest.id) {
+                m.addChat(Chat(
+                    chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
+                    chatItems: []
+                ))
+                NtfManager.shared.notifyContactRequest(contactRequest)
+            }
         case let .contactUpdated(toContact):
             let cInfo = ChatInfo.direct(contact: toContact)
             if m.hasChat(toContact.id) {
@@ -850,8 +852,12 @@ func refreshCallInvitations() throws {
     let m = ChatModel.shared
     let callInvitations = try apiGetCallInvitations()
     m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
-    if let inv = callInvitations.last {
-        activateCall(inv)
+    if let (chatId, ntfAction) = m.ntfCallInvitationAction,
+       let invitation = m.callInvitations.removeValue(forKey: chatId) {
+        m.ntfCallInvitationAction = nil
+        CallController.shared.callAction(invitation: invitation, action: ntfAction)
+    } else if let invitation = callInvitations.last {
+        activateCall(invitation)
     }
 }
 
