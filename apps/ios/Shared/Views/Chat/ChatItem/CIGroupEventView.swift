@@ -16,8 +16,9 @@ struct CIGroupEventView: View {
         HStack(alignment: .bottom, spacing: 0) {
             if let member = chatItem.memberDisplayName {
                 Text(member)
-                    .font(.footnote)
+                    .font(.caption)
                     .foregroundColor(.secondary)
+                    .fontWeight(.light)
                 + Text(" ")
                 + eventText()
             } else {
@@ -31,8 +32,9 @@ struct CIGroupEventView: View {
 
     func eventText() -> Text {
         Text(chatItem.content.text)
-            .font(.footnote)
+            .font(.caption)
             .foregroundColor(.secondary)
+            .fontWeight(.light)
         + Text(" ")
         + chatItem.timestampText
             .font(.caption)
