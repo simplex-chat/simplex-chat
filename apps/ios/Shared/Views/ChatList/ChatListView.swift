@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Binding var showChatInfo: Bool
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
@@ -21,7 +20,7 @@ struct ChatListView: View {
         let v = NavigationView {
             List {
                 ForEach(filteredChats(), id: \.viewId) { chat in
-                    ChatListNavLink(chat: chat, showChatInfo: $showChatInfo)
+                    ChatListNavLink(chat: chat)
                         .padding(.trailing, -16)
                         .disabled(chatModel.chatRunning != true)
                 }
@@ -108,11 +107,10 @@ struct ChatListView_Previews: PreviewProvider {
             )
 
         ]
-        @State var showChatInfo = false
         return Group {
-            ChatListView(showChatInfo: $showChatInfo)
+            ChatListView()
                 .environmentObject(chatModel)
-            ChatListView(showChatInfo: $showChatInfo)
+            ChatListView()
                 .environmentObject(ChatModel())
         }
     }

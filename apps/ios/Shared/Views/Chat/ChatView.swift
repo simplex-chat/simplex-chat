@@ -11,11 +11,18 @@ import SimpleXChat
 
 private let memberImageSize: CGFloat = 34
 
+enum ChatViewSheet: Identifiable {
+    case chatInfo
+    case addMember
+
+    var id: ChatViewSheet { get { self } }
+}
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @Binding var showChatInfo: Bool
+    @State private var chatViewSheet: ChatViewSheet?
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -99,15 +106,21 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfo = true
+                    // showChatInfo = true
+                    chatViewSheet = .chatInfo
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatInfo) {
-                    if case let .direct(contact) = chat.chatInfo {
-                        ChatInfoView(chat: chat, showChatInfo: $showChatInfo, contact: contact)
-                    } else if case .group = chat.chatInfo {
-                        GroupChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                .sheet(item: $chatViewSheet) { sheet in
+                    switch sheet {
+                    case .chatInfo:
+                        if case let .direct(contact) = chat.chatInfo {
+                            ChatInfoView(chat: chat, chatViewSheet: $chatViewSheet, contact: contact)
+                        } else if case .group = chat.chatInfo {
+                            GroupChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
+                        }
+                    case .addMember:
+                        AddGroupMemberView()
                     }
                 }
             }
@@ -117,6 +130,8 @@ struct ChatView: View {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")
                     }
+                } else if case .group = chat.chatInfo {
+                    addMemberButton()
                 }
             }
         }
@@ -128,6 +143,14 @@ struct ChatView: View {
             CallController.shared.startCall(contact, media)
         } label: {
             Image(systemName: imageName)
+        }
+    }
+
+    private func addMemberButton() -> some View {
+        Button {
+            chatViewSheet = .addMember
+        } label: {
+            Image(systemName: "person.crop.circle.badge.plus")
         }
     }
 
@@ -276,7 +299,7 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         @State var showChatInfo = false
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)
     }
 }
