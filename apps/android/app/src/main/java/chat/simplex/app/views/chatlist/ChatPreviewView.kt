@@ -86,8 +86,10 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
             Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
           }
         is ChatInfo.Group ->
-          if (cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemAccepted) {
-            Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+          when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.you_are_invited_to_group))
+            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+            else -> {}
           }
         else -> {}
       }
