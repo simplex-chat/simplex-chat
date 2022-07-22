@@ -37,6 +37,7 @@
 - [Make a private connection](#make-a-private-connection)
 - [Quick installation of a terminal app](#zap-quick-installation-of-a-terminal-app)
 - [SimpleX Platform design](#simplex-platform-design)
+- [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
 - [For developers](#for-developers)
 - [Roadmap](#roadmap)
 - [Help us pay for 3rd party security audit](#help-us-pay-for-3rd-party-security-audit)
@@ -124,23 +125,24 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 
 ## Privacy: technical details and limitations
 
-SimpleX Chat is a work in progress, we are releasing improvements as they are ready. You have to decide if the current state is good enough for your scenarios.
+SimpleX Chat is a work in progress – we are releasing improvements as they are ready. You have to decide if the current state is good enough for your usage scenario.
 
 What is already implemented:
 
-1. Instead of user profile identifiers used by all other platforms, even the most private, SimpleX uses pairwise per-queue identifiers (2 addresses for each message queue, 2 queues in each connection between the users) . It makes understanding of network graph more difficult on the application level, as for `n` users you have `n * (n-1)` message queues.
-2. End-to-end encryption in each message queue using [NaCl cryptobox](https://nacl.cr.yp.to/box.html). This is added to allow redundancy in the future (passing each message via several servers), to avoid having the same ciphertext in different queues (that would only be visible to the attacker if TLS is compromised). The encryption keys used for this level are not rotated, instead we are planning to replace the queues. Curve25519 keys are used for key negotiation.
-3. [Double ratchet](https://signal.org/docs/specifications/doubleratchet/) end-to-end encryption in each bi-directional conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps, it provides forward secrecy (each message is encrypted by its own ephemeral key) and break-in recovery (the keys used for key derivation are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial key agreement, initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
-4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server (and there are no identifiers in common as well) inside TLS.
+1. Instead of user profile identifiers used by all other platforms, even the most private ones, SimpleX uses pairwise per-queue identifiers (2 addresses for each unidirectional message queue, with an optional 3rd address for push notificaitons on iOS, 2 queues in each connection between the users). It makes observing the network graph on the application level more difficult, as for `n` users there can be up to `n * (n-1)` message queues.
+2. End-to-end encryption in each message queue using [NaCl cryptobox](https://nacl.cr.yp.to/box.html). This is added to allow redundancy in the future (passing each message via several servers), to avoid having the same ciphertext in different queues (that would only be visible to the attacker if TLS is compromised). The encryption keys used for this encryption are not rotated, instead we are planning to rotate the queues. Curve25519 keys are used for key negotiation.
+3. [Double ratchet](https://signal.org/docs/specifications/doubleratchet/) end-to-end encryption in each bi-directional conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps; it provides OTR messaging with forward secrecy (each message is encrypted by its own ephemeral key), break-in recovery (the keys are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial key agreement, initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
+4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
 5. Several levels of content padding to the fixed size - server blocks inside TLS and message content inside each of 3 encrypted envelopes are padded to a constant size, to prevent any correlation by message size.
-6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time message was received by the server (rounded to a second) is inside encrypted envelope, so even if TLS is compromised it cannot be observed.
-7. Only TLS 1.3 is used, with two certificate to provide server identity verification, with tls-unique used as session - it is used in each client command and signed over by the per-queue ephemeral key.
+6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
+7. Only TLS 1.2/1.3 are allowed used for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
+8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 
-What we plan to provide soon:
+We plan to add soon:
 
-1. Access to messaging servers via Tor. Currently clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via tor independently. The servers provided by SimpleX Chat do not log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
-2. Queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-3. Local database encryption. Currently the local chat database is not encrypted.
+1. Access to messaging servers via Tor. Currently clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via Tor independently. The servers provided by SimpleX Chat do not do not correlate users by or log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
+2. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+3. Local database encryption. Currently the local chat database stored on your device is not encrypted.
 4. Independent implementation audit.
 
 ## For developers
