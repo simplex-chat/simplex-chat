@@ -39,7 +39,7 @@ actor PendingNtfs {
             for await ntf in s {
                 nse.setBestAttemptNtf(ntf)
                 rcvCount -= 1
-                if rcvCount == 0 { break }
+                if rcvCount == 0 || ntf.categoryIdentifier == ntfCategoryCallInvitation { break }
             }
             logger.debug("PendingNtfs.readStream: exiting")
         }
@@ -204,7 +204,9 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
                cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
            }
         }
-        return (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
+        return cItem.isCall() ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
+    case let .callInvitation(invitation):
+        return (invitation.contact.id, createCallInvitationNtf(invitation))
     default:
         logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
         return nil

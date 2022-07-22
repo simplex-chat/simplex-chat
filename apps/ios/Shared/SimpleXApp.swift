@@ -120,6 +120,12 @@ struct SimpleXApp: App {
                     }
                 }
             }
+            if let chatId = chatModel.ntfContactRequest {
+                chatModel.ntfContactRequest = nil
+                if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+                    Task { await acceptContactRequest(contactRequest) }
+                }
+            }
         } catch let error {
             logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
@@ -128,8 +134,7 @@ struct SimpleXApp: App {
     private func updateCallInvitations() {
         do {
             try refreshCallInvitations()
-        }
-        catch let error {
+        } catch let error {
             logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
     }
