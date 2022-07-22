@@ -152,8 +152,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.userAddress.value = apiGetUserAddress()
         chatModel.userSMPServers.value = getUserSMPServers()
         val chats = apiGetChats()
-        chatModel.chats.clear()
-        chatModel.chats.addAll(chats)
+        chatModel.updateChats(chats)
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
         chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
