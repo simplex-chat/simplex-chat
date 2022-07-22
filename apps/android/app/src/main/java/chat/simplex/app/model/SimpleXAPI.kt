@@ -577,7 +577,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
             chatModel.updateContact(sub.contact)
             chatModel.updateNetworkStatus(sub.contact.id, Chat.NetworkStatus.Connected())
           } else {
-            Log.e(TAG,"ContactSubSummary error: $err")
             processContactSubError(sub.contact, sub.contactError)
           }
         }
