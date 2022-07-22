@@ -135,12 +135,12 @@ What is already implemented:
 4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
 5. Several levels of content padding to the fixed size - server blocks inside TLS and message content inside each of 3 encrypted envelopes are padded to a constant size, to prevent any correlation by message size.
 6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
-7. Only TLS 1.2/1.3 are allowed used for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
+7. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
 8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
 
 We plan to add soon:
 
-1. Access to messaging servers via Tor. Currently clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via Tor independently. The servers provided by SimpleX Chat do not do not correlate users by or log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
+1. Access to messaging servers via Tor. Currently clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via Tor independently. The servers provided by SimpleX Chat do not correlate users by or log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
 2. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 3. Local database encryption. Currently the local chat database stored on your device is not encrypted.
 4. Independent implementation audit.
