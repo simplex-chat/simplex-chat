@@ -206,6 +206,13 @@ class CallController: NSObject, ObservableObject {
         callManager.endCall(call: call, completed: completed)
     }
 
+    func callAction(invitation: RcvCallInvitation, action: NtfCallAction) {
+        switch action {
+        case .accept: answerCall(invitation: invitation)
+        case .reject: endCall(invitation: invitation)
+        }
+    }
+
 //    private func requestTransaction(with action: CXAction) {
 //        let t = CXTransaction()
 //        t.addAction(action)

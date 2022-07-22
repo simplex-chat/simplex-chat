@@ -147,23 +147,24 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     try {
       if (chatModel.chatRunning.value == true) return
       val justStarted = apiStartChat()
-      apiSetFilesFolder(getAppFilesDirectory(appContext))
-      chatModel.userAddress.value = apiGetUserAddress()
-      chatModel.userSMPServers.value = getUserSMPServers()
-      val chats = apiGetChats()
       if (justStarted) {
-        chatModel.chats.clear()
-        chatModel.chats.addAll(chats)
-      } else {
+        apiSetFilesFolder(getAppFilesDirectory(appContext))
+        chatModel.userAddress.value = apiGetUserAddress()
+        chatModel.userSMPServers.value = getUserSMPServers()
+        val chats = apiGetChats()
         chatModel.updateChats(chats)
+        chatModel.currentUser.value = user
+        chatModel.userCreated.value = true
+        chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
+        chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
+        chatModel.chatRunning.value = true
+        startReceiver()
+        Log.d(TAG, "startChat: started")
+      } else {
+        val chats = apiGetChats()
+        chatModel.updateChats(chats)
+        Log.d(TAG, "startChat: running")
       }
-      chatModel.currentUser.value = user
-      chatModel.userCreated.value = true
-      chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-      chatModel.controller.appPrefs.chatLastStart.set(Clock.System.now())
-      chatModel.chatRunning.value = true
-      startReceiver()
-      Log.d(TAG, "chat started")
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
       throw e
