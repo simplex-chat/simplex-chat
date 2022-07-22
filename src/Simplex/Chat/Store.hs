@@ -2932,44 +2932,23 @@ getGroupChat db user groupId pagination = do
     CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count
 
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatLast_ db user@User {userId, userContactId} groupId count = do
+getGroupChatLast_ db user@User {userId} groupId count = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
-  chatItems <- ExceptT getGroupChatItemsLast_
+  chatItemIds <- liftIO getGroupChatItemIdsLast_
+  chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
-    getGroupChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTGroup])
-    getGroupChatItemsLast_ = do
-      tz <- getCurrentTimeZone
-      currentTs <- getCurrentTime
-      mapM (toGroupChatItem tz currentTs userContactId)
+    getGroupChatItemIdsLast_ :: IO [ChatItemId]
+    getGroupChatItemIdsLast_ = do
+      map fromOnly
         <$> DB.query
           db
           [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
-              -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
-              -- GroupMember
-              m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-              m.member_status, m.invited_by, m.local_display_name, m.contact_id,
-              p.display_name, p.full_name, p.image,
-              -- quoted ChatItem
-              ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
-              -- quoted GroupMember
-              rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
-              rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id,
-              rp.display_name, rp.full_name, rp.image
-            FROM chat_items i
-            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
-            LEFT JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
-            LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            LEFT JOIN group_members rm ON rm.group_member_id = ri.group_member_id
-            LEFT JOIN contact_profiles rp ON rp.contact_profile_id = rm.contact_profile_id
-            WHERE i.user_id = ? AND i.group_id = ? AND i.item_deleted != 1
-            ORDER BY i.item_ts DESC, i.chat_item_id DESC
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+            ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
           (userId, groupId, count)
