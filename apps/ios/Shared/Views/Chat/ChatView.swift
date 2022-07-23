@@ -106,7 +106,6 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    // showChatInfo = true
                     chatViewSheet = .chatInfo
                 } label: {
                     ChatInfoToolbar(chat: chat)

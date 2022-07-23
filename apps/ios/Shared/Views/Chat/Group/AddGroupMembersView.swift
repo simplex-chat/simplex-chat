@@ -59,7 +59,7 @@ struct AddGroupMembersView: View {
         let unaddedContacts = chatModel.chats
             .compactMap{ $0.chatInfo.contact }
             .filter{ !memberContactIds.contains($0.apiId) }
-            .sorted{$0.displayName < $1.displayName}
+            .sorted{ $0.displayName < $1.displayName }
         return unaddedContacts
     }
 
