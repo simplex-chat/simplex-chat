@@ -81,6 +81,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Selected updates:
 
+[Jul 23, 2022. v3.1-beta: access via Tor SOCKS5 proxy in terminal app, join and leave chat groups in mobile apps, up to 90x reduced battery and traffic usage, docker configurations for self-hosted servers](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+
 [Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
 
 [May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
@@ -149,7 +151,8 @@ We plan to add soon:
 1. Access to messaging servers via Tor. Currently it is supported only for [terminal CLI clients](./docs/CLI.md); mobile clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via Tor independently. The servers provided by SimpleX Chat do not correlate users by or log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
 2. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 3. Local database encryption. Currently the local chat database stored on your device is not encrypted.
-4. Independent implementation audit.
+4. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+5. Independent implementation audit.
 
 ## For developers
 
