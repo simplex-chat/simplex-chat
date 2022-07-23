@@ -6,8 +6,8 @@
 
 - terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor) (e.g., Tor).
 - mobile apps: [join and leave chat groups](#mobile-apps-join-and-leave-chat-groups).
-- [optimized battery and traffic usage](#optimized-battery-and-traffic-usage---up-to-90x-reduction).
-- [docker configuration for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
+- [optimized battery and traffic usage - up to 90x reduction!](#optimized-battery-and-traffic-usage---up-to-90x-reduction).
+- [two docker configurations for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
 
 ### Terminall app: access to messaging servers via SOCKS5 proxy / Tor
 
