@@ -87,7 +87,13 @@ defaultChatConfig =
             yesToMigrations = False
           },
       yesToMigrations = False,
-      defaultServers = InitialAgentServers {smp = _defaultSMPServers, ntf = _defaultNtfServers},
+      defaultServers =
+        InitialAgentServers
+          { smp = _defaultSMPServers,
+            ntf = _defaultNtfServers,
+            socksProxy = Nothing,
+            tcpTimeout = 5000000
+          },
       tbqSize = 64,
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
@@ -116,7 +122,7 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, logConnections} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, socksProxy, tcpTimeout, logConnections} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -124,7 +130,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {socksProxy, tcpTimeout}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
