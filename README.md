@@ -81,7 +81,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Selected updates:
 
-[Jul 23, 2022. v3.1-beta: access via Tor SOCKS5 proxy in terminal app, join and leave chat groups in mobile apps, up to 90x reduced battery and traffic usage, docker configurations for self-hosted servers](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+[Jul 23, 2022. v3.1-beta: access via Tor SOCKS5 proxy in terminal app, join and leave chat groups in mobile apps, up to 90x reduced battery and traffic usage, docker configurations for self-hosted servers](./blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
 
 [Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
 
