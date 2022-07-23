@@ -7,11 +7,16 @@
   - mobile apps: [join and leave chat groups](#mobile-apps-join-and-leave-chat-groups).
   - [optimized battery and traffic usage](#optimized-battery-and-traffic-usage).
   - [docker configuration for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
-- SimpleX platform:
+- [SimpleX platform](#simplex-platform):
+  - [no user identifiers](#the-first-and-the-only-messaging-platform-without-user-identifiers-of-any-kind---100-private-by-design)
+  - [privacy: technical details and limitations](#privacy-technical-details-and-limitations)
+  - [please help us pay for 3rd party security audit](#we-ask-you-to-help-us-pay-for-3rd-party-security-audit)
 
 ## What's new
 
 ### Terminall app: access to messaging servers via SOCKS5 proxy / Tor
+
+<img src="./images/20220723-tor.jpg" width="480">
 
 While SMP protocol is focussed on minimizing application-level meta-data by using pair-wise identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
 
@@ -26,6 +31,8 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 ```
 
 ### Mobile apps: join and leave chat groups
+
+<img src="./images/20220723-group-invite.png" width="330"> <img src="./images/20220723-group-accept.png" width="330"> <img src="./images/20220723-group-leave.png" width="330">
 
 Groups have been supported by SimpleX Chat core for a very long time, but there was no user interface in the mobile apps to use them - users had to use chat console to create groups, add members, and accept invitations.
 
@@ -45,7 +52,7 @@ To reduce battery and traffic usage this release updated SMP protocol to allow b
 
 You might notice that sending commands to multiple queues in one block would allow the server to correlate that all these queues belong to the same user, even though the current server implementation we use does not do it. But even without batching, as the commands are sent via the same TCP connection, this correlation was already possible, so compared with the previous version it has no downsides.
 
-To mitigate the risk of servers correlating your messaging queues we will soon add an option to access each queue via a separate TCP connection, which will have to be used together with access via Tor (as otherwise the servers would still see the same IP address). While it will increase battery and traffic consumption, it will also provide the best privacy.
+To mitigate the risk of servers correlating your messaging queues we will soon add an option to access each queue via a separate TCP connection, which will have to be used together with access via Tor (as otherwise the servers would still see the same IP address). While it will increase battery and traffic consumption, it will also provide the highest level of privacy.
 
 ### Docker configuration for self-hosted SMP servers
 
