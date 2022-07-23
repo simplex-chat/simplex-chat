@@ -15,7 +15,7 @@
 
 While SMP protocol is focussed on minimizing application-level meta-data by using pair-wise identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
 
-This release of terminal app is limited to making all server accessed via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without requiring it from the other party.
+This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without requiring it from the other party.
 
 To use SimpleX Chat via Tor you only need to install tor and run simplex-chat with `-x` option. See [terminal app docs](../docs/CLI.md#access-messaging-servers-via-tor-beta) for more information.
 
@@ -49,10 +49,10 @@ To mitigate the risk of servers correlating your messaging queues we will soon a
 
 ### Docker configuration for self-hosted SMP servers
 
-When we released SimpleX Chat v3 two weeks ago many users wanted to host messaging servers in docker containers. So, we are now offering two versions:
+When we released SimpleX Chat v3 two weeks ago many users wanted to host messaging servers in docker containers. So, we are now offering [two versions of docker configurations](https://github.com/simplex-chat/simplexmq/tree/stable/scripts/docker):
 
-- fast and convenient docker configuration that downloads the server binary from GitHub.
-- more secure configuration that builds the server from the source code.
+- fast and convenient - it downloads SMP server binary from GitHub.
+- more secure - it builds SMP server from the source code.
 
 Let us know how it works for you!
 
@@ -72,16 +72,16 @@ I wrote about it in [v2 release announcement](./20220511-simplex-chat-v2-images-
 
 SimpleX design follows "defence in depth" security principles having multiple overlapping defensive mechanisms to protect users privacy and security:
 
-- TLS transport with service identity validation and channel binding, limited to the most secure cryptographic algorigthms
+- TLS transport with service identity validation and channel binding, limited to the most secure cryptographic algorithms
 - Multiple levels of encryption that both protect message content and meta-data, preventinc trafic correlation even if TLS is compromised:
   - end-to-end encryption in each messaging queue.
-  - end-to-end encryption of the conversation using double-ratchet algorightm, that provides OTR messaging with forward secrecy and break-in recovery.
+  - end-to-end encryption of the conversation using double-ratchet algorithms, that provides OTR messaging with forward secrecy and break-in recovery.
   - additional encryption layer between the server and message recipient
 - Multiple level of content padding - the TLS transport block is padded to a fixed 16kb size, and each encrypted envelope is padded to a constant size as well.
 
 What we plan to add to further improve privacy:
 
-- message queue rotation, so that pairwise identifiers we use would become temporary, and your converstaions would be moving from server to server automatically.
+- message queue rotation, so that pairwise identifiers we use would become temporary, and your conversations would be moving from server to server automatically.
 - access to the messaging servers via Tor v3 hidden services.
 - message mixing - adding latency to message delivery, to protect against traffic correlation by message time.
 
