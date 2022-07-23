@@ -10,12 +10,12 @@ PLATFORM="$(uname)"
 if [ -n "$1" ]; then
   RELEASE="tag/$1"
   DOWNLOAD="download/$1"
+  echo "downloading SimpleX Chat $1 ..."
 else
   RELEASE=latest
   DOWNLOAD="latest/download"
+  echo "downloading the latest version of SimpleX Chat ..."
 fi
-
-echo "DOWNLOAD=$DOWNLOAD"
 
 if [ $PLATFORM == "Darwin" ]; then
   PLATFORM="macos-x86-64"
