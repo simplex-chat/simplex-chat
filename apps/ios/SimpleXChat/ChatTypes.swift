@@ -180,6 +180,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var contact: Contact? {
+        get {
+            switch self {
+            case let .direct(contact): return contact
+            default: return nil
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -410,8 +419,8 @@ public enum ConnStatus: String, Decodable {
 }
 
 public struct Group: Decodable {
-    var groupInfo: GroupInfo
-    var members: [GroupMember]
+    public var groupInfo: GroupInfo
+    public var members: [GroupMember]
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
@@ -472,7 +481,7 @@ public struct GroupMember: Decodable {
     var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
-    var memberContactId: Int64?
+    public var memberContactId: Int64?
     var activeConn: Connection?
 
     var directChatId: ChatId? {

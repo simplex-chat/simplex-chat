@@ -380,6 +380,12 @@ func clearChat(_ chat: Chat) async {
     }
 }
 
+func apiListContacts() throws -> [Contact] {
+    let r = chatSendCmdSync(.listContacts)
+    if case let .contactsList(contacts) = r { return contacts }
+    throw r
+}
+
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
     switch r {
@@ -537,6 +543,20 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
+func addMember(groupId: Int64, contactId: Int64) async {
+    do {
+        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: .admin)
+    } catch let error {
+        logger.error("addMember error: \(responseError(error))")
+    }
+}
+
+func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
+    if case .sentGroupInvitation = r { return }
+    throw r
+}
+
 func joinGroup(groupId: Int64) async {
     do {
         let groupInfo = try await apiJoinGroup(groupId: groupId)
@@ -565,6 +585,12 @@ func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
     if case let .leftMemberUser(groupInfo) = r { return groupInfo }
     throw r
+}
+
+func apiListMembers(groupId: Int64) -> [GroupMember] {
+    let r = chatSendCmdSync(.apiListMembers(groupId: groupId))
+    if case let .groupMembers(group) = r { return group.members }
+    return []
 }
 
 func initializeChat(start: Bool) throws {

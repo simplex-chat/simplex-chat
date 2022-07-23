@@ -46,6 +46,7 @@ public enum ChatCommand {
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
+    case listContacts
     case apiUpdateProfile(profile: Profile)
     case createMyAddress
     case deleteMyAddress
@@ -102,6 +103,7 @@ public enum ChatCommand {
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
+            case .listContacts: return "/contacts"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
@@ -158,6 +160,7 @@ public enum ChatCommand {
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
+            case .listContacts: return "listContacts"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
@@ -231,6 +234,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
     case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
@@ -317,6 +321,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
+            case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
@@ -403,6 +408,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
             case let .sentGroupInvitation(groupInfo, contact): return "groupInfo: \(groupInfo)\ncontact: \(contact)"
             case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)

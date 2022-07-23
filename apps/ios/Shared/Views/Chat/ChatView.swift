@@ -120,7 +120,7 @@ struct ChatView: View {
                             GroupChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
                         }
                     case .addMember:
-                        AddGroupMemberView()
+                        AddGroupMembersView(groupId: chat.chatInfo.apiId, chatViewSheet: $chatViewSheet)
                     }
                 }
             }
