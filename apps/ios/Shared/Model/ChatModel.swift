@@ -23,7 +23,6 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
-    @Published var groupMembers: [GroupMember] = []
     @Published var chatToTop: String?
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
