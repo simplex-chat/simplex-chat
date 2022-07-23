@@ -7,7 +7,7 @@ BIN_DIR="$HOME/.local/bin"
 BIN_PATH="$BIN_DIR/$APP_NAME"
 PLATFORM="$(uname)"
 
-if [ -n "$1" ]; then
+if [ -n "${1:-}" ]; then
   RELEASE="tag/$1"
   DOWNLOAD="download/$1"
   echo "downloading SimpleX Chat $1 ..."
