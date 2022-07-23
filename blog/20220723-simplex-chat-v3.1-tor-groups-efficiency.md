@@ -2,27 +2,22 @@
 
 **Published:** Jul 23, 2022
 
-- What's new:
-  - terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor) (e.g., Tor).
-  - mobile apps: [join and leave chat groups](#mobile-apps-join-and-leave-chat-groups).
-  - [optimized battery and traffic usage](#optimized-battery-and-traffic-usage).
-  - [docker configuration for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
-- [SimpleX platform](#simplex-platform):
-  - [no user identifiers](#the-first-and-the-only-messaging-platform-without-user-identifiers-of-any-kind---100-private-by-design)
-  - [privacy: technical details and limitations](#privacy-technical-details-and-limitations)
-  - [please help us pay for 3rd party security audit](#we-ask-you-to-help-us-pay-for-3rd-party-security-audit)
-
 ## What's new
+
+- terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor) (e.g., Tor).
+- mobile apps: [join and leave chat groups](#mobile-apps-join-and-leave-chat-groups).
+- [optimized battery and traffic usage](#optimized-battery-and-traffic-usage---up-to-90x-reduction).
+- [docker configuration for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
 
 ### Terminall app: access to messaging servers via SOCKS5 proxy / Tor
 
 <img src="./images/20220723-tor.jpg" width="480">
 
-While SMP protocol is focussed on minimizing application-level meta-data by using pair-wise identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
+While SMP protocol is focussed on protecting application-level meta-data by using pairwise connection identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
 
-This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without requiring it from the other party.
+This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who self-host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without necessarily requiring that the other party uses Tor as well.
 
-To use SimpleX Chat via Tor you only need to install tor and run simplex-chat with `-x` option. See [terminal app docs](../docs/CLI.md#access-messaging-servers-via-tor-beta) for more information.
+To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with `-x` option. See [terminal app docs](../docs/CLI.md#access-messaging-servers-via-tor-beta) for more information.
 
 As this is a beta release, to install it you need to use this command:
 
@@ -36,9 +31,9 @@ curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/inst
 
 Groups have been supported by SimpleX Chat core for a very long time, but there was no user interface in the mobile apps to use them - users had to use chat console to create groups, add members, and accept invitations.
 
-This release allows accepting the invitations to join groups via mobile apps UI, making it much easier to create groups - only one user (group owner) needs to use chat console, while all other groups members just need to tap a button in the UI to join or leave the group. Full group UI is coming in v3.1 in 1-2 weeks, but you can already start using groups today.
+This release allows accepting the invitations to join groups via mobile apps UI, making it much easier to create groups - only one user (a group owner) needs to use chat console, while all other groups members just need to tap a button in the UI to join or leave the group. Full group UI is coming in v3.1 in 1-2 weeks, but you can already start using groups today by installing beta-versions of mobile apps via [TestFlight](https://testflight.apple.com/join/DWuT2LQu), [Google PlayStore Beta](https://play.google.com/apps/testing/chat.simplex.app) and [APK download](https://github.com/simplex-chat/simplex-chat/releases/download/v3.1.0-beta.0/simplex.apk).
 
-To manage groups via chat console in the mobile app you have to use these commands:
+To manage groups via terminal app or via chat console in the mobile apps you have to use these commands:
 
 - to create group: `/g <group_name> [<description>]`
 - to add member (admin by default): `/a <group_name> <contact_name> [owner/admin/member]`
@@ -46,7 +41,7 @@ To manage groups via chat console in the mobile app you have to use these comman
 
 Accepting group invitations, leaving and deleting groups no longer requires using console commands.
 
-### Optimized battery and traffic usage
+### Optimized battery and traffic usage - up to 90x reduction!
 
 To reduce battery and traffic usage this release updated SMP protocol to allow batching multiple server commands (up to 90!) into one traffic block – provided both the server and the client are upgraded. It means that if you have 90 contacts (or group members) on one server, to subscribe to all messaging queues you now need to send only one 16kb block instead of ~1.5Mb of traffic (90 blocks). It also hides how many contacts you have from any attackers who observe your network.
 
@@ -79,18 +74,20 @@ I wrote about it in [v2 release announcement](./20220511-simplex-chat-v2-images-
 
 SimpleX design follows "defence in depth" security principles having multiple overlapping defensive mechanisms to protect users privacy and security:
 
-- TLS transport with service identity validation and channel binding, limited to the most secure cryptographic algorithms
-- Multiple levels of encryption that both protect message content and meta-data, preventinc trafic correlation even if TLS is compromised:
+- TLS transport with server identity validation and channel binding, limited to the most secure cryptographic algorithms.
+- Three levels of encryption that both protect message content and meta-data, preventinc trafic correlation even if TLS is compromised:
   - end-to-end encryption in each messaging queue.
   - end-to-end encryption of the conversation using double-ratchet algorithms, that provides OTR messaging with forward secrecy and break-in recovery.
-  - additional encryption layer between the server and message recipient
-- Multiple level of content padding - the TLS transport block is padded to a fixed 16kb size, and each encrypted envelope is padded to a constant size as well.
+  - additional encryption layer between the server and message recipient, to prevent traffic correlation by ciphertext or any identifiers.
+- Four levels of message padding to prevent any attack based on the content size - the TLS transport block is padded to a fixed 16kb size, and each of 3 encrypted envelopes is padded to a constant size before encryption as well.
 
-What we plan to add to further improve privacy:
+What we plan to add soon to further improve privacy and security:
 
-- message queue rotation, so that pairwise identifiers we use would become temporary, and your conversations would be moving from server to server automatically.
+- message queue rotation, so that pairwise identifiers become temporary, and your conversations move from server to server automatically.
 - access to the messaging servers via Tor v3 hidden services.
-- message mixing - adding latency to message delivery, to protect against traffic correlation by message time.
+- message mixing - adding latencies to message delivery, to protect against traffic correlation by message time.
+- using Tor v3 hidden service addresses for messaging servers.
+- passphrase-based local database encryption.
 
 SimpleX Chat [README page](../README.md#privacy-technical-details-and-limitations) has more details about it.
 
