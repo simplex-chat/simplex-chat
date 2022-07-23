@@ -1,3 +1,5 @@
+#!/bin/sh
+
 set -eu
 
 APP_NAME="simplex-chat"
@@ -5,13 +7,23 @@ BIN_DIR="$HOME/.local/bin"
 BIN_PATH="$BIN_DIR/$APP_NAME"
 PLATFORM="$(uname)"
 
+if [ -n "$1" ]; then
+  RELEASE="tag/$1"
+  DOWNLOAD="download/$1"
+else
+  RELEASE=latest
+  DOWNLOAD="latest/download"
+fi
+
+echo "DOWNLOAD=$DOWNLOAD"
+
 if [ $PLATFORM == "Darwin" ]; then
   PLATFORM="macos-x86-64"
 elif [ $PLATFORM == "Linux" ]; then
   PLATFORM="ubuntu-20_04-x86-64"
 else
   echo "Scripted installation on your platform is not supported."
-  echo "See compiled binaries in the latest release: https://github.com/$APP_NAME/$APP_NAME/releases/latest"
+  echo "See compiled binaries in the ${1:-latest} release: https://github.com/$APP_NAME/$APP_NAME/releases/$RELEASE"
   exit 1
 fi
 
@@ -67,9 +79,9 @@ fi
 [[ ! -d $BIN_DIR ]] && mkdir -p $BIN_DIR
 
 if [ -n "$(command -v curl)" ]; then
-  curl -L -o $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
+  curl -L -o $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
 elif [ -n "$(command -v wget)" ]; then
-  wget -O $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/latest/download/$APP_NAME-$PLATFORM"
+  wget -O $BIN_PATH "https://github.com/$APP_NAME/$APP_NAME/releases/$DOWNLOAD/$APP_NAME-$PLATFORM"
 else
   echo "Cannot download $APP_NAME - please install curl or wget"
   exit 1
