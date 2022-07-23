@@ -105,6 +105,12 @@ The channel through which you share the link does not have to be secure - it is 
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
 ```
 
+or to install v3.1.0-beta.0 that supports accessing SimpleX servers via SOCKS5 proxy:
+
+```
+curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | sh -s -- v3.1.0-beta.0
+```
+
 Once the chat client is installed, simply run `simplex-chat` from your terminal.
 
 ![simplex-chat](./images/connection.gif)
