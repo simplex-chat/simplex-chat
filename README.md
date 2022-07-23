@@ -149,7 +149,8 @@ We plan to add soon:
 1. Access to messaging servers via Tor. Currently it is supported only for [terminal CLI clients](./docs/CLI.md); mobile clients access servers via public Internet, and the servers can observe IP addresses of the clients. Depending which platform you use, you might be able to configure access via Tor independently. The servers provided by SimpleX Chat do not correlate users by or log IP addresses, and you can use your own servers, but in some scenarios that may be not a sufficient level of privacy.
 2. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
 3. Local database encryption. Currently the local chat database stored on your device is not encrypted.
-4. Independent implementation audit.
+4. Message "mixing" - adding latency to message delivery, to prevent traffic correlation by message time.
+5. Independent implementation audit.
 
 ## For developers
 
