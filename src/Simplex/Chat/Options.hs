@@ -70,7 +70,7 @@ chatOpts appDir defaultDbFileName = do
       auto
       ( long "tcp-timeout"
           <> metavar "TIMEOUT"
-          <> help "TCP timeout, seconds (default: 5/10 with/without SOCKS5 proxy)"
+          <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
           <> value 0
       )
   logConnections <-
