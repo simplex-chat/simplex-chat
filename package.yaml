@@ -28,10 +28,12 @@ dependencies:
   - filepath == 1.4.*
   - http-types == 0.12.*
   - mtl == 2.2.*
+  - network >= 3.1.2.7 && < 3.2
   - optparse-applicative >= 0.15 && < 0.17
   - process == 1.6.*
   - simple-logger == 0.1.*
   - simplexmq >= 3.0
+  - socks == 0.6.*
   - sqlite-simple == 0.4.*
   - stm == 2.5.*
   - terminal == 0.2.*

@@ -49,6 +49,8 @@ testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
+      socksProxy = Nothing,
+      tcpTimeout = 5000000,
       logConnections = False,
       logAgent = False,
       chatCmd = "",

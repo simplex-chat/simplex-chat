@@ -12,6 +12,7 @@
     - [Using Haskell stack](#using-haskell-stack)
 - [Usage](#usage)
   - [Running the chat client](#running-the-chat-client)
+  - [Access messaging servers via Tor (BETA)](#access-messaging-servers-via-tor-beta)
   - [How to use SimpleX chat](#how-to-use-simplex-chat)
   - [Groups](#groups)
   - [Sending files](#sending-files)
@@ -138,6 +139,23 @@ Base64url encoded string preceding the server address is the server's offline ce
 You can still talk to people using default or any other server - it only affects the location of the message queue when you initiate the connection (and the reply queue can be on another server, as set by the other party's client).
 
 Run `simplex-chat -h` to see all available options.
+
+### Access messaging servers via Tor (BETA)
+
+Install Tor and run it as SOCKS5 proxy on port 9050, e.g. on Mac you can:
+
+```
+brew install tor
+brew services start tor
+```
+
+Use `-x` option to access servers via Tor:
+
+```
+simplex-chat -x
+```
+
+You can also use option `--socks-proxy=ipv4:port` or `--socks-proxy=:port` to configure host and port of your SOCKS5 proxy, e.g. if you are running it on some other host or port.
 
 ### How to use SimpleX chat
 
