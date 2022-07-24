@@ -86,7 +86,7 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button("Join group") { Task { await joinGroup(groupId: groupInfo.groupId) } }
+                    Button("Join group") { Task { await joinGroup(groupInfo.groupId) } }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -132,7 +132,7 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            Task { await joinGroup(groupId: chat.chatInfo.apiId) }
+            Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
             Label("Join", systemImage: "ipad.and.arrow.forward")
         }
@@ -237,7 +237,7 @@ struct ChatListNavLink: View {
             title: Text("Leave group?"),
             message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
             primaryButton: .destructive(Text("Leave")) {
-                Task { await leaveGroup(groupId: groupInfo.groupId) }
+                Task { await leaveGroup(groupInfo.groupId) }
             },
             secondaryButton: .cancel()
         )

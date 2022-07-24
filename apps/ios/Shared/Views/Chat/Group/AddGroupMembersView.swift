@@ -11,16 +11,18 @@ import SimpleXChat
 
 struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
-    var groupId: Int64
+    var chat: Chat
     @Binding var chatViewSheet: ChatViewSheet?
     @State private var contactsToAdd: [Contact] = []
     @State private var selectedContacts = Set<Int64>()
 
     var body: some View {
-        VStack {
-            Text("Invite to group")
-                .font(.headline)
-                .padding()
+        VStack(alignment: .leading, spacing: 0) {
+            ChatInfoToolbar(chat: chat, imageSize: 64)
+            .padding(.top)
+            .padding(.leading, -6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(uiColor: .quaternarySystemFill))
             if (contactsToAdd.isEmpty) {
                 Text("No contacts to add")
                     .foregroundColor(.secondary)
@@ -28,12 +30,12 @@ struct AddGroupMembersView: View {
                 HStack {
                     let count = selectedContacts.count
                     if count == 0 {
-                        Text("Select new member(s)")
+                        Text("Select new member(s):")
                     } else {
                         Button {
                             Task {
                                 for contactId in selectedContacts {
-                                    await addMember(groupId: groupId, contactId: contactId)
+                                    await addMember(groupId: chat.chatInfo.apiId, contactId: contactId)
                                 }
                                 chatViewSheet = nil
                             }
@@ -48,8 +50,9 @@ struct AddGroupMembersView: View {
                         }
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: 36, alignment: .leading)
+                .padding(.horizontal)
+                .frame(maxWidth: .infinity, maxHeight: 48, alignment: .leading)
+                .background(Color(uiColor: .quaternarySystemFill))
                 List(contactsToAdd) { contact in
                     contactCheckView(contact)
                         .listRowBackground(Color.clear)
@@ -64,7 +67,7 @@ struct AddGroupMembersView: View {
     }
 
     func getContactsToAdd() async -> [Contact] {
-        let memberContactIds = await apiListMembers(groupId: groupId)
+        let memberContactIds = await apiListMembers(chat.chatInfo.apiId)
             .compactMap{ $0.memberContactId }
         return chatModel.chats
             .compactMap{ $0.chatInfo.contact }
@@ -98,6 +101,6 @@ struct AddGroupMembersView: View {
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatViewSheet = ChatViewSheet.chatInfo
-        return AddGroupMembersView(groupId: 1, chatViewSheet: Binding($chatViewSheet))
+        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), chatViewSheet: Binding($chatViewSheet))
     }
 }
