@@ -67,6 +67,8 @@ mobileChatOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = [],
+      socksProxy = Nothing,
+      tcpTimeout = 5000000,
       logConnections = False,
       logAgent = False,
       chatCmd = "",
