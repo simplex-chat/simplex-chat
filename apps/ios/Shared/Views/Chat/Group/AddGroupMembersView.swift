@@ -13,82 +13,83 @@ struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
     var groupId: Int64
     @Binding var chatViewSheet: ChatViewSheet?
-    @State private var unaddedContacts: [Contact] = []
-    @State private var selectedContactIds = Set<Int64>()
+    @State private var contactsToAdd: [Contact] = []
+    @State private var selectedContacts = Set<Int64>()
 
     var body: some View {
         VStack {
-            Text("Contacts")
+            Text("Invite to group")
                 .font(.headline)
                 .padding()
-            if (unaddedContacts.isEmpty) {
-                Text("No unadded contacts")
+            if (contactsToAdd.isEmpty) {
+                Text("No contacts to add")
                     .foregroundColor(.secondary)
             } else {
                 HStack {
-                    Button {
-                        selectedContactIds.forEach { contactId in
+                    let count = selectedContacts.count
+                    if count == 0 {
+                        Text("Select new member(s)")
+                    } else {
+                        Button {
                             Task {
-                                await addMember(groupId: groupId, contactId: contactId)
+                                for contactId in selectedContacts {
+                                    await addMember(groupId: groupId, contactId: contactId)
+                                }
+                                chatViewSheet = nil
                             }
-                            chatViewSheet = nil
+                        } label: {
+                            Label("Invite \(count) member(s)", systemImage: "checkmark")
                         }
-                    } label: {
-                        Label("Add members", systemImage: "plus.circle.fill")
+                        Spacer()
+                        Button {
+                            selectedContacts.removeAll()
+                        } label: {
+                            Label("Clear", systemImage: "multiply")
+                        }
                     }
-                    .padding()
-                    Spacer()
                 }
-                .disabled(selectedContactIds.count < 1)
-                List(unaddedContacts) { contact in
-                    ContactCheckView(contact: contact, selectedContactIds: $selectedContactIds)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: 36, alignment: .leading)
+                List(contactsToAdd) { contact in
+                    contactCheckView(contact)
                         .listRowBackground(Color.clear)
                 }
                 .listStyle(.plain)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .onAppear() {
-            unaddedContacts = prepareUnaddedContactsList()
+        .task {
+            contactsToAdd = await getContactsToAdd()
         }
     }
 
-    func prepareUnaddedContactsList() -> [Contact] {
-        let memberContactIds = apiListMembers(groupId: groupId)
+    func getContactsToAdd() async -> [Contact] {
+        let memberContactIds = await apiListMembers(groupId: groupId)
             .compactMap{ $0.memberContactId }
-        let unaddedContacts = chatModel.chats
+        return chatModel.chats
             .compactMap{ $0.chatInfo.contact }
             .filter{ !memberContactIds.contains($0.apiId) }
-            .sorted{ $0.displayName < $1.displayName }
-        return unaddedContacts
+            .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
     }
 
-    struct ContactCheckView: View {
-        var contact: Contact
-        @State var checked: Bool = false
-        @Binding var selectedContactIds: Set<Int64>
-
-        func toggle() {
-            checked.toggle()
+    func contactCheckView(_ contact: Contact) -> some View {
+        let checked = selectedContacts.contains(contact.apiId)
+        return Button {
             if checked {
-                selectedContactIds.insert(contact.apiId)
+                selectedContacts.remove(contact.apiId)
             } else {
-                selectedContactIds.remove(contact.apiId)
+                selectedContacts.insert(contact.apiId)
             }
-        }
-
-        var body: some View {
-            Button(action: toggle){
-                HStack{
-                    ProfileImage(imageStr: contact.image)
-                        .frame(width: 30, height: 30)
-                        .padding(.trailing, 2)
-                    Text(ChatInfo.direct(contact: contact).chatViewName)
-                        .lineLimit(1)
-                    Spacer()
-                    Image(systemName: checked ? "checkmark.circle.fill": "circle")
-                        .foregroundColor(checked ? .accentColor : .secondary)
-                }
+        } label: {
+            HStack{
+                ProfileImage(imageStr: contact.image)
+                    .frame(width: 30, height: 30)
+                    .padding(.trailing, 2)
+                Text(ChatInfo.direct(contact: contact).chatViewName)
+                    .lineLimit(1)
+                Spacer()
+                Image(systemName: checked ? "checkmark.circle.fill": "circle")
+                    .foregroundColor(checked ? .accentColor : .secondary)
             }
         }
     }

@@ -587,8 +587,8 @@ func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
-func apiListMembers(groupId: Int64) -> [GroupMember] {
-    let r = chatSendCmdSync(.apiListMembers(groupId: groupId))
+func apiListMembers(groupId: Int64) async -> [GroupMember] {
+    let r = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(group) = r { return group.members }
     return []
 }
