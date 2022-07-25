@@ -2557,11 +2557,10 @@ chatCommandP =
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
     netCfgP = do
-      socksProxy <- "proxy=" *> proxyP
+      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ NetworkConfig {socksProxy, tcpTimeout}
-    proxyP = "off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP
 
 adminContactReq :: ConnReqContact
 adminContactReq =
