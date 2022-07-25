@@ -475,7 +475,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
     var groupId: Int64
     var memberId: String
-    var memberRole: GroupMemberRole
+    public var memberRole: GroupMemberRole
     var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
     var invitedBy: InvitedBy
@@ -543,6 +543,17 @@ public enum GroupMemberRole: String, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
+
+    public var text: String {
+        switch self {
+        case .member:
+            return NSLocalizedString("Member", comment: "group member role")
+        case .admin:
+            return NSLocalizedString("Admin", comment: "group member role")
+        case .owner:
+            return NSLocalizedString("Owner", comment: "group member role")
+        }
+    }
 }
 
 public enum GroupMemberCategory: String, Decodable {

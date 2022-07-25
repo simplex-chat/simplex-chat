@@ -71,7 +71,11 @@ struct GroupChatInfoView: View {
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 72, height: 72)
                 .padding(.top, 12)
-            Text(chat.chatInfo.localDisplayName).font(.title).lineLimit(1)
+                .padding(.bottom, 6)
+            Text(chat.chatInfo.localDisplayName)
+                .font(.title)
+                .lineLimit(1)
+                .padding(.bottom, 2)
             Text(chat.chatInfo.fullName).font(.title2).lineLimit(2)
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -101,6 +105,12 @@ struct GroupChatInfoView: View {
                     .padding(.trailing, 2)
                 Text(member.chatViewName)
                     .lineLimit(1)
+                // TODO server connection status
+                Spacer()
+                let role = member.memberRole
+                if role == .owner || role == .admin {
+                    Text(member.memberRole.text)
+                }
             }
         }
     }
