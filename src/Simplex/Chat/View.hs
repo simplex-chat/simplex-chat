@@ -497,7 +497,7 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
 viewSocksProxy :: Maybe SocksProxy -> String
 viewSocksProxy =
   maybe
-    "use `/network proxy=on` command or -x CLI option to connect via SOCKS5 at :9050"
+    "Direct network connection. Use `/network proxy=on` command or `-x` CLI option to connect via SOCKS5 at :9050"
     (("using SOCKS5 proxy " <>) . show)
 
 viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
