@@ -546,12 +546,9 @@ public enum GroupMemberRole: String, Decodable {
 
     public var text: String {
         switch self {
-        case .member:
-            return NSLocalizedString("Member", comment: "group member role")
-        case .admin:
-            return NSLocalizedString("Admin", comment: "group member role")
-        case .owner:
-            return NSLocalizedString("Owner", comment: "group member role")
+        case .member: return NSLocalizedString("Member", comment: "group member role")
+        case .admin: return NSLocalizedString("Admin", comment: "group member role")
+        case .owner: return NSLocalizedString("Owner", comment: "group member role")
         }
     }
 }
@@ -576,6 +573,38 @@ public enum GroupMemberStatus: String, Decodable {
     case memConnected = "connected"
     case memComplete = "complete"
     case memCreator = "creator"
+
+    public var text: String {
+        switch self {
+        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
+        case .memLeft: return NSLocalizedString("left", comment: "group member status")
+        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
+        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
+        case .memIntroduced: return NSLocalizedString("connecting (introduced)", comment: "group member status")
+        case .memIntroInvited: return NSLocalizedString("connecting (introduction invitation)", comment: "group member status")
+        case .memAccepted: return NSLocalizedString("connecting (accepted)", comment: "group member status")
+        case .memAnnounced: return NSLocalizedString("connecting (announced)", comment: "group member status")
+        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
+        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
+        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
+        }
+    }
+
+    public var shortText: String {
+        switch self {
+        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
+        case .memLeft: return NSLocalizedString("left", comment: "group member status")
+        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
+        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
+        case .memIntroduced: return NSLocalizedString("connecting", comment: "group member status")
+        case .memIntroInvited: return NSLocalizedString("connecting", comment: "group member status")
+        case .memAccepted: return NSLocalizedString("connecting", comment: "group member status")
+        case .memAnnounced: return NSLocalizedString("connecting", comment: "group member status")
+        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
+        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
+        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
+        }
+    }
 }
 
 public enum InvitedBy: Decodable {

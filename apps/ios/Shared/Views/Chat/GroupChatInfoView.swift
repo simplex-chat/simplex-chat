@@ -76,7 +76,9 @@ struct GroupChatInfoView: View {
                 .font(.title)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            Text(chat.chatInfo.fullName).font(.title2).lineLimit(2)
+            Text(chat.chatInfo.fullName)
+                .font(.title2)
+                .lineLimit(2)
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -101,11 +103,17 @@ struct GroupChatInfoView: View {
         } label: {
             HStack{
                 ProfileImage(imageStr: member.image)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 38, height: 38)
                     .padding(.trailing, 2)
-                Text(member.chatViewName)
-                    .lineLimit(1)
                 // TODO server connection status
+                VStack(alignment: .leading) {
+                    Text(member.chatViewName)
+                        .lineLimit(1)
+                    Text(member.memberStatus.shortText)
+                        .lineLimit(1)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 Spacer()
                 let role = member.memberRole
                 if role == .owner || role == .admin {
@@ -143,7 +151,7 @@ struct GroupChatInfoView: View {
         }
     }
 
-    // TODO reuse this clearChatAlert with ChatInfoView
+    // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteChatAlert() -> Alert {
         Alert(
             title: Text("Delete chat?"),
