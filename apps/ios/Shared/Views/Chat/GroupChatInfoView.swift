@@ -13,56 +13,75 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
-    @Binding var chatViewSheet: ChatViewSheet?
+    var groupInfo: GroupInfo
+    @Binding var showSheet: Bool
     @State private var members: [GroupMember] = []
-    @State private var selectedMember: GroupMember? = nil
-    @State private var alert: ChatInfoViewAlert? = nil
+    @State private var alert: GroupChatInfoViewAlert? = nil
+    @State private var showAddMembersSheet: Bool = false
 
-    enum ChatInfoViewAlert: Identifiable {
+    enum GroupChatInfoViewAlert: Identifiable {
         case deleteChatAlert
         case clearChatAlert
+        case leaveGroupAlert
 
-        var id: ChatInfoViewAlert { get { self } }
+        var id: GroupChatInfoViewAlert { get { self } }
     }
 
     var body: some View {
-        VStack{
-            ChatInfoImage(chat: chat)
-                .frame(width: 192, height: 192)
-                .padding(.top, 48)
-                .padding()
-            Text(chat.chatInfo.localDisplayName).font(.largeTitle)
-                .padding(.bottom, 2)
-            Text(chat.chatInfo.fullName).font(.title)
-                .padding(.bottom)
-
-            List(members) { member in
-                memberView(member)
+        NavigationView {
+            List {
+                groupInfoHeader()
                     .listRowBackground(Color.clear)
-            }
-            .listStyle(.plain)
 
-            Spacer()
-            Button() {
-                alert = .clearChatAlert
-            } label: {
-                Label("Clear conversation", systemImage: "gobackward")
+                Section(header: Text("\(members.count) Members")) {
+                    addMembersButton()
+                    ForEach(members) { member in
+                        memberView(member)
+                    }
+                }
+
+                Section {
+                    clearChatButton()
+                    if groupInfo.canDelete {
+                        deleteChatButton()
+                    }
+                    leaveGroupButton()
+                }
             }
-            .tint(Color.orange)
-            .padding()
         }
-        .sheet(item: $selectedMember) { member in
-            GroupMemberInfoView(member: member)
+        .sheet(isPresented: $showAddMembersSheet) {
+            AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteChatAlert: return deleteChatAlert()
             case .clearChatAlert: return clearChatAlert()
+            case .leaveGroupAlert: return leaveGroupAlert()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .task {
             members = await apiListMembers(chat.chatInfo.apiId)
+                .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() } // TODO owner first
+        }
+    }
+
+    func groupInfoHeader() -> some View {
+        VStack(spacing: 0) {
+            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
+                .frame(width: 72, height: 72)
+                .padding(.top, 12)
+            Text(chat.chatInfo.localDisplayName).font(.title).lineLimit(1)
+            Text(chat.chatInfo.fullName).font(.title2).lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func addMembersButton() -> some View {
+        Button {
+            showAddMembersSheet = true
+        } label: {
+            Label("Invite members", systemImage: "plus")
         }
     }
 
@@ -73,8 +92,8 @@ struct GroupChatInfoView: View {
     }
 
     func memberView(_ member: GroupMember) -> some View {
-        return Button {
-            selectedMember = member
+        NavigationLink {
+            GroupMemberInfoView(member: member)
         } label: {
             HStack{
                 ProfileImage(imageStr: member.image)
@@ -83,6 +102,34 @@ struct GroupChatInfoView: View {
                 Text(member.chatViewName)
                     .lineLimit(1)
             }
+        }
+    }
+
+    func deleteChatButton() -> some View {
+        Button(role: .destructive) {
+            alert = .deleteChatAlert
+        } label: {
+            Label("Delete group", systemImage: "trash")
+                .foregroundColor(Color.red)
+        }
+    }
+
+    func clearChatButton() -> some View {
+        Button() {
+            alert = .clearChatAlert
+        } label: {
+            Label("Clear conversation", systemImage: "gobackward")
+                .foregroundColor(Color.orange)
+        }
+        .tint(Color.orange)
+    }
+
+    func leaveGroupButton() -> some View {
+        Button(role: .destructive) {
+            alert = .leaveGroupAlert
+        } label: {
+            Label("Leave group", systemImage: "rectangle.portrait.and.arrow.right")
+                .foregroundColor(Color.red)
         }
     }
 
@@ -97,7 +144,7 @@ struct GroupChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         DispatchQueue.main.async {
                             chatModel.removeChat(chat.chatInfo.id)
-                            chatViewSheet = nil
+                            showSheet = false
                         }
                     } catch let error {
                         logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
@@ -116,7 +163,23 @@ struct GroupChatInfoView: View {
                 Task {
                     await clearChat(chat)
                     DispatchQueue.main.async {
-                        chatViewSheet = nil
+                        showSheet = false
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func leaveGroupAlert() -> Alert {
+        Alert(
+            title: Text("Leave group?"),
+            message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
+            primaryButton: .destructive(Text("Leave")) {
+                Task {
+                    await leaveGroup(chat.chatInfo.apiId)
+                    DispatchQueue.main.async {
+                        showSheet = false
                     }
                 }
             },
@@ -127,7 +190,7 @@ struct GroupChatInfoView: View {
 
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var chatViewSheet = ChatViewSheet.chatInfo
-        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), chatViewSheet: Binding($chatViewSheet))
+        @State var showSheet = true
+        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData, showSheet: $showSheet)
     }
 }

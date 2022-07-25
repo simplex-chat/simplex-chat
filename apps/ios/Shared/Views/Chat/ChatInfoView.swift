@@ -13,7 +13,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
-    @Binding var chatViewSheet: ChatViewSheet?
+    @Binding var showSheet: Bool
     @State var alert: ChatInfoViewAlert? = nil
 
     enum ChatInfoViewAlert: Identifiable {
@@ -84,7 +84,7 @@ struct ChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         DispatchQueue.main.async {
                             chatModel.removeChat(chat.chatInfo.id)
-                            chatViewSheet = nil
+                            showSheet = false
                         }
                     } catch let error {
                         logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
@@ -103,7 +103,7 @@ struct ChatInfoView: View {
                 Task {
                     await clearChat(chat)
                     DispatchQueue.main.async {
-                        chatViewSheet = nil
+                        showSheet = false
                     }
                 }
             },
@@ -114,7 +114,7 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var chatViewSheet = ChatViewSheet.chatInfo
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), chatViewSheet: Binding($chatViewSheet))
+        @State var showSheet = true
+        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showSheet: $showSheet)
     }
 }

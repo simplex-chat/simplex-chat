@@ -22,6 +22,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    @State private var showChatViewSheet: Bool = false
     @State private var chatViewSheet: ChatViewSheet?
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
@@ -107,19 +108,21 @@ struct ChatView: View {
             ToolbarItem(placement: .principal) {
                 Button {
                     chatViewSheet = .chatInfo
+                    showChatViewSheet = true
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(item: $chatViewSheet) { sheet in
-                    switch sheet {
+                .sheet(isPresented: $showChatViewSheet) {
+                    switch chatViewSheet {
                     case .chatInfo:
                         if case .direct = chat.chatInfo {
-                            ChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
-                        } else if case .group = chat.chatInfo {
-                            GroupChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
+                            ChatInfoView(chat: chat, showSheet: $showChatViewSheet)
+                        } else if case let .group(groupInfo) = chat.chatInfo {
+                            GroupChatInfoView(chat: chat, groupInfo: groupInfo, showSheet: $showChatViewSheet)
                         }
                     case .addMember:
-                        AddGroupMembersView(chat: chat, chatViewSheet: $chatViewSheet)
+                        AddGroupMembersView(chat: chat, showSheet: $showChatViewSheet)
+                    default: EmptyView()
                     }
                 }
             }
@@ -130,7 +133,7 @@ struct ChatView: View {
                         callButton(contact, .video, imageName: "video")
                     }
                 } else if case .group = chat.chatInfo {
-                    addMemberButton()
+                    addMembersButton()
                 }
             }
         }
@@ -145,9 +148,10 @@ struct ChatView: View {
         }
     }
 
-    private func addMemberButton() -> some View {
+    private func addMembersButton() -> some View {
         Button {
             chatViewSheet = .addMember
+            showChatViewSheet = true
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
         }

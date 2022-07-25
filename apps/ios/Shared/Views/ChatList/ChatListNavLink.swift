@@ -80,7 +80,7 @@ struct ChatListNavLink: View {
                     joinGroupButton()
                 }
                 .swipeActions(edge: .trailing) {
-                    if groupInfo.canDelete() {
+                    if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
                 }
@@ -123,7 +123,7 @@ struct ChatListNavLink: View {
                 }
             }
             .swipeActions(edge: .trailing) {
-                if groupInfo.canDelete() {
+                if groupInfo.canDelete {
                     deleteGroupChatButton(groupInfo)
                 }
             }
