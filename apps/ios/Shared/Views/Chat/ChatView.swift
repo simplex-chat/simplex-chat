@@ -113,8 +113,8 @@ struct ChatView: View {
                 .sheet(item: $chatViewSheet) { sheet in
                     switch sheet {
                     case .chatInfo:
-                        if case let .direct(contact) = chat.chatInfo {
-                            ChatInfoView(chat: chat, chatViewSheet: $chatViewSheet, contact: contact)
+                        if case .direct = chat.chatInfo {
+                            ChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
                         } else if case .group = chat.chatInfo {
                             GroupChatInfoView(chat: chat, chatViewSheet: $chatViewSheet)
                         }

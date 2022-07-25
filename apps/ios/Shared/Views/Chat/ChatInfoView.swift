@@ -15,11 +15,9 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     @Binding var chatViewSheet: ChatViewSheet?
     @State var alert: ChatInfoViewAlert? = nil
-    @State var deletingContact: Contact?
-    var contact: Contact
 
     enum ChatInfoViewAlert: Identifiable {
-        case deleteContactAlert
+        case deleteChatAlert
         case clearChatAlert
 
         var id: ChatInfoViewAlert { get { self } }
@@ -55,8 +53,7 @@ struct ChatInfoView: View {
             }
             .tint(Color.orange)
             Button(role: .destructive) {
-                deletingContact = contact
-                alert = .deleteContactAlert
+                alert = .deleteChatAlert
             } label: {
                 Label("Delete contact", systemImage: "trash")
             }
@@ -64,7 +61,7 @@ struct ChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteContactAlert: return deleteContactAlert(deletingContact!)
+            case .deleteChatAlert: return deleteChatAlert()
             case .clearChatAlert: return clearChatAlert()
             }
         }
@@ -77,20 +74,20 @@ struct ChatInfoView: View {
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    private func deleteContactAlert(_ contact: Contact) -> Alert {
+    private func deleteChatAlert() -> Alert {
         Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete chat?"),
+            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
-                        try await apiDeleteChat(type: .direct, id: contact.apiId)
+                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
+                            chatModel.removeChat(chat.chatInfo.id)
                             chatViewSheet = nil
                         }
                     } catch let error {
-                        logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
                     }
                 }
             },
@@ -118,6 +115,6 @@ struct ChatInfoView: View {
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatViewSheet = ChatViewSheet.chatInfo
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), chatViewSheet: Binding($chatViewSheet), contact: Contact.sampleData)
+        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), chatViewSheet: Binding($chatViewSheet))
     }
 }

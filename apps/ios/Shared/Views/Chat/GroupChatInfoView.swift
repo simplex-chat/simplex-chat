@@ -14,11 +14,12 @@ struct GroupChatInfoView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var chat: Chat
     @Binding var chatViewSheet: ChatViewSheet?
-    @State var alert: ChatInfoViewAlert? = nil
-    @State var deletingContact: Contact?
+    @State private var members: [GroupMember] = []
+    @State private var selectedMember: GroupMember? = nil
+    @State private var alert: ChatInfoViewAlert? = nil
 
     enum ChatInfoViewAlert: Identifiable {
-        case deleteContactAlert
+        case deleteChatAlert
         case clearChatAlert
 
         var id: ChatInfoViewAlert { get { self } }
@@ -35,6 +36,12 @@ struct GroupChatInfoView: View {
             Text(chat.chatInfo.fullName).font(.title)
                 .padding(.bottom)
 
+            List(members) { member in
+                memberView(member)
+                    .listRowBackground(Color.clear)
+            }
+            .listStyle(.plain)
+
             Spacer()
             Button() {
                 alert = .clearChatAlert
@@ -44,13 +51,19 @@ struct GroupChatInfoView: View {
             .tint(Color.orange)
             .padding()
         }
+        .sheet(item: $selectedMember) { member in
+            GroupMemberInfoView(member: member)
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteContactAlert: return deleteContactAlert(deletingContact!)
+            case .deleteChatAlert: return deleteChatAlert()
             case .clearChatAlert: return clearChatAlert()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .task {
+            members = await apiListMembers(chat.chatInfo.apiId)
+        }
     }
 
     func serverImage() -> some View {
@@ -59,20 +72,35 @@ struct GroupChatInfoView: View {
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    private func deleteContactAlert(_ contact: Contact) -> Alert {
+    func memberView(_ member: GroupMember) -> some View {
+        return Button {
+            selectedMember = member
+        } label: {
+            HStack{
+                ProfileImage(imageStr: member.image)
+                    .frame(width: 30, height: 30)
+                    .padding(.trailing, 2)
+                Text(member.chatViewName)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    // TODO reuse this clearChatAlert with ChatInfoView
+    private func deleteChatAlert() -> Alert {
         Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete chat?"),
+            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
-                        try await apiDeleteChat(type: .direct, id: contact.apiId)
+                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
+                            chatModel.removeChat(chat.chatInfo.id)
                             chatViewSheet = nil
                         }
                     } catch let error {
-                        logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
                     }
                 }
             },
@@ -80,7 +108,6 @@ struct GroupChatInfoView: View {
         )
     }
 
-    // TODO reuse between this and ChatInfoView
     private func clearChatAlert() -> Alert {
         Alert(
             title: Text("Clear conversation?"),
@@ -101,6 +128,6 @@ struct GroupChatInfoView: View {
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatViewSheet = ChatViewSheet.chatInfo
-        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), chatViewSheet: Binding($chatViewSheet))
+        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), chatViewSheet: Binding($chatViewSheet))
     }
 }

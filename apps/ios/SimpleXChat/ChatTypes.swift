@@ -471,7 +471,7 @@ public struct GroupProfile: Codable, NamedChat {
     )
 }
 
-public struct GroupMember: Decodable {
+public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
     var groupId: Int64
     var memberId: String
@@ -479,10 +479,14 @@ public struct GroupMember: Decodable {
     var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
     var invitedBy: InvitedBy
-    var localDisplayName: ContactName
+    public var localDisplayName: ContactName
     public var memberProfile: Profile
     public var memberContactId: Int64?
     var activeConn: Connection?
+
+    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var fullName: String { get { memberProfile.fullName } }
+    public var image: String? { get { memberProfile.image } }
 
     var directChatId: ChatId? {
         get {
@@ -492,10 +496,6 @@ public struct GroupMember: Decodable {
                 return nil
             }
         }
-    }
-
-    public var id: String {
-        "#\(groupId) @\(groupMemberId)"
     }
 
     public var chatViewName: String {
