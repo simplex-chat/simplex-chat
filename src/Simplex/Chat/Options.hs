@@ -13,20 +13,18 @@ where
 
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
-import Data.Maybe (fromMaybe)
-import Network.Socket (HostAddress, SockAddr (..), tupleToHostAddress)
-import Network.Socks5 (SocksConf, defaultSocksConf)
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionStr)
 import Simplex.Messaging.Agent.Protocol (SMPServer)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     smpServers :: [SMPServer],
-    socksProxy :: Maybe SocksConf,
+    socksProxy :: Maybe SocksProxy,
     tcpTimeout :: Int,
     logConnections :: Bool,
     logAgent :: Bool,
@@ -59,7 +57,7 @@ chatOpts appDir defaultDbFileName = do
   socksProxy <-
     flag' (Just defaultSocksProxy) (short 'x' <> help "use local SOCKS5 proxy at :9050")
       <|> option
-        parseSocksConf
+        parseSocksProxy
         ( long "socks-proxy"
             <> metavar "SOCKS5"
             <> help "`ipv4:port` or `:port` of SOCKS5 proxy"
@@ -126,21 +124,8 @@ chatOpts appDir defaultDbFileName = do
 parseSMPServers :: ReadM [SMPServer]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
 
-defaultSocksHost :: HostAddress
-defaultSocksHost = tupleToHostAddress (127, 0, 0, 1)
-
-defaultSocksProxy :: SocksConf
-defaultSocksProxy = defaultSocksConf $ SockAddrInet 9050 defaultSocksHost
-
-parseSocksConf :: ReadM (Maybe SocksConf)
-parseSocksConf = eitherReader $ parseAll socksConfP . B.pack
-  where
-    socksConfP = do
-      host <- maybe defaultSocksHost tupleToHostAddress <$> optional ipv4P
-      port <- fromMaybe 9050 <$> optional (A.char ':' *> (fromInteger <$> A.decimal))
-      pure . Just . defaultSocksConf $ SockAddrInet port host
-    ipv4P = (,,,) <$> ipNum <*> ipNum <*> ipNum <*> A.decimal
-    ipNum = A.decimal <* A.char '.'
+parseSocksProxy :: ReadM (Maybe SocksProxy)
+parseSocksProxy = eitherReader $ parseAll strP . B.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack
