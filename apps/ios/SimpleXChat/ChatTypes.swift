@@ -284,7 +284,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
-    var connLevel: Int
+    public var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -473,16 +473,16 @@ public struct GroupProfile: Codable, NamedChat {
 
 public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
-    var groupId: Int64
-    var memberId: String
+    public var groupId: Int64
+    public var memberId: String
     public var memberRole: GroupMemberRole
-    var memberCategory: GroupMemberCategory
+    public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
-    var invitedBy: InvitedBy
+    public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: Profile
     public var memberContactId: Int64?
-    var activeConn: Connection?
+    public var activeConn: Connection?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
     public var displayName: String { get { memberProfile.displayName } }

@@ -49,6 +49,7 @@ struct GroupChatInfoView: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .sheet(isPresented: $showAddMembersSheet) {
             AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
         }
@@ -59,7 +60,6 @@ struct GroupChatInfoView: View {
             case .leaveGroupAlert: return leaveGroupAlert()
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .task {
             members = await apiListMembers(chat.chatInfo.apiId)
                 .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() } // TODO owner first

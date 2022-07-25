@@ -12,19 +12,86 @@ import SimpleXChat
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     var member: GroupMember
+    @State private var alert: GroupMemberInfoViewAlert? = nil
+
+    enum GroupMemberInfoViewAlert: Identifiable {
+        case removeMemberAlert
+
+        var id: GroupMemberInfoViewAlert { get { self } }
+    }
 
     var body: some View {
-        VStack{
-            ProfileImage(imageStr: member.image)
-                .frame(width: 192, height: 192)
-                .padding(.top, 48)
-                .padding()
-            Text(member.localDisplayName).font(.largeTitle)
-                .padding(.bottom, 2)
-            Text(member.fullName).font(.title)
-                .padding(.bottom)
+        NavigationView {
+            List {
+                groupMemberInfoHeader()
+                    .listRowBackground(Color.clear)
+
+                // TODO server status
+
+                Section(header: Text("Info")) {
+                    Text("Role: \(member.memberRole.text)")
+                    // TODO invited by - need to get contact by contact id
+                    Text("Status: \(member.memberStatus.text.capitalized)")
+                    if let conn = member.activeConn {
+                        Text("Connection level: \(conn.connLevel)")
+                    }
+                }
+
+                Section {
+                    removeMemberButton()
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .alert(item: $alert) { alertItem in
+            switch(alertItem) {
+            case .removeMemberAlert: return removeMemberAlert()
+            }
+        }
+    }
+
+    func groupMemberInfoHeader() -> some View {
+        VStack(spacing: 0) {
+            ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
+                .frame(width: 72, height: 72)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
+            Text(member.localDisplayName)
+                .font(.title)
+                .lineLimit(1)
+                .padding(.bottom, 2)
+            Text(member.fullName)
+                .font(.title2)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    func removeMemberButton() -> some View {
+        Button(role: .destructive) {
+            alert = .removeMemberAlert
+        } label: {
+            Label("Remove member", systemImage: "trash")
+                .foregroundColor(Color.red)
+        }
+    }
+
+    private func removeMemberAlert() -> Alert {
+        Alert(
+            title: Text("Remove member?"),
+            message: Text("Member will be removed from group - this cannot be undone!"),
+            primaryButton: .destructive(Text("Remove")) {
+                Task {
+                    do {
+                        _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
+                        // TODO navigate back
+                    } catch let error {
+                        logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+        )
     }
 }
 
