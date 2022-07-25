@@ -33,9 +33,10 @@
   <string name="description_via_contact_address_link">via contact address link</string>
   <string name="description_via_one_time_link">via one-time link</string>
 
-  <!-- SMP Server Information - SimpleXAPI.kt -->
+  <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_setting_network_config">Error updating network configuration</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="contact_already_exists">Contact already exists</string>
@@ -271,6 +272,11 @@
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
+  <string name="network_settings">Network</string>
+  <string name="network_enable_socks">Use SOCKS proxy?</string>
+  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
+  <string name="network_disable_socks">Use direct Internet connection?</string>
+  <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
