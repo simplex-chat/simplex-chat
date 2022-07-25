@@ -8,7 +8,7 @@ import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
-import Simplex.Chat.View (serializeChatResponse, viewSocksProxy)
+import Simplex.Chat.View (serializeChatResponse)
 import System.Directory (getAppUserDataDirectory)
 import System.Terminal (withTerminal)
 
@@ -35,6 +35,9 @@ welcome ChatOpts {dbFilePrefix, socksProxy} =
     putStrLn
     [ "SimpleX Chat v" ++ versionNumber,
       "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db",
-      viewSocksProxy socksProxy,
+      maybe
+        "direct network connection - use `/network` command or `-x` CLI option to connect via SOCKS5 at :9050"
+        (("using SOCKS5 proxy " <>) . show)
+        socksProxy,
       "type \"/help\" or \"/h\" for usage info"
     ]

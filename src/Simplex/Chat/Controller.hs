@@ -89,7 +89,7 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where

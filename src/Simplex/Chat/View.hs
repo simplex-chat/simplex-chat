@@ -42,8 +42,8 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Protocol (ProtocolServer (..))
 import qualified Simplex.Messaging.Protocol as SMP
-import Simplex.Messaging.Transport.Client (SocksProxy)
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
@@ -81,6 +81,7 @@ responseToView testView = \case
     HSMyAddress -> myAddressHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
+    HSSettings -> settingsInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
   CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
@@ -492,13 +493,10 @@ viewSMPServers smpServers testView =
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
-  [plain $ viewSocksProxy socksProxy, "TCP timeout: " <> sShow tcpTimeout]
-
-viewSocksProxy :: Maybe SocksProxy -> String
-viewSocksProxy =
-  maybe
-    "Direct network connection. Use `/network socks=on` command or `-x` CLI option to connect via SOCKS5 at :9050"
-    (("using SOCKS5 proxy " <>) . show)
+  [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
+    "TCP timeout: " <> sShow tcpTimeout,
+    "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>] to change settings"
+  ]
 
 viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
 viewContactInfo Contact {contactId} stats =
@@ -517,7 +515,7 @@ viewConnectionStats ConnectionStats {rcvServers, sndServers} =
     <> ["sending messages via: " <> viewServers sndServers | not $ null sndServers]
 
 viewServers :: [SMPServer] -> StyledString
-viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
+viewServers = plain . intercalate ", " . map host
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
