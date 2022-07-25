@@ -4,6 +4,10 @@
 
 ## New in version 3
 
+- [instant notifications for iOS](#instant-notifications-for-ios)
+- [database export and import](#database-export-and-import)
+- [protocol privacy and performance improvements](#protocol-privacy-and-performance-improvements)
+
 ### Instant notifications for iOS
 
 I wrote previously about [our design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
@@ -43,7 +47,7 @@ This feature can be useful in some other scenarios:
 - share access to the same profile with other people, as long as it is not used at the same time. For that use case it may be better to run SimpleX Chat terminal client in the cloud, as we do with our public account that you can connect to via the app.
 - preserve chat profile when you need to temporarily delete the app from your device.
 
-### Protocol privacy and performance improvement
+### Protocol privacy and performance improvements
 
 Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and now there is no message timestamp inside TLS as well.
 

@@ -1,6 +1,8 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Options
   ( ChatOpts (..),
@@ -16,11 +18,14 @@ import Simplex.Chat.Controller (updateStr, versionStr)
 import Simplex.Messaging.Agent.Protocol (SMPServer)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
+import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
 import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     smpServers :: [SMPServer],
+    socksProxy :: Maybe SocksProxy,
+    tcpTimeout :: Int,
     logConnections :: Bool,
     logAgent :: Bool,
     chatCmd :: String,
@@ -46,9 +51,25 @@ chatOpts appDir defaultDbFileName = do
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help
-            "Comma separated list of SMP server(s) to use"
+          <> help "Comma separated list of SMP server(s) to use"
           <> value []
+      )
+  socksProxy <-
+    flag' (Just defaultSocksProxy) (short 'x' <> help "use local SOCKS5 proxy at :9050")
+      <|> option
+        parseSocksProxy
+        ( long "socks-proxy"
+            <> metavar "SOCKS5"
+            <> help "`ipv4:port` or `:port` of SOCKS5 proxy"
+            <> value Nothing
+        )
+  t <-
+    option
+      auto
+      ( long "tcp-timeout"
+          <> metavar "TIMEOUT"
+          <> help "TCP timeout, seconds (default: 5/10 without/with SOCKS5 proxy)"
+          <> value 0
       )
   logConnections <-
     switch
@@ -95,12 +116,16 @@ chatOpts appDir defaultDbFileName = do
           <> short 'm'
           <> help "Run in maintenance mode (/_start to start chat)"
       )
-  pure ChatOpts {dbFilePrefix, smpServers, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort, maintenance}
+  pure ChatOpts {dbFilePrefix, smpServers, socksProxy, tcpTimeout = useTcpTimeout socksProxy t, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort, maintenance}
   where
+    useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
     defaultDbFilePath = combine appDir defaultDbFileName
 
 parseSMPServers :: ReadM [SMPServer]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
+
+parseSocksProxy :: ReadM (Maybe SocksProxy)
+parseSocksProxy = eitherReader $ parseAll strP . B.pack
 
 parseServerPort :: ReadM (Maybe String)
 parseServerPort = eitherReader $ parseAll serverPortP . B.pack

@@ -8,7 +8,7 @@ import Simplex.Chat.Controller (versionNumber)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
-import Simplex.Chat.View (serializeChatResponse)
+import Simplex.Chat.View (serializeChatResponse, viewSocksProxy)
 import System.Directory (getAppUserDataDirectory)
 import System.Terminal (withTerminal)
 
@@ -30,7 +30,11 @@ main = do
       threadDelay $ chatCmdDelay opts * 1000000
 
 welcome :: ChatOpts -> IO ()
-welcome ChatOpts {dbFilePrefix} = do
-  putStrLn $ "SimpleX Chat v" ++ versionNumber
-  putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
-  putStrLn "type \"/help\" or \"/h\" for usage info"
+welcome ChatOpts {dbFilePrefix, socksProxy} =
+  mapM_
+    putStrLn
+    [ "SimpleX Chat v" ++ versionNumber,
+      "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db",
+      viewSocksProxy socksProxy,
+      "type \"/help\" or \"/h\" for usage info"
+    ]

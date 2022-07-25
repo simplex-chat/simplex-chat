@@ -44,7 +44,7 @@ fun CIGroupInvitationView(
     Row(
       Modifier
         .defaultMinSize(minWidth = 220.dp)
-        .padding(bottom = 3.dp)
+        .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
       ProfileImage(size = 60.dp, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
@@ -85,7 +85,8 @@ fun CIGroupInvitationView(
     Box(
       Modifier
         .width(IntrinsicSize.Min)
-        .padding(vertical = 3.dp, horizontal = 12.dp),
+        .padding(vertical = 3.dp)
+        .padding(start = 8.dp, end = 12.dp),
       contentAlignment = Alignment.BottomEnd
     ) {
       Column(
@@ -95,13 +96,15 @@ fun CIGroupInvitationView(
         horizontalAlignment = Alignment.Start
       ) {
         groupInfoView()
-        Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
-        if (action) {
-          groupInvitationText()
-          Text(stringResource(R.string.group_invitation_tap_to_join), color = MaterialTheme.colors.primary)
-        } else {
-          Box(Modifier.padding(end = 60.dp)) {
+        Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
+          Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
+          if (action) {
             groupInvitationText()
+            Text(stringResource(R.string.group_invitation_tap_to_join), color = MaterialTheme.colors.primary)
+          } else {
+            Box(Modifier.padding(end = 48.dp)) {
+              groupInvitationText()
+            }
           }
         }
       }

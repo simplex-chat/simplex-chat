@@ -1,5 +1,12 @@
 # Blog
 
+Jul 23, 2022 [SimpleX Chat v3.1-beta released](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+
+- terminal app: access to messaging servers via SOCKS5 proxy (e.g., Tor).
+- mobile apps: join and leave chat groups.
+- optimized battery and traffic usage - up to 90x reduction!
+- two docker configurations for self-hosted SMP servers.
+
 Jul 11, 2022 [SimpleX Chat v3 released](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
 
 - instant push notifications for iOS

@@ -56,7 +56,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), NetworkConfig (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
@@ -65,6 +65,7 @@ import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
@@ -87,7 +88,12 @@ defaultChatConfig =
             yesToMigrations = False
           },
       yesToMigrations = False,
-      defaultServers = InitialAgentServers {smp = _defaultSMPServers, ntf = _defaultNtfServers},
+      defaultServers =
+        InitialAgentServers
+          { smp = _defaultSMPServers,
+            ntf = _defaultNtfServers,
+            netCfg = NetworkConfig {socksProxy = Nothing, tcpTimeout = 5000000}
+          },
       tbqSize = 64,
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
@@ -116,7 +122,7 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, logConnections} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, socksProxy, tcpTimeout, logConnections} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -124,7 +130,8 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers
+  let netCfg = NetworkConfig {socksProxy, tcpTimeout}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {netCfg}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -591,6 +598,8 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
+  APISetNetworkConfig cfg -> withUser $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
+  APIGetNetworkConfig -> CRNetworkConfig <$> withUser (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
     CRContactInfo ct <$> withAgent (`getConnectionServers` contactConnId ct)
@@ -2447,6 +2456,9 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
+      "/_network " *> (APISetNetworkConfig <$> jsonP),
+      ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
+      ("/network" <|> "/net") $> APIGetNetworkConfig,
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
@@ -2544,6 +2556,11 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
+    netCfgP = do
+      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      t_ <- optional $ " timeout=" *> A.decimal
+      let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
+      pure $ NetworkConfig {socksProxy, tcpTimeout}
 
 adminContactReq :: ConnReqContact
 adminContactReq =
