@@ -62,7 +62,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
         withApi {
           val cfg = chatModel.controller.getNetworkConfig()
           if (cfg != null) {
-            ModalManager.shared.showModal { NetworkSettingsView(chatModel, cfg) }
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+                NetworkSettingsView(chatModel, cfg)
+              }
+            }
           }
         }
       }
@@ -124,7 +129,8 @@ fun SettingsLayout(
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         divider()
         SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
-        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
+        divider()
+        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
       }
       spacer()
 

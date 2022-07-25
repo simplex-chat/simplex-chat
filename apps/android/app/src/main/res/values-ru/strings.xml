@@ -267,6 +267,8 @@
     <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_settings">Настройки сети</string>
+    <string name="network_settings_title">Настройки сети</string>
+    <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
     <string name="network_enable_socks">Использовать SOCKS прокси?</string>
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
@@ -447,6 +449,7 @@
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
+    <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>

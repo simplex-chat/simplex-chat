@@ -29,7 +29,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10))
+              chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
               useSocksProxy.value = true
             }
           }
@@ -41,7 +41,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5))
+              chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5_000_000))
               useSocksProxy.value = false
             }
           }
@@ -61,22 +61,26 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
-      stringResource(R.string.your_SMP_servers),
-      Modifier.padding(bottom = 24.dp),
+      stringResource(R.string.network_settings_title),
+      Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    Row(
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      Text(stringResource(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
-      Switch(
-        checked = useSocksProxy.value,
-        onCheckedChange = toggleSocksProxy,
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
-      )
+    SettingsSectionView(stringResource(R.string.settings_section_title_socks)) {
+      Row(
+        Modifier.padding(start = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Text(stringResource(R.string.network_socks_toggle))
+        Spacer(Modifier.fillMaxWidth().weight(1f))
+        Switch(
+          checked = useSocksProxy.value,
+          onCheckedChange = toggleSocksProxy,
+          colors = SwitchDefaults.colors(
+            checkedThumbColor = MaterialTheme.colors.primary,
+            uncheckedThumbColor = HighOrLowlight
+          ),
+        )
+      }
     }
   }
 }

@@ -273,6 +273,8 @@
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
   <string name="network_settings">Network</string>
+  <string name="network_settings_title">Network settings</string>
+  <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
@@ -449,6 +451,7 @@
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
   <string name="settings_experimental_features">Experimental features</string>
+  <string name="settings_section_title_socks">SOCKS PROXY</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
