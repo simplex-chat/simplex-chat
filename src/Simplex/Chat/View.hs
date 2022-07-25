@@ -495,7 +495,7 @@ viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
-    "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>] to change settings"
+    "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]` to change settings"
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
