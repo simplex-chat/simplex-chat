@@ -30,22 +30,21 @@ struct AddGroupMembersView: View {
             } else {
                 HStack {
                     let count = selectedContacts.count
-                    if count == 0 {
-                        Text("Select new member(s):")
-                            .frame(height: 22)
-                    } else {
-                        Button {
-                            Task {
-                                for contactId in selectedContacts {
-                                    await addMember(groupId: chat.chatInfo.apiId, contactId: contactId)
-                                }
-                                chatViewSheet = nil
+                    Button {
+                        Task {
+                            for contactId in selectedContacts {
+                                await addMember(groupId: chat.chatInfo.apiId, contactId: contactId)
                             }
-                        } label: {
-                            Label("Invite \(count) member(s)", systemImage: "checkmark")
+                            chatViewSheet = nil
                         }
-                        .frame(height: 22)
-                        Spacer()
+                    } label: {
+                        Label(
+                            count > 0 ? "Invite \(count) member(s)" : "Invite new members",
+                            systemImage: "plus")
+                    }
+                    .disabled(count < 1)
+                    Spacer()
+                    if count > 0 {
                         Button {
                             selectedContacts.removeAll()
                         } label: {
