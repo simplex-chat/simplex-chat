@@ -18,19 +18,21 @@ struct AddGroupMembersView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ChatInfoToolbar(chat: chat, imageSize: 64)
-            .padding(.top)
-            .padding(.leading, -6)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            ChatInfoToolbar(chat: chat, imageSize: 48)
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .center)
             .background(Color(uiColor: .quaternarySystemFill))
             if (contactsToAdd.isEmpty) {
                 Text("No contacts to add")
                     .foregroundColor(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
             } else {
                 HStack {
                     let count = selectedContacts.count
                     if count == 0 {
                         Text("Select new member(s):")
+                            .frame(height: 22)
                     } else {
                         Button {
                             Task {
@@ -42,6 +44,7 @@ struct AddGroupMembersView: View {
                         } label: {
                             Label("Invite \(count) member(s)", systemImage: "checkmark")
                         }
+                        .frame(height: 22)
                         Spacer()
                         Button {
                             selectedContacts.removeAll()
@@ -51,7 +54,8 @@ struct AddGroupMembersView: View {
                     }
                 }
                 .padding(.horizontal)
-                .frame(maxWidth: .infinity, maxHeight: 48, alignment: .leading)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(uiColor: .quaternarySystemFill))
                 List(contactsToAdd) { contact in
                     contactCheckView(contact)
