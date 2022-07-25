@@ -36,12 +36,14 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.Transport.Client (SocksProxy)
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
@@ -59,6 +61,7 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats -> viewContactInfo ct cStats
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
@@ -486,6 +489,16 @@ viewSMPServers smpServers testView =
       if null smpServers
         then "no custom SMP servers saved"
         else viewServers smpServers
+
+viewNetworkConfig :: NetworkConfig -> [StyledString]
+viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
+  [plain $ viewSocksProxy socksProxy, "TCP timeout: " <> sShow tcpTimeout]
+
+viewSocksProxy :: Maybe SocksProxy -> String
+viewSocksProxy =
+  maybe
+    "Direct network connection. Use `/network socks=on` command or `-x` CLI option to connect via SOCKS5 at :9050"
+    (("using SOCKS5 proxy " <>) . show)
 
 viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
 viewContactInfo Contact {contactId} stats =
