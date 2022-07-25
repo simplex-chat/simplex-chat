@@ -511,11 +511,14 @@ viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats =
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
-  ["receiving messages via: " <> viewServers rcvServers | not $ null rcvServers]
-    <> ["sending messages via: " <> viewServers sndServers | not $ null sndServers]
+  ["receiving messages via: " <> viewServerHosts rcvServers | not $ null rcvServers]
+    <> ["sending messages via: " <> viewServerHosts sndServers | not $ null sndServers]
 
 viewServers :: [SMPServer] -> StyledString
-viewServers = plain . intercalate ", " . map host
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
+
+viewServerHosts :: [SMPServer] -> StyledString
+viewServerHosts = plain . intercalate ", " . map host
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
