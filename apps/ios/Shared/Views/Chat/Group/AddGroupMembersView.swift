@@ -28,8 +28,8 @@ struct AddGroupMembersView: View {
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .center)
             } else {
+                let count = selectedContacts.count
                 HStack {
-                    let count = selectedContacts.count
                     if count > 0 {
                         Button {
                             selectedContacts.removeAll()
@@ -37,7 +37,9 @@ struct AddGroupMembersView: View {
                             Label("Clear", systemImage: "multiply")
                         }
                     }
+
                     Spacer()
+
                     Button {
                         Task {
                             for contactId in selectedContacts {
@@ -46,9 +48,7 @@ struct AddGroupMembersView: View {
                             showSheet = false
                         }
                     } label: {
-                        Label(
-                            count > 0 ? "Invite \(count) member(s)" : "Invite new members",
-                            systemImage: "plus")
+                        Label("Invite", systemImage: "plus")
                     }
                     .disabled(count < 1)
                 }
@@ -61,6 +61,14 @@ struct AddGroupMembersView: View {
                         .listRowBackground(Color.clear)
                 }
                 .listStyle(.plain)
+
+                Spacer()
+
+                Text("\(count) contact(s) selected")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
