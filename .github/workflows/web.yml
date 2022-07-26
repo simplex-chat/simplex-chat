@@ -1,0 +1,35 @@
+name: Build Eleventy
+
+on:
+  push:
+    branches:
+      - website
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies & build
+        run: |
+          cd ./website
+          npm i
+          npm run build
+          npm run build-tailwind
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          publish_dir: ./website/_site
+          github_token: ${{ secrets.GITHUB_TOKEN }}
