@@ -11,19 +11,12 @@ import SimpleXChat
 
 private let memberImageSize: CGFloat = 34
 
-enum ChatViewSheet: Identifiable {
-    case chatInfo
-    case addMember
-
-    var id: ChatViewSheet { get { self } }
-}
-
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @State private var showChatViewSheet: Bool = false
-    @State private var chatViewSheet: ChatViewSheet?
+    @State private var showChatInfoSheet: Bool = false
+    @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -107,22 +100,15 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    chatViewSheet = .chatInfo
-                    showChatViewSheet = true
+                    showChatInfoSheet = true
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatViewSheet) {
-                    switch chatViewSheet {
-                    case .chatInfo:
-                        if case .direct = chat.chatInfo {
-                            ChatInfoView(chat: chat, showSheet: $showChatViewSheet)
-                        } else if case let .group(groupInfo) = chat.chatInfo {
-                            GroupChatInfoView(chat: chat, groupInfo: groupInfo, showSheet: $showChatViewSheet)
-                        }
-                    case .addMember:
-                        AddGroupMembersView(chat: chat, showSheet: $showChatViewSheet)
-                    default: EmptyView()
+                .sheet(isPresented: $showChatInfoSheet) {
+                    if case .direct = chat.chatInfo {
+                        ChatInfoView(chat: chat, showSheet: $showChatInfoSheet)
+                    } else if case let .group(groupInfo) = chat.chatInfo {
+                        GroupChatInfoView(chat: chat, groupInfo: groupInfo, showSheet: $showChatInfoSheet)
                     }
                 }
             }
@@ -135,6 +121,9 @@ struct ChatView: View {
                 } else if case let .group(groupInfo) = chat.chatInfo,
                           groupInfo.canAddMember {
                     addMembersButton()
+                        .sheet(isPresented: $showAddMembersSheet) {
+                            AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
+                        }
                 }
             }
         }
@@ -151,8 +140,7 @@ struct ChatView: View {
 
     private func addMembersButton() -> some View {
         Button {
-            chatViewSheet = .addMember
-            showChatViewSheet = true
+            showAddMembersSheet = true
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
         }

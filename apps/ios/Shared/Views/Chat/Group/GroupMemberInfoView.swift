@@ -13,6 +13,7 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     var groupInfo: GroupInfo
     var member: GroupMember
+    @Binding var selectedMember: GroupMember?
     @State private var alert: GroupMemberInfoViewAlert? = nil
 
     enum GroupMemberInfoViewAlert: Identifiable {
@@ -34,17 +35,18 @@ struct GroupMemberInfoView: View {
                     infoRow("Status", member.memberStatus.text.capitalized)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        infoRow("Connection level", connLevelDesc)
+                        infoRow("Connection", connLevelDesc)
                     }
                     // TODO network status
                 }
 
                 Section {
-                    if member.canRemove(userRole: groupInfo.membership.memberRole) {
+                    if member.canRemove(userRole: groupInfo.membership.memberRole) && member.memberStatus != .memRemoved {
                         removeMemberButton()
                     }
                 }
             }
+            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
@@ -99,7 +101,7 @@ struct GroupMemberInfoView: View {
                 Task {
                     do {
                         _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        // TODO navigate back
+                        selectedMember = nil
                     } catch let error {
                         logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
                     }
@@ -112,6 +114,7 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
+        @State var selectedMember = GroupMember.sampleData
+        return GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData, selectedMember: Binding($selectedMember))
     }
 }

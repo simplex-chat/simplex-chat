@@ -18,6 +18,7 @@ struct GroupChatInfoView: View {
     @State private var members: [GroupMember] = []
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var showAddMembersSheet: Bool = false
+    @State private var selectedMember: GroupMember? = nil
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -42,9 +43,15 @@ struct GroupChatInfoView: View {
                 Section(header: Text("\(members.count) Members")) {
                     if (groupInfo.canAddMember) {
                         addMembersButton()
+                            .sheet(isPresented: $showAddMembersSheet) {
+                                AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
+                            }
                     }
                     ForEach(members) { member in
                         memberView(member)
+                            .sheet(item: $selectedMember) { member in
+                                GroupMemberInfoView(groupInfo: groupInfo, member: member, selectedMember: $selectedMember)
+                            }
                     }
                 }
 
@@ -61,9 +68,6 @@ struct GroupChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .sheet(isPresented: $showAddMembersSheet) {
-            AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
-        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteGroupAlert: return deleteGroupAlert()
@@ -121,10 +125,8 @@ struct GroupChatInfoView: View {
     }
 
     func memberView(_ member: GroupMember) -> some View {
-        NavigationLink {
-            GroupMemberInfoView(groupInfo: groupInfo, member: member)
-//                .navigationTitle("\(groupInfo.displayName): \(member.displayName)")
-//                .navigationBarTitleDisplayMode(.inline)
+        Button {
+            selectedMember = member
         } label: {
             HStack{
                 ProfileImage(imageStr: member.image)
@@ -134,6 +136,7 @@ struct GroupChatInfoView: View {
                 VStack(alignment: .leading) {
                     Text(member.chatViewName)
                         .lineLimit(1)
+                        .foregroundColor(.primary)
                     Text(member.memberStatus.shortText)
                         .lineLimit(1)
                         .font(.caption)
