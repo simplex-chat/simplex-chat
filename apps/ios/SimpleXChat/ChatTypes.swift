@@ -576,17 +576,17 @@ public enum GroupMemberStatus: String, Decodable {
 
     public var text: LocalizedStringKey {
         switch self {
-        case .memRemoved: return "removed"
-        case .memLeft: return "left"
-        case .memGroupDeleted: return "group deleted"
-        case .memInvited: return "invited"
-        case .memIntroduced: return "connecting (introduced)"
-        case .memIntroInvited: return "connecting (introduction invitation)"
-        case .memAccepted: return "connecting (accepted)"
-        case .memAnnounced: return "connecting (announced)"
-        case .memConnected: return "connected"
-        case .memComplete: return "complete"
-        case .memCreator: return "creator"
+        case .memRemoved: return "Removed"
+        case .memLeft: return "Left"
+        case .memGroupDeleted: return "Group deleted"
+        case .memInvited: return "Invited"
+        case .memIntroduced: return "Connecting (introduced)"
+        case .memIntroInvited: return "Connecting (introduction invitation)"
+        case .memAccepted: return "Connecting (accepted)"
+        case .memAnnounced: return "Connecting (announced)"
+        case .memConnected: return "Connected"
+        case .memComplete: return "Complete"
+        case .memCreator: return "Creator"
         }
     }
 

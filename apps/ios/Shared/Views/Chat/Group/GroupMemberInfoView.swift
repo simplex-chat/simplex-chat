@@ -29,11 +29,12 @@ struct GroupMemberInfoView: View {
                 // TODO server status
 
                 Section(header: Text("Info")) {
-                    Text("Role: \(member.memberRole.text)")
+                    Text("Role: ") + Text(member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
-                    Text("Status: \(member.memberStatus.text.capitalized)")
+                    Text("Status: ") + Text(member.memberStatus.text)
                     if let conn = member.activeConn {
-                        Text("Connection level: \(conn.connLevel)")
+                        let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect \(conn.connLevel)"
+                        Text("Connection level: \(connLevelDesc)")
                     }
                 }
 
