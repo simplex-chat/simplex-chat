@@ -41,6 +41,7 @@ struct GroupMemberInfoView: View {
                     removeMemberButton()
                 }
             }
+            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in

@@ -48,6 +48,7 @@ struct GroupChatInfoView: View {
                     leaveGroupButton()
                 }
             }
+            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .sheet(isPresented: $showAddMembersSheet) {
