@@ -53,13 +53,13 @@ struct GroupMemberInfoView: View {
     }
 
     func groupMemberInfoHeader() -> some View {
-        VStack(spacing: 0) {
+        VStack {
             ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 108, height: 108)
+                .frame(width: 192, height: 192)
                 .padding(.top, 12)
-                .padding(.bottom, 6)
+                .padding()
             Text(member.localDisplayName)
-                .font(.title)
+                .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
             Text(member.fullName)

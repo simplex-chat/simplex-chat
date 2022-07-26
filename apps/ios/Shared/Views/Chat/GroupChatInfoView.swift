@@ -68,13 +68,13 @@ struct GroupChatInfoView: View {
     }
 
     func groupInfoHeader() -> some View {
-        VStack(spacing: 0) {
+        VStack {
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 108, height: 108)
+                .frame(width: 192, height: 192)
                 .padding(.top, 12)
-                .padding(.bottom, 6)
+                .padding()
             Text(chat.chatInfo.localDisplayName)
-                .font(.title)
+                .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
             Text(chat.chatInfo.fullName)

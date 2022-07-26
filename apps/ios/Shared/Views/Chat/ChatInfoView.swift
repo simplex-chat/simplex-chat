@@ -24,7 +24,7 @@ struct ChatInfoView: View {
     }
 
     var body: some View {
-        VStack{
+        VStack {
             ChatInfoImage(chat: chat)
                 .frame(width: 192, height: 192)
                 .padding(.top, 48)
