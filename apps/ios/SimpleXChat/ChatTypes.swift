@@ -444,7 +444,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
     }
 
-    public var canAddMember: Bool {
+    public var canAddMembers: Bool {
         return membership.memberRole >= .admin && membership.memberActive
     }
 

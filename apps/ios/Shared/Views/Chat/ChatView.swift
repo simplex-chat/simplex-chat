@@ -119,10 +119,10 @@ struct ChatView: View {
                         callButton(contact, .video, imageName: "video")
                     }
                 } else if case let .group(groupInfo) = chat.chatInfo,
-                          groupInfo.canAddMember {
+                          groupInfo.canAddMembers {
                     addMembersButton()
                         .sheet(isPresented: $showAddMembersSheet) {
-                            AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
+                            AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
                         }
                 }
             }

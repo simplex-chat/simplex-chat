@@ -12,6 +12,7 @@ import SimpleXChat
 struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
     var chat: Chat
+    var groupInfo: GroupInfo
     @Binding var showSheet: Bool
     @State private var contactsToAdd: [Contact] = []
     @State private var selectedContacts = Set<Int64>()
@@ -99,7 +100,9 @@ struct AddGroupMembersView: View {
     func rolePicker() -> some View {
         Picker("Invite as", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
-                Text(role.rawValue.capitalized)
+                if role <= groupInfo.membership.memberRole {
+                    Text(role.rawValue.capitalized)
+                }
             }
         }
     }
@@ -131,6 +134,6 @@ struct AddGroupMembersView: View {
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
         @State var showSheet = true
-        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), showSheet: $showSheet)
+        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData, showSheet: $showSheet)
     }
 }

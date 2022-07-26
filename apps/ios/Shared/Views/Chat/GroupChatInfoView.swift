@@ -41,10 +41,10 @@ struct GroupChatInfoView: View {
                 }
 
                 Section(header: Text("\(members.count) Members")) {
-                    if (groupInfo.canAddMember) {
+                    if (groupInfo.canAddMembers) {
                         addMembersButton()
                             .sheet(isPresented: $showAddMembersSheet) {
-                                AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
+                                AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
                             }
                     }
                     ForEach(members) { member in
