@@ -15,6 +15,7 @@ struct AddGroupMembersView: View {
     @Binding var showSheet: Bool
     @State private var contactsToAdd: [Contact] = []
     @State private var selectedContacts = Set<Int64>()
+    @State private var selectedRole: GroupMemberRole = .admin
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -43,7 +44,7 @@ struct AddGroupMembersView: View {
                     Button {
                         Task {
                             for contactId in selectedContacts {
-                                await addMember(groupId: chat.chatInfo.apiId, contactId: contactId)
+                                await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
                             }
                             showSheet = false
                         }
@@ -56,6 +57,15 @@ struct AddGroupMembersView: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(uiColor: .quaternarySystemFill))
+
+//                Menu("Role") {
+//                    Picker("Role", selection: $selectedRole) {
+//                        ForEach(GroupMemberRole.allCases) { role in
+//                            Text(role.rawValue.capitalized)
+//                        }
+//                    }
+//                }
+
                 List(contactsToAdd) { contact in
                     contactCheckView(contact)
                         .listRowBackground(Color.clear)

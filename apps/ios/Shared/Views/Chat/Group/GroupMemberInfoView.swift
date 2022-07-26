@@ -27,17 +27,16 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-                // TODO server status
-
                 Section(header: Text("Info")) {
-                    Text("Local display name: ").foregroundColor(.secondary) + Text(member.localDisplayName)
-                    Text("Role: ").foregroundColor(.secondary) + Text(member.memberRole.text)
+                    infoRow("Local display name", member.localDisplayName)
+                    infoRow("Role", member.memberRole.rawValue.capitalized)
                     // TODO invited by - need to get contact by contact id
-                    Text("Status: ").foregroundColor(.secondary) + Text(member.memberStatus.text)
+                    infoRow("Status", member.memberStatus.text.capitalized)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        Text("Connection level: ").foregroundColor(.secondary) + Text(connLevelDesc)
+                        infoRow("Connection level", connLevelDesc)
                     }
+                    // TODO network status
                 }
 
                 Section {
@@ -46,7 +45,6 @@ struct GroupMemberInfoView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
@@ -73,6 +71,15 @@ struct GroupMemberInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    func infoRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+        }
     }
 
     func removeMemberButton() -> some View {

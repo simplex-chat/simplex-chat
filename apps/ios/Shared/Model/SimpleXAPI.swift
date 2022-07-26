@@ -565,9 +565,9 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func addMember(groupId: Int64, contactId: Int64) async {
+func addMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async {
     do {
-        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: .admin)
+        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole)
     } catch let error {
         logger.error("addMember error: \(responseError(error))")
     }

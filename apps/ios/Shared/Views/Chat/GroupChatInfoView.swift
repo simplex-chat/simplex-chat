@@ -34,9 +34,9 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section(header: Text("Info")) {
-                    Text("Local display name: ").foregroundColor(.secondary) + Text(chat.chatInfo.localDisplayName)
-                    Text("Your role: ").foregroundColor(.secondary) + Text(groupInfo.membership.memberRole.text)
-                    Text("Membership status: ").foregroundColor(.secondary) + Text(groupInfo.membership.memberStatus.text)
+                    infoRow("Local display name", chat.chatInfo.localDisplayName)
+                    infoRow("Your role", groupInfo.membership.memberRole.rawValue.capitalized)
+                    infoRow("Membership status", groupInfo.membership.memberStatus.text.capitalized)
                 }
 
                 Section(header: Text("\(members.count) Members")) {
@@ -97,6 +97,15 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
+    func infoRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private func addMembersButton() -> some View {
         Button {
             showAddMembersSheet = true
@@ -114,6 +123,8 @@ struct GroupChatInfoView: View {
     func memberView(_ member: GroupMember) -> some View {
         NavigationLink {
             GroupMemberInfoView(groupInfo: groupInfo, member: member)
+//                .navigationTitle("\(groupInfo.displayName): \(member.displayName)")
+//                .navigationBarTitleDisplayMode(.inline)
         } label: {
             HStack{
                 ProfileImage(imageStr: member.image)
@@ -131,7 +142,8 @@ struct GroupChatInfoView: View {
                 Spacer()
                 let role = member.memberRole
                 if role == .owner || role == .admin {
-                    Text(member.memberRole.text)
+                    Text(member.memberRole.rawValue.capitalized)
+                        .foregroundColor(.secondary)
                 }
             }
         }

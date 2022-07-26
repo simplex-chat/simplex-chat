@@ -547,18 +547,12 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
-public enum GroupMemberRole: String, Comparable, Decodable {
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
 
-    public var text: LocalizedStringKey {
-        switch self {
-        case .member: return "Member"
-        case .admin: return "Admin"
-        case .owner: return "Owner"
-        }
-    }
+    public var id: Self { self }
 
     private var comparisonValue: Int {
         switch self {
@@ -594,35 +588,35 @@ public enum GroupMemberStatus: String, Decodable {
     case memComplete = "complete"
     case memCreator = "creator"
 
-    public var text: LocalizedStringKey {
+    public var text: String {
         switch self {
-        case .memRemoved: return "Removed"
-        case .memLeft: return "Left"
-        case .memGroupDeleted: return "Group deleted"
-        case .memInvited: return "Invited"
-        case .memIntroduced: return "Connecting (introduced)"
-        case .memIntroInvited: return "Connecting (introduction invitation)"
-        case .memAccepted: return "Connecting (accepted)"
-        case .memAnnounced: return "Connecting (announced)"
-        case .memConnected: return "Connected"
-        case .memComplete: return "Complete"
-        case .memCreator: return "Creator"
+        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
+        case .memLeft: return NSLocalizedString("left", comment: "group member status")
+        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
+        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
+        case .memIntroduced: return NSLocalizedString("connecting (introduced)", comment: "group member status")
+        case .memIntroInvited: return NSLocalizedString("connecting (introduction invitation)", comment: "group member status")
+        case .memAccepted: return NSLocalizedString("connecting (accepted)", comment: "group member status")
+        case .memAnnounced: return NSLocalizedString("connecting (announced)", comment: "group member status")
+        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
+        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
+        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
         }
     }
 
-    public var shortText: LocalizedStringKey {
+    public var shortText: String {
         switch self {
-        case .memRemoved: return "removed"
-        case .memLeft: return "left"
-        case .memGroupDeleted: return "group deleted"
-        case .memInvited: return "invited"
-        case .memIntroduced: return "connecting"
-        case .memIntroInvited: return "connecting"
-        case .memAccepted: return "connecting"
-        case .memAnnounced: return "connecting"
-        case .memConnected: return "connected"
-        case .memComplete: return "complete"
-        case .memCreator: return "creator"
+        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
+        case .memLeft: return NSLocalizedString("left", comment: "group member status")
+        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
+        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
+        case .memIntroduced: return NSLocalizedString("connecting", comment: "group member status")
+        case .memIntroInvited: return NSLocalizedString("connecting", comment: "group member status")
+        case .memAccepted: return NSLocalizedString("connecting", comment: "group member status")
+        case .memAnnounced: return NSLocalizedString("connecting", comment: "group member status")
+        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
+        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
+        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
         }
     }
 }
