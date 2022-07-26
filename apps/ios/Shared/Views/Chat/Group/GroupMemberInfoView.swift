@@ -29,13 +29,13 @@ struct GroupMemberInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section {
-                    InfoRow(title: "Local display name", value: member.localDisplayName)
-                    InfoRow(title: "Role", value: member.memberRole.rawValue.capitalized)
+                    infoRow("Local display name", member.localDisplayName)
+                    localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
-                    InfoRow(title: "Status", value: member.memberStatus.text.capitalized)
+                    localizedInfoRow("Status", member.memberStatus.text)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        InfoRow(title: "Connection", value: connLevelDesc)
+                        infoRow("Connection", connLevelDesc)
                     }
                     // TODO network status
                 } header: {

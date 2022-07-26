@@ -101,7 +101,7 @@ struct AddGroupMembersView: View {
         Picker("Invite as", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
                 if role <= groupInfo.membership.memberRole {
-                    Text(role.rawValue.capitalized)
+                    Text(role.text)
                 }
             }
         }

@@ -554,6 +554,14 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     public var id: Self { self }
 
+    public var text: LocalizedStringKey {
+        switch self {
+        case .member: return "member"
+        case .admin: return "admin"
+        case .owner: return "owner"
+        }
+    }
+
     private var comparisonValue: Int {
         switch self {
         case .member: return 0
@@ -588,35 +596,35 @@ public enum GroupMemberStatus: String, Decodable {
     case memComplete = "complete"
     case memCreator = "creator"
 
-    public var text: String {
+    public var text: LocalizedStringKey {
         switch self {
-        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
-        case .memLeft: return NSLocalizedString("left", comment: "group member status")
-        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
-        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
-        case .memIntroduced: return NSLocalizedString("connecting (introduced)", comment: "group member status")
-        case .memIntroInvited: return NSLocalizedString("connecting (introduction invitation)", comment: "group member status")
-        case .memAccepted: return NSLocalizedString("connecting (accepted)", comment: "group member status")
-        case .memAnnounced: return NSLocalizedString("connecting (announced)", comment: "group member status")
-        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
-        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
-        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting (introduced)"
+        case .memIntroInvited: return "connecting (introduction invitation)"
+        case .memAccepted: return "connecting (accepted)"
+        case .memAnnounced: return "connecting (announced)"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
         }
     }
 
-    public var shortText: String {
+    public var shortText: LocalizedStringKey {
         switch self {
-        case .memRemoved: return NSLocalizedString("removed", comment: "group member status")
-        case .memLeft: return NSLocalizedString("left", comment: "group member status")
-        case .memGroupDeleted: return NSLocalizedString("group deleted", comment: "group member status")
-        case .memInvited: return NSLocalizedString("invited", comment: "group member status")
-        case .memIntroduced: return NSLocalizedString("connecting", comment: "group member status")
-        case .memIntroInvited: return NSLocalizedString("connecting", comment: "group member status")
-        case .memAccepted: return NSLocalizedString("connecting", comment: "group member status")
-        case .memAnnounced: return NSLocalizedString("connecting", comment: "group member status")
-        case .memConnected: return NSLocalizedString("connected", comment: "group member status")
-        case .memComplete: return NSLocalizedString("complete", comment: "group member status")
-        case .memCreator: return NSLocalizedString("creator", comment: "group member status")
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting"
+        case .memIntroInvited: return "connecting"
+        case .memAccepted: return "connecting"
+        case .memAnnounced: return "connecting"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
         }
     }
 }

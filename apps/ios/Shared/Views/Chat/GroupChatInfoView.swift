@@ -9,6 +9,24 @@
 import SwiftUI
 import SimpleXChat
 
+func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
+func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -35,9 +53,9 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section(header: Text("Info")) {
-                    InfoRow(title: "Local display name", value: chat.chatInfo.localDisplayName)
-                    InfoRow(title: "Your role", value: groupInfo.membership.memberRole.rawValue.capitalized)
-                    InfoRow(title: "Membership status", value: groupInfo.membership.memberStatus.text.capitalized)
+                    infoRow("Local display name", chat.chatInfo.localDisplayName)
+                    localizedInfoRow("Your role", groupInfo.membership.memberRole.text)
+                    localizedInfoRow("Membership status", groupInfo.membership.memberStatus.text)
                 }
 
                 Section(header: Text("\(members.count) Members")) {
@@ -101,15 +119,6 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func infoRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-        }
-    }
-
     private func addMembersButton() -> some View {
         Button {
             showAddMembersSheet = true
@@ -145,7 +154,7 @@ struct GroupChatInfoView: View {
                 Spacer()
                 let role = member.memberRole
                 if role == .owner || role == .admin {
-                    Text(member.memberRole.rawValue.capitalized)
+                    Text(member.memberRole.text)
                         .foregroundColor(.secondary)
                 }
             }
