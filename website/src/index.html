@@ -1,0 +1,20 @@
+---
+layout: layouts/base.html
+title: 11ty demo
+---
+
+<h1 class="bg-orange-400">{{ title }}</h1>
+<p>i am also on the home page</p>
+<a href="/11ty-demo/contact" class="text-blue-700 mb-4 inline-block underline">go to contact</a>
+
+<img src="/11ty-demo/assets/images/hotel.jpg" alt="This is a Hotel Picture." width="300px">
+
+{% for item in card %}
+{% Card title=item.title ,link=item.link, linkText=item.linkText %}    
+{% endfor %}
+
+<h1 class="text-2xl font-bold text-red-500">
+    {% include "../markdown/index.md" %}    
+</h1>
+
+
