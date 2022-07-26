@@ -35,9 +35,9 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section(header: Text("Info")) {
-                    infoRow("Local display name", chat.chatInfo.localDisplayName)
-                    infoRow("Your role", groupInfo.membership.memberRole.rawValue.capitalized)
-                    infoRow("Membership status", groupInfo.membership.memberStatus.text.capitalized)
+                    InfoRow(title: "Local display name", value: chat.chatInfo.localDisplayName)
+                    InfoRow(title: "Your role", value: groupInfo.membership.memberRole.rawValue.capitalized)
+                    InfoRow(title: "Membership status", value: groupInfo.membership.memberStatus.text.capitalized)
                 }
 
                 Section(header: Text("\(members.count) Members")) {

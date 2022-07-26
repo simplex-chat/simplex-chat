@@ -18,68 +18,42 @@ struct AddGroupMembersView: View {
     @State private var selectedRole: GroupMemberRole = .admin
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ChatInfoToolbar(chat: chat, imageSize: 48)
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .center)
-            .background(Color(uiColor: .quaternarySystemFill))
-            if (contactsToAdd.isEmpty) {
-                Text("No contacts to add")
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .center)
-            } else {
-                let count = selectedContacts.count
-                HStack {
-                    if count > 0 {
-                        Button {
-                            selectedContacts.removeAll()
-                        } label: {
-                            Label("Clear", systemImage: "multiply")
-                        }
-                    }
+        NavigationView {
+            List {
+                ChatInfoToolbar(chat: chat, imageSize: 48)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
-                    Spacer()
-
-                    Button {
-                        Task {
-                            for contactId in selectedContacts {
-                                await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
-                            }
-                            showSheet = false
-                        }
-                    } label: {
-                        Label("Invite", systemImage: "plus")
+                if (contactsToAdd.isEmpty) {
+                    Text("No contacts to add")
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
+                } else {
+                    let count = selectedContacts.count
+                    Section {
+                        clearSelectionButton()
+                        inviteMembersButton()
+                    } footer: {
+                        Text("\(count) contact(s) selected")
                     }
                     .disabled(count < 1)
+
+                    Section {
+                        rolePicker()
+                    }
+                    .disabled(count < 1)
+
+                    Section {
+                        ForEach(contactsToAdd) { contact in
+                            contactCheckView(contact)
+                        }
+                    }
                 }
-                .padding(.horizontal)
-                .padding(.bottom, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(uiColor: .quaternarySystemFill))
-
-//                Menu("Role") {
-//                    Picker("Role", selection: $selectedRole) {
-//                        ForEach(GroupMemberRole.allCases) { role in
-//                            Text(role.rawValue.capitalized)
-//                        }
-//                    }
-//                }
-
-                List(contactsToAdd) { contact in
-                    contactCheckView(contact)
-                        .listRowBackground(Color.clear)
-                }
-                .listStyle(.plain)
-
-                Spacer()
-
-                Text("\(count) contact(s) selected")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding()
-                    .frame(maxWidth: .infinity, alignment: .center)
             }
+            .navigationBarHidden(true)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .task {
@@ -96,6 +70,35 @@ struct AddGroupMembersView: View {
             .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
     }
 
+    func clearSelectionButton() -> some View {
+        Button {
+            selectedContacts.removeAll()
+        } label: {
+            Label("Clear", systemImage: "multiply")
+        }
+    }
+
+    func inviteMembersButton() -> some View {
+        Button {
+            Task {
+                for contactId in selectedContacts {
+                    await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
+                }
+                showSheet = false
+            }
+        } label: {
+            Label("Invite", systemImage: "plus")
+        }
+    }
+
+    func rolePicker() -> some View {
+        Picker("Invite as", selection: $selectedRole) {
+            ForEach(GroupMemberRole.allCases) { role in
+                Text(role.rawValue.capitalized)
+            }
+        }
+    }
+
     func contactCheckView(_ contact: Contact) -> some View {
         let checked = selectedContacts.contains(contact.apiId)
         return Button {
@@ -110,10 +113,11 @@ struct AddGroupMembersView: View {
                     .frame(width: 30, height: 30)
                     .padding(.trailing, 2)
                 Text(ChatInfo.direct(contact: contact).chatViewName)
+                    .foregroundColor(.primary)
                     .lineLimit(1)
                 Spacer()
                 Image(systemName: checked ? "checkmark.circle.fill": "circle")
-                    .foregroundColor(checked ? .accentColor : .secondary)
+                    .foregroundColor(checked ? .accentColor : Color(uiColor: .tertiaryLabel))
             }
         }
     }

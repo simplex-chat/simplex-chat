@@ -28,16 +28,20 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section(header: Text("Info")) {
-                    infoRow("Local display name", member.localDisplayName)
-                    infoRow("Role", member.memberRole.rawValue.capitalized)
+                Section {
+                    InfoRow(title: "Local display name", value: member.localDisplayName)
+                    InfoRow(title: "Role", value: member.memberRole.rawValue.capitalized)
                     // TODO invited by - need to get contact by contact id
-                    infoRow("Status", member.memberStatus.text.capitalized)
+                    InfoRow(title: "Status", value: member.memberStatus.text.capitalized)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        infoRow("Connection", connLevelDesc)
+                        InfoRow(title: "Connection", value: connLevelDesc)
                     }
                     // TODO network status
+                } header: {
+                    Text("Info")
+                } footer: {
+                    Text("Group: \(groupInfo.displayName)")
                 }
 
                 Section {
@@ -73,15 +77,6 @@ struct GroupMemberInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-    }
-
-    func infoRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-        }
     }
 
     func removeMemberButton() -> some View {
