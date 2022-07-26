@@ -12,7 +12,7 @@ import SimpleXChat
 struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
     var chat: Chat
-    @Binding var chatViewSheet: ChatViewSheet?
+    @Binding var showSheet: Bool
     @State private var contactsToAdd: [Contact] = []
     @State private var selectedContacts = Set<Int64>()
 
@@ -35,7 +35,7 @@ struct AddGroupMembersView: View {
                             for contactId in selectedContacts {
                                 await addMember(groupId: chat.chatInfo.apiId, contactId: contactId)
                             }
-                            chatViewSheet = nil
+                            showSheet = false
                         }
                     } label: {
                         Label(
@@ -103,7 +103,7 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var chatViewSheet = ChatViewSheet.chatInfo
-        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), chatViewSheet: Binding($chatViewSheet))
+        @State var showSheet = true
+        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), showSheet: $showSheet)
     }
 }

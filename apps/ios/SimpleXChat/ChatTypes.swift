@@ -284,7 +284,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
-    var connLevel: Int
+    public var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -439,12 +439,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
-    public func canDelete() -> Bool {
+    public var canDelete: Bool {
         let s = membership.memberStatus
         return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
     }
 
-    static let sampleData = GroupInfo(
+    public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
@@ -471,18 +471,23 @@ public struct GroupProfile: Codable, NamedChat {
     )
 }
 
-public struct GroupMember: Decodable {
+public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
-    var groupId: Int64
-    var memberId: String
-    var memberRole: GroupMemberRole
-    var memberCategory: GroupMemberCategory
+    public var groupId: Int64
+    public var memberId: String
+    public var memberRole: GroupMemberRole
+    public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
-    var invitedBy: InvitedBy
-    var localDisplayName: ContactName
+    public var invitedBy: InvitedBy
+    public var localDisplayName: ContactName
     public var memberProfile: Profile
     public var memberContactId: Int64?
-    var activeConn: Connection?
+    public var activeConn: Connection?
+
+    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var displayName: String { get { memberProfile.displayName } }
+    public var fullName: String { get { memberProfile.fullName } }
+    public var image: String? { get { memberProfile.image } }
 
     var directChatId: ChatId? {
         get {
@@ -492,10 +497,6 @@ public struct GroupMember: Decodable {
                 return nil
             }
         }
-    }
-
-    public var id: String {
-        "#\(groupId) @\(groupMemberId)"
     }
 
     public var chatViewName: String {
@@ -542,6 +543,14 @@ public enum GroupMemberRole: String, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .member: return "Member"
+        case .admin: return "Admin"
+        case .owner: return "Owner"
+        }
+    }
 }
 
 public enum GroupMemberCategory: String, Decodable {
@@ -564,6 +573,38 @@ public enum GroupMemberStatus: String, Decodable {
     case memConnected = "connected"
     case memComplete = "complete"
     case memCreator = "creator"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "Removed"
+        case .memLeft: return "Left"
+        case .memGroupDeleted: return "Group deleted"
+        case .memInvited: return "Invited"
+        case .memIntroduced: return "Connecting (introduced)"
+        case .memIntroInvited: return "Connecting (introduction invitation)"
+        case .memAccepted: return "Connecting (accepted)"
+        case .memAnnounced: return "Connecting (announced)"
+        case .memConnected: return "Connected"
+        case .memComplete: return "Complete"
+        case .memCreator: return "Creator"
+        }
+    }
+
+    public var shortText: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting"
+        case .memIntroInvited: return "connecting"
+        case .memAccepted: return "connecting"
+        case .memAnnounced: return "connecting"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
+        }
+    }
 }
 
 public enum InvitedBy: Decodable {

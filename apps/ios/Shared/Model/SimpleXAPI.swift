@@ -594,6 +594,12 @@ func apiJoinGroup(_ groupId: Int64) async throws -> GroupInfo {
     throw r
 }
 
+func apiRemoveMember(groupId: Int64, memberId: Int64) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
+    if case let .userDeletedMember(_, member) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)

@@ -53,7 +53,7 @@ struct ChatListNavLink: View {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     contact.ready
-                    ? deleteChatAlert(chat.chatInfo)
+                    ? deleteContactAlert(chat.chatInfo)
                     : deletePendingContactAlert(chat, contact)
                 )
             } label: {
@@ -80,7 +80,7 @@ struct ChatListNavLink: View {
                     joinGroupButton()
                 }
                 .swipeActions(edge: .trailing) {
-                    if groupInfo.canDelete() {
+                    if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
                 }
@@ -123,7 +123,7 @@ struct ChatListNavLink: View {
                 }
             }
             .swipeActions(edge: .trailing) {
-                if groupInfo.canDelete() {
+                if groupInfo.canDelete {
                     deleteGroupChatButton(groupInfo)
                 }
             }
@@ -159,7 +159,7 @@ struct ChatListNavLink: View {
 
     @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button(role: .destructive) {
-            AlertManager.shared.showAlert(deleteChatAlert(.group(groupInfo: groupInfo)))
+            AlertManager.shared.showAlert(deleteGroupAlert(.group(groupInfo: groupInfo)))
         } label: {
             Label("Delete", systemImage: "trash")
         }
@@ -210,10 +210,21 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func deleteChatAlert(_ chatInfo: ChatInfo) -> Alert {
+    private func deleteContactAlert(_ chatInfo: ChatInfo) -> Alert {
         Alert(
-            title: Text("Delete chat?"),
-            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete contact?"),
+            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
+            primaryButton: .destructive(Text("Delete")) {
+                Task { await deleteChat(chat) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func deleteGroupAlert(_ chatInfo: ChatInfo) -> Alert {
+        Alert(
+            title: Text("Delete group?"),
+            message: Text("Group will be deleted for all members - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task { await deleteChat(chat) }
             },
