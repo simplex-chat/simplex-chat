@@ -33,7 +33,7 @@ struct GroupMemberInfoView: View {
                     // TODO invited by - need to get contact by contact id
                     Text("Status: ") + Text(member.memberStatus.text)
                     if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect \(conn.connLevel)"
+                        let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
                         Text("Connection level: \(connLevelDesc)")
                     }
                 }
