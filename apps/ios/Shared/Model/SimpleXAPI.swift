@@ -290,6 +290,28 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
+func getNetworkConfig() async throws -> NetCfg? {
+    let r = await chatSendCmd(.apiGetNetworkConfig)
+    if case let .networkConfig(cfg) = r { return cfg }
+    throw r
+}
+
+func setNetworkConfig(cfg: NetCfg) async throws {
+    try await sendCommandOkResp(.apiSetNetworkConfig(networkConfig: cfg))
+}
+
+func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
+    let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
+    if case let .contactInfo(_, connStats) = r { return connStats }
+    throw r
+}
+
+func apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64) async throws -> ConnectionStats? {
+    let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
+    throw r
+}
+
 func apiAddContact() throws -> String {
     let r = chatSendCmdSync(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
