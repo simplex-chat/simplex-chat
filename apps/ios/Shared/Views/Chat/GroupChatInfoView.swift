@@ -49,7 +49,9 @@ struct GroupChatInfoView: View {
                     if groupInfo.canDelete {
                         deleteGroupButton()
                     }
-                    leaveGroupButton()
+                    if (groupInfo.membership.memberStatus != .memLeft) {
+                        leaveGroupButton()
+                    }
                 }
             }
             .navigationBarHidden(true)
