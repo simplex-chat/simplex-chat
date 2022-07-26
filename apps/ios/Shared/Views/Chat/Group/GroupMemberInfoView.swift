@@ -34,7 +34,7 @@ struct GroupMemberInfoView: View {
                     // TODO invited by - need to get contact by contact id
                     localizedInfoRow("Status", member.memberStatus.text)
                     if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
+                        let connLevelDesc = conn.connLevel == 0 ? "direct" : "indirect (\(conn.connLevel))"
                         infoRow("Connection", connLevelDesc)
                     }
                     // TODO network status
