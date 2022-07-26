@@ -35,10 +35,14 @@ struct GroupChatInfoView: View {
 
                 Section(header: Text("Info")) {
                     Text("Local display name: ").foregroundColor(.secondary) + Text(chat.chatInfo.localDisplayName)
+                    Text("Your role: ").foregroundColor(.secondary) + Text(groupInfo.membership.memberRole.text)
+                    Text("Membership status: ").foregroundColor(.secondary) + Text(groupInfo.membership.memberStatus.text)
                 }
 
                 Section(header: Text("\(members.count) Members")) {
-                    addMembersButton()
+                    if (groupInfo.canAddMember) {
+                        addMembersButton()
+                    }
                     ForEach(members) { member in
                         memberView(member)
                     }
@@ -109,7 +113,7 @@ struct GroupChatInfoView: View {
 
     func memberView(_ member: GroupMember) -> some View {
         NavigationLink {
-            GroupMemberInfoView(member: member)
+            GroupMemberInfoView(groupInfo: groupInfo, member: member)
         } label: {
             HStack{
                 ProfileImage(imageStr: member.image)

@@ -132,7 +132,8 @@ struct ChatView: View {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")
                     }
-                } else if case .group = chat.chatInfo {
+                } else if case let .group(groupInfo) = chat.chatInfo,
+                          groupInfo.canAddMember {
                     addMembersButton()
                 }
             }

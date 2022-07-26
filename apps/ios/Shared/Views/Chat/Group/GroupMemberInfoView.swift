@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    var groupInfo: GroupInfo
     var member: GroupMember
     @State private var alert: GroupMemberInfoViewAlert? = nil
 
@@ -40,7 +41,9 @@ struct GroupMemberInfoView: View {
                 }
 
                 Section {
-                    removeMemberButton()
+                    if member.canRemove(userRole: groupInfo.membership.memberRole) {
+                        removeMemberButton()
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -102,6 +105,6 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(member: GroupMember.sampleData)
+        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
     }
 }

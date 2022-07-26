@@ -444,6 +444,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
     }
 
+    public var canAddMember: Bool {
+        return membership.memberRole >= .admin && membership.memberActive
+    }
+
     public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
@@ -524,6 +528,10 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
+    public func canRemove(userRole: GroupMemberRole) -> Bool {
+        return userRole >= .admin && userRole >= memberRole
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
         groupId: 1,
@@ -539,7 +547,7 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
-public enum GroupMemberRole: String, Decodable {
+public enum GroupMemberRole: String, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
@@ -550,6 +558,18 @@ public enum GroupMemberRole: String, Decodable {
         case .admin: return "Admin"
         case .owner: return "Owner"
         }
+    }
+
+    private var comparisonValue: Int {
+        switch self {
+        case .member: return 0
+        case .admin: return 1
+        case .owner: return 2
+        }
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
     }
 }
 
