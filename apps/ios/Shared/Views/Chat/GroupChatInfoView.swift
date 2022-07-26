@@ -33,6 +33,10 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
+                Section(header: Text("Info")) {
+                    Text("Local display name: ").foregroundColor(.secondary) + Text(chat.chatInfo.localDisplayName)
+                }
+
                 Section(header: Text("\(members.count) Members")) {
                     addMembersButton()
                     ForEach(members) { member in
@@ -69,17 +73,20 @@ struct GroupChatInfoView: View {
 
     func groupInfoHeader() -> some View {
         VStack {
+            let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(chat.chatInfo.localDisplayName)
+            Text(cInfo.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            Text(chat.chatInfo.fullName)
-                .font(.title2)
-                .lineLimit(2)
+            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+                Text(cInfo.fullName)
+                    .font(.title2)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }

@@ -29,12 +29,13 @@ struct GroupMemberInfoView: View {
                 // TODO server status
 
                 Section(header: Text("Info")) {
-                    Text("Role: ") + Text(member.memberRole.text)
+                    Text("Local display name: ").foregroundColor(.secondary) + Text(member.localDisplayName)
+                    Text("Role: ").foregroundColor(.secondary) + Text(member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
-                    Text("Status: ") + Text(member.memberStatus.text)
+                    Text("Status: ").foregroundColor(.secondary) + Text(member.memberStatus.text)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        Text("Connection level: \(connLevelDesc)")
+                        Text("Connection level: ").foregroundColor(.secondary) + Text(connLevelDesc)
                     }
                 }
 
@@ -58,13 +59,15 @@ struct GroupMemberInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(member.localDisplayName)
+            Text(member.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            Text(member.fullName)
-                .font(.title2)
-                .lineLimit(2)
+            if member.fullName != "" && member.fullName != member.displayName {
+                Text(member.fullName)
+                    .font(.title2)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
