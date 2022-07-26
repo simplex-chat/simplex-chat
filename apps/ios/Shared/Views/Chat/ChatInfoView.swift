@@ -17,7 +17,7 @@ struct ChatInfoView: View {
     @State var alert: ChatInfoViewAlert? = nil
 
     enum ChatInfoViewAlert: Identifiable {
-        case deleteChatAlert
+        case deleteContactAlert
         case clearChatAlert
 
         var id: ChatInfoViewAlert { get { self } }
@@ -53,7 +53,7 @@ struct ChatInfoView: View {
             }
             .tint(Color.orange)
             Button(role: .destructive) {
-                alert = .deleteChatAlert
+                alert = .deleteContactAlert
             } label: {
                 Label("Delete contact", systemImage: "trash")
             }
@@ -61,7 +61,7 @@ struct ChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteChatAlert: return deleteChatAlert()
+            case .deleteContactAlert: return deleteContactAlert()
             case .clearChatAlert: return clearChatAlert()
             }
         }
@@ -74,10 +74,10 @@ struct ChatInfoView: View {
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    private func deleteChatAlert() -> Alert {
+    private func deleteContactAlert() -> Alert {
         Alert(
-            title: Text("Delete chat?"),
-            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete contact?"),
+            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -87,7 +87,7 @@ struct ChatInfoView: View {
                             showSheet = false
                         }
                     } catch let error {
-                        logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                     }
                 }
             },

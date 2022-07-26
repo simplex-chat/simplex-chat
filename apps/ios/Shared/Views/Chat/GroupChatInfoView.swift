@@ -20,7 +20,7 @@ struct GroupChatInfoView: View {
     @State private var showAddMembersSheet: Bool = false
 
     enum GroupChatInfoViewAlert: Identifiable {
-        case deleteChatAlert
+        case deleteGroupAlert
         case clearChatAlert
         case leaveGroupAlert
 
@@ -43,7 +43,7 @@ struct GroupChatInfoView: View {
                 Section {
                     clearChatButton()
                     if groupInfo.canDelete {
-                        deleteChatButton()
+                        deleteGroupButton()
                     }
                     leaveGroupButton()
                 }
@@ -55,7 +55,7 @@ struct GroupChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteChatAlert: return deleteChatAlert()
+            case .deleteGroupAlert: return deleteGroupAlert()
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             }
@@ -123,9 +123,9 @@ struct GroupChatInfoView: View {
         }
     }
 
-    func deleteChatButton() -> some View {
+    func deleteGroupButton() -> some View {
         Button(role: .destructive) {
-            alert = .deleteChatAlert
+            alert = .deleteGroupAlert
         } label: {
             Label("Delete group", systemImage: "trash")
                 .foregroundColor(Color.red)
@@ -152,10 +152,10 @@ struct GroupChatInfoView: View {
     }
 
     // TODO reuse this and clearChatAlert with ChatInfoView
-    private func deleteChatAlert() -> Alert {
+    private func deleteGroupAlert() -> Alert {
         Alert(
-            title: Text("Delete chat?"),
-            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete group?"),
+            message: Text("Group will be deleted for all members - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -165,7 +165,7 @@ struct GroupChatInfoView: View {
                             showSheet = false
                         }
                     } catch let error {
-                        logger.error("deleteChatAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
                     }
                 }
             },
