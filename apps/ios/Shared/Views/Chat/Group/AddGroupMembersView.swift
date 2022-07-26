@@ -34,7 +34,12 @@ struct AddGroupMembersView: View {
                 } else {
                     let count = selectedContacts.count
                     Section {
-                        clearSelectionButton()
+                        let v = clearSelectionButton()
+                        if (count < 1) {
+                            v
+                        } else {
+                            v.foregroundColor(Color.red)
+                        }
                         inviteMembersButton()
                     } footer: {
                         Text("\(count) contact(s) selected")
