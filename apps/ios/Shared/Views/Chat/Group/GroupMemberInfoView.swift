@@ -11,10 +11,11 @@ import SimpleXChat
 
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     var member: GroupMember
-    @Binding var selectedMember: GroupMember?
-    @State private var alert: GroupMemberInfoViewAlert? = nil
+    @State private var alert: GroupMemberInfoViewAlert?
+    @State private var connectionStats: ConnectionStats?
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
@@ -28,26 +29,34 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section {
-                    infoRow("Local display name", member.localDisplayName)
-                    localizedInfoRow("Role", member.memberRole.text)
+                Section("Member") {
+                    infoRow("Group", groupInfo.displayName)
+                    // TODO change role
+                    // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
-                    localizedInfoRow("Status", member.memberStatus.text)
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? "direct" : "indirect (\(conn.connLevel))"
                         infoRow("Connection", connLevelDesc)
                     }
-                    // TODO network status
-                } header: {
-                    Text("Info")
-                } footer: {
-                    Text("Group: \(groupInfo.displayName)")
+                }
+
+                if let connStats = connectionStats {
+                    Section("Servers") {
+                        // TODO network connection status
+                        smpServers("receiving via", connStats.rcvServers)
+                        smpServers("sending via", connStats.sndServers)
+                    }
                 }
 
                 Section {
                     if member.canRemove(userRole: groupInfo.membership.memberRole) && member.memberStatus != .memRemoved {
                         removeMemberButton()
                     }
+                }
+
+                Section("For console") {
+                    infoRow("Local name", member.localDisplayName)
+                    infoRow("Database ID", "\(member.groupMemberId)")
                 }
             }
             .navigationBarHidden(true)
@@ -58,9 +67,17 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return removeMemberAlert()
             }
         }
+        .task {
+            do {
+                let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                await MainActor.run { connectionStats = stats }
+            } catch let error {
+                logger.error("apiGroupMemberInfo error: \(responseError(error))")
+            }
+        }
     }
 
-    func groupMemberInfoHeader() -> some View {
+    private func groupMemberInfoHeader() -> some View {
         VStack {
             ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
@@ -77,6 +94,20 @@ struct GroupMemberInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    @ViewBuilder private func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
+        if let server = servers?[0] {
+            infoRow(title, serverHost(server))
+        }
+    }
+
+    private func serverHost(_ s: String) -> String {
+        if let i = s.range(of: "@")?.lowerBound {
+            return String(s[i...].dropFirst())
+        } else {
+            return s
+        }
     }
 
     func removeMemberButton() -> some View {
@@ -96,7 +127,7 @@ struct GroupMemberInfoView: View {
                 Task {
                     do {
                         _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        selectedMember = nil
+                        dismiss()
                     } catch let error {
                         logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
                     }
@@ -109,7 +140,6 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var selectedMember = GroupMember.sampleData
-        return GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData, selectedMember: Binding($selectedMember))
+        return GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
     }
 }

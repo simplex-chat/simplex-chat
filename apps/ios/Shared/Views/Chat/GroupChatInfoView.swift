@@ -52,25 +52,20 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section(header: Text("Info")) {
-                    infoRow("Local display name", chat.chatInfo.localDisplayName)
-                    localizedInfoRow("Your role", groupInfo.membership.memberRole.text)
-                    localizedInfoRow("Membership status", groupInfo.membership.memberStatus.text)
-                }
-
-                Section(header: Text("\(members.count) Members")) {
+                Section(header: Text("\(members.count + 1) members")) {
                     if (groupInfo.canAddMembers) {
                         addMembersButton()
-                            .sheet(isPresented: $showAddMembersSheet) {
-                                AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
-                            }
                     }
+                    memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
-                        memberView(member)
-                            .sheet(item: $selectedMember) { member in
-                                GroupMemberInfoView(groupInfo: groupInfo, member: member, selectedMember: $selectedMember)
-                            }
+                        Button { selectedMember = member } label: { memberView(member) }
                     }
+                }
+                .sheet(isPresented: $showAddMembersSheet) {
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
+                }
+                .sheet(item: $selectedMember) { member in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member)
                 }
 
                 Section {
@@ -81,6 +76,11 @@ struct GroupChatInfoView: View {
                     if (groupInfo.membership.memberStatus != .memLeft) {
                         leaveGroupButton()
                     }
+                }
+
+                Section(header: Text("For console")) {
+                    infoRow("Local name", chat.chatInfo.localDisplayName)
+                    infoRow("Database ID", "\(chat.chatInfo.apiId)")
                 }
             }
             .navigationBarHidden(true)
@@ -133,30 +133,27 @@ struct GroupChatInfoView: View {
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    func memberView(_ member: GroupMember) -> some View {
-        Button {
-            selectedMember = member
-        } label: {
-            HStack{
-                ProfileImage(imageStr: member.image)
-                    .frame(width: 38, height: 38)
-                    .padding(.trailing, 2)
-                // TODO server connection status
-                VStack(alignment: .leading) {
-                    Text(member.chatViewName)
-                        .lineLimit(1)
-                        .foregroundColor(.primary)
-                    Text(member.memberStatus.shortText)
-                        .lineLimit(1)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                let role = member.memberRole
-                if role == .owner || role == .admin {
-                    Text(member.memberRole.text)
-                        .foregroundColor(.secondary)
-                }
+    func memberView(_ member: GroupMember, user: Bool = false) -> some View {
+        HStack{
+            ProfileImage(imageStr: member.image)
+                .frame(width: 38, height: 38)
+                .padding(.trailing, 2)
+            // TODO server connection status
+            VStack(alignment: .leading) {
+                Text(member.chatViewName)
+                    .lineLimit(1)
+                    .foregroundColor(.primary)
+                let s = Text(member.memberStatus.shortText)
+                (user ? Text ("you: ") + s : s)
+                    .lineLimit(1)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            let role = member.memberRole
+            if role == .owner || role == .admin {
+                Text(member.memberRole.text)
+                    .foregroundColor(.secondary)
             }
         }
     }

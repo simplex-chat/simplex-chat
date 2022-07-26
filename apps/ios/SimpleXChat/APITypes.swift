@@ -500,8 +500,8 @@ public struct NetCfg: Codable {
 }
 
 public struct ConnectionStats: Codable {
-    var rcvServers: [String]?
-    var sndServers: [String]?
+    public var rcvServers: [String]?
+    public var sndServers: [String]?
 }
 
 public protocol SelectableItem: Hashable, Identifiable {

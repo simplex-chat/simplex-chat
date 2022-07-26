@@ -306,7 +306,7 @@ func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
     throw r
 }
 
-func apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64) async throws -> ConnectionStats? {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> ConnectionStats? {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
     throw r

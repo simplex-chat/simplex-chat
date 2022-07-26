@@ -35,22 +35,21 @@ struct AddGroupMembersView: View {
                 } else {
                     let count = selectedContacts.count
                     Section {
-                        let v = clearSelectionButton()
-                        if (count < 1) {
-                            v
-                        } else {
-                            v.foregroundColor(Color.red)
-                        }
-                        inviteMembersButton()
-                    } footer: {
-                        Text("\(count) contact(s) selected")
-                    }
-                    .disabled(count < 1)
-
-                    Section {
                         rolePicker()
+                        inviteMembersButton()
+                            .disabled(count < 1)
+                    } footer: {
+                        if (count >= 1) {
+                            HStack {
+                                Button { selectedContacts.removeAll() } label: { Text("Clear") }
+                                Spacer()
+                                Text("\(count) contact(s) selected")
+                            }
+                        } else {
+                            Text("No contacts selected")
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                        }
                     }
-                    .disabled(count < 1)
 
                     Section {
                         ForEach(contactsToAdd) { contact in
@@ -76,14 +75,6 @@ struct AddGroupMembersView: View {
             .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
     }
 
-    func clearSelectionButton() -> some View {
-        Button {
-            selectedContacts.removeAll()
-        } label: {
-            Label("Clear", systemImage: "multiply")
-        }
-    }
-
     func inviteMembersButton() -> some View {
         Button {
             Task {
@@ -93,12 +84,16 @@ struct AddGroupMembersView: View {
                 showSheet = false
             }
         } label: {
-            Label("Invite", systemImage: "plus")
+            HStack {
+                Text("Invite members")
+                Image(systemName: "checkmark")
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     func rolePicker() -> some View {
-        Picker("Invite as", selection: $selectedRole) {
+        Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
                 if role <= groupInfo.membership.memberRole {
                     Text(role.text)
