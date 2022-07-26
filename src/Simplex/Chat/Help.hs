@@ -9,6 +9,7 @@ module Simplex.Chat.Help
     myAddressHelpInfo,
     messagesHelpInfo,
     markdownInfo,
+    settingsInfo,
   )
 where
 
@@ -83,11 +84,10 @@ chatHelpInfo =
       green "Create your address: " <> highlight "/address",
       "",
       green "Other commands:",
-      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["messages", "files", "groups", "address"],
+      indent <> highlight "/help <topic>    " <> " - help on: " <> listHighlight ["messages", "files", "groups", "address", "settings"],
       indent <> highlight "/profile         " <> " - show / update user profile",
       indent <> highlight "/delete <contact>" <> " - delete contact and all messages with them",
       indent <> highlight "/contacts        " <> " - list contacts",
-      indent <> highlight "/smp_servers     " <> " - show / set custom SMP servers",
       indent <> highlight "/markdown        " <> " - supported markdown syntax",
       indent <> highlight "/version         " <> " - SimpleX Chat version",
       indent <> highlight "/quit            " <> " - quit chat",
@@ -184,4 +184,15 @@ markdownInfo =
       indent <> highlight "`code snippet` " <> " - " <> markdown Snippet "a + b // no *markdown* here",
       indent <> highlight "!1 text!       " <> " - " <> markdown (colored Red) "red text" <> " (1-6: red, green, blue, yellow, cyan, magenta)",
       indent <> highlight "#secret#       " <> " - " <> markdown Secret "secret text" <> " (can be copy-pasted)"
+    ]
+
+settingsInfo :: [StyledString]
+settingsInfo =
+  map
+    styleMarkdown
+    [ green "Chat settings:",
+      indent <> highlight "/network                 " <> " - show / set network access options",
+      indent <> highlight "/smp_servers             " <> " - show / set custom SMP servers",
+      indent <> highlight "/info <contact>          " <> " - information about contact connection",
+      indent <> highlight "/info #<group> <member>  " <> " - information about member connection"
     ]

@@ -2467,6 +2467,7 @@ chatCommandP =
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
+      ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile),
       ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole),
