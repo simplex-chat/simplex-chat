@@ -70,7 +70,7 @@ struct GroupChatInfoView: View {
     func groupInfoHeader() -> some View {
         VStack(spacing: 0) {
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 72, height: 72)
+                .frame(width: 108, height: 108)
                 .padding(.top, 12)
                 .padding(.bottom, 6)
             Text(chat.chatInfo.localDisplayName)
@@ -161,7 +161,7 @@ struct GroupChatInfoView: View {
                 Task {
                     do {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        DispatchQueue.main.async {
+                        await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
                             showSheet = false
                         }
@@ -181,7 +181,7 @@ struct GroupChatInfoView: View {
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         showSheet = false
                     }
                 }
@@ -197,7 +197,7 @@ struct GroupChatInfoView: View {
             primaryButton: .destructive(Text("Leave")) {
                 Task {
                     await leaveGroup(chat.chatInfo.apiId)
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         showSheet = false
                     }
                 }

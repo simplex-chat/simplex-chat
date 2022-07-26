@@ -54,7 +54,7 @@ struct GroupMemberInfoView: View {
     func groupMemberInfoHeader() -> some View {
         VStack(spacing: 0) {
             ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
-                .frame(width: 72, height: 72)
+                .frame(width: 108, height: 108)
                 .padding(.top, 12)
                 .padding(.bottom, 6)
             Text(member.localDisplayName)

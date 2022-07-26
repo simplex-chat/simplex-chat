@@ -82,7 +82,7 @@ struct ChatInfoView: View {
                 Task {
                     do {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        DispatchQueue.main.async {
+                        await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
                             showSheet = false
                         }
@@ -102,7 +102,7 @@ struct ChatInfoView: View {
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         showSheet = false
                     }
                 }
