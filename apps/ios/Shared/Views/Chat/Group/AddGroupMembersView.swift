@@ -85,7 +85,7 @@ struct AddGroupMembersView: View {
             }
         } label: {
             HStack {
-                Text("Invite members")
+                Text("Invite to group")
                 Image(systemName: "checkmark")
             }
         }
