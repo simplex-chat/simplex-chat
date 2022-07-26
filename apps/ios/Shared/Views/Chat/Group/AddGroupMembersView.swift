@@ -30,6 +30,14 @@ struct AddGroupMembersView: View {
             } else {
                 HStack {
                     let count = selectedContacts.count
+                    if count > 0 {
+                        Button {
+                            selectedContacts.removeAll()
+                        } label: {
+                            Label("Clear", systemImage: "multiply")
+                        }
+                    }
+                    Spacer()
                     Button {
                         Task {
                             for contactId in selectedContacts {
@@ -43,14 +51,6 @@ struct AddGroupMembersView: View {
                             systemImage: "plus")
                     }
                     .disabled(count < 1)
-                    Spacer()
-                    if count > 0 {
-                        Button {
-                            selectedContacts.removeAll()
-                        } label: {
-                            Label("Clear", systemImage: "multiply")
-                        }
-                    }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 12)
