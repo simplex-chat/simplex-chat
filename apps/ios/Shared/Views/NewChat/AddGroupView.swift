@@ -22,6 +22,8 @@ struct AddGroupView: View {
             Text("Create group")
                 .font(.largeTitle)
                 .padding(.bottom, 4)
+            Text("Enter group details")
+                .padding(.bottom)
             ZStack(alignment: .topLeading) {
                 if !validDisplayName(displayName) {
                     Image(systemName: "exclamationmark.circle")

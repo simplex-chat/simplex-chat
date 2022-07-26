@@ -402,6 +402,12 @@ func clearChat(_ chat: Chat) async {
     }
 }
 
+func apiListContacts() throws -> [Contact] {
+    let r = chatSendCmdSync(.listContacts)
+    if case let .contactsList(contacts) = r { return contacts }
+    throw r
+}
+
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     let r = await chatSendCmd(.apiUpdateProfile(profile: profile))
     switch r {
@@ -559,34 +565,54 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func joinGroup(groupId: Int64) async {
+func addMember(groupId: Int64, contactId: Int64) async {
     do {
-        let groupInfo = try await apiJoinGroup(groupId: groupId)
+        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: .admin)
+    } catch let error {
+        logger.error("addMember error: \(responseError(error))")
+    }
+}
+
+func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
+    if case .sentGroupInvitation = r { return }
+    throw r
+}
+
+func joinGroup(_ groupId: Int64) async {
+    do {
+        let groupInfo = try await apiJoinGroup(groupId)
         DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
     } catch let error {
         logger.error("joinGroup error: \(responseError(error))")
     }
 }
 
-func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
+func apiJoinGroup(_ groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
     throw r
 }
 
-func leaveGroup(groupId: Int64) async {
+func leaveGroup(_ groupId: Int64) async {
     do {
-        let groupInfo = try await apiLeaveGroup(groupId: groupId)
+        let groupInfo = try await apiLeaveGroup(groupId)
         DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
     } catch let error {
         logger.error("leaveGroup error: \(responseError(error))")
     }
 }
 
-func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
+func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
     if case let .leftMemberUser(groupInfo) = r { return groupInfo }
     throw r
+}
+
+func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
+    let r = await chatSendCmd(.apiListMembers(groupId: groupId))
+    if case let .groupMembers(group) = r { return group.members }
+    return []
 }
 
 func initializeChat(start: Bool) throws {

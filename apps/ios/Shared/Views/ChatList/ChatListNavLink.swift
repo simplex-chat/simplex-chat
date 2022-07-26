@@ -12,7 +12,6 @@ import SimpleXChat
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
-    @Binding var showChatInfo: Bool
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
 
@@ -30,7 +29,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(chat: chat, showChatInfo: $showChatInfo)
+        ChatView(chat: chat)
             .onAppear { loadChat(chat: chat) }
     }
 
@@ -87,7 +86,7 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button("Join group") { Task { await joinGroup(groupId: groupInfo.groupId) } }
+                    Button("Join group") { Task { await joinGroup(groupInfo.groupId) } }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -133,7 +132,7 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            Task { await joinGroup(groupId: chat.chatInfo.apiId) }
+            Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
             Label("Join", systemImage: "ipad.and.arrow.forward")
         }
@@ -238,7 +237,7 @@ struct ChatListNavLink: View {
             title: Text("Leave group?"),
             message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
             primaryButton: .destructive(Text("Leave")) {
-                Task { await leaveGroup(groupId: groupInfo.groupId) }
+                Task { await leaveGroup(groupInfo.groupId) }
             },
             secondaryButton: .cancel()
         )
@@ -324,20 +323,19 @@ struct ChatListNavLink: View {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
-        @State var showChatInfo = false
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showChatInfo: $showChatInfo)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showChatInfo: $showChatInfo)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ), showChatInfo: $showChatInfo)
+            ))
         }
         .previewLayout(.fixed(width: 360, height: 80))
     }
