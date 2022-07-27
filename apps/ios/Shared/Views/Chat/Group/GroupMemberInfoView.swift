@@ -97,8 +97,9 @@ struct GroupMemberInfoView: View {
     }
 
     @ViewBuilder private func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
-        if let server = servers?[0] {
-            infoRow(title, serverHost(server))
+        if let servers = servers,
+           servers.count > 0 {
+            infoRow(title, serverHost(servers[0]))
         }
     }
 
