@@ -43,8 +43,8 @@ struct GroupMemberInfoView: View {
                 if let connStats = connectionStats {
                     Section("Servers") {
                         // TODO network connection status
-                        smpServers("receiving via", connStats.rcvServers)
-                        smpServers("sending via", connStats.sndServers)
+                        smpServers("Receiving via", connStats.rcvServers)
+                        smpServers("Sending via", connStats.sndServers)
                     }
                 }
 
@@ -94,21 +94,6 @@ struct GroupMemberInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-    }
-
-    @ViewBuilder private func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
-        if let servers = servers,
-           servers.count > 0 {
-            infoRow(title, serverHost(servers[0]))
-        }
-    }
-
-    private func serverHost(_ s: String) -> String {
-        if let i = s.range(of: "@")?.lowerBound {
-            return String(s[i...].dropFirst())
-        } else {
-            return s
-        }
     }
 
     func removeMemberButton() -> some View {

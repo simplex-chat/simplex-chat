@@ -9,24 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
-    HStack {
-        Text(title)
-        Spacer()
-        Text(value)
-            .foregroundStyle(.secondary)
-    }
-}
-
-func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
-    HStack {
-        Text(title)
-        Spacer()
-        Text(value)
-            .foregroundStyle(.secondary)
-    }
-}
-
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -174,7 +156,6 @@ struct GroupChatInfoView: View {
             Label("Clear conversation", systemImage: "gobackward")
                 .foregroundColor(Color.orange)
         }
-        .tint(Color.orange)
     }
 
     func leaveGroupButton() -> some View {
