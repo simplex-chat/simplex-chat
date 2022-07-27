@@ -1,4 +1,4 @@
-package chat.simplex.app.views.chat
+package chat.simplex.app.views.chat.group
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -19,27 +19,27 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.chat.clearChatDialog
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
+fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   if (chat != null) {
-    ChatInfoLayout(
+    GroupChatInfoLayout(
       chat,
-      connStats,
       close = close,
-      deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
+      deleteContact = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
   }
 }
 
-fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteGroupDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.delete_contact_question),
-    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
+    title = generalGetString(R.string.delete_group_question),
+    text = generalGetString(R.string.delete_group_for_all_members_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
@@ -55,28 +55,20 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
   )
 }
 
-fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.clear_chat_question),
-    text = generalGetString(R.string.clear_chat_warning),
-    confirmText = generalGetString(R.string.clear_verb),
+    title = generalGetString(R.string.leave_group_question),
+    text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    confirmText = generalGetString(R.string.leave_group_button),
     onConfirm = {
-      withApi {
-        val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
-        if (updatedChatInfo != null) {
-          chatModel.clearChat(updatedChatInfo)
-          chatModel.controller.ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
-        }
-      }
+      withApi { chatModel.controller.leaveGroup(groupInfo.groupId) }
     }
   )
 }
 
 @Composable
-fun ChatInfoLayout(
+fun GroupChatInfoLayout(
   chat: Chat,
-  connStats: ConnectionStats?,
   close: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit
@@ -125,10 +117,6 @@ fun ChatInfoLayout(
             .padding(top = 16.dp)
             .padding(horizontal = 16.dp)
         )
-        if (connStats != null) {
-          SimplexServers("receiving via: ", connStats.rcvServers)
-          SimplexServers("sending via: ", connStats.sndServers)
-        }
       }
 
       Spacer(Modifier.weight(1F))
@@ -173,14 +161,6 @@ fun ChatInfoLayout(
 }
 
 @Composable
-fun SimplexServers(text: String, servers: List<String>?) {
-  if (servers != null) {
-    val info = text + servers.joinToString(separator = ", ") { it.substringAfter("@") }
-    Text(info, style = MaterialTheme.typography.body2)
-  }
-}
-
-@Composable
 fun ServerImage(chat: Chat) {
   when (chat.serverInfo.networkStatus) {
     is Chat.NetworkStatus.Connected ->
@@ -195,15 +175,14 @@ fun ServerImage(chat: Chat) {
 
 @Preview
 @Composable
-fun PreviewChatInfoLayout() {
+fun PreviewGroupChatInfoLayout() {
   SimpleXTheme {
-    ChatInfoLayout(
+    GroupChatInfoLayout(
       chat = Chat(
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
-      connStats = null,
       close = {}, deleteContact = {}, clearChat = {}
     )
   }

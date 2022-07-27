@@ -139,8 +139,8 @@
     <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
-    <string name="delete_chat_question">Удалить чат?</string>
-    <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Чат и все сообщения будут удалены - это действие нельзя отменить!</string>
+    <string name="delete_contact_question">Удалить контакт?</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
@@ -506,6 +506,7 @@
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
     <string name="group_left_description">[покинута]</string>
+    <string name="icon_descr_add_members">Пригласить участников</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
@@ -544,4 +545,8 @@
     <string name="group_member_status_creator">создатель</string>
 
     <string name="group_member_status_connecting">соединяется</string>
+
+    <!-- GroupChatInfoView.kt -->
+    <string name="delete_group_question">Удалить группу?</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
 </resources>

@@ -32,6 +32,8 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
+import chat.simplex.app.views.chat.group.AddGroupMembersView
+import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
@@ -90,12 +92,13 @@ fun ChatView(chatModel: ChatModel) {
       back = { chatModel.chatId.value = null },
       info = {
         withApi {
-          var connStats: ConnectionStats? = null
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
+          } else if (cInfo is ChatInfo.Group) {
+            ModalManager.shared.showCustomModal { close -> GroupChatInfoView(cInfo.groupInfo, chatModel, close) }
           }
-          ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
         }
       },
       openDirectChat = { contactId ->
@@ -137,6 +140,13 @@ fun ChatView(chatModel: ChatModel) {
         } else {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
+      },
+      addMembers = { groupInfo ->
+        withApi {
+          val memberContactIds = chatModel.controller.apiListMembers(groupInfo.groupId)
+            .mapNotNull { it.memberContactId }
+          ModalManager.shared.showCustomModal { close -> AddGroupMembersView(groupInfo, memberContactIds, chatModel, close) }
+        }
       }
     )
   }
@@ -160,7 +170,8 @@ fun ChatLayout(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  addMembers: (GroupInfo) -> Unit
 ) {
   Surface(
     Modifier
@@ -181,7 +192,7 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
@@ -195,7 +206,13 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+fun ChatInfoToolbar(
+  chat: Chat,
+  back: () -> Unit,
+  info: () -> Unit,
+  startCall: (CallMediaType) -> Unit,
+  addMembers: (GroupInfo) -> Unit
+) {
   @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
     IconButton(onClick, modifier = modifier) {
       Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
@@ -221,6 +238,12 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (
           }
           toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
             startCall(CallMediaType.Video)
+          }
+        }
+      } else if (cInfo is ChatInfo.Group) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+          toolbarButton(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
+            addMembers(cInfo.groupInfo)
           }
         }
       }
@@ -402,7 +425,8 @@ fun PreviewChatLayout() {
       receiveFile = {},
       joinGroup = {},
       startCall = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      addMembers = { _ -> }
     )
   }
 }
@@ -450,7 +474,8 @@ fun PreviewGroupChatLayout() {
       receiveFile = {},
       joinGroup = {},
       startCall = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      addMembers = { _ -> }
     )
   }
 }
