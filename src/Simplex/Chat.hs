@@ -2471,6 +2471,7 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile),
+      "/_group " *> (NewGroup <$> jsonP),
       ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole),
       ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName),
       ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName),
