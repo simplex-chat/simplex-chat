@@ -310,9 +310,9 @@ final class Chat: ObservableObject, Identifiable {
         var statusString: LocalizedStringKey {
             get {
                 switch self {
-                case .connected: return "Server connected"
-                case let .error(err): return "Connecting server… (error: \(err))"
-                default: return "Connecting server…"
+                case .connected: return "connected"
+                case .error: return "error"
+                default: return "connecting"
                 }
             }
         }
