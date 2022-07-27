@@ -524,4 +524,24 @@
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
     <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_user_left">вы покинули группу</string>
+
+    <!-- GroupMemberRole -->
+    <string name="group_member_role_member">участник</string>
+    <string name="group_member_role_admin">администратор</string>
+    <string name="group_member_role_owner">владелец</string>
+
+    <!-- GroupMemberStatus -->
+    <string name="group_member_status_removed">удален(а)</string>
+    <string name="group_member_status_left">покинул(а)</string>
+    <string name="group_member_status_group_deleted">группа удалена</string>
+    <string name="group_member_status_invited">приглашен(а)</string>
+    <string name="group_member_status_introduced">соединяется (представлен(а))</string>
+    <string name="group_member_status_intro_invitation">соединяется (приглашение по представлению)</string>
+    <string name="group_member_status_accepted">соединяется (приглашение принято)</string>
+    <string name="group_member_status_announced">соединяется (объявлен(а))</string>
+    <string name="group_member_status_connected">соединен(а)</string>
+    <string name="group_member_status_complete">соединение завершено</string>
+    <string name="group_member_status_creator">создатель</string>
+
+    <string name="group_member_status_connecting">соединяется</string>
 </resources>

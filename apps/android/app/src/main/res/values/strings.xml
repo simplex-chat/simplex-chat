@@ -526,4 +526,24 @@
   <string name="rcv_group_event_group_deleted">deleted group</string>
   <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="snd_group_event_user_left">you left</string>
+
+  <!-- GroupMemberRole -->
+  <string name="group_member_role_member">member</string>
+  <string name="group_member_role_admin">admin</string>
+  <string name="group_member_role_owner">owner</string>
+
+  <!-- GroupMemberStatus -->
+  <string name="group_member_status_removed">removed</string>
+  <string name="group_member_status_left">left</string>
+  <string name="group_member_status_group_deleted">group deleted</string>
+  <string name="group_member_status_invited">invited</string>
+  <string name="group_member_status_introduced">connecting (introduced)</string>
+  <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
+  <string name="group_member_status_accepted">connecting (accepted)</string>
+  <string name="group_member_status_announced">connecting (announced)</string>
+  <string name="group_member_status_connected">connected</string>
+  <string name="group_member_status_complete">complete</string>
+  <string name="group_member_status_creator">creator</string>
+
+  <string name="group_member_status_connecting">connecting</string>
 </resources>
