@@ -113,7 +113,7 @@ struct CreateProfile: View {
 }
 
 func validDisplayName(_ name: String) -> Bool {
-    name.firstIndex(of: " ") == nil
+    name.firstIndex(of: " ") == nil && name.first != "@" && name.first != "#"
 }
 
 struct CreateProfile_Previews: PreviewProvider {
