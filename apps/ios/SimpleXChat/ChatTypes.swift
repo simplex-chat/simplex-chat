@@ -444,6 +444,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
     }
 
+    public var canAddMembers: Bool {
+        return membership.memberRole >= .admin && membership.memberActive
+    }
+
     public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
@@ -524,6 +528,10 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
+    public func canRemove(userRole: GroupMemberRole) -> Bool {
+        return userRole >= .admin && userRole >= memberRole
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
         groupId: 1,
@@ -539,17 +547,31 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
-public enum GroupMemberRole: String, Decodable {
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
 
+    public var id: Self { self }
+
     public var text: LocalizedStringKey {
         switch self {
-        case .member: return "Member"
-        case .admin: return "Admin"
-        case .owner: return "Owner"
+        case .member: return "member"
+        case .admin: return "admin"
+        case .owner: return "owner"
         }
+    }
+
+    private var comparisonValue: Int {
+        switch self {
+        case .member: return 0
+        case .admin: return 1
+        case .owner: return 2
+        }
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
     }
 }
 
@@ -576,17 +598,17 @@ public enum GroupMemberStatus: String, Decodable {
 
     public var text: LocalizedStringKey {
         switch self {
-        case .memRemoved: return "Removed"
-        case .memLeft: return "Left"
-        case .memGroupDeleted: return "Group deleted"
-        case .memInvited: return "Invited"
-        case .memIntroduced: return "Connecting (introduced)"
-        case .memIntroInvited: return "Connecting (introduction invitation)"
-        case .memAccepted: return "Connecting (accepted)"
-        case .memAnnounced: return "Connecting (announced)"
-        case .memConnected: return "Connected"
-        case .memComplete: return "Complete"
-        case .memCreator: return "Creator"
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting (introduced)"
+        case .memIntroInvited: return "connecting (introduction invitation)"
+        case .memAccepted: return "connecting (accepted)"
+        case .memAnnounced: return "connecting (announced)"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
         }
     }
 

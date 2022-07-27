@@ -28,7 +28,7 @@ struct NewChatButton: View {
             Image(systemName: "plus.circle.fill")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24                        )
+                .frame(width: 24, height: 24)
         }
         .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
             Button("Create link / QR code") { addContactAction() }

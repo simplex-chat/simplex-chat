@@ -745,7 +745,8 @@ processChatCommand = \case
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
         let userRole = memberRole (membership :: GroupMember)
-        when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
+            canRemove = userRole >= GRAdmin && userRole >= mRole
+        unless canRemove $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
           when (mStatus /= GSMemInvited) $ do
             msg <- sendGroupMessage gInfo members $ XGrpMemDel mId

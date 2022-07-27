@@ -85,7 +85,13 @@ struct AddGroupView: View {
                 m.chatId = groupInfo.id
             }
         } catch {
-            fatalError("Failed to create group: \(responseError(error))")
+            openedSheet = nil
+            AlertManager.shared.showAlert(
+                Alert(
+                    title: Text("Failed to create group"),
+                    message: Text(responseError(error))
+                )
+            )
         }
     }
 

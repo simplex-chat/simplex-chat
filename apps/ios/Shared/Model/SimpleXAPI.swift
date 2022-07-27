@@ -306,7 +306,7 @@ func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
     throw r
 }
 
-func apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64) async throws -> ConnectionStats? {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> ConnectionStats? {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
     throw r
@@ -565,9 +565,9 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func addMember(groupId: Int64, contactId: Int64) async {
+func addMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async {
     do {
-        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: .admin)
+        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole)
     } catch let error {
         logger.error("addMember error: \(responseError(error))")
     }

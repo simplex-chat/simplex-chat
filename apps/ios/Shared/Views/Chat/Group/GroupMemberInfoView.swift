@@ -11,8 +11,11 @@ import SimpleXChat
 
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
+    var groupInfo: GroupInfo
     var member: GroupMember
-    @State private var alert: GroupMemberInfoViewAlert? = nil
+    @State private var alert: GroupMemberInfoViewAlert?
+    @State private var connectionStats: ConnectionStats?
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
@@ -26,20 +29,34 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-                // TODO server status
-
-                Section(header: Text("Info")) {
-                    Text("Role: ") + Text(member.memberRole.text)
+                Section("Member") {
+                    infoRow("Group", groupInfo.displayName)
+                    // TODO change role
+                    // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
-                    Text("Status: ") + Text(member.memberStatus.text)
                     if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? "Direct" : "Indirect (\(conn.connLevel))"
-                        Text("Connection level: \(connLevelDesc)")
+                        let connLevelDesc = conn.connLevel == 0 ? "direct" : "indirect (\(conn.connLevel))"
+                        infoRow("Connection", connLevelDesc)
+                    }
+                }
+
+                if let connStats = connectionStats {
+                    Section("Servers") {
+                        // TODO network connection status
+                        smpServers("receiving via", connStats.rcvServers)
+                        smpServers("sending via", connStats.sndServers)
                     }
                 }
 
                 Section {
-                    removeMemberButton()
+                    if member.canRemove(userRole: groupInfo.membership.memberRole) && member.memberStatus != .memRemoved {
+                        removeMemberButton()
+                    }
+                }
+
+                Section("For console") {
+                    infoRow("Local name", member.localDisplayName)
+                    infoRow("Database ID", "\(member.groupMemberId)")
                 }
             }
             .navigationBarHidden(true)
@@ -50,23 +67,48 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return removeMemberAlert()
             }
         }
+        .task {
+            do {
+                let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                await MainActor.run { connectionStats = stats }
+            } catch let error {
+                logger.error("apiGroupMemberInfo error: \(responseError(error))")
+            }
+        }
     }
 
-    func groupMemberInfoHeader() -> some View {
+    private func groupMemberInfoHeader() -> some View {
         VStack {
             ProfileImage(imageStr: member.image, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(member.localDisplayName)
+            Text(member.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            Text(member.fullName)
-                .font(.title2)
-                .lineLimit(2)
+            if member.fullName != "" && member.fullName != member.displayName {
+                Text(member.fullName)
+                    .font(.title2)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    @ViewBuilder private func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
+        if let servers = servers,
+           servers.count > 0 {
+            infoRow(title, serverHost(servers[0]))
+        }
+    }
+
+    private func serverHost(_ s: String) -> String {
+        if let i = s.range(of: "@")?.lowerBound {
+            return String(s[i...].dropFirst())
+        } else {
+            return s
+        }
     }
 
     func removeMemberButton() -> some View {
@@ -86,7 +128,7 @@ struct GroupMemberInfoView: View {
                 Task {
                     do {
                         _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        // TODO navigate back
+                        dismiss()
                     } catch let error {
                         logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
                     }
@@ -99,6 +141,6 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupMemberInfoView(member: GroupMember.sampleData)
+        return GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
     }
 }

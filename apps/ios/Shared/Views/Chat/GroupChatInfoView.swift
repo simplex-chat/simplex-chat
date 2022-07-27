@@ -9,6 +9,24 @@
 import SwiftUI
 import SimpleXChat
 
+func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
+func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
@@ -18,6 +36,7 @@ struct GroupChatInfoView: View {
     @State private var members: [GroupMember] = []
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var showAddMembersSheet: Bool = false
+    @State private var selectedMember: GroupMember? = nil
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -33,11 +52,20 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section(header: Text("\(members.count) Members")) {
-                    addMembersButton()
-                    ForEach(members) { member in
-                        memberView(member)
+                Section(header: Text("\(members.count + 1) members")) {
+                    if (groupInfo.canAddMembers) {
+                        addMembersButton()
                     }
+                    memberView(groupInfo.membership, user: true)
+                    ForEach(members) { member in
+                        Button { selectedMember = member } label: { memberView(member) }
+                    }
+                }
+                .sheet(isPresented: $showAddMembersSheet) {
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
+                }
+                .sheet(item: $selectedMember) { member in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member)
                 }
 
                 Section {
@@ -45,15 +73,19 @@ struct GroupChatInfoView: View {
                     if groupInfo.canDelete {
                         deleteGroupButton()
                     }
-                    leaveGroupButton()
+                    if (groupInfo.membership.memberStatus != .memLeft) {
+                        leaveGroupButton()
+                    }
+                }
+
+                Section(header: Text("For console")) {
+                    infoRow("Local name", chat.chatInfo.localDisplayName)
+                    infoRow("Database ID", "\(chat.chatInfo.apiId)")
                 }
             }
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .sheet(isPresented: $showAddMembersSheet) {
-            AddGroupMembersView(chat: chat, showSheet: $showAddMembersSheet)
-        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteGroupAlert: return deleteGroupAlert()
@@ -69,17 +101,20 @@ struct GroupChatInfoView: View {
 
     func groupInfoHeader() -> some View {
         VStack {
+            let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(chat.chatInfo.localDisplayName)
+            Text(cInfo.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            Text(chat.chatInfo.fullName)
-                .font(.title2)
-                .lineLimit(2)
+            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+                Text(cInfo.fullName)
+                    .font(.title2)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -98,28 +133,27 @@ struct GroupChatInfoView: View {
             .foregroundColor(status == .connected ? .green : .secondary)
     }
 
-    func memberView(_ member: GroupMember) -> some View {
-        NavigationLink {
-            GroupMemberInfoView(member: member)
-        } label: {
-            HStack{
-                ProfileImage(imageStr: member.image)
-                    .frame(width: 38, height: 38)
-                    .padding(.trailing, 2)
-                // TODO server connection status
-                VStack(alignment: .leading) {
-                    Text(member.chatViewName)
-                        .lineLimit(1)
-                    Text(member.memberStatus.shortText)
-                        .lineLimit(1)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                let role = member.memberRole
-                if role == .owner || role == .admin {
-                    Text(member.memberRole.text)
-                }
+    func memberView(_ member: GroupMember, user: Bool = false) -> some View {
+        HStack{
+            ProfileImage(imageStr: member.image)
+                .frame(width: 38, height: 38)
+                .padding(.trailing, 2)
+            // TODO server connection status
+            VStack(alignment: .leading) {
+                Text(member.chatViewName)
+                    .lineLimit(1)
+                    .foregroundColor(.primary)
+                let s = Text(member.memberStatus.shortText)
+                (user ? Text ("you: ") + s : s)
+                    .lineLimit(1)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            let role = member.memberRole
+            if role == .owner || role == .admin {
+                Text(member.memberRole.text)
+                    .foregroundColor(.secondary)
             }
         }
     }
