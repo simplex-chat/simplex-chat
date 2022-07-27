@@ -745,7 +745,8 @@ processChatCommand = \case
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
         let userRole = memberRole (membership :: GroupMember)
-        when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
+            canRemove = userRole >= GRAdmin && userRole >= mRole
+        unless canRemove $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
           when (mStatus /= GSMemInvited) $ do
             msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
@@ -2467,8 +2468,10 @@ chatCommandP =
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
+      ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile),
+      "/_group " *> (NewGroup <$> jsonP),
       ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole),
       ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName),
       ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName),

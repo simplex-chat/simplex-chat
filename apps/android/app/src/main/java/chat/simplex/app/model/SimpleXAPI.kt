@@ -332,6 +332,42 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
+  suspend fun getNetworkConfig(): NetCfg? {
+    val r = sendCmd(CC.APIGetNetworkConfig())
+    if (r is CR.NetworkConfig) return r.networkConfig
+    Log.e(TAG, "getNetworkConfig bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun setNetworkConfig(cfg: NetCfg): Boolean {
+    val r = sendCmd(CC.APISetNetworkConfig(cfg))
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "setNetworkConfig bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.error_setting_network_config),
+          "${r.responseType}: ${r.details}"
+        )
+        false
+      }
+    }
+  }
+
+  suspend fun apiContactInfo(contactId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APIContactInfo(contactId))
+    if (r is CR.ContactInfo) return r.connectionStats
+    Log.e(TAG, "apiContactInfo bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): ConnectionStats? {
+    val r = sendCmd(CC.APIGroupMemberInfo(groupId, groupMemberId))
+    if (r is CR.GroupMemberInfo) return r.connectionStats_
+    Log.e(TAG, "apiGroupMemberInfo bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
     if (r is CR.Invitation) return r.connReqInvitation
@@ -941,8 +977,12 @@ sealed class CC {
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
-  class GetUserSMPServers(): CC()
+  class GetUserSMPServers: CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
+  class APISetNetworkConfig(val networkConfig: NetCfg): CC()
+  class APIGetNetworkConfig: CC()
+  class APIContactInfo(val contactId: Long): CC()
+  class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class AddContact: CC()
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
@@ -987,6 +1027,10 @@ sealed class CC {
     is ApiListMembers -> "/_members #$groupId"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
+    is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
+    is APIGetNetworkConfig -> "/network"
+    is APIContactInfo -> "/_info @$contactId"
+    is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is AddContact -> "/connect"
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
@@ -1032,6 +1076,10 @@ sealed class CC {
     is ApiListMembers -> "apiListMembers"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
+    is APISetNetworkConfig -> "/apiSetNetworkConfig"
+    is APIGetNetworkConfig -> "/apiGetNetworkConfig"
+    is APIContactInfo -> "apiContactInfo"
+    is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is AddContact -> "addContact"
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
@@ -1068,6 +1116,9 @@ class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgCon
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
+
+@Serializable
+class NetCfg(val socksProxy: String? = null, val tcpTimeout: Int)
 
 val json = Json {
   prettyPrint = true
@@ -1106,6 +1157,9 @@ sealed class CR {
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
+  @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -1187,6 +1241,9 @@ sealed class CR {
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is UserSMPServers -> "userSMPServers"
+    is NetworkConfig -> "networkConfig"
+    is ContactInfo -> "contactInfo"
+    is GroupMemberInfo -> "groupMemberInfo"
     is Invitation -> "invitation"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
@@ -1266,6 +1323,9 @@ sealed class CR {
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
     is UserSMPServers -> json.encodeToString(smpServers)
+    is NetworkConfig -> json.encodeToString(networkConfig)
+    is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
+    is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()
@@ -1366,6 +1426,9 @@ abstract class TerminalItem {
     fun resp(r: CR) = Resp(System.currentTimeMillis(), r)
   }
 }
+
+@Serializable
+class ConnectionStats(val rcvServers: List<String>?, val sndServers: List<String>?)
 
 @Serializable
 sealed class ChatError {

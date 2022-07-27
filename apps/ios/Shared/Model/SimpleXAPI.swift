@@ -290,6 +290,28 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
+func getNetworkConfig() async throws -> NetCfg? {
+    let r = await chatSendCmd(.apiGetNetworkConfig)
+    if case let .networkConfig(cfg) = r { return cfg }
+    throw r
+}
+
+func setNetworkConfig(cfg: NetCfg) async throws {
+    try await sendCommandOkResp(.apiSetNetworkConfig(networkConfig: cfg))
+}
+
+func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
+    let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
+    if case let .contactInfo(_, connStats) = r { return connStats }
+    throw r
+}
+
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> ConnectionStats? {
+    let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
+    throw r
+}
+
 func apiAddContact() throws -> String {
     let r = chatSendCmdSync(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
@@ -378,6 +400,12 @@ func clearChat(_ chat: Chat) async {
     } catch {
         logger.error("clearChat apiClearChat error: \(responseError(error))")
     }
+}
+
+func apiListContacts() throws -> [Contact] {
+    let r = chatSendCmdSync(.listContacts)
+    if case let .contactsList(contacts) = r { return contacts }
+    throw r
 }
 
 func apiUpdateProfile(profile: Profile) async throws -> Profile? {
@@ -537,34 +565,60 @@ func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func joinGroup(groupId: Int64) async {
+func addMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async {
     do {
-        let groupInfo = try await apiJoinGroup(groupId: groupId)
+        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole)
+    } catch let error {
+        logger.error("addMember error: \(responseError(error))")
+    }
+}
+
+func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
+    if case .sentGroupInvitation = r { return }
+    throw r
+}
+
+func joinGroup(_ groupId: Int64) async {
+    do {
+        let groupInfo = try await apiJoinGroup(groupId)
         DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
     } catch let error {
         logger.error("joinGroup error: \(responseError(error))")
     }
 }
 
-func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
+func apiJoinGroup(_ groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
     throw r
 }
 
-func leaveGroup(groupId: Int64) async {
+func apiRemoveMember(groupId: Int64, memberId: Int64) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
+    if case let .userDeletedMember(_, member) = r { return member }
+    throw r
+}
+
+func leaveGroup(_ groupId: Int64) async {
     do {
-        let groupInfo = try await apiLeaveGroup(groupId: groupId)
+        let groupInfo = try await apiLeaveGroup(groupId)
         DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
     } catch let error {
         logger.error("leaveGroup error: \(responseError(error))")
     }
 }
 
-func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
+func apiLeaveGroup(_ groupId: Int64) async throws -> GroupInfo {
     let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
     if case let .leftMemberUser(groupInfo) = r { return groupInfo }
     throw r
+}
+
+func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
+    let r = await chatSendCmd(.apiListMembers(groupId: groupId))
+    if case let .groupMembers(group) = r { return group.members }
+    return []
 }
 
 func initializeChat(start: Bool) throws {

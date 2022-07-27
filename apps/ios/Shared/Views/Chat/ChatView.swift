@@ -15,7 +15,8 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @Binding var showChatInfo: Bool
+    @State private var showChatInfoSheet: Bool = false
+    @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -99,15 +100,15 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfo = true
+                    showChatInfoSheet = true
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatInfo) {
-                    if case let .direct(contact) = chat.chatInfo {
-                        ChatInfoView(chat: chat, showChatInfo: $showChatInfo, contact: contact)
-                    } else if case .group = chat.chatInfo {
-                        GroupChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                .sheet(isPresented: $showChatInfoSheet) {
+                    if case .direct = chat.chatInfo {
+                        ChatInfoView(chat: chat, showSheet: $showChatInfoSheet)
+                    } else if case let .group(groupInfo) = chat.chatInfo {
+                        GroupChatInfoView(chat: chat, groupInfo: groupInfo, showSheet: $showChatInfoSheet)
                     }
                 }
             }
@@ -117,6 +118,12 @@ struct ChatView: View {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")
                     }
+                } else if case let .group(groupInfo) = chat.chatInfo,
+                          groupInfo.canAddMembers {
+                    addMembersButton()
+                        .sheet(isPresented: $showAddMembersSheet) {
+                            AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
+                        }
                 }
             }
         }
@@ -128,6 +135,14 @@ struct ChatView: View {
             CallController.shared.startCall(contact, media)
         } label: {
             Image(systemName: imageName)
+        }
+    }
+
+    private func addMembersButton() -> some View {
+        Button {
+            showAddMembersSheet = true
+        } label: {
+            Image(systemName: "person.crop.circle.badge.plus")
         }
     }
 
@@ -276,7 +291,7 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         @State var showChatInfo = false
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)
     }
 }

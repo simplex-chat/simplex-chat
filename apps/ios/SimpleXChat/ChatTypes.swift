@@ -180,6 +180,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var contact: Contact? {
+        get {
+            switch self {
+            case let .direct(contact): return contact
+            default: return nil
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -275,7 +284,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
-    var connLevel: Int
+    public var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -410,8 +419,8 @@ public enum ConnStatus: String, Decodable {
 }
 
 public struct Group: Decodable {
-    var groupInfo: GroupInfo
-    var members: [GroupMember]
+    public var groupInfo: GroupInfo
+    public var members: [GroupMember]
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
@@ -430,12 +439,16 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
-    public func canDelete() -> Bool {
+    public var canDelete: Bool {
         let s = membership.memberStatus
         return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
     }
 
-    static let sampleData = GroupInfo(
+    public var canAddMembers: Bool {
+        return membership.memberRole >= .admin && membership.memberActive
+    }
+
+    public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
@@ -462,18 +475,23 @@ public struct GroupProfile: Codable, NamedChat {
     )
 }
 
-public struct GroupMember: Decodable {
+public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
-    var groupId: Int64
-    var memberId: String
-    var memberRole: GroupMemberRole
-    var memberCategory: GroupMemberCategory
+    public var groupId: Int64
+    public var memberId: String
+    public var memberRole: GroupMemberRole
+    public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
-    var invitedBy: InvitedBy
-    var localDisplayName: ContactName
+    public var invitedBy: InvitedBy
+    public var localDisplayName: ContactName
     public var memberProfile: Profile
-    var memberContactId: Int64?
-    var activeConn: Connection?
+    public var memberContactId: Int64?
+    public var activeConn: Connection?
+
+    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var displayName: String { get { memberProfile.displayName } }
+    public var fullName: String { get { memberProfile.fullName } }
+    public var image: String? { get { memberProfile.image } }
 
     var directChatId: ChatId? {
         get {
@@ -483,10 +501,6 @@ public struct GroupMember: Decodable {
                 return nil
             }
         }
-    }
-
-    public var id: String {
-        "#\(groupId) @\(groupMemberId)"
     }
 
     public var chatViewName: String {
@@ -514,6 +528,10 @@ public struct GroupMember: Decodable {
         }
     }
 
+    public func canRemove(userRole: GroupMemberRole) -> Bool {
+        return userRole >= .admin && userRole >= memberRole
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
         groupId: 1,
@@ -529,10 +547,32 @@ public struct GroupMember: Decodable {
     )
 }
 
-public enum GroupMemberRole: String, Decodable {
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
+
+    public var id: Self { self }
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .member: return "member"
+        case .admin: return "admin"
+        case .owner: return "owner"
+        }
+    }
+
+    private var comparisonValue: Int {
+        switch self {
+        case .member: return 0
+        case .admin: return 1
+        case .owner: return 2
+        }
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
+    }
 }
 
 public enum GroupMemberCategory: String, Decodable {
@@ -555,6 +595,38 @@ public enum GroupMemberStatus: String, Decodable {
     case memConnected = "connected"
     case memComplete = "complete"
     case memCreator = "creator"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting (introduced)"
+        case .memIntroInvited: return "connecting (introduction invitation)"
+        case .memAccepted: return "connecting (accepted)"
+        case .memAnnounced: return "connecting (announced)"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
+        }
+    }
+
+    public var shortText: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting"
+        case .memIntroInvited: return "connecting"
+        case .memAccepted: return "connecting"
+        case .memAnnounced: return "connecting"
+        case .memConnected: return "connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
+        }
+    }
 }
 
 public enum InvitedBy: Decodable {

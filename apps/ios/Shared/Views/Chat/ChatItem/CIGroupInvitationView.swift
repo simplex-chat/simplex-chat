@@ -98,7 +98,7 @@ struct CIGroupInvitationView: View {
     private func acceptInvitation() {
         Task {
             logger.debug("acceptInvitation")
-            await joinGroup(groupId: groupInvitation.groupId)
+            await joinGroup(groupInvitation.groupId)
         }
     }
 }

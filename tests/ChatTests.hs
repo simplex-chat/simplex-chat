@@ -1102,6 +1102,7 @@ testGroupAsync = withTmpFiles $ do
             cath <## "#team: connected to server(s)"
             cath <## "#team: member bob (Bob) is connected"
         ]
+  threadDelay 500000
   print (3 :: Integer)
   withTestChat "bob" $ \bob -> do
     withNewTestChat "dan" danProfile $ \dan -> do
@@ -1120,7 +1121,8 @@ testGroupAsync = withTmpFiles $ do
         [ bob <## "#team: dan joined the group",
           dan <## "#team: you joined the group"
         ]
-      threadDelay 500000
+      threadDelay 1000000
+  threadDelay 500000
   print (4 :: Integer)
   withTestChat "alice" $ \alice -> do
     withTestChat "cath" $ \cath -> do

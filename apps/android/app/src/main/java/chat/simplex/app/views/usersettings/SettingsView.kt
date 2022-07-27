@@ -57,7 +57,20 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
         }
       } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
-      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
+      showNetworkSettings = {
+        withApi {
+          val cfg = chatModel.controller.getNetworkConfig()
+          if (cfg != null) {
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+                NetworkSettingsView(chatModel, cfg)
+              }
+            }
+          }
+        }
+      }
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
   }
@@ -77,6 +90,7 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
+  showNetworkSettings: () -> Unit
 //  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -115,6 +129,8 @@ fun SettingsLayout(
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         divider()
         SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
+        divider()
+        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
       }
       spacer()
 
@@ -349,6 +365,7 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
+      showNetworkSettings = {}
 //      showVideoChatPrototype = {}
     )
   }

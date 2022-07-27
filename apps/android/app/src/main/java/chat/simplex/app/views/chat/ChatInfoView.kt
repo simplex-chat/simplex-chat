@@ -22,12 +22,13 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
+fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   if (chat != null) {
     ChatInfoLayout(
       chat,
+      connStats,
       close = close,
       deleteContact = { deleteChatDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
@@ -87,6 +88,7 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
 @Composable
 fun ChatInfoLayout(
   chat: Chat,
+  connStats: ConnectionStats?,
   close: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit
@@ -135,6 +137,10 @@ fun ChatInfoLayout(
             .padding(top = 16.dp)
             .padding(horizontal = 16.dp)
         )
+        if (connStats != null) {
+          SimplexServers("receiving via: ", connStats.rcvServers)
+          SimplexServers("sending via: ", connStats.sndServers)
+        }
       }
 
       Spacer(Modifier.weight(1F))
@@ -179,6 +185,14 @@ fun ChatInfoLayout(
 }
 
 @Composable
+fun SimplexServers(text: String, servers: List<String>?) {
+  if (servers != null) {
+    val info = text + servers.joinToString(separator = ", ") { it.substringAfter("@") }
+    Text(info, style = MaterialTheme.typography.body2)
+  }
+}
+
+@Composable
 fun ServerImage(chat: Chat) {
   when (chat.serverInfo.networkStatus) {
     is Chat.NetworkStatus.Connected ->
@@ -201,6 +215,7 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
+      connStats = null,
       close = {}, deleteContact = {}, clearChat = {}
     )
   }

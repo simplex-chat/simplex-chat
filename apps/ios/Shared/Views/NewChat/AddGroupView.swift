@@ -22,6 +22,8 @@ struct AddGroupView: View {
             Text("Create group")
                 .font(.largeTitle)
                 .padding(.bottom, 4)
+            Text("Enter group details")
+                .padding(.bottom)
             ZStack(alignment: .topLeading) {
                 if !validDisplayName(displayName) {
                     Image(systemName: "exclamationmark.circle")
@@ -83,7 +85,13 @@ struct AddGroupView: View {
                 m.chatId = groupInfo.id
             }
         } catch {
-            fatalError("Failed to create group: \(responseError(error))")
+            openedSheet = nil
+            AlertManager.shared.showAlert(
+                Alert(
+                    title: Text("Failed to create group"),
+                    message: Text(responseError(error))
+                )
+            )
         }
     }
 

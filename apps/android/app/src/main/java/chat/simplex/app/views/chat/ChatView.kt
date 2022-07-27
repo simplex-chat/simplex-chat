@@ -88,7 +88,16 @@ fun ChatView(chatModel: ChatModel) {
       chatModel.chatItems,
       useLinkPreviews = useLinkPreviews,
       back = { chatModel.chatId.value = null },
-      info = { ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, close) } },
+      info = {
+        withApi {
+          var connStats: ConnectionStats? = null
+          val cInfo = chat.chatInfo
+          if (cInfo is ChatInfo.Direct) {
+            connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+          }
+          ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
+        }
+      },
       openDirectChat = { contactId ->
         val c = chatModel.chats.firstOrNull {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
