@@ -192,8 +192,8 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Media server to optimize sending large files to groups.
 - Channels server for large groups and broadcast channels.
+- Media server to optimize sending large files to groups.
 
 ## Help us pay for 3rd party security audit
 
