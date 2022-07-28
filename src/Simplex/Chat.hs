@@ -598,8 +598,8 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APISetNetworkConfig cfg -> withUser $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
-  APIGetNetworkConfig -> CRNetworkConfig <$> withUser (\_ -> withAgent getNetworkConfig)
+  APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
+  APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
     CRContactInfo ct <$> withAgent (`getConnectionServers` contactConnId ct)
