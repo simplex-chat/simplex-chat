@@ -555,4 +555,6 @@
   <!-- AddGroupMembersView.kt -->
   <string name="invite_to_group_button">Invite to group</string>
   <string name="icon_descr_contact_checked">Contact checked</string>
+  <string name="new_member_role">New member role</string>
+  <string name="icon_descr_expand_role">Expand role selection</string>
 </resources>

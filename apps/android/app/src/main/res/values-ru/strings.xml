@@ -553,4 +553,6 @@
     <!-- AddGroupMembersView.kt -->
     <string name="invite_to_group_button">Пригласить в группу</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
+    <string name="new_member_role">Роль участника</string>
+    <string name="icon_descr_expand_role">Развернуть выбор роли</string>
 </resources>

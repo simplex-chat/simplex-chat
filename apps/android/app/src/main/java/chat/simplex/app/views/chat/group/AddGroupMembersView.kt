@@ -11,8 +11,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Circle
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -26,20 +25,22 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.*
 
 @Composable
 fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
+  val selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) }
+
   BackHandler(onBack = close)
   AddGroupMembersLayout(
     groupInfo = groupInfo,
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
+    selectedRole = selectedRole,
     inviteMembers = {
       withApi {
         selectedContacts.forEach {
-          chatModel.controller.apiAddMember(groupInfo.groupId, it, GroupMemberRole.Admin)
+          chatModel.controller.apiAddMember(groupInfo.groupId, it, selectedRole.value)
         }
         close.invoke()
       }
@@ -68,6 +69,7 @@ fun AddGroupMembersLayout(
   groupInfo: GroupInfo,
   contactsToAdd: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
+  selectedRole: MutableState<GroupMemberRole>,
   inviteMembers: () -> Unit,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
@@ -85,7 +87,11 @@ fun AddGroupMembersLayout(
     SectionSpacer()
 
     SectionView {
-      SectionItemView() {
+      SectionItemView {
+        RoleSelectionRow(selectedRole)
+      }
+      SectionDivider()
+      SectionItemView {
         InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
       }
     }
@@ -98,21 +104,88 @@ fun AddGroupMembersLayout(
 }
 
 @Composable
-fun InviteMembersButton(inviteMembers: () -> Unit, disabled: Boolean) {
+fun RoleSelectionRow(selectedRole: MutableState<GroupMemberRole>) {
   Row(
     Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.End
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    SimpleButtonFrame(inviteMembers, disabled) {
-      val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Text(generalGetString(R.string.invite_to_group_button), color = color)
+    Text(stringResource(R.string.new_member_role))
+    RoleDropdownMenu(selectedRole)
+  }
+}
+
+@Composable
+fun RoleDropdownMenu(selectedRole: MutableState<GroupMemberRole>) {
+  val options = GroupMemberRole.values()
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = {
+      expanded = !expanded
+    }
+  ) {
+    Row(
+      Modifier.fillMaxWidth(0.7f),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.End
+    ) {
+      Text(
+        selectedRole.value.text,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = HighOrLowlight
+      )
+      Spacer(Modifier.size(4.dp))
       Icon(
-        Icons.Outlined.Check,
+        if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
         generalGetString(R.string.invite_to_group_button),
-        tint = color,
-        modifier = Modifier.padding(start = 8.dp)
+        modifier = Modifier.padding(start = 8.dp),
+        tint = HighOrLowlight
       )
     }
+    ExposedDropdownMenu(
+      expanded = expanded,
+      onDismissRequest = {
+        expanded = false
+      }
+    ) {
+      options.forEach { selectionOption ->
+        DropdownMenuItem(
+          onClick = {
+            selectedRole.value = selectionOption
+            expanded = false
+          }
+        ) {
+          Text(
+            selectionOption.text,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = HighOrLowlight
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun InviteMembersButton(inviteMembers: () -> Unit, disabled: Boolean) {
+  val modifier = if (disabled) Modifier else Modifier.clickable { inviteMembers() }
+  Row(
+    modifier.fillMaxSize(),
+    horizontalArrangement = Arrangement.End,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+    Text(stringResource(R.string.invite_to_group_button), color = color)
+    Spacer(Modifier.size(8.dp))
+    Icon(
+      Icons.Outlined.Check,
+      generalGetString(R.string.invite_to_group_button),
+      tint = color
+    )
   }
 }
 
@@ -175,6 +248,7 @@ fun PreviewAddGroupMembersLayout() {
       groupInfo = GroupInfo.sampleData,
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
+      selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
       inviteMembers = {},
       addContact = {},
       removeContact = {}
