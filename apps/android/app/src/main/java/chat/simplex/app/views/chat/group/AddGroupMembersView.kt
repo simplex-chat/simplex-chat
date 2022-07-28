@@ -1,11 +1,13 @@
 package chat.simplex.app.views.chat.group
 
+import SectionDivider
+import SectionItemView
+import SectionSpacer
+import SectionView
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -24,6 +26,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.*
 
 @Composable
 fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
@@ -43,7 +46,6 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
     removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
-    close = close
   )
 }
 
@@ -69,33 +71,48 @@ fun AddGroupMembersLayout(
   inviteMembers: () -> Unit,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
-  close: () -> Unit
 ) {
   Column(
-    Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
+    Modifier.fillMaxWidth(),
+    horizontalAlignment = Alignment.Start,
   ) {
-    CloseSheetBar(close)
-    ChatInfoToolbarTitle(ChatInfo.Group(groupInfo), imageSize = 60.dp)
-    InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
-    ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center
+    ) {
+      ChatInfoToolbarTitle(ChatInfo.Group(groupInfo), imageSize = 60.dp, iconColor = HighOrLowlight) // TODO tertiary color
+    }
+    SectionSpacer()
+
+    SectionView {
+      SectionItemView() {
+        InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
+      }
+    }
+    SectionSpacer()
+
+    SectionView {
+      ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+    }
   }
 }
 
 @Composable
 fun InviteMembersButton(inviteMembers: () -> Unit, disabled: Boolean) {
-  SimpleButtonFrame(inviteMembers, disabled) {
-    val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-    Text(generalGetString(R.string.invite_to_group_button), color = color)
-    Icon(
-      Icons.Outlined.Check,
-      generalGetString(R.string.invite_to_group_button),
-      tint = color,
-      modifier = Modifier.padding(end = 8.dp)
-    )
+  Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.End
+  ) {
+    SimpleButtonFrame(inviteMembers, disabled) {
+      val color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      Text(generalGetString(R.string.invite_to_group_button), color = color)
+      Icon(
+        Icons.Outlined.Check,
+        generalGetString(R.string.invite_to_group_button),
+        tint = color,
+        modifier = Modifier.padding(start = 8.dp)
+      )
+    }
   }
 }
 
@@ -107,11 +124,14 @@ fun ContactList(
   removeContact: (Long) -> Unit
 ) {
   LazyColumn {
-    items(contacts) { contact ->
+    itemsIndexed(contacts) { index, contact ->
       ContactCheckRow(
         contact, addContact, removeContact,
         checked = selectedContacts.contains(contact.apiId)
       )
+      if (index < contacts.lastIndex) {
+        SectionDivider()
+      }
     }
   }
 }
@@ -123,22 +143,27 @@ fun ContactCheckRow(
   removeContact: (Long) -> Unit,
   checked: Boolean
 ) {
-  Row(
-    Modifier
-      .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) }
-      .fillMaxWidth(),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Row {
-      ProfileImage(size = 30.dp, contact.image)
-      Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+  SectionItemView {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        ProfileImage(size = 36.dp, contact.image)
+        Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      }
+      Icon(
+        if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+        contentDescription = stringResource(R.string.icon_descr_contact_checked),
+        tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
+      )
     }
-    Icon(
-      if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-      contentDescription = stringResource(R.string.icon_descr_contact_checked),
-      tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
-    )
   }
 }
 
@@ -152,8 +177,7 @@ fun PreviewAddGroupMembersLayout() {
       selectedContacts = remember { mutableStateListOf() },
       inviteMembers = {},
       addContact = {},
-      removeContact = {},
-      close = {}
+      removeContact = {}
     )
   }
 }

@@ -1,5 +1,8 @@
 package chat.simplex.app.views.usersettings
 
+import SectionDivider
+import SectionSpacer
+import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -15,7 +18,6 @@ import chat.simplex.app.model.ChatModel
 
 @Composable
 fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
-  @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start
@@ -25,14 +27,14 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       style = MaterialTheme.typography.h1,
       modifier = Modifier.padding(start = 16.dp, bottom = 24.dp)
     )
-    SettingsSectionView(stringResource(R.string.settings_section_title_device)) {
+    SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel.performLA, setPerformLA)
     }
-    Spacer(Modifier.height(30.dp))
+    SectionSpacer()
 
-    SettingsSectionView(stringResource(R.string.settings_section_title_chats)) {
+    SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
-      divider()
+      SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
     }
   }

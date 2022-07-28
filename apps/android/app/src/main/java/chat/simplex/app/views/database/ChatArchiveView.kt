@@ -1,5 +1,8 @@
 package chat.simplex.app.views.database
 
+import SectionDivider
+import SectionFooterText
+import SectionView
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
@@ -25,8 +28,7 @@ import chat.simplex.app.TAG
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.usersettings.SettingsActionItem
-import chat.simplex.app.views.usersettings.SettingsSectionView
+import chat.simplex.app.views.usersettings.*
 import kotlinx.datetime.*
 import java.io.BufferedOutputStream
 import java.io.File
@@ -57,21 +59,20 @@ fun ChatArchiveLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
     Text(
       title,
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
 
-    SettingsSectionView(stringResource(R.string.chat_archive_section)) {
+    SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.save_archive),
         saveArchive,
         textColor = MaterialTheme.colors.primary
       )
-      divider()
+      SectionDivider()
       SettingsActionItem(
         Icons.Outlined.Delete,
         stringResource(R.string.delete_archive),
@@ -80,7 +81,7 @@ fun ChatArchiveLayout(
       )
     }
     val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
-    SettingsSectionFooter(
+    SectionFooterText(
       String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
   }

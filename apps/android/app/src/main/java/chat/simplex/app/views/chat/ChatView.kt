@@ -146,7 +146,12 @@ fun ChatView(chatModel: ChatModel) {
       addMembers = { groupInfo ->
         withApi {
           populateGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showCustomModal { close -> AddGroupMembersView(groupInfo, chatModel, close) }
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+              AddGroupMembersView(groupInfo, chatModel, close)
+            }
+          }
         }
       }
     )
@@ -262,12 +267,12 @@ fun ChatInfoToolbar(
 }
 
 @Composable
-fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp) {
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondary) {
   Row(
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    ChatInfoImage(cInfo, size = imageSize)
+    ChatInfoImage(cInfo, size = imageSize, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
