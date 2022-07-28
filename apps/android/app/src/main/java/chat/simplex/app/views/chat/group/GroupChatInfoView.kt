@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -30,8 +28,9 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
     GroupChatInfoLayout(
       chat,
       close = close,
-      deleteContact = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
+      deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
+      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
+      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) }
     )
   }
 }
@@ -61,7 +60,10 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
     text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(R.string.leave_group_button),
     onConfirm = {
-      withApi { chatModel.controller.leaveGroup(groupInfo.groupId) }
+      withApi {
+        chatModel.controller.leaveGroup(groupInfo.groupId)
+        close?.invoke()
+      }
     }
   )
 }
@@ -70,8 +72,9 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
 fun GroupChatInfoLayout(
   chat: Chat,
   close: () -> Unit,
-  deleteContact: () -> Unit,
-  clearChat: () -> Unit
+  deleteGroup: () -> Unit,
+  clearChat: () -> Unit,
+  leaveGroup: () -> Unit,
 ) {
   Column(
     Modifier
@@ -97,79 +100,36 @@ fun GroupChatInfoLayout(
       modifier = Modifier.padding(bottom = 16.dp)
     )
 
-    if (cInfo is ChatInfo.Direct) {
-      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.padding(horizontal = 32.dp)) {
-          ServerImage(chat)
-          Text(
-            chat.serverInfo.networkStatus.statusString,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.onBackground,
-            modifier = Modifier.padding(start = 8.dp)
-          )
-        }
-        Text(
-          chat.serverInfo.networkStatus.statusExplanation,
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.onBackground,
-          textAlign = TextAlign.Center,
-          modifier = Modifier
-            .padding(top = 16.dp)
-            .padding(horizontal = 16.dp)
-        )
-      }
+    Spacer(Modifier.weight(1F))
 
-      Spacer(Modifier.weight(1F))
-
-      Box(Modifier.padding(4.dp)) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
-      }
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.button_delete_contact),
-          icon = Icons.Outlined.Delete,
-          color = Color.Red,
-          click = deleteContact
-        )
-      }
-    } else if (cInfo is ChatInfo.Group) {
-      Spacer(Modifier.weight(1F))
-
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
-      }
+    Box(Modifier.padding(4.dp)) {
+      SimpleButton(
+        stringResource(R.string.clear_chat_button),
+        icon = Icons.Outlined.Restore,
+        color = WarningOrange,
+        click = clearChat
+      )
     }
-  }
-}
-
-@Composable
-fun ServerImage(chat: Chat) {
-  when (chat.serverInfo.networkStatus) {
-    is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
-    is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
-    is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
-    else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+    Box(Modifier.padding(4.dp)) {
+      SimpleButton(
+        stringResource(R.string.button_leave_group),
+        icon = Icons.Outlined.Logout,
+        color = Color.Red,
+        click = leaveGroup
+      )
+    }
+    Box(
+      Modifier
+        .padding(4.dp)
+        .padding(bottom = 32.dp)
+    ) {
+      SimpleButton(
+        stringResource(R.string.button_delete_group),
+        icon = Icons.Outlined.Delete,
+        color = Color.Red,
+        click = deleteGroup
+      )
+    }
   }
 }
 
@@ -183,7 +143,7 @@ fun PreviewGroupChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
-      close = {}, deleteContact = {}, clearChat = {}
+      close = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }
 }

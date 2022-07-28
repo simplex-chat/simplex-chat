@@ -105,69 +105,52 @@ fun ChatInfoLayout(
       modifier = Modifier.padding(bottom = 16.dp)
     )
 
-    if (cInfo is ChatInfo.Direct) {
-      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.padding(horizontal = 32.dp)) {
-          ServerImage(chat)
-          Text(
-            chat.serverInfo.networkStatus.statusString,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.onBackground,
-            modifier = Modifier.padding(start = 8.dp)
-          )
-        }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      Row(Modifier.padding(horizontal = 32.dp)) {
+        ServerImage(chat)
         Text(
-          chat.serverInfo.networkStatus.statusExplanation,
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.onBackground,
+          chat.serverInfo.networkStatus.statusString,
           textAlign = TextAlign.Center,
-          modifier = Modifier
-            .padding(top = 16.dp)
-            .padding(horizontal = 16.dp)
+          color = MaterialTheme.colors.onBackground,
+          modifier = Modifier.padding(start = 8.dp)
         )
-        if (connStats != null) {
-          SimplexServers("receiving via: ", connStats.rcvServers)
-          SimplexServers("sending via: ", connStats.sndServers)
-        }
       }
+      Text(
+        chat.serverInfo.networkStatus.statusExplanation,
+        style = MaterialTheme.typography.body2,
+        color = MaterialTheme.colors.onBackground,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+          .padding(top = 16.dp)
+          .padding(horizontal = 16.dp)
+      )
+      if (connStats != null) {
+        SimplexServers("receiving via: ", connStats.rcvServers)
+        SimplexServers("sending via: ", connStats.sndServers)
+      }
+    }
 
-      Spacer(Modifier.weight(1F))
+    Spacer(Modifier.weight(1F))
 
-      Box(Modifier.padding(4.dp)) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
-      }
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.button_delete_contact),
-          icon = Icons.Outlined.Delete,
-          color = Color.Red,
-          click = deleteContact
-        )
-      }
-    } else if (cInfo is ChatInfo.Group) {
-      Spacer(Modifier.weight(1F))
-
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
-      }
+    Box(Modifier.padding(4.dp)) {
+      SimpleButton(
+        stringResource(R.string.clear_chat_button),
+        icon = Icons.Outlined.Restore,
+        color = WarningOrange,
+        click = clearChat
+      )
+    }
+    Box(
+      Modifier
+        .padding(4.dp)
+        .padding(bottom = 32.dp)
+    ) {
+      SimpleButton(
+        stringResource(R.string.button_delete_contact),
+        icon = Icons.Outlined.Delete,
+        color = Color.Red,
+        click = deleteContact
+      )
     }
   }
 }

@@ -558,4 +558,8 @@
     <string name="clear_contacts_selection_button">Очистить</string>
     <string name="num_contacts_selected">Контактов выбрано: <xliff:g id="num_contacts">%1$s</xliff:g></string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
+
+    <!-- GroupChatInfoView.kt -->
+    <string name="button_delete_group">Удалить группу</string>
+    <string name="button_leave_group">Выйти из группы</string>
 </resources>

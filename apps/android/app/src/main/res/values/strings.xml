@@ -560,4 +560,8 @@
   <string name="clear_contacts_selection_button">Clear</string>
   <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
   <string name="no_contacts_selected">No contacts selected</string>
+
+  <!-- GroupChatInfoView.kt -->
+  <string name="button_delete_group">Delete group</string>
+  <string name="button_leave_group">Leave group</string>
 </resources>
