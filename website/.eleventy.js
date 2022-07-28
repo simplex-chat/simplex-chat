@@ -8,6 +8,11 @@ module.exports = function (eleventyConfig) {
     eleventyConfig.addPassthroughCopy("src/js");
     eleventyConfig.addPassthroughCopy("src/contact");
     eleventyConfig.addPassthroughCopy("src/app-demo");
+    // eleventyConfig.addPassthroughCopy({"../blog":"../src/blog"});
+
+    eleventyConfig.addCollection('posts', function (collection) {
+        return collection.getFilteredByGlob('src/blog/*.md');
+    });
 
     eleventyConfig.addWatchTarget("src/css");
     eleventyConfig.addWatchTarget("markdown/");
