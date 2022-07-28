@@ -179,9 +179,9 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
 - ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
 - ✅ Chat database export and import
-- 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- 🏗 Connecting to messaging servers via Tor (in progress).
 - 🏗 Chat groups in mobile apps (in progress).
+- 🏗 Connecting to messaging servers via Tor (in progress).
+- 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
 - Chat database encryption.
 - Disappearing messages, with mutual agreement.
 - Web widgets for custom interactivity in the chats.
@@ -192,8 +192,8 @@ If you are considering developing with SimpleX platform please get in touch for 
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Media server to optimize sending large files to groups.
 - Channels server for large groups and broadcast channels.
+- Media server to optimize sending large files to groups.
 
 ## Help us pay for 3rd party security audit
 
