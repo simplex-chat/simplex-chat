@@ -1,8 +1,11 @@
 package chat.simplex.app.views.chat.group
 
+import SectionDivider
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -27,6 +30,7 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
   if (chat != null) {
     GroupChatInfoLayout(
       chat,
+      members = chatModel.groupMembers.sortedBy { it.displayName.lowercase() },
       close = close,
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -71,6 +75,7 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
 @Composable
 fun GroupChatInfoLayout(
   chat: Chat,
+  members: List<GroupMember>,
   close: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
@@ -99,6 +104,10 @@ fun GroupChatInfoLayout(
       color = MaterialTheme.colors.onBackground,
       modifier = Modifier.padding(bottom = 16.dp)
     )
+
+    Spacer(modifier = Modifier.size(30.dp))
+
+    MembersList(members)
 
     Spacer(Modifier.weight(1F))
 
@@ -133,6 +142,23 @@ fun GroupChatInfoLayout(
   }
 }
 
+@Composable
+fun MembersList(members: List<GroupMember>) {
+  LazyColumn {
+    itemsIndexed(members) { index, member ->
+      MemberRow(member)
+      if (index < members.lastIndex) {
+        SectionDivider()
+      }
+    }
+  }
+}
+
+@Composable
+fun MemberRow(member: GroupMember) {
+  Text(member.chatViewName)
+}
+
 @Preview
 @Composable
 fun PreviewGroupChatInfoLayout() {
@@ -143,6 +169,7 @@ fun PreviewGroupChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
+      members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       close = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }

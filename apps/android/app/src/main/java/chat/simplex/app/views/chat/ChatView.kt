@@ -99,6 +99,7 @@ fun ChatView(chatModel: ChatModel) {
             val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
           } else if (cInfo is ChatInfo.Group) {
+            populateGroupMembers(cInfo.groupInfo, chatModel)
             ModalManager.shared.showCustomModal { close -> GroupChatInfoView(cInfo.groupInfo, chatModel, close) }
           }
         }
