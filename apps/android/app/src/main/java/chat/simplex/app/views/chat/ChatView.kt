@@ -37,6 +37,7 @@ import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -144,10 +145,8 @@ fun ChatView(chatModel: ChatModel) {
       },
       addMembers = { groupInfo ->
         withApi {
-          val memberContactIds = chatModel.controller.apiListMembers(groupInfo.groupId)
-            .filter { it.memberCurrent }
-            .mapNotNull { it.memberContactId }
-          ModalManager.shared.showCustomModal { close -> AddGroupMembersView(groupInfo, memberContactIds, chatModel, close) }
+          populateGroupMembers(groupInfo, chatModel)
+          ModalManager.shared.showCustomModal { close -> AddGroupMembersView(groupInfo, chatModel, close) }
         }
       }
     )

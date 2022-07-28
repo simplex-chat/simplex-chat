@@ -26,8 +26,11 @@ class ChatModel(val controller: ChatController) {
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chats = mutableStateListOf<Chat>()
+
+  // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  val groupMembers = mutableStateListOf<GroupMember>()
 
   var connReqInvitation: String? = null
   val terminalItems = mutableStateListOf<TerminalItem>()

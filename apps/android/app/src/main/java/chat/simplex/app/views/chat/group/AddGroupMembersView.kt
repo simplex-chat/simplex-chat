@@ -26,12 +26,12 @@ import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, memberContactIds: List<Long>, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   BackHandler(onBack = close)
   AddGroupMembersLayout(
     groupInfo = groupInfo,
-    contactsToAdd = getContactsToAdd(memberContactIds, chatModel),
+    contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     inviteMembers = {
       withApi {
@@ -47,7 +47,10 @@ fun AddGroupMembersView(groupInfo: GroupInfo, memberContactIds: List<Long>, chat
   )
 }
 
-fun getContactsToAdd(memberContactIds: List<Long>, chatModel: ChatModel): List<Contact> {
+fun getContactsToAdd(chatModel: ChatModel): List<Contact> {
+  val memberContactIds = chatModel.groupMembers
+    .filter { it.memberCurrent }
+    .mapNotNull { it.memberContactId }
   return chatModel.chats
     .asSequence()
     .map { it.chatInfo }

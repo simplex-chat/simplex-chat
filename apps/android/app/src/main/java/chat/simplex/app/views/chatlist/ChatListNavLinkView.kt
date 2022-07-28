@@ -96,6 +96,12 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
+suspend fun populateGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
+  val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
+  chatModel.groupMembers.clear()
+  chatModel.groupMembers.addAll(groupMembers)
+}
+
 @Composable
 fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
