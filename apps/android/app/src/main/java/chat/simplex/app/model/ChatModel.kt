@@ -588,6 +588,20 @@ class GroupMember (
     GroupMemberStatus.MemCreator -> true
   }
 
+  val memberCurrent: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRemoved -> false
+    GroupMemberStatus.MemLeft -> false
+    GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemIntroduced -> true
+    GroupMemberStatus.MemIntroInvited -> true
+    GroupMemberStatus.MemAccepted -> true
+    GroupMemberStatus.MemAnnounced -> true
+    GroupMemberStatus.MemConnected -> true
+    GroupMemberStatus.MemComplete -> true
+    GroupMemberStatus.MemCreator -> true
+  }
+
   fun canRemove(userRole: GroupMemberRole): Boolean =
     userRole >= GroupMemberRole.Admin && userRole >= memberRole
 
@@ -609,10 +623,10 @@ class GroupMember (
 }
 
 @Serializable
-enum class GroupMemberRole(val value: Int) {
-  @SerialName("member") Member(0),
-  @SerialName("admin") Admin(1),
-  @SerialName("owner") Owner(2);
+enum class GroupMemberRole(val memberRole: String) {
+  @SerialName("member") Member("member"), // order matters in comparisons
+  @SerialName("admin") Admin("admin"),
+  @SerialName("owner") Owner("owner");
 
   val text: String get() = when (this) {
     Member -> generalGetString(R.string.group_member_role_member)

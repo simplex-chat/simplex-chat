@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
@@ -144,6 +145,7 @@ fun ChatView(chatModel: ChatModel) {
       addMembers = { groupInfo ->
         withApi {
           val memberContactIds = chatModel.controller.apiListMembers(groupInfo.groupId)
+            .filter { it.memberCurrent }
             .mapNotNull { it.memberContactId }
           ModalManager.shared.showCustomModal { close -> AddGroupMembersView(groupInfo, memberContactIds, chatModel, close) }
         }
@@ -247,33 +249,41 @@ fun ChatInfoToolbar(
           }
         }
       }
-      Row(
+      Box(
         Modifier
-          .padding(horizontal = 80.dp)
-          .fillMaxWidth()
+          .padding(horizontal = 80.dp).fillMaxWidth()
           .clickable(onClick = info),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        contentAlignment = Alignment.Center
       ) {
-        ChatInfoImage(cInfo, size = 40.dp)
-        Column(
-          Modifier.padding(start = 8.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Text(
-            cInfo.displayName, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis
-          )
-          if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
-            Text(
-              cInfo.fullName,
-              maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
-          }
-        }
+        ChatInfoToolbarTitle(cInfo)
       }
     }
     Divider()
+  }
+}
+
+@Composable
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp) {
+  Row(
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    ChatInfoImage(cInfo, size = imageSize)
+    Column(
+      Modifier.padding(start = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        cInfo.displayName, fontWeight = FontWeight.SemiBold,
+        maxLines = 1, overflow = TextOverflow.Ellipsis
+      )
+      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+        Text(
+          cInfo.fullName,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
   }
 }
 

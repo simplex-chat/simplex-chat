@@ -549,4 +549,8 @@
     <!-- GroupChatInfoView.kt -->
     <string name="delete_group_question">Удалить группу?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
+
+    <!-- AddGroupMembersView.kt -->
+    <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="icon_descr_contact_checked">Контакт выбран</string>
 </resources>

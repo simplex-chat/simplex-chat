@@ -551,4 +551,8 @@
   <!-- GroupChatInfoView.kt -->
   <string name="delete_group_question">Delete group?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+
+  <!-- AddGroupMembersView.kt -->
+  <string name="invite_to_group_button">Invite to group</string>
+  <string name="icon_descr_contact_checked">Contact checked</string>
 </resources>
