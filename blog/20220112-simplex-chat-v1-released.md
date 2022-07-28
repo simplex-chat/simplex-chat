@@ -1,3 +1,7 @@
+---
+title: "Simplex Chat v1.0.0 released"
+date: 2022-01-12
+---
 # SimpleX announces SimpleX Chat v1
 
 **Published:** Jan 12, 2022

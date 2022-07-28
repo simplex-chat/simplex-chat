@@ -1,3 +1,7 @@
+---
+title: "Simplex Chat v0.5 released"
+date: 2021-12-08
+---
 # SimpleX announces SimpleX Chat v0.5 
 
 ## Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph

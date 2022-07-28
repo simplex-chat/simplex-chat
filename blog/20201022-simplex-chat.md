@@ -1,3 +1,8 @@
+---
+title: "Simplex Chat"
+date: 2020-10-22
+---
+
 # Simplex chat
 
 **Published:** Oct 22, 2020

@@ -1,3 +1,7 @@
+---
+title: "Simplex Chat Terminal UI"
+date: 2021-05-12
+---
 ## Announcing SimpleX Chat Prototype!
 
 **Published:** May 12, 2021

@@ -1,3 +1,7 @@
+---
+title: "Simplex Chat v0.4 released"
+date: 2021-09-14
+---
 # SimpleX announces SimpleX Chat v0.4
 
 ## Open-source decentralized chat that uses privacy-preserving message routing protocol
