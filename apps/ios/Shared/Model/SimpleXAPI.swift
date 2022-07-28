@@ -765,7 +765,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            if !cItem.isCall() {
+            if !cItem.chatDir.sent && !cItem.isCall() {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemStatusUpdated(aChatItem):

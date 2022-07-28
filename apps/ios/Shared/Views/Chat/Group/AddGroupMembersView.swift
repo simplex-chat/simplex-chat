@@ -67,8 +67,8 @@ struct AddGroupMembersView: View {
     }
 
     func getContactsToAdd() async -> [Contact] {
-        let memberContactIds = await apiListMembers(chat.chatInfo.apiId)
-            .compactMap{ $0.memberContactId }
+        let ms = await apiListMembers(chat.chatInfo.apiId)
+        let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
         return chatModel.chats
             .compactMap{ $0.chatInfo.contact }
             .filter{ !memberContactIds.contains($0.apiId) }

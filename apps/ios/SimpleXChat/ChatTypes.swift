@@ -511,20 +511,34 @@ public struct GroupMember: Identifiable, Decodable {
     }
 
     public var memberActive: Bool {
-        get {
-            switch self.memberStatus {
-            case .memRemoved: return false
-            case .memLeft: return false
-            case .memGroupDeleted: return false
-            case .memInvited: return false
-            case .memIntroduced: return false
-            case .memIntroInvited: return false
-            case .memAccepted: return false
-            case .memAnnounced: return false
-            case .memConnected: return true
-            case .memComplete: return true
-            case .memCreator: return true
-            }
+        switch memberStatus {
+        case .memRemoved: return false
+        case .memLeft: return false
+        case .memGroupDeleted: return false
+        case .memInvited: return false
+        case .memIntroduced: return false
+        case .memIntroInvited: return false
+        case .memAccepted: return false
+        case .memAnnounced: return false
+        case .memConnected: return true
+        case .memComplete: return true
+        case .memCreator: return true
+        }
+    }
+
+    public var memberCurrent: Bool {
+        switch memberStatus {
+        case .memRemoved: return false
+        case .memLeft: return false
+        case .memGroupDeleted: return false
+        case .memInvited: return false
+        case .memIntroduced: return true
+        case .memIntroInvited: return true
+        case .memAccepted: return true
+        case .memAnnounced: return true
+        case .memConnected: return true
+        case .memComplete: return true
+        case .memCreator: return true
         }
     }
 
