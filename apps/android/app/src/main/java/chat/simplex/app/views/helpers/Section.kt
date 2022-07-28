@@ -39,13 +39,22 @@ fun SectionItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: B
 }
 
 @Composable
-fun SectionFooterText(text: String) {
+fun SectionTextFooter(text: String) {
   Text(
     text,
     Modifier.padding(horizontal = 16.dp).padding(top = 5.dp).fillMaxWidth(0.9F),
     color = HighOrLowlight,
     fontSize = 12.sp
   )
+}
+
+@Composable
+fun SectionCustomFooter(content: (@Composable () -> Unit)) {
+  Row(
+    Modifier.padding(horizontal = 16.dp).padding(top = 5.dp)
+  ) {
+    content()
+  }
 }
 
 @Composable

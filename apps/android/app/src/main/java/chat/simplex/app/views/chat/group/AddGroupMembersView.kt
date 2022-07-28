@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat.group
 
+import SectionCustomFooter
 import SectionDivider
 import SectionItemView
 import SectionSpacer
@@ -20,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -45,6 +47,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
         close.invoke()
       }
     },
+    clearSelection = { selectedContacts.clear() },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
     removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
   )
@@ -71,6 +74,7 @@ fun AddGroupMembersLayout(
   selectedContacts: SnapshotStateList<Long>,
   selectedRole: MutableState<GroupMemberRole>,
   inviteMembers: () -> Unit,
+  clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
 ) {
@@ -94,6 +98,9 @@ fun AddGroupMembersLayout(
       SectionItemView {
         InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
       }
+    }
+    SectionCustomFooter() {
+      InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
     }
     SectionSpacer()
 
@@ -162,7 +169,6 @@ fun RoleDropdownMenu(selectedRole: MutableState<GroupMemberRole>) {
             selectionOption.text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = HighOrLowlight
           )
         }
       }
@@ -186,6 +192,39 @@ fun InviteMembersButton(inviteMembers: () -> Unit, disabled: Boolean) {
       generalGetString(R.string.invite_to_group_button),
       tint = color
     )
+  }
+}
+
+@Composable
+fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) {
+  Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = if (selectedContactsCount >= 1) Arrangement.SpaceBetween else Arrangement.End,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    if (selectedContactsCount >= 1) {
+      Box(
+        Modifier.clickable { clearSelection() }
+      ) {
+        Text(
+          stringResource(R.string.clear_contacts_selection_button),
+          color = MaterialTheme.colors.primary,
+          fontSize = 12.sp
+        )
+      }
+
+      Text(
+        String.format(generalGetString(R.string.num_contacts_selected), selectedContactsCount),
+        color = HighOrLowlight,
+        fontSize = 12.sp
+      )
+    } else {
+      Text(
+        stringResource(R.string.no_contacts_selected),
+        color = HighOrLowlight,
+        fontSize = 12.sp
+      )
+    }
   }
 }
 
@@ -250,6 +289,7 @@ fun PreviewAddGroupMembersLayout() {
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
       inviteMembers = {},
+      clearSelection = {},
       addContact = {},
       removeContact = {}
     )

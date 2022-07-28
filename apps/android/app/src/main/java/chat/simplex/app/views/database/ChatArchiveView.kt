@@ -1,7 +1,7 @@
 package chat.simplex.app.views.database
 
 import SectionDivider
-import SectionFooterText
+import SectionTextFooter
 import SectionView
 import android.content.Context
 import android.content.res.Configuration
@@ -81,7 +81,7 @@ fun ChatArchiveLayout(
       )
     }
     val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
-    SectionFooterText(
+    SectionTextFooter(
       String.format(generalGetString(R.string.archive_created_on_ts), archiveTs)
     )
   }

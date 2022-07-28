@@ -551,8 +551,11 @@
     <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
 
     <!-- AddGroupMembersView.kt -->
-    <string name="invite_to_group_button">Пригласить в группу</string>
-    <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="new_member_role">Роль участника</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
+    <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="icon_descr_contact_checked">Контакт выбран</string>
+    <string name="clear_contacts_selection_button">Очистить</string>
+    <string name="num_contacts_selected">Контактов выбрано: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="no_contacts_selected">Контакты не выбраны</string>
 </resources>

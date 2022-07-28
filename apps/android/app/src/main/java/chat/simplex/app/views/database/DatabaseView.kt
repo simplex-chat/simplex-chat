@@ -1,7 +1,7 @@
 package chat.simplex.app.views.database
 
 import SectionDivider
-import SectionFooterText
+import SectionTextFooter
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -167,7 +167,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionFooterText(
+    SectionTextFooter(
       if (chatDbChanged) {
         stringResource(R.string.restart_the_app_to_use_new_chat_database)
       } else {

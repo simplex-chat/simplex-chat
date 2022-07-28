@@ -553,8 +553,11 @@
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
 
   <!-- AddGroupMembersView.kt -->
-  <string name="invite_to_group_button">Invite to group</string>
-  <string name="icon_descr_contact_checked">Contact checked</string>
   <string name="new_member_role">New member role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
+  <string name="invite_to_group_button">Invite to group</string>
+  <string name="icon_descr_contact_checked">Contact checked</string>
+  <string name="clear_contacts_selection_button">Clear</string>
+  <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
+  <string name="no_contacts_selected">No contacts selected</string>
 </resources>
