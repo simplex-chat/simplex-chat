@@ -146,7 +146,7 @@ fun ContactCheckRow(
   SectionItemView {
     Row(
       Modifier
-        .fillMaxWidth()
+        .fillMaxSize()
         .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
       horizontalArrangement = Arrangement.SpaceBetween,
       verticalAlignment = Alignment.CenterVertically
