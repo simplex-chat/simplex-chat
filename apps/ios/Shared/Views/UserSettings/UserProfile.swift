@@ -130,23 +130,6 @@ struct UserProfile: View {
         .padding(.bottom)
     }
 
-    func profileImageView(_ imageStr: String?) -> some View {
-        ProfileImage(imageStr: imageStr)
-            .aspectRatio(1, contentMode: .fit)
-            .frame(maxWidth: 192, maxHeight: 192)
-    }
-
-    func editImageButton(action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            Image(systemName: "camera")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 48)
-        }
-    }
-    
     func startEditingImage(_ user: User) {
         profile = user.profile
         editProfile = true
@@ -167,6 +150,23 @@ struct UserProfile: View {
             }
             editProfile = false
         }
+    }
+}
+
+func profileImageView(_ imageStr: String?) -> some View {
+    ProfileImage(imageStr: imageStr)
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: 192, maxHeight: 192)
+}
+
+func editImageButton(action: @escaping () -> Void) -> some View {
+    Button {
+        action()
+    } label: {
+        Image(systemName: "camera")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 48)
     }
 }
 

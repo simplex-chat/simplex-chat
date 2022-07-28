@@ -95,7 +95,7 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .newGroup(groupProfile): return "/group \(groupProfile.displayName) \(groupProfile.fullName)"
+            case let .newGroup(groupProfile): return "/_group \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
