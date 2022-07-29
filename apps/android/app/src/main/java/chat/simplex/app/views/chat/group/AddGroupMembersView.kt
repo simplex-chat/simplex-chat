@@ -100,7 +100,7 @@ fun AddGroupMembersLayout(
         InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
       }
     }
-    SectionCustomFooter() {
+    SectionCustomFooter {
       InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
     }
     SectionSpacer()

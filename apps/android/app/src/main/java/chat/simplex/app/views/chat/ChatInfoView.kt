@@ -100,14 +100,15 @@ fun ChatInfoLayout(
 
     if (connStats != null) {
       SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
-        InfoRow("abc", "abc")
+        SectionItemView {
+          NetworkStatusRow(chat.serverInfo.networkStatus)
+        }
 
         val rcvServers = connStats.rcvServers
         if (rcvServers != null && rcvServers.isNotEmpty()) {
           SectionDivider()
           SimplexServers(stringResource(R.string.receiving_via), rcvServers)
         }
-
         val sndServers = connStats.sndServers
         if (sndServers != null && sndServers.isNotEmpty()) {
           SectionDivider()
@@ -116,27 +117,6 @@ fun ChatInfoLayout(
       }
       SectionSpacer()
     }
-
-//    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-//      Row(Modifier.padding(horizontal = 32.dp)) {
-//        ServerImage(chat)
-//        Text(
-//          chat.serverInfo.networkStatus.statusString,
-//          textAlign = TextAlign.Center,
-//          color = MaterialTheme.colors.onBackground,
-//          modifier = Modifier.padding(start = 8.dp)
-//        )
-//      }
-//      Text(
-//        chat.serverInfo.networkStatus.statusExplanation,
-//        style = MaterialTheme.typography.body2,
-//        color = MaterialTheme.colors.onBackground,
-//        textAlign = TextAlign.Center,
-//        modifier = Modifier
-//          .padding(top = 16.dp)
-//          .padding(horizontal = 16.dp)
-//      )
-//    }
 
     SectionView {
       SectionItemView {
@@ -183,22 +163,63 @@ fun ChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-fun SimplexServers(text: String, servers: List<String>) {
-  val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
-  InfoRow(text, info)
+fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.network_status),
+          networkStatus.statusExplanation
+        )
+      },
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Text(stringResource(R.string.network_status))
+      Icon(
+        Icons.Outlined.Info,
+        stringResource(R.string.network_status),
+        tint = MaterialTheme.colors.primary
+      )
+    }
+
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Text(
+        networkStatus.statusString,
+        color = HighOrLowlight
+      )
+      ServerImage(networkStatus)
+    }
+  }
 }
 
 @Composable
-fun ServerImage(chat: Chat) {
-  when (chat.serverInfo.networkStatus) {
-    is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
-    is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
-    is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
-    else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+fun ServerImage(networkStatus: Chat.NetworkStatus) {
+  Box(Modifier.size(12.dp)) {
+    when (networkStatus) {
+      is Chat.NetworkStatus.Connected ->
+        Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
+      is Chat.NetworkStatus.Disconnected ->
+        Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
+      is Chat.NetworkStatus.Error ->
+        Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
+      else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+    }
   }
+}
+
+@Composable
+fun SimplexServers(text: String, servers: List<String>) {
+  val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
+  InfoRow(text, info)
 }
 
 @Composable

@@ -10,8 +10,9 @@
     <string name="connect_via_link_verb">Соединиться</string>
 
     <!-- Server info - ChatModel.kt -->
-    <string name="server_connected">Соединение установлено</string>
-    <string name="server_connecting">Соединение устанавливается…</string>
+    <string name="server_connected">соединено</string>
+    <string name="server_error">ошибка</string>
+    <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
@@ -582,4 +583,5 @@
     <string name="conn_stats_section_title_servers">СЕРВЕРЫ</string>
     <string name="receiving_via">Получение через</string>
     <string name="sending_via">Отправка через</string>
+    <string name="network_status">Состояние сети</string>
 </resources>

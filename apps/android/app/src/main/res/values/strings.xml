@@ -10,8 +10,9 @@
   <string name="connect_via_link_verb">Connect</string>
 
   <!-- Server info - ChatModel.kt -->
-  <string name="server_connected">Server connected</string>
-  <string name="server_connecting">Connecting server…</string>
+  <string name="server_connected">connected</string>
+  <string name="server_error">error</string>
+  <string name="server_connecting">connecting</string>
   <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
   <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
   <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
@@ -584,4 +585,5 @@
   <string name="conn_stats_section_title_servers">SERVERS</string>
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
+  <string name="network_status">Network status</string>
 </resources>
