@@ -64,6 +64,7 @@ module Simplex.Chat.Store
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
+    updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
     getGroupInfoByName,
@@ -3076,6 +3077,76 @@ getGroupInfo db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
+
+updateGroupProfile :: DB.Connection -> User -> GroupId -> GroupProfileUpdate -> Int -> ExceptT StoreError IO GroupProfile
+updateGroupProfile db User {userId} groupId GroupProfileUpdate {displayName = dn, fullName = fn, image = img, prevVersion, version} fromVersion = do
+  (pId, p, pVersion_) <- getCurrentProfile
+  profiles <- liftIO $ mapM (getProfileVersions pId) pVersion_
+  let dn' = resolveConflicts p profiles dn (displayName :: GroupProfile -> Text)
+      fn' = resolveConflicts p profiles fn (fullName :: GroupProfile -> Text)
+      img' = resolveConflicts p profiles img (image :: GroupProfile -> Maybe ImageData)
+      p' = GroupProfile {displayName = dn', fullName = fn', image = img'}
+      pVersion = fromMaybe 0 pVersion_
+  liftIO . when (p /= p') $ updateProfile pId p' (pVersion + 1)
+  pure p
+  where
+    getCurrentProfile :: ExceptT StoreError IO (Int64, GroupProfile, Maybe Int)
+    getCurrentProfile =
+      ExceptT . firstRow groupProfileData (SEGroupNotFound groupId) $
+        DB.query
+          db
+          [sql|
+            SELECT p.group_profile_id, p.display_name, p.full_name, p.image, v.group_profile_version
+            FROM group_profiles p
+            LEFT JOIN group_profile_versions v USING (group_id, group_profile_id)
+            WHERE p.user_id = ? AND p.group_id = ?
+            ORDER BY group_profile_version_id DESC
+            LIMIT 1
+          |]
+          (userId, groupId)
+      where
+        groupProfileData (pId, displayName, fullName, image, pVersion_) = (pId, GroupProfile {displayName, fullName, image}, pVersion_)
+    getProfileVersions :: Int64 -> Int -> IO [GroupProfile]
+    getProfileVersions pId pVersion =
+      map groupProfile
+        <$> DB.query
+          db
+          [sql|
+            SELECT display_name, full_name, image
+            FROM group_profile_versions
+            WHERE user_id = ? AND group_id = ? AND group_profile_id = ?
+              AND group_profile_version >= ? AND group_profile_version <= ?
+            ORDER BY group_profile_version
+          |]
+          (userId, groupId, pId, fromVersion, pVersion)
+      where
+        groupProfile (displayName, fullName, image) = GroupProfile {displayName, fullName, image}
+    resolveConflicts :: forall a. Eq a => GroupProfile -> Maybe [GroupProfile] -> Maybe a -> (GroupProfile -> a) -> a
+    resolveConflicts p profiles_ val_ sel = maybe (sel p) (maybe id resolve profiles_) val_
+      where
+        resolve :: [GroupProfile] -> a -> a
+        resolve profiles val'
+          | all ((== val) . sel) profiles = val'
+          | otherwise = val
+        val = sel p
+    updateProfile :: Int64 -> GroupProfile -> Int -> IO ()
+    updateProfile pId GroupProfile {displayName, fullName, image} pVersion' = do
+      DB.execute
+        db
+        [sql|
+          UPDATE group_profiles
+          SET display_name = ?, full_name = ?, image = ?
+          WHERE user_id = ? AND group_id = ?
+        |]
+        (displayName, fullName, image, userId, groupId)
+      DB.execute
+        db
+        [sql|
+          INSERT INFO group_profile_versions
+            (group_profile_version, group_profile_id, group_id, user_id, display_name, full_name, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        |]
+        (pVersion', pId, groupId, userId, displayName, fullName, image)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user pagination = do

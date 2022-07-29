@@ -1,0 +1,22 @@
+# Updating group profiles
+
+## Problem
+
+Group profiles can be updated concurrently by multiple users, and because messages with updates can arrive in any order the group would be in different state for different group members, unless some conflict resolution strategy is applied.
+
+While we are planning using Merkle Tree for ordering messages and ensuring group integrity, this is a substantial development, and does not seem pragmatic before groups are more widely used - currently messages are simply sorted by message time (sent time or server time).
+
+## Solution
+
+The proposed mechanism for conflict resolution is ad-hoc. Some more formal CRDT library was considered (ron) and it seems an unnecessary complexity for a simple task of resolving conflicts across several group profile fields.
+
+1. Store all created versions of group profiles in a separate table, with a random version number is assigned by the user making the update.
+
+2. Include both the previous and the new version number in update message and make all profile fields in update message optional, to minimize conflicts when one user updates, for example, group title, and another - group image.
+
+3. When update is done by the user - save the new version, update the profile and broadcast the update to all group members (including only changed fields and profile version numbers).
+
+4. When update is received:
+  1) check if the version of the update is already present in prev_version field - if yes, it would mean that this update is obsolete and should be ignored
+  2) check previous version from the update - if it is not present in the table, or if it is present and is the current one, the update should be performed
+  3) load all versions starting from referenced by the random ID until current, and check whether each field was changed - if not - allow update, if it was changed - roll-back the change to the state marked by the previous version.
