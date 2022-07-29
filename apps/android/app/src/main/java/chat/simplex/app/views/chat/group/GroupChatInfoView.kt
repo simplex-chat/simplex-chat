@@ -10,6 +10,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -40,8 +42,10 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
         withApi {
           populateGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showCustomModal { close ->
-            ModalView(close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
               AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
@@ -111,14 +115,17 @@ fun GroupChatInfoLayout(
     }
     SectionSpacer()
 
-    SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count())) {
+    SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
         SectionItemView {
           AddMembersButton(addMembers)
         }
         SectionDivider()
       }
-      MemberRow(groupInfo.membership, user = true)
+      SectionItemView(height = 50.dp) {
+        MemberRow(groupInfo.membership, user = true)
+      }
+      SectionDivider()
       MembersList(members)
     }
     SectionSpacer()
@@ -195,11 +202,11 @@ fun AddMembersButton(addMembers: () -> Unit) {
 
 @Composable
 fun MembersList(members: List<GroupMember>) {
-//  LazyColumn {
-//    itemsIndexed(members) { index, member ->
+  //  LazyColumn {
+  //    itemsIndexed(members) { index, member ->
   Column {
     members.forEachIndexed { index, member ->
-      SectionItemView {
+      SectionItemView(height = 50.dp) {
         MemberRow(member)
       }
       if (index < members.lastIndex) {
@@ -211,7 +218,35 @@ fun MembersList(members: List<GroupMember>) {
 
 @Composable
 fun MemberRow(member: GroupMember, user: Boolean = false) {
-  Text(member.chatViewName)
+  val modifier = if (!user) Modifier.clickable {} else Modifier
+  Row(
+    modifier.fillMaxSize(),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      ProfileImage(size = 46.dp, member.image)
+      Column {
+        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        val s = member.memberStatus.shortText
+        val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
+        Text(
+          statusDescr,
+          color = HighOrLowlight,
+          fontSize = 12.sp,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
+    val role = member.memberRole
+    if (role == GroupMemberRole.Owner || role == GroupMemberRole.Admin) {
+      Text(role.text, color = HighOrLowlight)
+    }
+  }
 }
 
 @Composable
