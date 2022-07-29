@@ -3096,7 +3096,11 @@ updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, grou
         [sql|
           UPDATE group_profiles
           SET display_name = ?, full_name = ?, image = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ?
+          WHERE group_profile_id IN (
+            SELECT group_profile_id
+            FROM groups
+            WHERE user_id = ? AND group_id = ?
+          )
         |]
         (newName, fullName, image, currentTs, userId, groupId)
     updateGroup_ ldn currentTs = do

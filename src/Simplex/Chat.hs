@@ -793,6 +793,11 @@ processChatCommand = \case
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore' (`getUserGroupDetails` user))
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
     Group g ms <- withStore $ \db -> getGroup db user groupId
+    let s = memberStatus $ membership g
+        canUpdate =
+          memberRole (membership g :: GroupMember) == GROwner
+            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
+    unless canUpdate $ throwChatError CEGroupUserRole
     g' <- withStore $ \db -> updateGroupProfile db user g p'
     msg <- sendGroupMessage g' ms (XGrpInfo p')
     ci <- saveSndChatItem user (CDGroupSnd g') msg (CISndGroupEvent SGEGroupProfileUpdated) Nothing Nothing
@@ -2503,7 +2508,7 @@ chatCommandP =
       ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
       ("/groups" <|> "/gs") $> ListGroups,
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
-      ("/group_profile #" <|> "/gp #") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
+      ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
       ("/contacts" <|> "/cs") $> ListContacts,

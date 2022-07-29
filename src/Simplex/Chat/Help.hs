@@ -123,7 +123,7 @@ groupsHelpInfo =
       indent <> highlight "/leave <group>                 " <> " - leave group",
       indent <> highlight "/delete <group>                " <> " - delete group",
       indent <> highlight "/members <group>               " <> " - list group members",
-      indent <> highlight "/gp <group> [<full_name>]      " <> " - update group profile",
+      indent <> highlight "/gp <group> <new_name> [<full_name>]  " <> " - update group profile",
       indent <> highlight "/groups                        " <> " - list groups",
       indent <> highlight "#<group> <message>             " <> " - send message to group",
       "",
