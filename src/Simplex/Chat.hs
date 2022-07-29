@@ -800,9 +800,9 @@ processChatCommand = \case
     unless canUpdate $ throwChatError CEGroupUserRole
     g' <- withStore $ \db -> updateGroupProfile db user g p'
     msg <- sendGroupMessage g' ms (XGrpInfo p')
-    ci <- saveSndChatItem user (CDGroupSnd g') msg (CISndGroupEvent SGEGroupProfileUpdated) Nothing Nothing
+    ci <- saveSndChatItem user (CDGroupSnd g') msg (CISndGroupEvent $ SGEGroupUpdated p') Nothing Nothing
     toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
-    pure $ CRGroupUpdated g g'
+    pure $ CRGroupUpdated g g' Nothing
   UpdateGroupProfile gName profile -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIUpdateGroupProfile groupId profile
@@ -2088,9 +2088,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions"
       | otherwise = do
         g' <- withStore $ \db -> updateGroupProfile db user g p'
-        ci <- saveRcvChatItem user (CDGroupRcv g' m) msg msgMeta (CIRcvGroupEvent RGEGroupProfileUpdated) Nothing
+        ci <- saveRcvChatItem user (CDGroupRcv g' m) msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p') Nothing
         groupMsgToView g' m ci msgMeta
-        toView $ CRGroupUpdated g g'
+        toView . CRGroupUpdated g g' $ Just m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode

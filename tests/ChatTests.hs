@@ -1056,6 +1056,17 @@ testUpdateGroupProfile =
       concurrently_
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
+      bob ##> "/gp team my_team"
+      bob <## "you have insufficient permissions for this group command"
+      alice ##> "/gp team my_team"
+      alice <## "group #team is changed to #my_team"
+      concurrently_
+        (bob <## "group #team is changed to #my_team by alice")
+        (cath <## "group #team is changed to #my_team by alice")
+      bob #> "#my_team hi"
+      concurrently_
+        (alice <# "#my_team bob> hi")
+        (cath <# "#my_team bob> hi")
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -2619,8 +2630,10 @@ cc1 <#? cc2 = do
 dropTime :: String -> String
 dropTime msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
-    if all isDigit [m, m', s, s'] then text else error "invalid time"
-  _ -> error "invalid time"
+    if all isDigit [m, m', s, s'] then text else err
+  _ -> err
+  where
+    err = error $ "invalid time: " <> msg
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
