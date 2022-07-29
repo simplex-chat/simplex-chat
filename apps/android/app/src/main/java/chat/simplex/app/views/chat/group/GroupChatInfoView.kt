@@ -88,7 +88,6 @@ fun GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
 ) {
-//  val scrollState = rememberScrollState()
   Column(
     Modifier
       .fillMaxWidth()
@@ -169,13 +168,13 @@ fun MembersList(members: List<GroupMember>) {
 //    }
 //  }
   Column {
-    members.forEach { member ->
+    members.forEachIndexed { index, member ->
       SectionItemView {
         MemberRow(member)
       }
-//      if (index < members.lastIndex) {
-//        SectionDivider()
-//      }
+      if (index < members.lastIndex) {
+        SectionDivider()
+      }
     }
   }
 }
