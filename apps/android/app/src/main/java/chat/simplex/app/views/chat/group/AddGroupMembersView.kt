@@ -107,6 +107,7 @@ fun AddGroupMembersLayout(
     SectionView {
       ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
     }
+    SectionSpacer()
   }
 }
 
@@ -189,7 +190,7 @@ fun InviteMembersButton(inviteMembers: () -> Unit, disabled: Boolean) {
     Spacer(Modifier.size(8.dp))
     Icon(
       Icons.Outlined.Check,
-      generalGetString(R.string.invite_to_group_button),
+      stringResource(R.string.invite_to_group_button),
       tint = color
     )
   }
@@ -237,10 +238,12 @@ fun ContactList(
 ) {
   LazyColumn {
     itemsIndexed(contacts) { index, contact ->
-      ContactCheckRow(
-        contact, addContact, removeContact,
-        checked = selectedContacts.contains(contact.apiId)
-      )
+      SectionItemView {
+        ContactCheckRow(
+          contact, addContact, removeContact,
+          checked = selectedContacts.contains(contact.apiId)
+        )
+      }
       if (index < contacts.lastIndex) {
         SectionDivider()
       }
@@ -255,27 +258,25 @@ fun ContactCheckRow(
   removeContact: (Long) -> Unit,
   checked: Boolean
 ) {
-  SectionItemView {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     Row(
-      Modifier
-        .fillMaxSize()
-        .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
-      horizontalArrangement = Arrangement.SpaceBetween,
-      verticalAlignment = Alignment.CenterVertically
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-      ) {
-        ProfileImage(size = 36.dp, contact.image)
-        Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
-      }
-      Icon(
-        if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
-        contentDescription = stringResource(R.string.icon_descr_contact_checked),
-        tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
-      )
+      ProfileImage(size = 36.dp, contact.image)
+      Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
+    Icon(
+      if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+      contentDescription = stringResource(R.string.icon_descr_contact_checked),
+      tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
+    )
   }
 }
 

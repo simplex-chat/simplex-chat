@@ -97,10 +97,20 @@ fun ChatView(chatModel: ChatModel) {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
             val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
-            ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+                ChatInfoView(chatModel, connStats, close)
+              }
+            }
           } else if (cInfo is ChatInfo.Group) {
             populateGroupMembers(cInfo.groupInfo, chatModel)
-            ModalManager.shared.showCustomModal { close -> GroupChatInfoView(cInfo.groupInfo, chatModel, close) }
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+                GroupChatInfoView(cInfo.groupInfo, chatModel, close)
+              }
+            }
           }
         }
       },

@@ -562,4 +562,10 @@
     <!-- GroupChatInfoView.kt -->
     <string name="button_delete_group">Удалить группу</string>
     <string name="button_leave_group">Выйти из группы</string>
+    <string name="group_info_section_title_num_members">УЧАСТНИКОВ: <xliff:g id="num_members">%1$s</xliff:g></string>
+
+    <!-- For Console chat info section -->
+    <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
+    <string name="info_row_local_name">Локальное название</string>
+    <string name="info_row_database_id">ID в базе данных</string>
 </resources>

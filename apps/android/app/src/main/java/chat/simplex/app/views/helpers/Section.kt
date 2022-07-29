@@ -66,3 +66,17 @@ fun SectionDivider() {
 fun SectionSpacer() {
   Spacer(Modifier.height(30.dp))
 }
+
+@Composable
+fun InfoRow(title: String, value: String) {
+  SectionItemView {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(title)
+      Text(value, color = HighOrLowlight)
+    }
+  }
+}

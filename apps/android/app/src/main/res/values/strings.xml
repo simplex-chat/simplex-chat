@@ -564,4 +564,10 @@
   <!-- GroupChatInfoView.kt -->
   <string name="button_delete_group">Delete group</string>
   <string name="button_leave_group">Leave group</string>
+  <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
+
+  <!-- For Console chat info section -->
+  <string name="section_title_for_console">FOR CONSOLE</string>
+  <string name="info_row_local_name">Local name</string>
+  <string name="info_row_database_id">Database ID</string>
 </resources>

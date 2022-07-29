@@ -29,7 +29,6 @@ fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () ->
     ChatInfoLayout(
       chat,
       connStats,
-      close = close,
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
@@ -77,19 +76,13 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   connStats: ConnectionStats?,
-  close: () -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit
 ) {
   Column(
-    Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
+    Modifier.fillMaxWidth(),
+    horizontalAlignment = Alignment.Start
   ) {
-    CloseSheetBar(close)
-    Spacer(Modifier.size(48.dp))
     val cInfo = chat.chatInfo
     ChatInfoImage(cInfo, size = 192.dp)
     Text(
@@ -187,7 +180,7 @@ fun PreviewChatInfoLayout() {
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
       connStats = null,
-      close = {}, deleteContact = {}, clearChat = {}
+      deleteContact = {}, clearChat = {}
     )
   }
 }
