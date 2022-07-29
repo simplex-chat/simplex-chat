@@ -79,7 +79,9 @@ fun AddGroupMembersLayout(
   removeContact: (Long) -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
     Row(
@@ -236,8 +238,8 @@ fun ContactList(
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit
 ) {
-  LazyColumn {
-    itemsIndexed(contacts) { index, contact ->
+  Column {
+    contacts.forEachIndexed { index, contact ->
       SectionItemView {
         ContactCheckRow(
           contact, addContact, removeContact,

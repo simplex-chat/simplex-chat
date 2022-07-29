@@ -159,14 +159,6 @@ fun GroupInfoHeader(cInfo: ChatInfo) {
 fun MembersList(members: List<GroupMember>) {
 //  LazyColumn {
 //    itemsIndexed(members) { index, member ->
-//      SectionItemView {
-//        MemberRow(member)
-//      }
-//      if (index < members.lastIndex) {
-//        SectionDivider()
-//      }
-//    }
-//  }
   Column {
     members.forEachIndexed { index, member ->
       SectionItemView {
