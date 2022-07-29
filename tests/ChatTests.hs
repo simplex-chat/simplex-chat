@@ -56,6 +56,7 @@ chatTests = do
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
     it "group message delete" testGroupMessageDelete
+    it "update group profile" testUpdateGroupProfile
   describe "async group connections" $ do
     it "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -1044,6 +1045,28 @@ testGroupMessageDelete =
       alice #$> ("/_get chat #1 count=1", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+
+testUpdateGroupProfile :: IO ()
+testUpdateGroupProfile =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      alice #> "#team hello!"
+      concurrently_
+        (bob <# "#team alice> hello!")
+        (cath <# "#team alice> hello!")
+      bob ##> "/gp team my_team"
+      bob <## "you have insufficient permissions for this group command"
+      alice ##> "/gp team my_team"
+      alice <## "group #team is changed to #my_team"
+      concurrently_
+        (bob <## "group #team is changed to #my_team by alice")
+        (cath <## "group #team is changed to #my_team by alice")
+      bob #> "#my_team hi"
+      concurrently_
+        (alice <# "#my_team bob> hi")
+        (cath <# "#my_team bob> hi")
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -2607,8 +2630,10 @@ cc1 <#? cc2 = do
 dropTime :: String -> String
 dropTime msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
-    if all isDigit [m, m', s, s'] then text else error "invalid time"
-  _ -> error "invalid time"
+    if all isDigit [m, m', s, s'] then text else err
+  _ -> err
+  where
+    err = error $ "invalid time: " <> msg
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do

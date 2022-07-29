@@ -507,11 +507,13 @@ rcvGroupEventToText = \case
   RGEMemberDeleted _ p -> "removed " <> memberProfileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
+  RGEGroupUpdated _ -> "group profile updated"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
   SGEMemberDeleted _ p -> "removed " <> memberProfileToText p
   SGEUserLeft -> "left"
+  SGEGroupUpdated _ -> "group profile updated"
 
 memberProfileToText :: Profile -> Text
 memberProfileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
@@ -539,6 +541,7 @@ data RcvGroupEvent
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
+  | RGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
   deriving (Show, Generic)
 
 instance FromJSON RcvGroupEvent where
@@ -551,6 +554,7 @@ instance ToJSON RcvGroupEvent where
 data SndGroupEvent
   = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
+  | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
   deriving (Show, Generic)
 
 instance FromJSON SndGroupEvent where

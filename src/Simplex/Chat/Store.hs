@@ -64,6 +64,7 @@ module Simplex.Chat.Store
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
+    updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
     getGroupInfoByName,
@@ -3076,6 +3077,38 @@ getGroupInfo db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
+
+updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
+  | displayName == newName = liftIO $ do
+    currentTs <- getCurrentTime
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateGroupProfile_ currentTs
+      updateGroup_ ldn currentTs
+      pure $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+  where
+    updateGroupProfile_ currentTs =
+      DB.execute
+        db
+        [sql|
+          UPDATE group_profiles
+          SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+          WHERE group_profile_id IN (
+            SELECT group_profile_id
+            FROM groups
+            WHERE user_id = ? AND group_id = ?
+          )
+        |]
+        (newName, fullName, image, currentTs, userId, groupId)
+    updateGroup_ ldn currentTs = do
+      DB.execute
+        db
+        "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
+        (ldn, currentTs, userId, groupId)
+      DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user pagination = do
