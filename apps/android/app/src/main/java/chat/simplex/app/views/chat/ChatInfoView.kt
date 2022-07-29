@@ -203,7 +203,7 @@ fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
 
 @Composable
 fun ServerImage(networkStatus: Chat.NetworkStatus) {
-  Box(Modifier.size(12.dp)) {
+  Box(Modifier.size(18.dp)) {
     when (networkStatus) {
       is Chat.NetworkStatus.Connected ->
         Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
