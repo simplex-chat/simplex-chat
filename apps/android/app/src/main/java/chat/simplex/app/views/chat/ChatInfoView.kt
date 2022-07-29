@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chat
 
+import InfoRow
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -118,8 +119,8 @@ fun ChatInfoLayout(
           .padding(horizontal = 16.dp)
       )
       if (connStats != null) {
-        SimplexServers("receiving via: ", connStats.rcvServers)
-        SimplexServers("sending via: ", connStats.sndServers)
+        SimplexServers("receiving via: ", connStats.rcvServers!!)
+        SimplexServers("sending via: ", connStats.sndServers!!)
       }
     }
 
@@ -149,11 +150,9 @@ fun ChatInfoLayout(
 }
 
 @Composable
-fun SimplexServers(text: String, servers: List<String>?) {
-  if (servers != null) {
-    val info = text + servers.joinToString(separator = ", ") { it.substringAfter("@") }
-    Text(info, style = MaterialTheme.typography.body2)
-  }
+fun SimplexServers(text: String, servers: List<String>) {
+  val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
+  InfoRow(text, info)
 }
 
 @Composable

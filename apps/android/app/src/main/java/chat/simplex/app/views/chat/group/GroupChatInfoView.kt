@@ -10,7 +10,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,6 +46,19 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
               background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
               AddGroupMembersView(groupInfo, chatModel, close)
+            }
+          }
+        }
+      },
+      showMemberInfo = { member ->
+        withApi {
+          val connStats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
+              GroupMemberInfoView(groupInfo, member, connStats, chatModel, close)
             }
           }
         }
@@ -97,6 +109,7 @@ fun GroupChatInfoLayout(
   groupInfo: GroupInfo,
   members: List<GroupMember>,
   addMembers: () -> Unit,
+  showMemberInfo: (GroupMember) -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
@@ -126,7 +139,7 @@ fun GroupChatInfoLayout(
         MemberRow(groupInfo.membership, user = true)
       }
       SectionDivider()
-      MembersList(members)
+      MembersList(members, showMemberInfo)
     }
     SectionSpacer()
 
@@ -201,13 +214,13 @@ fun AddMembersButton(addMembers: () -> Unit) {
 }
 
 @Composable
-fun MembersList(members: List<GroupMember>) {
+fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   //  LazyColumn {
   //    itemsIndexed(members) { index, member ->
   Column {
     members.forEachIndexed { index, member ->
       SectionItemView(height = 50.dp) {
-        MemberRow(member)
+        MemberRow(member, showMemberInfo)
       }
       if (index < members.lastIndex) {
         SectionDivider()
@@ -217,8 +230,8 @@ fun MembersList(members: List<GroupMember>) {
 }
 
 @Composable
-fun MemberRow(member: GroupMember, user: Boolean = false) {
-  val modifier = if (!user) Modifier.clickable {} else Modifier
+fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = null, user: Boolean = false) {
+  val modifier = if (showMemberInfo != null) Modifier.clickable { showMemberInfo(member) } else Modifier
   Row(
     modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -315,7 +328,7 @@ fun PreviewGroupChatInfoLayout() {
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
-      addMembers = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
+      addMembers = {}, showMemberInfo = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }
 }
