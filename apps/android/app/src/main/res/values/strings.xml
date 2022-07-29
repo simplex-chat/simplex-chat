@@ -562,9 +562,10 @@
   <string name="no_contacts_selected">No contacts selected</string>
 
   <!-- GroupChatInfoView.kt -->
+  <string name="button_add_members">Invite members</string>
+  <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
   <string name="button_delete_group">Delete group</string>
   <string name="button_leave_group">Leave group</string>
-  <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FOR CONSOLE</string>

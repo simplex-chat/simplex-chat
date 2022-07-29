@@ -8,7 +8,6 @@ import SectionView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -94,7 +93,7 @@ fun AddGroupMembersLayout(
 
     SectionView {
       SectionItemView {
-        RoleSelectionRow(selectedRole)
+        RoleSelectionRow(groupInfo, selectedRole)
       }
       SectionDivider()
       SectionItemView {
@@ -114,20 +113,21 @@ fun AddGroupMembersLayout(
 }
 
 @Composable
-fun RoleSelectionRow(selectedRole: MutableState<GroupMemberRole>) {
+fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<GroupMemberRole>) {
   Row(
     Modifier.fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Text(stringResource(R.string.new_member_role))
-    RoleDropdownMenu(selectedRole)
+    RoleDropdownMenu(groupInfo, selectedRole)
   }
 }
 
 @Composable
-fun RoleDropdownMenu(selectedRole: MutableState<GroupMemberRole>) {
+fun RoleDropdownMenu(groupInfo: GroupInfo, selectedRole: MutableState<GroupMemberRole>) {
   val options = GroupMemberRole.values()
+    .filter { it <= groupInfo.membership.memberRole }
   var expanded by remember { mutableStateOf(false) }
 
   ExposedDropdownMenuBox(

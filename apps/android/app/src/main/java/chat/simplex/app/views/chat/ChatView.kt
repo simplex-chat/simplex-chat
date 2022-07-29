@@ -98,16 +98,20 @@ fun ChatView(chatModel: ChatModel) {
           if (cInfo is ChatInfo.Direct) {
             val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showCustomModal { close ->
-              ModalView(close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+              ModalView(
+                close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              ) {
                 ChatInfoView(chatModel, connStats, close)
               }
             }
           } else if (cInfo is ChatInfo.Group) {
             populateGroupMembers(cInfo.groupInfo, chatModel)
             ModalManager.shared.showCustomModal { close ->
-              ModalView(close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+              ModalView(
+                close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              ) {
                 GroupChatInfoView(cInfo.groupInfo, chatModel, close)
               }
             }
@@ -158,8 +162,10 @@ fun ChatView(chatModel: ChatModel) {
         withApi {
           populateGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showCustomModal { close ->
-            ModalView(close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
               AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
@@ -258,9 +264,11 @@ fun ChatInfoToolbar(
           }
         }
       } else if (cInfo is ChatInfo.Group) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-          toolbarButton(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
-            addMembers(cInfo.groupInfo)
+        if (cInfo.groupInfo.canAddMembers) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            toolbarButton(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
+              addMembers(cInfo.groupInfo)
+            }
           }
         }
       }

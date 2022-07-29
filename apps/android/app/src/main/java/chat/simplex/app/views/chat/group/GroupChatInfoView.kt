@@ -7,11 +7,7 @@ import SectionSpacer
 import SectionView
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -28,6 +24,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.clearChatDialog
+import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -39,6 +36,17 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
       chat,
       groupInfo,
       members = chatModel.groupMembers.sortedBy { it.displayName.lowercase() },
+      addMembers = {
+        withApi {
+          populateGroupMembers(groupInfo, chatModel)
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+              AddGroupMembersView(groupInfo, chatModel, close)
+            }
+          }
+        }
+      },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) }
@@ -84,6 +92,7 @@ fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
   members: List<GroupMember>,
+  addMembers: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
@@ -103,6 +112,13 @@ fun GroupChatInfoLayout(
     SectionSpacer()
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count())) {
+      if (groupInfo.canAddMembers) {
+        SectionItemView {
+          AddMembersButton(addMembers)
+        }
+        SectionDivider()
+      }
+      MemberRow(groupInfo.membership, user = true)
       MembersList(members)
     }
     SectionSpacer()
@@ -111,13 +127,17 @@ fun GroupChatInfoLayout(
       SectionItemView {
         ClearChatButton(clearChat)
       }
-      SectionDivider()
-      SectionItemView {
-        LeaveGroupButton(leaveGroup)
+      if (groupInfo.canDelete) {
+        SectionDivider()
+        SectionItemView {
+          DeleteGroupButton(deleteGroup)
+        }
       }
-      SectionDivider()
-      SectionItemView() {
-        DeleteGroupButton(deleteGroup)
+      if (groupInfo.membership.memberStatus != GroupMemberStatus.MemLeft) {
+        SectionDivider()
+        SectionItemView {
+          LeaveGroupButton(leaveGroup)
+        }
       }
     }
     SectionSpacer()
@@ -156,6 +176,24 @@ fun GroupInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
+fun AddMembersButton(addMembers: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { addMembers() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Add,
+      stringResource(R.string.button_add_members),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_add_members), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 fun MembersList(members: List<GroupMember>) {
 //  LazyColumn {
 //    itemsIndexed(members) { index, member ->
@@ -172,7 +210,7 @@ fun MembersList(members: List<GroupMember>) {
 }
 
 @Composable
-fun MemberRow(member: GroupMember) {
+fun MemberRow(member: GroupMember, user: Boolean = false) {
   Text(member.chatViewName)
 }
 
@@ -242,7 +280,7 @@ fun PreviewGroupChatInfoLayout() {
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
-      deleteGroup = {}, clearChat = {}, leaveGroup = {}
+      addMembers = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }
 }

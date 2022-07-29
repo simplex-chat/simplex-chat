@@ -560,9 +560,10 @@
     <string name="no_contacts_selected">Контакты не выбраны</string>
 
     <!-- GroupChatInfoView.kt -->
+    <string name="button_add_members">Пригласить участников</string>
+    <string name="group_info_section_title_num_members">УЧАСТНИКОВ: <xliff:g id="num_members">%1$s</xliff:g></string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="button_leave_group">Выйти из группы</string>
-    <string name="group_info_section_title_num_members">УЧАСТНИКОВ: <xliff:g id="num_members">%1$s</xliff:g></string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
