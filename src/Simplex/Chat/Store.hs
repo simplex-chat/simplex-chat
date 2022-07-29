@@ -3078,75 +3078,33 @@ getGroupInfo db User {userId, userContactId} groupId =
       |]
       (groupId, userId, userContactId)
 
-updateGroupProfile :: DB.Connection -> User -> GroupId -> GroupProfileUpdate -> Int -> ExceptT StoreError IO GroupProfile
-updateGroupProfile db User {userId} groupId GroupProfileUpdate {displayName = dn, fullName = fn, image = img, prevVersion, version} fromVersion = do
-  (pId, p, pVersion_) <- getCurrentProfile
-  profiles <- liftIO $ mapM (getProfileVersions pId) pVersion_
-  let dn' = resolveConflicts p profiles dn (displayName :: GroupProfile -> Text)
-      fn' = resolveConflicts p profiles fn (fullName :: GroupProfile -> Text)
-      img' = resolveConflicts p profiles img (image :: GroupProfile -> Maybe ImageData)
-      p' = GroupProfile {displayName = dn', fullName = fn', image = img'}
-      pVersion = fromMaybe 0 pVersion_
-  liftIO . when (p /= p') $ updateProfile pId p' (pVersion + 1)
-  pure p
+updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
+  | displayName == newName = liftIO $ do
+    currentTs <- getCurrentTime
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateGroupProfile_ currentTs
+      updateGroup_ ldn currentTs
+      pure $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
   where
-    getCurrentProfile :: ExceptT StoreError IO (Int64, GroupProfile, Maybe Int)
-    getCurrentProfile =
-      ExceptT . firstRow groupProfileData (SEGroupNotFound groupId) $
-        DB.query
-          db
-          [sql|
-            SELECT p.group_profile_id, p.display_name, p.full_name, p.image, v.group_profile_version
-            FROM group_profiles p
-            LEFT JOIN group_profile_versions v USING (group_id, group_profile_id)
-            WHERE p.user_id = ? AND p.group_id = ?
-            ORDER BY group_profile_version_id DESC
-            LIMIT 1
-          |]
-          (userId, groupId)
-      where
-        groupProfileData (pId, displayName, fullName, image, pVersion_) = (pId, GroupProfile {displayName, fullName, image}, pVersion_)
-    getProfileVersions :: Int64 -> Int -> IO [GroupProfile]
-    getProfileVersions pId pVersion =
-      map groupProfile
-        <$> DB.query
-          db
-          [sql|
-            SELECT display_name, full_name, image
-            FROM group_profile_versions
-            WHERE user_id = ? AND group_id = ? AND group_profile_id = ?
-              AND group_profile_version >= ? AND group_profile_version <= ?
-            ORDER BY group_profile_version
-          |]
-          (userId, groupId, pId, fromVersion, pVersion)
-      where
-        groupProfile (displayName, fullName, image) = GroupProfile {displayName, fullName, image}
-    resolveConflicts :: forall a. Eq a => GroupProfile -> Maybe [GroupProfile] -> Maybe a -> (GroupProfile -> a) -> a
-    resolveConflicts p profiles_ val_ sel = maybe (sel p) (maybe id resolve profiles_) val_
-      where
-        resolve :: [GroupProfile] -> a -> a
-        resolve profiles val'
-          | all ((== val) . sel) profiles = val'
-          | otherwise = val
-        val = sel p
-    updateProfile :: Int64 -> GroupProfile -> Int -> IO ()
-    updateProfile pId GroupProfile {displayName, fullName, image} pVersion' = do
+    updateGroupProfile_ currentTs =
       DB.execute
         db
         [sql|
           UPDATE group_profiles
-          SET display_name = ?, full_name = ?, image = ?
+          SET display_name = ?, full_name = ?, image = ?, updated_at = ?
           WHERE user_id = ? AND group_id = ?
         |]
-        (displayName, fullName, image, userId, groupId)
+        (newName, fullName, image, currentTs, userId, groupId)
+    updateGroup_ ldn currentTs = do
       DB.execute
         db
-        [sql|
-          INSERT INFO group_profile_versions
-            (group_profile_version, group_profile_id, group_id, user_id, display_name, full_name, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        |]
-        (pVersion', pId, groupId, userId, displayName, fullName, image)
+        "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
+        (ldn, currentTs, userId, groupId)
+      DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user pagination = do

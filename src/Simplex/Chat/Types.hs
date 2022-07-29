@@ -216,15 +216,6 @@ instance ToJSON GroupProfile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data GroupProfileUpdate = GroupProfileUpdate
-  { displayName :: Maybe GroupName,
-    fullName :: Maybe Text,
-    image :: Maybe (Maybe ImageData),
-    prevVersion :: DataVersion,
-    version :: DataVersion
-  }
-  deriving (Eq, Show, Generic, FromJSON)
-
 newtype ImageData = ImageData Text
   deriving (Eq, Show)
 
@@ -238,25 +229,6 @@ instance ToJSON ImageData where
 instance ToField ImageData where toField (ImageData t) = toField t
 
 instance FromField ImageData where fromField = fmap ImageData . fromField
-
-newtype DataVersion = DataVersion ByteString
-  deriving (Eq, Show)
-
-instance FromField DataVersion where fromField f = DataVersion <$> fromField f
-
-instance ToField DataVersion where toField (DataVersion m) = toField m
-
-instance StrEncoding DataVersion where
-  strEncode (DataVersion m) = strEncode m
-  strDecode s = DataVersion <$> strDecode s
-  strP = DataVersion <$> strP
-
-instance FromJSON DataVersion where
-  parseJSON = strParseJSON "DataVersion"
-
-instance ToJSON DataVersion where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,

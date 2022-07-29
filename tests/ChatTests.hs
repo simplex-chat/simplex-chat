@@ -56,6 +56,7 @@ chatTests = do
     it "group message quoted replies" testGroupMessageQuotedReply
     it "group message update" testGroupMessageUpdate
     it "group message delete" testGroupMessageDelete
+    it "update group profile" testUpdateGroupProfile
   describe "async group connections" $ do
     it "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -1044,6 +1045,17 @@ testGroupMessageDelete =
       alice #$> ("/_get chat #1 count=1", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
       bob #$> ("/_get chat #1 count=3", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+
+testUpdateGroupProfile :: IO ()
+testUpdateGroupProfile =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      threadDelay 1000000
+      alice #> "#team hello!"
+      concurrently_
+        (bob <# "#team alice> hello!")
+        (cath <# "#team alice> hello!")
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do

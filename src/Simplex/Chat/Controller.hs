@@ -141,6 +141,7 @@ data ChatCommand
   | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
+  | APIUpdateGroupProfile GroupId GroupProfile
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | APISetNetworkConfig NetworkConfig
@@ -178,6 +179,7 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
+  | UpdateGroupProfile GroupName GroupProfile
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ChatName FilePath
@@ -279,6 +281,7 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo}
   | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}

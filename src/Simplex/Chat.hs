@@ -791,6 +791,16 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore' (`getUserGroupDetails` user))
+  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
+    Group g ms <- withStore $ \db -> getGroup db user groupId
+    g' <- withStore $ \db -> updateGroupProfile db user g p'
+    msg <- sendGroupMessage g' ms (XGrpInfo p')
+    ci <- saveSndChatItem user (CDGroupSnd g') msg (CISndGroupEvent SGEGroupProfileUpdated) Nothing Nothing
+    toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
+    pure $ CRGroupUpdated g g'
+  UpdateGroupProfile gName profile -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIUpdateGroupProfile groupId profile
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName (safeDecodeUtf8 quotedMsg)
@@ -1451,6 +1461,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
             XGrpLeave -> xGrpLeave gInfo m msg msgMeta
             XGrpDel -> xGrpDel gInfo m msg msgMeta
+            XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
@@ -2067,6 +2078,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
 
+    xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> MsgMeta -> m ()
+    xGrpInfo g m@GroupMember {memberRole} p' msg msgMeta
+      | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions"
+      | otherwise = do
+        g' <- withStore $ \db -> updateGroupProfile db user g p'
+        ci <- saveRcvChatItem user (CDGroupRcv g' m) msg msgMeta (CIRcvGroupEvent RGEGroupProfileUpdated) Nothing
+        groupMsgToView g' m ci msgMeta
+        toView $ CRGroupUpdated g g'
+
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode
 
@@ -2482,6 +2502,8 @@ chatCommandP =
       ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName),
       ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
       ("/groups" <|> "/gs") $> ListGroups,
+      "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
+      ("/group_profile #" <|> "/gp #") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
       ("/contacts" <|> "/cs") $> ListContacts,

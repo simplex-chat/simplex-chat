@@ -149,6 +149,7 @@ responseToView testView = \case
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
+  CRGroupUpdated g g' -> viewGroupUpdated g g'
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
@@ -528,6 +529,15 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where
     notified = " (your contacts are notified)"
+
+viewGroupUpdated :: GroupInfo -> GroupInfo -> [StyledString]
+viewGroupUpdated
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image'}}
+    | n == n' && fullName == fullName' && image == image' = []
+    | n == n' && fullName == fullName' = ["group " <> ttyGroup n <> ": profile image " <> if isNothing image' then "removed" else "updated"]
+    | n == n' = ["group " <> ttyGroup n <> ": full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName']
+    | otherwise = ["group " <> ttyGroup n <> " is changed to " <> ttyFullGroup g']
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
