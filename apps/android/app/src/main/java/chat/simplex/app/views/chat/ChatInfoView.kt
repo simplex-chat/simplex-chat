@@ -1,8 +1,12 @@
 package chat.simplex.app.views.chat
 
 import InfoRow
+import SectionDivider
+import SectionItemView
+import SectionSpacer
+import SectionView
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -14,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -81,69 +85,98 @@ fun ChatInfoLayout(
   clearChat: () -> Unit
 ) {
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start
   ) {
-    val cInfo = chat.chatInfo
-    ChatInfoImage(cInfo, size = 192.dp)
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center
+    ) {
+      ChatInfoHeader(chat.chatInfo)
+    }
+    SectionSpacer()
+
+    if (connStats != null) {
+      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+        InfoRow("abc", "abc")
+
+        val rcvServers = connStats.rcvServers
+        if (rcvServers != null && rcvServers.isNotEmpty()) {
+          SectionDivider()
+          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+        }
+
+        val sndServers = connStats.sndServers
+        if (sndServers != null && sndServers.isNotEmpty()) {
+          SectionDivider()
+          SimplexServers(stringResource(R.string.sending_via), sndServers)
+        }
+      }
+      SectionSpacer()
+    }
+
+//    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+//      Row(Modifier.padding(horizontal = 32.dp)) {
+//        ServerImage(chat)
+//        Text(
+//          chat.serverInfo.networkStatus.statusString,
+//          textAlign = TextAlign.Center,
+//          color = MaterialTheme.colors.onBackground,
+//          modifier = Modifier.padding(start = 8.dp)
+//        )
+//      }
+//      Text(
+//        chat.serverInfo.networkStatus.statusExplanation,
+//        style = MaterialTheme.typography.body2,
+//        color = MaterialTheme.colors.onBackground,
+//        textAlign = TextAlign.Center,
+//        modifier = Modifier
+//          .padding(top = 16.dp)
+//          .padding(horizontal = 16.dp)
+//      )
+//    }
+
+    SectionView {
+      SectionItemView {
+        ClearChatButton(clearChat)
+      }
+      SectionDivider()
+      SectionItemView {
+        DeleteContactButton(deleteContact)
+      }
+    }
+    SectionSpacer()
+
+    SectionView(title = stringResource(R.string.section_title_for_console)) {
+      InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
+      SectionDivider()
+      InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+    }
+    SectionSpacer()
+  }
+}
+
+@Composable
+fun ChatInfoHeader(cInfo: ChatInfo) {
+  Column(
+    Modifier.padding(horizontal = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = HighOrLowlight)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
-      modifier = Modifier
-        .padding(top = 32.dp)
-        .padding(bottom = 8.dp)
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
     )
-    Text(
-      cInfo.fullName, style = MaterialTheme.typography.h2,
-      color = MaterialTheme.colors.onBackground,
-      modifier = Modifier.padding(bottom = 16.dp)
-    )
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      Row(Modifier.padding(horizontal = 32.dp)) {
-        ServerImage(chat)
-        Text(
-          chat.serverInfo.networkStatus.statusString,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.onBackground,
-          modifier = Modifier.padding(start = 8.dp)
-        )
-      }
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
       Text(
-        chat.serverInfo.networkStatus.statusExplanation,
-        style = MaterialTheme.typography.body2,
+        cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-          .padding(top = 16.dp)
-          .padding(horizontal = 16.dp)
-      )
-      if (connStats != null) {
-        SimplexServers("receiving via: ", connStats.rcvServers!!)
-        SimplexServers("sending via: ", connStats.sndServers!!)
-      }
-    }
-
-    Spacer(Modifier.weight(1F))
-
-    Box(Modifier.padding(4.dp)) {
-      SimpleButton(
-        stringResource(R.string.clear_chat_button),
-        icon = Icons.Outlined.Restore,
-        color = WarningOrange,
-        click = clearChat
-      )
-    }
-    Box(
-      Modifier
-        .padding(4.dp)
-        .padding(bottom = 32.dp)
-    ) {
-      SimpleButton(
-        stringResource(R.string.button_delete_contact),
-        icon = Icons.Outlined.Delete,
-        color = Color.Red,
-        click = deleteContact
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
@@ -165,6 +198,42 @@ fun ServerImage(chat: Chat) {
     is Chat.NetworkStatus.Error ->
       Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
     else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+  }
+}
+
+@Composable
+fun ClearChatButton(clearChat: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { clearChat() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Restore,
+      stringResource(R.string.clear_chat_button),
+      tint = WarningOrange
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.clear_chat_button), color = WarningOrange)
+  }
+}
+
+@Composable
+fun DeleteContactButton(deleteContact: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { deleteContact() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Delete,
+      stringResource(R.string.button_delete_contact),
+      tint = Color.Red
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_delete_contact), color = Color.Red)
   }
 }
 

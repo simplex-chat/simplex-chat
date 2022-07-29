@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chat.clearChatDialog
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 
@@ -124,7 +123,7 @@ fun GroupChatInfoLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      GroupInfoHeader(chat.chatInfo)
+      ChatInfoHeader(chat.chatInfo)
     }
     SectionSpacer()
 
@@ -168,30 +167,6 @@ fun GroupChatInfoLayout(
       InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
     }
     SectionSpacer()
-  }
-}
-
-@Composable
-fun GroupInfoHeader(cInfo: ChatInfo) {
-  Column(
-    Modifier.padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = HighOrLowlight)
-    Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.onBackground,
-      maxLines = 1,
-      overflow = TextOverflow.Ellipsis
-    )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
-      Text(
-        cInfo.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis
-      )
-    }
   }
 }
 
@@ -259,24 +234,6 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
     if (role == GroupMemberRole.Owner || role == GroupMemberRole.Admin) {
       Text(role.text, color = HighOrLowlight)
     }
-  }
-}
-
-@Composable
-fun ClearChatButton(clearChat: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { clearChat() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Restore,
-      stringResource(R.string.clear_chat_button),
-      tint = WarningOrange
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.clear_chat_button), color = WarningOrange)
   }
 }
 
