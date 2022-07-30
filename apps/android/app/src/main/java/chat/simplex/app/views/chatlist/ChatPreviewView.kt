@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RemoveCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,6 +29,28 @@ import chat.simplex.app.views.helpers.badgeLayout
 @Composable
 fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   val cInfo = chat.chatInfo
+
+  @Composable
+  fun groupInactiveIcon() {
+    Icon(
+      Icons.Filled.RemoveCircle,
+      stringResource(R.string.icon_descr_group_inactive),
+      Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
+      tint = Color.Red
+    )
+  }
+
+  @Composable
+  fun chatPreviewImageOverlayIcon() {
+    if (cInfo is ChatInfo.Group) {
+      when (cInfo.groupInfo.membership.memberStatus) {
+        GroupMemberStatus.MemLeft -> groupInactiveIcon()
+        GroupMemberStatus.MemRemoved -> groupInactiveIcon()
+        GroupMemberStatus.MemGroupDeleted -> groupInactiveIcon()
+        else -> {}
+      }
+    }
+  }
 
   @Composable
   fun chatPreviewTitleText(color: Color = Color.Unspecified) {
@@ -85,7 +108,12 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   }
 
   Row {
-    ChatInfoImage(cInfo, size = 72.dp)
+    Box(contentAlignment = Alignment.BottomEnd) {
+      ChatInfoImage(cInfo, size = 72.dp)
+      Box(Modifier.padding(end = 6.dp, bottom = 6.dp)) {
+        chatPreviewImageOverlayIcon()
+      }
+    }
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
