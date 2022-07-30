@@ -106,9 +106,7 @@ struct GroupProfileView: View {
             )
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        }
+        .onTapGesture { hideKeyboard() }
     }
 
     func profileNameTextEdit(_ label: String, _ name: Binding<String>) -> some View {

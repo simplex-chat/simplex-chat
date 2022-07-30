@@ -165,13 +165,13 @@ struct AddGroupView: View {
         }
     }
 
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
     func canCreateProfile() -> Bool {
         profile.displayName != "" && validDisplayName(profile.displayName)
     }
+}
+
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
 struct AddGroupView_Previews: PreviewProvider {
