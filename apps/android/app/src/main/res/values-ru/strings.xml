@@ -10,8 +10,9 @@
     <string name="connect_via_link_verb">Соединиться</string>
 
     <!-- Server info - ChatModel.kt -->
-    <string name="server_connected">Соединение установлено</string>
-    <string name="server_connecting">Соединение устанавливается…</string>
+    <string name="server_connected">соединено</string>
+    <string name="server_error">ошибка</string>
+    <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
@@ -111,6 +112,7 @@
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
+    <string name="group_preview_you_are_invited">вы приглашены в группу</string>
     <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->
@@ -139,8 +141,8 @@
     <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
-    <string name="delete_chat_question">Удалить чат?</string>
-    <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Чат и все сообщения будут удалены - это действие нельзя отменить!</string>
+    <string name="delete_contact_question">Удалить контакт?</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
@@ -505,7 +507,8 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="group_left_description">[покинута]</string>
+    <string name="icon_descr_add_members">Пригласить участников</string>
+    <string name="icon_descr_group_inactive">Группа неактивна</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
@@ -524,4 +527,62 @@
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
     <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_user_left">вы покинули группу</string>
+
+    <!-- GroupMemberRole -->
+    <string name="group_member_role_member">участник</string>
+    <string name="group_member_role_admin">администратор</string>
+    <string name="group_member_role_owner">владелец</string>
+
+    <!-- GroupMemberStatus -->
+    <string name="group_member_status_removed">удален(а)</string>
+    <string name="group_member_status_left">покинул(а)</string>
+    <string name="group_member_status_group_deleted">группа удалена</string>
+    <string name="group_member_status_invited">приглашен(а)</string>
+    <string name="group_member_status_introduced">соединяется (представлен(а))</string>
+    <string name="group_member_status_intro_invitation">соединяется (приглашение по представлению)</string>
+    <string name="group_member_status_accepted">соединяется (приглашение принято)</string>
+    <string name="group_member_status_announced">соединяется (объявлен(а))</string>
+    <string name="group_member_status_connected">соединен(а)</string>
+    <string name="group_member_status_complete">соединение завершено</string>
+    <string name="group_member_status_creator">создатель</string>
+
+    <string name="group_member_status_connecting">соединяется</string>
+
+    <!-- AddGroupMembersView.kt -->
+    <string name="new_member_role">Роль участника</string>
+    <string name="icon_descr_expand_role">Развернуть выбор роли</string>
+    <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="icon_descr_contact_checked">Контакт выбран</string>
+    <string name="clear_contacts_selection_button">Очистить</string>
+    <string name="num_contacts_selected">Контактов выбрано: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="no_contacts_selected">Контакты не выбраны</string>
+
+    <!-- GroupChatInfoView.kt -->
+    <string name="button_add_members">Пригласить участников</string>
+    <string name="group_info_section_title_num_members">УЧАСТНИКОВ: <xliff:g id="num_members">%1$s</xliff:g></string>
+    <string name="group_info_member_you">вы: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="button_delete_group">Удалить группу</string>
+    <string name="delete_group_question">Удалить группу?</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
+    <string name="button_leave_group">Выйти из группы</string>
+
+    <!-- For Console chat info section -->
+    <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
+    <string name="info_row_local_name">Локальное название</string>
+    <string name="info_row_database_id">ID в базе данных</string>
+
+    <!-- GroupMemberInfoView.kt -->
+    <string name="button_remove_member">Удалить участника</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Участник будет удален из группы - это действие нельзя отменить!</string>
+    <string name="member_info_section_title_member">УЧАСТНИК</string>
+    <string name="info_row_group">Группа</string>
+    <string name="info_row_connection">Соединение</string>
+    <string name="conn_level_desc_direct">прямое</string>
+    <string name="conn_level_desc_indirect">непрямое (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+    <!-- ConnectionStats -->
+    <string name="conn_stats_section_title_servers">СЕРВЕРЫ</string>
+    <string name="receiving_via">Получение через</string>
+    <string name="sending_via">Отправка через</string>
+    <string name="network_status">Состояние сети</string>
 </resources>

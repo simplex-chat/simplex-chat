@@ -26,14 +26,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
+import chat.simplex.app.views.chat.group.AddGroupMembersView
+import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -90,12 +94,28 @@ fun ChatView(chatModel: ChatModel) {
       back = { chatModel.chatId.value = null },
       info = {
         withApi {
-          var connStats: ConnectionStats? = null
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(
+                close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              ) {
+                ChatInfoView(chatModel, connStats, close)
+              }
+            }
+          } else if (cInfo is ChatInfo.Group) {
+            populateGroupMembers(cInfo.groupInfo, chatModel)
+            ModalManager.shared.showCustomModal { close ->
+              ModalView(
+                close = close, modifier = Modifier,
+                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              ) {
+                GroupChatInfoView(cInfo.groupInfo, chatModel, close)
+              }
+            }
           }
-          ModalManager.shared.showCustomModal { close -> ChatInfoView(chatModel, connStats, close) }
         }
       },
       openDirectChat = { contactId ->
@@ -137,6 +157,19 @@ fun ChatView(chatModel: ChatModel) {
         } else {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
+      },
+      addMembers = { groupInfo ->
+        withApi {
+          populateGroupMembers(groupInfo, chatModel)
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
+              AddGroupMembersView(groupInfo, chatModel, close)
+            }
+          }
+        }
       }
     )
   }
@@ -160,7 +193,8 @@ fun ChatLayout(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  addMembers: (GroupInfo) -> Unit
 ) {
   Surface(
     Modifier
@@ -181,7 +215,7 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
@@ -195,7 +229,13 @@ fun ChatLayout(
 }
 
 @Composable
-fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (CallMediaType) -> Unit) {
+fun ChatInfoToolbar(
+  chat: Chat,
+  back: () -> Unit,
+  info: () -> Unit,
+  startCall: (CallMediaType) -> Unit,
+  addMembers: (GroupInfo) -> Unit
+) {
   @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
     IconButton(onClick, modifier = modifier) {
       Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
@@ -223,34 +263,50 @@ fun ChatInfoToolbar(chat: Chat, back: () -> Unit, info: () -> Unit, startCall: (
             startCall(CallMediaType.Video)
           }
         }
-      }
-      Row(
-        Modifier
-          .padding(horizontal = 80.dp)
-          .fillMaxWidth()
-          .clickable(onClick = info),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        ChatInfoImage(cInfo, size = 40.dp)
-        Column(
-          Modifier.padding(start = 8.dp),
-          horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-          Text(
-            cInfo.displayName, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis
-          )
-          if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
-            Text(
-              cInfo.fullName,
-              maxLines = 1, overflow = TextOverflow.Ellipsis
-            )
+      } else if (cInfo is ChatInfo.Group) {
+        if (cInfo.groupInfo.canAddMembers) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+            toolbarButton(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
+              addMembers(cInfo.groupInfo)
+            }
           }
         }
       }
+      Box(
+        Modifier
+          .padding(horizontal = 80.dp).fillMaxWidth()
+          .clickable(onClick = info),
+        contentAlignment = Alignment.Center
+      ) {
+        ChatInfoToolbarTitle(cInfo)
+      }
     }
     Divider()
+  }
+}
+
+@Composable
+fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Color = MaterialTheme.colors.secondary) {
+  Row(
+    horizontalArrangement = Arrangement.Center,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    ChatInfoImage(cInfo, size = imageSize, iconColor)
+    Column(
+      Modifier.padding(start = 8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        cInfo.displayName, fontWeight = FontWeight.SemiBold,
+        maxLines = 1, overflow = TextOverflow.Ellipsis
+      )
+      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+        Text(
+          cInfo.fullName,
+          maxLines = 1, overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
   }
 }
 
@@ -402,7 +458,8 @@ fun PreviewChatLayout() {
       receiveFile = {},
       joinGroup = {},
       startCall = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      addMembers = { _ -> }
     )
   }
 }
@@ -450,7 +507,8 @@ fun PreviewGroupChatLayout() {
       receiveFile = {},
       joinGroup = {},
       startCall = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      addMembers = { _ -> }
     )
   }
 }

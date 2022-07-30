@@ -1,5 +1,10 @@
 package chat.simplex.app.views.database
 
+import SectionDivider
+import SectionTextFooter
+import SectionItemView
+import SectionSpacer
+import SectionView
 import android.content.Context
 import android.content.res.Configuration
 import android.net.Uri
@@ -23,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -114,19 +118,18 @@ fun DatabaseLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
     Text(
       stringResource(R.string.your_chat_database),
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
 
-    SettingsSectionView(stringResource(R.string.run_chat_section)) {
+    SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbChanged, startChat, stopChatAlert)
     }
-    Spacer(Modifier.height(30.dp))
+    SectionSpacer()
 
-    SettingsSectionView(stringResource(R.string.chat_database_section)) {
+    SectionView(stringResource(R.string.chat_database_section)) {
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
@@ -134,7 +137,7 @@ fun DatabaseLayout(
         textColor = MaterialTheme.colors.primary,
         disabled = operationsDisabled
       )
-      divider()
+      SectionDivider()
       SettingsActionItem(
         Icons.Outlined.FileDownload,
         stringResource(R.string.import_database),
@@ -142,7 +145,7 @@ fun DatabaseLayout(
         textColor = Color.Red,
         disabled = operationsDisabled
       )
-      divider()
+      SectionDivider()
       val chatArchiveNameVal = chatArchiveName.value
       val chatArchiveTimeVal = chatArchiveTime.value
       val chatLastStartVal = chatLastStart.value
@@ -154,7 +157,7 @@ fun DatabaseLayout(
           click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
-        divider()
+        SectionDivider()
       }
       SettingsActionItem(
         Icons.Outlined.DeleteForever,
@@ -164,7 +167,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SettingsSectionFooter(
+    SectionTextFooter(
       if (chatDbChanged) {
         stringResource(R.string.restart_the_app_to_use_new_chat_database)
       } else {
@@ -186,7 +189,7 @@ fun RunChatSetting(
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
-  SettingsItemView() {
+  SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
       val chatRunningText = if (stopped) stringResource(R.string.chat_is_stopped) else stringResource(R.string.chat_is_running)
       Icon(
@@ -223,11 +226,6 @@ fun RunChatSetting(
 @Composable
 fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
-}
-
-@Composable
-fun SettingsSectionFooter(text: String) {
-  Text(text, color = HighOrLowlight, modifier = Modifier.padding(start = 16.dp, top = 5.dp).fillMaxWidth(0.9F), fontSize = 12.sp)
 }
 
 private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, context: Context) {

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -25,7 +26,7 @@ fun ExperimentalFeaturesView(chatModel: ChatModel, enableCalls: MutableState<Boo
       style = MaterialTheme.typography.h1,
       modifier = Modifier.padding(start = 16.dp, bottom = 24.dp)
     )
-    SettingsSectionView("") {
+    SectionView("") {
       SettingsPreferenceItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), chatModel.controller.appPrefs.experimentalCalls, enableCalls)
     }
   }

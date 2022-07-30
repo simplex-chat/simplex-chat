@@ -44,8 +44,8 @@ private func serverHost(_ s: String) -> String {
 
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    @Binding var showSheet: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @State private var connectionStats: ConnectionStats?
 
@@ -172,7 +172,7 @@ struct ChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
-                            showSheet = false
+                            dismiss()
                         }
                     } catch let error {
                         logger.error("deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
@@ -190,9 +190,7 @@ struct ChatInfoView: View {
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
-                    await MainActor.run {
-                        showSheet = false
-                    }
+                    await MainActor.run { dismiss() }
                 }
             },
             secondaryButton: .cancel()
@@ -209,7 +207,6 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showSheet = true
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showSheet: $showSheet)
+        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
     }
 }

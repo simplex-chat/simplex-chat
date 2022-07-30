@@ -559,8 +559,8 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
-    let r = chatSendCmdSync(.newGroup(groupProfile: gp))
+func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
+    let r = chatSendCmdSync(.newGroup(groupProfile: p))
     if case let .groupCreated(groupInfo) = r { return groupInfo }
     throw r
 }
@@ -619,6 +619,20 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     let r = await chatSendCmd(.apiListMembers(groupId: groupId))
     if case let .groupMembers(group) = r { return group.members }
     return []
+}
+
+func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
+    let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
+    return ChatModel.shared.chats
+        .compactMap{ $0.chatInfo.contact }
+        .filter{ !memberContactIds.contains($0.apiId) }
+        .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
+}
+
+func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiUpdateGroupProfile(groupId: groupId, groupProfile: groupProfile))
+    if case let .groupUpdated(toGroup) = r { return toGroup }
+    throw r
 }
 
 func initializeChat(start: Bool) throws {
@@ -765,7 +779,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     await receiveFile(fileId: file.fileId)
                 }
             }
-            if !cItem.isCall() {
+            if !cItem.chatDir.sent && !cItem.isCall() {
                 NtfManager.shared.notifyMessageReceived(cInfo, cItem)
             }
         case let .chatItemStatusUpdated(aChatItem):
