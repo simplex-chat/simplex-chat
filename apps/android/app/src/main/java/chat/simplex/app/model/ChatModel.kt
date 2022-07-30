@@ -525,11 +525,7 @@ class GroupInfo (
   override val image get() = groupProfile.image
 
   val canDelete: Boolean
-    get() {
-      val s = membership.memberStatus
-      return membership.memberRole == GroupMemberRole.Owner
-          || (s == GroupMemberStatus.MemRemoved || s == GroupMemberStatus.MemLeft || s == GroupMemberStatus.MemGroupDeleted || s == GroupMemberStatus.MemInvited)
-    }
+    get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrent
 
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
@@ -610,8 +606,11 @@ class GroupMember (
     GroupMemberStatus.MemCreator -> true
   }
 
-  fun canRemove(userRole: GroupMemberRole): Boolean =
-    userRole >= GroupMemberRole.Admin && userRole >= memberRole
+  fun canBeRemoved(membership: GroupMember): Boolean {
+    val userRole = membership.memberRole
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && membership.memberCurrent
+  }
 
   companion object {
     val sampleData = GroupMember(

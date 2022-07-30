@@ -125,7 +125,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
         MarkReadChatAction(chat, chatModel, showMenu)
       }
       ClearChatAction(chat, chatModel, showMenu)
-      if (groupInfo.membership.memberStatus != GroupMemberStatus.MemLeft) {
+      if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {

@@ -35,7 +35,7 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 Section(header: Text("\(members.count + 1) members")) {
-                    if (groupInfo.canAddMembers) {
+                    if groupInfo.canAddMembers {
                         addMembersButton()
                     }
                     memberView(groupInfo.membership, user: true)

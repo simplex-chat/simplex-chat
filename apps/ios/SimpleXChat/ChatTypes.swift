@@ -541,9 +541,10 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canRemove(membership: GroupMember) -> Bool {
+    public func canBeRemoved(membership: GroupMember) -> Bool {
         let userRole = membership.memberRole
-        return userRole >= .admin && userRole >= memberRole && membership.memberCurrent
+        return memberStatus != .memRemoved && memberStatus != .memLeft
+            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
     }
 
     public static let sampleData = GroupMember(

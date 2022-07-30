@@ -152,7 +152,7 @@ fun GroupChatInfoLayout(
           DeleteGroupButton(deleteGroup)
         }
       }
-      if (groupInfo.membership.memberStatus != GroupMemberStatus.MemLeft) {
+      if (groupInfo.membership.memberCurrent) {
         SectionDivider()
         SectionItemView {
           LeaveGroupButton(leaveGroup)
@@ -190,8 +190,6 @@ fun AddMembersButton(addMembers: () -> Unit) {
 
 @Composable
 fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
-  //  LazyColumn {
-  //    itemsIndexed(members) { index, member ->
   Column {
     members.forEachIndexed { index, member ->
       SectionItemView(height = 50.dp) {
