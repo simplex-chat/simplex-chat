@@ -444,6 +444,10 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
+    public var canEdit: Bool {
+        return membership.memberRole == .owner && membership.memberCurrent
+    }
+
     public var canDelete: Bool {
         return membership.memberRole == .owner || !membership.memberCurrent
     }
