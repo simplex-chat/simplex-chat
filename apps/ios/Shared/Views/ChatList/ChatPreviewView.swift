@@ -106,12 +106,12 @@ struct ChatPreviewView: View {
             switch (chat.chatInfo) {
             case let .direct(contact):
                 if !contact.ready {
-                    chatPreviewInfoText("Connecting...")
+                    chatPreviewInfoText("connecting...")
                 }
             case let .group(groupInfo):
                 switch (groupInfo.membership.memberStatus) {
-                case .memInvited: chatPreviewInfoText("You are invited to group")
-                case .memAccepted: chatPreviewInfoText("Connecting...")
+                case .memInvited: chatPreviewInfoText("you are invited to group")
+                case .memAccepted: chatPreviewInfoText("connecting...")
                 default: EmptyView()
                 }
             default: EmptyView()

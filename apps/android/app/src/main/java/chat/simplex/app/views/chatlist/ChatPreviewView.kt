@@ -87,7 +87,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
-            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.you_are_invited_to_group))
+            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.group_preview_you_are_invited))
             GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
             else -> {}
           }

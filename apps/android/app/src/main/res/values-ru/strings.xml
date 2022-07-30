@@ -112,6 +112,7 @@
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
+    <string name="group_preview_you_are_invited">вы приглашены в группу</string>
     <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->

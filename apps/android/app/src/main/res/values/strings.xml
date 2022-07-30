@@ -112,6 +112,7 @@
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
   <string name="contact_connection_pending">connecting…</string>
+  <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_connection_pending">connecting…</string>
 
   <!-- ComposeView.kt, helpers -->
