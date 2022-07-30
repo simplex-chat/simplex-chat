@@ -55,6 +55,7 @@
 		5C9C2DA128929B6900CC63B1 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9C2D9C28929B6900CC63B1 /* libgmp.a */; };
 		5C9C2DA228929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9C2D9D28929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a */; };
 		5C9C2DA328929B6900CC63B1 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9C2D9E28929B6900CC63B1 /* libgmpxx.a */; };
+		5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */; };
 		5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9D13A2282187BB00AB8B43 /* WebRTC.swift */; };
 		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
 		5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DB279559F40002BEB4 /* Tests_iOS.swift */; };
@@ -234,6 +235,7 @@
 		5C9C2D9C28929B6900CC63B1 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5C9C2D9D28929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5C9C2D9E28929B6900CC63B1 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupProfileView.swift; sourceTree = "<group>"; };
 		5C9D13A2282187BB00AB8B43 /* WebRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTC.swift; sourceTree = "<group>"; };
 		5C9FD96A27A56D4D0075386C /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageView.swift; sourceTree = "<group>"; };
@@ -632,6 +634,7 @@
 			children = (
 				6440CA02288AECA70062C672 /* AddGroupMembersView.swift */,
 				647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */,
+				5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */,
 			);
 			path = Group;
 			sourceTree = "<group>";
@@ -891,6 +894,7 @@
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
 				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
+				5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */,
 				5CEACCED27DEA495000BD591 /* MsgContentView.swift in Sources */,
 				5C764E89279CBCB3000C6508 /* ChatModel.swift in Sources */,
 				5C971E1D27AEBEF600C8A3CE /* ChatInfoView.swift in Sources */,

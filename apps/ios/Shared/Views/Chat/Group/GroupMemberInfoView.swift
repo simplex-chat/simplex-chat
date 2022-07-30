@@ -126,6 +126,6 @@ struct GroupMemberInfoView: View {
 
 struct GroupMemberInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        return GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
+        GroupMemberInfoView(groupInfo: GroupInfo.sampleData, member: GroupMember.sampleData)
     }
 }
