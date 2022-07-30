@@ -18,9 +18,14 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         let unread = chat.chatStats.unreadCount
         return HStack(spacing: 8) {
-            ChatInfoImage(chat: chat)
-                .frame(width: 63, height: 63)
-                .padding(.leading, 4)
+            ZStack(alignment: .bottomTrailing) {
+                ChatInfoImage(chat: chat)
+                    .frame(width: 63, height: 63)
+                chatPreviewImageOverlayIcon()
+                    .padding([.bottom, .trailing], 1)
+
+            }
+            .padding(.leading, 4)
 
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
@@ -51,6 +56,28 @@ struct ChatPreviewView: View {
         }
     }
 
+    @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
+        if case let .group(groupInfo) = chat.chatInfo {
+            switch (groupInfo.membership.memberStatus) {
+            case .memLeft:
+                groupInactiveIcon()
+            case .memRemoved:
+                groupInactiveIcon()
+            case .memGroupDeleted:
+                groupInactiveIcon()
+            default: EmptyView()
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder private func groupInactiveIcon() -> some View {
+        Image(systemName: "minus.circle.fill")
+            .foregroundColor(.red)
+
+    }
+
     @ViewBuilder private func chatPreviewTitle() -> some View {
         let v = Text(chat.chatInfo.chatViewName)
             .font(.title3)
@@ -66,18 +93,6 @@ struct ChatPreviewView: View {
                 v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
-            case .memLeft:
-                HStack {
-                    Text(NSLocalizedString("[left]", comment: "group left description"))
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                    Text(chat.chatInfo.chatViewName)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .lineLimit(1)
-                }
-                .frame(maxHeight: .infinity, alignment: .topLeading)
             default: v
             }
         default: v

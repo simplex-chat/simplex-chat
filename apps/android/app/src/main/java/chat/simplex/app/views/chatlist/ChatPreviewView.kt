@@ -50,18 +50,6 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
-          GroupMemberStatus.MemLeft ->
-            Row(
-              horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              Text(
-                stringResource(R.string.group_left_description),
-                style = MaterialTheme.typography.h3,
-                fontWeight = FontWeight.Bold,
-                color = HighOrLowlight
-              )
-              chatPreviewTitleText()
-            }
           else -> chatPreviewTitleText()
         }
       else -> chatPreviewTitleText()

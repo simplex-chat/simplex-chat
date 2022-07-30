@@ -507,7 +507,6 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="group_left_description">[покинута]</string>
     <string name="icon_descr_add_members">Пригласить участников</string>
 
     <!-- CIGroupInvitationView.kt -->
