@@ -28,17 +28,13 @@ struct AddGroupView: View {
                                 groupInfo: groupInfo,
                                 membersToAdd: filterMembersToAdd([]),
                                 showSkip: true) { _ in
-                openGroup(groupInfo.id)
+                dismiss()
+                DispatchQueue.main.async {
+                    m.chatId = groupInfo.id
+                }
             }
         } else {
             createGroupView()
-        }
-    }
-
-    func openGroup(_ chatId: String) {
-        dismiss()
-        DispatchQueue.main.async {
-            m.chatId = chatId
         }
     }
 
