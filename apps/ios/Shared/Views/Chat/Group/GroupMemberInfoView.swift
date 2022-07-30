@@ -48,8 +48,8 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                Section {
-                    if member.canRemove(userRole: groupInfo.membership.memberRole) && member.memberStatus != .memRemoved {
+                if member.canBeRemoved(membership: groupInfo.membership) {
+                    Section {
                         removeMemberButton()
                     }
                 }

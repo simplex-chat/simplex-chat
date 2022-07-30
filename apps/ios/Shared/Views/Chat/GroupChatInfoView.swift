@@ -35,19 +35,21 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section {
-                    Button {
-                        showGroupProfile = true
-                    } label: {
-                        Label("Edit group profile", systemImage: "pencil")
+                if groupInfo.canEdit {
+                    Section {
+                        Button {
+                            showGroupProfile = true
+                        } label: {
+                            Label("Edit group profile", systemImage: "pencil")
+                        }
                     }
-                }
-                .sheet(isPresented: $showGroupProfile) {
-                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                    .sheet(isPresented: $showGroupProfile) {
+                        GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                    }
                 }
 
                 Section("\(members.count + 1) members") {
-                    if (groupInfo.canAddMembers) {
+                    if groupInfo.canAddMembers {
                         addMembersButton()
                     }
                     memberView(groupInfo.membership, user: true)
@@ -67,7 +69,7 @@ struct GroupChatInfoView: View {
                     if groupInfo.canDelete {
                         deleteGroupButton()
                     }
-                    if (groupInfo.membership.memberStatus != .memLeft) {
+                    if groupInfo.membership.memberCurrent {
                         leaveGroupButton()
                     }
                 }

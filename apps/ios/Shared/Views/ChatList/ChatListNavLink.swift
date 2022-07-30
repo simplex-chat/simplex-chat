@@ -113,7 +113,7 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             .swipeActions(edge: .trailing) {
-                if (groupInfo.membership.memberStatus != .memLeft) {
+                if (groupInfo.membership.memberCurrent) {
                     Button {
                         AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
                     } label: {

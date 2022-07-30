@@ -441,10 +441,7 @@ processChatCommand = \case
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
       g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \db -> getGroup db user chatId
-      let s = memberStatus membership
-          canDelete =
-            memberRole (membership :: GroupMember) == GROwner
-              || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
+      let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
@@ -745,7 +742,7 @@ processChatCommand = \case
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
         let userRole = memberRole (membership :: GroupMember)
-            canRemove = userRole >= GRAdmin && userRole >= mRole
+            canRemove = userRole >= GRAdmin && userRole >= mRole && memberCurrent membership
         unless canRemove $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
           when (mStatus /= GSMemInvited) $ do

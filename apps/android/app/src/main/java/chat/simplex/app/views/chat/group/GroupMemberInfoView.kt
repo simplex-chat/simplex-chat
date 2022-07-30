@@ -107,7 +107,7 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (member.canRemove(userRole = groupInfo.membership.memberRole) && member.memberStatus != GroupMemberStatus.MemRemoved) {
+    if (member.canBeRemoved(groupInfo.membership)) {
       SectionView {
         SectionItemView {
           RemoveMemberButton(removeMember)

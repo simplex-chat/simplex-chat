@@ -487,7 +487,7 @@ class Profile(
   override val fullName: String,
   override val image: String? = null
 ): NamedChat {
-  val displayNameWithOptionalFullName: String
+  val profileViewName: String
     get() {
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
@@ -525,11 +525,7 @@ class GroupInfo (
   override val image get() = groupProfile.image
 
   val canDelete: Boolean
-    get() {
-      val s = membership.memberStatus
-      return membership.memberRole == GroupMemberRole.Owner
-          || (s == GroupMemberStatus.MemRemoved || s == GroupMemberStatus.MemLeft || s == GroupMemberStatus.MemGroupDeleted || s == GroupMemberStatus.MemInvited)
-    }
+    get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrent
 
   val canAddMembers: Boolean
     get() = membership.memberRole >= GroupMemberRole.Admin && membership.memberActive
@@ -610,8 +606,11 @@ class GroupMember (
     GroupMemberStatus.MemCreator -> true
   }
 
-  fun canRemove(userRole: GroupMemberRole): Boolean =
-    userRole >= GroupMemberRole.Admin && userRole >= memberRole
+  fun canBeRemoved(membership: GroupMember): Boolean {
+    val userRole = membership.memberRole
+    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && membership.memberCurrent
+  }
 
   companion object {
     val sampleData = GroupMember(
@@ -1367,10 +1366,10 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
 
   val text: String get() = when (this) {
-    is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.displayNameWithOptionalFullName)
+    is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
     is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
-    is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
   }
@@ -1382,7 +1381,7 @@ sealed class SndGroupEvent() {
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
 
   val text: String get() = when (this) {
-    is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
   }
 }

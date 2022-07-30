@@ -44,7 +44,7 @@ public struct Profile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
-    var displayNameWithOptionalFullName: String {
+    var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
     }
 
@@ -444,9 +444,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
+    public var canEdit: Bool {
+        return membership.memberRole == .owner && membership.memberCurrent
+    }
+
     public var canDelete: Bool {
-        let s = membership.memberStatus
-        return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
+        return membership.memberRole == .owner || !membership.memberCurrent
     }
 
     public var canAddMembers: Bool {
@@ -547,8 +550,10 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canRemove(userRole: GroupMemberRole) -> Bool {
-        return userRole >= .admin && userRole >= memberRole
+    public func canBeRemoved(membership: GroupMember) -> Bool {
+        let userRole = membership.memberRole
+        return memberStatus != .memRemoved && memberStatus != .memLeft
+            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
     }
 
     public static let sampleData = GroupMember(
@@ -1271,11 +1276,11 @@ public enum RcvGroupEvent: Decodable {
     var text: String {
         switch self {
         case let .memberAdded(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberDeleted(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
@@ -1291,7 +1296,7 @@ public enum SndGroupEvent: Decodable {
     var text: String {
         switch self {
         case let .memberDeleted(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
         case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         }
