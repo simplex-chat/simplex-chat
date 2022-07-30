@@ -440,8 +440,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var image: String? { get { groupProfile.image } }
 
     public var canDelete: Bool {
-        let s = membership.memberStatus
-        return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
+        return membership.memberRole == .owner || !membership.memberCurrent
     }
 
     public var canAddMembers: Bool {
@@ -542,8 +541,9 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canRemove(userRole: GroupMemberRole) -> Bool {
-        return userRole >= .admin && userRole >= memberRole
+    public func canRemove(membership: GroupMember) -> Bool {
+        let userRole = membership.memberRole
+        return userRole >= .admin && userRole >= memberRole && membership.memberCurrent
     }
 
     public static let sampleData = GroupMember(
