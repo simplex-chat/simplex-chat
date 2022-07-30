@@ -565,6 +565,18 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
   }
 
+//  func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
+//    let r = chatSendCmdSync(.newGroup(groupProfile: p))
+//    if case let .groupCreated(groupInfo) = r { return groupInfo }
+//    throw r
+//  }
+
+  suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole) {
+    val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
+    if (r is CR.SentGroupInvitation) return
+    Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiJoinGroup(groupId: Long): GroupInfo? {
     val r = sendCmd(CC.ApiJoinGroup(groupId))
     if (r is CR.UserAcceptedGroupSent) return r.groupInfo

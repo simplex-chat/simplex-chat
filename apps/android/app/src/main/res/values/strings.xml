@@ -161,10 +161,11 @@
   <string name="add_contact">Add contact</string>
 
   <!-- NewChatSheet -->
-  <string name="add_contact_to_start_new_chat">Add contact to start a new chat:</string>
+  <string name="add_contact_or_create_group">Add contact or create group</string>
   <string name="create_one_time_link">Create link / QR code</string>
   <string name="paste_received_link">Connect via received link</string>
   <string name="scan_QR_code">Scan QR code</string>
+  <string name="create_group">Create secret group</string>
   <string name="to_share_with_your_contact">(to share with your contact)</string>
   <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
   <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
@@ -587,4 +588,10 @@
   <string name="receiving_via">Receiving via</string>
   <string name="sending_via">Sending via</string>
   <string name="network_status">Network status</string>
+
+  <!-- AddGroupView.kt -->
+  <string name="create_secret_group_title">Create secret group</string>
+  <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
+  <string name="group_display_name_field">Group display name:</string>
+  <string name="group_full_name_field">Group full name:</string>
 </resources>

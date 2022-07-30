@@ -1,7 +1,7 @@
 package chat.simplex.app.views.newchat
 
 import android.Manifest
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -48,30 +48,39 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     pasteLink = {
       newChatCtrl.collapse()
       ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel, close) }
+    },
+    createGroup = {
+      newChatCtrl.collapse()
+      ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
     }
   )
 }
 
 @Composable
-fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: () -> Unit) {
+fun NewChatSheetLayout(
+  addContact: () -> Unit,
+  scanCode: () -> Unit,
+  pasteLink: () -> Unit,
+  createGroup: () -> Unit
+) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Text(
-      stringResource(R.string.add_contact_to_start_new_chat),
+      stringResource(R.string.add_contact_or_create_group),
       modifier = Modifier.padding(horizontal = 8.dp).padding(top = 32.dp)
     )
     Row(
       Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 8.dp)
-        .padding(top = 24.dp, bottom = 40.dp),
-      horizontalArrangement = Arrangement.SpaceEvenly
+        .padding(top = 24.dp, bottom = 30.dp)
+        .horizontalScroll(rememberScrollState()),
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+      Spacer(Modifier.size(4.dp))
+
       Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
+        Modifier.size(width = 130.dp, height = 140.dp)
+      ) {
         ActionButton(
           stringResource(R.string.create_one_time_link),
           stringResource(R.string.to_share_with_your_contact),
@@ -80,9 +89,8 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
         )
       }
       Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
+        Modifier.size(width = 130.dp, height = 140.dp)
+      ) {
         ActionButton(
           stringResource(R.string.paste_received_link),
           stringResource(R.string.paste_received_link_from_clipboard),
@@ -91,9 +99,8 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
         )
       }
       Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
+        Modifier.size(width = 130.dp, height = 140.dp)
+      ) {
         ActionButton(
           stringResource(R.string.scan_QR_code),
           stringResource(R.string.in_person_or_in_video_call__bracketed),
@@ -101,26 +108,46 @@ fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: 
           click = scanCode
         )
       }
+      Box(
+        Modifier.size(width = 130.dp, height = 140.dp)
+      ) {
+        ActionButton(
+          stringResource(R.string.create_group),
+          icon = Icons.Outlined.Group,
+          click = createGroup
+        )
+      }
+
+      Spacer(Modifier.size(4.dp))
     }
   }
 }
 
 @Composable
-fun ActionButton(text: String?, comment: String?, icon: ImageVector, disabled: Boolean = false,
-                 click: () -> Unit = {}) {
-  Surface(shape = RoundedCornerShape(18.dp)) {
+fun ActionButton(
+  text: String?, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
+  Surface(
+    Modifier.fillMaxSize(),
+    shape = RoundedCornerShape(18.dp),
+    color = MaterialTheme.colors.secondary
+  ) {
     Column(
       Modifier
         .clickable(onClick = click)
         .padding(8.dp),
-      horizontalAlignment = Alignment.CenterHorizontally
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center
     ) {
       val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Icon(icon, text,
+      Icon(
+        icon, text,
         tint = tint,
         modifier = Modifier
           .size(40.dp)
-          .padding(bottom = 8.dp))
+          .padding(bottom = 8.dp)
+      )
       if (text != null) {
         Text(
           text,
@@ -148,7 +175,8 @@ fun PreviewNewChatSheet() {
     NewChatSheetLayout(
       addContact = {},
       scanCode = {},
-      pasteLink = {}
+      pasteLink = {},
+      createGroup = {}
     )
   }
 }
