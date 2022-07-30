@@ -421,12 +421,17 @@ public enum ConnStatus: String, Decodable {
 public struct Group: Decodable {
     public var groupInfo: GroupInfo
     public var members: [GroupMember]
+
+    public init(groupInfo: GroupInfo, members: [GroupMember]) {
+        self.groupInfo = groupInfo
+        self.members = members
+    }
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var groupId: Int64
     var localDisplayName: GroupName
-    var groupProfile: GroupProfile
+    public var groupProfile: GroupProfile
     public var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
@@ -1262,6 +1267,7 @@ public enum RcvGroupEvent: Decodable {
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
     case groupDeleted
+    case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
@@ -1273,6 +1279,7 @@ public enum RcvGroupEvent: Decodable {
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         }
     }
 }
@@ -1280,12 +1287,14 @@ public enum RcvGroupEvent: Decodable {
 public enum SndGroupEvent: Decodable {
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
+    case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
+        case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         }
     }
 }
