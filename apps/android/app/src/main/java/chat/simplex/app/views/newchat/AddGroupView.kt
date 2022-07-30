@@ -75,18 +75,13 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           Column(
             Modifier
               .verticalScroll(rememberScrollState())
-              .padding(bottom = 16.dp)
+              .padding(bottom = 16.dp),
           ) {
-            Row(
-              Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.Center
-            ) {
-              Text(
-                stringResource(R.string.create_secret_group_title),
-                style = MaterialTheme.typography.h4,
-                modifier = Modifier.padding(vertical = 5.dp)
-              )
-            }
+            Text(
+              stringResource(R.string.create_secret_group_title),
+              style = MaterialTheme.typography.h4,
+              modifier = Modifier.padding(vertical = 5.dp)
+            )
             ReadableText(R.string.group_is_decentralized)
             Spacer(Modifier.height(10.dp))
             Box(
