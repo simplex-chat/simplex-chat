@@ -40,6 +40,7 @@ public enum ChatCommand {
     case apiRemoveMember(groupId: Int64, memberId: Int64)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
+    case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case apiSetNetworkConfig(networkConfig: NetCfg)
@@ -101,6 +102,7 @@ public enum ChatCommand {
             case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
+            case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
@@ -162,6 +164,7 @@ public enum ChatCommand {
             case .apiRemoveMember: return "apiRemoveMember"
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
+            case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
@@ -270,6 +273,7 @@ public enum ChatResponse: Decodable, Error {
     case joinedGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case groupRemoved(groupInfo: GroupInfo)
+    case groupUpdated(toGroup: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
     case rcvFileStart(chatItem: AChatItem)
@@ -359,6 +363,7 @@ public enum ChatResponse: Decodable, Error {
             case .joinedGroupMember: return "joinedGroupMember"
             case .connectedToGroupMember: return "connectedToGroupMember"
             case .groupRemoved: return "groupRemoved"
+            case .groupUpdated: return "groupUpdated"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
@@ -449,6 +454,7 @@ public enum ChatResponse: Decodable, Error {
             case let .joinedGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .connectedToGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .groupRemoved(groupInfo): return String(describing: groupInfo)
+            case let .groupUpdated(toGroup): return String(describing: toGroup)
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
