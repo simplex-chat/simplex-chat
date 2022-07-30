@@ -92,8 +92,8 @@ struct MakeConnection: View {
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
             case .createLink: AddContactView(connReqInvitation: connReq)
-            case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
-            case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
+            case .pasteLink: PasteToConnectView()
+            case .scanQRCode: ScanToConnectView()
             case .createGroup: EmptyView() // TODO refactor / show during onboarding?
             }
         }

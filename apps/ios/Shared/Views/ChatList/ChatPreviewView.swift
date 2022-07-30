@@ -73,8 +73,8 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func groupInactiveIcon() -> some View {
-        Image(systemName: "minus.circle.fill")
-            .foregroundColor(.red)
+        Image(systemName: "multiply.circle.fill")
+            .foregroundColor(.secondary)
             .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
     }
 
