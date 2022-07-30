@@ -393,7 +393,6 @@
 				5C971E1C27AEBEF600C8A3CE /* ChatInfoView.swift */,
 				5C1A4C1D27A715B700EAD5AD /* ChatItemView.swift */,
 				5CE4407127ADB1D0007B033A /* Emoji.swift */,
-				6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */,
 			);
 			path = Chat;
 			sourceTree = "<group>";
@@ -633,6 +632,7 @@
 			isa = PBXGroup;
 			children = (
 				6440CA02288AECA70062C672 /* AddGroupMembersView.swift */,
+				6442E0BD2880182D00CEC0F9 /* GroupChatInfoView.swift */,
 				647F090D288EA27B00644C40 /* GroupMemberInfoView.swift */,
 				5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */,
 			);
