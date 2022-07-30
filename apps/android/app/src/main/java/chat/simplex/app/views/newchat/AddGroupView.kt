@@ -16,20 +16,27 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.SimplexService
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.ModalView
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.isValidDisplayName
-import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 
 @Composable
 fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
-    createGroup = {},
+    createGroup = { groupProfile ->
+      withApi {
+        val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
+        if (groupInfo != null) {
+          chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
+          close.invoke()
+          chatModel.chatId.value = groupInfo.id
+        }
+      }
+    },
     close
   )
 }
@@ -79,13 +86,12 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
         ProfileNameField(fullName)
 
         Spacer(Modifier.fillMaxHeight().weight(1f))
-
         val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
         val createModifier: Modifier
         val createColor: Color
         if (enabled) {
-          //          createModifier = Modifier.clickable { chat.simplex.app.views.createProfile(displayName.value, fullName.value) }.padding(8.dp)
-          createModifier = Modifier.clickable { }.padding(8.dp)
+          val groupProfile = GroupProfile(displayName.value, fullName.value)
+          createModifier = Modifier.clickable { createGroup(groupProfile) }.padding(8.dp)
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)
@@ -113,35 +119,3 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
     }
   }
 }
-
-//func createGroup() {
-//  hideKeyboard()
-//  do {
-//    let groupInfo = try apiNewGroup(profile)
-//      m.addChat(Chat(chatInfo: .group(groupInfo: groupInfo), chatItems: []))
-//      openedSheet = nil
-//      DispatchQueue.main.async {
-//        m.chatId = groupInfo.id
-//      }
-//    } catch {
-//      openedSheet = nil
-//      AlertManager.shared.showAlert(
-//        Alert(
-//          title: Text("Error creating group"),
-//          message: Text(responseError(error))
-//        )
-//      )
-//    }
-//  }
-
-//fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
-//  withApi {
-//    val user = chatModel.controller.apiCreateActiveUser(
-//      Profile(displayName, fullName, null)
-//    )
-//    chatModel.controller.startChat(user)
-//    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-//    SimplexService.start(chatModel.controller.appContext)
-//    chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
-//  }
-//}
