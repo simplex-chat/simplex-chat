@@ -74,8 +74,8 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
         Surface(Modifier.background(MaterialTheme.colors.onBackground)) {
           Column(
             Modifier
-              .fillMaxSize()
               .verticalScroll(rememberScrollState())
+              .padding(bottom = 16.dp)
           ) {
             Row(
               Modifier.fillMaxWidth(),
@@ -104,56 +104,56 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
                   DeleteImageButton { profileImage.value = null }
                 }
               }
-              Text(
-                stringResource(R.string.group_display_name_field),
-                style = MaterialTheme.typography.h6,
-                modifier = Modifier.padding(bottom = 3.dp)
-              )
-              ProfileNameField(displayName, focusRequester)
-              val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-              Text(
-                errorText,
-                fontSize = 15.sp,
-                color = MaterialTheme.colors.error
-              )
-              Spacer(Modifier.height(3.dp))
-              Text(
-                stringResource(R.string.group_full_name_field),
-                style = MaterialTheme.typography.h6,
-                modifier = Modifier.padding(bottom = 5.dp)
-              )
-              ProfileNameField(fullName)
+            }
+            Text(
+              stringResource(R.string.group_display_name_field),
+              style = MaterialTheme.typography.h6,
+              modifier = Modifier.padding(bottom = 3.dp)
+            )
+            ProfileNameField(displayName, focusRequester)
+            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
+            Text(
+              errorText,
+              fontSize = 15.sp,
+              color = MaterialTheme.colors.error
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+              stringResource(R.string.group_full_name_field),
+              style = MaterialTheme.typography.h6,
+              modifier = Modifier.padding(bottom = 5.dp)
+            )
+            ProfileNameField(fullName)
 
-              Spacer(Modifier.fillMaxHeight())
-              val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-              val createModifier: Modifier
-              val createColor: Color
-              if (enabled) {
-                val groupProfile = GroupProfile(displayName.value, fullName.value, profileImage.value)
-                createModifier = Modifier.clickable { createGroup(groupProfile) }.padding(8.dp)
-                createColor = MaterialTheme.colors.primary
-              } else {
-                createModifier = Modifier.padding(8.dp)
-                createColor = HighOrLowlight
-              }
-              Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-              ) {
-                Surface(shape = RoundedCornerShape(20.dp)) {
-                  Row(
-                    createModifier,
-                    verticalAlignment = Alignment.CenterVertically,
-                  ) {
-                    Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor)
-                    Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
-                  }
+            Spacer(Modifier.fillMaxHeight())
+            val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            val createModifier: Modifier
+            val createColor: Color
+            if (enabled) {
+              val groupProfile = GroupProfile(displayName.value, fullName.value, profileImage.value)
+              createModifier = Modifier.clickable { createGroup(groupProfile) }.padding(8.dp)
+              createColor = MaterialTheme.colors.primary
+            } else {
+              createModifier = Modifier.padding(8.dp)
+              createColor = HighOrLowlight
+            }
+            Row(
+              Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.End
+            ) {
+              Surface(shape = RoundedCornerShape(20.dp)) {
+                Row(
+                  createModifier,
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor)
+                  Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
                 }
               }
+            }
 
-              LaunchedEffect(Unit) {
-                focusRequester.requestFocus()
-              }
+            LaunchedEffect(Unit) {
+              focusRequester.requestFocus()
             }
           }
         }
@@ -161,3 +161,4 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
     }
   }
 }
+
