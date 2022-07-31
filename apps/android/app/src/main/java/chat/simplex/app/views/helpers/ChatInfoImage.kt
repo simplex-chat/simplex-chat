@@ -24,11 +24,11 @@ import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
   val icon =
     if (chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
-  ProfileImage(size, chatInfo.image, icon)
+  ProfileImage(size, chatInfo.image, icon, iconColor)
 }
 
 @Composable

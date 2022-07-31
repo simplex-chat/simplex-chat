@@ -10,27 +10,70 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupView: View {
-    @Binding var openedSheet: NewChatAction?
     @EnvironmentObject var m: ChatModel
-    @State private var displayName: String = ""
-    @State private var fullName: String = ""
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @State private var chat: Chat?
+    @State private var groupInfo: GroupInfo?
+    @State private var profile = GroupProfile(displayName: "", fullName: "")
     @FocusState private var focusDisplayName
     @FocusState private var focusFullName
+    @State private var showChooseSource = false
+    @State private var showImagePicker = false
+    @State private var showTakePhoto = false
+    @State private var chosenImage: UIImage? = nil
 
     var body: some View {
+        if let chat = chat, let groupInfo = groupInfo {
+            AddGroupMembersView(chat: chat,
+                                groupInfo: groupInfo,
+                                membersToAdd: filterMembersToAdd([]),
+                                showSkip: true) { _ in
+                dismiss()
+                DispatchQueue.main.async {
+                    m.chatId = groupInfo.id
+                }
+            }
+        } else {
+            createGroupView()
+        }
+    }
+
+    func createGroupView() -> some View {
         VStack(alignment: .leading) {
-            Text("Create group")
+            Text("Create secret group")
                 .font(.largeTitle)
+                .padding(.vertical, 4)
+            Text("The group is fully decentralized – it is visible only to the members.")
                 .padding(.bottom, 4)
-            Text("Enter group details")
                 .padding(.bottom)
+
+            ZStack(alignment: .center) {
+                ZStack(alignment: .topTrailing) {
+                    profileImageView(profile.image)
+                    if profile.image != nil {
+                        Button {
+                            profile.image = nil
+                        } label: {
+                            Image(systemName: "multiply")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 12)
+                        }
+                    }
+                }
+
+                editImageButton { showChooseSource = true }
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.bottom, 4)
+
             ZStack(alignment: .topLeading) {
-                if !validDisplayName(displayName) {
+                if !validDisplayName(profile.displayName) {
                     Image(systemName: "exclamationmark.circle")
                         .foregroundColor(.red)
                         .padding(.top, 4)
                 }
-                textField("Display name", text: $displayName)
+                textField("Group display name", text: $profile.displayName)
                     .focused($focusDisplayName)
                     .submitLabel(.next)
                     .onSubmit {
@@ -38,7 +81,7 @@ struct AddGroupView: View {
                         else { focusDisplayName = true }
                     }
             }
-            textField("Full name (optional)", text: $fullName)
+            textField("Group full name (optional)", text: $profile.fullName)
                 .focused($focusFullName)
                 .submitLabel(.go)
                 .onSubmit {
@@ -58,9 +101,39 @@ struct AddGroupView: View {
             .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .onAppear() {
-            focusDisplayName = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                focusDisplayName = true
+            }
         }
         .padding()
+        .confirmationDialog("Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
+            Button("Take picture") {
+                showTakePhoto = true
+            }
+            Button("Choose from library") {
+                showImagePicker = true
+            }
+        }
+        .fullScreenCover(isPresented: $showTakePhoto) {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                CameraImagePicker(image: $chosenImage)
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            LibraryImagePicker(image: $chosenImage) {
+                didSelectItem in showImagePicker = false
+            }
+        }
+        .onChange(of: chosenImage) { image in
+            if let image = image {
+                profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
+            } else {
+                profile.image = nil
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { hideKeyboard() }
     }
 
     func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
@@ -73,40 +146,36 @@ struct AddGroupView: View {
 
     func createGroup() {
         hideKeyboard()
-        let groupProfile = GroupProfile(
-            displayName: displayName,
-            fullName: fullName
-        )
         do {
-            let groupInfo = try apiNewGroup(groupProfile)
-            m.addChat(Chat(chatInfo: .group(groupInfo: groupInfo), chatItems: []))
-            openedSheet = nil
-            DispatchQueue.main.async {
-                m.chatId = groupInfo.id
+            let gInfo = try apiNewGroup(profile)
+            let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
+            m.addChat(c)
+            withAnimation {
+                groupInfo = gInfo
+                chat = c
             }
         } catch {
-            openedSheet = nil
+            dismiss()
             AlertManager.shared.showAlert(
                 Alert(
-                    title: Text("Failed to create group"),
+                    title: Text("Error creating group"),
                     message: Text(responseError(error))
                 )
             )
         }
     }
 
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
     func canCreateProfile() -> Bool {
-        displayName != "" && validDisplayName(displayName)
+        profile.displayName != "" && validDisplayName(profile.displayName)
     }
+}
+
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
 struct AddGroupView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var openedSheet: NewChatAction? = nil
-        return AddGroupView(openedSheet: $openedSheet)
+        AddGroupView()
     }
 }

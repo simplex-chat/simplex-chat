@@ -11,22 +11,24 @@ import SimpleXChat
 
 struct AddGroupMembersView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
     var groupInfo: GroupInfo
-    @Binding var showSheet: Bool
-    @State private var contactsToAdd: [Contact] = []
+    var membersToAdd: [Contact]
+    var showSkip: Bool = false
+    var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .admin
 
     var body: some View {
         NavigationView {
-            List {
+            let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
-                if (contactsToAdd.isEmpty) {
+                if (membersToAdd.isEmpty) {
                     Text("No contacts to add")
                         .foregroundColor(.secondary)
                         .padding()
@@ -52,27 +54,28 @@ struct AddGroupMembersView: View {
                     }
 
                     Section {
-                        ForEach(contactsToAdd) { contact in
+                        ForEach(membersToAdd) { contact in
                             contactCheckView(contact)
                         }
                     }
                 }
             }
-            .navigationBarHidden(true)
+
+            if (showSkip) {
+                v.toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if showSkip {
+                            Button ("Skip") {
+                                if let cb = addedMembersCb { cb(selectedContacts) }
+                            }
+                        }
+                    }
+                }
+            } else {
+                v.navigationBarHidden(true)
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .task {
-            contactsToAdd = await getContactsToAdd()
-        }
-    }
-
-    func getContactsToAdd() async -> [Contact] {
-        let ms = await apiListMembers(chat.chatInfo.apiId)
-        let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
-        return chatModel.chats
-            .compactMap{ $0.chatInfo.contact }
-            .filter{ !memberContactIds.contains($0.apiId) }
-            .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
     }
 
     func inviteMembersButton() -> some View {
@@ -81,7 +84,8 @@ struct AddGroupMembersView: View {
                 for contactId in selectedContacts {
                     await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
                 }
-                showSheet = false
+                await MainActor.run { dismiss() }
+                if let cb = addedMembersCb { cb(selectedContacts) }
             }
         } label: {
             HStack {
@@ -128,7 +132,6 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showSheet = true
-        return AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData, showSheet: $showSheet)
+        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData, membersToAdd: [])
     }
 }

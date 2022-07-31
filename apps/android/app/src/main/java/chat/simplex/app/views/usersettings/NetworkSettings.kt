@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -65,7 +66,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SettingsSectionView(stringResource(R.string.settings_section_title_socks)) {
+    SectionView(stringResource(R.string.settings_section_title_socks)) {
       Row(
         Modifier.padding(start = 10.dp),
         verticalAlignment = Alignment.CenterVertically

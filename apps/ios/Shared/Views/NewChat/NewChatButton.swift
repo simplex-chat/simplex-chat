@@ -34,14 +34,14 @@ struct NewChatButton: View {
             Button("Create link / QR code") { addContactAction() }
             Button("Paste received link") { actionSheet = .pasteLink }
             Button("Scan QR code") { actionSheet = .scanQRCode }
-            Button("Create group") { actionSheet = .createGroup }
+            Button("Create secret group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
             case .createLink: AddContactView(connReqInvitation: connReq)
-            case .pasteLink: PasteToConnectView(openedSheet: $actionSheet)
-            case .scanQRCode: ScanToConnectView(openedSheet: $actionSheet)
-            case .createGroup: AddGroupView(openedSheet: $actionSheet)
+            case .pasteLink: PasteToConnectView()
+            case .scanQRCode: ScanToConnectView()
+            case .createGroup: AddGroupView()
             }
         }
     }
@@ -64,12 +64,12 @@ enum ConnReqType: Equatable {
     case invitation
 }
 
-func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<NewChatAction?>? = nil) {
+func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
     Task {
         do {
             let res = try await apiConnect(connReq: connectionLink)
             DispatchQueue.main.async {
-                openedSheet?.wrappedValue = nil
+                dismiss?()
                 if let connReqType = res {
                     connectionReqSentAlert(connReqType)
                 }
@@ -77,7 +77,7 @@ func connectViaLink(_ connectionLink: String, _ openedSheet: Binding<NewChatActi
         } catch {
             logger.error("connectViaLink apiConnect error: \(responseError(error))")
             DispatchQueue.main.async {
-                openedSheet?.wrappedValue = nil
+                dismiss?()
                 connectionErrorAlert(error)
             }
         }

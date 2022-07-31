@@ -447,6 +447,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
+  suspend fun apiListContacts(): List<Contact>? {
+    val r = sendCmd(CC.ListContacts())
+    if (r is CR.ContactsList) return r.contacts
+    Log.e(TAG, "apiListContacts bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiUpdateProfile(profile: Profile): Profile? {
     val r = sendCmd(CC.ApiUpdateProfile(profile))
     if (r is CR.UserProfileNoChange) return profile
@@ -554,10 +561,30 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
+  suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
+    val r = sendCmd(CC.NewGroup(p))
+    if (r is CR.GroupCreated) return r.groupInfo
+    Log.e(TAG, "apiNewGroup bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole) {
+    val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
+    if (r is CR.SentGroupInvitation) return
+    Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiJoinGroup(groupId: Long): GroupInfo? {
     val r = sendCmd(CC.ApiJoinGroup(groupId))
     if (r is CR.UserAcceptedGroupSent) return r.groupInfo
     Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiRemoveMember(groupId: Long, memberId: Long): GroupMember? {
+    val r = sendCmd(CC.ApiRemoveMember(groupId, memberId))
+    if (r is CR.UserDeletedMember) return r.member
+    Log.e(TAG, "apiRemoveMember bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -566,6 +593,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     if (r is CR.LeftMemberUser) return r.groupInfo
     Log.e(TAG, "apiLeaveGroup bad response: ${r.responseType} ${r.details}")
     return null
+  }
+
+  suspend fun apiListMembers(groupId: Long): List<GroupMember> {
+    val r = sendCmd(CC.ApiListMembers(groupId))
+    if (r is CR.GroupMembers) return r.group.members
+    Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
+    return emptyList()
   }
 
   fun apiErrorAlert(method: String, title: String, r: CR) {
@@ -627,7 +661,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
         }
-        if (!cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
+        if (!cItem.chatDir.sent && !cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(cInfo, cItem)
         }
       }
@@ -659,6 +693,10 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         // TODO NtfManager.shared.notifyGroupInvitation
       }
       is CR.UserJoinedGroup ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.GroupDeleted ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.DeletedMemberUser ->
         chatModel.updateGroup(r.groupInfo)
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.chatItem)
@@ -989,6 +1027,7 @@ sealed class CC {
   class Connect(val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
+  class ListContacts: CC()
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
   class CreateMyAddress: CC()
@@ -1021,8 +1060,8 @@ sealed class CC {
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
-    is NewGroup -> "/group ${groupProfile.displayName} ${groupProfile.fullName}"
-    is ApiAddMember -> "/_add #$groupId $contactId $memberRole"
+    is NewGroup -> "/_group ${json.encodeToString(groupProfile)}"
+    is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
@@ -1037,6 +1076,7 @@ sealed class CC {
     is Connect -> "/connect $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
+    is ListContacts -> "/contacts"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
     is CreateMyAddress -> "/address"
@@ -1086,6 +1126,7 @@ sealed class CC {
     is Connect -> "connect"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiClearChat -> "apiClearChat"
+    is ListContacts -> "listContacts"
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is CreateMyAddress -> "createMyAddress"
@@ -1192,6 +1233,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemStatusUpdated") class ChatItemStatusUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val deletedChatItem: AChatItem, val toChatItem: AChatItem): CR()
+  @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact): CR()
@@ -1276,6 +1318,7 @@ sealed class CR {
     is ChatItemStatusUpdated -> "chatItemStatusUpdated"
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemDeleted -> "chatItemDeleted"
+    is ContactsList -> "contactsList"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -1358,6 +1401,7 @@ sealed class CR {
     is ChatItemStatusUpdated -> json.encodeToString(chatItem)
     is ChatItemUpdated -> json.encodeToString(chatItem)
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
+    is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
     is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact"
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)

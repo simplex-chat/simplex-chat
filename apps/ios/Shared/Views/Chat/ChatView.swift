@@ -17,6 +17,7 @@ struct ChatView: View {
     @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
+    @State private var membersToAdd: [Contact] = []
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -72,9 +73,7 @@ struct ChatView: View {
                             }
                         }
                     }
-                    .onTapGesture {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
+                    .onTapGesture { hideKeyboard() }
                 }
             }
 
@@ -105,25 +104,32 @@ struct ChatView: View {
                     ChatInfoToolbar(chat: chat)
                 }
                 .sheet(isPresented: $showChatInfoSheet) {
-                    if case .direct = chat.chatInfo {
-                        ChatInfoView(chat: chat, showSheet: $showChatInfoSheet)
-                    } else if case let .group(groupInfo) = chat.chatInfo {
-                        GroupChatInfoView(chat: chat, groupInfo: groupInfo, showSheet: $showChatInfoSheet)
+                    switch cInfo {
+                    case .direct:
+                        ChatInfoView(chat: chat)
+                    case let .group(groupInfo):
+                        GroupChatInfoView(chat: chat, groupInfo: groupInfo)
+                    default:
+                        EmptyView()
                     }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if case let .direct(contact) = cInfo {
+                switch cInfo {
+                case let .direct(contact):
                     HStack {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")
                     }
-                } else if case let .group(groupInfo) = chat.chatInfo,
-                          groupInfo.canAddMembers {
-                    addMembersButton()
-                        .sheet(isPresented: $showAddMembersSheet) {
-                            AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
-                        }
+                case let .group(groupInfo):
+                    if groupInfo.canAddMembers {
+                        addMembersButton()
+                            .sheet(isPresented: $showAddMembersSheet) {
+                                AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: membersToAdd)
+                            }
+                    }
+                default:
+                    EmptyView()
                 }
             }
         }
@@ -140,7 +146,15 @@ struct ChatView: View {
 
     private func addMembersButton() -> some View {
         Button {
-            showAddMembersSheet = true
+            if case let .group(gInfo) = chat.chatInfo {
+                Task {
+                    let ms = await apiListMembers(gInfo.apiId)
+                    await MainActor.run {
+                        membersToAdd = filterMembersToAdd(ms)
+                        showAddMembersSheet = true
+                    }
+                }
+            }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
         }

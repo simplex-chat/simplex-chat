@@ -1,7 +1,7 @@
 package chat.simplex.app.views.newchat
 
 import android.Manifest
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -48,66 +48,108 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     pasteLink = {
       newChatCtrl.collapse()
       ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel, close) }
+    },
+    createGroup = {
+      newChatCtrl.collapse()
+      ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
     }
   )
 }
 
 @Composable
-fun NewChatSheetLayout(addContact: () -> Unit, scanCode: () -> Unit, pasteLink: () -> Unit) {
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
+fun NewChatSheetLayout(
+  addContact: () -> Unit,
+  scanCode: () -> Unit,
+  pasteLink: () -> Unit,
+  createGroup: () -> Unit
+) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
-      stringResource(R.string.add_contact_to_start_new_chat),
-      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 32.dp)
+      stringResource(R.string.add_contact_or_create_group),
+      modifier = Modifier.padding(horizontal = 4.dp).padding(top = 20.dp, bottom = 20.dp),
+      style = MaterialTheme.typography.body2
     )
+    val boxModifier = Modifier.fillMaxWidth().height(80.dp).padding(horizontal = 0.dp)
+    Divider(Modifier.padding(horizontal = 8.dp))
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.create_one_time_link),
+        stringResource(R.string.to_share_with_your_contact),
+        Icons.Outlined.AddLink,
+        click = addContact
+      )
+    }
+    Divider(Modifier.padding(horizontal = 8.dp))
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.paste_received_link),
+        stringResource(R.string.paste_received_link_from_clipboard),
+        Icons.Outlined.Article,
+        click = pasteLink
+      )
+    }
+    Divider(Modifier.padding(horizontal = 8.dp))
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.scan_QR_code),
+        stringResource(R.string.in_person_or_in_video_call__bracketed),
+        Icons.Outlined.QrCode,
+        click = scanCode
+      )
+    }
+    Divider(Modifier.padding(horizontal = 8.dp))
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.create_group),
+        stringResource(R.string.only_stored_on_members_devices),
+        icon = Icons.Outlined.Group,
+        click = createGroup
+      )
+    }
+  }
+}
+
+@Composable
+fun ActionRowButton(
+  text: String, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
+  Surface(Modifier.fillMaxSize()) {
     Row(
-      Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 8.dp)
-        .padding(top = 24.dp, bottom = 40.dp),
-      horizontalArrangement = Arrangement.SpaceEvenly
+      Modifier.clickable(onClick = click).size(48.dp).padding(8.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
-        ActionButton(
-          stringResource(R.string.create_one_time_link),
-          stringResource(R.string.to_share_with_your_contact),
-          Icons.Outlined.AddLink,
-          click = addContact
+      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      Icon(icon, text, tint = tint, modifier = Modifier.size(48.dp).padding(start = 4.dp, end = 16.dp))
+
+      Column {
+        Text(
+          text,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Bold,
+          color = tint
         )
-      }
-      Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
-        ActionButton(
-          stringResource(R.string.paste_received_link),
-          stringResource(R.string.paste_received_link_from_clipboard),
-          Icons.Outlined.Article,
-          click = pasteLink
-        )
-      }
-      Box(
-        Modifier
-          .weight(1F)
-          .fillMaxWidth()) {
-        ActionButton(
-          stringResource(R.string.scan_QR_code),
-          stringResource(R.string.in_person_or_in_video_call__bracketed),
-          Icons.Outlined.QrCode,
-          click = scanCode
-        )
+
+        if (comment != null) {
+          Text(
+            comment,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.body2
+          )
+        }
       }
     }
   }
 }
 
 @Composable
-fun ActionButton(text: String?, comment: String?, icon: ImageVector, disabled: Boolean = false,
-                 click: () -> Unit = {}) {
+fun ActionButton(
+  text: String?,
+  comment: String?,
+  icon: ImageVector,
+  disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
   Surface(shape = RoundedCornerShape(18.dp)) {
     Column(
       Modifier
@@ -148,7 +190,8 @@ fun PreviewNewChatSheet() {
     NewChatSheetLayout(
       addContact = {},
       scanCode = {},
-      pasteLink = {}
+      pasteLink = {},
+      createGroup = {}
     )
   }
 }

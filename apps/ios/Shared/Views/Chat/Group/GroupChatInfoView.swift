@@ -11,14 +11,15 @@ import SimpleXChat
 
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @ObservedObject var alertManager = AlertManager.shared
+    @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     var groupInfo: GroupInfo
-    @Binding var showSheet: Bool
+    @ObservedObject private var alertManager = AlertManager.shared
     @State private var members: [GroupMember] = []
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
+    @State private var showGroupProfile: Bool = false
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -34,8 +35,8 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                Section(header: Text("\(members.count + 1) members")) {
-                    if (groupInfo.canAddMembers) {
+                Section("\(members.count + 1) members") {
+                    if groupInfo.canAddMembers {
                         addMembersButton()
                     }
                     memberView(groupInfo.membership, user: true)
@@ -44,18 +45,24 @@ struct GroupChatInfoView: View {
                     }
                 }
                 .sheet(isPresented: $showAddMembersSheet) {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo, showSheet: $showAddMembersSheet)
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: filterMembersToAdd(members))
                 }
                 .sheet(item: $selectedMember) { member in
                     GroupMemberInfoView(groupInfo: groupInfo, member: member)
                 }
+                .sheet(isPresented: $showGroupProfile) {
+                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                }
 
                 Section {
+                    if groupInfo.canEdit {
+                        editGroupButton()
+                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
                     }
-                    if (groupInfo.membership.memberStatus != .memLeft) {
+                    if groupInfo.membership.memberCurrent {
                         leaveGroupButton()
                     }
                 }
@@ -76,8 +83,10 @@ struct GroupChatInfoView: View {
             }
         }
         .task {
-            members = await apiListMembers(chat.chatInfo.apiId)
-                .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() } // TODO owner first
+            let ms = await apiListMembers(chat.chatInfo.apiId)
+            await MainActor.run {
+                members = ms.sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+            }
         }
     }
 
@@ -140,6 +149,14 @@ struct GroupChatInfoView: View {
         }
     }
 
+    func editGroupButton() -> some View {
+        Button {
+            showGroupProfile = true
+        } label: {
+            Label("Edit group profile", systemImage: "pencil")
+        }
+    }
+
     func deleteGroupButton() -> some View {
         Button(role: .destructive) {
             alert = .deleteGroupAlert
@@ -178,7 +195,7 @@ struct GroupChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
-                            showSheet = false
+                            dismiss()
                         }
                     } catch let error {
                         logger.error("deleteGroupAlert apiDeleteChat error: \(error.localizedDescription)")
@@ -196,9 +213,7 @@ struct GroupChatInfoView: View {
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
-                    await MainActor.run {
-                        showSheet = false
-                    }
+                    await MainActor.run { dismiss() }
                 }
             },
             secondaryButton: .cancel()
@@ -212,9 +227,7 @@ struct GroupChatInfoView: View {
             primaryButton: .destructive(Text("Leave")) {
                 Task {
                     await leaveGroup(chat.chatInfo.apiId)
-                    await MainActor.run {
-                        showSheet = false
-                    }
+                    await MainActor.run { dismiss() }
                 }
             },
             secondaryButton: .cancel()
@@ -224,7 +237,6 @@ struct GroupChatInfoView: View {
 
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showSheet = true
-        return GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData, showSheet: $showSheet)
+        GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData)
     }
 }

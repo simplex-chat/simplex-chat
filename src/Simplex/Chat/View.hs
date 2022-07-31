@@ -149,6 +149,7 @@ responseToView testView = \case
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
+  CRGroupUpdated g g' m -> viewGroupUpdated g g' m
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
@@ -449,7 +450,14 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' ldn fullName
-        _ -> ttyGroup ldn <> optFullName ldn fullName
+        s -> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+      where
+        viewMemberStatus = \case
+          GSMemRemoved -> delete "you are removed"
+          GSMemLeft -> delete "you left"
+          GSMemGroupDeleted -> delete "group deleted"
+          _ -> ""
+        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
 
 groupInvitation' :: GroupName -> Text -> StyledString
 groupInvitation' displayName fullName =
@@ -528,6 +536,18 @@ viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displ
   | otherwise = ["user profile is changed to " <> ttyFullName n' fullName' <> notified]
   where
     notified = " (your contacts are notified)"
+
+viewGroupUpdated :: GroupInfo -> GroupInfo -> Maybe GroupMember -> [StyledString]
+viewGroupUpdated
+  GroupInfo {localDisplayName = n, groupProfile = GroupProfile {fullName, image}}
+  g'@GroupInfo {localDisplayName = n', groupProfile = GroupProfile {fullName = fullName', image = image'}}
+  m
+    | n == n' && fullName == fullName' && image == image' = []
+    | n == n' && fullName == fullName' = ["group " <> ttyGroup n <> ": profile image " <> (if isNothing image' then "removed" else "updated") <> byMember]
+    | n == n' = ["group " <> ttyGroup n <> ": full name " <> if T.null fullName' || fullName' == n' then "removed" else "changed to " <> plain fullName' <> byMember]
+    | otherwise = ["group " <> ttyGroup n <> " is changed to " <> ttyFullGroup g' <> byMember]
+    where
+      byMember = maybe "" ((" by " <>) . ttyMember) m
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

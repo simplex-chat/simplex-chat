@@ -64,6 +64,7 @@ module Simplex.Chat.Store
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
+    updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
     getGroupInfoByName,
@@ -1277,28 +1278,23 @@ updateConnectionStatus db Connection {connId} connStatus = do
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
-createNewGroup db gVar user groupProfile =
-  checkConstraint SEDuplicateName . liftIO $ do
-    let GroupProfile {displayName, fullName, image} = groupProfile
-        uId = userId user
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, displayName, uId, currentTs, currentTs)
+createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
+  let GroupProfile {displayName, fullName, image} = groupProfile
+  currentTs <- getCurrentTime
+  withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
       "INSERT INTO group_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (displayName, fullName, image, uId, currentTs, currentTs)
+      (displayName, fullName, image, userId, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
       "INSERT INTO groups (local_display_name, user_id, group_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, uId, profileId, currentTs, currentTs)
+      (ldn, userId, profileId, currentTs, currentTs)
     groupId <- insertedRowId db
     memberId <- encodedRandomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
-    pure GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> ExceptT StoreError IO GroupInfo
@@ -3076,6 +3072,38 @@ getGroupInfo db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
+
+updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
+  | displayName == newName = liftIO $ do
+    currentTs <- getCurrentTime
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateGroupProfile_ currentTs
+      updateGroup_ ldn currentTs
+      pure $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+  where
+    updateGroupProfile_ currentTs =
+      DB.execute
+        db
+        [sql|
+          UPDATE group_profiles
+          SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+          WHERE group_profile_id IN (
+            SELECT group_profile_id
+            FROM groups
+            WHERE user_id = ? AND group_id = ?
+          )
+        |]
+        (newName, fullName, image, currentTs, userId, groupId)
+    updateGroup_ ldn currentTs = do
+      DB.execute
+        db
+        "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
+        (ldn, currentTs, userId, groupId)
+      DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user pagination = do
