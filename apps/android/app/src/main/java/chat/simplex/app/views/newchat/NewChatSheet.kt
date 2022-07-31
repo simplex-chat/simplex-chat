@@ -63,16 +63,14 @@ fun NewChatSheetLayout(
   pasteLink: () -> Unit,
   createGroup: () -> Unit
 ) {
-  Column(
-    Modifier.padding(bottom = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
       stringResource(R.string.add_contact_or_create_group),
-      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 20.dp, bottom = 10.dp)
+      modifier = Modifier.padding(horizontal = 4.dp).padding(top = 20.dp, bottom = 20.dp),
+      style = MaterialTheme.typography.body2
     )
-    val boxModifier = Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp, vertical = 8.dp)
-
+    val boxModifier = Modifier.fillMaxWidth().height(80.dp).padding(horizontal = 8.dp)
+    Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
         stringResource(R.string.create_one_time_link),
@@ -81,7 +79,7 @@ fun NewChatSheetLayout(
         click = addContact
       )
     }
-
+    Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
         stringResource(R.string.paste_received_link),
@@ -90,7 +88,7 @@ fun NewChatSheetLayout(
         click = pasteLink
       )
     }
-
+    Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
         stringResource(R.string.scan_QR_code),
@@ -99,7 +97,7 @@ fun NewChatSheetLayout(
         click = scanCode
       )
     }
-
+    Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
         stringResource(R.string.create_group),
@@ -116,17 +114,13 @@ fun ActionRowButton(
   text: String, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(
-    Modifier.fillMaxSize(),
-    shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.colors.secondary
-  ) {
+  Surface(Modifier.fillMaxSize()) {
     Row(
       Modifier.clickable(onClick = click).size(48.dp).padding(8.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Icon(icon, text, tint = tint, modifier = Modifier.size(48.dp).padding(horizontal = 10.dp))
+      Icon(icon, text, tint = tint, modifier = Modifier.size(48.dp).padding(start = 4.dp, end = 16.dp))
 
       Column {
         Text(
