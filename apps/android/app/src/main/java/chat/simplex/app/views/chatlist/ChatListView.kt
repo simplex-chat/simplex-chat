@@ -135,7 +135,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
           Icons.Outlined.AddCircle,
           stringResource(R.string.add_contact),
           tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp)
+          modifier = Modifier.padding(10.dp).size(26.dp)
         )
       }
     } else {

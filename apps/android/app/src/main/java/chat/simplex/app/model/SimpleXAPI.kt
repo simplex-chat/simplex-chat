@@ -559,6 +559,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
+  suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
+    val r = sendCmd(CC.NewGroup(p))
+    if (r is CR.GroupCreated) return r.groupInfo
+    Log.e(TAG, "apiNewGroup bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole) {
     val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
     if (r is CR.SentGroupInvitation) return
@@ -1047,7 +1054,7 @@ sealed class CC {
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
-    is NewGroup -> "/group ${groupProfile.displayName} ${groupProfile.fullName}"
+    is NewGroup -> "/_group ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
