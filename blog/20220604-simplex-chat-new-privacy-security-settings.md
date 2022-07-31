@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!"
 date: 2022-06-04
 ---

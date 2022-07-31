@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "Instant notifications for SimpleX Chat mobile apps"
 date: 2022-04-04
 ---

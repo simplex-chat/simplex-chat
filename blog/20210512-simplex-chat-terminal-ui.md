@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "Announcing SimpleX Chat Prototype!"
 date: 2021-05-12
 ---

@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "Simplex Chat"
 date: 2020-10-22
 ---

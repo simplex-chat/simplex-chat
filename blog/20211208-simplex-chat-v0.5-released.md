@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v0.5"
 date: 2021-12-08
 ---

@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "SimpleX Chat v3.1-beta is released"
 date: 2022-07-23
 ---

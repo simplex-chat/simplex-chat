@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v0.4"
 date: 2021-09-14
 ---

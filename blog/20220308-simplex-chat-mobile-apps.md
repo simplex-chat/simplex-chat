@@ -1,4 +1,5 @@
 ---
+layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat mobile apps for iOS and Android"
 date: 2022-03-08
 ---
