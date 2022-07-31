@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+    Simplex Chat
+    <a href="/blog/20201022-simplex-chat/">Simplex Chat sss</a>
+    <!-- &lt;h1&gt;Simplex chat&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Oct 22, 2020&lt;/p&gt;
+&lt;p&gt;https://simplex.chat&lt;/p&gt;
+&lt;p&gt;I&#39;d really appreciate your feedback, criticism and suggestions on the open-source idea I was slowly working on since early 2020. I recently made the demo server for the low-level message queue protocol (&amp;quot;simplex messaging protocol&amp;quot;) and the website to try to explain the chat idea that would use this protocol.&lt;/p&gt;
+&lt;p&gt;Haskell protocol implementation: https://github.com/simplex-chat/simplexmq&lt;/p&gt;
+&lt;p&gt;In short, the protocol defines a minimalist set of commands and server responses (just 7 commands and 5 responses sent over TCP) to operate encrypted message queues with in-memory persistence - the implementation uses STM.&lt;/p&gt;
+&lt;p&gt;If anything, it was definitely helping to get to know Haskell types etc. much deeper than before :)&lt;/p&gt;
+&lt;p&gt;Any criticism would be great - thank you in advance!&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Originally published at https://www.reddit.com/r/haskell/comments/jg6uh4/simplex_chat/&lt;/p&gt;
+ -->
+    
+    Simplex Chat Terminal UI
+    <a href="/blog/20210512-simplex-chat-terminal-ui/">Simplex Chat Terminal UI sss</a>
+    <!-- &lt;h2&gt;Announcing SimpleX Chat Prototype!&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 12, 2021&lt;/p&gt;
+&lt;p&gt;For the last six months &lt;a href=&quot;https://github.com/epoberezkin&quot;&gt;me&lt;/a&gt; and my son &lt;a href=&quot;https://github.com/efim-poberezkin&quot;&gt;Efim&lt;/a&gt; have been working to bring you a working prototype of SimpleX Chat. We&#39;re excited to announce SimpleX Chat terminal client is now available &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;here&lt;/a&gt; on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).&lt;/p&gt;
+&lt;p&gt;We’ve been using the terminal client between us and a few other people for a couple of months now, eating our own “dog food”, and have developed up to version 0.3.1, with most of the messaging protocol features we originally planned&lt;/p&gt;
+&lt;h3&gt;Features&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;End-to-end encryption with protection from man in the middle attack. The connection invitation must be passed out-of-band (see &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#how-to-use-simplex-chat&quot;&gt;how to use SimpleX Chat&lt;/a&gt; in the repo).&lt;/li&gt;
+&lt;li&gt;No global identity or any usernames visible to the server(s), ensuring full privacy of your contacts and conversations.&lt;/li&gt;
+&lt;li&gt;Message signing and verification with automatically generated RSA keys, with keys being unique per each connection.&lt;/li&gt;
+&lt;li&gt;Authorization of each command/message by the servers with automatically generated RSA key pairs, also unique per connection.&lt;/li&gt;
+&lt;li&gt;Message integrity validation (via passing the digests of the previous messages).&lt;/li&gt;
+&lt;li&gt;Encrypted TCP transport, independent of certificates.&lt;/li&gt;
+&lt;li&gt;You can deploy your own server, but you don’t have to - the demo SMP server to relay your messages is available at smp1.simplex.im:5223 (pre-configured in the client).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;We need your help!&lt;/h3&gt;
+&lt;p&gt;We&#39;re building a new kind of chat network - the only network that lets you control your chat. We&#39;d really appreciate your feedback, criticism and support - a star on the github repo, signing up to the mailing list or any contribution to the project will help. There is so much more to do!&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Originally published at https://www.reddit.com/r/haskell/comments/naw6lz/simplex_chat_prototype_terminal_ui_made_in_haskell/&lt;/p&gt;
+ -->
+    
+    Simplex Chat v0.4 released
+    <a href="/blog/20210914-simplex-chat-v0.4-released/">Simplex Chat v0.4 released sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat v0.4&lt;/h1&gt;
+&lt;h2&gt;Open-source decentralized chat that uses privacy-preserving message routing protocol&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 14, 2021&lt;/p&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.&lt;/p&gt;
+&lt;h2&gt;What is SimpleX?&lt;/h2&gt;
+&lt;p&gt;We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph.  SimpleX, at it&#39;s core, is designed to be truly distributed with no central server.  This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.&lt;/p&gt;
+&lt;p&gt;The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline.  The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.&lt;/p&gt;
+&lt;h2&gt;What&#39;s new in v0.5?&lt;/h2&gt;
+&lt;p&gt;We&#39;re exicted to announce that SimpleX Chat now supports group chat and file transfer!&lt;/p&gt;
+&lt;h3&gt;Chat groups&lt;/h3&gt;
+&lt;p&gt;To create a group use the &lt;code&gt;/g &amp;lt;group&amp;gt;&lt;/code&gt; command. You can then invite contacts to the group by entering the &lt;code&gt;/a &amp;lt;group&amp;gt; &amp;lt;name&amp;gt;&lt;/code&gt; command. Your contact(s) will need to use the &lt;code&gt;/j accept&lt;/code&gt; command to accept the invitation to the group. To send messages to the group, simply enter &lt;code&gt;#&amp;lt;group&amp;gt; &amp;lt;message&amp;gt;&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Please note:&lt;/strong&gt; Groups are not stored on any server; they are maintained as a list of members in the app database. Sending a message to the group sends a message to each member of the group.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/img/images/groups.gif&quot; alt=&quot;simplex-chat&quot;&gt;&lt;/p&gt;
+&lt;h3&gt;File transfer&lt;/h3&gt;
+&lt;p&gt;Sharing files is simple! To send a file to a contact, use the &lt;code&gt;/f @&amp;lt;contact&amp;gt; &amp;lt;file_path&amp;gt;&lt;/code&gt; command. The recipient will have to accept before the file is sent.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/img/images/files.gif&quot; alt=&quot;simplex-chat&quot;&gt;&lt;/p&gt;
+&lt;h2&gt;We&#39;re always looking for help!&lt;/h2&gt;
+&lt;p&gt;We&#39;d really appreciate your comments, criticism and support - a star on the GitHub repo, downloading and testing the chat or any contribution to the project will help a lot – thank you for all your support!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Please note:&lt;/strong&gt; SimpleX Chat is in early stage development: we are still iterating protocols, improving privacy and security, so if you have communication scenarios requiring high security, you should consider some other options for now.&lt;/p&gt;
+&lt;p&gt;Our goal is to create a new kind of chat platform that lets you control your chat!&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Originally published at https://www.reddit.com/r/selfhosted/comments/poal79/simplex_chat_an_opensource_decentralized_chat/&lt;/p&gt;
+ -->
+    
+    Simplex Chat v0.5 released
+    <a href="/blog/20211208-simplex-chat-v0.5-released/">Simplex Chat v0.5 released sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat v0.5&lt;/h1&gt;
+&lt;h2&gt;Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph&lt;/h2&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Dec 08, 2021&lt;/p&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.&lt;/p&gt;
+&lt;h2&gt;What is SimpleX?&lt;/h2&gt;
+&lt;p&gt;We recognised that there is currently no messaging application which respects user privacy and guarantees metadata privacy -- in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph.  SimpleX, at it&#39;s core, is designed to be truly distributed with no central server.  This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.&lt;/p&gt;
+&lt;p&gt;The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline.  The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.&lt;/p&gt;
+&lt;h2&gt;What&#39;s new in v0.5?&lt;/h2&gt;
+&lt;h3&gt;Long-term chat addresses&lt;/h3&gt;
+&lt;p&gt;Users can now create long-term chat addresses that they can share with many people (e.g. in email signature, or online), so that any chat user can send them a connection request.&lt;/p&gt;
+&lt;p&gt;This is an ALPHA feature, and we have not yet added any protection against spam contact requests. However, if the address you created starts receiving spam connection requests, you can simply delete it without losing any of your accepted connections and create another address - as many times as you like!&lt;/p&gt;
+&lt;h2&gt;We need your help!&lt;/h2&gt;
+&lt;p&gt;We&#39;d really appreciate your comments, criticism and support - a star on the GitHub repo, downloading and testing the chat or any contribution to the project will help a lot – thank you for all your support!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Please note:&lt;/strong&gt; SimpleX Chat is in early stage development: we are still iterating protocols, improving privacy and security, so if you have communication scenarios requiring high security, you should consider some other options for now.&lt;/p&gt;
+&lt;p&gt;Our goal is to create a new kind of chat platform that lets you control your chat!&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;Originally published at https://www.reddit.com/r/haskell/comments/rc0xkn/simplex_chat_the_first_chat_platform_that_is_100/&lt;/p&gt;
+ -->
+    
+    Simplex Chat v1.0.0 released
+    <a href="/blog/20220112-simplex-chat-v1-released/">Simplex Chat v1.0.0 released sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat v1&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jan 12, 2022&lt;/p&gt;
+&lt;h2&gt;The most private and secure chat and application platform&lt;/h2&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a messaging application built on the SimpleX platform.&lt;/p&gt;
+&lt;h2&gt;What is SimpleX?&lt;/h2&gt;
+&lt;p&gt;There is currently no messaging application which respects user privacy and guarantees metadata privacy - in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph. SimpleX, at it&#39;s core, is designed to be truly distributed with no central server. This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.&lt;/p&gt;
+&lt;p&gt;The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.&lt;/p&gt;
+&lt;h2&gt;What&#39;s new in v1?&lt;/h2&gt;
+&lt;h3&gt;Stable protocol implementation&lt;/h3&gt;
+&lt;p&gt;All releases from v1 onwards will be forwards and backwards compatible.&lt;/p&gt;
+&lt;h3&gt;Message encryption has been completely re-engineered to provide forward secrecy and recovery from break-in.&lt;/h3&gt;
+&lt;p&gt;SimpleX Chat v1 now uses:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.signal.org/docs/specifications/doubleratchet/&quot;&gt;double-ratchet&lt;/a&gt; E2E encryption using AES-256-GCM cipher with &lt;a href=&quot;https://www.signal.org/docs/specifications/x3dh/&quot;&gt;X3DH key agreement&lt;/a&gt; using 2 ephemeral Curve448 keys to derive secrets for ratchet initialization. These keys and secrets are separate for each contact, group membership and file transfer.&lt;/li&gt;
+&lt;li&gt;in addition to double ratchet, there is a separate E2E encryption in each message queue with DH key exchange using Curve25519 and &lt;a href=&quot;https://nacl.cr.yp.to/index.html&quot;&gt;NaCl crypto-box&lt;/a&gt; - separate E2E encryption has been added to avoid having any cipher-text in common between message queues of a single contact (to prevent traffic correlation).&lt;/li&gt;
+&lt;li&gt;additional encryption of messages delivered from servers to recipients, also using Curve25519 DH exchange and NaCl crypto-box - to avoid shared cipher-text in sent and received traffic (also to prevent traffic correlation).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Improved user and server authentication and transport&lt;/h3&gt;
+&lt;p&gt;SimpleX now uses ephemeral Ed448 keys to sign and verify client commands to the servers. As before, these keys are different per message queue and do not represent a user&#39;s identity.&lt;/p&gt;
+&lt;p&gt;Instead of ad-hoc encrypted transport we now use TLS 1.2+ limited to the most performant and secure cipher with forward secrecy (ECDHE-ECDSA-CHACHA20POLY1305-SHA256), Curve448 groups and Ed448 keys.&lt;/p&gt;
+&lt;p&gt;Server identity is validated as part of TLS handshake - the fingerprint of offline server certificate is used as a permanent server identity which is included in server address, to protect against MITM attacks between clients and servers.&lt;/p&gt;
+&lt;p&gt;SimpleX also uses &lt;a href=&quot;https://datatracker.ietf.org/doc/html/rfc5929#section-3&quot;&gt;tls-unique channel binding&lt;/a&gt; in each signed client command to the server to protect against replay attacks.&lt;/p&gt;
+&lt;h3&gt;Changes in protocol encoding&lt;/h3&gt;
+&lt;p&gt;We switched from inefficient text-based low level protocol encodings, that simplified early development, to space and performance efficient binary encodings, reducing protocol overhead from circa 15% to 3.7% of transmitted application message size.&lt;/p&gt;
+&lt;h2&gt;Learn more about Simplex&lt;/h2&gt;
+&lt;p&gt;Further details on platform objectives and technical design are available &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;SimpleX Chat client can be used in the terminal on all major desktop platforms (Windows/Mac/Linux) and also on Android devices with &lt;a href=&quot;https://github.com/termux&quot;&gt;Termux&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;SimpleX also allows people to host their own servers and own their own chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages).&lt;/p&gt;
+&lt;h2&gt;We look forward to you using it!&lt;/h2&gt;
+&lt;p&gt;We look forward to your feedback and suggestions - via GitHub issues or via SimpleX Chat - you can connect to the team with &lt;code&gt;/simplex&lt;/code&gt; command once you run the chat.&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220214-simplex-chat-ios-public-beta/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat public beta for iOS&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Feb 14, 2022&lt;/p&gt;
+&lt;h2&gt;Private and secure chat and application platform - &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;public beta is now available&lt;/a&gt; for iPhones with iOS 15.&lt;/h2&gt;
+&lt;p&gt;Our new iPhone app is very basic - right now it only supports text messages and emojis.&lt;/p&gt;
+&lt;p&gt;Even though the app is new, it uses the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 a month ago:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.signal.org/docs/specifications/doubleratchet/&quot;&gt;double-ratchet&lt;/a&gt; E2E encryption.&lt;/li&gt;
+&lt;li&gt;separate keys for each contact.&lt;/li&gt;
+&lt;li&gt;additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).&lt;/li&gt;
+&lt;li&gt;additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can read more details in our recent &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released/&quot;&gt;v1 announcement&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Join our public beta!&lt;/h2&gt;
+&lt;p&gt;Install the app &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;via TestFlight&lt;/a&gt;, connect to us (via &lt;strong&gt;Connect to SimpleX team&lt;/strong&gt; link in the app) and to a couple of your friends you usually send messages to - and please let us know what you think!&lt;/p&gt;
+&lt;p&gt;We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.&lt;/p&gt;
+&lt;p&gt;Should it be:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;images,&lt;/li&gt;
+&lt;li&gt;link previews,&lt;/li&gt;
+&lt;li&gt;or maybe something else we couldn&#39;t think of.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Please vote on the features you think are the most needed in our &lt;a href=&quot;https://app.loopedin.io/simplex&quot;&gt;app roadmap&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;What is SimpleX?&lt;/h2&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter.&lt;/p&gt;
+&lt;p&gt;We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.&lt;/p&gt;
+&lt;p&gt;The first application built on the platform is Simplex Chat, which is available for terminal (command line in Windows/Mac/Linux) and as iOS public beta - with Android app coming in a few weeks. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.&lt;/p&gt;
+&lt;p&gt;SimpleX also allows people to host their own servers to have control of their chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages). It should be considered though that while self-hosting the servers provides more control, it may reduce meta-data privacy, as it is easier to correlate the traffic of servers with small number of messages coming through.&lt;/p&gt;
+&lt;p&gt;Further details on platform objectives and technical design are available &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;in SimpleX platform overview&lt;/a&gt;.&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220308-simplex-chat-mobile-apps/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat mobile apps for iOS and Android&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; March 8, 2022&lt;/p&gt;
+&lt;h2&gt;SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections graph&lt;/h2&gt;
+&lt;p&gt;We have now released iPhone and Android apps to &lt;a href=&quot;https://apps.apple.com/us/app/simplex-chat/id1605771084&quot;&gt;Apple AppStore&lt;/a&gt; and &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;Google Play Store&lt;/a&gt;, &lt;a href=&quot;https://github.com/simplex-chat/website/raw/master/simplex.apk&quot;&gt;APK for Android&lt;/a&gt; is also available for direct download.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Please note&lt;/strong&gt;: the current version is only supported on iPhone 8+ and on Android 10+ - we are planning to add support for iPad and older devices very soon, and we will announce it on our &lt;a href=&quot;https://www.reddit.com/r/SimpleXChat/&quot;&gt;Reddit&lt;/a&gt; and &lt;a href=&quot;https://twitter.com/SimpleXChat&quot;&gt;Twitter&lt;/a&gt; channels - please subscribe to follow our updates there.&lt;/p&gt;
+&lt;h2&gt;What is SimpleX&lt;/h2&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter.&lt;/p&gt;
+&lt;p&gt;We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.&lt;/p&gt;
+&lt;p&gt;The first application built on the platform is Simplex Chat. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.&lt;/p&gt;
+&lt;p&gt;Further details on platform objectives and technical design are available &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;in SimpleX platform overview&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;Why we are building it&lt;/h2&gt;
+&lt;p&gt;Evgeny (SimpleX Chat founder): I have been working on this platform for a long time to provide a place where all people can communicate freely with each other, without fear of persecution because of what they said and who they are connected with. Not sharing information about your connections is very important, particularly for people living in oppressive regimes. Because of the terrible conflict between Russia and Ukraine, people of both countries – I have friends and family there – could be at risk when sharing their opinions or just from being connected to people who were prosecuted. Every messenger app that knows who you are can end up sharing all of your connections with undesirable third parties, either as a result of a court order or as a result of attack - so even Signal, which has strong encryption, cannot protect your connection graph. I hope our messenger can help people living in the oppressive regimes to express their opinions without fear and risk of prosecution.&lt;/p&gt;
+&lt;h2&gt;Huge thanks to our testers!&lt;/h2&gt;
+&lt;p&gt;Thanks a lot to everybody who helped testing and improving the apps!&lt;/p&gt;
+&lt;p&gt;If you have a &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;TestFlight version&lt;/a&gt; installed you can continue using it.&lt;/p&gt;
+&lt;p&gt;We plan to keep it as stable as we can, and it will give you access to all new features 1-2 weeks earlier - it&#39;s limited to 10,000 users, so you can grab it while it&#39;s available. You can still communicate with people who use a public version – we are committed to maintaining backwards compatibility.&lt;/p&gt;
+&lt;p&gt;You can always migrate from a public App Store version to a TestFlight version. The opposite migration - from TestFlight to public version - is only possible when we have the same app versions released, as there are usually some database migrations that cannot be reversed. To migrate to public version you have to disable automatic updates on TestFlight, wait until public version catches up and then install it from App Store. In any case, it is safe installing the public version, but it might crash if you have a newer version from TestFlight - in this case you just need to re-install the app from TestFlight and install App Store version a bit later - you would not lose any of your data.&lt;/p&gt;
+&lt;h2&gt;It&#39;s not all new - our core code has been used for a long time by a few thousand people in our terminal app.&lt;/h2&gt;
+&lt;p&gt;The apps use the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://www.signal.org/docs/specifications/doubleratchet/&quot;&gt;double-ratchet&lt;/a&gt; E2E encryption.&lt;/li&gt;
+&lt;li&gt;separate keys for each contact.&lt;/li&gt;
+&lt;li&gt;additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).&lt;/li&gt;
+&lt;li&gt;additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;You can read more technical details in our recent &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released/&quot;&gt;v1 announcement&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;A big thank you to &lt;a href=&quot;https://github.com/angerman&quot;&gt;@angerman&lt;/a&gt; for making it possible to compile our Haskell code to mobile platforms and getting it approved on app stores - it has been a non-trivial project, and it is still ongoing.&lt;/p&gt;
+&lt;h2&gt;Install the apps and make a private connection!&lt;/h2&gt;
+&lt;p&gt;Once you install the app, you can connect to anybody:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create your local chat profile - it is not shared with SimpleX servers, it is local to your devices, and it will be shared with your contacts when you connect.&lt;/li&gt;
+&lt;li&gt;To make a private connection, you need to create a one-time connection link / QR code via &amp;quot;Add contact&amp;quot; button in the app. You can either show the QR code to your contact in person or via a video call - this is the most secure way to create a connection - or you can share the link via any other channel - only one user can connect via this link.&lt;/li&gt;
+&lt;li&gt;Once another user scans the QR code or opens the app via the link (they also should create their profile first) the connection will be created and you can send e2e encrypted messages privately, without anybody knowing you are connected.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;New features and improvements that are coming soon&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;push notification server. Currently the apps load messages in the background periodically, that can be quite infrequent on iOS if you don&#39;t open the app regularly. With push notifications you would know about the new messages instantly.&lt;/li&gt;
+&lt;li&gt;e2e encrypted audio and video calls via WebRTC.&lt;/li&gt;
+&lt;li&gt;export and import of the chat database.&lt;/li&gt;
+&lt;li&gt;&amp;quot;reply to message&amp;quot; - feature allowing you to quote the message you are replying to.&lt;/li&gt;
+&lt;li&gt;localization - we will let you know once you can contribute the translations to your languages.&lt;/li&gt;
+&lt;li&gt;configuring your servers in the apps - this will be released this week, both for iOS and Android. By default the apps are using SimpleX Chat servers, but you will be able to configure your own and still be connected to other users who use our app with our servers.&lt;/li&gt;
+&lt;li&gt;user profile images.&lt;/li&gt;
+&lt;li&gt;sending images and files - image preview will be sent via the servers, so it can be asynchronous, and large files/full resolution images via WebRTC, so both devices will have to be online.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Please let us know what else you think is important and if you find any bugs.&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220404-simplex-chat-instant-notifications/"> sss</a>
+    <!-- &lt;h1&gt;Instant notifications for SimpleX Chat mobile apps&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; April 04, 2022&lt;/p&gt;
+&lt;h2&gt;SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections&lt;/h2&gt;
+&lt;p&gt;Since we released SimpleX Chat mobile apps couple of weeks ago we&#39;ve had a lot of excitement from our users - nearly 2000 people downloaded the app after &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220308-simplex-chat-mobile-apps/&quot;&gt;the announcement&lt;/a&gt;!&lt;/p&gt;
+&lt;p&gt;Huge thanks to everybody who downloaded and connected to us via the chat - there were many great questions and suggestions, and on some days I spent most of the time chatting to our users :)&lt;/p&gt;
+&lt;p&gt;Since we released the app, we&#39;ve added and released:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;support for iPhone 7.&lt;/li&gt;
+&lt;li&gt;configurable SimpleX servers.&lt;/li&gt;
+&lt;li&gt;message replies, editing and deletion.&lt;/li&gt;
+&lt;li&gt;profile images.&lt;/li&gt;
+&lt;li&gt;and, most importantly, private instant message notifications on Android devices - more on that below.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;Install the apps and make a private connection!&lt;/h2&gt;
+&lt;p&gt;Once you install the app, you can connect to anybody:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create your local chat profile - it is not shared with SimpleX servers. It is local to your devices, and it will be shared with your contacts only when you connect.&lt;/li&gt;
+&lt;li&gt;To make a private connection, you need to create a one-time connection link or a QR code via the &amp;quot;Add contact&amp;quot; button in the app. You can show the QR code to your contact in person or via a video call - this is the most secure way to create a connection - or you can share the link via any other channel. Only one user can connect via this link.&lt;/li&gt;
+&lt;li&gt;Once another user scans the QR code or opens the app via the link the connection will be created and you can send end-to-end encrypted messages privately, without anybody knowing you are connected.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;See &lt;a href=&quot;https://youtu.be/rZeVhsv_JAY&quot;&gt;demo video&lt;/a&gt; that shows how two users connect and send the first messages.&lt;/p&gt;
+&lt;h2&gt;Why we are doing it&lt;/h2&gt;
+&lt;p&gt;We are building SimpleX Chat because we believe that privacy is a fundamental human right, and that protecting our personal network of contacts is even more important than the content of the messages - sharing this network can lead to various adverse consequences, from manipulating us into buying goods we don&#39;t need, manipulating election processes, and in some cases, prosecuting innocent people. For example, &lt;a href=&quot;https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi&quot;&gt;Mohamedou Ould Salahi&lt;/a&gt; was detained in Guantanamo prison for 15 years after a single &amp;quot;wrong&amp;quot; phone call. His story is told in his memoir and in The Mauritanian movie.&lt;/p&gt;
+&lt;h2&gt;Problem - users expect to be instantly notified when messages arrive!&lt;/h2&gt;
+&lt;p&gt;Our first users realized that what we take for granted in messaging apps - instant message notifications - is missing in our first release of SimpleX Chat apps. Quite a few people thought that it was a bug, rather than a missing feature. Sorry to disappoint!&lt;/p&gt;
+&lt;h2&gt;Why can&#39;t we just do what messenger X does?&lt;/h2&gt;
+&lt;p&gt;SimpleX Chat is the first and the only messenger we know of that operates without user identities of any kind. There are no phone numbers, emails, usernames, public keys, or any other addresses or identifiers to uniquely identify the users to the network or servers. That is why we say it is 100% private by design, and fundamentally different than other chat platforms.&lt;/p&gt;
+&lt;p&gt;Instead, SimpleX Chat assigns these identifiers to unidirectional message queues. What looks to SimpleX Chat users like contacts and groups [1], to SimpleX servers looks like an unorganized and unrelated collection of unidirectional message queues. Our servers do not know which queues belong to which users, contacts or groups. Even a single conversation can happen via two different servers (one for sent and another for received messages). This makes our personal network of contacts invisible to the servers.&lt;/p&gt;
+&lt;p&gt;But it also creates a problem for instant notifications - all push notification services require having a device token.&lt;/p&gt;
+&lt;p&gt;So, how can we operate without identities and still have instant notifications?&lt;/p&gt;
+&lt;p&gt;[1] yes, we have groups in our terminal app, and the UI to manage them is coming to mobile apps soon. Some users have already firgured out how to &lt;a href=&quot;https://medium.com/@vsevolod.mineev/how-to-collaborate-across-multiple-devices-whilst-protecting-your-metadata-371af87d0ba0&quot;&gt;create groups via chat console&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;We&#39;ve cracked it for Android!&lt;/h2&gt;
+&lt;p&gt;After some research into how push notifications work on Android, and open-source alternatives to Google push notifications, we discovered how to avoid sharing device tokens with any servers.&lt;/p&gt;
+&lt;p&gt;We have implemented message reception as a background service (in Android terminology, a &amp;quot;foreground service&amp;quot; showing a notification icon when the service is running) following the same design as &lt;a href=&quot;https://github.com/binwiederhier/ntfy-android&quot;&gt;ntfy.sh&lt;/a&gt; created by &lt;a href=&quot;https://github.com/binwiederhier&quot;&gt;Philipp Heckel&lt;/a&gt;, who, in turn, credits the design to &lt;a href=&quot;https://robertohuertas.com/2019/06/29/android_foreground_services/&quot;&gt;the blog post by Roberto Huertas&lt;/a&gt;. Big thanks to them!&lt;/p&gt;
+&lt;p&gt;How does it work? When the app is first started on an Android device, it starts the background service that keeps the TCP connections to the messaging servers open with almost no traffic (only doing periodic checks that connections still exist). It consumes only a few percents of battery per day, depending on how stable your internet connection is, and delivers message notifications as soon as messages arrive.&lt;/p&gt;
+&lt;p&gt;This service continues running when the app is switched off, and it is restarted when the device is restarted even if you don&#39;t open the app - so the message notifications arrive instantly every time. To maximize battery life, it can be turned off by switching off &amp;quot;Private notifications&amp;quot;. You will still receive notifications while the app is running or in the background.&lt;/p&gt;
+&lt;p&gt;So, for Android we can now deliver instant message notifications without compromising users&#39; privacy in any way. The app version 1.5 that includes private instant notifications is now available on &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;Play Store&lt;/a&gt;, in our &lt;a href=&quot;https://app.simplex.chat/&quot;&gt;F-Droid repo&lt;/a&gt; and via direct &lt;a href=&quot;https://github.com/simplex-chat/website/raw/master/simplex.apk&quot;&gt;APK&lt;/a&gt; downloads!&lt;/p&gt;
+&lt;p&gt;Please let us what needs to be improved - it&#39;s only the first version of instant notifications for Android!&lt;/p&gt;
+&lt;h2&gt;Our iOS approach has one trade-off&lt;/h2&gt;
+&lt;p&gt;iOS is much more protective of what apps are allowed to run on the devices, and the solution that worked on Android is not viable on iOS.&lt;/p&gt;
+&lt;p&gt;We already have background refresh in the iOS app that periodically checks for new messages, and if you use the app every day it delivers notifications within 10 or 20 minutes. It is not instant, but it may be usable for some. If you use the app infrequently, however, this delay can become several hours, or your phone may stop checking for the new messages completely. This is not ideal!&lt;/p&gt;
+&lt;p&gt;The only solution known to us is using Apple&#39;s push notifications service (APN) to deliver push notifications.&lt;/p&gt;
+&lt;p&gt;We planned for it, so we added to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released/&quot;&gt;v1 of SMP&lt;/a&gt; (the protocol used by our servers) an extension allowing the client to subscribe to notifications from message queues, via separate queue addresses, and using separate cryptographic keys for each queue. This has to be enabled by the client for each queue separately. We haven&#39;t used this extension so far, and now we are building a SimpleX notification service based on it.&lt;/p&gt;
+&lt;p&gt;If the user enables push notifications, then for each contact the app would enable a notification subscription and pass credentials to the notification server together with the device token required to deliver push notifications to user&#39;s device.&lt;/p&gt;
+&lt;p&gt;The notification server will subscribe to these notifications from SMP servers. The notifications do not include any message content, only the signal that a message has arrived to the server. Notification server is only allowed to send 2-3 hidden notifications per hour to the device. The notification is end-to-end encrypted and contains information about which server has a message, so that the client can connect to the server, retrieve and decrypt the message, and show the notification to the users including sender name and the message content. None of this information is shared with any server.&lt;/p&gt;
+&lt;p&gt;If the user receives more than 2-3 messages per hour, the notification server can send additional visible notifications that would simply say &amp;quot;you have a new message&amp;quot;, and the user will have to open the app to receive and see these messages. We are also investigating whether we can use &amp;quot;mutable-content&amp;quot; notifications that allow doing some processing when the notification arrives before showing it to the users.&lt;/p&gt;
+&lt;p&gt;It is a substantial amount of development, we are aiming to release it later this month.&lt;/p&gt;
+&lt;p&gt;This design is a compromise between privacy and convenience. The notification server will have to have a device token to deliver notifications. Several things we did (or plan to do) to improve this compromise:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;The notification server will only store device tokens and queue addresses in memory, making it more complex for a potential attacker to access. If server has to be restarted, they would lose all configured notification subscriptions and the clients would have to create them again. We will program the clients to periodically check for the existence of notification subscriptions on the notification server.&lt;/li&gt;
+&lt;li&gt;The notificaiton server will not know the addresses of the messaging queues used to receive or send messages. A different address is used to subscribe to notifications. So while the notification server would have the knowledge of how many queues your device has (and on which servers), it still won&#39;t know who is sending you the messages.&lt;/li&gt;
+&lt;li&gt;We are also planning to split the logic of notification subscriptions and delivering notifications to the devices to two different servers. The server that subscribes to the notifications could be self-hosted, allowing you full control of how you deploy it. Only this server would know which messaging servers you use or how many messaging queues you have. The server that delivers notifications to the devices will be managed by SimpleX Chat as we have to authorize it with Apple&#39;s push notification service. This split will not be available in the first release. We plan to add it a bit later.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;So, with the notification servers added, our network design will look like this:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;  User&#39;s iOS device                Internet                        Servers
+---------------------   |   ------------------------   |   -------------------------
+                        |                              |
+                        |                              |   (can be self-hosted now)
++--------------+        |                              |      +----------------+
+| SimpleX Chat |       -------------- TLS ---------------     | SimpleX        |
+|    client    |------&amp;gt; SimpleX Messaging Protocol (SMP) ---&amp;gt; | Messaging      |
++--------------+       ----------------------------------     | Server         |
+     ^    |             |                              |      +----------------+
+     |    |             |                              |            |   |
+     |    |             |                              |            | S | T
+     |    |             |                              |            | M | L
+     |    |             |                              |            | P | S
+     |    |             |                              |            |   |
+     |    |             |                              |      +----------------+       +----------------+
+     |    |            -------------- TLS ---------------     | SimpleX        |       | SimpleX        |
+     |    |-----------&amp;gt;     Notifications management    ----&amp;gt; | Notifications  | ----&amp;gt; | Push           |
+     |                 ----------------------------------     | Subscriber     |       | Server         |
+     |                  |                              |      +----------------+       +----------------+
+     |                  |                              |     (can be self-hosted                |
+     |                  |                              |        in the future)                  |
+     |                  |                              |                                        V
+     |                 -------------- TLS ---------------                              +-----------------+
+     |-----------------       Notification delivery     &amp;lt;----------------------------- | Apple PN server |
+                       ----------------------------------                              +-----------------+
+                        |                              |
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;Please let us know what you think about this design and about this privacy / usability trade-off:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;For you, is this an acceptable compromise, if you can choose to disable instant notifications?&lt;/li&gt;
+&lt;li&gt;Do you have any ideas about how this design could be improved upon?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Thank you!&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220511-simplex-chat-v2-images-files/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX Chat v2.0 - sending images and files in mobile apps&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 11, 2022&lt;/p&gt;
+&lt;h2&gt;New in version 2.0 - sending images and files privately&lt;/h2&gt;
+&lt;p&gt;To send image and files SimpleX Chat uses privacy-preserving system components, both in iOS and Android apps. We do not ask for permission to access multiple or selected files, as, for example, Signal and Telegram do - it compromises either privacy or convenience.&lt;/p&gt;
+&lt;p&gt;How does it work? The gallery and files are accessed from a system provided dialogue that runs in a separate process, and provides a temporary URI to access only one file selected by the user, only until the app is restarted.&lt;/p&gt;
+&lt;p&gt;To make file and images work for mobile apps we made a breaking change in SimpleX Chat core. The current version can exchange files with the previous version 1.6 of the terminal app, but not with the version before that.&lt;/p&gt;
+&lt;p&gt;In the mobile app, to send and receive files both devices must have version 2.0 installed - so please check it with your contacts. Receiving images works in the previous version, so even if your contacts did not yet upgrade the app, they should be able to receive the images.&lt;/p&gt;
+&lt;h2&gt;The first messaging platform without user identifiers.&lt;/h2&gt;
+&lt;p&gt;To protect identities of users and their connections, SimpleX Chat has no user identifiers visible to the network – unlike any other messaging platform.&lt;/p&gt;
+&lt;p&gt;Many people asked: &lt;em&gt;if SimpleX has no user identifiers, how can it deliver messages?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;To deliver mesages, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts. In the current version of the protocol each queue is used until the contact is deleted. Later this year we plan to add queue rotation to the client protocol, so that even conversations don&#39;t have long term identifiers visible to the network. This design prevents leaking any users metadata on the application level.&lt;/p&gt;
+&lt;p&gt;You define which server(s) to use &lt;strong&gt;to receive&lt;/strong&gt; the messages, your contacts – the servers you use &lt;strong&gt;to send&lt;/strong&gt; the messages to them. It means that every conversation is likely to use two different servers - one for each message direction.&lt;/p&gt;
+&lt;p&gt;Only client devices store user profiles, contacts, groups, and messages sent with &lt;strong&gt;2-layer end-to-end encryption&lt;/strong&gt;.&lt;/p&gt;
+&lt;p&gt;Read more in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;SimpleX whitepaper&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;How to connect with your contacts in SimpleX Chat&lt;/h2&gt;
+&lt;p&gt;Once you install the app, you can connect to anybody:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Create your local chat profile - it is not shared with SimpleX servers. It is local to your devices, and it will be shared with your contacts only when you connect.&lt;/li&gt;
+&lt;li&gt;To make a private connection, you need to create a one-time connection link or a QR code via the app. You can show the QR code to your contact in person or via a video call - this is the most secure way to create a connection - or you can share the link via any other channel. Only one user can connect via this link.&lt;/li&gt;
+&lt;li&gt;Once another user scans the QR code or opens the app via the link the connection will be created and you can send end-to-end encrypted messages privately, without anybody knowing you are connected.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;img src=&quot;https://github.com/simplex-chat/.github/blob/master/profile/images/conversation.png&quot; alt=&quot;Make a private connection&quot; width=&quot;594&quot; height=&quot;360&quot;&gt;
+ -->
+    
+    
+    <a href="/blog/20220524-simplex-chat-better-privacy/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX Chat v2.1 - better conversation privacy&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 24, 2022&lt;/p&gt;
+&lt;h2&gt;New in version 2.1 - clearing conversations without deleting contacts&lt;/h2&gt;
+&lt;p&gt;In this version you can irreversibly delete individual messages after they were deleted by a sender, and also completely clear the conversation.&lt;/p&gt;
+&lt;p&gt;The only way to do it before this version was by deleting the contact, now you can keep the connection when you clear the conversation.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/img/images/20220524-clear-chat1.png&quot; width=&quot;240&quot;&gt; &lt;img src=&quot;/img/images/20220524-clear-chat2.png&quot; width=&quot;240&quot;&gt;&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;/blog/20220112-simplex-chat-v1-released/&quot;&gt;v1 announcement&lt;/a&gt; for information on how SimpleX protects the security of the messages.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;/blog/20220511-simplex-chat-v2-images-files/&quot;&gt;v2 announcement&lt;/a&gt; for more information about SimpleX platform and how it works.&lt;/p&gt;
+&lt;p&gt;Read about SimpleX design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;whitepaper&lt;/a&gt;.&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220604-simplex-chat-new-privacy-security-settings/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; June 4, 2022&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;/blog/20220511-simplex-chat-v2-images-files/&quot;&gt;v2 announcement&lt;/a&gt; for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platfom, has no identity keys or any numbers that identify its users.&lt;/p&gt;
+&lt;h2&gt;New Privacy and Security settings in version 2.2&lt;/h2&gt;
+&lt;img src=&quot;/img/images/20220604-privacy-settings.png&quot; width=&quot;480&quot;&gt;
+&lt;h3&gt;Protect your chats&lt;/h3&gt;
+&lt;p&gt;To protect your chats you can enable SimpleX Lock. Every time you open the chat after it was in the background for 30 second, you will need to pass biometric or pin code authentication to use the app (provided it is enabled for your device).&lt;/p&gt;
+&lt;h3&gt;Save data and avoid sharing you are online&lt;/h3&gt;
+&lt;p&gt;In case you want to save your mobile data or to avoid showing to your contacts that you are online, you can disable automatic image downloads. For many users it is more convenient to have images downloaded automatically, so it is enabled by default.&lt;/p&gt;
+&lt;p&gt;Low resolution image previews would still be shown, the senders have no way to see if you received them or not.&lt;/p&gt;
+&lt;h3&gt;Avoid visiting websites of the links you send&lt;/h3&gt;
+&lt;p&gt;When you receive the links that include link previews, it is fully private - these previews are generated by the sender, and they do not expose your IP address in any way.&lt;/p&gt;
+&lt;p&gt;When you send the links, the app automatically downloads the link description and the picture from the website of the link. While it is convenient, it exposes your IP address to the website. To avoid it you can disable sending link previews.&lt;/p&gt;
+&lt;h3&gt;Identify any lost messages in the chat&lt;/h3&gt;
+&lt;p&gt;The app tracks the integrity of the messages you receive by cheching their sequential numbers and by validating that the hash of the previous message matches the hash included in the message – each conversation, effectively, is two blockchains that only you and your contact have access to.&lt;/p&gt;
+&lt;p&gt;In case some of the messages are lost, you would see it in the chat. It can happen because of one the following reasons:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;the messages have expired on the server after 30 days not being delivered.&lt;/li&gt;
+&lt;li&gt;the messages were removed when the server was restarted. We will add server redundancy later this year to avoid message loss in this case, for now if you see an indication that some messages were lost in the chat, you can check with your contact what it was.&lt;/li&gt;
+&lt;li&gt;some other app error. Please notify us via chat - we will investigate possible root causes.&lt;/li&gt;
+&lt;li&gt;the connection is compromised. This is very unlikely, but not an impossible scenario.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;There is more&lt;/h3&gt;
+&lt;p&gt;You can discover additional features we are currently testing in Experimental Features - they will be announced later!&lt;/p&gt;
+&lt;h2&gt;More information&lt;/h2&gt;
+&lt;p&gt;See &lt;a href=&quot;/blog/20220112-simplex-chat-v1-released/&quot;&gt;v1 announcement&lt;/a&gt; for information on how SimpleX protects the security of the messages.&lt;/p&gt;
+&lt;p&gt;Read about SimpleX design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;whitepaper&lt;/a&gt;.&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX announces SimpleX Chat v3&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 11, 2022&lt;/p&gt;
+&lt;h2&gt;New in version 3&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#instant-notifications-for-ios&quot;&gt;instant notifications for iOS&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#database-export-and-import&quot;&gt;database export and import&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#protocol-privacy-and-performance-improvements&quot;&gt;protocol privacy and performance improvements&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Instant notifications for iOS&lt;/h3&gt;
+&lt;p&gt;I wrote previously about &lt;a href=&quot;/blog/20220404-simplex-chat-instant-notifications/#problem---users-expect-to-be-instantly-notified-when-messages-arrive&quot;&gt;our design for iOS notifications&lt;/a&gt; - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.&lt;/p&gt;
+&lt;p&gt;To deliver the notifications to iOS devices we use our notification server, as there is a single private key that Apple issues for the app. This server has minimal amount of information about your chat activity:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;it does not have the addresses of messaging queues used to send and receive messages - there is an additional address used for notification server to receive notifications from the messaging servers.&lt;/li&gt;
+&lt;li&gt;notifications themselves do not include message content or contacts, even in encrypted form - they only contain end-to-end encrypted metadata about the server and the queue that has available messages - so Apple servers cannot access the information about how many contacts you have or how frequently each of them messages you - they can only see the total number of notifications your device receives.&lt;/li&gt;
+&lt;li&gt;message senders do not connect to the notification server, so it cannot in any way correlate sent and received traffic across multiple devices.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;img src=&quot;/img/images/20220711-notifications.png&quot; width=&quot;480&quot;&gt;
+&lt;p&gt;&lt;strong&gt;Please note&lt;/strong&gt;: for periodic notifications to work the app has to be in the background - if the app is completely stopped (removed from the recent apps), it will not check the new messages and you will not receive notifications. Instant notifications work even when the app is completely stopped.&lt;/p&gt;
+&lt;h3&gt;End-to-end encrypted audio/video calls&lt;/h3&gt;
+&lt;p&gt;You can now call your contacts via WebRTC, connecting via SimpleX Chat relay servers or peer-to-peer, and in the near future you will be able to configure your own STUN/TURN servers used to establish the connection. The calls are end-to-end encrypted - the key is negotiated via the connection you already have with your contact in the chat, that is also used as a signalling layer for WebRTC - in most cases only three messages in total have to be sent by your and your contact&#39;s clients for the call to start, including the initial call invitation.&lt;/p&gt;
+&lt;img src=&quot;/img/images/20220711-call-in-progress.png&quot; width=&quot;480&quot;&gt;
+&lt;p&gt;The calls are still quite limited, especially on iOS, - for example, you cannot continue the call while the app is in the background.&lt;/p&gt;
+&lt;h3&gt;Database export and import&lt;/h3&gt;
+&lt;p&gt;Quite a few users asked - &lt;em&gt;how can I move my chat profile to a new device&lt;/em&gt;? SimpleX Chat v3 has a solution for that - you can now export chat database from one device and import it into another - even to another platform, e.g. you can move chat database from Android phone to iOS or to the terminal (console) client.&lt;/p&gt;
+&lt;img src=&quot;/img/images/20220711-database-chat-stopped.png&quot; width=&quot;480&quot;&gt;
+&lt;p&gt;Some important limitations:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;you cannot run the same chat profile from two devices, neither at the same time nor in turns. You should only use the latest database version - every time you want to move it to another device you need to export a new chat archive from the device that was the latest to use it, and import it to the device where you want to use it next.&lt;/li&gt;
+&lt;li&gt;we plan to add internal database encryption soon, but currently it is stored on the device without encryption, and the exported archive is also not encrypted. You should store it securely, and encrypt it if you store it in the cloud or send via email.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;This feature can be useful in some other scenarios:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;managing multiple chat profiles - it&#39;s not very convenient, and a better support of multiple profiles is coming soon.&lt;/li&gt;
+&lt;li&gt;share access to the same profile with other people, as long as it is not used at the same time. For that use case it may be better to run SimpleX Chat terminal client in the cloud, as we do with our public account that you can connect to via the app.&lt;/li&gt;
+&lt;li&gt;preserve chat profile when you need to temporarily delete the app from your device.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Protocol privacy and performance improvements&lt;/h3&gt;
+&lt;p&gt;Adding push notifications for iOS required SimpleX Messaging Protocol changes. We managed not just to keep the same level of meta-data privacy from passive observers, but to improve it - now all message meta-data that is passed from the server to the recipient is included into the same encrypted envelope as the message itself - as before, there is no identifiers or ciphertext in common inside TLS traffic between received and sent traffic of the server, and now there is no message timestamp inside TLS as well.&lt;/p&gt;
+&lt;p&gt;We also improved the protocol flow for establishing bidirectional connection between two users - it is substantially faster now, consuming much less network traffic and battery. It improves the time it takes to connect to your contacts and to start delivering images and files.&lt;/p&gt;
+&lt;p&gt;All these changes did not affect backward compatibility - if your contact has the previous version of the client, or you are connecting to a previous version of the server, the previous version of the protocol will be used - SimpleX has independent version negotiation in 4 protocol layers &lt;a href=&quot;/blog/20220112-simplex-chat-v1-released/#stable-protocol-implementation&quot;&gt;since v1&lt;/a&gt;, allowing us to evolve the protocols without any disruption to the users.&lt;/p&gt;
+&lt;h2&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a messaging application built on the SimpleX platform.&lt;/p&gt;
+&lt;h3&gt;The first (and we believe the only) messaging platform without user identifiers of any kind - 100% private by design!&lt;/h3&gt;
+&lt;p&gt;To protect identities of users and their connections, SimpleX Chat has no user identifiers visible to the servers and the network – unlike any other messaging platform. Not only SimpleX doesn&#39;t use phone numbers or emails, as Signal and many other platforms, it also does not have any persistent identifiers to identify users - unlike many other messengers considered private - Session, Cwtch, Ricochet, Briar, Jami, etc., - all these platforms have global user identifiers, uniquely identifying their users and creating the risks of de-anonymising the users.&lt;/p&gt;
+&lt;h3&gt;Why having users&#39; identifiers is bad for the users?&lt;/h3&gt;
+&lt;p&gt;When each user has a unique identifier on the platform, even if this is just a random number, e.g. as a Session ID, it creates risks that whoever gains access to the platform data can observe how the users are connected and how many messages are transmitted between them, and then correlate this information with the existing public social networks, determining the real identities of some users. Even with the most private messengers built on top of Tor network, having a persistent identity means that if you talk to two different users via the same profile they can prove that they communicate with the same person, as they would use the same address to send messages.&lt;/p&gt;
+&lt;p&gt;SimpleX platform avoids these risks by not having any user identity in its design - so even if you talk to two different people from the same chat profile, they would not be able to prove they are talking to the same person - only that user profiles look the same. And we are planning to add a feature allowing to have a different display name for each contact you connect to - quite a few users asked for it.&lt;/p&gt;
+&lt;h3&gt;How does it work&lt;/h3&gt;
+&lt;p&gt;Many people asked: &lt;em&gt;if SimpleX has no user identifiers, how can it deliver messages?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;I wrote about it in &lt;a href=&quot;/blog/20220511-simplex-chat-v2-images-files/&quot;&gt;v2 release announcement&lt;/a&gt; and you can get more information about SimpleX platform objectives and technical design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;the whitepaper&lt;/a&gt;.&lt;/p&gt;
+&lt;h2&gt;We ask you to help us pay for 3rd party security audit&lt;/h2&gt;
+&lt;p&gt;I will get straight to the point: I ask you to support SimpleX Chat with donations.&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.&lt;/p&gt;
+&lt;p&gt;We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20000+ expense could be covered with donations.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations for the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.&lt;/p&gt;
+&lt;p&gt;It is possible to &lt;a href=&quot;https://github.com/sponsors/simplex-chat&quot;&gt;donate via GitHub&lt;/a&gt;, which is commission-free for us, or &lt;a href=&quot;https://opencollective.com/simplex-chat&quot;&gt;via OpenCollective&lt;/a&gt;, that also accepts donations in crypto-currencies, but charges a commission.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+ -->
+    
+    
+    <a href="/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency/"> sss</a>
+    <!-- &lt;h1&gt;SimpleX Chat v3.1-beta is released&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 23, 2022&lt;/p&gt;
+&lt;h2&gt;What&#39;s new&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;terminal app: &lt;a href=&quot;#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor&quot;&gt;access to messaging servers via SOCKS5 proxy&lt;/a&gt; (e.g., Tor).&lt;/li&gt;
+&lt;li&gt;mobile apps: &lt;a href=&quot;#mobile-apps-join-and-leave-chat-groups&quot;&gt;join and leave chat groups&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#optimized-battery-and-traffic-usage---up-to-90x-reduction&quot;&gt;optimized battery and traffic usage - up to 90x reduction!&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#docker-configuration-for-self-hosted-smp-servers&quot;&gt;two docker configurations for self-hosted SMP servers&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Terminall app: access to messaging servers via SOCKS5 proxy / Tor&lt;/h3&gt;
+&lt;img src=&quot;/img/images/20220723-tor.jpg&quot; width=&quot;480&quot;&gt;
+&lt;p&gt;While SMP protocol is focussed on protecting application-level meta-data by using pairwise connection identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn&#39;t add it earlier.&lt;/p&gt;
+&lt;p&gt;This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who self-host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without necessarily requiring that the other party uses Tor as well.&lt;/p&gt;
+&lt;p&gt;To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with &lt;code&gt;-x&lt;/code&gt; option. See &lt;a href=&quot;../docs/CLI/#access-messaging-servers-via-tor-beta&quot;&gt;terminal app docs&lt;/a&gt; for more information.&lt;/p&gt;
+&lt;p&gt;As this is a beta release, to install it you need to use this command:&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;language-sh&quot;&gt;curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | sh -s -- v3.1.0-beta.0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;Mobile apps: join and leave chat groups&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;/img/images/20220723-group-invite.png&quot; width=&quot;330&quot;&gt; &lt;img src=&quot;/img/images/20220723-group-accept.png&quot; width=&quot;330&quot;&gt; &lt;img src=&quot;/img/images/20220723-group-leave.png&quot; width=&quot;330&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Groups have been supported by SimpleX Chat core for a very long time, but there was no user interface in the mobile apps to use them - users had to use chat console to create groups, add members, and accept invitations.&lt;/p&gt;
+&lt;p&gt;This release allows accepting the invitations to join groups via mobile apps UI, making it much easier to create groups - only one user (a group owner) needs to use chat console, while all other groups members just need to tap a button in the UI to join or leave the group. Full group UI is coming in v3.1 in 1-2 weeks, but you can already start using groups today by installing beta-versions of mobile apps via &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;TestFlight&lt;/a&gt;, &lt;a href=&quot;https://play.google.com/apps/testing/chat.simplex.app&quot;&gt;Google PlayStore Beta&lt;/a&gt; and &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/download/v3.1.0-beta.0/simplex.apk&quot;&gt;APK download&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;To manage groups via terminal app or via chat console in the mobile apps you have to use these commands:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;to create group: &lt;code&gt;/g &amp;lt;group_name&amp;gt; [&amp;lt;description&amp;gt;]&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;to add member (admin by default): &lt;code&gt;/a &amp;lt;group_name&amp;gt; &amp;lt;contact_name&amp;gt; [owner/admin/member]&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;to remove member from the group: &lt;code&gt;/rm &amp;lt;group_name&amp;gt; &amp;lt;contact_name&amp;gt;&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Accepting group invitations, leaving and deleting groups no longer requires using console commands.&lt;/p&gt;
+&lt;h3&gt;Optimized battery and traffic usage - up to 90x reduction!&lt;/h3&gt;
+&lt;p&gt;To reduce battery and traffic usage this release updated SMP protocol to allow batching multiple server commands (up to 90!) into one traffic block – provided both the server and the client are upgraded. It means that if you have 90 contacts (or group members) on one server, to subscribe to all messaging queues you now need to send only one 16kb block instead of ~1.5Mb of traffic (90 blocks). It also hides how many contacts you have from any attackers who observe your network.&lt;/p&gt;
+&lt;p&gt;You might notice that sending commands to multiple queues in one block would allow the server to correlate that all these queues belong to the same user, even though the current server implementation we use does not do it. But even without batching, as the commands are sent via the same TCP connection, this correlation was already possible, so compared with the previous version it has no downsides.&lt;/p&gt;
+&lt;p&gt;To mitigate the risk of servers correlating your messaging queues we will soon add an option to access each queue via a separate TCP connection, which will have to be used together with access via Tor (as otherwise the servers would still see the same IP address). While it will increase battery and traffic consumption, it will also provide the highest level of privacy.&lt;/p&gt;
+&lt;h3&gt;Docker configuration for self-hosted SMP servers&lt;/h3&gt;
+&lt;p&gt;When we released SimpleX Chat v3 two weeks ago many users wanted to host messaging servers in docker containers. So, we are now offering &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/tree/stable/scripts/docker&quot;&gt;two versions of docker configurations&lt;/a&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;fast and convenient - it downloads SMP server binary from GitHub.&lt;/li&gt;
+&lt;li&gt;more secure - it builds SMP server from the source code.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Let us know how it works for you!&lt;/p&gt;
+&lt;h2&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a messaging application built on the SimpleX platform.&lt;/p&gt;
+&lt;h3&gt;The first (and the only?) messaging platform without user identifiers of any kind - 100% private by design!&lt;/h3&gt;
+&lt;p&gt;To protect identities of users and their connections, instead of user identifiers visible to the servers and/or the network (that are used by all other messaging platforms), SimpleX Chat uses &lt;a href=&quot;https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier&quot;&gt;pairwise identifiers&lt;/a&gt; of connections between the users – there are two queues in each connection, each queue having 2 different identifiers to send and to receive the messages. It increases the number of used identifiers to the square of the number of users, making it more difficult (or impossible) to determine who is talking to whom. I &lt;a href=&quot;/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements/#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;wrote previously&lt;/a&gt; why it is bad for the users&#39; privacy to have any identifiers, even random numbers, associated with their profiles.&lt;/p&gt;
+&lt;h3&gt;If SimpleX has no user identifiers, how can it deliver messages?&lt;/h3&gt;
+&lt;p&gt;I wrote about it in &lt;a href=&quot;/blog/20220511-simplex-chat-v2-images-files/&quot;&gt;v2 release announcement&lt;/a&gt; and you can get more information about SimpleX platform objectives and technical design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/&quot;&gt;the whitepaper&lt;/a&gt;.&lt;/p&gt;
+&lt;h3&gt;Privacy: technical details and limitations&lt;/h3&gt;
+&lt;p&gt;SimpleX design follows &amp;quot;defence in depth&amp;quot; security principles having multiple overlapping defensive mechanisms to protect users privacy and security:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;TLS transport with server identity validation and channel binding, limited to the most secure cryptographic algorithms.&lt;/li&gt;
+&lt;li&gt;Three levels of encryption that both protect message content and meta-data, preventinc trafic correlation even if TLS is compromised:
+&lt;ul&gt;
+&lt;li&gt;end-to-end encryption in each messaging queue.&lt;/li&gt;
+&lt;li&gt;end-to-end encryption of the conversation using double-ratchet algorithms, that provides OTR messaging with forward secrecy and break-in recovery.&lt;/li&gt;
+&lt;li&gt;additional encryption layer between the server and message recipient, to prevent traffic correlation by ciphertext or any identifiers.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Four levels of message padding to prevent any attack based on the content size - the TLS transport block is padded to a fixed 16kb size, and each of 3 encrypted envelopes is padded to a constant size before encryption as well.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;What we plan to add soon to further improve privacy and security:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;message queue rotation, so that pairwise identifiers become temporary, and your conversations move from server to server automatically.&lt;/li&gt;
+&lt;li&gt;access to the messaging servers via Tor v3 hidden services.&lt;/li&gt;
+&lt;li&gt;message mixing - adding latencies to message delivery, to protect against traffic correlation by message time.&lt;/li&gt;
+&lt;li&gt;using Tor v3 hidden service addresses for messaging servers.&lt;/li&gt;
+&lt;li&gt;passphrase-based local database encryption.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;SimpleX Chat &lt;a href=&quot;../README/#privacy-technical-details-and-limitations&quot;&gt;README page&lt;/a&gt; has more details about it.&lt;/p&gt;
+&lt;h2&gt;We ask you to help us pay for 3rd party security audit&lt;/h2&gt;
+&lt;p&gt;I will get straight to the point: I ask you to support SimpleX Chat with donations.&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.&lt;/p&gt;
+&lt;p&gt;We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20000+ expense could be covered with donations.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations for the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.&lt;/p&gt;
+&lt;p&gt;It is possible to &lt;a href=&quot;https://github.com/sponsors/simplex-chat&quot;&gt;donate via GitHub&lt;/a&gt;, which is commission-free for us, or &lt;a href=&quot;https://opencollective.com/simplex-chat&quot;&gt;via OpenCollective&lt;/a&gt;, that also accepts donations in crypto-currencies, but charges a commission.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+ -->
+    
+</body>
+</html>
