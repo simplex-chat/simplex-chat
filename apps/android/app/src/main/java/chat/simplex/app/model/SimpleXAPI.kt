@@ -572,11 +572,25 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiJoinGroup(groupId: Long): GroupInfo? {
+  suspend fun apiJoinGroup(groupId: Long) {
     val r = sendCmd(CC.ApiJoinGroup(groupId))
-    if (r is CR.UserAcceptedGroupSent) return r.groupInfo
-    Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
-    return null
+    when (r) {
+      is CR.UserAcceptedGroupSent ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.ChatCmdError -> {
+        val e = r.chatError
+        if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
+          chatModel.removeChat("#$groupId")
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_group_invitation_expired), generalGetString(R.string.alert_message_group_invitation_expired))
+        } else if (e is ChatError.ChatErrorStore && e.storeError is StoreError.GroupNotFound) {
+          chatModel.removeChat("#$groupId")
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_no_group), generalGetString(R.string.alert_message_no_group))
+        } else {
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_join_group_error), "$e")
+        }
+      }
+      else -> Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
+    }
   }
 
   suspend fun apiRemoveMember(groupId: Long, memberId: Long): GroupMember? {
@@ -768,13 +782,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val chatItem = apiReceiveFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(chatItem)
-    }
-  }
-
-  suspend fun joinGroup(groupId: Long) {
-    val groupInfo = apiJoinGroup(groupId)
-    if (groupInfo != null) {
-      chatModel.updateGroup(groupInfo)
     }
   }
 
@@ -1502,8 +1509,10 @@ sealed class ChatErrorType {
 sealed class StoreError {
   val string: String get() = when (this) {
     is UserContactLinkNotFound -> "userContactLinkNotFound"
+    is GroupNotFound -> "groupNotFound"
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
+  @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
 }
 
 @Serializable

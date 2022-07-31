@@ -513,6 +513,11 @@
   <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
   <string name="icon_descr_add_members">Invite members</string>
   <string name="icon_descr_group_inactive">Group inactive</string>
+  <string name="alert_title_group_invitation_expired">Invitation expired!</string>
+  <string name="alert_message_group_invitation_expired">Group invitation is no longer valid, it was removed by sender.</string>
+  <string name="alert_title_no_group">No group!</string>
+  <string name="alert_message_no_group">This group no longer exists.</string>
+  <string name="alert_title_join_group_error">Error joining group</string>
 
   <!-- CIGroupInvitationView.kt -->
   <string name="you_sent_group_invitation">You sent group invitation</string>

@@ -511,6 +511,11 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
     <string name="icon_descr_add_members">Пригласить участников</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
+    <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
+    <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
+    <string name="alert_title_no_group">Нет группы!</string>
+    <string name="alert_message_no_group">Эта группа больше не существует.</string>
+    <string name="alert_title_join_group_error">Ошибка приглашения</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
