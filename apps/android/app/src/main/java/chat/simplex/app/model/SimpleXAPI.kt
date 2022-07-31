@@ -84,6 +84,7 @@ class AppPreferences(val context: Context) {
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
+  val useSocksProxy = mkBoolPreference(SHARED_PREFS_USE_SOCKS_PROXY, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -128,6 +129,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
+    private const val SHARED_PREFS_USE_SOCKS_PROXY = "UseSocksProxy"
   }
 }
 
@@ -146,6 +148,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.d(TAG, "user: $user")
     try {
       if (chatModel.chatRunning.value == true) return
+      if (chatModel.controller.appPrefs.useSocksProxy.get()) {
+        setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
+      }
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
