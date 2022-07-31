@@ -23,10 +23,7 @@ jobs:
 
       - name: Install dependencies & build
         run: |
-          cd ./website
-          npm i
-          npm run build
-          npm run build-tailwind
+          ./web.sh
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

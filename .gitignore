@@ -47,6 +47,8 @@ logs/
 
 # for website
 website/node_modules/
+website/src/blog/
+website/src/img/images/
 # Generated files
 website/package/generated*
 
