@@ -13,11 +13,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
@@ -36,8 +38,9 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
         val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
-          close.invoke()
+          chatModel.chatItems.clear()
           chatModel.chatId.value = groupInfo.id
+          close.invoke()
         }
       }
     },
@@ -71,7 +74,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       ModalView(close) {
-        Surface(Modifier.background(MaterialTheme.colors.onBackground)) {
+        Surface(Modifier.background(MaterialTheme.colors.onBackground).fillMaxSize()) {
           Column(
             Modifier
               .verticalScroll(rememberScrollState())
@@ -92,7 +95,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             ) {
               Box(contentAlignment = Alignment.TopEnd) {
                 Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(192.dp, null)
+                  ProfileImage(size = 192.dp, image = profileImage.value)
                   EditImageButton { scope.launch { bottomSheetModalState.show() } }
                 }
                 if (profileImage.value != null) {
@@ -120,33 +123,14 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             )
             ProfileNameField(fullName)
 
-            Spacer(Modifier.fillMaxHeight())
+            Spacer(Modifier.height(8.dp))
             val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-            val createModifier: Modifier
-            val createColor: Color
             if (enabled) {
               val groupProfile = GroupProfile(displayName.value, fullName.value, profileImage.value)
-              createModifier = Modifier.clickable { createGroup(groupProfile) }.padding(8.dp)
-              createColor = MaterialTheme.colors.primary
+              CreateGroupButton(MaterialTheme.colors.primary, Modifier.clickable { createGroup(groupProfile) }.padding(8.dp))
             } else {
-              createModifier = Modifier.padding(8.dp)
-              createColor = HighOrLowlight
+              CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
             }
-            Row(
-              Modifier.fillMaxWidth(),
-              horizontalArrangement = Arrangement.End
-            ) {
-              Surface(shape = RoundedCornerShape(20.dp)) {
-                Row(
-                  createModifier,
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = createColor)
-                  Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = createColor)
-                }
-              }
-            }
-
             LaunchedEffect(Unit) {
               focusRequester.requestFocus()
             }
@@ -157,3 +141,28 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   }
 }
 
+@Composable
+fun CreateGroupButton(color: Color, modifier: Modifier) {
+  Row(
+    Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.End
+  ) {
+    Surface(shape = RoundedCornerShape(20.dp)) {
+      Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Text(stringResource(R.string.create_profile_button), style = MaterialTheme.typography.caption, color = color)
+        Icon(Icons.Outlined.ArrowForwardIos, stringResource(R.string.create_profile_button), tint = color)
+      }
+    }
+  }
+}
+
+@Preview
+@Composable
+fun PreviewAddGroupLayout() {
+  SimpleXTheme {
+    AddGroupLayout(
+      createGroup = {},
+      close = {}
+    )
+  }
+}
