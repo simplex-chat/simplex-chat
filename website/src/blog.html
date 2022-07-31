@@ -8,9 +8,9 @@
 </head>
 <body>
     {% for blog in collections.blogs  %}
-    {{ blog.data.title }}
-    <a href="{{ blog.url }}">{{ blog.data.title }} sss</a>
-    <!-- {{ blog.templateContent }} -->
+    <h1>{{ blog.title }}</h1>
+    <a href="{{ blog.url }}">{{ blog.data.title }}</a>
+    <br>
     {% endfor %}
 </body>
 </html>
