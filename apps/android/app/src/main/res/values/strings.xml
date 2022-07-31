@@ -161,7 +161,7 @@
   <string name="add_contact">Add contact</string>
 
   <!-- NewChatSheet -->
-  <string name="add_contact_or_create_group">Start new conversation</string>
+  <string name="add_contact_or_create_group">Start new chat</string>
   <string name="create_one_time_link">Create link / QR code</string>
   <string name="paste_received_link">Connect via received link</string>
   <string name="scan_QR_code">Scan QR code</string>

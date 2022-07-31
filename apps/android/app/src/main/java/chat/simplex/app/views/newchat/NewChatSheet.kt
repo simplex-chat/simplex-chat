@@ -63,60 +63,87 @@ fun NewChatSheetLayout(
   pasteLink: () -> Unit,
   createGroup: () -> Unit
 ) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(
+    Modifier.padding(bottom = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
     Text(
       stringResource(R.string.add_contact_or_create_group),
-      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 30.dp)
+      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 20.dp, bottom = 10.dp)
     )
-    val boxModifier = Modifier.size(width = 140.dp, height = 140.dp)
-    Row(
-      Modifier.padding(top = 24.dp, bottom = 30.dp),
-      horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-      Spacer(Modifier.fillMaxWidth().weight(1F))
-      Box(boxModifier) {
-        ActionButton(
-          stringResource(R.string.create_one_time_link),
-          stringResource(R.string.to_share_with_your_contact),
-          Icons.Outlined.AddLink,
-          click = addContact
-        )
-      }
-      Spacer(Modifier.fillMaxWidth().weight(1F))
-      Box(boxModifier) {
-        ActionButton(
-          stringResource(R.string.create_group),
-          stringResource(R.string.only_stored_on_members_devices),
-          icon = Icons.Outlined.Group,
-          click = createGroup
-        )
-      }
-      Spacer(Modifier.fillMaxWidth().weight(1F))
+    val boxModifier = Modifier.fillMaxWidth().height(88.dp).padding(horizontal = 16.dp, vertical = 8.dp)
+
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.create_one_time_link),
+        stringResource(R.string.to_share_with_your_contact),
+        Icons.Outlined.AddLink,
+        click = addContact
+      )
     }
 
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.paste_received_link),
+        stringResource(R.string.paste_received_link_from_clipboard),
+        Icons.Outlined.Article,
+        click = pasteLink
+      )
+    }
+
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.scan_QR_code),
+        stringResource(R.string.in_person_or_in_video_call__bracketed),
+        Icons.Outlined.QrCode,
+        click = scanCode
+      )
+    }
+
+    Box(boxModifier) {
+      ActionRowButton(
+        stringResource(R.string.create_group),
+        stringResource(R.string.only_stored_on_members_devices),
+        icon = Icons.Outlined.Group,
+        click = createGroup
+      )
+    }
+  }
+}
+
+@Composable
+fun ActionRowButton(
+  text: String, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
+  click: () -> Unit = {}
+) {
+  Surface(
+    Modifier.fillMaxSize(),
+    shape = RoundedCornerShape(18.dp),
+    color = MaterialTheme.colors.secondary
+  ) {
     Row(
-      Modifier.padding(bottom = 30.dp),
-      horizontalArrangement = Arrangement.spacedBy(4.dp)
+      Modifier.clickable(onClick = click).size(48.dp).padding(8.dp),
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Spacer(Modifier.fillMaxWidth().weight(1F))
-      Box(boxModifier) {
-        ActionButton(
-          stringResource(R.string.scan_QR_code),
-          stringResource(R.string.in_person_or_in_video_call__bracketed),
-          Icons.Outlined.QrCode,
-          click = scanCode
+      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      Icon(icon, text, tint = tint, modifier = Modifier.size(48.dp).padding(horizontal = 10.dp))
+
+      Column {
+        Text(
+          text,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Bold,
+          color = tint
         )
+
+        if (comment != null) {
+          Text(
+            comment,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.body2
+          )
+        }
       }
-      Spacer(Modifier.fillMaxWidth().weight(1F))
-      Box(boxModifier) {
-        ActionButton(
-          stringResource(R.string.paste_received_link),
-          stringResource(R.string.paste_received_link_from_clipboard),
-          Icons.Outlined.Article,
-          click = pasteLink
-        )
-      }
-      Spacer(Modifier.fillMaxWidth().weight(1F))
     }
   }
 }
