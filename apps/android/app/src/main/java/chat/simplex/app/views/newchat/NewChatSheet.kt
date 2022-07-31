@@ -69,7 +69,7 @@ fun NewChatSheetLayout(
       modifier = Modifier.padding(horizontal = 4.dp).padding(top = 20.dp, bottom = 20.dp),
       style = MaterialTheme.typography.body2
     )
-    val boxModifier = Modifier.fillMaxWidth().height(80.dp).padding(horizontal = 8.dp)
+    val boxModifier = Modifier.fillMaxWidth().height(80.dp).padding(horizontal = 0.dp)
     Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
@@ -144,29 +144,25 @@ fun ActionRowButton(
 
 @Composable
 fun ActionButton(
-  text: String?, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
+  text: String?,
+  comment: String?,
+  icon: ImageVector,
+  disabled: Boolean = false,
   click: () -> Unit = {}
 ) {
-  Surface(
-    Modifier.fillMaxSize(),
-    shape = RoundedCornerShape(18.dp),
-    color = MaterialTheme.colors.secondary
-  ) {
+  Surface(shape = RoundedCornerShape(18.dp)) {
     Column(
       Modifier
         .clickable(onClick = click)
         .padding(8.dp),
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
       val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Icon(
-        icon, text,
+      Icon(icon, text,
         tint = tint,
         modifier = Modifier
           .size(40.dp)
-          .padding(bottom = 8.dp)
-      )
+          .padding(bottom = 8.dp))
       if (text != null) {
         Text(
           text,
