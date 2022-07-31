@@ -161,7 +161,7 @@
     <string name="add_contact">Добавить контакт</string>
 
     <!-- NewChatSheet -->
-    <string name="add_contact_or_create_group">Добавьте контакт или создайте группу</string>
+    <string name="add_contact_or_create_group">Начните новый разговор</string>
     <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="paste_received_link">Вставить полученную ссылку</string>
     <string name="scan_QR_code">Сканировать QR код</string>
@@ -169,6 +169,7 @@
     <string name="to_share_with_your_contact">(чтобы отправить вашему контакту)</string>
     <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
     <string name="paste_received_link_from_clipboard">(вставить ссылку из буфера обмена)</string>
+    <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
 
     <!-- GetImageView -->
     <string name="toast_permission_denied">Разрешение не получено!</string>

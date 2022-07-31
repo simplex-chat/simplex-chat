@@ -161,7 +161,7 @@
   <string name="add_contact">Add contact</string>
 
   <!-- NewChatSheet -->
-  <string name="add_contact_or_create_group">Add contact or create group</string>
+  <string name="add_contact_or_create_group">Start new conversation</string>
   <string name="create_one_time_link">Create link / QR code</string>
   <string name="paste_received_link">Connect via received link</string>
   <string name="scan_QR_code">Scan QR code</string>
@@ -169,6 +169,7 @@
   <string name="to_share_with_your_contact">(to share with your contact)</string>
   <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
   <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
+  <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>

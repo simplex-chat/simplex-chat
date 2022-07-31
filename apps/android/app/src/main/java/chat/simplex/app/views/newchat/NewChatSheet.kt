@@ -63,24 +63,18 @@ fun NewChatSheetLayout(
   pasteLink: () -> Unit,
   createGroup: () -> Unit
 ) {
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Text(
       stringResource(R.string.add_contact_or_create_group),
-      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 32.dp)
+      modifier = Modifier.padding(horizontal = 8.dp).padding(top = 30.dp)
     )
+    val boxModifier = Modifier.size(width = 140.dp, height = 140.dp)
     Row(
-      Modifier
-        .padding(top = 24.dp, bottom = 30.dp)
-        .horizontalScroll(rememberScrollState()),
+      Modifier.padding(top = 24.dp, bottom = 30.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      Spacer(Modifier.size(4.dp))
-
-      Box(
-        Modifier.size(width = 130.dp, height = 140.dp)
-      ) {
+      Spacer(Modifier.fillMaxWidth().weight(1F))
+      Box(boxModifier) {
         ActionButton(
           stringResource(R.string.create_one_time_link),
           stringResource(R.string.to_share_with_your_contact),
@@ -88,19 +82,24 @@ fun NewChatSheetLayout(
           click = addContact
         )
       }
-      Box(
-        Modifier.size(width = 130.dp, height = 140.dp)
-      ) {
+      Spacer(Modifier.fillMaxWidth().weight(1F))
+      Box(boxModifier) {
         ActionButton(
-          stringResource(R.string.paste_received_link),
-          stringResource(R.string.paste_received_link_from_clipboard),
-          Icons.Outlined.Article,
-          click = pasteLink
+          stringResource(R.string.create_group),
+          stringResource(R.string.only_stored_on_members_devices),
+          icon = Icons.Outlined.Group,
+          click = createGroup
         )
       }
-      Box(
-        Modifier.size(width = 130.dp, height = 140.dp)
-      ) {
+      Spacer(Modifier.fillMaxWidth().weight(1F))
+    }
+
+    Row(
+      Modifier.padding(bottom = 30.dp),
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Spacer(Modifier.fillMaxWidth().weight(1F))
+      Box(boxModifier) {
         ActionButton(
           stringResource(R.string.scan_QR_code),
           stringResource(R.string.in_person_or_in_video_call__bracketed),
@@ -108,17 +107,16 @@ fun NewChatSheetLayout(
           click = scanCode
         )
       }
-      Box(
-        Modifier.size(width = 130.dp, height = 140.dp)
-      ) {
+      Spacer(Modifier.fillMaxWidth().weight(1F))
+      Box(boxModifier) {
         ActionButton(
-          stringResource(R.string.create_group),
-          icon = Icons.Outlined.Group,
-          click = createGroup
+          stringResource(R.string.paste_received_link),
+          stringResource(R.string.paste_received_link_from_clipboard),
+          Icons.Outlined.Article,
+          click = pasteLink
         )
       }
-
-      Spacer(Modifier.size(4.dp))
+      Spacer(Modifier.fillMaxWidth().weight(1F))
     }
   }
 }
