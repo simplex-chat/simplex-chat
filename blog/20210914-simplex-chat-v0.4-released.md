@@ -1,5 +1,5 @@
 ---
-title: "Simplex Chat v0.4 released"
+title: "SimpleX announces SimpleX Chat v0.4"
 date: 2021-09-14
 ---
 # SimpleX announces SimpleX Chat v0.4

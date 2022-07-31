@@ -1,3 +1,8 @@
+---
+title: "SimpleX Chat v2.1 - better conversation privacy"
+date: 2022-05-24
+---
+
 # SimpleX Chat v2.1 - better conversation privacy
 
 **Published:** May 24, 2022

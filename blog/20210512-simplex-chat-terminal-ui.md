@@ -1,5 +1,5 @@
 ---
-title: "Simplex Chat Terminal UI"
+title: "Announcing SimpleX Chat Prototype!"
 date: 2021-05-12
 ---
 ## Announcing SimpleX Chat Prototype!

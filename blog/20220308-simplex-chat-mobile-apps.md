@@ -1,3 +1,8 @@
+---
+title: "SimpleX announces SimpleX Chat mobile apps for iOS and Android"
+date: 2022-03-08
+---
+
 # SimpleX announces SimpleX Chat mobile apps for iOS and Android
 
 **Published:** March 8, 2022

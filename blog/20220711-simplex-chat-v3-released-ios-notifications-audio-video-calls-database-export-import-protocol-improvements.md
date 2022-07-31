@@ -1,3 +1,7 @@
+---
+title: "SimpleX announces SimpleX Chat v3"
+date: 2022-07-11
+---
 # SimpleX announces SimpleX Chat v3
 
 **Published:** Jul 11, 2022

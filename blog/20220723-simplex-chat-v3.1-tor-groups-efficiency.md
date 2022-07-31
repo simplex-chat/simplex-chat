@@ -1,3 +1,7 @@
+---
+title: "SimpleX Chat v3.1-beta is released"
+date: 2022-07-23
+---
 # SimpleX Chat v3.1-beta is released
 
 **Published:** Jul 23, 2022

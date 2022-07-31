@@ -1,3 +1,7 @@
+---
+title: "SimpleX announces SimpleX Chat public beta for iOS"
+date: 2022-02-14
+---
 # SimpleX announces SimpleX Chat public beta for iOS
 
 **Published:** Feb 14, 2022

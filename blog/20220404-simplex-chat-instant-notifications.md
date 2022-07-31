@@ -1,3 +1,8 @@
+---
+title: "Instant notifications for SimpleX Chat mobile apps"
+date: 2022-04-04
+---
+
 # Instant notifications for SimpleX Chat mobile apps
 
 **Published:** April 04, 2022
