@@ -148,6 +148,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.d(TAG, "user: $user")
     try {
       if (chatModel.chatRunning.value == true) return
+      if (chatModel.controller.appPrefs.useSocksProxy.get()) {
+        setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
+      }
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
