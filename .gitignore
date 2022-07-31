@@ -43,3 +43,29 @@ stack.yaml.lock
 # Temporary test files
 tests/tmp
 logs/
+
+
+# for website
+website/node_modules/
+# Generated files
+website/package/generated*
+
+# Ignore build tool output, e.g. code coverage
+website/.nyc_output/
+website/coverage/
+
+# Ignore API documentation
+website/api-docs/
+
+# Ignore folders from source code editors
+website/.vscode
+website/.idea
+
+# Ignore eleventy output when doing manual tests
+website/_site/
+
+website/package-lock.json
+
+# Ignore test files
+website/.cache
+website/test/stubs-layout-cache/_includes/*.js
