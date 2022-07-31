@@ -818,6 +818,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
         case let .userJoinedGroup(groupInfo):
             m.updateGroup(groupInfo)
+        case let .groupDeleted(groupInfo, _):
+            m.updateGroup(groupInfo)
+        case let .deletedMemberUser(groupInfo, _):
+            m.updateGroup(groupInfo)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
