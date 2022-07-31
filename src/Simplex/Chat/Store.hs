@@ -1278,28 +1278,23 @@ updateConnectionStatus db Connection {connId} connStatus = do
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
-createNewGroup db gVar user groupProfile =
-  checkConstraint SEDuplicateName . liftIO $ do
-    let GroupProfile {displayName, fullName, image} = groupProfile
-        uId = userId user
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, displayName, uId, currentTs, currentTs)
+createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
+  let GroupProfile {displayName, fullName, image} = groupProfile
+  currentTs <- getCurrentTime
+  withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
       "INSERT INTO group_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (displayName, fullName, image, uId, currentTs, currentTs)
+      (displayName, fullName, image, userId, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
       "INSERT INTO groups (local_display_name, user_id, group_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, uId, profileId, currentTs, currentTs)
+      (ldn, userId, profileId, currentTs, currentTs)
     groupId <- insertedRowId db
     memberId <- encodedRandomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
-    pure GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> ExceptT StoreError IO GroupInfo

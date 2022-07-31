@@ -49,6 +49,7 @@ chatTests = do
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
+    it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
     it "remove contact from group and add again" testGroupRemoveAdd
@@ -691,6 +692,17 @@ testGroupDelete =
       cath <## "you are no longer a member of the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
+
+testGroupSameName :: IO ()
+testGroupSameName =
+  testChat2 aliceProfile bobProfile $
+    \alice _ -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/g team"
+      alice <## "group #team_1 (team) is created"
+      alice <## "use /a team_1 <name> to add members"
 
 testGroupDeleteWhenInvited :: IO ()
 testGroupDeleteWhenInvited =
