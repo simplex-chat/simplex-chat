@@ -24,6 +24,7 @@ final class ChatModel: ObservableObject {
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
     @Published var chatToTop: String?
+//    @Published var groups: Dictionary<ChatId, SimpleXChat.Group> = [:]
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -35,6 +36,9 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    // pending notification actions
+    @Published var ntfContactRequest: ChatId?
+    @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
@@ -75,13 +79,17 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact))
+        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact())
     }
 
-    private func updateChat(_ cInfo: ChatInfo) {
+    func updateGroup(_ groupInfo: GroupInfo) {
+        updateChat(.group(groupInfo: groupInfo))
+    }
+
+    private func updateChat(_ cInfo: ChatInfo, addMissing: Bool = true) {
         if hasChat(cInfo.id) {
             updateChatInfo(cInfo)
-        } else {
+        } else if addMissing {
             addChat(Chat(chatInfo: cInfo, chatItems: []))
         }
     }
@@ -122,7 +130,12 @@ final class ChatModel: ObservableObject {
                 addChat(Chat(c), at: i)
             }
         }
+        NtfManager.shared.setNtfBadgeCount(totalUnreadCount())
     }
+
+//    func addGroup(_ group: SimpleXChat.Group) {
+//        groups[group.groupInfo.id] = group
+//    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
@@ -130,6 +143,7 @@ final class ChatModel: ObservableObject {
             chats[i].chatItems = [cItem]
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
+                NtfManager.shared.incNtfBadgeCount()
             }
             if i > 0 {
                 if chatId == nil {
@@ -194,6 +208,9 @@ final class ChatModel: ObservableObject {
         // remove from current chat
         if chatId == cInfo.id {
             if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+                if chatItems[i].isRcvNew() == true {
+                    NtfManager.shared.decNtfBadgeCount()
+                }
                 _ = withAnimation {
                     self.chatItems.remove(at: i)
                 }
@@ -204,6 +221,7 @@ final class ChatModel: ObservableObject {
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         if let chat = getChat(cInfo.id) {
+            NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatStats = ChatStats()
         }
         // update current chat
@@ -221,6 +239,7 @@ final class ChatModel: ObservableObject {
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {
+            NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatItems = []
             chat.chatStats = ChatStats()
             chat.chatInfo = cInfo
@@ -240,6 +259,10 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
             chatItems[j].meta.itemStatus = .rcvRead
         }
+    }
+
+    func totalUnreadCount() -> Int {
+        chats.reduce(0, { count, chat in count + chat.chatStats.unreadCount })
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {

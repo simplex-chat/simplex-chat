@@ -143,6 +143,10 @@ data ChatCommand
   | APIListMembers GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
+  | APIContactInfo ContactId
+  | APIGroupMemberInfo GroupId GroupMemberId
+  | ContactInfo ContactName
+  | GroupMemberInfo GroupName ContactName
   | ChatHelp HelpSection
   | Welcome
   | AddContact
@@ -199,6 +203,8 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats}
+  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -260,7 +266,7 @@ data ChatResponse
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
-  | CRUserJoinedGroup {groupInfo :: GroupInfo}
+  | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
@@ -270,10 +276,10 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
-  | CRMemberSubError {groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError} -- TODO Contact?  or GroupMember?
-  | CRMemberSubErrors {memberSubErrors :: [MemberSubError]}
+  | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
+  | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
-  | CRPendingSubSummary {pendingSubStatus :: [PendingSubStatus]}
+  | CRPendingSubSummary {pendingSubscriptions :: [PendingSubStatus]}
   | CRSndFileSubError {sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {callInvitation :: RcvCallInvitation}
@@ -311,17 +317,18 @@ instance ToJSON ContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data MemberSubError = MemberSubError
+data MemberSubStatus = MemberSubStatus
   { member :: GroupMember,
-    memberError :: ChatError
+    memberError :: Maybe ChatError
   }
   deriving (Show, Generic)
 
-instance ToJSON MemberSubError where
-  toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON MemberSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data PendingSubStatus = PendingSubStatus
-  { connId :: AgentConnId,
+  { connection :: PendingContactConnection,
     connError :: Maybe ChatError
   }
   deriving (Show, Generic)
@@ -396,6 +403,7 @@ data ChatErrorType
   | CECallContact {contactId :: Int64}
   | CECallState {currentCallState :: CallStateTag}
   | CEAgentVersion
+  | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
   deriving (Show, Exception, Generic)
 

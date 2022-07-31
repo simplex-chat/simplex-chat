@@ -73,12 +73,14 @@ class ChatModel(val controller: ChatController) {
 
   fun updateContactConnection(contactConnection: PendingContactConnection) = updateChat(ChatInfo.ContactConnection(contactConnection))
 
-  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact))
+  fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = !contact.isIndirectContact)
 
-  private fun updateChat(cInfo: ChatInfo) {
+  fun updateGroup(groupInfo: GroupInfo) = updateChat(ChatInfo.Group(groupInfo))
+
+  private fun updateChat(cInfo: ChatInfo, addMissing: Boolean = true) {
     if (hasChat(cInfo.id)) {
       updateChatInfo(cInfo)
-    } else {
+    } else if (addMissing) {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf()))
     }
   }
@@ -291,6 +293,7 @@ interface SomeChat {
   val id: ChatId
   val apiId: Long
   val ready: Boolean
+  val sendMsgEnabled: Boolean
   val createdAt: Instant
   val updatedAt: Instant
 }
@@ -343,6 +346,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contact.id
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
+    override val sendMsgEnabled get() = contact.sendMsgEnabled
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
@@ -361,6 +365,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = groupInfo.id
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
+    override val sendMsgEnabled get() = groupInfo.sendMsgEnabled
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
@@ -379,6 +384,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contactRequest.id
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
+    override val sendMsgEnabled get() = contactRequest.sendMsgEnabled
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
@@ -397,6 +403,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contactConnection.id
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
+    override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
@@ -424,9 +431,13 @@ class Contact(
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
+  override val sendMsgEnabled get() = true
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
+
+  val isIndirectContact: Boolean get() =
+    activeConn.connLevel > 0 || viaGroup != null
 
   companion object {
     val sampleData = Contact(
@@ -455,10 +466,10 @@ class ContactSubStatus(
 )
 
 @Serializable
-class Connection(val connId: Long, val connStatus: ConnStatus) {
+class Connection(val connId: Long, val connStatus: ConnStatus, val connLevel: Int) {
   val id: ChatId get() = ":$connId"
   companion object {
-    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready)
+    val sampleData = Connection(connId = 1, connStatus = ConnStatus.Ready, connLevel = 0)
   }
 }
 
@@ -468,6 +479,11 @@ class Profile(
   override val fullName: String,
   override val image: String? = null
 ): NamedChat {
+  val displayNameWithOptionalFullName: String
+    get() {
+      return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
+    }
+
   companion object {
     val sampleData = Profile(
       displayName = "alice",
@@ -477,10 +493,17 @@ class Profile(
 }
 
 @Serializable
+class Group (
+  val groupInfo: GroupInfo,
+  var members: List<GroupMember>
+)
+
+@Serializable
 class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
+  val membership: GroupMember,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -488,15 +511,24 @@ class GroupInfo (
   override val id get() = "#$groupId"
   override val apiId get() = groupId
   override val ready get() = true
+  override val sendMsgEnabled get() = membership.memberActive
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
+
+  val canDelete: Boolean
+    get() {
+      val s = membership.memberStatus
+      return membership.memberRole == GroupMemberRole.Owner
+          || (s == GroupMemberStatus.MemRemoved || s == GroupMemberStatus.MemLeft || s == GroupMemberStatus.MemGroupDeleted || s == GroupMemberStatus.MemInvited)
+    }
 
   companion object {
     val sampleData = GroupInfo(
       groupId = 1,
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
+      membership = GroupMember.sampleData,
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -520,25 +552,84 @@ class GroupProfile (
 @Serializable
 class GroupMember (
   val groupMemberId: Long,
+  val groupId: Long,
   val memberId: String,
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+  var memberRole: GroupMemberRole,
+  var memberCategory: GroupMemberCategory,
+  var memberStatus: GroupMemberStatus,
+  var invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: Profile,
-  val memberContactId: Long?
-//    var activeConn: Connection?
+  val memberContactId: Long? = null,
+  var activeConn: Connection? = null
 ) {
+  val memberActive: Boolean get() = when (this.memberStatus) {
+    GroupMemberStatus.MemRemoved -> false
+    GroupMemberStatus.MemLeft -> false
+    GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemInvited -> false
+    GroupMemberStatus.MemIntroduced -> false
+    GroupMemberStatus.MemIntroInvited -> false
+    GroupMemberStatus.MemAccepted -> false
+    GroupMemberStatus.MemAnnounced -> false
+    GroupMemberStatus.MemConnected -> true
+    GroupMemberStatus.MemComplete -> true
+    GroupMemberStatus.MemCreator -> true
+  }
+
   companion object {
     val sampleData = GroupMember(
       groupMemberId = 1,
+      groupId = 1,
       memberId = "abcd",
+      memberRole = GroupMemberRole.Member,
+      memberCategory = GroupMemberCategory.InviteeMember,
+      memberStatus = GroupMemberStatus.MemComplete,
+      invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = Profile.sampleData,
-      memberContactId = 1
+      memberContactId = 1,
+      activeConn = Connection.sampleData
     )
   }
+}
+
+@Serializable
+enum class GroupMemberRole {
+  @SerialName("member") Member,
+  @SerialName("admin") Admin,
+  @SerialName("owner") Owner;
+}
+
+@Serializable
+enum class GroupMemberCategory {
+  @SerialName("user") UserMember,
+  @SerialName("invitee") InviteeMember,
+  @SerialName("host") HostMember,
+  @SerialName("pre") PreMember,
+  @SerialName("post") PostMember;
+}
+
+@Serializable
+enum class GroupMemberStatus {
+  @SerialName("removed") MemRemoved,
+  @SerialName("left") MemLeft,
+  @SerialName("deleted") MemGroupDeleted,
+  @SerialName("invited") MemInvited,
+  @SerialName("introduced") MemIntroduced,
+  @SerialName("intro-inv") MemIntroInvited,
+  @SerialName("accepted") MemAccepted,
+  @SerialName("announced") MemAnnounced,
+  @SerialName("connected") MemConnected,
+  @SerialName("complete") MemComplete,
+  @SerialName("creator") MemCreator;
+}
+
+@Serializable
+sealed class InvitedBy {
+  @Serializable @SerialName("contact") class IBContact(val byContactId: Long): InvitedBy()
+  @Serializable @SerialName("user") class IBUser: InvitedBy()
+  @Serializable @SerialName("unknown") class IBUnknown: InvitedBy()
 }
 
 @Serializable
@@ -576,6 +667,7 @@ class UserContactRequest (
   override val id get() = "<@$contactRequestId"
   override val apiId get() = contactRequestId
   override val ready get() = true
+  override val sendMsgEnabled get() = false
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -604,6 +696,7 @@ class PendingContactConnection(
   override val id get () = ":$pccConnId"
   override val apiId get() = pccConnId
   override val ready get() = false
+  override val sendMsgEnabled get() = false
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     val initiated = pccConnStatus.initiated
@@ -760,6 +853,24 @@ data class ChatItem (
         quotedItem = null,
         file = null
       )
+
+    fun getGroupInvitationSample(status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending) =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), "received invitation to join group team as admin", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvGroupInvitation(groupInvitation = CIGroupInvitation.getSample(status = status), memberRole = GroupMemberRole.Admin),
+        quotedItem = null,
+        file = null
+      )
+
+    fun getGroupEventSample() =
+      ChatItem(
+        chatDir = CIDirection.DirectRcv(),
+        meta = CIMeta.getSample(1, Clock.System.now(), "group event text", CIStatus.RcvRead(), itemDeleted = false, itemEdited = false, editable = false),
+        content = CIContent.RcvGroupEventContent(rcvGroupEvent = RcvGroupEvent.MemberAdded(groupMemberId = 1, profile = Profile.sampleData)),
+        quotedItem = null,
+        file = null
+      )
   }
 }
 
@@ -850,6 +961,10 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvIntegrityError") class RcvIntegrityError(val msgError: MsgErrorType): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupInvitation") class RcvGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupInvitation") class SndGroupInvitation(val groupInvitation: CIGroupInvitation, val memberRole: GroupMemberRole): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("rcvGroupEvent") class RcvGroupEventContent(val rcvGroupEvent: RcvGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("sndGroupEvent") class SndGroupEventContent(val sndGroupEvent: SndGroupEvent): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when(this) {
     is SndMsgContent -> msgContent.text
@@ -859,6 +974,10 @@ sealed class CIContent: ItemContent {
     is SndCall -> status.text(duration)
     is RcvCall -> status.text(duration)
     is RcvIntegrityError -> msgError.text
+    is RcvGroupInvitation -> groupInvitation.text
+    is SndGroupInvitation -> groupInvitation.text
+    is RcvGroupEventContent -> rcvGroupEvent.text
+    is SndGroupEventContent -> sndGroupEvent.text
   }
 }
 
@@ -950,6 +1069,36 @@ sealed class MsgContent {
     is MCFile -> "json ${json.encodeToString(this)}"
     is MCUnknown -> "json $json"
   }
+}
+
+@Serializable
+class CIGroupInvitation (
+  val groupId: Long,
+  val groupMemberId: Long,
+  val localDisplayName: String,
+  val groupProfile: GroupProfile,
+  val status: CIGroupInvitationStatus
+  ) {
+  val text: String get() = String.format(generalGetString(R.string.group_invitation_item_description), groupProfile.displayName)
+
+  companion object {
+    fun getSample(
+      groupId: Long = 1,
+      groupMemberId: Long = 1,
+      localDisplayName: String = "team",
+      groupProfile: GroupProfile = GroupProfile.sampleData,
+      status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending
+    ): CIGroupInvitation =
+      CIGroupInvitation(groupId = groupId, groupMemberId = groupMemberId, localDisplayName = localDisplayName, groupProfile = groupProfile, status = status)
+  }
+}
+
+@Serializable
+enum class CIGroupInvitationStatus {
+  @SerialName("pending") Pending,
+  @SerialName("accepted") Accepted,
+  @SerialName("rejected") Rejected,
+  @SerialName("expired") Expired;
 }
 
 object MsgContentSerializer : KSerializer<MsgContent> {
@@ -1135,5 +1284,35 @@ sealed class MsgErrorType() {
     is MsgBadHash -> generalGetString(R.string.integrity_msg_bad_hash) // not used now
     is MsgBadId -> generalGetString(R.string.integrity_msg_bad_id) // not used now
     is MsgDuplicate -> generalGetString(R.string.integrity_msg_duplicate) // not used now
+  }
+}
+
+@Serializable
+sealed class RcvGroupEvent() {
+  @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
+  @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
+  @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
+  @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
+  @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
+
+  val text: String get() = when (this) {
+    is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.displayNameWithOptionalFullName)
+    is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
+    is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
+    is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
+    is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
+  }
+}
+
+@Serializable
+sealed class SndGroupEvent() {
+  @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
+  @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
+
+  val text: String get() = when (this) {
+    is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.displayNameWithOptionalFullName)
+    is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
   }
 }

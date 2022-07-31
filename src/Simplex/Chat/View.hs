@@ -6,7 +6,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
@@ -60,8 +59,10 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
-  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item
-  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item) chatItems
+  CRContactInfo ct cStats -> viewContactInfo ct cStats
+  CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
+  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
+  CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
   CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
   CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
@@ -132,9 +133,9 @@ responseToView testView = \case
     where
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
-    [groupInvitation ldn fullName]
+    [groupInvitation' ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup g -> [ttyGroup' g <> ": you joined the group"]
+  CRUserJoinedGroup g _ -> [ttyGroup' g <> ": you joined the group"]
   CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
@@ -144,8 +145,8 @@ responseToView testView = \case
   CRGroupEmpty g -> [ttyFullGroup g <> ": group is empty"]
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
-  CRMemberSubError g c e -> [ttyGroup' g <> " member " <> ttyContact c <> " error: " <> sShow e]
-  CRMemberSubErrors summary -> viewErrorsSummary summary " group member errors"
+  CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
+  CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
   CRPendingSubSummary _ -> []
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
@@ -200,20 +201,24 @@ responseToView testView = \case
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
-viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
-viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case chat of
+viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
+viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItem to
+      CISndGroupEvent {} -> showSndItemProhibited to
       where
         to = ttyToContact' c
     CIDirectRcv -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvGroupInvitation {} -> showRcvItem from
+      CIRcvGroupEvent {} -> showRcvItemProhibited from
       where
         from = ttyFromContact' c
     where
@@ -221,15 +226,19 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
   GroupChat g -> case chatDir of
     CIGroupSnd -> case content of
       CISndMsgContent mc -> withSndFile to $ sndMsg to quote mc
-      CISndDeleted _ -> []
-      CISndCall {} -> []
+      CISndDeleted _ -> showSndItem to
+      CISndCall {} -> showSndItem to
+      CISndGroupInvitation {} -> showSndItemProhibited to
+      CISndGroupEvent {} -> showSndItem to
       where
         to = ttyToGroup g
     CIGroupRcv m -> case content of
       CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
-      CIRcvDeleted _ -> []
-      CIRcvCall {} -> []
+      CIRcvDeleted _ -> showRcvItem from
+      CIRcvCall {} -> showRcvItem from
       CIRcvIntegrityError err -> viewRcvIntegrityError from err meta
+      CIRcvGroupInvitation {} -> showRcvItemProhibited from
+      CIRcvGroupEvent {} -> showRcvItem from
       where
         from = ttyFromGroup' g m
     where
@@ -245,6 +254,13 @@ viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} = case cha
       ("", Just _, []) -> []
       ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) meta
       _ -> view dir quote mc meta
+    showSndItem to = showItem $ sentWithTime_ [to <> plainContent content] meta
+    showRcvItem from = showItem $ receivedWithTime_ from [] meta [plainContent content]
+    showSndItemProhibited to = showItem $ sentWithTime_ [to <> plainContent content <> " " <> prohibited] meta
+    showRcvItemProhibited from = showItem $ receivedWithTime_ from [] meta [plainContent content <> " " <> prohibited]
+    showItem ss = if doShow then ss else []
+    plainContent = plain . ciContentToText
+    prohibited = styled (colored Red) ("[prohibited - it's a bug if this chat item was created in this context, please report it to dev team]" :: String)
 
 viewItemUpdate :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> [StyledString]
 viewItemUpdate chat ChatItem {chatDir, meta, content, quotedItem} = case chat of
@@ -428,11 +444,11 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation ldn fullName
+        GSMemInvited -> groupInvitation' ldn fullName
         _ -> ttyGroup ldn <> optFullName ldn fullName
 
-groupInvitation :: GroupName -> Text -> StyledString
-groupInvitation displayName fullName =
+groupInvitation' :: GroupName -> Text -> StyledString
+groupInvitation' displayName fullName =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
     <> " - you are invited ("
@@ -469,7 +485,26 @@ viewSMPServers smpServers testView =
     customSMPServers =
       if null smpServers
         then "no custom SMP servers saved"
-        else plain $ intercalate ", " (map (B.unpack . strEncode) smpServers)
+        else viewServers smpServers
+
+viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
+viewContactInfo Contact {contactId} stats =
+  ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+
+viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats =
+  [ "group ID: " <> sShow groupId,
+    "member ID: " <> sShow groupMemberId
+  ]
+    <> maybe ["member not connected"] viewConnectionStats stats
+
+viewConnectionStats :: ConnectionStats -> [StyledString]
+viewConnectionStats ConnectionStats {rcvServers, sndServers} =
+  ["receiving messages via: " <> viewServers rcvServers | not $ null rcvServers]
+    <> ["sending messages via: " <> viewServers sndServers | not $ null sndServers]
+
+viewServers :: [SMPServer] -> StyledString
+viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}
@@ -768,6 +803,7 @@ viewChatError = \case
     CECallContact _ -> []
     CECallState _ -> []
     CEAgentVersion -> ["unsupported agent version"]
+    CEAgentNoSubResult connId -> ["no subscription result for connection: " <> sShow connId]
     CECommandError e -> ["bad chat command: " <> plain e]
   -- e -> ["chat error: " <> sShow e]
   ChatErrorStore err -> case err of
@@ -877,9 +913,7 @@ ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
 
 optFullName :: ContactName -> Text -> StyledString
-optFullName localDisplayName fullName
-  | T.null fullName || localDisplayName == fullName = ""
-  | otherwise = plain (" (" <> fullName <> ")")
+optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
 
 highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan

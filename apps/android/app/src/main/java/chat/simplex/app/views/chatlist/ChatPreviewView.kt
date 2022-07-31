@@ -27,36 +27,84 @@ import chat.simplex.app.views.helpers.badgeLayout
 
 @Composable
 fun ChatPreviewView(chat: Chat, stopped: Boolean) {
+  val cInfo = chat.chatInfo
+
+  @Composable
+  fun chatPreviewTitleText(color: Color = Color.Unspecified) {
+    Text(
+      cInfo.chatViewName,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      style = MaterialTheme.typography.h3,
+      fontWeight = FontWeight.Bold,
+      color = color
+    )
+  }
+
+  @Composable
+  fun chatPreviewTitle() {
+    when (cInfo) {
+      is ChatInfo.Direct ->
+        chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+      is ChatInfo.Group ->
+        when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
+          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
+          GroupMemberStatus.MemLeft ->
+            Row(
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Text(
+                stringResource(R.string.group_left_description),
+                style = MaterialTheme.typography.h3,
+                fontWeight = FontWeight.Bold,
+                color = HighOrLowlight
+              )
+              chatPreviewTitleText()
+            }
+          else -> chatPreviewTitleText()
+        }
+      else -> chatPreviewTitleText()
+    }
+  }
+
+  @Composable
+  fun chatPreviewText() {
+    val ci = chat.chatItems.lastOrNull()
+    if (ci != null) {
+      MarkdownText(
+        ci.text, ci.formattedText, ci.memberDisplayName,
+        metaText = ci.timestampText,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+      )
+    } else {
+      when (cInfo) {
+        is ChatInfo.Direct ->
+          if (!cInfo.ready) {
+            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+          }
+        is ChatInfo.Group ->
+          when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.you_are_invited_to_group))
+            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+            else -> {}
+          }
+        else -> {}
+      }
+    }
+  }
+
   Row {
-    val cInfo = chat.chatInfo
     ChatInfoImage(cInfo, size = 72.dp)
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
-      Text(
-        cInfo.chatViewName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold,
-        color = if (cInfo.ready) Color.Unspecified else HighOrLowlight
-      )
-      if (cInfo.ready) {
-        val ci = chat.chatItems.lastOrNull()
-        if (ci != null) {
-          MarkdownText(
-            ci.text, ci.formattedText, ci.memberDisplayName,
-            metaText = ci.timestampText,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
-          )
-        }
-      } else {
-        Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
-      }
+      chatPreviewTitle()
+      chatPreviewText()
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 

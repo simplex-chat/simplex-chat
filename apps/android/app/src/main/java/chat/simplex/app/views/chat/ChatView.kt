@@ -75,10 +75,12 @@ fun ChatView(chatModel: ChatModel) {
       chat,
       composeState,
       composeView = {
-        ComposeView(
-          chatModel, chat, composeState, attachmentOption,
-          showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
-        )
+        if (chat.chatInfo.sendMsgEnabled) {
+          ComposeView(
+            chatModel, chat, composeState, attachmentOption,
+            showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+          )
+        }
       },
       attachmentOption,
       scope,
@@ -107,6 +109,9 @@ fun ChatView(chatModel: ChatModel) {
       },
       receiveFile = { fileId ->
         withApi { chatModel.controller.receiveFile(fileId) }
+      },
+      joinGroup = { groupId ->
+        withApi { chatModel.controller.joinGroup(groupId) }
       },
       startCall = { media ->
         val cInfo = chat.chatInfo
@@ -144,6 +149,7 @@ fun ChatLayout(
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit
 ) {
@@ -171,7 +177,7 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
           Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, useLinkPreviews, openDirectChat, deleteMessage, receiveFile, acceptCall)
+            ChatItemsList(user, chat, composeState, chatItems, useLinkPreviews, openDirectChat, deleteMessage, receiveFile, joinGroup, acceptCall)
           }
         }
       }
@@ -261,6 +267,7 @@ fun ChatItemsList(
   openDirectChat: (Long) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit
 ) {
   val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
@@ -299,11 +306,11 @@ fun ChatItemsList(
             } else {
               Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         } else {
           Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         }
       } else { // direct message
@@ -314,7 +321,7 @@ fun ChatItemsList(
             end = if (sent) 12.dp else 76.dp,
           )
         ) {
-          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, acceptCall = acceptCall)
+          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
         }
       }
     }
@@ -384,8 +391,9 @@ fun PreviewChatLayout() {
       openDirectChat = {},
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       startCall = {},
-      acceptCall = { _ ->  }
+      acceptCall = { _ -> }
     )
   }
 }
@@ -431,8 +439,9 @@ fun PreviewGroupChatLayout() {
       openDirectChat = {},
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       startCall = {},
-      acceptCall = { _ ->  }
+      acceptCall = { _ -> }
     )
   }
 }

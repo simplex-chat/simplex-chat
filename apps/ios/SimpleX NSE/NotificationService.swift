@@ -14,13 +14,58 @@ let logger = Logger()
 
 let suspendingDelay: UInt64 = 2_000_000_000
 
+typealias NtfStream = AsyncStream<UNMutableNotificationContent>
+
+actor PendingNtfs {
+    static let shared = PendingNtfs()
+    private var ntfStreams: [String: NtfStream] = [:]
+    private var ntfConts: [String: NtfStream.Continuation] = [:]
+
+    func createStream(_ id: String) {
+        logger.debug("PendingNtfs.createStream: \(id, privacy: .public)")
+        if ntfStreams.index(forKey: id) == nil {
+            ntfStreams[id] = AsyncStream { cont in
+                ntfConts[id] = cont
+                logger.debug("PendingNtfs.createStream: store continuation")
+            }
+        }
+    }
+
+    func readStream(_ id: String, for nse: NotificationService, msgCount: Int = 1) async {
+        logger.debug("PendingNtfs.readStream: \(id, privacy: .public) \(msgCount, privacy: .public)")
+        if let s = ntfStreams[id] {
+            logger.debug("PendingNtfs.readStream: has stream")
+            var rcvCount = max(1, msgCount)
+            for await ntf in s {
+                nse.setBestAttemptNtf(ntf)
+                rcvCount -= 1
+                if rcvCount == 0 || ntf.categoryIdentifier == ntfCategoryCallInvitation { break }
+            }
+            logger.debug("PendingNtfs.readStream: exiting")
+        }
+    }
+
+    func writeStream(_ id: String, _ ntf: UNMutableNotificationContent) {
+        logger.debug("PendingNtfs.writeStream: \(id, privacy: .public)")
+        if let cont = ntfConts[id] {
+            logger.debug("PendingNtfs.writeStream: writing ntf")
+            cont.yield(ntf)
+        }
+    }
+}
+
+
+
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
-    var bestAttemptContent: UNNotificationContent?
+    var bestAttemptNtf: UNMutableNotificationContent?
+    var badgeCount: Int = 0
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        bestAttemptContent = request.content
+        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+        ntfBadgeCountGroupDefault.set(badgeCount)
+        setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
         self.contentHandler = contentHandler
         let appState = appStateGroupDefault.get()
         switch appState {
@@ -40,19 +85,19 @@ class NotificationService: UNNotificationServiceExtension {
                 if state.inactive {
                     receiveNtfMessages(request, contentHandler)
                 } else {
-                    contentHandler(request.content)
+                    deliverBestAttemptNtf()
                 }
             }
         default:
             logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
-            contentHandler(request.content)
+            deliverBestAttemptNtf()
         }
     }
 
     func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
-            contentHandler(request.content)
+            deliverBestAttemptNtf()
             return
         }
         let userInfo = request.content.userInfo
@@ -64,25 +109,38 @@ class NotificationService: UNNotificationServiceExtension {
             if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
-                    bestAttemptContent = createConnectionEventNtf(connEntity)
+                    setBestAttemptNtf(createConnectionEventNtf(connEntity))
+                    if let id = connEntity.id {
+                        Task {
+                            logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
+                            await PendingNtfs.shared.createStream(id)
+                            await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count)
+                            deliverBestAttemptNtf()
+                        }
+                    }
                 }
-                if let content = receiveMessageForNotification() {
-                    logger.debug("NotificationService: receiveMessageForNotification: has message")
-                    contentHandler(content)
-                } else if let content = bestAttemptContent {
-                    logger.debug("NotificationService: receiveMessageForNotification: no message")
-                    contentHandler(content)
-                }
+                return
             }
         }
+        deliverBestAttemptNtf()
     }
 
     override func serviceExtensionTimeWillExpire() {
         logger.debug("NotificationService.serviceExtensionTimeWillExpire")
-        // Called just before the extension will be terminated by the system.
-        // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
-        if let contentHandler = self.contentHandler, let content = bestAttemptContent {
-            contentHandler(content)
+        deliverBestAttemptNtf()
+    }
+
+    func setBestAttemptNtf(_ ntf: UNMutableNotificationContent?) {
+        logger.debug("NotificationService.setBestAttemptNtf")
+        bestAttemptNtf = ntf
+        bestAttemptNtf?.badge = badgeCount as NSNumber
+    }
+
+    private func deliverBestAttemptNtf() {
+        logger.debug("NotificationService.deliverBestAttemptNtf")
+        if let handler = contentHandler, let content = bestAttemptNtf {
+            handler(content)
+            bestAttemptNtf = nil
         }
     }
 }
@@ -92,9 +150,12 @@ func startChat() -> User? {
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
-            try apiStartChat()
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-            chatLastStartGroupDefault.set(Date.now)
+            let justStarted = try apiStartChat()
+            if justStarted {
+                try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+                chatLastStartGroupDefault.set(Date.now)
+                Task { await receiveMessages() }
+            }
             return user
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
@@ -105,40 +166,50 @@ func startChat() -> User? {
     return nil
 }
 
-func receiveMessageForNotification() -> UNNotificationContent? {
-    logger.debug("NotificationService receiveMessages started")
+func receiveMessages() async {
+    logger.debug("NotificationService receiveMessages")
     while true {
-        if let res = recvSimpleXMsg() {
-            logger.debug("NotificationService receiveMessages: \(res.responseType)")
-            switch res {
-            case let .contactConnected(contact):
-                return createContactConnectedNtf(contact)
-    //        case let .contactConnecting(contact):
-    //            TODO profile update
-            case let .receivedContactRequest(contactRequest):
-                return createContactRequestNtf(contactRequest)
-            case let .newChatItem(aChatItem):
-                let cInfo = aChatItem.chatInfo
-                var cItem = aChatItem.chatItem
-                if case .image = cItem.content.msgContent {
-                   if let file = cItem.file,
-                      file.fileSize <= maxImageSize,
-                      privacyAcceptImagesGroupDefault.get() {
-                       cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
-                   }
-                }
-                return createMessageReceivedNtf(cInfo, cItem)
-    //        case let .rcvFileComplete(aChatItem):
-    //            TODO file received?
-    //            let cInfo = aChatItem.chatInfo
-    //            let cItem = aChatItem.chatItem
-    //            NtfManager.shared.notifyMessageReceived(cInfo, cItem)
-            default:
-                logger.debug("NotificationService ignored event: \(res.responseType)")
+        if let msg = await chatRecvMsg() {
+            if let (id, ntf) = await receivedMsgNtf(msg) {
+                await PendingNtfs.shared.createStream(id)
+                await PendingNtfs.shared.writeStream(id, ntf)
             }
-        } else {
-            return nil
         }
+    }
+}
+
+func chatRecvMsg() async -> ChatResponse? {
+    await withCheckedContinuation { cont in
+        let resp = recvSimpleXMsg()
+        cont.resume(returning: resp)
+    }
+}
+
+func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotificationContent)? {
+    logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
+    switch res {
+    case let .contactConnected(contact):
+        return (contact.id, createContactConnectedNtf(contact))
+//        case let .contactConnecting(contact):
+//            TODO profile update
+    case let .receivedContactRequest(contactRequest):
+        return (UserContact(contactRequest: contactRequest).id, createContactRequestNtf(contactRequest))
+    case let .newChatItem(aChatItem):
+        let cInfo = aChatItem.chatInfo
+        var cItem = aChatItem.chatItem
+        if case .image = cItem.content.msgContent {
+           if let file = cItem.file,
+              file.fileSize <= maxImageSize,
+              privacyAcceptImagesGroupDefault.get() {
+               cItem = apiReceiveFile(fileId: file.fileId)?.chatItem ?? cItem
+           }
+        }
+        return cItem.isCall() ? nil : (aChatItem.chatId, createMessageReceivedNtf(cInfo, cItem))
+    case let .callInvitation(invitation):
+        return (invitation.contact.id, createCallInvitationNtf(invitation))
+    default:
+        logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
+        return nil
     }
 }
 
@@ -155,11 +226,11 @@ func apiGetActiveUser() -> User? {
     }
 }
 
-func apiStartChat() throws {
+func apiStartChat() throws -> Bool {
     let r = sendSimpleXCmd(.startChat(subscribe: false))
     switch r {
-    case .chatStarted: return
-    case .chatRunning: return
+    case .chatStarted: return true
+    case .chatRunning: return false
     default: throw r
     }
 }

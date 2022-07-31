@@ -44,6 +44,10 @@ public struct Profile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
+    var displayNameWithOptionalFullName: String {
+        (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+    }
+
     static let sampleData = Profile(
         displayName: "alice",
         fullName: "Alice"
@@ -165,6 +169,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var sendMsgEnabled: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.sendMsgEnabled
+            case let .group(groupInfo): return groupInfo.sendMsgEnabled
+            case let .contactRequest(contactRequest): return contactRequest.sendMsgEnabled
+            case let .contactConnection(contactConnection): return contactConnection.sendMsgEnabled
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -219,16 +234,21 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     var localDisplayName: ContactName
     public var profile: Profile
     public var activeConn: Connection
-    var viaGroup: Int64?
+    public var viaGroup: Int64?
     var createdAt: Date
     var updatedAt: Date
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
+    public var sendMsgEnabled: Bool { get { true } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+
+    public func isIndirectContact() -> Bool {
+        return activeConn.connLevel > 0 || viaGroup != nil
+    }
 
     public static let sampleData = Contact(
         contactId: 1,
@@ -255,20 +275,36 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
+    var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
     static let sampleData = Connection(
         connId: 1,
-        connStatus: .ready
+        connStatus: .ready,
+        connLevel: 0
     )
 }
 
 public struct UserContact: Decodable {
+    public var userContactLinkId: Int64
+
+    public init(userContactLinkId: Int64) {
+        self.userContactLinkId = userContactLinkId
+    }
+
+    public init(contactRequest: UserContactRequest) {
+        self.userContactLinkId = contactRequest.userContactLinkId
+    }
+
+    public var id: String {
+        "@>\(userContactLinkId)"
+    }
 }
 
 public struct UserContactRequest: Decodable, NamedChat {
     var contactRequestId: Int64
+    public var userContactLinkId: Int64
     var localDisplayName: ContactName
     var profile: Profile
     var createdAt: Date
@@ -277,12 +313,14 @@ public struct UserContactRequest: Decodable, NamedChat {
     public var id: ChatId { get { "<@\(contactRequestId)" } }
     public var apiId: Int64 { get { contactRequestId } }
     var ready: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { false } }
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
 
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
+        userContactLinkId: 1,
         localDisplayName: "alice",
         profile: Profile.sampleData,
         createdAt: .now,
@@ -301,6 +339,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     public var id: ChatId { get { ":\(pccConnId)" } }
     public var apiId: Int64 { get { pccConnId } }
     var ready: Bool { get { false } }
+    public var sendMsgEnabled: Bool { get { false } }
     var localDisplayName: String {
         get { String.localizedStringWithFormat(NSLocalizedString("connection:%@", comment: "connection information"), pccConnId) }
     }
@@ -370,35 +409,54 @@ public enum ConnStatus: String, Decodable {
     }
 }
 
+public struct Group: Decodable {
+    var groupInfo: GroupInfo
+    var members: [GroupMember]
+}
+
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
-    var groupId: Int64
+    public var groupId: Int64
     var localDisplayName: GroupName
     var groupProfile: GroupProfile
+    public var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
 
     public var id: ChatId { get { "#\(groupId)" } }
-    var apiId: Int64 { get { groupId } }
+    public var apiId: Int64 { get { groupId } }
     public var ready: Bool { get { true } }
+    public var sendMsgEnabled: Bool { get { membership.memberActive } }
     public var displayName: String { get { groupProfile.displayName } }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
+
+    public func canDelete() -> Bool {
+        let s = membership.memberStatus
+        return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
+    }
 
     static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
+        membership: GroupMember.sampleData,
         createdAt: .now,
         updatedAt: .now
     )
 }
 
 public struct GroupProfile: Codable, NamedChat {
+    public init(displayName: String, fullName: String, image: String? = nil) {
+        self.displayName = displayName
+        self.fullName = fullName
+        self.image = image
+    }
+
     public var displayName: String
     public var fullName: String
     public var image: String?
 
-    static let sampleData = GroupProfile(
+    public static let sampleData = GroupProfile(
         displayName: "team",
         fullName: "My Team"
     )
@@ -406,15 +464,16 @@ public struct GroupProfile: Codable, NamedChat {
 
 public struct GroupMember: Decodable {
     public var groupMemberId: Int64
+    var groupId: Int64
     var memberId: String
-//    var memberRole: GroupMemberRole
-//    var memberCategory: GroupMemberCategory
-//    var memberStatus: GroupMemberStatus
-//    var invitedBy: InvitedBy
+    var memberRole: GroupMemberRole
+    var memberCategory: GroupMemberCategory
+    public var memberStatus: GroupMemberStatus
+    var invitedBy: InvitedBy
     var localDisplayName: ContactName
     public var memberProfile: Profile
     var memberContactId: Int64?
-//    var activeConn: Connection?
+    var activeConn: Connection?
 
     var directChatId: ChatId? {
         get {
@@ -426,6 +485,10 @@ public struct GroupMember: Decodable {
         }
     }
 
+    public var id: String {
+        "#\(groupId) @\(groupMemberId)"
+    }
+
     public var chatViewName: String {
         get {
             let p = memberProfile
@@ -433,13 +496,71 @@ public struct GroupMember: Decodable {
         }
     }
 
+    public var memberActive: Bool {
+        get {
+            switch self.memberStatus {
+            case .memRemoved: return false
+            case .memLeft: return false
+            case .memGroupDeleted: return false
+            case .memInvited: return false
+            case .memIntroduced: return false
+            case .memIntroInvited: return false
+            case .memAccepted: return false
+            case .memAnnounced: return false
+            case .memConnected: return true
+            case .memComplete: return true
+            case .memCreator: return true
+            }
+        }
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
+        groupId: 1,
         memberId: "abcd",
+        memberRole: .admin,
+        memberCategory: .inviteeMember,
+        memberStatus: .memComplete,
+        invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: Profile.sampleData,
-        memberContactId: 1
+        memberContactId: 1,
+        activeConn: Connection.sampleData
     )
+}
+
+public enum GroupMemberRole: String, Decodable {
+    case member = "member"
+    case admin = "admin"
+    case owner = "owner"
+}
+
+public enum GroupMemberCategory: String, Decodable {
+    case userMember = "user"
+    case inviteeMember = "invitee"
+    case hostMember = "host"
+    case preMember = "pre"
+    case postMember = "post"
+}
+
+public enum GroupMemberStatus: String, Decodable {
+    case memRemoved = "removed"
+    case memLeft = "left"
+    case memGroupDeleted = "deleted"
+    case memInvited = "invited"
+    case memIntroduced = "introduced"
+    case memIntroInvited = "intro-inv"
+    case memAccepted = "accepted"
+    case memAnnounced = "announced"
+    case memConnected = "connected"
+    case memComplete = "complete"
+    case memCreator = "creator"
+}
+
+public enum InvitedBy: Decodable {
+    case contact(byContactId: Int64)
+    case user
+    case unknown
 }
 
 public struct MemberSubError: Decodable {
@@ -448,11 +569,24 @@ public struct MemberSubError: Decodable {
 }
 
 public enum ConnectionEntity: Decodable {
-    case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
-    case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
-    case userContactConnection(entityConnection: Connection, userContact: UserContact)
+    case rcvDirectMsgConnection(contact: Contact?)
+    case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
+    case sndFileConnection(sndFileTransfer: SndFileTransfer)
+    case rcvFileConnection(rcvFileTransfer: RcvFileTransfer)
+    case userContactConnection(userContact: UserContact)
+
+    public var id: String? {
+        switch self {
+        case let .rcvDirectMsgConnection(contact):
+            return contact?.id ?? nil
+        case let .rcvGroupMsgConnection(_, groupMember):
+            return groupMember.id
+        case let .userContactConnection(userContact):
+            return userContact.id
+        default:
+            return nil
+        }
+    }
 }
 
 public struct NtfMsgInfo: Decodable {
@@ -462,6 +596,13 @@ public struct NtfMsgInfo: Decodable {
 public struct AChatItem: Decodable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
+
+    public var chatId: String {
+        if case let .groupRcv(groupMember) = chatItem.chatDir {
+            return groupMember.id
+        }
+        return chatInfo.id
+    }
 }
 
 public struct ChatItem: Identifiable, Decodable {
@@ -572,6 +713,26 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
        )
     }
+
+    public static func getGroupInvitationSample (_ status: CIGroupInvitationStatus = .pending) -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "received invitation to join group team as admin", .rcvRead, false, false, false),
+            content: .rcvGroupInvitation(groupInvitation: CIGroupInvitation.getSample(status: status), memberRole: .admin),
+            quotedItem: nil,
+            file: nil
+       )
+    }
+
+    public static func getGroupEventSample () -> ChatItem {
+        ChatItem(
+            chatDir: .directRcv,
+            meta: CIMeta.getSample(1, .now, "group event text", .rcvRead, false, false, false),
+            content: .rcvGroupEvent(rcvGroupEvent: .memberAdded(groupMemberId: 1, profile: Profile.sampleData)),
+            quotedItem: nil,
+            file: nil
+       )
+    }
 }
 
 public enum CIDirection: Decodable {
@@ -654,6 +815,10 @@ public enum CIContent: Decodable, ItemContent {
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
+    case rcvGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case sndGroupInvitation(groupInvitation: CIGroupInvitation, memberRole: GroupMemberRole)
+    case rcvGroupEvent(rcvGroupEvent: RcvGroupEvent)
+    case sndGroupEvent(sndGroupEvent: SndGroupEvent)
 
     public var text: String {
         get {
@@ -665,6 +830,10 @@ public enum CIContent: Decodable, ItemContent {
             case let .sndCall(status, duration): return status.text(duration)
             case let .rcvCall(status, duration): return status.text(duration)
             case let .rcvIntegrityError(msgError): return msgError.text
+            case let .rcvGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .sndGroupInvitation(groupInvitation, _): return groupInvitation.text
+            case let .rcvGroupEvent(rcvGroupEvent): return rcvGroupEvent.text
+            case let .sndGroupEvent(sndGroupEvent): return sndGroupEvent.text
             }
         }
     }
@@ -972,6 +1141,64 @@ public enum MsgErrorType: Decodable {
         case .msgBadHash: return NSLocalizedString("bad message hash", comment: "integrity error chat item") // not used now
         case .msgBadId: return NSLocalizedString("bad message ID", comment: "integrity error chat item") // not used now
         case .msgDuplicate: return NSLocalizedString("duplicate message", comment: "integrity error chat item") // not used now
+        }
+    }
+}
+
+public struct CIGroupInvitation: Decodable {
+    public var groupId: Int64
+    public var groupMemberId: Int64
+    public var localDisplayName: GroupName
+    public var groupProfile: GroupProfile
+    public var status: CIGroupInvitationStatus
+
+    var text: String {
+        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+    }
+
+    public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
+        CIGroupInvitation(groupId: groupId, groupMemberId: groupMemberId, localDisplayName: localDisplayName, groupProfile: groupProfile, status: status)
+    }
+}
+
+public enum CIGroupInvitationStatus: String, Decodable {
+    case pending
+    case accepted
+    case rejected
+    case expired
+}
+
+public enum RcvGroupEvent: Decodable {
+    case memberAdded(groupMemberId: Int64, profile: Profile)
+    case memberConnected
+    case memberLeft
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userDeleted
+    case groupDeleted
+
+    var text: String {
+        switch self {
+        case let .memberAdded(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
+        case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
+        case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        }
+    }
+}
+
+public enum SndGroupEvent: Decodable {
+    case memberDeleted(groupMemberId: Int64, profile: Profile)
+    case userLeft
+
+    var text: String {
+        switch self {
+        case let .memberDeleted(_, profile):
+            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.displayNameWithOptionalFullName)
+        case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
         }
     }
 }

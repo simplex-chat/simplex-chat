@@ -17,6 +17,11 @@ let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
 private let ntfTimeInterval: TimeInterval = 1
 
+enum NtfCallAction {
+    case accept
+    case reject
+}
+
 class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     static let shared = NtfManager()
 
@@ -32,24 +37,38 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         let content = response.notification.request.content
         let chatModel = ChatModel.shared
         let action = response.actionIdentifier
+        logger.debug("NtfManager.userNotificationCenter: didReceive: action \(action), categoryIdentifier \(content.categoryIdentifier)")
         if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
-           let chatId = content.userInfo["chatId"] as? String,
-           case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-            Task { await acceptContactRequest(contactRequest) }
-        } else if content.categoryIdentifier == ntfCategoryCallInvitation && (action == ntfActionAcceptCall || action == ntfActionRejectCall),
-                  let chatId = content.userInfo["chatId"] as? String,
-                  let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
-            let cc = CallController.shared
-            if action == ntfActionAcceptCall {
-                cc.answerCall(invitation: invitation)
+           let chatId = content.userInfo["chatId"] as? String {
+            if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
+                Task { await acceptContactRequest(contactRequest) }
             } else {
-                cc.endCall(invitation: invitation)
+                chatModel.ntfContactRequest = chatId
+            }
+        } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
+            if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
+                CallController.shared.callAction(invitation: invitation, action: ntfAction)
+            } else {
+                chatModel.ntfCallInvitationAction = (chatId, ntfAction)
             }
         } else {
             chatModel.chatId = content.targetContentIdentifier
         }
         handler()
     }
+
+    private func ntfCallAction(_ content: UNNotificationContent, _ action: String) -> (ChatId, NtfCallAction)? {
+        if content.categoryIdentifier == ntfCategoryCallInvitation,
+           let chatId = content.userInfo["chatId"] as? String {
+            if action == ntfActionAcceptCall {
+                return (chatId, .accept)
+            } else if action == ntfActionRejectCall {
+                return (chatId, .reject)
+            }
+        }
+        return nil
+    }
+
 
     // Handle notification when the app is in foreground
     func userNotificationCenter(_ center: UNUserNotificationCenter,
@@ -103,7 +122,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 identifier: ntfCategoryContactRequest,
                 actions: [UNNotificationAction(
                     identifier: ntfActionAcceptContact,
-                    title: NSLocalizedString("Accept", comment: "accept contact request via notification")
+                    title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
+                    options: .foreground
                 )],
                 intentIdentifiers: [],
                 hiddenPreviewsBodyPlaceholder: NSLocalizedString("New contact request", comment: "notification")
@@ -186,6 +206,19 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {
         logger.debug("NtfManager.notifyCallInvitation")
         addNotification(createCallInvitationNtf(invitation))
+    }
+
+    func setNtfBadgeCount(_ count: Int) {
+        UIApplication.shared.applicationIconBadgeNumber = count
+        ntfBadgeCountGroupDefault.set(count)
+    }
+
+    func decNtfBadgeCount(by count: Int = 1) {
+        setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber - count))
+    }
+
+    func incNtfBadgeCount(by count: Int = 1) {
+        setNtfBadgeCount(UIApplication.shared.applicationIconBadgeNumber + count)
     }
 
     private func addNotification(_ content: UNMutableNotificationContent) {

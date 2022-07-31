@@ -84,6 +84,7 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
+            .disabled(!chat.chatInfo.sendMsgEnabled)
         }
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
@@ -103,7 +104,11 @@ struct ChatView: View {
                     ChatInfoToolbar(chat: chat)
                 }
                 .sheet(isPresented: $showChatInfo) {
-                    ChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                    if case let .direct(contact) = chat.chatInfo {
+                        ChatInfoView(chat: chat, showChatInfo: $showChatInfo, contact: contact)
+                    } else if case .group = chat.chatInfo {
+                        GroupChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                    }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {

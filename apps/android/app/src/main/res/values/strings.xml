@@ -110,6 +110,7 @@
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
   <string name="contact_connection_pending">connecting…</string>
+  <string name="group_connection_pending">connecting…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -137,8 +138,8 @@
   <string name="error_saving_file">Error saving file</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
-  <string name="delete_contact__question">Delete contact?</string>
-  <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_chat_question">Delete chat?</string>
+  <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Chat and all messages will be deleted - this cannot be undone!</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
@@ -421,7 +422,7 @@
   <string name="answer_call">Answer call</string>
 
   <!-- Message integrity -->
-  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)"</string>
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)</string>
   <string name="integrity_msg_bad_hash">bad message hash</string>
   <string name="integrity_msg_bad_id">bad message ID</string>
   <string name="integrity_msg_duplicate">duplicate message</string>
@@ -486,4 +487,34 @@
   <string name="delete_archive">Delete archive</string>
   <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>
   <string name="delete_chat_archive_question">Delete chat archive?</string>
+
+  <!-- Groups -->
+  <string name="group_invitation_item_description">invitation to group <xliff:g id="group_name">%1$s</xliff:g></string>
+  <string name="join_group_question">Join group?</string>
+  <string name="you_are_invited_to_group_join_to_connect_with_group_members">You are invited to group. Join to connect with group members.</string>
+  <string name="join_group_button">Join</string>
+  <string name="joining_group">Joining group</string>
+  <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
+  <string name="leave_group_button">Leave</string>
+  <string name="leave_group_question">Leave group?</string>
+  <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="group_left_description">[left]</string>
+
+  <!-- CIGroupInvitationView.kt -->
+  <string name="you_sent_group_invitation">You sent group invitation</string>
+  <string name="you_are_invited_to_group">You are invited to group</string>
+  <string name="group_invitation_tap_to_join">Tap to join</string>
+  <string name="you_joined_this_group">You joined this group</string>
+  <string name="you_rejected_group_invitation">You rejected group invitation</string>
+  <string name="group_invitation_expired">Group invitation expired</string>
+
+  <!-- Group event chat items -->
+  <string name="rcv_group_event_member_added">invited <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_member_connected">connected</string>
+  <string name="rcv_group_event_member_left">left</string>
+  <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_user_deleted">removed you</string>
+  <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="snd_group_event_user_left">you left</string>
 </resources>

@@ -29,16 +29,16 @@ fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
     ChatInfoLayout(
       chat,
       close = close,
-      deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
+      deleteContact = { deleteChatDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
   }
 }
 
-fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.delete_contact__question),
-    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
+    title = generalGetString(R.string.delete_chat_question),
+    text = generalGetString(R.string.delete_chat_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
@@ -68,6 +68,18 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
           close?.invoke()
         }
       }
+    }
+  )
+}
+
+// TODO move to GroupChatInfoView
+fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.leave_group_question),
+    text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
+    confirmText = generalGetString(R.string.leave_group_button),
+    onConfirm = {
+      withApi { chatModel.controller.leaveGroup(groupInfo.groupId) }
     }
   )
 }

@@ -350,7 +350,18 @@ func apiDeleteChat(type: ChatType, id: Int64) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
+    if case .group = type, case .groupDeletedUser = r { return }
     throw r
+}
+
+func deleteChat(_ chat: Chat) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
+    } catch {
+        logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
+    }
 }
 
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
@@ -520,6 +531,42 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
+func apiNewGroup(_ gp: GroupProfile) throws -> GroupInfo {
+    let r = chatSendCmdSync(.newGroup(groupProfile: gp))
+    if case let .groupCreated(groupInfo) = r { return groupInfo }
+    throw r
+}
+
+func joinGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiJoinGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("joinGroup error: \(responseError(error))")
+    }
+}
+
+func apiJoinGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
+    if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
+    throw r
+}
+
+func leaveGroup(groupId: Int64) async {
+    do {
+        let groupInfo = try await apiLeaveGroup(groupId: groupId)
+        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
+    } catch let error {
+        logger.error("leaveGroup error: \(responseError(error))")
+    }
+}
+
+func apiLeaveGroup(groupId: Int64) async throws -> GroupInfo {
+    let r = await chatSendCmd(.apiLeaveGroup(groupId: groupId), bgTask: false)
+    if case let .leftMemberUser(groupInfo) = r { return groupInfo }
+    throw r
+}
+
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     do {
@@ -547,6 +594,7 @@ func startChat() throws {
         m.userSMPServers = try getUserSMPServers()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
         try refreshCallInvitations()
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
         if let token = m.deviceToken {
@@ -621,11 +669,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateContact(contact)
             m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
-            m.addChat(Chat(
-                chatInfo: ChatInfo.contactRequest(contactRequest: contactRequest),
-                chatItems: []
-            ))
-            NtfManager.shared.notifyContactRequest(contactRequest)
+            let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)
+            if m.hasChat(contactRequest.id) {
+                m.updateChatInfo(cInfo)
+            } else {
+                m.addChat(Chat(
+                    chatInfo: cInfo,
+                    chatItems: []
+                ))
+                NtfManager.shared.notifyContactRequest(contactRequest)
+            }
         case let .contactUpdated(toContact):
             let cInfo = ChatInfo.direct(contact: toContact)
             if m.hasChat(toContact.id) {
@@ -689,6 +742,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 // currently only broadcast deletion of rcv message can be received, and only this case should happen
                 _ = m.upsertChatItem(cInfo, cItem)
             }
+        case let .receivedGroupInvitation(groupInfo, _, _):
+            m.addChat(Chat(
+                chatInfo: .group(groupInfo: groupInfo),
+                chatItems: []
+            ))
+            // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .userJoinedGroup(groupInfo):
+            m.updateGroup(groupInfo)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):
@@ -794,8 +855,12 @@ func refreshCallInvitations() throws {
     let m = ChatModel.shared
     let callInvitations = try apiGetCallInvitations()
     m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
-    if let inv = callInvitations.last {
-        activateCall(inv)
+    if let (chatId, ntfAction) = m.ntfCallInvitationAction,
+       let invitation = m.callInvitations.removeValue(forKey: chatId) {
+        m.ntfCallInvitationAction = nil
+        CallController.shared.callAction(invitation: invitation, action: ntfAction)
+    } else if let invitation = callInvitations.last {
+        activateCall(invitation)
     }
 }
 

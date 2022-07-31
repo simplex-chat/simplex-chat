@@ -7,7 +7,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
-import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +20,6 @@ class SimplexService: Service() {
   private var wakeLock: PowerManager.WakeLock? = null
   private var isServiceStarted = false
   private var isStartingService = false
-  private var isStoppingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
   private val chatController by lazy { (application as SimplexApp).chatController }
@@ -88,8 +86,6 @@ class SimplexService: Service() {
 
   private fun stopService() {
     Log.d(TAG, "Stopping foreground service")
-    if (isStoppingService) return
-    isStoppingService = true
     try {
       wakeLock?.let {
         while (it.isHeld) it.release() // release all, in case acquired more than once
@@ -100,7 +96,6 @@ class SimplexService: Service() {
     } catch (e: Exception) {
       Log.d(TAG, "Service stopped without being started: ${e.message}")
     }
-    isStoppingService = false
     isServiceStarted = false
     saveServiceState(this, ServiceState.STOPPED)
   }
@@ -128,7 +123,7 @@ class SimplexService: Service() {
       .setContentTitle(title)
       .setContentText(text)
       .setContentIntent(pendingIntent)
-      .setSound(null)
+      .setSilent(true)
       .setShowWhen(false) // no date/time
       .build()
   }
@@ -215,7 +210,6 @@ class SimplexService: Service() {
     suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
 
     private suspend fun serviceAction(context: Context, action: Action) {
-      if (!AppPreferences(context).runServiceInBackground.get()) { return }
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")
       withContext(Dispatchers.IO) {
         Intent(context, SimplexService::class.java).also {

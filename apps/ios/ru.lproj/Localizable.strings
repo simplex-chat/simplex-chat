@@ -25,6 +25,9 @@
 /* No comment provided by engineer. */
 ")" = ")";
 
+/* group left description */
+"[left]" = "[покинута]";
+
 /* No comment provided by engineer. */
 "[Send us email](mailto:chat@simplex.chat)" = "[Отправить email](mailto:chat@simplex.chat)";
 
@@ -174,6 +177,9 @@
 "Cancel" = "Отменить";
 
 /* No comment provided by engineer. */
+"Chat and all messages will be deleted - this cannot be undone!" = "Чат и все сообщения будут удалены - это действие нельзя отменить!";
+
+/* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
 
 /* No comment provided by engineer. */
@@ -321,6 +327,9 @@
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
+"Create group" = "Создать группу";
+
+/* No comment provided by engineer. */
 "Create link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
@@ -360,6 +369,9 @@
 "Delete chat profile?" = "Удалить профиль?";
 
 /* No comment provided by engineer. */
+"Delete chat?" = "Удалить чат?";
+
+/* No comment provided by engineer. */
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
@@ -378,7 +390,7 @@
 "Delete for me" = "Удалить для меня";
 
 /* No comment provided by engineer. */
-"Delete group" = "Удалить группу";
+"Delete invitation" = "Удалить приглашение";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
@@ -397,6 +409,9 @@
 
 /* deleted chat item */
 "deleted" = "удалено";
+
+/* rcv group event chat item */
+"deleted group" = "удалил(а) группу";
 
 /* No comment provided by engineer. */
 "Develop" = "Для разработчиков";
@@ -513,7 +528,10 @@
 "Full name (optional)" = "Полное имя (не обязательно)";
 
 /* No comment provided by engineer. */
-"Group deletion is not supported" = "Удаление групп не поддерживается";
+"Group invitation" = "Приглашение в группу";
+
+/* No comment provided by engineer. */
+"Group invitation expired" = "Приглашение в группу истекло";
 
 /* notification */
 "Group message:" = "Групповое сообщение:";
@@ -590,6 +608,12 @@
 /* No comment provided by engineer. */
 "Invalid connection link" = "Ошибка в ссылке контакта";
 
+/* group name */
+"invitation to group %@" = "приглашение в группу %@";
+
+/* rcv group event chat item */
+"invited %@" = "пригласил(а) %@";
+
 /* chat list item title */
 "invited to connect" = "приглашение";
 
@@ -606,7 +630,25 @@
 "italic" = "курсив";
 
 /* No comment provided by engineer. */
+"Join" = "Вступить";
+
+/* No comment provided by engineer. */
+"Join group" = "Вступить в группу";
+
+/* No comment provided by engineer. */
+"Joining group" = "Вступление в группу";
+
+/* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
+
+/* No comment provided by engineer. */
+"Leave" = "Выйти";
+
+/* No comment provided by engineer. */
+"Leave group?" = "Выйти из группы?";
+
+/* rcv group event chat item */
+"left" = "покинул(а) группу";
 
 /* No comment provided by engineer. */
 "Limitations" = "Ограничения";
@@ -622,6 +664,9 @@
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
+
+/* rcv group event chat item */
+"member connected" = "соединен(а)";
 
 /* No comment provided by engineer. */
 "Message delivery error" = "Ошибка доставки сообщения";
@@ -779,6 +824,12 @@
 /* call status */
 "rejected call" = "отклонённый звонок";
 
+/* rcv group event chat item */
+"removed %@" = "удалил(а) %@";
+
+/* rcv group event chat item */
+"removed you" = "удалил(а) вас из группы";
+
 /* No comment provided by engineer. */
 "Reply" = "Ответить";
 
@@ -895,6 +946,9 @@
 
 /* No comment provided by engineer. */
 "Tap button " = "Нажмите кнопку";
+
+/* No comment provided by engineer. */
+"Tap to join" = "Нажмите, чтобы вступить";
 
 /* No comment provided by engineer. */
 "Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
@@ -1044,6 +1098,9 @@
 "You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
+"You are invited to group" = "Вы приглашены в группу";
+
+/* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button" = "Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
 
 /* notification body */
@@ -1071,7 +1128,25 @@
 "You invited your contact" = "Вы пригласили ваш контакт";
 
 /* No comment provided by engineer. */
+"You joined this group" = "Вы вступили в эту группу";
+
+/* No comment provided by engineer. */
+"You joined this group. Connecting to inviting group member." = "Вы вступили в эту группу. Устанавливается соединение с пригласившим членом группы.";
+
+/* snd group event chat item */
+"you left" = "вы покинули группу";
+
+/* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Вы должны всегда использовать самую новую версию данных чата, ТОЛЬКО на одном устройстве, инача вы можете перестать получать сообщения от каких то контактов.";
+
+/* No comment provided by engineer. */
+"You rejected group invitation" = "Вы отклонили приглашение в группу";
+
+/* snd group event chat item */
+"you removed %@" = "вы удалили %@";
+
+/* No comment provided by engineer. */
+"You sent group invitation" = "Вы отправили приглашение в группу";
 
 /* chat list item description */
 "you shared one-time link" = "вы создали ссылку";
@@ -1084,6 +1159,9 @@
 
 /* No comment provided by engineer. */
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.";
+
+/* No comment provided by engineer. */
+"You will stop receiving messages from this group. Chat history will be preserved." = "Вы перестанете получать сообщения от этой группы. История чата будет сохранена.";
 
 /* No comment provided by engineer. */
 "Your calls" = "Ваши звонки";

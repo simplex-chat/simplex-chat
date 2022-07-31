@@ -49,6 +49,8 @@ testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
+      socksProxy = Nothing,
+      tcpTimeout = 5000000,
       logConnections = False,
       logAgent = False,
       chatCmd = "",
@@ -274,7 +276,8 @@ serverCfg =
       certificateFile = "tests/fixtures/tls/server.crt",
       logStatsInterval = Just 86400,
       logStatsStartTime = 0,
-      serverStatsFile = Nothing,
+      serverStatsLogFile = "tests/smp-server-stats.daily.log",
+      serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange
     }
 
