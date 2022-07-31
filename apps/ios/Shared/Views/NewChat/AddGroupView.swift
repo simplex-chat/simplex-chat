@@ -10,8 +10,10 @@ import SwiftUI
 import SimpleXChat
 
 struct AddGroupView: View {
-    @Binding var openedSheet: NewChatAction?
     @EnvironmentObject var m: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
+    @State private var chat: Chat?
+    @State private var groupInfo: GroupInfo?
     @State private var profile = GroupProfile(displayName: "", fullName: "")
     @FocusState private var focusDisplayName
     @FocusState private var focusFullName
@@ -21,6 +23,22 @@ struct AddGroupView: View {
     @State private var chosenImage: UIImage? = nil
 
     var body: some View {
+        if let chat = chat, let groupInfo = groupInfo {
+            AddGroupMembersView(chat: chat,
+                                groupInfo: groupInfo,
+                                membersToAdd: filterMembersToAdd([]),
+                                showSkip: true) { _ in
+                dismiss()
+                DispatchQueue.main.async {
+                    m.chatId = groupInfo.id
+                }
+            }
+        } else {
+            createGroupView()
+        }
+    }
+
+    func createGroupView() -> some View {
         VStack(alignment: .leading) {
             Text("Create secret group")
                 .font(.largeTitle)
@@ -129,14 +147,15 @@ struct AddGroupView: View {
     func createGroup() {
         hideKeyboard()
         do {
-            let groupInfo = try apiNewGroup(profile)
-            m.addChat(Chat(chatInfo: .group(groupInfo: groupInfo), chatItems: []))
-            openedSheet = nil
-            DispatchQueue.main.async {
-                m.chatId = groupInfo.id
+            let gInfo = try apiNewGroup(profile)
+            let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
+            m.addChat(c)
+            withAnimation {
+                groupInfo = gInfo
+                chat = c
             }
         } catch {
-            openedSheet = nil
+            dismiss()
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error creating group"),
@@ -146,18 +165,17 @@ struct AddGroupView: View {
         }
     }
 
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
     func canCreateProfile() -> Bool {
         profile.displayName != "" && validDisplayName(profile.displayName)
     }
 }
 
+func hideKeyboard() {
+    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+}
+
 struct AddGroupView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var openedSheet: NewChatAction? = nil
-        return AddGroupView(openedSheet: $openedSheet)
+        AddGroupView()
     }
 }
