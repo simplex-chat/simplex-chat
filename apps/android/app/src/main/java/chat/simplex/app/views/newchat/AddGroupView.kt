@@ -115,8 +115,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             }
             Text(
               stringResource(R.string.group_display_name_field),
-              style = MaterialTheme.typography.h6,
-              modifier = Modifier.padding(bottom = 3.dp)
+              Modifier.padding(bottom = 3.dp)
             )
             ProfileNameField(displayName, focusRequester)
             val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
@@ -128,8 +127,7 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             Spacer(Modifier.height(3.dp))
             Text(
               stringResource(R.string.group_full_name_field),
-              style = MaterialTheme.typography.h6,
-              modifier = Modifier.padding(bottom = 5.dp)
+              Modifier.padding(bottom = 5.dp)
             )
             ProfileNameField(fullName)
 

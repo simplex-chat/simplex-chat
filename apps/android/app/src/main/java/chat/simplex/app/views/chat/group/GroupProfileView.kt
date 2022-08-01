@@ -6,11 +6,10 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,6 +19,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.usersettings.*
@@ -57,8 +57,7 @@ fun GroupProfileLayout(
   val profileImage = remember { mutableStateOf(groupProfile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
-  val keyboardState by getKeyboardState()
-  var savedKeyboardState by remember { mutableStateOf(keyboardState) }
+  val focusRequester = remember { FocusRequester() }
 
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
@@ -108,13 +107,24 @@ fun GroupProfileLayout(
                 }
               }
             }
-            Box {
-              if (!isValidDisplayName(displayName.value)) {
-                Icon(Icons.Outlined.Info, tint = Color.Red, contentDescription = stringResource(R.string.display_name_cannot_contain_whitespace))
-              }
-              ProfileNameTextField(displayName)
-            }
-            ProfileNameTextField(fullName)
+            Text(
+              stringResource(R.string.group_display_name_field),
+              Modifier.padding(bottom = 3.dp)
+            )
+            ProfileNameField(displayName, focusRequester)
+            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
+            Text(
+              errorText,
+              fontSize = 15.sp,
+              color = MaterialTheme.colors.error
+            )
+            Spacer(Modifier.height(3.dp))
+            Text(
+              stringResource(R.string.group_full_name_field),
+              Modifier.padding(bottom = 5.dp)
+            )
+            ProfileNameField(fullName)
+            Spacer(Modifier.height(16.dp))
             Row {
               TextButton(stringResource(R.string.cancel_verb)) {
                 close.invoke()
@@ -136,13 +146,8 @@ fun GroupProfileLayout(
             }
           }
 
-          if (savedKeyboardState != keyboardState) {
-            LaunchedEffect(keyboardState) {
-              scope.launch {
-                savedKeyboardState = keyboardState
-                scrollState.animateScrollTo(scrollState.maxValue)
-              }
-            }
+          LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
           }
         }
       }
