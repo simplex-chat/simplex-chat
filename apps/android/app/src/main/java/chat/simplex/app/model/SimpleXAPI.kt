@@ -620,6 +620,24 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return emptyList()
   }
 
+  suspend fun apiUpdateGroup(groupId: Long, groupProfile: GroupProfile): GroupInfo? {
+    return when (val r = sendCmd(CC.ApiUpdateGroupProfile(groupId, groupProfile))) {
+      is CR.GroupUpdated -> r.toGroup
+      is CR.ChatCmdError -> {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_saving_group_profile), "$r.chatError")
+        null
+      }
+      else -> {
+        Log.e(TAG, "apiUpdateGroup bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.error_saving_group_profile),
+          "${r.responseType}: ${r.details}"
+        )
+        null
+      }
+    }
+  }
+
   fun apiErrorAlert(method: String, title: String, r: CR) {
     val errMsg = "${r.responseType}: ${r.details}"
     Log.e(TAG, "$method bad response: $errMsg")
@@ -716,6 +734,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.updateGroup(r.groupInfo)
       is CR.DeletedMemberUser ->
         chatModel.updateGroup(r.groupInfo)
+      is CR.GroupUpdated ->
+        chatModel.updateGroup(r.toGroup)
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.RcvFileComplete ->
@@ -1028,6 +1048,7 @@ sealed class CC {
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
+  class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
   class GetUserSMPServers: CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1077,6 +1098,7 @@ sealed class CC {
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
+    is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1127,6 +1149,7 @@ sealed class CC {
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
+    is ApiUpdateGroupProfile -> "apiUpdateGroupProfile"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -1265,6 +1288,7 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupUpdated") class GroupUpdated(val toGroup: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
@@ -1349,6 +1373,7 @@ sealed class CR {
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupRemoved -> "groupRemoved"
+    is GroupUpdated -> "groupUpdated"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
@@ -1432,6 +1457,7 @@ sealed class CR {
     is JoinedGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is ConnectedToGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is GroupRemoved -> json.encodeToString(groupInfo)
+    is GroupUpdated -> json.encodeToString(toGroup)
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)

@@ -534,8 +534,10 @@
   <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="snd_group_event_user_left">you left</string>
+  <string name="snd_group_event_group_profile_updated">group profile updated</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">member</string>
@@ -574,6 +576,7 @@
   <string name="delete_group_question">Delete group?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
+  <string name="button_edit_group_profile">Edit group profile</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FOR CONSOLE</string>
@@ -600,4 +603,9 @@
   <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
   <string name="group_display_name_field">Group display name:</string>
   <string name="group_full_name_field">Group full name:</string>
+
+  <!-- GroupProfileView.kt -->
+  <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="save_group_profile">Save group profile</string>
+  <string name="error_saving_group_profile">Error saving group profile</string>
 </resources>

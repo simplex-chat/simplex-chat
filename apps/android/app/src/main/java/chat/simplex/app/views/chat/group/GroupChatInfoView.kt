@@ -28,10 +28,11 @@ import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
-  if (chat != null) {
+  if (chat != null && chat.chatInfo is ChatInfo.Group) {
+    val groupInfo = chat.chatInfo.groupInfo
     GroupChatInfoLayout(
       chat,
       groupInfo,
@@ -61,6 +62,9 @@ fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> U
             }
           }
         }
+      },
+      editGroupProfile = {
+        ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -109,6 +113,7 @@ fun GroupChatInfoLayout(
   members: List<GroupMember>,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
+  editGroupProfile: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
@@ -143,6 +148,12 @@ fun GroupChatInfoLayout(
     SectionSpacer()
 
     SectionView {
+      if (groupInfo.canEdit) {
+        SectionItemView {
+          EditGroupProfileButton(editGroupProfile)
+        }
+        SectionDivider()
+      }
       SectionItemView {
         ClearChatButton(clearChat)
       }
@@ -236,6 +247,24 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
 }
 
 @Composable
+fun EditGroupProfileButton(editGroupProfile: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { editGroupProfile() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Edit,
+      stringResource(R.string.button_edit_group_profile),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_edit_group_profile), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 fun LeaveGroupButton(leaveGroup: () -> Unit) {
   Row(
     Modifier
@@ -283,7 +312,7 @@ fun PreviewGroupChatInfoLayout() {
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
-      addMembers = {}, showMemberInfo = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }
 }

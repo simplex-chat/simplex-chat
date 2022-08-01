@@ -103,7 +103,6 @@ fun ChatInfoLayout(
         SectionItemView {
           NetworkStatusRow(chat.serverInfo.networkStatus)
         }
-
         val rcvServers = connStats.rcvServers
         if (rcvServers != null && rcvServers.isNotEmpty()) {
           SectionDivider()
@@ -144,7 +143,7 @@ fun ChatInfoHeader(cInfo: ChatInfo) {
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = HighOrLowlight)
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
