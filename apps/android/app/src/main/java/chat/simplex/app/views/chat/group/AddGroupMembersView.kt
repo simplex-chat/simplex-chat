@@ -87,7 +87,11 @@ fun AddGroupMembersLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      ChatInfoToolbarTitle(ChatInfo.Group(groupInfo), imageSize = 60.dp, iconColor = HighOrLowlight) // TODO tertiary color
+      ChatInfoToolbarTitle(
+        ChatInfo.Group(groupInfo),
+        imageSize = 60.dp,
+        iconColor = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background
+      )
     }
     SectionSpacer()
 
