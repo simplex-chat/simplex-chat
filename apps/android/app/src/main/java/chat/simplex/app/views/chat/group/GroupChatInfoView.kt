@@ -28,10 +28,11 @@ import chat.simplex.app.views.chatlist.populateGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupChatInfoView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
-  if (chat != null) {
+  if (chat != null && chat.chatInfo is ChatInfo.Group) {
+    val groupInfo = chat.chatInfo.groupInfo
     GroupChatInfoLayout(
       chat,
       groupInfo,
