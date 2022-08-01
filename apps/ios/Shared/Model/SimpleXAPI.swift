@@ -823,6 +823,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateGroup(groupInfo)
         case let .deletedMemberUser(groupInfo, _):
             m.updateGroup(groupInfo)
+        case let .groupUpdated(toGroup):
+            m.updateGroup(toGroup)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):

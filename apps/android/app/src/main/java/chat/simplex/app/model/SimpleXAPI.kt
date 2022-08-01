@@ -734,6 +734,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.updateGroup(r.groupInfo)
       is CR.DeletedMemberUser ->
         chatModel.updateGroup(r.groupInfo)
+      is CR.GroupUpdated ->
+        chatModel.updateGroup(r.toGroup)
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.RcvFileComplete ->
