@@ -513,7 +513,7 @@
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
-    <string name="alert_title_no_group">Нет группы!</string>
+    <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
     <string name="alert_title_join_group_error">Ошибка приглашения</string>
 
