@@ -136,8 +136,9 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
             if (enabled) {
-              val groupProfile = GroupProfile(displayName.value, fullName.value, profileImage.value)
-              CreateGroupButton(MaterialTheme.colors.primary, Modifier.clickable { createGroup(groupProfile) }.padding(8.dp))
+              CreateGroupButton(MaterialTheme.colors.primary, Modifier
+                .clickable { createGroup(GroupProfile(displayName.value, fullName.value, profileImage.value)) }
+                .padding(8.dp))
             } else {
               CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
             }

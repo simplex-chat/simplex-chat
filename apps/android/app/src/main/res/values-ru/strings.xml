@@ -572,6 +572,7 @@
     <string name="delete_group_question">Удалить группу?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
+    <string name="button_edit_group_profile">Редактировать профиль группы</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
@@ -598,4 +599,9 @@
     <string name="group_is_decentralized">Группа полностью децентрализована — она видна только участникам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
+
+    <!-- GroupProfileView.kt -->
+    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах участников, а не на серверах.</string>
+    <string name="save_group_profile">Сохранить профиль группы</string>
+    <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
 </resources>

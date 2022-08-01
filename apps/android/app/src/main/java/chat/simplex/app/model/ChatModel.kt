@@ -524,6 +524,9 @@ class GroupInfo (
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
 
+  val canEdit: Boolean
+    get() = membership.memberRole == GroupMemberRole.Owner && membership.memberCurrent
+
   val canDelete: Boolean
     get() = membership.memberRole == GroupMemberRole.Owner || !membership.memberCurrent
 

@@ -200,7 +200,7 @@ fun UserProfileLayout(
 }
 
 @Composable
-private fun ProfileNameTextField(name: MutableState<String>) {
+fun ProfileNameTextField(name: MutableState<String>) {
   BasicTextField(
     value = name.value,
     onValueChange = { name.value = it },
@@ -218,7 +218,7 @@ private fun ProfileNameTextField(name: MutableState<String>) {
 }
 
 @Composable
-private fun ProfileNameRow(label: String, text: String) {
+fun ProfileNameRow(label: String, text: String) {
   Row(Modifier.padding(bottom = 24.dp)) {
     Text(
       label,
@@ -234,7 +234,7 @@ private fun ProfileNameRow(label: String, text: String) {
 }
 
 @Composable
-private fun TextButton(text: String, click: () -> Unit) {
+fun TextButton(text: String, click: () -> Unit) {
   Text(
     text,
     color = MaterialTheme.colors.primary,
