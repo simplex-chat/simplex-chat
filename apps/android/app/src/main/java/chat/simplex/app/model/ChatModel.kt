@@ -1367,6 +1367,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
+  @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
@@ -1375,6 +1376,7 @@ sealed class RcvGroupEvent() {
     is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
+    is GroupUpdated -> generalGetString(R.string.rcv_group_event_updated_group_profile)
   }
 }
 
@@ -1382,9 +1384,11 @@ sealed class RcvGroupEvent() {
 sealed class SndGroupEvent() {
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
+  @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
 
   val text: String get() = when (this) {
     is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
+    is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)
   }
 }

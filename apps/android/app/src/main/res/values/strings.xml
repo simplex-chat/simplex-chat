@@ -534,8 +534,10 @@
   <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_user_deleted">removed you</string>
   <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="snd_group_event_user_left">you left</string>
+  <string name="snd_group_event_group_profile_updated">group profile updated</string>
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">member</string>
