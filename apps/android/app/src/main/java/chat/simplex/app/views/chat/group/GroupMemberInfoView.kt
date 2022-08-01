@@ -131,7 +131,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ProfileImage(size = 192.dp, member.image, color = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background)
+    ProfileImage(size = 192.dp, member.image, color = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
       member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,

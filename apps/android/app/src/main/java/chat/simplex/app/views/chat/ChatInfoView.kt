@@ -143,7 +143,7 @@ fun ChatInfoHeader(cInfo: ChatInfo) {
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background)
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
       cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
