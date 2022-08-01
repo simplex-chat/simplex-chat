@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.RemoveCircle
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -33,10 +33,10 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   @Composable
   fun groupInactiveIcon() {
     Icon(
-      Icons.Filled.RemoveCircle,
+      Icons.Filled.Cancel,
       stringResource(R.string.icon_descr_group_inactive),
       Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
-      tint = Color.Red
+      tint = HighOrLowlight
     )
   }
 

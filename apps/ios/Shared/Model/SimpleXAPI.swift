@@ -579,19 +579,20 @@ func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     throw r
 }
 
-func joinGroup(_ groupId: Int64) async {
-    do {
-        let groupInfo = try await apiJoinGroup(groupId)
-        DispatchQueue.main.async { ChatModel.shared.updateGroup(groupInfo) }
-    } catch let error {
-        logger.error("joinGroup error: \(responseError(error))")
-    }
+enum JoinGroupResult {
+    case joined(groupInfo: GroupInfo)
+    case invitationRemoved
+    case groupNotFound
 }
 
-func apiJoinGroup(_ groupId: Int64) async throws -> GroupInfo {
+func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
-    if case let .userAcceptedGroupSent(groupInfo) = r { return groupInfo }
-    throw r
+    switch r {
+    case let .userAcceptedGroupSent(groupInfo): return .joined(groupInfo: groupInfo)
+    case .chatCmdError(.errorAgent(.SMP(.AUTH))): return .invitationRemoved
+    case .chatCmdError(.errorStore(.groupNotFound)): return .groupNotFound
+    default: throw r
+    }
 }
 
 func apiRemoveMember(groupId: Int64, memberId: Int64) async throws -> GroupMember {
@@ -818,6 +819,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
         case let .userJoinedGroup(groupInfo):
             m.updateGroup(groupInfo)
+        case let .groupDeleted(groupInfo, _):
+            m.updateGroup(groupInfo)
+        case let .deletedMemberUser(groupInfo, _):
+            m.updateGroup(groupInfo)
+        case let .groupUpdated(toGroup):
+            m.updateGroup(toGroup)
         case let .rcvFileStart(aChatItem):
             chatItemSimpleUpdate(aChatItem)
         case let .rcvFileComplete(aChatItem):

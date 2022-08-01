@@ -84,6 +84,7 @@ class AppPreferences(val context: Context) {
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
+  val useSocksProxy = mkBoolPreference(SHARED_PREFS_USE_SOCKS_PROXY, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -128,6 +129,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
+    private const val SHARED_PREFS_USE_SOCKS_PROXY = "UseSocksProxy"
   }
 }
 
@@ -146,6 +148,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.d(TAG, "user: $user")
     try {
       if (chatModel.chatRunning.value == true) return
+      if (chatModel.controller.appPrefs.useSocksProxy.get()) {
+        setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
+      }
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
@@ -559,17 +564,39 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
+  suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
+    val r = sendCmd(CC.NewGroup(p))
+    if (r is CR.GroupCreated) return r.groupInfo
+    Log.e(TAG, "apiNewGroup bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole) {
     val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
     if (r is CR.SentGroupInvitation) return
     Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiJoinGroup(groupId: Long): GroupInfo? {
+  suspend fun apiJoinGroup(groupId: Long) {
     val r = sendCmd(CC.ApiJoinGroup(groupId))
-    if (r is CR.UserAcceptedGroupSent) return r.groupInfo
-    Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
-    return null
+    when (r) {
+      is CR.UserAcceptedGroupSent ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.ChatCmdError -> {
+        val e = r.chatError
+        suspend fun deleteGroup() { if (apiDeleteChat(ChatType.Group, groupId)) { chatModel.removeChat("#$groupId") } }
+        if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
+          deleteGroup()
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_group_invitation_expired), generalGetString(R.string.alert_message_group_invitation_expired))
+        } else if (e is ChatError.ChatErrorStore && e.storeError is StoreError.GroupNotFound) {
+          deleteGroup()
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_no_group), generalGetString(R.string.alert_message_no_group))
+        } else {
+          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_join_group_error), "$e")
+        }
+      }
+      else -> Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
+    }
   }
 
   suspend fun apiRemoveMember(groupId: Long, memberId: Long): GroupMember? {
@@ -591,6 +618,24 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     if (r is CR.GroupMembers) return r.group.members
     Log.e(TAG, "apiListMembers bad response: ${r.responseType} ${r.details}")
     return emptyList()
+  }
+
+  suspend fun apiUpdateGroup(groupId: Long, groupProfile: GroupProfile): GroupInfo? {
+    return when (val r = sendCmd(CC.ApiUpdateGroupProfile(groupId, groupProfile))) {
+      is CR.GroupUpdated -> r.toGroup
+      is CR.ChatCmdError -> {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_saving_group_profile), "$r.chatError")
+        null
+      }
+      else -> {
+        Log.e(TAG, "apiUpdateGroup bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.error_saving_group_profile),
+          "${r.responseType}: ${r.details}"
+        )
+        null
+      }
+    }
   }
 
   fun apiErrorAlert(method: String, title: String, r: CR) {
@@ -685,6 +730,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       }
       is CR.UserJoinedGroup ->
         chatModel.updateGroup(r.groupInfo)
+      is CR.GroupDeleted ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.DeletedMemberUser ->
+        chatModel.updateGroup(r.groupInfo)
+      is CR.GroupUpdated ->
+        chatModel.updateGroup(r.toGroup)
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(r.chatItem)
       is CR.RcvFileComplete ->
@@ -757,13 +808,6 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val chatItem = apiReceiveFile(fileId)
     if (chatItem != null) {
       chatItemSimpleUpdate(chatItem)
-    }
-  }
-
-  suspend fun joinGroup(groupId: Long) {
-    val groupInfo = apiJoinGroup(groupId)
-    if (groupInfo != null) {
-      chatModel.updateGroup(groupInfo)
     }
   }
 
@@ -1004,6 +1048,7 @@ sealed class CC {
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
+  class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
   class GetUserSMPServers: CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
@@ -1047,12 +1092,13 @@ sealed class CC {
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
-    is NewGroup -> "/group ${groupProfile.displayName} ${groupProfile.fullName}"
+    is NewGroup -> "/_group ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
+    is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
@@ -1103,6 +1149,7 @@ sealed class CC {
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
+    is ApiUpdateGroupProfile -> "apiUpdateGroupProfile"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
@@ -1241,6 +1288,7 @@ sealed class CR {
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupUpdated") class GroupUpdated(val toGroup: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
@@ -1325,6 +1373,7 @@ sealed class CR {
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupRemoved -> "groupRemoved"
+    is GroupUpdated -> "groupUpdated"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
@@ -1408,6 +1457,7 @@ sealed class CR {
     is JoinedGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is ConnectedToGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is GroupRemoved -> json.encodeToString(groupInfo)
+    is GroupUpdated -> json.encodeToString(toGroup)
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)
@@ -1491,8 +1541,10 @@ sealed class ChatErrorType {
 sealed class StoreError {
   val string: String get() = when (this) {
     is UserContactLinkNotFound -> "userContactLinkNotFound"
+    is GroupNotFound -> "groupNotFound"
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
+  @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
 }
 
 @Serializable

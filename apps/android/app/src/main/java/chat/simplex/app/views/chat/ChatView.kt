@@ -112,7 +112,7 @@ fun ChatView(chatModel: ChatModel) {
                 close = close, modifier = Modifier,
                 background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
-                GroupChatInfoView(cInfo.groupInfo, chatModel, close)
+                GroupChatInfoView(chatModel, close)
               }
             }
           }
@@ -140,7 +140,7 @@ fun ChatView(chatModel: ChatModel) {
         withApi { chatModel.controller.receiveFile(fileId) }
       },
       joinGroup = { groupId ->
-        withApi { chatModel.controller.joinGroup(groupId) }
+        withApi { chatModel.controller.apiJoinGroup(groupId) }
       },
       startCall = { media ->
         val cInfo = chat.chatInfo

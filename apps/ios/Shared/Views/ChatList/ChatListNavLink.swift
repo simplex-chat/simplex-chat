@@ -331,6 +331,36 @@ struct ChatListNavLink: View {
     }
 }
 
+func joinGroup(_ groupId: Int64) async {
+    do {
+        let r = try await apiJoinGroup(groupId)
+        switch r {
+        case let .joined(groupInfo):
+            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+        case .invitationRemoved:
+            AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+            await deleteGroup()
+        case .groupNotFound:
+            AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+            await deleteGroup()
+        }
+    } catch let error {
+        let err = responseError(error)
+        AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
+        logger.error("apiJoinGroup error: \(err)")
+    }
+
+    func deleteGroup() async {
+        do {
+            // TODO this API should update chat item with the invitation as well
+            try await apiDeleteChat(type: .group, id: groupId)
+            await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
+        } catch {
+            logger.error("apiDeleteChat error: \(responseError(error))")
+        }
+    }
+}
+
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"

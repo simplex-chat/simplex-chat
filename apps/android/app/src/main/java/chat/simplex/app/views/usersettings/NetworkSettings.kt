@@ -19,6 +19,10 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
   val useSocksProxy = remember { mutableStateOf(netCfg.socksProxy != null) }
+  fun setSocksProxy(value: Boolean) {
+    chatModel.controller.appPrefs.useSocksProxy.set(value)
+    useSocksProxy.value = value
+  }
 
   NetworkSettingsLayout(
     useSocksProxy,
@@ -31,7 +35,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           onConfirm = {
             withApi {
               chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
-              useSocksProxy.value = true
+              setSocksProxy(true)
             }
           }
         )
@@ -43,7 +47,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           onConfirm = {
             withApi {
               chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5_000_000))
-              useSocksProxy.value = false
+              setSocksProxy(false)
             }
           }
         )

@@ -193,7 +193,7 @@ fun JoinGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutabl
     stringResource(R.string.join_group_button),
     Icons.Outlined.Login,
     onClick = {
-      withApi { chatModel.controller.joinGroup(groupInfo.groupId) }
+      withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) }
       showMenu.value = false
     }
   )
@@ -359,7 +359,7 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = generalGetString(R.string.join_group_button),
-    onConfirm = { withApi { chatModel.controller.joinGroup(groupInfo.groupId) } },
+    onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
     dismissText = generalGetString(R.string.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
   )

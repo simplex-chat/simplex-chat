@@ -35,19 +35,6 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                if groupInfo.canEdit {
-                    Section {
-                        Button {
-                            showGroupProfile = true
-                        } label: {
-                            Label("Edit group profile", systemImage: "pencil")
-                        }
-                    }
-                    .sheet(isPresented: $showGroupProfile) {
-                        GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
-                    }
-                }
-
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
                         addMembersButton()
@@ -63,8 +50,14 @@ struct GroupChatInfoView: View {
                 .sheet(item: $selectedMember) { member in
                     GroupMemberInfoView(groupInfo: groupInfo, member: member)
                 }
+                .sheet(isPresented: $showGroupProfile) {
+                    GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                }
 
                 Section {
+                    if groupInfo.canEdit {
+                        editGroupButton()
+                    }
                     clearChatButton()
                     if groupInfo.canDelete {
                         deleteGroupButton()
@@ -153,6 +146,14 @@ struct GroupChatInfoView: View {
                 Text(member.memberRole.text)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    func editGroupButton() -> some View {
+        Button {
+            showGroupProfile = true
+        } label: {
+            Label("Edit group profile", systemImage: "pencil")
         }
     }
 

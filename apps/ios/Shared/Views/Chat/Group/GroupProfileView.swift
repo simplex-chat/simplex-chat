@@ -24,7 +24,7 @@ struct GroupProfileView: View {
 
     var body: some View {
         return VStack(alignment: .leading) {
-            Text("Group profile is stored on members devices.\nSimpleX servers cannot see group profile.")
+            Text("Group profile is stored on members' devices, not on the servers.")
                 .padding(.bottom)
 
             ZStack(alignment: .center) {
@@ -59,7 +59,7 @@ struct GroupProfileView: View {
                 profileNameTextEdit("Group full name (optional)", $groupProfile.fullName)
                 HStack(spacing: 20) {
                     Button("Cancel") { dismiss() }
-                    Button("Save") { saveProfile() }
+                    Button("Save group profile") { saveProfile() }
                         .disabled(groupProfile.displayName == "" || !validDisplayName(groupProfile.displayName))
                 }
             }
@@ -105,6 +105,8 @@ struct GroupProfileView: View {
                 message: Text("\(saveGroupError ?? "Unexpected error")")
             )
         }
+        .contentShape(Rectangle())
+        .onTapGesture { hideKeyboard() }
     }
 
     func profileNameTextEdit(_ label: String, _ name: Binding<String>) -> some View {

@@ -450,7 +450,14 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' ldn fullName
-        _ -> ttyGroup ldn <> optFullName ldn fullName
+        s -> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+      where
+        viewMemberStatus = \case
+          GSMemRemoved -> delete "you are removed"
+          GSMemLeft -> delete "you left"
+          GSMemGroupDeleted -> delete "group deleted"
+          _ -> ""
+        delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
 
 groupInvitation' :: GroupName -> Text -> StyledString
 groupInvitation' displayName fullName =

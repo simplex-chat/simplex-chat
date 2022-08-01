@@ -14,13 +14,15 @@ struct AddGroupMembersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
     var groupInfo: GroupInfo
-    @State var membersToAdd: [Contact]
+    var membersToAdd: [Contact]
+    var showSkip: Bool = false
+    var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .admin
 
     var body: some View {
         NavigationView {
-            List {
+            let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowBackground(Color.clear)
@@ -58,7 +60,20 @@ struct AddGroupMembersView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+
+            if (showSkip) {
+                v.toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if showSkip {
+                            Button ("Skip") {
+                                if let cb = addedMembersCb { cb(selectedContacts) }
+                            }
+                        }
+                    }
+                }
+            } else {
+                v.navigationBarHidden(true)
+            }
         }
         .frame(maxHeight: .infinity, alignment: .top)
     }
@@ -70,6 +85,7 @@ struct AddGroupMembersView: View {
                     await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
                 }
                 await MainActor.run { dismiss() }
+                if let cb = addedMembersCb { cb(selectedContacts) }
             }
         } label: {
             HStack {
