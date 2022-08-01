@@ -579,11 +579,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.updateGroup(r.groupInfo)
       is CR.ChatCmdError -> {
         val e = r.chatError
+        suspend fun deleteGroup() { if (apiDeleteChat(ChatType.Group, groupId)) { chatModel.removeChat("#$groupId") } }
         if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
-          chatModel.removeChat("#$groupId")
+          deleteGroup()
           AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_group_invitation_expired), generalGetString(R.string.alert_message_group_invitation_expired))
         } else if (e is ChatError.ChatErrorStore && e.storeError is StoreError.GroupNotFound) {
-          chatModel.removeChat("#$groupId")
+          deleteGroup()
           AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_no_group), generalGetString(R.string.alert_message_no_group))
         } else {
           AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_join_group_error), "$e")
