@@ -50,7 +50,7 @@ struct GroupChatInfoView: View {
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
                                 }
-                                selectedMember = member
+                                await MainActor.run { selectedMember = member }
                             }
                         } label: { memberView(member) }
                     }

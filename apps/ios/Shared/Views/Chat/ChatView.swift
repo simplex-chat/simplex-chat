@@ -108,7 +108,7 @@ struct ChatView: View {
                             } catch let error {
                                 logger.error("apiContactInfo error: \(responseError(error))")
                             }
-                            showChatInfoSheet = true
+                            await MainActor.run { showChatInfoSheet = true }
                         }
                     } else {
                         showChatInfoSheet = true
