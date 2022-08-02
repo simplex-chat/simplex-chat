@@ -446,6 +446,9 @@ processChatCommand = \case
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
         mapM_ deleteMemberConnection members
+        -- two functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
+        withStore' $ \db -> deleteGroupConnectionsAndFiles db userId g
         withStore' $ \db -> deleteGroup db user g
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"

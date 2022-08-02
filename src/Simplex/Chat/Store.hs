@@ -70,6 +70,7 @@ module Simplex.Chat.Store
     getGroupInfoByName,
     getGroupMember,
     getGroupMembers,
+    deleteGroupConnectionsAndFiles,
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
@@ -1340,10 +1341,21 @@ getGroup db user groupId = do
   members <- liftIO $ getGroupMembers db user gInfo
   pure $ Group gInfo members
 
-deleteGroup :: DB.Connection -> User -> Group -> IO ()
-deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} members) = do
+deleteGroupConnectionsAndFiles :: DB.Connection -> UserId -> Group -> IO ()
+deleteGroupConnectionsAndFiles db userId (Group GroupInfo {groupId} members) = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
+  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+deleteGroup :: DB.Connection -> User -> Group -> IO ()
+deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} _) = do
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  deleteGroupProfile_ db userId groupId
+  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+
+deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
+deleteGroupProfile_ db userId groupId =
   DB.execute
     db
     [sql|
@@ -1355,8 +1367,6 @@ deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} member
       )
     |]
     (userId, groupId)
-  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: DB.Connection -> User -> IO [Group]
 getUserGroups db user@User {userId} = do
