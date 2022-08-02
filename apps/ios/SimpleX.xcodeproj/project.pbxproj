@@ -56,6 +56,7 @@
 		5C9C2DA228929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9C2D9D28929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a */; };
 		5C9C2DA328929B6900CC63B1 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C9C2D9E28929B6900CC63B1 /* libgmpxx.a */; };
 		5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */; };
+		5C9C2DA7289957AE00CC63B1 /* NetworkSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9C2DA6289957AE00CC63B1 /* NetworkSettingsView.swift */; };
 		5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9D13A2282187BB00AB8B43 /* WebRTC.swift */; };
 		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
 		5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA059DB279559F40002BEB4 /* Tests_iOS.swift */; };
@@ -236,6 +237,7 @@
 		5C9C2D9D28929B6900CC63B1 /* libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-3.1.0-FNUbBjLYHjnDjt6ldpTolw-ghc8.10.7.a"; sourceTree = "<group>"; };
 		5C9C2D9E28929B6900CC63B1 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
 		5C9C2DA42894777E00CC63B1 /* GroupProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupProfileView.swift; sourceTree = "<group>"; };
+		5C9C2DA6289957AE00CC63B1 /* NetworkSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkSettingsView.swift; sourceTree = "<group>"; };
 		5C9D13A2282187BB00AB8B43 /* WebRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTC.swift; sourceTree = "<group>"; };
 		5C9FD96A27A56D4D0075386C /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageView.swift; sourceTree = "<group>"; };
@@ -531,6 +533,7 @@
 				5CB924D327A853F100ACCCDD /* SettingsButton.swift */,
 				5CB924D627A8563F00ACCCDD /* SettingsView.swift */,
 				5CB346E62868D76D001FD2EF /* NotificationsView.swift */,
+				5C9C2DA6289957AE00CC63B1 /* NetworkSettingsView.swift */,
 				5C05DF522840AA1D00C683F9 /* CallSettings.swift */,
 				5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */,
 				5CB924E327A8683A00ACCCDD /* UserAddress.swift */,
@@ -912,6 +915,7 @@
 				5C3F1D5A2844B4DE00EC8A82 /* ExperimentalFeaturesView.swift in Sources */,
 				5C1A4C1E27A715B700EAD5AD /* ChatItemView.swift in Sources */,
 				64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */,
+				5C9C2DA7289957AE00CC63B1 /* NetworkSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

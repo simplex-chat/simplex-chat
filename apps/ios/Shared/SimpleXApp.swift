@@ -26,6 +26,7 @@ struct SimpleXApp: App {
         hs_init(0, nil)
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()
+        registerGroupDefaults()
         setDbContainer()
         BGManager.shared.register()
         NtfManager.shared.registerCategories()

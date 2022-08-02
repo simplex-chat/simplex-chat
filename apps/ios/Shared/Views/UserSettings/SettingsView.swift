@@ -121,10 +121,10 @@ struct SettingsView: View {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("Your SMP servers")
+                        NetworkSettingsView()
+                            .navigationTitle("Network")
                     } label: {
-                        settingsRow("server.rack") { Text("SMP servers") }
+                        settingsRow("network") { Text("Network & servers") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)

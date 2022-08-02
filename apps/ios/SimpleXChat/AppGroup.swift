@@ -15,10 +15,29 @@ public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
+let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
+let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
+let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
+let GROUP_DEFAULT_NETWORK_TCP_KEEP_ALIVE = "networkTCPKeepAlive"
+let GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE = "networkTCPKeepIdle"
+let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
+let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
 
 let APP_GROUP_NAME = "group.chat.simplex.app"
 
 public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
+
+public func registerGroupDefaults() {
+    groupDefaults.register(defaults: [
+        GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: 7_500000,
+        GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: 5_000000,
+        GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: 600_000000,
+        GROUP_DEFAULT_NETWORK_TCP_KEEP_ALIVE: true,
+        GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE: 30,
+        GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: 15,
+        GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: 4
+    ])
+}
 
 public enum AppState: String {
     case active
@@ -135,4 +154,39 @@ public class Default<T> {
         defaults.set(value, forKey: key)
         defaults.synchronize()
     }
+}
+
+public func getNetCfg() -> NetCfg {
+    let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
+    let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
+    let enableKeepAlive = groupDefaults.bool(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_ALIVE)
+    var tcpKeepAlive: KeepAliveOpts?
+    if enableKeepAlive {
+        let keepIdle = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE)
+        let keepIntvl = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL)
+        let keepCnt = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT)
+        tcpKeepAlive = KeepAliveOpts(keepIdle: keepIdle, keepIntvl: keepIntvl, keepCnt: keepCnt)
+    } else {
+        tcpKeepAlive = nil
+    }
+    return NetCfg(
+        tcpConnectTimeout: tcpConnectTimeout,
+        tcpTimeout: tcpTimeout,
+        tcpKeepAlive: tcpKeepAlive,
+        smpPingInterval: smpPingInterval
+    )
+}
+
+public func setNetCfg(_ cfg: NetCfg) {
+    groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
+    groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
+    groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
+    groupDefaults.set(cfg.tcpKeepAlive != nil, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_ALIVE)
+    if let tcpKeepAlive = cfg.tcpKeepAlive {
+        groupDefaults.set(tcpKeepAlive.keepIdle, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_IDLE)
+        groupDefaults.set(tcpKeepAlive.keepIntvl, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL)
+        groupDefaults.set(tcpKeepAlive.keepCnt, forKey: GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT)
+    }
+    groupDefaults.synchronize()
 }
