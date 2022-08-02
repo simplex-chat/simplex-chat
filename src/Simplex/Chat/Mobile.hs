@@ -25,6 +25,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations))
+import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Protocol (CorrId (..))
 import System.Timeout (timeout)
 
@@ -67,8 +68,7 @@ mobileChatOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = [],
-      socksProxy = Nothing,
-      tcpTimeout = 5000000,
+      networkConfig = defaultNetworkConfig,
       logConnections = False,
       logAgent = False,
       chatCmd = "",
