@@ -100,14 +100,18 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    Task {
-                        do {
-                            let stats = try await apiContactInfo(contactId: chat.chatInfo.apiId)
-                            await MainActor.run { connectionStats = stats }
+                    if case .direct = cInfo {
+                        Task {
+                            do {
+                                let stats = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                await MainActor.run { connectionStats = stats }
+                            } catch let error {
+                                logger.error("apiContactInfo error: \(responseError(error))")
+                            }
                             showChatInfoSheet = true
-                        } catch let error {
-                            logger.error("apiContactInfo error: \(responseError(error))")
                         }
+                    } else {
+                        showChatInfoSheet = true
                     }
                 } label: {
                     ChatInfoToolbar(chat: chat)

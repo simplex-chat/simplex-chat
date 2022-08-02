@@ -47,12 +47,11 @@ struct GroupChatInfoView: View {
                                 do {
                                     let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                                     await MainActor.run { connectionStats = stats }
-                                    selectedMember = member
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
                                 }
+                                selectedMember = member
                             }
-                            selectedMember = member
                         } label: { memberView(member) }
                     }
                 }
