@@ -584,6 +584,7 @@
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Удалить участника</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Участник будет удален из группы - это действие нельзя отменить!</string>
+    <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">УЧАСТНИК</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
