@@ -19,6 +19,7 @@ let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
+let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
@@ -32,6 +33,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
     DEFAULT_PENDING_CONNECTIONS: true,
+    DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
@@ -52,6 +54,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -169,6 +172,9 @@ struct SettingsView: View {
                         settingsRow("terminal") { Text("Chat console") }
                     }
                     .disabled(chatModel.chatRunning != true)
+                    settingsRow("gear") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
