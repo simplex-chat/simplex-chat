@@ -37,7 +37,9 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
     GroupChatInfoLayout(
       chat,
       groupInfo,
-      members = chatModel.groupMembers.sortedBy { it.displayName.lowercase() },
+      members = chatModel.groupMembers
+        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+        .sortedBy { it.displayName.lowercase() },
       developerTools,
       addMembers = {
         withApi {

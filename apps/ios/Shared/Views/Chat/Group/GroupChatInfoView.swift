@@ -98,8 +98,10 @@ struct GroupChatInfoView: View {
         }
         .task {
             let ms = await apiListMembers(chat.chatInfo.apiId)
+                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
+                .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
             await MainActor.run {
-                members = ms.sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+                members = ms
             }
         }
     }
