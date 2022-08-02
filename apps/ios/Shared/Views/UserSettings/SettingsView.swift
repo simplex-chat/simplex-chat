@@ -121,10 +121,10 @@ struct SettingsView: View {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
                     NavigationLink {
-                        NetworkSettingsView()
-                            .navigationTitle("Network")
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
                     } label: {
-                        settingsRow("network") { Text("Network & servers") }
+                        settingsRow("point.3.filled.connected.trianglepath.dotted") { Text("Network & servers") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)
