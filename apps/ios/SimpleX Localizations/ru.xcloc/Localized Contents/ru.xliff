@@ -1989,11 +1989,6 @@ SimpleX серверы не могут получить доступ к ваше
         <target>входящий звонок…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="chat connecting…" xml:space="preserve">
-        <source>connecting…</source>
-        <target>устанавливается соединение…</target>
-        <note>chat list item title</note>
-      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>цвет</target>
@@ -2047,7 +2042,7 @@ SimpleX серверы не могут получить доступ к ваше
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>соединяется…</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>

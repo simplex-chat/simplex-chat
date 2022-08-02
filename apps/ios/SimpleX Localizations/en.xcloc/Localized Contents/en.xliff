@@ -1989,11 +1989,6 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="chat connecting…" xml:space="preserve">
-        <source>connecting…</source>
-        <target>connecting…</target>
-        <note>chat list item title</note>
-      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>colored</target>
@@ -2047,7 +2042,7 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>connecting…</target>
-        <note>No comment provided by engineer.</note>
+        <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
