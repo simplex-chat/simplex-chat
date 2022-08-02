@@ -48,6 +48,7 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     var connectionStats: ConnectionStats?
     @State private var alert: ChatInfoViewAlert? = nil
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
@@ -79,9 +80,11 @@ struct ChatInfoView: View {
                     deleteContactButton()
                 }
 
-                Section(header: Text("For console")) {
-                    infoRow("Local name", chat.chatInfo.localDisplayName)
-                    infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                if developerTools {
+                    Section(header: Text("For console")) {
+                        infoRow("Local name", chat.chatInfo.localDisplayName)
+                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                    }
                 }
             }
             .navigationBarHidden(true)

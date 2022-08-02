@@ -16,6 +16,7 @@ struct GroupMemberInfoView: View {
     var member: GroupMember
     var connectionStats: ConnectionStats?
     @State private var alert: GroupMemberInfoViewAlert?
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
@@ -54,9 +55,11 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                Section("For console") {
-                    infoRow("Local name", member.localDisplayName)
-                    infoRow("Database ID", "\(member.groupMemberId)")
+                if developerTools {
+                    Section("For console") {
+                        infoRow("Local name", member.localDisplayName)
+                        infoRow("Database ID", "\(member.groupMemberId)")
+                    }
                 }
             }
             .navigationBarHidden(true)

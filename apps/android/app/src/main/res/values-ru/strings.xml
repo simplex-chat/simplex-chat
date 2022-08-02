@@ -452,6 +452,7 @@
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
 

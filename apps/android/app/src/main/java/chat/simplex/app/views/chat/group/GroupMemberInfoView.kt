@@ -30,11 +30,13 @@ import chat.simplex.app.views.helpers.*
 fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: ConnectionStats?, chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     GroupMemberInfoLayout(
       groupInfo,
       member,
       connStats,
+      developerTools,
       removeMember = { removeMemberDialog(member, chatModel, close) }
     )
   }
@@ -59,6 +61,7 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
+  developerTools: Boolean,
   removeMember: () -> Unit,
 ) {
   Column(
@@ -116,12 +119,14 @@ fun GroupMemberInfoLayout(
       SectionSpacer()
     }
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
@@ -175,6 +180,7 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
+      developerTools = false,
       removeMember = {}
     )
   }

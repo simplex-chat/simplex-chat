@@ -21,6 +21,7 @@ struct GroupChatInfoView: View {
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -78,9 +79,11 @@ struct GroupChatInfoView: View {
                     }
                 }
 
-                Section(header: Text("For console")) {
-                    infoRow("Local name", chat.chatInfo.localDisplayName)
-                    infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                if developerTools {
+                    Section(header: Text("For console")) {
+                        infoRow("Local name", chat.chatInfo.localDisplayName)
+                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                    }
                 }
             }
             .navigationBarHidden(true)
