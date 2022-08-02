@@ -452,6 +452,7 @@
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
 
@@ -584,6 +585,7 @@
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Удалить участника</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Участник будет удален из группы - это действие нельзя отменить!</string>
+    <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">УЧАСТНИК</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>

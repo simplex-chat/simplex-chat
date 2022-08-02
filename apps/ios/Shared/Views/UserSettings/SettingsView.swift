@@ -26,6 +26,7 @@ let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
+let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -36,7 +37,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
-    DEFAULT_CHAT_V3_DB_MIGRATION: "offer"
+    DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
+    DEFAULT_DEVELOPER_TOOLS: false
 ]
 
 private var indent: CGFloat = 36
@@ -52,6 +54,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -169,6 +172,9 @@ struct SettingsView: View {
                         settingsRow("terminal") { Text("Chat console") }
                     }
                     .disabled(chatModel.chatRunning != true)
+                    settingsRow("gear") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()

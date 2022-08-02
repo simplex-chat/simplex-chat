@@ -14,8 +14,9 @@ struct GroupMemberInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     var member: GroupMember
+    var connectionStats: ConnectionStats?
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var connectionStats: ConnectionStats?
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
@@ -54,9 +55,11 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                Section("For console") {
-                    infoRow("Local name", member.localDisplayName)
-                    infoRow("Database ID", "\(member.groupMemberId)")
+                if developerTools {
+                    Section("For console") {
+                        infoRow("Local name", member.localDisplayName)
+                        infoRow("Database ID", "\(member.groupMemberId)")
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -65,14 +68,6 @@ struct GroupMemberInfoView: View {
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
-            }
-        }
-        .task {
-            do {
-                let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                await MainActor.run { connectionStats = stats }
-            } catch let error {
-                logger.error("apiGroupMemberInfo error: \(responseError(error))")
             }
         }
     }

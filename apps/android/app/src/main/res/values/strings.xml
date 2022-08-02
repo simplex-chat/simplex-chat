@@ -454,6 +454,7 @@
   <string name="settings_section_title_develop">DEVELOP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
 
@@ -586,6 +587,7 @@
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="remove_member_confirmation">Remove</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>

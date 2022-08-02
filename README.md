@@ -207,7 +207,11 @@ Our pledge to our users is that SimpleX protocols are and will remain open, and 
 
 If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.
 
-It is possible to [donate via GitHub](https://github.com/sponsors/simplex-chat), which is commission-free for us, or [via OpenCollective](https://opencollective.com/simplex-chat), that also accepts donations in crypto-currencies, but charges a commission.
+It is possible to donate via:
+
+- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
+- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
+- [Monero wallet](monero:8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt): 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 
 Thank you,
 

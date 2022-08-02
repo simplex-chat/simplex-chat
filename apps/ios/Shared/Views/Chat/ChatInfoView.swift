@@ -46,8 +46,9 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
+    var connectionStats: ConnectionStats?
     @State private var alert: ChatInfoViewAlert? = nil
-    @State private var connectionStats: ConnectionStats?
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
@@ -79,9 +80,11 @@ struct ChatInfoView: View {
                     deleteContactButton()
                 }
 
-                Section(header: Text("For console")) {
-                    infoRow("Local name", chat.chatInfo.localDisplayName)
-                    infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                if developerTools {
+                    Section(header: Text("For console")) {
+                        infoRow("Local name", chat.chatInfo.localDisplayName)
+                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -92,14 +95,6 @@ struct ChatInfoView: View {
             case .deleteContactAlert: return deleteContactAlert()
             case .clearChatAlert: return clearChatAlert()
             case .networkStatusAlert: return networkStatusAlert()
-            }
-        }
-        .task {
-            do {
-                let stats = try await apiContactInfo(contactId: chat.chatInfo.apiId)
-                await MainActor.run { connectionStats = stats }
-            } catch let error {
-                logger.error("apiContactInfo error: \(responseError(error))")
             }
         }
     }
