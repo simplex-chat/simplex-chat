@@ -95,24 +95,37 @@ fun AddGroupMembersLayout(
     }
     SectionSpacer()
 
-    SectionView {
-      SectionItemView {
-        RoleSelectionRow(groupInfo, selectedRole)
+    if (contactsToAdd.isEmpty()) {
+      Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+      ) {
+        Text(
+          stringResource(R.string.no_contacts_to_add),
+          Modifier.padding(),
+          color = HighOrLowlight
+        )
       }
-      SectionDivider()
-      SectionItemView {
-        InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
+    } else {
+      SectionView {
+        SectionItemView {
+          RoleSelectionRow(groupInfo, selectedRole)
+        }
+        SectionDivider()
+        SectionItemView {
+          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
+        }
       }
-    }
-    SectionCustomFooter {
-      InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
-    }
-    SectionSpacer()
+      SectionCustomFooter {
+        InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+      }
+      SectionSpacer()
 
-    SectionView {
-      ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+      SectionView {
+        ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
