@@ -44,7 +44,7 @@ fun removeMemberDialog(member: GroupMember, chatModel: ChatModel, close: (() -> 
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.button_remove_member),
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
-    confirmText = generalGetString(R.string.delete_verb),
+    confirmText = generalGetString(R.string.remove_member_confirmation),
     onConfirm = {
       withApi {
         chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)

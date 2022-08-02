@@ -22,6 +22,7 @@ struct ChatView: View {
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
     @State private var showDeleteMessage = false
+    @State private var connectionStats: ConnectionStats?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -99,14 +100,26 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfoSheet = true
+                    if case .direct = cInfo {
+                        Task {
+                            do {
+                                let stats = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                await MainActor.run { connectionStats = stats }
+                            } catch let error {
+                                logger.error("apiContactInfo error: \(responseError(error))")
+                            }
+                            await MainActor.run { showChatInfoSheet = true }
+                        }
+                    } else {
+                        showChatInfoSheet = true
+                    }
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
                 .sheet(isPresented: $showChatInfoSheet) {
                     switch cInfo {
                     case .direct:
-                        ChatInfoView(chat: chat)
+                        ChatInfoView(chat: chat, connectionStats: connectionStats)
                     case let .group(groupInfo):
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     default:

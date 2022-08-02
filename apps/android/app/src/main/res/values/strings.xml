@@ -586,6 +586,7 @@
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="remove_member_confirmation">Remove</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>

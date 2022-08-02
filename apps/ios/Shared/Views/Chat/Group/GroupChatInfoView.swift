@@ -20,6 +20,7 @@ struct GroupChatInfoView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
+    @State private var connectionStats: ConnectionStats?
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -41,14 +42,24 @@ struct GroupChatInfoView: View {
                     }
                     memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
-                        Button { selectedMember = member } label: { memberView(member) }
+                        Button {
+                            Task {
+                                do {
+                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                                    await MainActor.run { connectionStats = stats }
+                                } catch let error {
+                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                }
+                                await MainActor.run { selectedMember = member }
+                            }
+                        } label: { memberView(member) }
                     }
                 }
                 .sheet(isPresented: $showAddMembersSheet) {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: filterMembersToAdd(members))
                 }
-                .sheet(item: $selectedMember) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member)
+                .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats)
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
