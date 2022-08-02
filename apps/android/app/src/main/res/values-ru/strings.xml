@@ -148,6 +148,7 @@
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
     <string name="icon_descr_server_status_pending">Ожидается соединение с сервером</string>
+    <string name="copied_to_clipboard">Скопировано в буфер обмена: %s</string>
 
     <!-- Message Actions - SendMsgView.kt -->
     <string name="icon_descr_send_message">Отправить сообщение</string>
