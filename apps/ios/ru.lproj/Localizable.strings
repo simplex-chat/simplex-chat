@@ -284,7 +284,7 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Устанавливается соединение с сервером… (ошибка: %@)";
 
-/* chat list item title */
+/* No comment provided by engineer. */
 "connecting…" = "соединяется…";
 
 /* No comment provided by engineer. */
@@ -457,6 +457,9 @@
 
 /* No comment provided by engineer. */
 "Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." = "Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.";
+
+/* connection level description */
+"direct" = "прямое";
 
 /* authentication reason */
 "Disable SimpleX Lock" = "Отключить блокировку SimpleX";
@@ -677,6 +680,9 @@
 /* notification */
 "Incoming video call" = "Входящий видеозвонок";
 
+/* connection level description */
+"indirect (%d)" = "непрямое (%d)";
+
 /* No comment provided by engineer. */
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
 
@@ -832,6 +838,9 @@
 
 /* No comment provided by engineer. */
 "no e2e encryption" = "нет e2e шифрования";
+
+/* No comment provided by engineer. */
+"No group!" = "Группа не найдена!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Уведомления";

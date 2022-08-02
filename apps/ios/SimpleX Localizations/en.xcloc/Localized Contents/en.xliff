@@ -1152,7 +1152,7 @@ We will be adding server redundancy to prevent lost messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
-        <source>No group!</source>
+        <source>Group not found!</source>
         <target>Group not found!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1989,6 +1989,11 @@ SimpleX servers cannot see your profile.</target>
         <target>calling…</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="chat connecting…" xml:space="preserve">
+        <source>connecting…</source>
+        <target>connecting…</target>
+        <note>chat list item title</note>
+      </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
         <target>colored</target>
@@ -2039,15 +2044,10 @@ SimpleX servers cannot see your profile.</target>
         <target>connecting call…</target>
         <note>call status</note>
       </trans-unit>
-      <trans-unit id="connecting..." xml:space="preserve">
-        <source>connecting…</source>
-        <target>connecting…</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
         <target>connecting…</target>
-        <note>chat list item title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
@@ -2084,6 +2084,11 @@ SimpleX servers cannot see your profile.</target>
         <target>deleted group</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="direct" xml:space="preserve">
+        <source>direct</source>
+        <target>direct</target>
+        <note>connection level description</note>
+      </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
         <source>duplicate message</source>
         <target>duplicate message</target>
@@ -2118,6 +2123,11 @@ SimpleX servers cannot see your profile.</target>
         <source>group profile updated</source>
         <target>group profile updated</target>
         <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="indirect (%d)" xml:space="preserve">
+        <source>indirect (%d)</source>
+        <target>indirect (%d)</target>
+        <note>connection level description</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>
