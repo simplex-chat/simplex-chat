@@ -40,6 +40,7 @@ fun CICallItemView(cInfo: ChatInfo, cItem: ChatItem, status: CICallStatus, durat
         Icon(Icons.Outlined.CallEnd, stringResource(R.string.icon_descr_call_ended), tint = HighOrLowlight, modifier = Modifier.padding(end = 4.dp))
         Text(status.duration(duration), color = HighOrLowlight)
       }
+      CICallStatus.Error -> {}
     }
 
     Text(
