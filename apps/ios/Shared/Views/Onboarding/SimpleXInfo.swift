@@ -10,13 +10,14 @@ import SwiftUI
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
     var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
             VStack(alignment: .leading) {
-                Image("logo")
+                Image(colorScheme == .light ? "logo" : "logo-light")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: g.size.width * 0.7)
