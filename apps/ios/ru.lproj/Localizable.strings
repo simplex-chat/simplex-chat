@@ -80,10 +80,10 @@
 "%lld" = "%lld";
 
 /* No comment provided by engineer. */
-"%lld contact(s) selected" = "Контактов выбрано: %lld";
+"%lld contact(s) selected" = "Выбрано контактов: %lld";
 
 /* No comment provided by engineer. */
-"%lld members" = "Участников: %lld";
+"%lld members" = "Членов группы: %lld";
 
 /* No comment provided by engineer. */
 "%lldk" = "%lldk";
@@ -126,7 +126,7 @@
 "Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
 
 /* No comment provided by engineer. */
-"admin" = "администратор";
+"admin" = "админ";
 
 /* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.";
@@ -351,7 +351,7 @@
 "Create link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
-"Create secret group" = "Создать секретную группу";
+"Create secret group" = "Создать скрытую группу";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Создать профиль";
@@ -369,7 +369,7 @@
 "Database export & import" = "Экспорт и импорт архива чата";
 
 /* No comment provided by engineer. */
-"Database ID" = "ID в базе данных";
+"Database ID" = "ID базы данных";
 
 /* No comment provided by engineer. */
 "Database will be migrated when the app restarts" = "Данные чата будут мигрированы при перезапуске";
@@ -609,13 +609,13 @@
 "Group message:" = "Групповое сообщение:";
 
 /* No comment provided by engineer. */
-"Group profile is stored on members' devices, not on the servers." = "Профиль группы хранится на устройствах участников, а не на серверах.";
+"Group profile is stored on members' devices, not on the servers." = "Профиль группы хранится на устройствах членов, а не на серверах.";
 
 /* snd group event chat item */
 "group profile updated" = "профиль группы обновлен";
 
 /* No comment provided by engineer. */
-"Group will be deleted for all members - this cannot be undone!" = "Группа будет удалена для всех участников - это действие нельзя отменить!";
+"Group will be deleted for all members - this cannot be undone!" = "Группа будет удалена для всех членов - это действие нельзя отменить!";
 
 /* No comment provided by engineer. */
 "Help" = "Помощь";
@@ -699,7 +699,7 @@
 "invitation to group %@" = "приглашение в группу %@";
 
 /* No comment provided by engineer. */
-"Invite members" = "Пригласить участников";
+"Invite members" = "Пригласить членов группы";
 
 /* No comment provided by engineer. */
 "Invite to group" = "Пригласить в группу";
@@ -768,16 +768,16 @@
 "Markdown in messages" = "Форматирование сообщений";
 
 /* No comment provided by engineer. */
-"member" = "участник";
+"member" = "член группы";
 
 /* No comment provided by engineer. */
-"Member" = "Участник";
+"Member" = "Член группы";
 
 /* rcv group event chat item */
 "member connected" = "соединен(а)";
 
 /* No comment provided by engineer. */
-"Member will be removed from group - this cannot be undone!" = "Участник будет удален из группы - это действие нельзя отменить!";
+"Member will be removed from group - this cannot be undone!" = "Член группы будет удален - это действие нельзя отменить!";
 
 /* No comment provided by engineer. */
 "Message delivery error" = "Ошибка доставки сообщения";
@@ -819,7 +819,7 @@
 "New database archive" = "Новый архив чата";
 
 /* No comment provided by engineer. */
-"New member role" = "Роль участника";
+"New member role" = "Роль члена группы";
 
 /* notification */
 "new message" = "новое сообщение";
@@ -960,10 +960,10 @@
 "Remove" = "Удалить";
 
 /* No comment provided by engineer. */
-"Remove member" = "Удалить участника";
+"Remove member" = "Удалить члена группы";
 
 /* No comment provided by engineer. */
-"Remove member?" = "Удалить участника?";
+"Remove member?" = "Удалить члена группы?";
 
 /* No comment provided by engineer. */
 "removed" = "удален(а)";
@@ -1122,7 +1122,7 @@
 "The created archive is available via app Settings / Database / Old database archive." = "Созданный архив доступен через Настройки приложения.";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только участникам.";
+"The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только членам.";
 
 /* No comment provided by engineer. */
 "The microphone does not work when the app is in the background." = "Микрофон не работает, когда приложение в фоновом режиме.";

@@ -62,12 +62,12 @@
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
         <source>%lld contact(s) selected</source>
-        <target>Контактов выбрано: %lld</target>
+        <target>Выбрано контактов: %lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
         <source>%lld members</source>
-        <target>Участников: %lld</target>
+        <target>Членов группы: %lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -448,7 +448,7 @@
       </trans-unit>
       <trans-unit id="Create secret group" xml:space="preserve">
         <source>Create secret group</source>
-        <target>Создать секретную группу</target>
+        <target>Создать скрытую группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -468,7 +468,7 @@
       </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
         <source>Database ID</source>
-        <target>ID в базе данных</target>
+        <target>ID базы данных</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database export &amp; import" xml:space="preserve">
@@ -828,12 +828,12 @@
       </trans-unit>
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
         <source>Group profile is stored on members' devices, not on the servers.</source>
-        <target>Профиль группы хранится на устройствах участников, а не на серверах.</target>
+        <target>Профиль группы хранится на устройствах членов, а не на серверах.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target>Группа будет удалена для всех участников - это действие нельзя отменить!</target>
+        <target>Группа будет удалена для всех членов - это действие нельзя отменить!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
@@ -963,7 +963,7 @@
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
-        <target>Пригласить участников</target>
+        <target>Пригласить членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
@@ -1063,12 +1063,12 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
         <source>Member</source>
-        <target>Участник</target>
+        <target>Член группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>Участник будет удален из группы - это действие нельзя отменить!</target>
+        <target>Член группы будет удален - это действие нельзя отменить!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery error" xml:space="preserve">
@@ -1128,7 +1128,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
         <source>New member role</source>
-        <target>Роль участника</target>
+        <target>Роль члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New message" xml:space="preserve">
@@ -1323,12 +1323,12 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
         <source>Remove member</source>
-        <target>Удалить участника</target>
+        <target>Удалить члена группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
-        <target>Удалить участника?</target>
+        <target>Удалить члена группы?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -1563,7 +1563,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
         <source>The group is fully decentralized – it is visible only to the members.</source>
-        <target>Группа полностью децентрализована — она видна только участникам.</target>
+        <target>Группа полностью децентрализована — она видна только членам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
@@ -1951,7 +1951,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
-        <target>администратор</target>
+        <target>админ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
@@ -2156,7 +2156,7 @@ SimpleX серверы не могут получить доступ к ваше
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
         <source>member</source>
-        <target>участник</target>
+        <target>член группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
