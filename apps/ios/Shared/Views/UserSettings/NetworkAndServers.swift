@@ -22,11 +22,13 @@ struct NetworkAndServers: View {
                         settingsRow("server.rack") { Text("SMP servers") }
                     }
 
-                    NavigationLink {
-                        AdvancedNetworkSettings()
-                            .navigationTitle("Network settings")
-                    } label: {
-                        settingsRow("app.connected.to.app.below.fill") { Text("Advanced network settings") }
+                    if developerTools {
+                        NavigationLink {
+                            AdvancedNetworkSettings()
+                                .navigationTitle("Network settings")
+                        } label: {
+                            settingsRow("app.connected.to.app.below.fill") { Text("Advanced network settings") }
+                        }
                     }
                 }
             }
