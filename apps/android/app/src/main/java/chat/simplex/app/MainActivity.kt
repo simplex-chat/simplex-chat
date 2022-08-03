@@ -90,6 +90,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
             runAuthenticate()
           }
         }
+        else -> {}
       }
     }
   }
