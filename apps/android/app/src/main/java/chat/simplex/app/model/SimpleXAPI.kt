@@ -85,6 +85,7 @@ class AppPreferences(val context: Context) {
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val useSocksProxy = mkBoolPreference(SHARED_PREFS_USE_SOCKS_PROXY, false)
+  val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -130,6 +131,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_USE_SOCKS_PROXY = "UseSocksProxy"
+    private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
   }
 }
 

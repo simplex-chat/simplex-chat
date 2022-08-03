@@ -30,10 +30,12 @@ import chat.simplex.app.views.helpers.*
 fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     ChatInfoLayout(
       chat,
       connStats,
+      developerTools,
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
@@ -81,6 +83,7 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   connStats: ConnectionStats?,
+  developerTools: Boolean,
   deleteContact: () -> Unit,
   clearChat: () -> Unit
 ) {
@@ -128,12 +131,14 @@ fun ChatInfoLayout(
     }
     SectionSpacer()
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
@@ -267,6 +272,7 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
+      developerTools = false,
       connStats = null,
       deleteContact = {}, clearChat = {}
     )

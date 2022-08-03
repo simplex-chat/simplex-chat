@@ -14,7 +14,6 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
-    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
 
     var body: some View {
         let v = NavigationView {
@@ -65,14 +64,10 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == "" && pendingConnections
+        return s == ""
             ? chatModel.chats
-            : s == ""
-            ? chatModel.chats.filter {
-                pendingConnections || $0.chatInfo.chatType != .contactConnection
-            }
             : chatModel.chats.filter {
-                (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
+                $0.chatInfo.chatType != .contactConnection &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
     }

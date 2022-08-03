@@ -80,6 +80,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation "androidx.compose.ui:ui-util:$compose_version"
     implementation "androidx.navigation:navigation-compose:2.4.1"
     implementation "com.google.accompanist:accompanist-insets:0.23.0"
     implementation 'androidx.webkit:webkit:1.4.0'

@@ -51,6 +51,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       profile = user.profile,
       stopped,
       runServiceInBackground = chatModel.runServiceInBackground,
+      developerTools = chatModel.controller.appPrefs.developerTools,
       setRunServiceInBackground = ::setRunServiceInBackground,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
@@ -98,6 +99,7 @@ fun SettingsLayout(
   profile: Profile,
   stopped: Boolean,
   runServiceInBackground: MutableState<Boolean>,
+  developerTools: Preference<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -161,6 +163,8 @@ fun SettingsLayout(
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
         ChatConsoleItem(showTerminal, stopped)
+        SectionDivider()
+        SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools)
         SectionDivider()
         InstallTerminalAppItem(uriHandler)
         SectionDivider()
@@ -344,6 +348,7 @@ fun PreviewSettingsLayout() {
       profile = Profile.sampleData,
       stopped = false,
       runServiceInBackground = remember { mutableStateOf(true) },
+      developerTools = Preference({ false }, {}),
       setRunServiceInBackground = {},
       setPerformLA = {},
       showModal = { {} },

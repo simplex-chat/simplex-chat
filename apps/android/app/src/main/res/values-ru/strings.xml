@@ -65,6 +65,7 @@
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
+    <string name="hide_notification">Скрыть</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
@@ -452,6 +453,7 @@
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
 
@@ -509,7 +511,7 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="icon_descr_add_members">Пригласить участников</string>
+    <string name="icon_descr_add_members">Пригласить членов группы</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
@@ -538,8 +540,8 @@
     <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
 
     <!-- GroupMemberRole -->
-    <string name="group_member_role_member">участник</string>
-    <string name="group_member_role_admin">администратор</string>
+    <string name="group_member_role_member">член группы</string>
+    <string name="group_member_role_admin">админ</string>
     <string name="group_member_role_owner">владелец</string>
 
     <!-- GroupMemberStatus -->
@@ -558,33 +560,35 @@
     <string name="group_member_status_connecting">соединяется</string>
 
     <!-- AddGroupMembersView.kt -->
-    <string name="new_member_role">Роль участника</string>
+    <string name="no_contacts_to_add">Нет контактов для добавления</string>
+    <string name="new_member_role">Роль члена группы</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
     <string name="invite_to_group_button">Пригласить в группу</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
-    <string name="num_contacts_selected">Контактов выбрано: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
 
     <!-- GroupChatInfoView.kt -->
-    <string name="button_add_members">Пригласить участников</string>
-    <string name="group_info_section_title_num_members">УЧАСТНИКОВ: <xliff:g id="num_members">%1$s</xliff:g></string>
+    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="group_info_section_title_num_members">ЧЛЕНОВ ГРУППЫ: <xliff:g id="num_members">%1$s</xliff:g></string>
     <string name="group_info_member_you">вы: <xliff:g id="group_info_you">%1$s</xliff:g></string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
-    <string name="info_row_local_name">Локальное название</string>
-    <string name="info_row_database_id">ID в базе данных</string>
+    <string name="info_row_local_name">Локальное имя</string>
+    <string name="info_row_database_id">ID базы данных</string>
 
     <!-- GroupMemberInfoView.kt -->
-    <string name="button_remove_member">Удалить участника</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Участник будет удален из группы - это действие нельзя отменить!</string>
-    <string name="member_info_section_title_member">УЧАСТНИК</string>
+    <string name="button_remove_member">Удалить члена группы</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
+    <string name="remove_member_confirmation">Удалить</string>
+    <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
     <string name="conn_level_desc_direct">прямое</string>
@@ -597,13 +601,13 @@
     <string name="network_status">Состояние сети</string>
 
     <!-- AddGroupView.kt -->
-    <string name="create_secret_group_title">Создать секретную группу</string>
-    <string name="group_is_decentralized">Группа полностью децентрализована — она видна только участникам.</string>
+    <string name="create_secret_group_title">Создать скрытую группу</string>
+    <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
 
     <!-- GroupProfileView.kt -->
-    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах участников, а не на серверах.</string>
+    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
     <string name="save_group_profile">Сохранить профиль группы</string>
     <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
 </resources>

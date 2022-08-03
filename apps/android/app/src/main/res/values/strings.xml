@@ -65,6 +65,7 @@
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
+  <string name="hide_notification">Hide</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -454,6 +455,7 @@
   <string name="settings_section_title_develop">DEVELOP</string>
   <string name="settings_section_title_device">DEVICE</string>
   <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
 
@@ -560,6 +562,7 @@
   <string name="group_member_status_connecting">connecting</string>
 
   <!-- AddGroupMembersView.kt -->
+  <string name="no_contacts_to_add">No contacts to add</string>
   <string name="new_member_role">New member role</string>
   <string name="icon_descr_expand_role">Expand role selection</string>
   <string name="invite_to_group_button">Invite to group</string>
@@ -586,6 +589,7 @@
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member">Remove member</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="remove_member_confirmation">Remove</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="info_row_group">Group</string>
   <string name="info_row_connection">Connection</string>

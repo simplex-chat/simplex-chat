@@ -31,12 +31,16 @@ import chat.simplex.app.views.helpers.*
 fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group) {
     val groupInfo = chat.chatInfo.groupInfo
     GroupChatInfoLayout(
       chat,
       groupInfo,
-      members = chatModel.groupMembers.sortedBy { it.displayName.lowercase() },
+      members = chatModel.groupMembers
+        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+        .sortedBy { it.displayName.lowercase() },
+      developerTools,
       addMembers = {
         withApi {
           populateGroupMembers(groupInfo, chatModel)
@@ -111,6 +115,7 @@ fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
   members: List<GroupMember>,
+  developerTools: Boolean,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
@@ -142,7 +147,9 @@ fun GroupChatInfoLayout(
       SectionItemView(height = 50.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
-      SectionDivider()
+      if (members.isNotEmpty()) {
+        SectionDivider()
+      }
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()
@@ -172,12 +179,14 @@ fun GroupChatInfoLayout(
     }
     SectionSpacer()
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
@@ -312,6 +321,7 @@ fun PreviewGroupChatInfoLayout() {
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
+      developerTools = false,
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
     )
   }
