@@ -1,8 +1,6 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.*
-import android.content.ClipboardManager
-import android.widget.Toast
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,13 +52,6 @@ fun ChatItemView(
       .fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    val onLinkLongClick = { link: String ->
-      val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-      val clip: ClipData = ClipData.newPlainText("link", link)
-      clipboard.setPrimaryClip(clip)
-      Toast.makeText(context, context.getString(R.string.copied_to_clipboard, link), Toast.LENGTH_SHORT).show()
-    }
-
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
@@ -70,6 +61,7 @@ fun ChatItemView(
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
+          val onLinkLongClick = { _: String -> showMenu.value = true }
           FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
         }
         DropdownMenu(
