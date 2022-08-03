@@ -1,1 +1,1 @@
-Private, decentralized chat with no global identities.
+SimpleX Chat - a private & encrypted messenger without any user IDs - private by design!

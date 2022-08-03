@@ -1,7 +1,23 @@
-<b>SimpleX Chat</b> - an open-source messenger 100% private by design - it is the first messenger where the servers have no access to your connections graph.
+<h1>SimpleX - the first messaging platform that has no user identifiers of any kind - 100% private by design!</h1>
 
-<ul>
-  <li> 📫 Make a private connection with anybody via link or QR code and start sending messages instantly! Scanning QR code is the most secure way to establish a private connection - it can be done via a video call or in person.</li>
-  <li> 📎 Your profile and contacts are only stored in the app on your device - our servers do not have access to this information.</li>
-  <li> 🔐 All messages are end-to-end encrypted using open-source double-ratchet protocol; the messages are routed via our servers using open-source SimpleX Messaging Protocol.</li>
-</ul>
+<p><strong>Full privacy of your identity, profile, contacts and metadata</strong>: unlike any other existing messaging platform, SimpleX uses no phone numbers or any other identifiers assigned to the users - not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.</p>
+ 
+<p><strong>Complete protection against spam and abuse</strong>: as you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address. Read more.</p>
+ 
+<p><strong>Full ownership, control and security of your data</strong>: SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.</p>
+ 
+<p><strong>Decentralized network</strong>: you can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.</p>
+ 
+<p>You can connect to anybody you know via link or scan QR code (in the video call or in person) and start sending messages instantly - no emails, phone numbers or passwords needed.</p>
+ 
+<p>Your profile and contacts are only stored in the app on your device - our servers do not have access to this information.</p>
+ 
+<p>All messages are end-to-end encrypted using open-source double-ratchet protocol; the messages are routed via our servers using open-source SimpleX Messaging Protocol.</p>
+ 
+<p>The app sends local notifications only when messages or connection requests arrive - the app checks for the new messages every 10-15 min, but if you stop using the app it may stop checking for the new messages.</p>
+ 
+<p>Please send us any questions via the app (connect to the team via settings!), email chat@simplex.chat or submit issues on GitHub (https://github.com/simplex-chat/simplex-chat/issues)</p>
+ 
+<p>Source code: https://github.com/simplex-chat/simplex-chat</p>
+ 
+<p>Follow us on Twitter (@SimpleXChat) and Reddit (r/SimpleXChat/) for the latest updates.</p>
