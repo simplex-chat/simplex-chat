@@ -9,6 +9,8 @@
 import SwiftUI
 
 struct NetworkAndServers: View {
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+
     var body: some View {
         VStack {
             List {
@@ -22,7 +24,7 @@ struct NetworkAndServers: View {
 
                     NavigationLink {
                         AdvancedNetworkSettings()
-                            .navigationTitle("Advanced settings")
+                            .navigationTitle("Network settings")
                     } label: {
                         settingsRow("app.connected.to.app.below.fill") { Text("Advanced network settings") }
                     }

@@ -515,6 +515,14 @@ public struct NetCfg: Codable, Equatable {
         smpPingInterval: 600_000_000
     )
 
+    public static let proxyDefaults: NetCfg = NetCfg(
+        socksProxy: nil,
+        tcpConnectTimeout: 15_000_000,
+        tcpTimeout: 10_000_000,
+        tcpKeepAlive: KeepAliveOpts.defaults,
+        smpPingInterval: 600_000_000
+    )
+
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
 

@@ -33,6 +33,15 @@ struct AdvancedNetworkSettings: View {
                     }
                     .disabled(currentNetCfg == NetCfg.defaults)
 
+                    Button {
+                        currentNetCfg = NetCfg.proxyDefaults
+                        resetNetCfg()
+                        saveNetCfg()
+                    } label: {
+                        Text("Set timeouts for proxy/VPN")
+                    }
+                    .disabled(currentNetCfg == NetCfg.proxyDefaults)
+
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [2_500000, 5_000000, 7_500000, 10_000000, 15_000000, 20_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000], label: secondsLabel)
                     timeoutSettingPicker("PING interval", selection: $netCfg.smpPingInterval, values: [120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000], label: secondsLabel)
@@ -57,7 +66,7 @@ struct AdvancedNetworkSettings: View {
                         Button {
                             saveNetCfg()
                         } label: {
-                            Label("Save", systemImage: "square.and.arrow.down").font(.callout)
+                            Label("Save", systemImage: "checkmark").font(.callout)
                         }
                     }
                     .disabled(netCfg == currentNetCfg)

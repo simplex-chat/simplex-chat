@@ -124,7 +124,7 @@ struct SettingsView: View {
                         NetworkAndServers()
                             .navigationTitle("Network & servers")
                     } label: {
-                        settingsRow("point.3.filled.connected.trianglepath.dotted") { Text("Network & servers") }
+                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)

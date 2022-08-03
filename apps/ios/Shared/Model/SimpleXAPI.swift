@@ -659,8 +659,7 @@ func initializeChat(start: Bool) throws {
 func startChat() throws {
     logger.debug("startChat")
     let m = ChatModel.shared
-    let cfg = getNetCfg()
-    try setNetworkConfig(cfg)
+    try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()
