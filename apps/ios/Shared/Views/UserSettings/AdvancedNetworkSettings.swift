@@ -11,32 +11,41 @@ import SimpleXChat
 
 private let secondsLabel =  NSLocalizedString("sec", comment: "network option")
 
+enum NetworkSettingsAlert: Identifiable {
+    case update
+    case error(err: String)
+
+    var id: String {
+        switch self {
+        case .update: return "update"
+        case let .error(err): return "error \(err)"
+        }
+    }
+}
+
 struct AdvancedNetworkSettings: View {
     @State private var netCfg = NetCfg.defaults
     @State private var currentNetCfg = NetCfg.defaults
     @State private var cfgLoaded = false
     @State private var enableKeepAlive = true
     @State private var keepAliveOpts = KeepAliveOpts.defaults
-    @State private var showSaveErrorAlert = false
-    @State private var saveConfigError: String?
+    @State private var showSettingsAlert: NetworkSettingsAlert?
 
     var body: some View {
         VStack {
             List {
                 Section {
                     Button {
-                        currentNetCfg = NetCfg.defaults
-                        resetNetCfg()
-                        saveNetCfg()
+                        updateNetCfgView(NetCfg.defaults)
+                        showSettingsAlert = .update
                     } label: {
                         Text("Reset to defaults")
                     }
                     .disabled(currentNetCfg == NetCfg.defaults)
 
                     Button {
-                        currentNetCfg = NetCfg.proxyDefaults
-                        resetNetCfg()
-                        saveNetCfg()
+                        updateNetCfgView(NetCfg.proxyDefaults)
+                        showSettingsAlert = .update
                     } label: {
                         Text("Set timeouts for proxy/VPN")
                     }
@@ -46,17 +55,25 @@ struct AdvancedNetworkSettings: View {
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [1_500000, 3_000000, 5_000000, 7_000000, 10_000000, 15_000000], label: secondsLabel)
                     timeoutSettingPicker("PING interval", selection: $netCfg.smpPingInterval, values: [120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000], label: secondsLabel)
                     Toggle("Enable TCP keep-alive", isOn: $enableKeepAlive)
+
                     if enableKeepAlive {
                         intSettingPicker("TCP_KEEPIDLE", selection: $keepAliveOpts.keepIdle, values: [15, 30, 60, 120, 180], label: secondsLabel)
                         intSettingPicker("TCP_KEEPINTVL", selection: $keepAliveOpts.keepIntvl, values: [5, 10, 15, 30, 60], label: secondsLabel)
                         intSettingPicker("TCP_KEEPCNT", selection: $keepAliveOpts.keepCnt, values: [1, 2, 4, 6, 8], label: "")
+                    } else {
+                        Group {
+                            Text("TCP_KEEPIDLE")
+                            Text("TCP_KEEPINTVL")
+                            Text("TCP_KEEPCNT")
+                        }
+                        .foregroundColor(.secondary)
                     }
                 } header: {
                         Text("")
                 } footer: {
                     HStack {
                         Button {
-                            resetNetCfg()
+                            updateNetCfgView(currentNetCfg)
                         } label: {
                             Label("Revert", systemImage: "arrow.counterclockwise").font(.callout)
                         }
@@ -64,7 +81,7 @@ struct AdvancedNetworkSettings: View {
                         Spacer()
 
                         Button {
-                            saveNetCfg()
+                            showSettingsAlert = .update
                         } label: {
                             Label("Save", systemImage: "checkmark").font(.callout)
                         }
@@ -83,18 +100,30 @@ struct AdvancedNetworkSettings: View {
             if cfgLoaded { return }
             cfgLoaded = true
             currentNetCfg = getNetCfg()
-            resetNetCfg()
+            updateNetCfgView(currentNetCfg)
         }
-        .alert(isPresented: $showSaveErrorAlert) {
-            Alert(
-                title: Text("Error updating settings"),
-                message: Text(saveConfigError ?? "Unexpected error")
-            )
+        .alert(item: $showSettingsAlert) { a in
+            switch a {
+            case .update:
+                return Alert(
+                    title: Text("Update network settings?"),
+                    message: Text("Updating settings will re-connect the client to all servers."),
+                    primaryButton: .default(Text("Ok")) {
+                        saveNetCfg()
+                    },
+                    secondaryButton: .cancel()
+                )
+            case let .error(err):
+                return Alert(
+                    title: Text("Error updating settings"),
+                    message: Text(err)
+                )
+            }
         }
     }
 
-    private func resetNetCfg() {
-        netCfg = currentNetCfg
+    private func updateNetCfgView(_ cfg: NetCfg) {
+        netCfg = cfg
         enableKeepAlive = currentNetCfg.enableKeepAlive
         keepAliveOpts = currentNetCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
     }
@@ -105,8 +134,9 @@ struct AdvancedNetworkSettings: View {
             currentNetCfg = netCfg
             setNetCfg(netCfg)
         } catch let error {
-            saveConfigError = responseError(error)
-            showSaveErrorAlert = true
+            let err = responseError(error)
+            showSettingsAlert = .error(err: err)
+            logger.error("\(err)")
         }
     }
 
