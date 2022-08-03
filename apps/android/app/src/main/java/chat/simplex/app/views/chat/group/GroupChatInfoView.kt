@@ -147,7 +147,9 @@ fun GroupChatInfoLayout(
       SectionItemView(height = 50.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
-      SectionDivider()
+      if (members.isNotEmpty()) {
+        SectionDivider()
+      }
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()

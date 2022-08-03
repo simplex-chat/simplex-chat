@@ -630,7 +630,7 @@ public enum GroupMemberStatus: String, Decodable {
         case .memIntroInvited: return "connecting (introduction invitation)"
         case .memAccepted: return "connecting (accepted)"
         case .memAnnounced: return "connecting (announced)"
-        case .memConnected: return "connected"
+        case .memConnected: return "member connected"
         case .memComplete: return "complete"
         case .memCreator: return "creator"
         }
@@ -646,7 +646,7 @@ public enum GroupMemberStatus: String, Decodable {
         case .memIntroInvited: return "connecting"
         case .memAccepted: return "connecting"
         case .memAnnounced: return "connecting"
-        case .memConnected: return "connected"
+        case .memConnected: return "member connected"
         case .memComplete: return "complete"
         case .memCreator: return "creator"
         }

@@ -296,8 +296,10 @@ func getNetworkConfig() async throws -> NetCfg? {
     throw r
 }
 
-func setNetworkConfig(cfg: NetCfg) async throws {
-    try await sendCommandOkResp(.apiSetNetworkConfig(networkConfig: cfg))
+func setNetworkConfig(_ cfg: NetCfg) throws {
+    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg))
+    if case .cmdOk = r { return }
+    throw r
 }
 
 func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
@@ -657,6 +659,7 @@ func initializeChat(start: Bool) throws {
 func startChat() throws {
     logger.debug("startChat")
     let m = ChatModel.shared
+    try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()
