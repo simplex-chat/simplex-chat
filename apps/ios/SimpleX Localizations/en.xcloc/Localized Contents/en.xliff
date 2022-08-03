@@ -60,6 +60,16 @@
         <target>%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%lld contact(s) selected" xml:space="preserve">
+        <source>%lld contact(s) selected</source>
+        <target>%lld contact(s) selected</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld members" xml:space="preserve">
+        <source>%lld members</source>
+        <target>%lld members</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
         <source>%lldk</source>
         <target>%lldk</target>
@@ -231,11 +241,6 @@
         <target>Cancel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat and all messages will be deleted - this cannot be undone!" xml:space="preserve">
-        <source>Chat and all messages will be deleted - this cannot be undone!</source>
-        <target>Chat and all messages will be deleted - this cannot be undone!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
         <source>Chat archive</source>
         <target>Chat archive</target>
@@ -356,9 +361,9 @@
         <target>Connecting to server… (error: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting..." xml:space="preserve">
-        <source>Connecting...</source>
-        <target>Connecting...</target>
+      <trans-unit id="Connection" xml:space="preserve">
+        <source>Connection</source>
+        <target>Connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -436,14 +441,14 @@
         <target>Create address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create group" xml:space="preserve">
-        <source>Create group</source>
-        <target>Create group</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create link / QR code" xml:space="preserve">
         <source>Create link / QR code</source>
         <target>Create link / QR code</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create secret group" xml:space="preserve">
+        <source>Create secret group</source>
+        <target>Create secret group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -459,6 +464,11 @@
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
         <source>Currently maximum supported file size is %@.</source>
         <target>Currently maximum supported file size is %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database ID" xml:space="preserve">
+        <source>Database ID</source>
+        <target>Database ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database export &amp; import" xml:space="preserve">
@@ -511,11 +521,6 @@
         <target>Delete chat profile?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat?" xml:space="preserve">
-        <source>Delete chat?</source>
-        <target>Delete chat?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Delete contact" xml:space="preserve">
         <source>Delete contact</source>
         <target>Delete contact</target>
@@ -539,6 +544,16 @@
       <trans-unit id="Delete for me" xml:space="preserve">
         <source>Delete for me</source>
         <target>Delete for me</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete group" xml:space="preserve">
+        <source>Delete group</source>
+        <target>Delete group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete group?" xml:space="preserve">
+        <source>Delete group?</source>
+        <target>Delete group?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete invitation" xml:space="preserve">
@@ -574,6 +589,11 @@
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Develop</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Developer tools" xml:space="preserve">
+        <source>Developer tools</source>
+        <target>Developer tools</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device" xml:space="preserve">
@@ -616,6 +636,11 @@
         <target>Edit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Edit group profile" xml:space="preserve">
+        <source>Edit group profile</source>
+        <target>Edit group profile</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable" xml:space="preserve">
         <source>Enable</source>
         <target>Enable</target>
@@ -644,6 +669,11 @@
       <trans-unit id="Error accessing database file" xml:space="preserve">
         <source>Error accessing database file</source>
         <target>Error accessing database file</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error creating group" xml:space="preserve">
+        <source>Error creating group</source>
+        <target>Error creating group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -681,9 +711,19 @@
         <target>Error importing chat database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error joining group" xml:space="preserve">
+        <source>Error joining group</source>
+        <target>Error joining group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
         <target>Error saving SMP servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving group profile" xml:space="preserve">
+        <source>Error saving group profile</source>
+        <target>Error saving group profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
@@ -736,9 +776,34 @@
         <target>File will be received when your contact is online, please wait or check later!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="For console" xml:space="preserve">
+        <source>For console</source>
+        <target>For console</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Full name (optional)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group" xml:space="preserve">
+        <source>Group</source>
+        <target>Group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group display name" xml:space="preserve">
+        <source>Group display name</source>
+        <target>Group display name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group full name (optional)" xml:space="preserve">
+        <source>Group full name (optional)</source>
+        <target>Group full name (optional)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group image" xml:space="preserve">
+        <source>Group image</source>
+        <target>Group image</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation" xml:space="preserve">
@@ -751,10 +816,25 @@
         <target>Group invitation expired</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
+        <source>Group invitation is no longer valid, it was removed by sender.</source>
+        <target>Group invitation is no longer valid, it was removed by sender.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
         <source>Group message:</source>
         <target>Group message:</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve">
+        <source>Group profile is stored on members' devices, not on the servers.</source>
+        <target>Group profile is stored on members' devices, not on the servers.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
+        <source>Group will be deleted for all members - this cannot be undone!</source>
+        <target>Group will be deleted for all members - this cannot be undone!</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
         <source>Help</source>
@@ -876,6 +956,21 @@
         <target>Invalid connection link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invitation expired!" xml:space="preserve">
+        <source>Invitation expired!</source>
+        <target>Invitation expired!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invite members" xml:space="preserve">
+        <source>Invite members</source>
+        <target>Invite members</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invite to group" xml:space="preserve">
+        <source>Invite to group</source>
+        <target>Invite to group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
         <source>It can happen when:
 1. The messages expire on the server if they were not received for 30 days,
@@ -926,6 +1021,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Leave</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Leave group" xml:space="preserve">
+        <source>Leave group</source>
+        <target>Leave group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Leave group?" xml:space="preserve">
         <source>Leave group?</source>
         <target>Leave group?</target>
@@ -934,6 +1034,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Limitations</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local name" xml:space="preserve">
+        <source>Local name</source>
+        <target>Local name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Make a private connection" xml:space="preserve">
@@ -954,6 +1059,16 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Markdown in messages" xml:space="preserve">
         <source>Markdown in messages</source>
         <target>Markdown in messages</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Member" xml:space="preserve">
+        <source>Member</source>
+        <target>Member</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
+        <source>Member will be removed from group - this cannot be undone!</source>
+        <target>Member will be removed from group - this cannot be undone!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery error" xml:space="preserve">
@@ -991,6 +1106,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Most likely this contact has deleted the connection with you.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network status" xml:space="preserve">
+        <source>Network status</source>
+        <target>Network status</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
         <source>New contact request</source>
         <target>New contact request</target>
@@ -1006,14 +1126,34 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>New database archive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New member role" xml:space="preserve">
+        <source>New member role</source>
+        <target>New member role</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New message" xml:space="preserve">
         <source>New message</source>
         <target>New message</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="No contacts selected" xml:space="preserve">
+        <source>No contacts selected</source>
+        <target>No contacts selected</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No contacts to add" xml:space="preserve">
+        <source>No contacts to add</source>
+        <target>No contacts to add</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="No device token!" xml:space="preserve">
         <source>No device token!</source>
         <target>No device token!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No group!" xml:space="preserve">
+        <source>Group not found!</source>
+        <target>Group not found!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -1156,6 +1296,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Received file event</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Receiving via" xml:space="preserve">
+        <source>Receiving via</source>
+        <target>Receiving via</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Reject</target>
@@ -1169,6 +1314,21 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Reject contact request" xml:space="preserve">
         <source>Reject contact request</source>
         <target>Reject contact request</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Remove" xml:space="preserve">
+        <source>Remove</source>
+        <target>Remove</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Remove member" xml:space="preserve">
+        <source>Remove member</source>
+        <target>Remove member</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Remove member?" xml:space="preserve">
+        <source>Remove member?</source>
+        <target>Remove member?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -1216,6 +1376,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Save archive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Save group profile" xml:space="preserve">
+        <source>Save group profile</source>
+        <target>Save group profile</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Saved SMP servers will be removed" xml:space="preserve">
         <source>Saved SMP servers will be removed</source>
         <target>Saved SMP servers will be removed</target>
@@ -1246,14 +1411,19 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Send notifications:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Sending via" xml:space="preserve">
+        <source>Sending via</source>
+        <target>Sending via</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
         <source>Sent file event</source>
         <target>Sent file event</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Server connected" xml:space="preserve">
-        <source>Server connected</source>
-        <target>Server connected</target>
+      <trans-unit id="Servers" xml:space="preserve">
+        <source>Servers</source>
+        <target>Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Settings" xml:space="preserve">
@@ -1300,6 +1470,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <source>SimpleX encrypted message or connection event</source>
         <target>SimpleX encrypted message or connection event</target>
         <note>notification</note>
+      </trans-unit>
+      <trans-unit id="Skip" xml:space="preserve">
+        <source>Skip</source>
+        <target>Skip</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Skipped messages" xml:space="preserve">
         <source>Skipped messages</source>
@@ -1386,6 +1561,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>The created archive is available via app Settings / Database / Old database archive.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The group is fully decentralized – it is visible only to the members." xml:space="preserve">
+        <source>The group is fully decentralized – it is visible only to the members.</source>
+        <target>The group is fully decentralized – it is visible only to the members.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The microphone does not work when the app is in the background." xml:space="preserve">
         <source>The microphone does not work when the app is in the background.</source>
         <target>The microphone does not work when the app is in the background.</target>
@@ -1414,6 +1594,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
         <target>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This group no longer exists." xml:space="preserve">
+        <source>This group no longer exists.</source>
+        <target>This group no longer exists.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To ask any questions and to receive SimpleX Chat updates." xml:space="preserve">
@@ -1744,11 +1929,6 @@ SimpleX servers cannot see your profile.</target>
         <target>[Send us email](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="[left]" xml:space="preserve">
-        <source>[left]</source>
-        <target>[left]</target>
-        <note>group left description</note>
-      </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
         <source>\_italic_</source>
         <target>\_italic_</target>
@@ -1768,6 +1948,11 @@ SimpleX servers cannot see your profile.</target>
         <source>accepted call</source>
         <target>accepted call</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="admin" xml:space="preserve">
+        <source>admin</source>
+        <target>admin</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
         <source>audio call (not e2e encrypted)</source>
@@ -1809,6 +1994,11 @@ SimpleX servers cannot see your profile.</target>
         <target>colored</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="complete" xml:space="preserve">
+        <source>complete</source>
+        <target>complete</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
         <source>connect to SimpleX Chat developers.</source>
         <target>connect to SimpleX Chat developers.</target>
@@ -1817,6 +2007,31 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
         <target>connected</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connecting" xml:space="preserve">
+        <source>connecting</source>
+        <target>connecting</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connecting (accepted)" xml:space="preserve">
+        <source>connecting (accepted)</source>
+        <target>connecting (accepted)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connecting (announced)" xml:space="preserve">
+        <source>connecting (announced)</source>
+        <target>connecting (announced)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connecting (introduced)" xml:space="preserve">
+        <source>connecting (introduced)</source>
+        <target>connecting (introduced)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
+        <source>connecting (introduction invitation)</source>
+        <target>connecting (introduction invitation)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call…" xml:space="preserve">
@@ -1849,6 +2064,11 @@ SimpleX servers cannot see your profile.</target>
         <target>contact has no e2e encryption</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="creator" xml:space="preserve">
+        <source>creator</source>
+        <target>creator</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
         <source>deleted</source>
         <target>deleted</target>
@@ -1858,6 +2078,11 @@ SimpleX servers cannot see your profile.</target>
         <source>deleted group</source>
         <target>deleted group</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="direct" xml:space="preserve">
+        <source>direct</source>
+        <target>direct</target>
+        <note>connection level description</note>
       </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
         <source>duplicate message</source>
@@ -1879,10 +2104,35 @@ SimpleX servers cannot see your profile.</target>
         <target>ended call %@</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="error" xml:space="preserve">
+        <source>error</source>
+        <target>error</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="group deleted" xml:space="preserve">
+        <source>group deleted</source>
+        <target>group deleted</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="group profile updated" xml:space="preserve">
+        <source>group profile updated</source>
+        <target>group profile updated</target>
+        <note>snd group event chat item</note>
+      </trans-unit>
+      <trans-unit id="indirect (%d)" xml:space="preserve">
+        <source>indirect (%d)</source>
+        <target>indirect (%d)</target>
+        <note>connection level description</note>
+      </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>
         <target>invitation to group %@</target>
         <note>group name</note>
+      </trans-unit>
+      <trans-unit id="invited" xml:space="preserve">
+        <source>invited</source>
+        <target>invited</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve">
         <source>invited %@</source>
@@ -1904,8 +2154,13 @@ SimpleX servers cannot see your profile.</target>
         <target>left</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="member" xml:space="preserve">
+        <source>member</source>
+        <target>member</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
-        <source>member connected</source>
+        <source>connected</source>
         <target>connected</target>
         <note>rcv group event chat item</note>
       </trans-unit>
@@ -1934,6 +2189,11 @@ SimpleX servers cannot see your profile.</target>
         <target>or</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="owner" xml:space="preserve">
+        <source>owner</source>
+        <target>owner</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
         <source>peer-to-peer</source>
         <target>peer-to-peer</target>
@@ -1953,6 +2213,11 @@ SimpleX servers cannot see your profile.</target>
         <source>rejected call</source>
         <target>rejected call</target>
         <note>call status</note>
+      </trans-unit>
+      <trans-unit id="removed" xml:space="preserve">
+        <source>removed</source>
+        <target>removed</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed %@" xml:space="preserve">
         <source>removed %@</source>
@@ -1988,6 +2253,11 @@ SimpleX servers cannot see your profile.</target>
         <source>unknown</source>
         <target>unknown</target>
         <note>connection info</note>
+      </trans-unit>
+      <trans-unit id="updated group profile" xml:space="preserve">
+        <source>updated group profile</source>
+        <target>updated group profile</target>
+        <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
@@ -2029,6 +2299,11 @@ SimpleX servers cannot see your profile.</target>
         <target>wants to connect to you!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="you are invited to group" xml:space="preserve">
+        <source>you are invited to group</source>
+        <target>you are invited to group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>you left</target>
@@ -2043,6 +2318,11 @@ SimpleX servers cannot see your profile.</target>
         <source>you shared one-time link</source>
         <target>you shared one-time link</target>
         <note>chat list item description</note>
+      </trans-unit>
+      <trans-unit id="you: " xml:space="preserve">
+        <source>you: </source>
+        <target>you: </target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>

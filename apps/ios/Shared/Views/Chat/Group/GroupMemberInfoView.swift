@@ -36,7 +36,7 @@ struct GroupMemberInfoView: View {
                     // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
                     if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? "direct" : "indirect (\(conn.connLevel))"
+                        let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
                         infoRow("Connection", connLevelDesc)
                     }
                 }
