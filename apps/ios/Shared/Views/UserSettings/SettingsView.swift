@@ -117,6 +117,14 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
+                    if UIApplication.shared.supportsAlternateIcons {
+                        NavigationLink {
+                            AppearanceSettings()
+                                .navigationTitle("Appearance")
+                        } label: {
+                            settingsRow("sun.max") { Text("Appearance") }
+                        }
+                    }
                     settingsRow("link") {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
