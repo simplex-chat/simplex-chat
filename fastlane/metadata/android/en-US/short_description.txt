@@ -1,0 +1,1 @@
+Private, decentralized chat with no global identities.

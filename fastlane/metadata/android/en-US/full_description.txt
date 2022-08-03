@@ -1,0 +1,7 @@
+<b>SimpleX Chat</b> - an open-source messenger 100% private by design - it is the first messenger where the servers have no access to your connections graph.
+
+<ul>
+  <li> 📫 Make a private connection with anybody via link or QR code and start sending messages instantly! Scanning QR code is the most secure way to establish a private connection - it can be done via a video call or in person.</li>
+  <li> 📎 Your profile and contacts are only stored in the app on your device - our servers do not have access to this information.</li>
+  <li> 🔐 All messages are end-to-end encrypted using open-source double-ratchet protocol; the messages are routed via our servers using open-source SimpleX Messaging Protocol.</li>
+</ul>
