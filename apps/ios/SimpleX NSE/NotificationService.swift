@@ -150,6 +150,7 @@ func startChat() -> User? {
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
+            try setNetworkConfig(getNetCfg())
             let justStarted = try apiStartChat()
             if justStarted {
                 try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
@@ -255,6 +256,12 @@ func apiReceiveFile(fileId: Int64) -> AChatItem? {
     if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
+}
+
+func setNetworkConfig(_ cfg: NetCfg) throws {
+    let r = sendSimpleXCmd(.apiSetNetworkConfig(networkConfig: cfg))
+    if case .cmdOk = r { return }
+    throw r
 }
 
 struct NtfMessages {

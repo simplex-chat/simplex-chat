@@ -121,10 +121,10 @@ struct SettingsView: View {
                         Toggle("Show pending connections", isOn: $pendingConnections)
                     }
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("Your SMP servers")
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
                     } label: {
-                        settingsRow("server.rack") { Text("SMP servers") }
+                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)

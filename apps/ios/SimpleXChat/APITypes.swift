@@ -500,9 +500,38 @@ public struct ArchiveConfig: Encodable {
     }
 }
 
-public struct NetCfg: Codable {
-    var socksProxy: String? = nil
-    var tcpTimeout: Int
+public struct NetCfg: Codable, Equatable {
+    public var socksProxy: String? = nil
+    public var tcpConnectTimeout: Int // microseconds
+    public var tcpTimeout: Int // microseconds
+    public var tcpKeepAlive: KeepAliveOpts?
+    public var smpPingInterval: Int // microseconds
+
+    public static let defaults: NetCfg = NetCfg(
+        socksProxy: nil,
+        tcpConnectTimeout: 7_500_000,
+        tcpTimeout: 5_000_000,
+        tcpKeepAlive: KeepAliveOpts.defaults,
+        smpPingInterval: 600_000_000
+    )
+
+    public static let proxyDefaults: NetCfg = NetCfg(
+        socksProxy: nil,
+        tcpConnectTimeout: 15_000_000,
+        tcpTimeout: 10_000_000,
+        tcpKeepAlive: KeepAliveOpts.defaults,
+        smpPingInterval: 600_000_000
+    )
+
+    public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public struct KeepAliveOpts: Codable, Equatable {
+    public var keepIdle: Int // seconds
+    public var keepIntvl: Int // seconds
+    public var keepCnt: Int // times
+
+    public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
 public struct ConnectionStats: Codable {
