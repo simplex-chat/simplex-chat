@@ -162,7 +162,10 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
-                        Task { await apiMarkChatItemRead(cInfo, cItem) }
+                        Task {
+                            await apiMarkChatItemRead(cInfo, cItem)
+                            NtfManager.shared.decNtfBadgeCount()
+                        }
                     }
                 }
             }
