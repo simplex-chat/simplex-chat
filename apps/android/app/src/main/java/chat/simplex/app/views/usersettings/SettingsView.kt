@@ -63,19 +63,6 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
-      showNetworkSettings = {
-        withApi {
-          val cfg = chatModel.controller.getNetworkConfig()
-          if (cfg != null) {
-            ModalManager.shared.showCustomModal { close ->
-              ModalView(close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
-                NetworkSettingsView(chatModel, cfg)
-              }
-            }
-          }
-        }
-      },
       showAppearance = {
         withApi {
           ModalManager.shared.showCustomModal { close ->
@@ -118,7 +105,6 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-  showNetworkSettings: () -> Unit,
   showAppearance: () -> Unit
 //  showVideoChatPrototype: () -> Unit
 ) {
@@ -149,17 +135,15 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
+        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
+        SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
-        SectionDivider()
-        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
-        SectionDivider()
-        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
-        SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
+        SectionDivider()
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
       SectionSpacer()
 
@@ -370,7 +354,6 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
-      showNetworkSettings = {},
       showAppearance = {},
 //      showVideoChatPrototype = {}
     )
