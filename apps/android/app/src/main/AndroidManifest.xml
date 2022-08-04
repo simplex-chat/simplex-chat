@@ -38,7 +38,6 @@
         android:windowSoftInputMode="adjustResize"
         android:theme="@style/Theme.SimpleX">
       <intent-filter>
-        <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
 
@@ -64,6 +63,35 @@
         <data android:pathPrefix="/contact" />
       </intent-filter>
     </activity>
+
+    <activity-alias
+        android:name=".MainActivity_default"
+        android:launchMode="singleTask"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:icon="@mipmap/icon"
+        android:enabled="true"
+        android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+
+    <activity-alias
+        android:name=".MainActivity_dark_blue"
+        android:launchMode="singleTask"
+        android:exported="true"
+        android:label="@string/app_name"
+        android:icon="@mipmap/icon_dark_blue"
+        android:enabled="false"
+        android:targetActivity=".MainActivity">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+
 
     <activity android:name=".views.call.IncomingCallActivity"
         android:showOnLockScreen="true"/>

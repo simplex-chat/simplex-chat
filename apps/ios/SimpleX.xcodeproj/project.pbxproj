@@ -43,6 +43,7 @@
 		5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */; };
 		5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */; };
 		5C6AD81327A834E300348BD7 /* NewChatButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6AD81227A834E300348BD7 /* NewChatButton.swift */; };
+		5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C6BA666289BD954009B8ECC /* DismissSheets.swift */; };
 		5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A127B65FDB00BE3227 /* CIMetaView.swift */; };
 		5C7505A527B679EE00BE3227 /* NavLinkPlain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */; };
 		5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */; };
@@ -227,6 +228,7 @@
 		5C5F2B6C27EBC3FE006A9D5F /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
 		5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImage.swift; sourceTree = "<group>"; };
 		5C6AD81227A834E300348BD7 /* NewChatButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatButton.swift; sourceTree = "<group>"; };
+		5C6BA666289BD954009B8ECC /* DismissSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissSheets.swift; sourceTree = "<group>"; };
 		5C7505A127B65FDB00BE3227 /* CIMetaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIMetaView.swift; sourceTree = "<group>"; };
 		5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavLinkPlain.swift; sourceTree = "<group>"; };
 		5C7505A727B6D34800BE3227 /* ChatInfoToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatInfoToolbar.swift; sourceTree = "<group>"; };
@@ -449,6 +451,7 @@
 				5C5F2B6F27EBC704006A9D5F /* ProfileImage.swift */,
 				5CFE0920282EEAF60002594B /* ZoomableScrollView.swift */,
 				646BB38D283FDB6D001CE359 /* LocalAuthenticationUtils.swift */,
+				5C6BA666289BD954009B8ECC /* DismissSheets.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -897,6 +900,7 @@
 				5C5DB70E289ABDD200730FFF /* AppearanceSettings.swift in Sources */,
 				5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
 				5C9C2DA92899DA6F00CC63B1 /* NetworkAndServers.swift in Sources */,
+				5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
 				5CA059EB279559F40002BEB4 /* SimpleXApp.swift in Sources */,
 				5CB346E92869E8BA001FD2EF /* PushEnvironment.swift in Sources */,
@@ -1151,7 +1155,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1193,7 +1197,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -1272,7 +1276,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1302,7 +1306,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1333,7 +1337,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -1379,7 +1383,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 66;
+				CURRENT_PROJECT_VERSION = 67;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;

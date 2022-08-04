@@ -277,13 +277,15 @@
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
-  <string name="network_settings">Network</string>
+  <string name="network_and_servers">Network &amp; servers</string>
+  <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
   <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
+  <string name="appearance_settings">Appearance</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -458,6 +460,7 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_icon">APP ICON</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
@@ -612,4 +615,17 @@
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+
+  <!-- AdvancedNetworkSettings.kt -->
+  <string name="network_options_reset_to_defaults">Reset to defaults</string>
+  <string name="network_option_seconds_label">sec</string>
+  <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
+  <string name="network_option_protocol_timeout">Protocol timeout</string>
+  <string name="network_option_ping_interval">PING interval</string>
+  <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
+  <string name="network_options_revert">Revert</string>
+  <string name="network_options_save">Save</string>
+  <string name="update_network_settings_question">Update network settings?</string>
+  <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
+  <string name="update_network_settings_confirmation">Update</string>
 </resources>
