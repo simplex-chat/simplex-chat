@@ -760,6 +760,7 @@ processChatCommand = \case
               msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
               toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+              deleteMemberConnection m
               withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
