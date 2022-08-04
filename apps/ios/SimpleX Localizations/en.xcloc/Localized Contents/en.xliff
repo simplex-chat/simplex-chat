@@ -35,6 +35,11 @@
         <target>%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="%@ %@" xml:space="preserve">
+        <source>%@ %@</source>
+        <target>%@ %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="%@ / %@" xml:space="preserve">
         <source>%@ / %@</source>
         <target>%@ / %@</target>
@@ -58,6 +63,11 @@
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
         <target>%lld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld %@" xml:space="preserve">
+        <source>%lld %@</source>
+        <target>%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
@@ -186,6 +196,11 @@
         <target>Add contact to start a new chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Advanced network settings" xml:space="preserve">
+        <source>Advanced network settings</source>
+        <target>Advanced network settings</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
         <target>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</target>
@@ -204,6 +219,16 @@
       <trans-unit id="Answer call" xml:space="preserve">
         <source>Answer call</source>
         <target>Answer call</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="App icon" xml:space="preserve">
+        <source>App icon</source>
+        <target>App icon</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Appearance" xml:space="preserve">
+        <source>Appearance</source>
+        <target>Appearance</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Attach" xml:space="preserve">
@@ -651,6 +676,11 @@
         <target>Enable SimpleX Lock</target>
         <note>authentication reason</note>
       </trans-unit>
+      <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
+        <source>Enable TCP keep-alive</source>
+        <target>Enable TCP keep-alive</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
         <target>Enable instant notifications?</target>
@@ -734,6 +764,11 @@
       <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
         <target>Error stopping chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating settings" xml:space="preserve">
+        <source>Error updating settings</source>
+        <target>Error updating settings</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: %@" xml:space="preserve">
@@ -1106,6 +1141,16 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Most likely this contact has deleted the connection with you.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Network &amp; servers" xml:space="preserve">
+        <source>Network &amp; servers</source>
+        <target>Network &amp; servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network settings" xml:space="preserve">
+        <source>Network settings</source>
+        <target>Network settings</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network status" xml:space="preserve">
         <source>Network status</source>
         <target>Network status</target>
@@ -1171,6 +1216,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Off (Local)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Ok" xml:space="preserve">
+        <source>Ok</source>
+        <target>Ok</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Old database" xml:space="preserve">
         <source>Old database</source>
         <target>Old database</target>
@@ -1204,6 +1254,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
         <source>Or open the link in the browser and tap **Open in mobile**.</source>
         <target>Or open the link in the browser and tap **Open in mobile**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="PING interval" xml:space="preserve">
+        <source>PING interval</source>
+        <target>PING interval</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste" xml:space="preserve">
@@ -1271,6 +1326,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Profile image</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Protocol timeout" xml:space="preserve">
+        <source>Protocol timeout</source>
+        <target>Protocol timeout</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
         <source>Push notifications</source>
         <target>Push notifications</target>
@@ -1336,6 +1396,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Reply</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reset to defaults" xml:space="preserve">
+        <source>Reset to defaults</source>
+        <target>Reset to defaults</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
         <source>Restart the app to create a new chat profile</source>
         <target>Restart the app to create a new chat profile</target>
@@ -1344,6 +1409,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve">
         <source>Restart the app to use imported chat database</source>
         <target>Restart the app to use imported chat database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Revert" xml:space="preserve">
+        <source>Revert</source>
+        <target>Revert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
@@ -1426,6 +1496,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
+        <source>Set timeouts for proxy/VPN</source>
+        <target>Set timeouts for proxy/VPN</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Settings" xml:space="preserve">
         <source>Settings</source>
         <target>Settings</target>
@@ -1444,11 +1519,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Share link</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Show pending connections" xml:space="preserve">
-        <source>Show pending connections</source>
-        <target>Show pending connections</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -1514,6 +1584,26 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Stop chat?" xml:space="preserve">
         <source>Stop chat?</source>
         <target>Stop chat?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP connection timeout" xml:space="preserve">
+        <source>TCP connection timeout</source>
+        <target>TCP connection timeout</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP_KEEPCNT" xml:space="preserve">
+        <source>TCP_KEEPCNT</source>
+        <target>TCP_KEEPCNT</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP_KEEPIDLE" xml:space="preserve">
+        <source>TCP_KEEPIDLE</source>
+        <target>TCP_KEEPIDLE</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP_KEEPINTVL" xml:space="preserve">
+        <source>TCP_KEEPINTVL</source>
+        <target>TCP_KEEPINTVL</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
@@ -1689,6 +1779,16 @@ To connect, please ask your contact to create another connection link and check 
         <source>Unlock</source>
         <target>Unlock</target>
         <note>authentication reason</note>
+      </trans-unit>
+      <trans-unit id="Update network settings?" xml:space="preserve">
+        <source>Update network settings?</source>
+        <target>Update network settings?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
+        <source>Updating settings will re-connect the client to all servers.</source>
+        <target>Updating settings will re-connect the client to all servers.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use SimpleX Chat servers?" xml:space="preserve">
         <source>Use SimpleX Chat servers?</source>
@@ -2228,6 +2328,11 @@ SimpleX servers cannot see your profile.</target>
         <source>removed you</source>
         <target>removed you</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="sec" xml:space="preserve">
+        <source>sec</source>
+        <target>sec</target>
+        <note>network option</note>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
