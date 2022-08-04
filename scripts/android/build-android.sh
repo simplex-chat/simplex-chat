@@ -4,22 +4,22 @@ set -eu
 
 u="$USER"
 tmp=$(mktemp -d -t)
-conf="${XDG_CONFIG_HOME:-$HOME/.config}"
 commands="nix git gradle unzip curl"
 
-nix_setup() {
+nix_install() {
   # Pre-setup nix
   [ ! -d /nix ] && sudo sh -c "mkdir -p /nix && chown -R $u /nix"
-
-  [ ! -d "$conf/nix" ] && mkdir -p "$conf/nix"
-
-  printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\nextra-substituters = https://cache.zw3rk.com\ntrusted-public-keys = loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=" > "$conf/nix/nix.conf"
 
   # Install nix
   curl -L https://nixos.org/nix/install -o "$tmp/nix-install"
   chmod +x "$tmp/nix-install" && "$tmp/nix-install" --no-daemon
 
   . "$HOME/.nix-profile/etc/profile.d/nix.sh"
+}
+
+nix_setup() {
+  printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\nextra-substituters = https://cache.zw3rk.com\ntrusted-public-keys = loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=" > "$tmp/nix.conf"
+  export NIX_CONF_DIR="$tmp/nix.conf"
 }
 
 git_setup() {
@@ -34,22 +34,22 @@ git_setup() {
 }
 
 checks() {
-    for i in $commands; do
-      case $i in
-        nix)
-          if ! command -v "$i" > /dev/null 2>&1 || [ ! -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
-            nix_setup
-          fi
-          ;;
-        *) 
-          if ! command -v "$i" > /dev/null 2>&1; then
-            commands_failed="$i $commands_failed"
-          fi
-          ;;
-      esac
-  done
-	
   set +u
+  for i in $commands; do
+    case $i in
+      nix)
+        if ! command -v "$i" > /dev/null 2>&1 || [ ! -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]; then
+          nix_install
+        fi
+        nix_setup
+        ;;
+      *)
+        if ! command -v "$i" > /dev/null 2>&1; then
+          commands_failed="$i $commands_failed"
+        fi
+        ;;
+    esac
+  done
 
   if [ -n "$commands_failed" ]; then
     commands_failed=${commands_failed% *}
