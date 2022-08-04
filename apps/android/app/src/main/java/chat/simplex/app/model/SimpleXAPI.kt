@@ -170,7 +170,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.d(TAG, "user: $user")
     try {
       if (chatModel.chatRunning.value == true) return
-      setNetworkConfig(getNetCfg())
+      apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
@@ -357,14 +357,14 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun getNetworkConfig(): NetCfg? {
+  suspend fun apiGetNetworkConfig(): NetCfg? {
     val r = sendCmd(CC.APIGetNetworkConfig())
     if (r is CR.NetworkConfig) return r.networkConfig
     Log.e(TAG, "getNetworkConfig bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun setNetworkConfig(cfg: NetCfg): Boolean {
+  suspend fun apiSetNetworkConfig(cfg: NetCfg): Boolean {
     val r = sendCmd(CC.APISetNetworkConfig(cfg))
     return when (r) {
       is CR.CmdOk -> true
@@ -1067,7 +1067,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun setNetCfg(cfg: NetCfg) {
-    appPrefs.networkUseSocksProxy.set(cfg.socksProxy != null)
+    appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
@@ -1261,6 +1261,7 @@ class NetCfg(
   val tcpKeepAlive: KeepAliveOpts?,
   val smpPingInterval: Long // microseconds
 ) {
+  val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
 
   companion object {

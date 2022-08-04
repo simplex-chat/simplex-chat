@@ -62,20 +62,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
         }
       } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
-      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
-      showNetworkSettings = {
-        withApi {
-          val cfg = chatModel.controller.getNetworkConfig()
-          if (cfg != null) {
-            ModalManager.shared.showCustomModal { close ->
-              ModalView(close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
-                NetworkAndServersView(chatModel, cfg, showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } })
-              }
-            }
-          }
-        }
-      }
+      showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } }
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
   }
@@ -106,7 +93,6 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-  showNetworkSettings: () -> Unit
 //  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -142,7 +128,7 @@ fun SettingsLayout(
         SectionDivider()
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_and_servers), showNetworkSettings, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal) }, disabled = stopped)
       }
       SectionSpacer()
 
@@ -353,7 +339,6 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
-      showNetworkSettings = {}
 //      showVideoChatPrototype = {}
     )
   }

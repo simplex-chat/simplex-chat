@@ -23,16 +23,11 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun NetworkAndServersView(
   chatModel: ChatModel,
-  netCfg: NetCfg,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
-  val networkUseSocksProxy = remember { mutableStateOf(netCfg.socksProxy != null) }
+  val netCfg: MutableState<NetCfg> = remember { mutableStateOf(chatModel.controller.getNetCfg()) }
+  val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.value.useSocksProxy) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
-
-  fun setSocksProxy(value: Boolean) {
-    chatModel.controller.appPrefs.networkUseSocksProxy.set(value)
-    networkUseSocksProxy.value = value
-  }
 
   NetworkAndServersLayout(
     developerTools = developerTools,
@@ -46,9 +41,9 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              //              chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
-              chatModel.controller.setNetworkConfig(chatModel.controller.getNetCfg())
-              setSocksProxy(true)
+              chatModel.controller.apiSetNetworkConfig(NetCfg.proxyDefaults())
+              chatModel.controller.setNetCfg(NetCfg.proxyDefaults())
+              networkUseSocksProxy.value = true
             }
           }
         )
@@ -59,9 +54,9 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              //              chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5_000_000))
-              chatModel.controller.setNetworkConfig(chatModel.controller.getNetCfg())
-              setSocksProxy(false)
+              chatModel.controller.apiSetNetworkConfig(NetCfg.defaults())
+              chatModel.controller.setNetCfg(NetCfg.defaults())
+              networkUseSocksProxy.value = false
             }
           }
         )
@@ -69,14 +64,12 @@ fun NetworkAndServersView(
     },
     showAdvancedSettings = {
       withApi {
-        val cfg = chatModel.controller.getNetworkConfig()
-        if (cfg != null) {
-          ModalManager.shared.showCustomModal { close ->
-            ModalView(close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              AdvancedNetworkSettingsView(chatModel, cfg)
-            }
+        val cfg = chatModel.controller.getNetCfg()
+        ModalManager.shared.showCustomModal { close ->
+          ModalView(close = close, modifier = Modifier,
+            background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+          ) {
+            AdvancedNetworkSettingsView(chatModel, cfg)
           }
         }
       }
