@@ -5,7 +5,6 @@ import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
-import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,7 +21,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -96,6 +94,25 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     }
   }
 
+  fun reset() {
+    val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults() else NetCfg.defaults()
+    updateView(newCfg)
+    saveCfg(newCfg)
+  }
+
+  fun save() {
+    saveCfg(buildCfg())
+  }
+
+  fun updateSettingsDialog(action: () -> Unit) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(R.string.update_network_settings_question),
+      text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+      confirmText = generalGetString(R.string.update_network_settings_confirmation),
+      onConfirm = action
+    )
+  }
+
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
@@ -105,14 +122,10 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIntvl,
     networkTCPKeepCnt,
     resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults() else currentCfg.value == NetCfg.defaults(),
-    reset = {
-      val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults() else NetCfg.defaults()
-      updateView(newCfg)
-      saveCfg(newCfg)
-    },
+    reset = { updateSettingsDialog(::reset) },
     footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
-    save = { saveCfg(buildCfg()) }
+    save = { updateSettingsDialog(::save) }
   )
 }
 

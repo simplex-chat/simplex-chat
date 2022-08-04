@@ -623,4 +623,7 @@
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
   <string name="network_options_revert">Revert</string>
   <string name="network_options_save">Save</string>
+  <string name="update_network_settings_question">Update network settings?</string>
+  <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
+  <string name="update_network_settings_confirmation">Update</string>
 </resources>

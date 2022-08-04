@@ -621,4 +621,7 @@
     <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
     <string name="network_options_revert">Отменить изменения</string>
     <string name="network_options_save">Сохранить</string>
+    <string name="update_network_settings_question">Обновить настройки сети?</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
+    <string name="update_network_settings_confirmation">Обновить</string>
 </resources>
