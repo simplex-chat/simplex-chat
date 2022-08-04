@@ -279,6 +279,7 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если вы подтвердите, серверы смогут видеть ваш IP адрес, а провайдер - с какими серверами вы соединяетесь.</string>
+    <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Создать адрес</string>
@@ -456,6 +457,7 @@
     <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
+    <string name="settings_section_title_icon">ИКОНКА</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>

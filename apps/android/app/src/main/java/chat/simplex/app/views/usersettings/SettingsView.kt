@@ -75,6 +75,18 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
             }
           }
         }
+      },
+      showAppearance = {
+        withApi {
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
+              AppearanceView()
+            }
+          }
+        }
       }
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
@@ -106,7 +118,8 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-  showNetworkSettings: () -> Unit
+  showNetworkSettings: () -> Unit,
+  showAppearance: () -> Unit
 //  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -145,6 +158,8 @@ fun SettingsLayout(
         SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
+        SectionDivider()
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
       }
       SectionSpacer()
 
@@ -355,7 +370,8 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
-      showNetworkSettings = {}
+      showNetworkSettings = {},
+      showAppearance = {},
 //      showVideoChatPrototype = {}
     )
   }
