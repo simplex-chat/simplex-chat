@@ -861,6 +861,7 @@ viewChatError = \case
       [ "error: connection authorization failed - this could happen if connection was deleted,\
         \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
+    AGENT A_DUPLICATE -> []
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
