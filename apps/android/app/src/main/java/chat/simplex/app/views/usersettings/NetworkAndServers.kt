@@ -91,7 +91,7 @@ fun NetworkAndServersView(
       }
       if (developerTools) {
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Tune, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
       }
     }
   }
@@ -112,7 +112,7 @@ fun UseSocksProxySwitch(
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       Icon(
-        Icons.Outlined.Router,
+        Icons.Outlined.SettingsEthernet,
         stringResource(R.string.network_socks_toggle),
         tint = HighOrLowlight
       )
