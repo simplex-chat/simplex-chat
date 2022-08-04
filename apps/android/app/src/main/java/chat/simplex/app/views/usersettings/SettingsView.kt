@@ -135,11 +135,11 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
+        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
+        SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
-        SectionDivider()
-        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
         SectionDivider()
