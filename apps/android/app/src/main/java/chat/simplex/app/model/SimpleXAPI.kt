@@ -368,7 +368,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   suspend fun apiGetNetworkConfig(): NetCfg? {
     val r = sendCmd(CC.APIGetNetworkConfig())
     if (r is CR.NetworkConfig) return r.networkConfig
-    Log.e(TAG, "getNetworkConfig bad response: ${r.responseType} ${r.details}")
+    Log.e(TAG, "apiGetNetworkConfig bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -377,7 +377,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return when (r) {
       is CR.CmdOk -> true
       else -> {
-        Log.e(TAG, "setNetworkConfig bad response: ${r.responseType} ${r.details}")
+        Log.e(TAG, "apiSetNetworkConfig bad response: ${r.responseType} ${r.details}")
         AlertManager.shared.showAlertMsg(
           generalGetString(R.string.error_setting_network_config),
           "${r.responseType}: ${r.details}"

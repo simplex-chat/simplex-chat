@@ -67,6 +67,9 @@
 /* No comment provided by engineer. */
 "%@ / %@" = "%@ / %@";
 
+/* No comment provided by engineer. */
+"%@ %@" = "%@ %@";
+
 /* notification title */
 "%@ is connected!" = "Установлено соединение с %@!";
 
@@ -78,6 +81,9 @@
 
 /* No comment provided by engineer. */
 "%lld" = "%lld";
+
+/* No comment provided by engineer. */
+"%lld %@" = "%lld %@";
 
 /* No comment provided by engineer. */
 "%lld contact(s) selected" = "Выбрано контактов: %lld";
@@ -129,6 +135,9 @@
 "admin" = "админ";
 
 /* No comment provided by engineer. */
+"Advanced network settings" = "Настройки сети";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.";
 
 /* No comment provided by engineer. */
@@ -139,6 +148,12 @@
 
 /* No comment provided by engineer. */
 "Answer call" = "Принять звонок";
+
+/* No comment provided by engineer. */
+"App icon" = "Иконка";
+
+/* No comment provided by engineer. */
+"Appearance" = "Интерфейс";
 
 /* No comment provided by engineer. */
 "Attach" = "Прикрепить";
@@ -501,6 +516,9 @@
 "Enable SimpleX Lock" = "Включить блокировку SimpleX";
 
 /* No comment provided by engineer. */
+"Enable TCP keep-alive" = "Включить TCP keep-alive";
+
+/* No comment provided by engineer. */
 "ended" = "завершён";
 
 /* call status */
@@ -550,6 +568,9 @@
 
 /* No comment provided by engineer. */
 "Error stopping chat" = "Ошибка при остановке чата";
+
+/* No comment provided by engineer. */
+"Error updating settings" = "Ошибка при сохранении настроек сети";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Ошибка: %@";
@@ -807,6 +828,12 @@
 "Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с вами.";
 
 /* No comment provided by engineer. */
+"Network & servers" = "Сеть & серверы";
+
+/* No comment provided by engineer. */
+"Network settings" = "Настройки сети";
+
+/* No comment provided by engineer. */
 "Network status" = "Состояние сети";
 
 /* notification */
@@ -850,6 +877,9 @@
 
 /* No comment provided by engineer. */
 "Off (Local)" = "Выключить (Локальные)";
+
+/* No comment provided by engineer. */
+"Ok" = "Ок";
 
 /* No comment provided by engineer. */
 "Old database" = "Предыдущая версия данных чата";
@@ -903,6 +933,9 @@
 "Periodically" = "Периодически";
 
 /* No comment provided by engineer. */
+"PING interval" = "Интервал PING";
+
+/* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
 /* No comment provided by engineer. */
@@ -919,6 +952,9 @@
 
 /* No comment provided by engineer. */
 "Profile image" = "Аватар";
+
+/* No comment provided by engineer. */
+"Protocol timeout" = "Таймаут протокола";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Доставка уведомлений";
@@ -978,10 +1014,16 @@
 "Reply" = "Ответить";
 
 /* No comment provided by engineer. */
+"Reset to defaults" = "Сбросить настройки";
+
+/* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Перезапустите приложение, чтобы создать новый профиль.";
 
 /* No comment provided by engineer. */
 "Restart the app to use imported chat database" = "Перезапустите приложение, чтобы использовать импортированные данные чата.";
+
+/* No comment provided by engineer. */
+"Revert" = "Отменить изменения";
 
 /* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
@@ -1007,6 +1049,9 @@
 /* No comment provided by engineer. */
 "Scan QR code" = "Сканировать QR код";
 
+/* network option */
+"sec" = "сек";
+
 /* No comment provided by engineer. */
 "secret" = "секрет";
 
@@ -1029,6 +1074,9 @@
 "Servers" = "Серверы";
 
 /* No comment provided by engineer. */
+"Set timeouts for proxy/VPN" = "Установить таймауты для прокси/VPN";
+
+/* No comment provided by engineer. */
 "Settings" = "Настройки";
 
 /* No comment provided by engineer. */
@@ -1039,9 +1087,6 @@
 
 /* No comment provided by engineer. */
 "Share link" = "Поделиться ссылкой";
-
-/* No comment provided by engineer. */
-"Show pending connections" = "Показать ожидаемые соединения";
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
@@ -1102,6 +1147,18 @@
 
 /* No comment provided by engineer. */
 "Tap to join" = "Нажмите, чтобы вступить";
+
+/* No comment provided by engineer. */
+"TCP connection timeout" = "Таймаут TCP соединения";
+
+/* No comment provided by engineer. */
+"TCP_KEEPCNT" = "TCP_KEEPCNT";
+
+/* No comment provided by engineer. */
+"TCP_KEEPIDLE" = "TCP_KEEPIDLE";
+
+/* No comment provided by engineer. */
+"TCP_KEEPINTVL" = "TCP_KEEPINTVL";
 
 /* No comment provided by engineer. */
 "Thank you for installing SimpleX Chat!" = "Спасибо, что установили SimpleX Chat!";
@@ -1202,8 +1259,14 @@
 /* authentication reason */
 "Unlock" = "Разблокировать";
 
+/* No comment provided by engineer. */
+"Update network settings?" = "Обновить настройки сети?";
+
 /* rcv group event chat item */
 "updated group profile" = "обновил(а) профиль группы";
+
+/* No comment provided by engineer. */
+"Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к переподключению клиента ко всем серверам.";
 
 /* No comment provided by engineer. */
 "Use chat" = "Использовать чат";
