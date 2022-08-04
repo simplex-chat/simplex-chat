@@ -98,12 +98,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
           val inStream = receiver.inputStream
           val inStreamReader = InputStreamReader(inStream)
           val input = BufferedReader(inStreamReader)
-
+          Log.d(TAG, "starting receiver loop")
           while (true) {
             val line = input.readLine() ?: break
             Log.w("$TAG (stdout/stderr)", line)
             logbuffer.add(line)
           }
+          Log.w(TAG, "exited receiver loop")
         }
       }
 

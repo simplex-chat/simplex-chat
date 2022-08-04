@@ -71,6 +71,7 @@ module Simplex.Chat.Store
     getGroupMember,
     getGroupMembers,
     deleteGroupConnectionsAndFiles,
+    deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
@@ -1341,27 +1342,31 @@ getGroup db user groupId = do
   members <- liftIO $ getGroupMembers db user gInfo
   pure $ Group gInfo members
 
-deleteGroupConnectionsAndFiles :: DB.Connection -> UserId -> Group -> IO ()
-deleteGroupConnectionsAndFiles db userId (Group GroupInfo {groupId} members) = do
-  print "deleteGroupConnectionsAndFiles"
+deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
+  putStrLn "deleteGroupConnectionsAndFiles"
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  print "deleteGroupConnectionsAndFiles: connections"
+  putStrLn "deleteGroupConnectionsAndFiles: connections"
   DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  print "deleteGroupConnectionsAndFiles: files"
+  putStrLn "deleteGroupConnectionsAndFiles: files"
 
-deleteGroup :: DB.Connection -> User -> Group -> IO ()
-deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} _) = do
-  print "deleteGroup"
+deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupItemsAndMembers db User {userId} GroupInfo {groupId} = do
+  putStrLn "deleteGroupItemsAndMembers"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  print "deleteGroup: chat_items"
+  putStrLn "deleteGroupItemsAndMembers: chat_items"
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  print "deleteGroup: group_members"
+  putStrLn "deleteGroupItemsAndMembers: group_members"
+
+deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
+  putStrLn "deleteGroup"
   deleteGroupProfile_ db userId groupId
-  print "deleteGroup: deleteGroupProfile_"
+  putStrLn "deleteGroup: deleteGroupProfile_"
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  print "deleteGroup: groups"
+  putStrLn "deleteGroup: groups"
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  print "deleteGroup: display_names"
+  putStrLn "deleteGroup: display_names"
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =
