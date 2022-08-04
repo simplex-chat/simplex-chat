@@ -3,6 +3,7 @@ package chat.simplex.app.views.onboarding
 import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -76,7 +77,7 @@ fun SimpleXInfoLayout(
 @Composable
 fun SimpleXLogo() {
   Image(
-    painter = painterResource(R.drawable.logo),
+    painter = painterResource(if (isSystemInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(R.string.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = 20.dp)

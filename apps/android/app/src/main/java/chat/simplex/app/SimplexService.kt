@@ -3,6 +3,7 @@ package chat.simplex.app
 import android.app.*
 import android.content.*
 import android.os.*
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -117,7 +118,8 @@ class SimplexService: Service() {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
-    return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+
+    val builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
       .setSmallIcon(R.drawable.ntf_service_icon)
       .setColor(0x88FFFF)
       .setContentTitle(title)
@@ -125,7 +127,18 @@ class SimplexService: Service() {
       .setContentIntent(pendingIntent)
       .setSilent(true)
       .setShowWhen(false) // no date/time
-      .build()
+
+    // Shows a button which opens notification channel settings
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      val setupIntent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+      setupIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+      setupIntent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFICATION_CHANNEL_ID)
+      val setup = PendingIntent.getActivity(this, 0, setupIntent, flags)
+      builder.addAction(0, getString(R.string.hide_notification), setup)
+    }
+
+    return builder.build()
   }
 
   override fun onBind(intent: Intent): IBinder? {

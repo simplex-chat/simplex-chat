@@ -67,6 +67,7 @@ class NotificationService: UNNotificationServiceExtension {
         ntfBadgeCountGroupDefault.set(badgeCount)
         setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
         self.contentHandler = contentHandler
+        registerGroupDefaults()
         let appState = appStateGroupDefault.get()
         switch appState {
         case .suspended:

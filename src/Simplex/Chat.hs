@@ -54,7 +54,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
+import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -440,16 +440,27 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
-      g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \db -> getGroup db user chatId
+      liftIO $ putStrLn "APIDeleteChat CTGroup"
+      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
+      liftIO $ putStrLn "APIDeleteChat CTGroup: getGroup"
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
+      liftIO $ putStrLn "APIDeleteChat CTGroup: canDelete"
+      void $ clearGroupContent user gInfo
+      liftIO $ putStrLn "APIDeleteChat CTGroup: clearGroupContent"
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
+        liftIO $ putStrLn "APIDeleteChat CTGroup: sendGroupMessage"
         mapM_ deleteMemberConnection members
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteMemberConnection"
         -- two functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
-        withStore' $ \db -> deleteGroupConnectionsAndFiles db userId g
-        withStore' $ \db -> deleteGroup db user g
+        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroupConnectionsAndFiles"
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroupItemsAndMembers"
+        withStore' $ \db -> deleteGroup db user gInfo
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroup"
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -470,19 +481,12 @@ processChatCommand = \case
       pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
-      ciIdsAndFileInfo <- withStore' $ \db -> getGroupChatItemIdsAndFileInfo db user chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
-        unless itemDeleted $ do
-          forM_ fileInfo_ $ \fileInfo -> do
-            cancelFile user fileInfo
-            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-          void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
-      gInfo' <- case ciIdsAndFileInfo of
-        [] -> pure gInfo
-        _ -> do
-          let (_, lastItemTs, _, _) = last ciIdsAndFileInfo
+      lastItemTs_ <- clearGroupContent user gInfo
+      gInfo' <- case lastItemTs_ of
+        Just lastItemTs -> do
           withStore' $ \db -> updateGroupTs db user gInfo lastItemTs
           pure (gInfo :: GroupInfo) {updatedAt = lastItemTs}
+        _ -> pure gInfo
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -958,6 +962,16 @@ processChatCommand = \case
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
             unless cancelled $ cancelRcvFileTransfer user ft
+    clearGroupContent :: User -> GroupInfo -> m (Maybe UTCTime)
+    clearGroupContent user gInfo@GroupInfo {groupId} = do
+      ciIdsAndFileInfo <- withStore' $ \db -> getGroupChatItemIdsAndFileInfo db user groupId
+      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
+        unless itemDeleted $ do
+          forM_ fileInfo_ $ \fileInfo -> do
+            cancelFile user fileInfo
+            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+          void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+      pure $ (\(_, lastItemTs, _, _) -> lastItemTs) <$> lastMaybe ciIdsAndFileInfo
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \user@User {userId} -> do
       ct <- withStore $ \db -> getContact db userId ctId
@@ -1731,6 +1745,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             then do
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
               toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+              let g = groupName' gInfo              
+              setActive $ ActiveG g
             else messageError "x.msg.update: group member attempted to update a message of another member"
         (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
