@@ -9,7 +9,8 @@
 import Foundation
 import UIKit
 
-private func keyWindow() -> UIWindow? { UIApplication.shared.connectedScenes
+private func keyWindow() -> UIWindow? {
+    UIApplication.shared.connectedScenes
     .filter { $0.activationState == .foregroundActive }
     .map { $0 as? UIWindowScene }
     .compactMap { $0 }
