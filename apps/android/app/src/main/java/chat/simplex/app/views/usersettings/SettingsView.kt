@@ -70,7 +70,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
             ModalManager.shared.showCustomModal { close ->
               ModalView(close = close, modifier = Modifier,
                 background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
-                NetworkSettingsView(chatModel, cfg)
+                NetworkAndServersView(chatModel, cfg, showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } })
               }
             }
           }
@@ -142,9 +142,7 @@ fun SettingsLayout(
         SectionDivider()
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) }, disabled = stopped)
-        SectionDivider()
-        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_and_servers), showNetworkSettings, disabled = stopped)
       }
       SectionSpacer()
 

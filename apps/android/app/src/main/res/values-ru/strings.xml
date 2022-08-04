@@ -272,6 +272,7 @@
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
+    <string name="network_and_servers">Сеть &amp; серверы</string>
     <string name="network_settings">Настройки сети</string>
     <string name="network_settings_title">Настройки сети</string>
     <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
@@ -610,4 +611,14 @@
     <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
     <string name="save_group_profile">Сохранить профиль группы</string>
     <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
+
+    <!-- AdvancedNetworkSettings.kt -->
+    <string name="network_options_reset_to_defaults">Сбросить настройки</string>
+    <string name="network_option_seconds_label">сек</string>
+    <string name="network_option_tcp_connection_timeout">Таймаут TCP соединения</string>
+    <string name="network_option_protocol_timeout">Таймаут протокола</string>
+    <string name="network_option_ping_interval">Интервал PING</string>
+    <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
+    <string name="network_options_revert">Отменить изменения</string>
+    <string name="network_options_save">Сохранить</string>
 </resources>

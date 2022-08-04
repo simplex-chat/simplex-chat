@@ -18,14 +18,14 @@ import chat.simplex.app.views.helpers.*
 
 @Composable
 fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
-  val useSocksProxy = remember { mutableStateOf(netCfg.socksProxy != null) }
+  val networkUseSocksProxy = remember { mutableStateOf(netCfg.socksProxy != null) }
   fun setSocksProxy(value: Boolean) {
-    chatModel.controller.appPrefs.useSocksProxy.set(value)
-    useSocksProxy.value = value
+    chatModel.controller.appPrefs.networkUseSocksProxy.set(value)
+    networkUseSocksProxy.value = value
   }
 
   NetworkSettingsLayout(
-    useSocksProxy,
+    networkUseSocksProxy,
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertMsg(
@@ -34,7 +34,8 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
+//              chatModel.controller.setNetworkConfig(NetCfg(socksProxy = ":9050", tcpTimeout = 10_000_000))
+              chatModel.controller.setNetworkConfig(chatModel.controller.getNetCfg())
               setSocksProxy(true)
             }
           }
@@ -46,7 +47,8 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5_000_000))
+//              chatModel.controller.setNetworkConfig(NetCfg(tcpTimeout = 5_000_000))
+              chatModel.controller.setNetworkConfig(chatModel.controller.getNetCfg())
               setSocksProxy(false)
             }
           }
@@ -57,7 +59,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
 }
 
 @Composable fun NetworkSettingsLayout(
-  useSocksProxy: MutableState<Boolean>,
+  networkUseSocksProxy: MutableState<Boolean>,
   toggleSocksProxy: (Boolean) -> Unit
 ) {
   Column(
@@ -78,7 +80,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
         Text(stringResource(R.string.network_socks_toggle))
         Spacer(Modifier.fillMaxWidth().weight(1f))
         Switch(
-          checked = useSocksProxy.value,
+          checked = networkUseSocksProxy.value,
           onCheckedChange = toggleSocksProxy,
           colors = SwitchDefaults.colors(
             checkedThumbColor = MaterialTheme.colors.primary,
@@ -95,7 +97,7 @@ fun NetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
 fun PreviewNetworkSettings() {
   SimpleXTheme {
     NetworkSettingsLayout(
-      useSocksProxy = remember { mutableStateOf(true) },
+      networkUseSocksProxy = remember { mutableStateOf(true) },
       toggleSocksProxy = {}
     )
   }

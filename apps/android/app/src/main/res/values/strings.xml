@@ -277,7 +277,8 @@
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
-  <string name="network_settings">Network</string>
+  <string name="network_and_servers">Network &amp; servers</string>
+  <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
   <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
   <string name="network_enable_socks">Use SOCKS proxy?</string>
@@ -612,4 +613,14 @@
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
   <string name="save_group_profile">Save group profile</string>
   <string name="error_saving_group_profile">Error saving group profile</string>
+
+  <!-- AdvancedNetworkSettings.kt -->
+  <string name="network_options_reset_to_defaults">Reset to defaults</string>
+  <string name="network_option_seconds_label">sec</string>
+  <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
+  <string name="network_option_protocol_timeout">Protocol timeout</string>
+  <string name="network_option_ping_interval">PING interval</string>
+  <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
+  <string name="network_options_revert">Revert</string>
+  <string name="network_options_save">Save</string>
 </resources>
