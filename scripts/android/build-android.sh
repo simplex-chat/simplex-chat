@@ -11,7 +11,12 @@ nix_install() {
   [ ! -d /nix ] && sudo sh -c "mkdir -p /nix && chown -R $u /nix"
 
   # Install nix
-  curl -L https://nixos.org/nix/install -o "$tmp/nix-install"
+  nix_ver="nix-2.10.3"
+  nix_url="https://releases.nixos.org/nix/$nix_ver/install"
+  nix_hash="2e96a9c4abb5648a805480e8679de3d9fecff30453603f11c26bb4e7176c7ebe"
+
+  curl -sSf "$nix_url" -o "$tmp/nix-install"
+  printf "%s %s" "$nix_hash" "$tmp/nix-install" | sha256sum -c
   chmod +x "$tmp/nix-install" && "$tmp/nix-install" --no-daemon
 
   . "$HOME/.nix-profile/etc/profile.d/nix.sh"
@@ -19,7 +24,7 @@ nix_install() {
 
 nix_setup() {
   printf "sandbox = true\nmax-jobs = auto\nexperimental-features = nix-command flakes\nextra-substituters = https://cache.zw3rk.com\ntrusted-public-keys = loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk=" > "$tmp/nix.conf"
-  export NIX_CONF_DIR="$tmp/nix.conf"
+  export NIX_CONF_DIR="$tmp/"
 }
 
 git_setup() {
