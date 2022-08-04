@@ -159,7 +159,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_settings), showNetworkSettings, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Colorize, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
       }
       SectionSpacer()
 

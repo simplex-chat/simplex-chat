@@ -75,7 +75,7 @@ fun AppearanceView() {
     SectionView(stringResource(R.string.settings_section_title_icon)) {
       LazyRow(
         Modifier
-          .padding(horizontal = 8.dp, vertical = 16.dp)
+          .padding(horizontal = 8.dp)
       ) {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -92,7 +92,7 @@ fun AppearanceView() {
           )
 
           if (index + 1 != AppIcon.values().size) {
-            Spacer(Modifier.padding(horizontal = 20.dp))
+            Spacer(Modifier.padding(horizontal = 4.dp))
           }
         }
       }
