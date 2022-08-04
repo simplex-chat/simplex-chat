@@ -752,12 +752,15 @@ processChatCommand = \case
             canRemove = userRole >= GRAdmin && userRole >= mRole && memberCurrent membership
         unless canRemove $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
-          when (mStatus /= GSMemInvited) $ do
-            msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
-            ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
-            toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-          deleteMemberConnection m
-          withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
+          case mStatus of
+            GSMemInvited -> do
+              deleteMemberConnection m
+              withStore' $ \db -> deleteGroupMember db user m
+            _ -> do
+              msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
+              toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+              withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -1745,7 +1748,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             then do
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
               toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-              let g = groupName' gInfo              
+              let g = groupName' gInfo
               setActive $ ActiveG g
             else messageError "x.msg.update: group member attempted to update a message of another member"
         (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"

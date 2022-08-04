@@ -81,6 +81,7 @@ module Simplex.Chat.Store
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
+    deleteGroupMember,
     deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
@@ -1585,8 +1586,13 @@ createNewMember_
     groupMemberId <- insertedRowId db
     pure GroupMember {..}
 
-deleteGroupMemberConnection :: DB.Connection -> UserId -> GroupMember -> IO ()
-deleteGroupMemberConnection db userId GroupMember {groupMemberId} =
+deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId} = do
+  deleteGroupMemberConnection db user m
+  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+
+deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
+deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
   DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
 
 createIntroductions :: DB.Connection -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
