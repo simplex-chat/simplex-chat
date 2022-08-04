@@ -1731,7 +1731,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             then do
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
               toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-              setActive $ ActiveG gInfo
+              let g = groupName' gInfo              
+              setActive $ ActiveG g
             else messageError "x.msg.update: group member attempted to update a message of another member"
         (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
