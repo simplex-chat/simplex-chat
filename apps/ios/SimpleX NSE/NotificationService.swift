@@ -63,8 +63,6 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        badgeCount = ntfBadgeCountGroupDefault.get() + 1
-        ntfBadgeCountGroupDefault.set(badgeCount)
         setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
         self.contentHandler = contentHandler
         registerGroupDefaults()
@@ -72,9 +70,11 @@ class NotificationService: UNNotificationServiceExtension {
         switch appState {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
+            setBadgeCount()
             receiveNtfMessages(request, contentHandler)
         case .suspending:
             logger.debug("NotificationService: app is suspending")
+            setBadgeCount()
             Task {
                 var state = appState
                 for _ in 1...5 {
@@ -129,6 +129,11 @@ class NotificationService: UNNotificationServiceExtension {
     override func serviceExtensionTimeWillExpire() {
         logger.debug("NotificationService.serviceExtensionTimeWillExpire")
         deliverBestAttemptNtf()
+    }
+
+    func setBadgeCount() {
+        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+        ntfBadgeCountGroupDefault.set(badgeCount)
     }
 
     func setBestAttemptNtf(_ ntf: UNMutableNotificationContent?) {
