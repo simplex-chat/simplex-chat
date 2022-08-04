@@ -1254,7 +1254,7 @@ class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgCon
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
 
 @Serializable
-class NetCfg(
+data class NetCfg(
   val socksProxy: String? = null,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
@@ -1286,7 +1286,7 @@ class NetCfg(
 }
 
 @Serializable
-class KeepAliveOpts(
+data class KeepAliveOpts(
   val keepIdle: Int, // seconds
   val keepIntvl: Int, // seconds
   val keepCnt: Int // times

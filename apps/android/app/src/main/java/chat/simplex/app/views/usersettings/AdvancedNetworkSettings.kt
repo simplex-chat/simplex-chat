@@ -5,6 +5,7 @@ import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -108,7 +110,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       updateView(newCfg)
       saveCfg(newCfg)
     },
-    footerDisabled = buildCfg() != currentCfg.value,
+    footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
     save = { saveCfg(buildCfg()) }
   )
