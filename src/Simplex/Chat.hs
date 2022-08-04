@@ -440,16 +440,23 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
+      liftIO $ putStrLn "APIDeleteChat CTGroup"
       g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \db -> getGroup db user chatId
+      liftIO $ putStrLn "APIDeleteChat CTGroup: getGroup"
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
+      liftIO $ putStrLn "APIDeleteChat CTGroup: canDelete"
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
+        liftIO $ putStrLn "APIDeleteChat CTGroup: sendGroupMessage"
         mapM_ deleteMemberConnection members
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteMemberConnection"
         -- two functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db userId g
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroupConnectionsAndFiles"
         withStore' $ \db -> deleteGroup db user g
+        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroup"
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
