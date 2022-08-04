@@ -26,18 +26,21 @@ import chat.simplex.app.views.helpers.*
 import java.text.DecimalFormat
 
 @Composable
-fun AdvancedNetworkSettingsView(chatModel: ChatModel, netCfg: NetCfg) {
-  val networkTCPConnectTimeout = remember { mutableStateOf(netCfg.tcpConnectTimeout) }
-  val networkTCPTimeout = remember { mutableStateOf(netCfg.tcpTimeout) }
-  val networkSMPPingInterval = remember { mutableStateOf(netCfg.smpPingInterval) }
-  val networkEnableKeepAlive = remember { mutableStateOf(netCfg.enableKeepAlive) }
+fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
+  val currentCfg = remember { mutableStateOf(chatModel.controller.getNetCfg()) }
+  val currentCfgVal = currentCfg.value
+
+  val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
+  val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
+  val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
+  val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
   val networkTCPKeepIdle: MutableState<Int>
   val networkTCPKeepIntvl: MutableState<Int>
   val networkTCPKeepCnt: MutableState<Int>
-  if (netCfg.tcpKeepAlive != null) {
-    networkTCPKeepIdle = remember { mutableStateOf(netCfg.tcpKeepAlive.keepIdle) }
-    networkTCPKeepIntvl = remember { mutableStateOf(netCfg.tcpKeepAlive.keepIntvl) }
-    networkTCPKeepCnt = remember { mutableStateOf(netCfg.tcpKeepAlive.keepCnt) }
+  if (currentCfgVal.tcpKeepAlive != null) {
+    networkTCPKeepIdle = remember { mutableStateOf(currentCfgVal.tcpKeepAlive.keepIdle) }
+    networkTCPKeepIntvl = remember { mutableStateOf(currentCfgVal.tcpKeepAlive.keepIntvl) }
+    networkTCPKeepCnt = remember { mutableStateOf(currentCfgVal.tcpKeepAlive.keepCnt) }
   } else {
     networkTCPKeepIdle = remember { mutableStateOf(KeepAliveOpts.defaults().keepIdle) }
     networkTCPKeepIntvl = remember { mutableStateOf(KeepAliveOpts.defaults().keepIntvl) }

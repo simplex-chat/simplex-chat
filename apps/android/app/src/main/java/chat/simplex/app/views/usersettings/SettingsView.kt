@@ -128,7 +128,7 @@ fun SettingsLayout(
         SectionDivider()
         PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.SettingsEthernet, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
       SectionSpacer()
 

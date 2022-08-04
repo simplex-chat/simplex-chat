@@ -3,7 +3,6 @@ package chat.simplex.app.views.usersettings
 import SectionDivider
 import SectionItemView
 import SectionView
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -24,6 +23,7 @@ import chat.simplex.app.views.helpers.*
 fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val netCfg: MutableState<NetCfg> = remember { mutableStateOf(chatModel.controller.getNetCfg()) }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.value.useSocksProxy) }
@@ -33,7 +33,8 @@ fun NetworkAndServersView(
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
     showModal = showModal,
-    toggleSocksProxy = { enable ->
+    showSettingsModal = showSettingsModal,
+        toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(R.string.network_enable_socks),
@@ -61,18 +62,6 @@ fun NetworkAndServersView(
           }
         )
       }
-    },
-    showAdvancedSettings = {
-      withApi {
-        val cfg = chatModel.controller.getNetCfg()
-        ModalManager.shared.showCustomModal { close ->
-          ModalView(close = close, modifier = Modifier,
-            background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-          ) {
-            AdvancedNetworkSettingsView(chatModel, cfg)
-          }
-        }
-      }
     }
   )
 }
@@ -81,8 +70,8 @@ fun NetworkAndServersView(
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  toggleSocksProxy: (Boolean) -> Unit,
-  showAdvancedSettings: () -> Unit
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  toggleSocksProxy: (Boolean) -> Unit
 ) {
   Column(
     Modifier.fillMaxWidth(),
@@ -102,7 +91,7 @@ fun NetworkAndServersView(
       }
       if (developerTools) {
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Tune, stringResource(R.string.network_settings), showAdvancedSettings)
+        SettingsActionItem(Icons.Outlined.Tune, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
       }
     }
   }
@@ -138,8 +127,8 @@ fun PreviewNetworkAndServersLayout() {
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
       showModal = { {} },
-      toggleSocksProxy = {},
-      showAdvancedSettings = {}
+      showSettingsModal = { {} },
+      toggleSocksProxy = {}
     )
   }
 }
