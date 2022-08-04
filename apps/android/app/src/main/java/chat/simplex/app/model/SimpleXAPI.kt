@@ -86,8 +86,8 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
-  val networkTCPConnectTimeout = mkLongPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults().tcpConnectTimeout)
-  val networkTCPTimeout = mkLongPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults().tcpTimeout)
+  val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults().tcpConnectTimeout, NetCfg.proxyDefaults().tcpConnectTimeout)
+  val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults().tcpTimeout, NetCfg.proxyDefaults().tcpTimeout)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults().smpPingInterval)
   val networkEnableKeepAlive = mkBoolPreference(SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE, NetCfg.defaults().enableKeepAlive)
   val networkTCPKeepIdle = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_IDLE, KeepAliveOpts.defaults().keepIdle)
@@ -105,6 +105,14 @@ class AppPreferences(val context: Context) {
       get = fun() = sharedPreferences.getLong(prefName, default),
       set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
     )
+
+  private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): Preference<Long> {
+    val d = if (networkUseSocksProxy.get()) proxyDefault else default
+    return Preference(
+      get = fun() = sharedPreferences.getLong(prefName, d),
+      set = fun(value) = sharedPreferences.edit().putLong(prefName, value).apply()
+    )
+  }
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
     Preference(
