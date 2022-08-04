@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,8 +29,7 @@ import java.text.DecimalFormat
 @Composable
 fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   val currentCfg = remember { mutableStateOf(chatModel.controller.getNetCfg()) }
-  val currentCfgVal = currentCfg.value
-
+  val currentCfgVal = currentCfg.value // used only on initialization
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
@@ -47,6 +47,53 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepCnt = remember { mutableStateOf(KeepAliveOpts.defaults().keepCnt) }
   }
 
+  fun buildCfg(): NetCfg {
+    val socksProxy = currentCfg.value.socksProxy
+    val tcpConnectTimeout = networkTCPConnectTimeout.value
+    val tcpTimeout = networkTCPTimeout.value
+    val smpPingInterval = networkSMPPingInterval.value
+    val enableKeepAlive = networkEnableKeepAlive.value
+    val tcpKeepAlive = if (enableKeepAlive) {
+      val keepIdle = networkTCPKeepIdle.value
+      val keepIntvl = networkTCPKeepIntvl.value
+      val keepCnt = networkTCPKeepCnt.value
+      KeepAliveOpts(keepIdle = keepIdle, keepIntvl = keepIntvl, keepCnt = keepCnt)
+    } else {
+      null
+    }
+    return NetCfg(
+      socksProxy = socksProxy,
+      tcpConnectTimeout = tcpConnectTimeout,
+      tcpTimeout = tcpTimeout,
+      tcpKeepAlive = tcpKeepAlive,
+      smpPingInterval = smpPingInterval
+    )
+  }
+
+  fun updateView(cfg: NetCfg) {
+    networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
+    networkTCPTimeout.value = cfg.tcpTimeout
+    networkSMPPingInterval.value = cfg.smpPingInterval
+    networkEnableKeepAlive.value = cfg.enableKeepAlive
+    if (cfg.tcpKeepAlive != null) {
+      networkTCPKeepIdle.value = cfg.tcpKeepAlive.keepIdle
+      networkTCPKeepIntvl.value = cfg.tcpKeepAlive.keepIntvl
+      networkTCPKeepCnt.value = cfg.tcpKeepAlive.keepCnt
+    } else {
+      networkTCPKeepIdle.value = KeepAliveOpts.defaults().keepIdle
+      networkTCPKeepIntvl.value = KeepAliveOpts.defaults().keepIntvl
+      networkTCPKeepCnt.value = KeepAliveOpts.defaults().keepCnt
+    }
+  }
+
+  fun saveCfg(cfg: NetCfg) {
+    withApi {
+      chatModel.controller.apiSetNetworkConfig(cfg)
+      currentCfg.value = cfg
+      chatModel.controller.setNetCfg(cfg)
+    }
+  }
+
   AdvancedNetworkSettingsLayout(
     networkTCPConnectTimeout,
     networkTCPTimeout,
@@ -55,9 +102,15 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIdle,
     networkTCPKeepIntvl,
     networkTCPKeepCnt,
-    reset = {},
-    revert = {},
-    save = {}
+    resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults() else currentCfg.value == NetCfg.defaults(),
+    reset = {
+      val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults() else NetCfg.defaults()
+      updateView(newCfg)
+      saveCfg(newCfg)
+    },
+    footerDisabled = buildCfg() != currentCfg.value,
+    revert = { updateView(currentCfg.value) },
+    save = { saveCfg(buildCfg()) }
   )
 }
 
@@ -69,7 +122,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   networkTCPKeepIdle: MutableState<Int>,
   networkTCPKeepIntvl: MutableState<Int>,
   networkTCPKeepCnt: MutableState<Int>,
+  resetDisabled: Boolean,
   reset: () -> Unit,
+  footerDisabled: Boolean,
   revert: () -> Unit,
   save: () -> Unit
 ) {
@@ -90,7 +145,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
 
     SectionView {
       SectionItemView {
-        ResetToDefaultsButton(reset, disabled = false)
+        ResetToDefaultsButton(reset, disabled = resetDisabled)
       }
       SectionDivider()
       SectionItemView {
@@ -145,7 +200,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       }
     }
     SectionCustomFooter {
-      SettingsSectionFooter(revert, save)
+      SettingsSectionFooter(revert, save, footerDisabled)
     }
     SectionSpacer()
   }
@@ -309,54 +364,37 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
 }
 
 @Composable
-fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit) {
+fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolean) {
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Surface(
-      shape = RoundedCornerShape(20.dp),
-      color = Color.Black.copy(alpha = 0f)
-    ) {
-      Row(
-        Modifier
-          .clickable { revert() }
-          .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        Icon(
-          Icons.Outlined.Replay,
-          stringResource(R.string.network_options_revert),
-          tint = MaterialTheme.colors.primary
-        )
-        Text(
-          stringResource(R.string.network_options_revert),
-          color = MaterialTheme.colors.primary
-        )
-      }
-    }
+    FooterButton(Icons.Outlined.Replay, stringResource(R.string.network_options_revert), revert, disabled)
+    FooterButton(Icons.Outlined.Check, stringResource(R.string.network_options_save), save, disabled)
+  }
+}
 
-    Surface(
-      shape = RoundedCornerShape(20.dp),
-      color = Color.Black.copy(alpha = 0f)
+@Composable
+fun FooterButton(icon: ImageVector, title: String, action: () -> Unit, disabled: Boolean) {
+  Surface(
+    shape = RoundedCornerShape(20.dp),
+    color = Color.Black.copy(alpha = 0f)
+  ) {
+    val modifier = if (disabled) Modifier else Modifier.clickable { action() }
+    Row(
+      modifier.padding(8.dp),
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-      Row(
-        Modifier
-          .clickable { save() }
-          .padding(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-      ) {
-        Icon(
-          Icons.Outlined.Replay,
-          stringResource(R.string.network_options_save),
-          tint = MaterialTheme.colors.primary
-        )
-        Text(
-          stringResource(R.string.network_options_save),
-          color = MaterialTheme.colors.primary
-        )
-      }
+      Icon(
+        icon,
+        title,
+        tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      )
+      Text(
+        title,
+        color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
+      )
     }
   }
 }
@@ -373,7 +411,9 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       networkTCPKeepIdle = remember { mutableStateOf(10) },
       networkTCPKeepIntvl = remember { mutableStateOf(10) },
       networkTCPKeepCnt = remember { mutableStateOf(10) },
+      resetDisabled = false,
       reset = {},
+      footerDisabled = false,
       revert = {},
       save = {}
     )
