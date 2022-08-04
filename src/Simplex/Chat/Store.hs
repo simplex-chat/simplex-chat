@@ -1344,29 +1344,19 @@ getGroup db user groupId = do
 
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
-  putStrLn "deleteGroupConnectionsAndFiles"
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
-  putStrLn "deleteGroupConnectionsAndFiles: connections"
   DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  putStrLn "deleteGroupConnectionsAndFiles: files"
 
 deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupItemsAndMembers db User {userId} GroupInfo {groupId} = do
-  putStrLn "deleteGroupItemsAndMembers"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  putStrLn "deleteGroupItemsAndMembers: chat_items"
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  putStrLn "deleteGroupItemsAndMembers: group_members"
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
-  putStrLn "deleteGroup"
   deleteGroupProfile_ db userId groupId
-  putStrLn "deleteGroup: deleteGroupProfile_"
   DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  putStrLn "deleteGroup: groups"
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
-  putStrLn "deleteGroup: display_names"
 
 deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
 deleteGroupProfile_ db userId groupId =

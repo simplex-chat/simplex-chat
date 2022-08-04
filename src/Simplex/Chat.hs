@@ -440,27 +440,18 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
-      liftIO $ putStrLn "APIDeleteChat CTGroup"
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
-      liftIO $ putStrLn "APIDeleteChat CTGroup: getGroup"
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
-      liftIO $ putStrLn "APIDeleteChat CTGroup: canDelete"
       void $ clearGroupContent user gInfo
-      liftIO $ putStrLn "APIDeleteChat CTGroup: clearGroupContent"
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
-        liftIO $ putStrLn "APIDeleteChat CTGroup: sendGroupMessage"
         mapM_ deleteMemberConnection members
-        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteMemberConnection"
         -- two functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroupConnectionsAndFiles"
         withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo
-        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroupItemsAndMembers"
         withStore' $ \db -> deleteGroup db user gInfo
-        liftIO $ putStrLn "APIDeleteChat CTGroup: deleteGroup"
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -1745,7 +1736,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             then do
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
               toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-              let g = groupName' gInfo              
+              let g = groupName' gInfo
               setActive $ ActiveG g
             else messageError "x.msg.update: group member attempted to update a message of another member"
         (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
