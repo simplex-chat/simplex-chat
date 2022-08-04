@@ -100,10 +100,6 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     saveCfg(newCfg)
   }
 
-  fun save() {
-    saveCfg(buildCfg())
-  }
-
   fun updateSettingsDialog(action: () -> Unit) {
     AlertManager.shared.showAlertMsg(
       title = generalGetString(R.string.update_network_settings_question),
@@ -125,7 +121,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     reset = { updateSettingsDialog(::reset) },
     footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
-    save = { updateSettingsDialog(::save) }
+    save = { updateSettingsDialog { saveCfg(buildCfg()) } }
   )
 }
 

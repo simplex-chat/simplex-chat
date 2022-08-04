@@ -107,7 +107,17 @@ fun UseSocksProxySwitch(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    Text(stringResource(R.string.network_socks_toggle))
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Icon(
+        Icons.Outlined.Router,
+        stringResource(R.string.network_socks_toggle),
+        tint = HighOrLowlight
+      )
+      Text(stringResource(R.string.network_socks_toggle))
+    }
     Switch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
