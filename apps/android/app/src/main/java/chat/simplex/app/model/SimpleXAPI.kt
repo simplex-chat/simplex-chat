@@ -86,13 +86,13 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
-  val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults().tcpConnectTimeout, NetCfg.proxyDefaults().tcpConnectTimeout)
-  val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults().tcpTimeout, NetCfg.proxyDefaults().tcpTimeout)
-  val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults().smpPingInterval)
-  val networkEnableKeepAlive = mkBoolPreference(SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE, NetCfg.defaults().enableKeepAlive)
-  val networkTCPKeepIdle = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_IDLE, KeepAliveOpts.defaults().keepIdle)
-  val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults().keepIntvl)
-  val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults().keepCnt)
+  val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
+  val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
+  val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
+  val networkEnableKeepAlive = mkBoolPreference(SHARED_PREFS_NETWORK_ENABLE_KEEP_ALIVE, NetCfg.defaults.enableKeepAlive)
+  val networkTCPKeepIdle = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_IDLE, KeepAliveOpts.defaults.keepIdle)
+  val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults.keepIntvl)
+  val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     Preference(
@@ -1273,21 +1273,21 @@ data class NetCfg(
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
 
   companion object {
-    fun defaults(): NetCfg =
+    val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
         tcpConnectTimeout = 7_500_000,
         tcpTimeout = 5_000_000,
-        tcpKeepAlive = KeepAliveOpts.defaults(),
+        tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
 
-    fun proxyDefaults(): NetCfg =
+    val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
         tcpConnectTimeout = 15_000_000,
         tcpTimeout = 10_000_000,
-        tcpKeepAlive = KeepAliveOpts.defaults(),
+        tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 600_000_000
       )
   }
@@ -1300,7 +1300,7 @@ data class KeepAliveOpts(
   val keepCnt: Int // times
 ) {
   companion object {
-    fun defaults(): KeepAliveOpts =
+    val defaults: KeepAliveOpts =
       KeepAliveOpts(keepIdle = 30, keepIntvl = 15, keepCnt = 4)
   }
 }

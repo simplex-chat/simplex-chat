@@ -42,8 +42,8 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.apiSetNetworkConfig(NetCfg.proxyDefaults())
-              chatModel.controller.setNetCfg(NetCfg.proxyDefaults())
+              chatModel.controller.apiSetNetworkConfig(NetCfg.proxyDefaults)
+              chatModel.controller.setNetCfg(NetCfg.proxyDefaults)
               networkUseSocksProxy.value = true
             }
           }
@@ -55,8 +55,8 @@ fun NetworkAndServersView(
           confirmText = generalGetString(R.string.confirm_verb),
           onConfirm = {
             withApi {
-              chatModel.controller.apiSetNetworkConfig(NetCfg.defaults())
-              chatModel.controller.setNetCfg(NetCfg.defaults())
+              chatModel.controller.apiSetNetworkConfig(NetCfg.defaults)
+              chatModel.controller.setNetCfg(NetCfg.defaults)
               networkUseSocksProxy.value = false
             }
           }
