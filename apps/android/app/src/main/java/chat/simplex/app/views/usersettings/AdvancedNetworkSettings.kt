@@ -42,9 +42,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIntvl = remember { mutableStateOf(currentCfgVal.tcpKeepAlive.keepIntvl) }
     networkTCPKeepCnt = remember { mutableStateOf(currentCfgVal.tcpKeepAlive.keepCnt) }
   } else {
-    networkTCPKeepIdle = remember { mutableStateOf(KeepAliveOpts.defaults().keepIdle) }
-    networkTCPKeepIntvl = remember { mutableStateOf(KeepAliveOpts.defaults().keepIntvl) }
-    networkTCPKeepCnt = remember { mutableStateOf(KeepAliveOpts.defaults().keepCnt) }
+    networkTCPKeepIdle = remember { mutableStateOf(KeepAliveOpts.defaults.keepIdle) }
+    networkTCPKeepIntvl = remember { mutableStateOf(KeepAliveOpts.defaults.keepIntvl) }
+    networkTCPKeepCnt = remember { mutableStateOf(KeepAliveOpts.defaults.keepCnt) }
   }
 
   fun buildCfg(): NetCfg {
@@ -80,9 +80,9 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       networkTCPKeepIntvl.value = cfg.tcpKeepAlive.keepIntvl
       networkTCPKeepCnt.value = cfg.tcpKeepAlive.keepCnt
     } else {
-      networkTCPKeepIdle.value = KeepAliveOpts.defaults().keepIdle
-      networkTCPKeepIntvl.value = KeepAliveOpts.defaults().keepIntvl
-      networkTCPKeepCnt.value = KeepAliveOpts.defaults().keepCnt
+      networkTCPKeepIdle.value = KeepAliveOpts.defaults.keepIdle
+      networkTCPKeepIntvl.value = KeepAliveOpts.defaults.keepIntvl
+      networkTCPKeepCnt.value = KeepAliveOpts.defaults.keepCnt
     }
   }
 
@@ -95,7 +95,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   }
 
   fun reset() {
-    val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults() else NetCfg.defaults()
+    val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults else NetCfg.defaults
     updateView(newCfg)
     saveCfg(newCfg)
   }
@@ -117,7 +117,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     networkTCPKeepIdle,
     networkTCPKeepIntvl,
     networkTCPKeepCnt,
-    resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults() else currentCfg.value == NetCfg.defaults(),
+    resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults else currentCfg.value == NetCfg.defaults,
     reset = { updateSettingsDialog(::reset) },
     footerDisabled = buildCfg() == currentCfg.value,
     revert = { updateView(currentCfg.value) },
