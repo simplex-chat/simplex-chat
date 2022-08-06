@@ -15,7 +15,7 @@
 
 ### Secret chat groups
 
-<img src="./images/20220808-group1.jpg" width="330"> <img src="./images/20220808-group2.jpg" width="330"> <img src="./images/20220808-group3.jpg" width="330">
+<img src="./images/20220808-group1.png" width="330"> <img src="./images/20220808-group2.png" width="330"> <img src="./images/20220808-group3.png" width="330">
 
 It's been [nearly a year](./20210914-simplex-chat-v0.4-released.md) since the users of the terminal app started experimenting with groups, and now it is available to mobile app users as well. Many bugs were fixed, and the stability was improved, but there are both the features we need to add and the bugs we need to fix to make groups more useful.
 
@@ -34,7 +34,7 @@ Other group improvements we will add soon:
 
 ### Access to messaging servers via Tor
 
-<img src="./images/20220808-tor1.jpg" width="330"> <img src="./images/20220808-tor2.jpg" width="330">
+<img src="./images/20220808-tor1.png" width="330"> <img src="./images/20220808-tor2.png" width="330">
 
 SimpleX protocols are focussed on protecting application-level meta-data – it doesn't have any user identifiers used by all other messaging platforms, instead relying on pairwise connection identifiers.
 
