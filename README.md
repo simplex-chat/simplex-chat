@@ -81,7 +81,7 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Selected updates:
 
-[Jul 23, 2022. v3.1-beta: access via Tor SOCKS5 proxy in terminal app, join and leave chat groups in mobile apps, up to 90x reduced battery and traffic usage, docker configurations for self-hosted servers](./blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced netwrok settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
 
 [Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
 
@@ -105,12 +105,6 @@ The channel through which you share the link does not have to be secure - it is 
 
 ```sh
 curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash
-```
-
-or to install v3.1.0-beta.0 that supports accessing SimpleX servers via SOCKS5 proxy:
-
-```
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | bash -s -- v3.1.0-beta.0
 ```
 
 Once the chat client is installed, simply run `simplex-chat` from your terminal.
@@ -179,8 +173,9 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
 - ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
 - ✅ Chat database export and import
-- 🏗 Chat groups in mobile apps (in progress).
-- 🏗 Connecting to messaging servers via Tor (in progress).
+- ✅ Chat groups in mobile apps.
+- ✅ Connecting to messaging servers via Tor.
+- 🏗 Dual server addresses to access messaging servers as v3 hidden services (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
 - Chat database encryption.
 - Disappearing messages, with mutual agreement.
