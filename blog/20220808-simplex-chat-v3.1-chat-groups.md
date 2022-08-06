@@ -34,7 +34,7 @@ Other group improvements we will add soon:
 
 ### Access to messaging servers via Tor
 
-<img src="./images/20220808-tor1.png" width="330"> <img src="./images/20220808-tor2.png" width="330">
+<img src="./images/20220808-tor1.png" width="330"> &nbsp; <img src="./images/20220808-tor2.png" width="330">
 
 SimpleX protocols are focussed on protecting application-level meta-data – it doesn't have any user identifiers used by all other messaging platforms, instead relying on pairwise connection identifiers.
 
