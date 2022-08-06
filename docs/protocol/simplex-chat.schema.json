@@ -97,6 +97,59 @@
         "profile": {"ref": "profile"}
       }
     },
+    "introInvitation": {
+      "properties": {
+        "groupConnReq": {"ref": "connReqUri"},
+        "directConnReq": {"ref": "connReqUri"}
+      }
+    },
+    "callInvitation": {
+      "properties": {
+        "callType": {"ref": "callType"}
+      },
+      "optionalProperties": {
+        "callDhPubKey": {"ref": "base64url"}
+      }
+    },
+    "callOffer": {
+      "properties": {
+        "callType": {"ref": "callType"},
+        "rtcSession": {"ref": "webRTCSession"}
+      },
+      "optionalProperties": {
+        "callDhPubKey": {"ref": "base64url"}
+      }
+    },
+    "callAnswer": {
+      "properties": {
+        "rtcSession": {"ref": "webRTCSession"}
+      }
+    },
+    "callExtraInfo": {
+      "properties": {
+        "rtcExtraInfo": {
+          "properties": {
+            "rtcIceCandidates": {"type": "string"}
+          }          
+        }
+      }
+    },
+    "callType": {
+      "properties": {
+        "media": {"enum": ["audio", "video"]},
+        "capabilities": {
+          "properties": {
+            "encryption": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "webRTCSession": {
+      "properties": {
+        "rtcSession": {"type": "string"},
+        "rtcIceCandidates": {"type": "string"}
+      }
+    },
     "base64url": {
       "type": "string",
       "metadata": {
@@ -232,23 +285,159 @@
         }
       }
     },
-    "x.grp.acpt": {},
-    "x.grp.mem.new": {},
-    "x.grp.mem.intro": {},
-    "x.grp.mem.inv": {},
-    "x.grp.mem.fwd": {},
-    "x.grp.mem.info": {},
-    "x.grp.mem.con": {},
-    "x.grp.mem.con.all": {},
-    "x.grp.mem.del": {},
-    "x.grp.leave": {},
-    "x.grp.del": {},
-    "x.grp.info": {},
-    "x.call.inv": {},
-    "x.call.offer": {},
-    "x.call.answer": {},
-    "x.call.extra": {},
-    "x.call.end": {},
+    "x.grp.acpt": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.new": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.intro": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "memberIntro": {"ref": "introInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.fwd": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"},
+            "memberIntro": {"ref": "introInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.info": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.grp.leave": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    },
+    "x.grp.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    },
+    "x.grp.info": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupProfile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.call.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "invitation": {}
+          }
+        }
+      }
+    },
+    "x.call.offer": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "offer": {"ref": "callOffer"}
+          }
+        }
+      }
+    },
+    "x.call.answer": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "answer": {"ref": "callAnswer"}
+          }
+        }
+      }
+    },
+    "x.call.extra": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "extra": {"ref": "callExtraInfo"}
+          }
+        }
+      }
+    },
+    "x.call.end": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
     "x.ok": {
       "properties": {
         "msgId": {"ref": "base64url"},
