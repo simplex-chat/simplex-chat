@@ -59,9 +59,11 @@ We will either replace these options with something much simpler or even automat
 
 ### New app icons
 
-Many users asked for some app personalization options, and it's just a start - you can now choose either light or dark icon option via `Appearance` settings.
+<img src="./images/20220808-icons.png" width="330">
 
-More options to personalize the app is coming - let us know what you think is the most important.
+Many users asked to allow customizing the app, this is just a start - you can now choose either light or dark icon option via `Appearance` settings.
+
+More options to customize the app are coming - please let us know what are the most important.
 
 ### Published chat protocol
 
