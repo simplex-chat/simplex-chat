@@ -19,7 +19,7 @@
 
 It's been [nearly a year](./20210914-simplex-chat-v0.4-released.md) since the users of SimpleX Chat terminal app started experimenting with the groups, and now it is available to mobile app users as well. Many bugs were fixed, the stability was improved, but there are both the features we need to add and the bugs we need to fix to make groups more useful - we really look forward to your feedback. You can send any suggestions via the app by choosing `Chat with the developers` via app Settings (or using `/simplex` command in the terminal app) – this would connect you to SimpleX team via its [fixed chat address](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D).
 
-SimpleX network is decentralized, so how do groups work? Unlike Matrix or Signal that host the group profile and the list of group members on their servers, SimpleX servers have no information about the group's existence - only its members do. SimpleX network does not assign any globally unique identifiers to the group, there is only a local database identifier and the list of members stored on members' devices. A user has an independent connection to each member in a group. When a user sends a message to the group, the app sends this message independently to each member. You can read more in SimpleX Chat Protocol (TODO link) document.
+SimpleX network is decentralized, so how do groups work? Unlike Matrix or Signal that host the group profile and the list of group members on their servers, SimpleX servers have no information about the group's existence - only its members do. SimpleX network does not assign any globally unique identifiers to the group, there is only a local database identifier and the list of members stored on members' devices. A user has an independent connection to each member in a group. When a user sends a message to the group, the app sends this message independently to each member. You can read more about how groups work in [SimpleX Chat Protocol](../docs/protocol/simplex-chat.md#sub-protocol-for-chat-groups).
 
 But how can it scale, you might ask? It simply won't, and the current design for the groups is only suitable for relatively small groups of people who know each other well, definitely not larger than few hundred members – this design prioritized privacy and security of the group over its size or performance. For example, to send a message to the group of 100 members a user would need to send a total of ~1.6mb of data (as each message uses a fixed size block of 16kb). And if you were to send a 1mb file then it would also require sending it 100 times (provided each member accepts it).
 
@@ -67,7 +67,9 @@ More options to customize the app are coming - please let us know what are the m
 
 ### Published chat protocol
 
-While low level protocols for SimpleX network were published long time ago, and updated to reflect the evolution of the protocols, the high level chat protocol was never published before. The reason for that was to allow us to iterate it quickly, without committing to any of the decisions. As we can now see it effectively working on different platforms, we are making SimpleX Chat Protocol public – it can be used to build alternative chat clients.
+The [low level SimpleX protocols](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/) were published long time ago, and updated to reflect the evolution of the protocols, the high level chat protocol was not published before. The reason for that was to allow us to iterate it quickly, without committing to any of the decisions.
+
+This is the [first draft of SimpleX Chat Protocol](../docs/protocol/simplex-chat.md) - let us know any questions or suggestions.
 
 ### Other changes since v3
 
