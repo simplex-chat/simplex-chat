@@ -130,8 +130,8 @@ data ChatMsgEvent
   | XGrpMemInv MemberId IntroInvitation
   | XGrpMemFwd MemberInfo IntroInvitation
   | XGrpMemInfo MemberId Profile
-  | XGrpMemCon MemberId
-  | XGrpMemConAll MemberId
+  | XGrpMemCon MemberId -- TODO not implemented
+  | XGrpMemConAll MemberId -- TODO not implemented
   | XGrpMemDel MemberId
   | XGrpLeave
   | XGrpDel

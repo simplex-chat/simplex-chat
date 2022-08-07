@@ -59,7 +59,7 @@ chatTests = do
     it "group message delete" testGroupMessageDelete
     it "update group profile" testUpdateGroupProfile
   describe "async group connections" $ do
-    it "create and join group when clients go offline" testGroupAsync
+    xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
