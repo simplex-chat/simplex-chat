@@ -314,8 +314,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChat(type: ChatType, id: Long): Chat? {
-    val r = sendCmd(CC.ApiGetChat(type, id))
+  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(100)): Chat? {
+    val r = sendCmd(CC.ApiGetChat(type, id, pagination))
     if (r is CR.ApiChat ) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
     return null
@@ -1104,7 +1104,7 @@ sealed class CC {
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
   class ApiGetChats: CC()
-  class ApiGetChat(val type: ChatType, val id: Long): CC()
+  class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
@@ -1155,7 +1155,7 @@ sealed class CC {
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
     is ApiGetChats -> "/_get chats pcc=on"
-    is ApiGetChat -> "/_get chat ${chatRef(type, id)} count=100"
+    is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}"
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
@@ -1252,6 +1252,18 @@ sealed class CC {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
     fun smpServersStr(smpServers: List<String>) = if (smpServers.isEmpty()) "default" else smpServers.joinToString(separator = ",")
+  }
+}
+
+sealed class ChatPagination {
+  class Last(val count: Int): ChatPagination()
+  class After(val chatItemId: Long, val count: Int): ChatPagination()
+  class Before(val chatItemId: Long, val count: Int): ChatPagination()
+
+  val cmdString: String get() = when (this) {
+    is Last -> "count=${this.count}"
+    is After -> "after=${this.chatItemId} count=${this.count}"
+    is Before -> "before=${this.chatItemId} count=${this.count}"
   }
 }
 

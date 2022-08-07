@@ -185,8 +185,8 @@ func apiGetChats() throws -> [ChatData] {
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination = .last(count: 100)) throws -> Chat {
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: pagination))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
