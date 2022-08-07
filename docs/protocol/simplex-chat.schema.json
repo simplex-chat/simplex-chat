@@ -1,4 +1,7 @@
 {
+  "metadata": {
+    "description": "JTD schema for SimpleX Chat Protocol messages for chat functions"
+  },
   "definitions": {
     "profile": {
       "properties": {
@@ -26,7 +29,12 @@
       },
       "optionalProperties": {
         "file": {"ref": "fileInvitation"},
-        "quote": {"ref": "msgContent"},
+        "quote": {
+          "properties": {
+            "msgRef": {"ref": "msgRef"},
+            "content": {"ref": "msgContent"}
+          }
+        },
         "forward": {"type": "boolean"}
       },
       "metadata": {
@@ -38,25 +46,43 @@
       "mapping": {
         "text": {
           "properties": {
-            "text": {"type": "string"}
+            "text": {"type": "string", "metadata": {"comment": "non-empty"}}
           }
         },
         "link": {
           "properties": {
-            "text": {"type": "string"},
+            "text": {"type": "string", "metadata": {"comment": "non-empty"}},
             "preview": {"ref": "linkPreview"}
           }
         },
         "image": {
-          "text": {"type": "string"},
+          "text": {"type": "string", "metadata": {"comment": "can be empty"}},
           "image": {"ref": "base64url"}
         },
         "file": {
-          "text": {"type": "string"}
+          "text": {"type": "string", "metadata": {"comment": "can be empty"}}
         }
       },
       "metadata": {
         "comment": "it is RECOMMENDED that the clients support other values in `type` properties showing them as text messages in case `text` property is present"
+      }
+    },
+    "msgRef": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "sentAt": {
+          "type": "string",
+          "metadata": {
+            "format": "ISO8601 UTC time of the message"
+          }
+        },
+        "sent": {"type": "boolean"}
+      },
+      "optionalProperties": {
+        "memberId": {"ref": "base64url"},
+        "metadata": {
+          "comment": "memberId must be present in all group message references, both for sent and received"
+        } 
       }
     },
     "fileInvitation": {
