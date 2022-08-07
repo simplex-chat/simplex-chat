@@ -130,7 +130,7 @@ The message is sent as part of the connection request to the long-term user addr
 
 This message is sent by both sides of the connection during the connection handshake, and can be sent later as well when contact profile is updated.
 
-### Probing for deduplicated contacts
+### Probing for duplicate contacts
 
 As there are no globally unique user identitifiers, when the contact a user is already connected to is added to the group by some other group member, this contact will be added to user's list of contacts as a new contact. To allow merging such contacts, "a probe" (random base64url-encoded 32 bytes) SHOULD be sent to all new members as part of `x.info.probe` message and, in case there is a contact with the same profile, the hash of the probe MAY be sent to it as part of `x.info.probe.check` message. In case both the new member and the existing contact are the same user (they would receive both the probe and its hash), the contact would send back the original probe as part of `x.info.probe.ok` message via the previously existing contact connection – proving to the sender that this new member and the existing contact are the same user, in which case the sender SHOULD merge these two contacts.
 
