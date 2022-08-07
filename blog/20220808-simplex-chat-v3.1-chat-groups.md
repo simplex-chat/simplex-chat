@@ -32,7 +32,7 @@ Other group improvements we will add soon:
 - manage notifications in each group independently.
 - search for messages - it is useful for direct conversations too, but more important for groups.
 
-### Access to messaging servers via Tor
+### Access messaging servers via Tor
 
 <img src="./images/20220808-tor1.png" width="330"> &nbsp; <img src="./images/20220808-tor2.png" width="330">
 
