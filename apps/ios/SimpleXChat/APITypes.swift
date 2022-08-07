@@ -24,7 +24,7 @@ public enum ChatCommand {
     case apiImportArchive(config: ArchiveConfig) 
     case apiDeleteStorage
     case apiGetChats
-    case apiGetChat(type: ChatType, id: Int64)
+    case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
@@ -85,7 +85,7 @@ public enum ChatCommand {
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
-            case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
+            case let .apiGetChat(type, id, pagination): return "/_get chat \(ref(type, id)) \(pagination.cmdString)"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 return "/_send \(ref(type, id)) json \(msg)"
@@ -482,6 +482,20 @@ public enum ChatResponse: Decodable, Error {
     }
 
     private var noDetails: String { get { "\(responseType): no details" } }
+}
+
+public enum ChatPagination {
+    case last(count: Int)
+    case after(chatItemId: Int64, count: Int)
+    case before(chatItemId: Int64, count: Int)
+
+    var cmdString: String {
+        switch self {
+        case let .last(count): return "count=\(count)"
+        case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
+        case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        }
+    }
 }
 
 struct ComposedMessage: Encodable {
