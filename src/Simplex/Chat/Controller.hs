@@ -109,7 +109,7 @@ data ChatCommand
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIGetChats {pendingConnections :: Bool}
-  | APIGetChat ChatRef ChatPagination
+  | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
   | APISendMessage ChatRef ComposedMessage
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
