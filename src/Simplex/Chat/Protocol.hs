@@ -130,11 +130,12 @@ data ChatMsgEvent
   | XGrpMemInv MemberId IntroInvitation
   | XGrpMemFwd MemberInfo IntroInvitation
   | XGrpMemInfo MemberId Profile
-  | XGrpMemCon MemberId
-  | XGrpMemConAll MemberId
+  | XGrpMemCon MemberId -- TODO not implemented
+  | XGrpMemConAll MemberId -- TODO not implemented
   | XGrpMemDel MemberId
   | XGrpLeave
   | XGrpDel
+  | XGrpInfo GroupProfile
   | XInfoProbe Probe
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
@@ -315,6 +316,7 @@ data CMEventTag
   | XGrpMemDel_
   | XGrpLeave_
   | XGrpDel_
+  | XGrpInfo_
   | XInfoProbe_
   | XInfoProbeCheck_
   | XInfoProbeOk_
@@ -351,6 +353,7 @@ instance StrEncoding CMEventTag where
     XGrpMemDel_ -> "x.grp.mem.del"
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
+    XGrpInfo_ -> "x.grp.info"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -384,6 +387,7 @@ instance StrEncoding CMEventTag where
     "x.grp.mem.del" -> Right XGrpMemDel_
     "x.grp.leave" -> Right XGrpLeave_
     "x.grp.del" -> Right XGrpDel_
+    "x.grp.info" -> Right XGrpInfo_
     "x.info.probe" -> Right XInfoProbe_
     "x.info.probe.check" -> Right XInfoProbeCheck_
     "x.info.probe.ok" -> Right XInfoProbeOk_
@@ -420,6 +424,7 @@ toCMEventTag = \case
   XGrpMemDel _ -> XGrpMemDel_
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
+  XGrpInfo _ -> XGrpInfo_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -484,6 +489,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
+      XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -525,6 +531,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XGrpMemDel memId -> o ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
+      XGrpInfo p -> o ["groupProfile" .= p]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

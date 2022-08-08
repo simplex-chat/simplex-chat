@@ -16,6 +16,7 @@ import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
 import Simplex.Messaging.Agent.Env.SQLite (InitialAgentServers (..))
+import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 
 terminalChatConfig :: ChatConfig
@@ -30,8 +31,7 @@ terminalChatConfig =
                   "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im"
                 ],
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im"],
-            socksProxy = Nothing,
-            tcpTimeout = 5000000
+            netCfg = defaultNetworkConfig
           }
     }
 

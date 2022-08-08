@@ -64,11 +64,14 @@ module Simplex.Chat.Store
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
+    updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
     getGroupInfoByName,
     getGroupMember,
     getGroupMembers,
+    deleteGroupConnectionsAndFiles,
+    deleteGroupItemsAndMembers,
     deleteGroup,
     getUserGroups,
     getUserGroupDetails,
@@ -78,6 +81,7 @@ module Simplex.Chat.Store
     createMemberConnection,
     updateGroupMemberStatus,
     createNewGroupMember,
+    deleteGroupMember,
     deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
@@ -1277,28 +1281,23 @@ updateConnectionStatus db Connection {connId} connStatus = do
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
-createNewGroup db gVar user groupProfile =
-  checkConstraint SEDuplicateName . liftIO $ do
-    let GroupProfile {displayName, fullName, image} = groupProfile
-        uId = userId user
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, displayName, uId, currentTs, currentTs)
+createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
+  let GroupProfile {displayName, fullName, image} = groupProfile
+  currentTs <- getCurrentTime
+  withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
       "INSERT INTO group_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (displayName, fullName, image, uId, currentTs, currentTs)
+      (displayName, fullName, image, userId, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
       "INSERT INTO groups (local_display_name, user_id, group_profile_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-      (displayName, uId, profileId, currentTs, currentTs)
+      (ldn, userId, profileId, currentTs, currentTs)
     groupId <- insertedRowId db
     memberId <- encodedRandomBytes gVar 12
     membership <- createContactMember_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser currentTs
-    pure GroupInfo {groupId, localDisplayName = displayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> ExceptT StoreError IO GroupInfo
@@ -1344,10 +1343,24 @@ getGroup db user groupId = do
   members <- liftIO $ getGroupMembers db user gInfo
   pure $ Group gInfo members
 
-deleteGroup :: DB.Connection -> User -> Group -> IO ()
-deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} members) = do
+deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
+  DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupItemsAndMembers db User {userId} GroupInfo {groupId} = do
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
+  deleteGroupProfile_ db userId groupId
+  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+
+deleteGroupProfile_ :: DB.Connection -> UserId -> GroupId -> IO ()
+deleteGroupProfile_ db userId groupId =
   DB.execute
     db
     [sql|
@@ -1359,8 +1372,6 @@ deleteGroup db User {userId} (Group GroupInfo {groupId, localDisplayName} member
       )
     |]
     (userId, groupId)
-  DB.execute db "DELETE FROM groups WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 getUserGroups :: DB.Connection -> User -> IO [Group]
 getUserGroups db user@User {userId} = do
@@ -1565,8 +1576,13 @@ createNewMember_
     groupMemberId <- insertedRowId db
     pure GroupMember {..}
 
-deleteGroupMemberConnection :: DB.Connection -> UserId -> GroupMember -> IO ()
-deleteGroupMemberConnection db userId GroupMember {groupMemberId} =
+deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId} = do
+  deleteGroupMemberConnection db user m
+  DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+
+deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
+deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
   DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
 
 createIntroductions :: DB.Connection -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
@@ -3076,6 +3092,38 @@ getGroupInfo db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
+
+updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
+updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
+  | displayName == newName = liftIO $ do
+    currentTs <- getCurrentTime
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateGroupProfile_ currentTs
+      updateGroup_ ldn currentTs
+      pure $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+  where
+    updateGroupProfile_ currentTs =
+      DB.execute
+        db
+        [sql|
+          UPDATE group_profiles
+          SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+          WHERE group_profile_id IN (
+            SELECT group_profile_id
+            FROM groups
+            WHERE user_id = ? AND group_id = ?
+          )
+        |]
+        (newName, fullName, image, currentTs, userId, groupId)
+    updateGroup_ ldn currentTs = do
+      DB.execute
+        db
+        "UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?"
+        (ldn, currentTs, userId, groupId)
+      DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
 
 getAllChatItems :: DB.Connection -> User -> ChatPagination -> ExceptT StoreError IO [AChatItem]
 getAllChatItems db user pagination = do

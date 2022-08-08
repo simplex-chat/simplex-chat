@@ -63,17 +63,18 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService.didReceive")
-        badgeCount = ntfBadgeCountGroupDefault.get() + 1
-        ntfBadgeCountGroupDefault.set(badgeCount)
         setBestAttemptNtf(request.content.mutableCopy() as? UNMutableNotificationContent)
         self.contentHandler = contentHandler
+        registerGroupDefaults()
         let appState = appStateGroupDefault.get()
         switch appState {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
+            setBadgeCount()
             receiveNtfMessages(request, contentHandler)
         case .suspending:
             logger.debug("NotificationService: app is suspending")
+            setBadgeCount()
             Task {
                 var state = appState
                 for _ in 1...5 {
@@ -130,6 +131,11 @@ class NotificationService: UNNotificationServiceExtension {
         deliverBestAttemptNtf()
     }
 
+    func setBadgeCount() {
+        badgeCount = ntfBadgeCountGroupDefault.get() + 1
+        ntfBadgeCountGroupDefault.set(badgeCount)
+    }
+
     func setBestAttemptNtf(_ ntf: UNMutableNotificationContent?) {
         logger.debug("NotificationService.setBestAttemptNtf")
         bestAttemptNtf = ntf
@@ -150,6 +156,7 @@ func startChat() -> User? {
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
+            try setNetworkConfig(getNetCfg())
             let justStarted = try apiStartChat()
             if justStarted {
                 try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
@@ -255,6 +262,12 @@ func apiReceiveFile(fileId: Int64) -> AChatItem? {
     if case let .rcvFileAccepted(chatItem) = r { return chatItem }
     logger.error("receiveFile error: \(responseError(r))")
     return nil
+}
+
+func setNetworkConfig(_ cfg: NetCfg) throws {
+    let r = sendSimpleXCmd(.apiSetNetworkConfig(networkConfig: cfg))
+    if case .cmdOk = r { return }
+    throw r
 }
 
 struct NtfMessages {

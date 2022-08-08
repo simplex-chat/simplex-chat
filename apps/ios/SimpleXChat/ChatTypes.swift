@@ -44,7 +44,7 @@ public struct Profile: Codable, NamedChat {
     public var fullName: String
     public var image: String?
 
-    var displayNameWithOptionalFullName: String {
+    var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
     }
 
@@ -180,6 +180,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var contact: Contact? {
+        get {
+            switch self {
+            case let .direct(contact): return contact
+            default: return nil
+            }
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -275,7 +284,7 @@ public struct ContactSubStatus: Decodable {
 public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
-    var connLevel: Int
+    public var connLevel: Int
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -410,14 +419,19 @@ public enum ConnStatus: String, Decodable {
 }
 
 public struct Group: Decodable {
-    var groupInfo: GroupInfo
-    var members: [GroupMember]
+    public var groupInfo: GroupInfo
+    public var members: [GroupMember]
+
+    public init(groupInfo: GroupInfo, members: [GroupMember]) {
+        self.groupInfo = groupInfo
+        self.members = members
+    }
 }
 
 public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var groupId: Int64
     var localDisplayName: GroupName
-    var groupProfile: GroupProfile
+    public var groupProfile: GroupProfile
     public var membership: GroupMember
     var createdAt: Date
     var updatedAt: Date
@@ -430,12 +444,19 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
 
-    public func canDelete() -> Bool {
-        let s = membership.memberStatus
-        return membership.memberRole == .owner || (s == .memRemoved || s == .memLeft || s == .memGroupDeleted || s == .memInvited)
+    public var canEdit: Bool {
+        return membership.memberRole == .owner && membership.memberCurrent
     }
 
-    static let sampleData = GroupInfo(
+    public var canDelete: Bool {
+        return membership.memberRole == .owner || !membership.memberCurrent
+    }
+
+    public var canAddMembers: Bool {
+        return membership.memberRole >= .admin && membership.memberActive
+    }
+
+    public static let sampleData = GroupInfo(
         groupId: 1,
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
@@ -462,18 +483,23 @@ public struct GroupProfile: Codable, NamedChat {
     )
 }
 
-public struct GroupMember: Decodable {
+public struct GroupMember: Identifiable, Decodable {
     public var groupMemberId: Int64
-    var groupId: Int64
-    var memberId: String
-    var memberRole: GroupMemberRole
-    var memberCategory: GroupMemberCategory
+    public var groupId: Int64
+    public var memberId: String
+    public var memberRole: GroupMemberRole
+    public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
-    var invitedBy: InvitedBy
-    var localDisplayName: ContactName
+    public var invitedBy: InvitedBy
+    public var localDisplayName: ContactName
     public var memberProfile: Profile
-    var memberContactId: Int64?
-    var activeConn: Connection?
+    public var memberContactId: Int64?
+    public var activeConn: Connection?
+
+    public var id: String { "#\(groupId) @\(groupMemberId)" }
+    public var displayName: String { get { memberProfile.displayName } }
+    public var fullName: String { get { memberProfile.fullName } }
+    public var image: String? { get { memberProfile.image } }
 
     var directChatId: ChatId? {
         get {
@@ -485,10 +511,6 @@ public struct GroupMember: Decodable {
         }
     }
 
-    public var id: String {
-        "#\(groupId) @\(groupMemberId)"
-    }
-
     public var chatViewName: String {
         get {
             let p = memberProfile
@@ -497,21 +519,41 @@ public struct GroupMember: Decodable {
     }
 
     public var memberActive: Bool {
-        get {
-            switch self.memberStatus {
-            case .memRemoved: return false
-            case .memLeft: return false
-            case .memGroupDeleted: return false
-            case .memInvited: return false
-            case .memIntroduced: return false
-            case .memIntroInvited: return false
-            case .memAccepted: return false
-            case .memAnnounced: return false
-            case .memConnected: return true
-            case .memComplete: return true
-            case .memCreator: return true
-            }
+        switch memberStatus {
+        case .memRemoved: return false
+        case .memLeft: return false
+        case .memGroupDeleted: return false
+        case .memInvited: return false
+        case .memIntroduced: return false
+        case .memIntroInvited: return false
+        case .memAccepted: return false
+        case .memAnnounced: return false
+        case .memConnected: return true
+        case .memComplete: return true
+        case .memCreator: return true
         }
+    }
+
+    public var memberCurrent: Bool {
+        switch memberStatus {
+        case .memRemoved: return false
+        case .memLeft: return false
+        case .memGroupDeleted: return false
+        case .memInvited: return false
+        case .memIntroduced: return true
+        case .memIntroInvited: return true
+        case .memAccepted: return true
+        case .memAnnounced: return true
+        case .memConnected: return true
+        case .memComplete: return true
+        case .memCreator: return true
+        }
+    }
+
+    public func canBeRemoved(membership: GroupMember) -> Bool {
+        let userRole = membership.memberRole
+        return memberStatus != .memRemoved && memberStatus != .memLeft
+            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
     }
 
     public static let sampleData = GroupMember(
@@ -529,10 +571,32 @@ public struct GroupMember: Decodable {
     )
 }
 
-public enum GroupMemberRole: String, Decodable {
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case member = "member"
     case admin = "admin"
     case owner = "owner"
+
+    public var id: Self { self }
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .member: return "member"
+        case .admin: return "admin"
+        case .owner: return "owner"
+        }
+    }
+
+    private var comparisonValue: Int {
+        switch self {
+        case .member: return 0
+        case .admin: return 1
+        case .owner: return 2
+        }
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
+    }
 }
 
 public enum GroupMemberCategory: String, Decodable {
@@ -555,6 +619,38 @@ public enum GroupMemberStatus: String, Decodable {
     case memConnected = "connected"
     case memComplete = "complete"
     case memCreator = "creator"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting (introduced)"
+        case .memIntroInvited: return "connecting (introduction invitation)"
+        case .memAccepted: return "connecting (accepted)"
+        case .memAnnounced: return "connecting (announced)"
+        case .memConnected: return "member connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
+        }
+    }
+
+    public var shortText: LocalizedStringKey {
+        switch self {
+        case .memRemoved: return "removed"
+        case .memLeft: return "left"
+        case .memGroupDeleted: return "group deleted"
+        case .memInvited: return "invited"
+        case .memIntroduced: return "connecting"
+        case .memIntroInvited: return "connecting"
+        case .memAccepted: return "connecting"
+        case .memAnnounced: return "connecting"
+        case .memConnected: return "member connected"
+        case .memComplete: return "complete"
+        case .memCreator: return "creator"
+        }
+    }
 }
 
 public enum InvitedBy: Decodable {
@@ -1175,17 +1271,19 @@ public enum RcvGroupEvent: Decodable {
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
     case groupDeleted
+    case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
         case let .memberAdded(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberDeleted(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
+        case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         }
     }
 }
@@ -1193,12 +1291,14 @@ public enum RcvGroupEvent: Decodable {
 public enum SndGroupEvent: Decodable {
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
+    case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
         case let .memberDeleted(_, profile):
-            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.displayNameWithOptionalFullName)
+            return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")
+        case .groupUpdated: return NSLocalizedString("group profile updated", comment: "snd group event chat item")
         }
     }
 }

@@ -103,17 +103,13 @@ struct CreateProfile: View {
         }
     }
 
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
     func canCreateProfile() -> Bool {
         displayName != "" && validDisplayName(displayName)
     }
 }
 
 func validDisplayName(_ name: String) -> Bool {
-    name.firstIndex(of: " ") == nil
+    name.firstIndex(of: " ") == nil && name.first != "@" && name.first != "#"
 }
 
 struct CreateProfile_Previews: PreviewProvider {

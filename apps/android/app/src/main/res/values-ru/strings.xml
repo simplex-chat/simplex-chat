@@ -10,8 +10,9 @@
     <string name="connect_via_link_verb">Соединиться</string>
 
     <!-- Server info - ChatModel.kt -->
-    <string name="server_connected">Соединение установлено</string>
-    <string name="server_connecting">Соединение устанавливается…</string>
+    <string name="server_connected">соединено</string>
+    <string name="server_error">ошибка</string>
+    <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта (ошибка: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который вы получаете сообщения от этого контакта.</string>
@@ -33,9 +34,10 @@
     <string name="description_via_contact_address_link">через ссылку-контакт</string>
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
 
-    <!-- SMP Server Information - SimpleXAPI.kt -->
+    <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
 
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="contact_already_exists">Существующий контакт</string>
@@ -63,6 +65,7 @@
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
+    <string name="hide_notification">Скрыть</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
@@ -110,6 +113,7 @@
     <string name="this_text_is_available_in_settings">Этот текст можно найти в Настройках</string>
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
+    <string name="group_preview_you_are_invited">вы приглашены в группу</string>
     <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->
@@ -138,8 +142,8 @@
     <string name="error_saving_file">Ошибка сохранения файла</string>
 
     <!-- Chat Info Actions - ChatInfoView.kt -->
-    <string name="delete_chat_question">Удалить чат?</string>
-    <string name="delete_chat_all_messages_deleted_cannot_undo_warning">Чат и все сообщения будут удалены - это действие нельзя отменить!</string>
+    <string name="delete_contact_question">Удалить контакт?</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
@@ -158,12 +162,15 @@
     <string name="add_contact">Добавить контакт</string>
 
     <!-- NewChatSheet -->
+    <string name="add_contact_or_create_group">Начать новый разговор</string>
     <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="paste_received_link">Вставить полученную ссылку</string>
     <string name="scan_QR_code">Сканировать QR код</string>
+    <string name="create_group">Создать секретную группу</string>
     <string name="to_share_with_your_contact">(чтобы отправить вашему контакту)</string>
     <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
     <string name="paste_received_link_from_clipboard">(вставить ссылку из буфера обмена)</string>
+    <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
 
     <!-- GetImageView -->
     <string name="toast_permission_denied">Разрешение не получено!</string>
@@ -265,6 +272,15 @@
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
+    <string name="network_and_servers">Сеть &amp; серверы</string>
+    <string name="network_settings">Настройки сети</string>
+    <string name="network_settings_title">Настройки сети</string>
+    <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
+    <string name="network_enable_socks">Использовать SOCKS прокси?</string>
+    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
+    <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
+    <string name="network_disable_socks_info">Если вы подтвердите, серверы смогут видеть ваш IP адрес, а провайдер - с какими серверами вы соединяетесь.</string>
+    <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Создать адрес</string>
@@ -310,7 +326,6 @@
     <string name="connect_via_link">Соединиться через ссылку</string>
     <string name="this_string_is_not_a_connection_link">Эта строка не является ссылкой-приглашением!</string>
     <string name="you_can_also_connect_by_clicking_the_link">Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Open in mobile app</b>.</string>
-    <string name="add_contact_to_start_new_chat">Добавьте контакт, чтобы начать разговор:</string>
 
     <!-- CICallStatus -->
     <string name="callstatus_calling">входящий звонок…</string>
@@ -440,7 +455,10 @@
     <string name="settings_section_title_develop">ДЛЯ РАЗРАБОТЧИКОВ</string>
     <string name="settings_section_title_device">УСТРОЙСТВО</string>
     <string name="settings_section_title_chats">ЧАТЫ</string>
+    <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
+    <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
+    <string name="settings_section_title_icon">ИКОНКА</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>
@@ -496,7 +514,13 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="group_left_description">[покинута]</string>
+    <string name="icon_descr_add_members">Пригласить членов группы</string>
+    <string name="icon_descr_group_inactive">Группа неактивна</string>
+    <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
+    <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
+    <string name="alert_title_no_group">Группа не найдена!</string>
+    <string name="alert_message_no_group">Эта группа больше не существует.</string>
+    <string name="alert_title_join_group_error">Ошибка приглашения</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
@@ -513,6 +537,93 @@
     <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_user_deleted">удалил(а) вас из группы</string>
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
+    <string name="rcv_group_event_updated_group_profile">обновил(а) профиль группы</string>
     <string name="snd_group_event_member_deleted">вы удалили <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="snd_group_event_user_left">вы покинули группу</string>
+    <string name="snd_group_event_group_profile_updated">профиль группы обновлен</string>
+
+    <!-- GroupMemberRole -->
+    <string name="group_member_role_member">член группы</string>
+    <string name="group_member_role_admin">админ</string>
+    <string name="group_member_role_owner">владелец</string>
+
+    <!-- GroupMemberStatus -->
+    <string name="group_member_status_removed">удален(а)</string>
+    <string name="group_member_status_left">покинул(а)</string>
+    <string name="group_member_status_group_deleted">группа удалена</string>
+    <string name="group_member_status_invited">приглашен(а)</string>
+    <string name="group_member_status_introduced">соединяется (представлен(а))</string>
+    <string name="group_member_status_intro_invitation">соединяется (приглашение по представлению)</string>
+    <string name="group_member_status_accepted">соединяется (приглашение принято)</string>
+    <string name="group_member_status_announced">соединяется (объявлен(а))</string>
+    <string name="group_member_status_connected">соединен(а)</string>
+    <string name="group_member_status_complete">соединение завершено</string>
+    <string name="group_member_status_creator">создатель</string>
+
+    <string name="group_member_status_connecting">соединяется</string>
+
+    <!-- AddGroupMembersView.kt -->
+    <string name="no_contacts_to_add">Нет контактов для добавления</string>
+    <string name="new_member_role">Роль члена группы</string>
+    <string name="icon_descr_expand_role">Развернуть выбор роли</string>
+    <string name="invite_to_group_button">Пригласить в группу</string>
+    <string name="icon_descr_contact_checked">Контакт выбран</string>
+    <string name="clear_contacts_selection_button">Очистить</string>
+    <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
+    <string name="no_contacts_selected">Контакты не выбраны</string>
+
+    <!-- GroupChatInfoView.kt -->
+    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="group_info_section_title_num_members">ЧЛЕНОВ ГРУППЫ: <xliff:g id="num_members">%1$s</xliff:g></string>
+    <string name="group_info_member_you">вы: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+    <string name="button_delete_group">Удалить группу</string>
+    <string name="delete_group_question">Удалить группу?</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
+    <string name="button_leave_group">Выйти из группы</string>
+    <string name="button_edit_group_profile">Редактировать профиль группы</string>
+
+    <!-- For Console chat info section -->
+    <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
+    <string name="info_row_local_name">Локальное имя</string>
+    <string name="info_row_database_id">ID базы данных</string>
+
+    <!-- GroupMemberInfoView.kt -->
+    <string name="button_remove_member">Удалить члена группы</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
+    <string name="remove_member_confirmation">Удалить</string>
+    <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
+    <string name="info_row_group">Группа</string>
+    <string name="info_row_connection">Соединение</string>
+    <string name="conn_level_desc_direct">прямое</string>
+    <string name="conn_level_desc_indirect">непрямое (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+    <!-- ConnectionStats -->
+    <string name="conn_stats_section_title_servers">СЕРВЕРЫ</string>
+    <string name="receiving_via">Получение через</string>
+    <string name="sending_via">Отправка через</string>
+    <string name="network_status">Состояние сети</string>
+
+    <!-- AddGroupView.kt -->
+    <string name="create_secret_group_title">Создать скрытую группу</string>
+    <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
+    <string name="group_display_name_field">Имя группы:</string>
+    <string name="group_full_name_field">Полное имя:</string>
+
+    <!-- GroupProfileView.kt -->
+    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
+    <string name="save_group_profile">Сохранить профиль группы</string>
+    <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
+
+    <!-- AdvancedNetworkSettings.kt -->
+    <string name="network_options_reset_to_defaults">Сбросить настройки</string>
+    <string name="network_option_seconds_label">сек</string>
+    <string name="network_option_tcp_connection_timeout">Таймаут TCP соединения</string>
+    <string name="network_option_protocol_timeout">Таймаут протокола</string>
+    <string name="network_option_ping_interval">Интервал PING</string>
+    <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
+    <string name="network_options_revert">Отменить изменения</string>
+    <string name="network_options_save">Сохранить</string>
+    <string name="update_network_settings_question">Обновить настройки сети?</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
+    <string name="update_network_settings_confirmation">Обновить</string>
 </resources>

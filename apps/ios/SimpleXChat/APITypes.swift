@@ -24,7 +24,7 @@ public enum ChatCommand {
     case apiImportArchive(config: ArchiveConfig) 
     case apiDeleteStorage
     case apiGetChats
-    case apiGetChat(type: ChatType, id: Int64)
+    case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
@@ -40,12 +40,18 @@ public enum ChatCommand {
     case apiRemoveMember(groupId: Int64, memberId: Int64)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
+    case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
+    case apiSetNetworkConfig(networkConfig: NetCfg)
+    case apiGetNetworkConfig
+    case apiContactInfo(contactId: Int64)
+    case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case addContact
     case connect(connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
+    case listContacts
     case apiUpdateProfile(profile: Profile)
     case createMyAddress
     case deleteMyAddress
@@ -79,7 +85,7 @@ public enum ChatCommand {
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
-            case let .apiGetChat(type, id): return "/_get chat \(ref(type, id)) count=100"
+            case let .apiGetChat(type, id, pagination): return "/_get chat \(ref(type, id)) \(pagination.cmdString)"
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 return "/_send \(ref(type, id)) json \(msg)"
@@ -90,18 +96,24 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .newGroup(groupProfile): return "/group \(groupProfile.displayName) \(groupProfile.fullName)"
+            case let .newGroup(groupProfile): return "/_group \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
+            case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
+            case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
+            case .apiGetNetworkConfig: return "/network"
+            case let .apiContactInfo(contactId): return "/_info @\(contactId)"
+            case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case .addContact: return "/connect"
             case let .connect(connReq): return "/connect \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
+            case .listContacts: return "/contacts"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
@@ -152,12 +164,18 @@ public enum ChatCommand {
             case .apiRemoveMember: return "apiRemoveMember"
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
+            case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
+            case .apiSetNetworkConfig: return "apiSetNetworkConfig"
+            case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .apiContactInfo: return "apiContactInfo"
+            case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .addContact: return "addContact"
             case .connect: return "connect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
+            case .listContacts: return "listContacts"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
@@ -202,6 +220,9 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [String])
+    case networkConfig(networkConfig: NetCfg)
+    case contactInfo(contact: Contact, connectionStats: ConnectionStats)
+    case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -231,6 +252,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemStatusUpdated(chatItem: AChatItem)
     case chatItemUpdated(chatItem: AChatItem)
     case chatItemDeleted(deletedChatItem: AChatItem, toChatItem: AChatItem)
+    case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
     case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
@@ -251,6 +273,7 @@ public enum ChatResponse: Decodable, Error {
     case joinedGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case groupRemoved(groupInfo: GroupInfo)
+    case groupUpdated(toGroup: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
     case rcvFileStart(chatItem: AChatItem)
@@ -288,6 +311,9 @@ public enum ChatResponse: Decodable, Error {
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .userSMPServers: return "userSMPServers"
+            case .networkConfig: return "networkConfig"
+            case .contactInfo: return "contactInfo"
+            case .groupMemberInfo: return "groupMemberInfo"
             case .invitation: return "invitation"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
@@ -317,6 +343,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemDeleted: return "chatItemDeleted"
+            case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
@@ -336,6 +363,7 @@ public enum ChatResponse: Decodable, Error {
             case .joinedGroupMember: return "joinedGroupMember"
             case .connectedToGroupMember: return "connectedToGroupMember"
             case .groupRemoved: return "groupRemoved"
+            case .groupUpdated: return "groupUpdated"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
@@ -374,6 +402,9 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .userSMPServers(smpServers): return String(describing: smpServers)
+            case let .networkConfig(networkConfig): return String(describing: networkConfig)
+            case let .contactInfo(contact, connectionStats): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))"
+            case let .groupMemberInfo(groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\\nconnectionStats_: \(String(describing: connectionStats_))"
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
@@ -403,6 +434,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemStatusUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemUpdated(chatItem): return String(describing: chatItem)
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
+            case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
             case let .sentGroupInvitation(groupInfo, contact): return "groupInfo: \(groupInfo)\ncontact: \(contact)"
             case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
@@ -422,6 +454,7 @@ public enum ChatResponse: Decodable, Error {
             case let .joinedGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .connectedToGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .groupRemoved(groupInfo): return String(describing: groupInfo)
+            case let .groupUpdated(toGroup): return String(describing: toGroup)
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
@@ -451,6 +484,20 @@ public enum ChatResponse: Decodable, Error {
     private var noDetails: String { get { "\(responseType): no details" } }
 }
 
+public enum ChatPagination {
+    case last(count: Int)
+    case after(chatItemId: Int64, count: Int)
+    case before(chatItemId: Int64, count: Int)
+
+    var cmdString: String {
+        switch self {
+        case let .last(count): return "count=\(count)"
+        case let .after(chatItemId, count): return "after=\(chatItemId) count=\(count)"
+        case let .before(chatItemId, count): return "before=\(chatItemId) count=\(count)"
+        }
+    }
+}
+
 struct ComposedMessage: Encodable {
     var filePath: String?
     var quotedItemId: Int64?
@@ -465,6 +512,45 @@ public struct ArchiveConfig: Encodable {
         self.archivePath = archivePath
         self.disableCompression = disableCompression
     }
+}
+
+public struct NetCfg: Codable, Equatable {
+    public var socksProxy: String? = nil
+    public var tcpConnectTimeout: Int // microseconds
+    public var tcpTimeout: Int // microseconds
+    public var tcpKeepAlive: KeepAliveOpts?
+    public var smpPingInterval: Int // microseconds
+
+    public static let defaults: NetCfg = NetCfg(
+        socksProxy: nil,
+        tcpConnectTimeout: 7_500_000,
+        tcpTimeout: 5_000_000,
+        tcpKeepAlive: KeepAliveOpts.defaults,
+        smpPingInterval: 600_000_000
+    )
+
+    public static let proxyDefaults: NetCfg = NetCfg(
+        socksProxy: nil,
+        tcpConnectTimeout: 15_000_000,
+        tcpTimeout: 10_000_000,
+        tcpKeepAlive: KeepAliveOpts.defaults,
+        smpPingInterval: 600_000_000
+    )
+
+    public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public struct KeepAliveOpts: Codable, Equatable {
+    public var keepIdle: Int // seconds
+    public var keepIntvl: Int // seconds
+    public var keepCnt: Int // times
+
+    public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
+}
+
+public struct ConnectionStats: Codable {
+    public var rcvServers: [String]?
+    public var sndServers: [String]?
 }
 
 public protocol SelectableItem: Hashable, Identifiable {

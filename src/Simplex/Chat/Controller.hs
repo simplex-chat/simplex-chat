@@ -34,7 +34,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store (StoreError)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
@@ -89,7 +89,7 @@ data ChatController = ChatController
     filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
   }
 
-data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages
+data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
   deriving (Show, Generic)
 
 instance ToJSON HelpSection where
@@ -141,8 +141,11 @@ data ChatCommand
   | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
+  | APIUpdateGroupProfile GroupId GroupProfile
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
+  | APISetNetworkConfig NetworkConfig
+  | APIGetNetworkConfig
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
   | ContactInfo ContactName
@@ -176,6 +179,7 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListGroups
+  | UpdateGroupProfile GroupName GroupProfile
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ChatName FilePath
@@ -203,6 +207,7 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRNewChatItem {chatItem :: AChatItem}
@@ -276,6 +281,7 @@ data ChatResponse
   | CRGroupEmpty {groupInfo :: GroupInfo}
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
   | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}

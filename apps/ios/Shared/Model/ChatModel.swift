@@ -24,7 +24,6 @@ final class ChatModel: ObservableObject {
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
     @Published var chatToTop: String?
-//    @Published var groups: Dictionary<ChatId, SimpleXChat.Group> = [:]
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -163,7 +162,10 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
-                        Task { await apiMarkChatItemRead(cInfo, cItem) }
+                        Task {
+                            await apiMarkChatItemRead(cInfo, cItem)
+                            NtfManager.shared.decNtfBadgeCount()
+                        }
                     }
                 }
             }
@@ -311,9 +313,9 @@ final class Chat: ObservableObject, Identifiable {
         var statusString: LocalizedStringKey {
             get {
                 switch self {
-                case .connected: return "Server connected"
-                case let .error(err): return "Connecting server… (error: \(err))"
-                default: return "Connecting server…"
+                case .connected: return "connected"
+                case .error: return "error"
+                default: return "connecting"
                 }
             }
         }

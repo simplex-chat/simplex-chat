@@ -15,11 +15,14 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
-    @Binding var showChatInfo: Bool
+    @State private var showChatInfoSheet: Bool = false
+    @State private var showAddMembersSheet: Bool = false
+    @State private var membersToAdd: [Contact] = []
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
     @State private var showDeleteMessage = false
+    @State private var connectionStats: ConnectionStats?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -71,9 +74,7 @@ struct ChatView: View {
                             }
                         }
                     }
-                    .onTapGesture {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
+                    .onTapGesture { hideKeyboard() }
                 }
             }
 
@@ -99,24 +100,49 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .principal) {
                 Button {
-                    showChatInfo = true
+                    if case .direct = cInfo {
+                        Task {
+                            do {
+                                let stats = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                await MainActor.run { connectionStats = stats }
+                            } catch let error {
+                                logger.error("apiContactInfo error: \(responseError(error))")
+                            }
+                            await MainActor.run { showChatInfoSheet = true }
+                        }
+                    } else {
+                        showChatInfoSheet = true
+                    }
                 } label: {
                     ChatInfoToolbar(chat: chat)
                 }
-                .sheet(isPresented: $showChatInfo) {
-                    if case let .direct(contact) = chat.chatInfo {
-                        ChatInfoView(chat: chat, showChatInfo: $showChatInfo, contact: contact)
-                    } else if case .group = chat.chatInfo {
-                        GroupChatInfoView(chat: chat, showChatInfo: $showChatInfo)
+                .sheet(isPresented: $showChatInfoSheet) {
+                    switch cInfo {
+                    case .direct:
+                        ChatInfoView(chat: chat, connectionStats: connectionStats)
+                    case let .group(groupInfo):
+                        GroupChatInfoView(chat: chat, groupInfo: groupInfo)
+                    default:
+                        EmptyView()
                     }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if case let .direct(contact) = cInfo {
+                switch cInfo {
+                case let .direct(contact):
                     HStack {
                         callButton(contact, .audio, imageName: "phone")
                         callButton(contact, .video, imageName: "video")
                     }
+                case let .group(groupInfo):
+                    if groupInfo.canAddMembers {
+                        addMembersButton()
+                            .sheet(isPresented: $showAddMembersSheet) {
+                                AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: membersToAdd)
+                            }
+                    }
+                default:
+                    EmptyView()
                 }
             }
         }
@@ -128,6 +154,22 @@ struct ChatView: View {
             CallController.shared.startCall(contact, media)
         } label: {
             Image(systemName: imageName)
+        }
+    }
+
+    private func addMembersButton() -> some View {
+        Button {
+            if case let .group(gInfo) = chat.chatInfo {
+                Task {
+                    let ms = await apiListMembers(gInfo.apiId)
+                    await MainActor.run {
+                        membersToAdd = filterMembersToAdd(ms)
+                        showAddMembersSheet = true
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "person.crop.circle.badge.plus")
         }
     }
 
@@ -276,7 +318,7 @@ struct ChatView_Previews: PreviewProvider {
             ChatItem.getSample(9, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")
         ]
         @State var showChatInfo = false
-        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo)
+        return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)
     }
 }

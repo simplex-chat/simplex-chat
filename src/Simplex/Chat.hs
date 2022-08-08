@@ -50,14 +50,15 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Options (ChatOpts (..), smpServersP)
+import Simplex.Chat.Options
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
+import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
+import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -65,6 +66,7 @@ import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath (combine, splitExtensions, takeFileName)
@@ -91,8 +93,7 @@ defaultChatConfig =
         InitialAgentServers
           { smp = _defaultSMPServers,
             ntf = _defaultNtfServers,
-            socksProxy = Nothing,
-            tcpTimeout = 5000000
+            netCfg = defaultNetworkConfig
           },
       tbqSize = 64,
       fileChunkSize = 15780,
@@ -122,7 +123,7 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, socksProxy, tcpTimeout, logConnections} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, networkConfig, logConnections} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -130,7 +131,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {socksProxy, tcpTimeout}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {netCfg = networkConfig}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -439,16 +440,18 @@ processChatCommand = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted conn
     CTGroup -> do
-      g@(Group gInfo@GroupInfo {membership} members) <- withStore $ \db -> getGroup db user chatId
-      let s = memberStatus membership
-          canDelete =
-            memberRole (membership :: GroupMember) == GROwner
-              || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
+      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
+      let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
+      void $ clearGroupContent user gInfo
       withChatLock . procCmd $ do
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
         mapM_ deleteMemberConnection members
-        withStore' $ \db -> deleteGroup db user g
+        -- two functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
+        withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo
+        withStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
@@ -469,19 +472,12 @@ processChatCommand = \case
       pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
-      ciIdsAndFileInfo <- withStore' $ \db -> getGroupChatItemIdsAndFileInfo db user chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
-        unless itemDeleted $ do
-          forM_ fileInfo_ $ \fileInfo -> do
-            cancelFile user fileInfo
-            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-          void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
-      gInfo' <- case ciIdsAndFileInfo of
-        [] -> pure gInfo
-        _ -> do
-          let (_, lastItemTs, _, _) = last ciIdsAndFileInfo
+      lastItemTs_ <- clearGroupContent user gInfo
+      gInfo' <- case lastItemTs_ of
+        Just lastItemTs -> do
           withStore' $ \db -> updateGroupTs db user gInfo lastItemTs
           pure (gInfo :: GroupInfo) {updatedAt = lastItemTs}
+        _ -> pure gInfo
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -597,6 +593,8 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
+  APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
+  APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
     ct <- withStore $ \db -> getContact db userId contactId
     CRContactInfo ct <$> withAgent (`getConnectionServers` contactConnId ct)
@@ -742,14 +740,19 @@ processChatCommand = \case
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
         let userRole = memberRole (membership :: GroupMember)
-        when (userRole < GRAdmin || userRole < mRole) $ throwChatError CEGroupUserRole
+            canRemove = userRole >= GRAdmin && userRole >= mRole && memberCurrent membership
+        unless canRemove $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
-          when (mStatus /= GSMemInvited) $ do
-            msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
-            ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
-            toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
-          deleteMemberConnection m
-          withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
+          case mStatus of
+            GSMemInvited -> do
+              deleteMemberConnection m
+              withStore' $ \db -> deleteGroupMember db user m
+            _ -> do
+              msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
+              toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+              deleteMemberConnection m
+              withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
           pure $ CRUserDeletedMember gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -787,6 +790,21 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   ListGroups -> CRGroupsList <$> withUser (\user -> withStore' (`getUserGroupDetails` user))
+  APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
+    Group g ms <- withStore $ \db -> getGroup db user groupId
+    let s = memberStatus $ membership g
+        canUpdate =
+          memberRole (membership g :: GroupMember) == GROwner
+            || (s == GSMemRemoved || s == GSMemLeft || s == GSMemGroupDeleted || s == GSMemInvited)
+    unless canUpdate $ throwChatError CEGroupUserRole
+    g' <- withStore $ \db -> updateGroupProfile db user g p'
+    msg <- sendGroupMessage g' ms (XGrpInfo p')
+    ci <- saveSndChatItem user (CDGroupSnd g') msg (CISndGroupEvent $ SGEGroupUpdated p') Nothing Nothing
+    toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat g') ci
+    pure $ CRGroupUpdated g g' Nothing
+  UpdateGroupProfile gName profile -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIUpdateGroupProfile groupId profile
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName (safeDecodeUtf8 quotedMsg)
@@ -939,6 +957,16 @@ processChatCommand = \case
           SMDRcv -> do
             ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
             unless cancelled $ cancelRcvFileTransfer user ft
+    clearGroupContent :: User -> GroupInfo -> m (Maybe UTCTime)
+    clearGroupContent user gInfo@GroupInfo {groupId} = do
+      ciIdsAndFileInfo <- withStore' $ \db -> getGroupChatItemIdsAndFileInfo db user groupId
+      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
+        unless itemDeleted $ do
+          forM_ fileInfo_ $ \fileInfo -> do
+            cancelFile user fileInfo
+            withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+          void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+      pure $ (\(_, lastItemTs, _, _) -> lastItemTs) <$> lastMaybe ciIdsAndFileInfo
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \user@User {userId} -> do
       ct <- withStore $ \db -> getContact db userId ctId
@@ -1447,6 +1475,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
             XGrpLeave -> xGrpLeave gInfo m msg msgMeta
             XGrpDel -> xGrpDel gInfo m msg msgMeta
+            XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
         ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
@@ -1711,6 +1740,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             then do
               updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
               toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+              let g = groupName' gInfo
+              setActive $ ActiveG g
             else messageError "x.msg.update: group member attempted to update a message of another member"
         (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
@@ -2062,6 +2093,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEGroupDeleted) Nothing
       groupMsgToView gInfo m ci msgMeta
       toView $ CRGroupDeleted gInfo {membership = membership {memberStatus = GSMemGroupDeleted}} m
+
+    xGrpInfo :: GroupInfo -> GroupMember -> GroupProfile -> RcvMessage -> MsgMeta -> m ()
+    xGrpInfo g m@GroupMember {memberRole} p' msg msgMeta
+      | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions"
+      | otherwise = do
+        g' <- withStore $ \db -> updateGroupProfile db user g p'
+        ci <- saveRcvChatItem user (CDGroupRcv g' m) msg msgMeta (CIRcvGroupEvent $ RGEGroupUpdated p') Nothing
+        groupMsgToView g' m ci msgMeta
+        toView . CRGroupUpdated g g' $ Just m
 
 parseChatMessage :: ByteString -> Either ChatError ChatMessage
 parseChatMessage = first (ChatError . CEInvalidChatMessage) . strDecode
@@ -2453,6 +2493,9 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
+      "/_network " *> (APISetNetworkConfig <$> jsonP),
+      ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
+      ("/network" <|> "/net") $> APIGetNetworkConfig,
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
@@ -2461,8 +2504,10 @@ chatCommandP =
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,
       ("/help address" <|> "/ha") $> ChatHelp HSMyAddress,
       ("/help messages" <|> "/hm") $> ChatHelp HSMessages,
+      ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group #" <|> "/group " <|> "/g #" <|> "/g ") *> (NewGroup <$> groupProfile),
+      "/_group " *> (NewGroup <$> jsonP),
       ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <*> displayName <*> memberRole),
       ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName),
       ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <*> displayName),
@@ -2473,6 +2518,8 @@ chatCommandP =
       ("/clear @" <|> "/clear ") *> (ClearContact <$> displayName),
       ("/members #" <|> "/members " <|> "/ms #" <|> "/ms ") *> (ListMembers <$> displayName),
       ("/groups" <|> "/gs") $> ListGroups,
+      "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
+      ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
       ("/contacts" <|> "/cs") $> ListContacts,
@@ -2550,6 +2597,11 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
+    netCfgP = do
+      socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      t_ <- optional $ " timeout=" *> A.decimal
+      let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
+      pure $ fullNetworkConfig socksProxy tcpTimeout
 
 adminContactReq :: ConnReqContact
 adminContactReq =

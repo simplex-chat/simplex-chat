@@ -26,6 +26,7 @@ struct SimpleXApp: App {
         hs_init(0, nil)
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()
+        registerGroupDefaults()
         setDbContainer()
         BGManager.shared.register()
         NtfManager.shared.registerCategories()
@@ -57,6 +58,7 @@ struct SimpleXApp: App {
                             enteredBackground = ProcessInfo.processInfo.systemUptime
                         }
                         doAuthenticate = false
+                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCount())
                     case .active:
                         if chatModel.chatRunning == true {
                             ChatReceiver.shared.start()

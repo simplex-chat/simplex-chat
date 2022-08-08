@@ -13,7 +13,6 @@ struct ContentView: View {
     @ObservedObject var callController = CallController.shared
     @Binding var doAuthenticate: Bool
     @Binding var userAuthorized: Bool?
-    @State private var showChatInfo: Bool = false // TODO comprehensively close modal views on authentication
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -42,7 +41,7 @@ struct ContentView: View {
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
-            ChatListView(showChatInfo: $showChatInfo)
+            ChatListView()
             .onAppear {
                 NtfManager.shared.requestAuthorization(onDeny: {
                     alertManager.showAlert(notificationAlert())
@@ -64,13 +63,10 @@ struct ContentView: View {
     private func runAuthenticate() {
         if !prefPerformLA {
             userAuthorized = true
-        } else if showChatInfo {
-            showChatInfo = false
-            DispatchQueue.main.async {
+        } else {
+            dismissAllSheets(animated: false) {
                 justAuthenticate()
             }
-        } else {
-            justAuthenticate()
         }
     }
 

@@ -12,7 +12,6 @@ import SimpleXChat
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var chat: Chat
-    @Binding var showChatInfo: Bool
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
 
@@ -30,7 +29,7 @@ struct ChatListNavLink: View {
     }
 
     private func chatView() -> some View {
-        ChatView(chat: chat, showChatInfo: $showChatInfo)
+        ChatView(chat: chat)
             .onAppear { loadChat(chat: chat) }
     }
 
@@ -54,7 +53,7 @@ struct ChatListNavLink: View {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     contact.ready
-                    ? deleteChatAlert(chat.chatInfo)
+                    ? deleteContactAlert(chat.chatInfo)
                     : deletePendingContactAlert(chat, contact)
                 )
             } label: {
@@ -81,13 +80,13 @@ struct ChatListNavLink: View {
                     joinGroupButton()
                 }
                 .swipeActions(edge: .trailing) {
-                    if groupInfo.canDelete() {
+                    if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button("Join group") { Task { await joinGroup(groupId: groupInfo.groupId) } }
+                    Button("Join group") { Task { await joinGroup(groupInfo.groupId) } }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -114,7 +113,7 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             .swipeActions(edge: .trailing) {
-                if (groupInfo.membership.memberStatus != .memLeft) {
+                if (groupInfo.membership.memberCurrent) {
                     Button {
                         AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
                     } label: {
@@ -124,7 +123,7 @@ struct ChatListNavLink: View {
                 }
             }
             .swipeActions(edge: .trailing) {
-                if groupInfo.canDelete() {
+                if groupInfo.canDelete {
                     deleteGroupChatButton(groupInfo)
                 }
             }
@@ -133,7 +132,7 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            Task { await joinGroup(groupId: chat.chatInfo.apiId) }
+            Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
             Label("Join", systemImage: "ipad.and.arrow.forward")
         }
@@ -160,7 +159,7 @@ struct ChatListNavLink: View {
 
     @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button(role: .destructive) {
-            AlertManager.shared.showAlert(deleteChatAlert(.group(groupInfo: groupInfo)))
+            AlertManager.shared.showAlert(deleteGroupAlert(.group(groupInfo: groupInfo)))
         } label: {
             Label("Delete", systemImage: "trash")
         }
@@ -211,10 +210,21 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func deleteChatAlert(_ chatInfo: ChatInfo) -> Alert {
+    private func deleteContactAlert(_ chatInfo: ChatInfo) -> Alert {
         Alert(
-            title: Text("Delete chat?"),
-            message: Text("Chat and all messages will be deleted - this cannot be undone!"),
+            title: Text("Delete contact?"),
+            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
+            primaryButton: .destructive(Text("Delete")) {
+                Task { await deleteChat(chat) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func deleteGroupAlert(_ chatInfo: ChatInfo) -> Alert {
+        Alert(
+            title: Text("Delete group?"),
+            message: Text("Group will be deleted for all members - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task { await deleteChat(chat) }
             },
@@ -238,7 +248,7 @@ struct ChatListNavLink: View {
             title: Text("Leave group?"),
             message: Text("You will stop receiving messages from this group. Chat history will be preserved."),
             primaryButton: .destructive(Text("Leave")) {
-                Task { await leaveGroup(groupId: groupInfo.groupId) }
+                Task { await leaveGroup(groupInfo.groupId) }
             },
             secondaryButton: .cancel()
         )
@@ -321,23 +331,52 @@ struct ChatListNavLink: View {
     }
 }
 
+func joinGroup(_ groupId: Int64) async {
+    do {
+        let r = try await apiJoinGroup(groupId)
+        switch r {
+        case let .joined(groupInfo):
+            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+        case .invitationRemoved:
+            AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+            await deleteGroup()
+        case .groupNotFound:
+            AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+            await deleteGroup()
+        }
+    } catch let error {
+        let err = responseError(error)
+        AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
+        logger.error("apiJoinGroup error: \(err)")
+    }
+
+    func deleteGroup() async {
+        do {
+            // TODO this API should update chat item with the invitation as well
+            try await apiDeleteChat(type: .group, id: groupId)
+            await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
+        } catch {
+            logger.error("apiDeleteChat error: \(responseError(error))")
+        }
+    }
+}
+
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
-        @State var showChatInfo = false
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showChatInfo: $showChatInfo)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ), showChatInfo: $showChatInfo)
+            ))
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ), showChatInfo: $showChatInfo)
+            ))
         }
         .previewLayout(.fixed(width: 360, height: 80))
     }

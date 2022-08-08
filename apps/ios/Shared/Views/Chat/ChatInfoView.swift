@@ -9,88 +9,168 @@
 import SwiftUI
 import SimpleXChat
 
+func infoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
+func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
+    HStack {
+        Text(title)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
+    }
+}
+
+@ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String]?) -> some View {
+    if let servers = servers,
+       servers.count > 0 {
+        infoRow(title, serverHost(servers[0]))
+    }
+}
+
+private func serverHost(_ s: String) -> String {
+    if let i = s.range(of: "@")?.lowerBound {
+        return String(s[i...].dropFirst())
+    } else {
+        return s
+    }
+}
+
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @ObservedObject var alertManager = AlertManager.shared
+    @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    @Binding var showChatInfo: Bool
-    @State var alert: ChatInfoViewAlert? = nil
-    @State var deletingContact: Contact?
-    var contact: Contact
+    var connectionStats: ConnectionStats?
+    @State private var alert: ChatInfoViewAlert? = nil
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
         case clearChatAlert
+        case networkStatusAlert
 
         var id: ChatInfoViewAlert { get { self } }
     }
 
     var body: some View {
-        VStack{
-            ChatInfoImage(chat: chat)
-                .frame(width: 192, height: 192)
-                .padding(.top, 48)
-                .padding()
-            Text(chat.chatInfo.localDisplayName).font(.largeTitle)
-                .padding(.bottom, 2)
-            Text(chat.chatInfo.fullName).font(.title)
-                .padding(.bottom)
+        NavigationView {
+            List {
+                contactInfoHeader()
+                    .listRowBackground(Color.clear)
 
-            HStack {
-                serverImage()
-                Text(chat.serverInfo.networkStatus.statusString)
-                    .foregroundColor(.primary)
-            }
-            Text(chat.serverInfo.networkStatus.statusExplanation)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 64)
-                .padding(.vertical, 8)
+                if let connStats = connectionStats {
+                    Section("Servers") {
+                        networkStatusRow()
+                            .onTapGesture {
+                                alert = .networkStatusAlert
+                            }
+                        smpServers("Receiving via", connStats.rcvServers)
+                        smpServers("Sending via", connStats.sndServers)
+                    }
+                }
 
-            Spacer()
-            Button() {
-                alert = .clearChatAlert
-            } label: {
-                Label("Clear conversation", systemImage: "gobackward")
+                Section {
+                    clearChatButton()
+                    deleteContactButton()
+                }
+
+                if developerTools {
+                    Section(header: Text("For console")) {
+                        infoRow("Local name", chat.chatInfo.localDisplayName)
+                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                    }
+                }
             }
-            .tint(Color.orange)
-            Button(role: .destructive) {
-                deletingContact = contact
-                alert = .deleteContactAlert
-            } label: {
-                Label("Delete contact", systemImage: "trash")
-            }
-            .padding()
-        }
-        .alert(item: $alert) { alertItem in
-            switch(alertItem) {
-            case .deleteContactAlert: return deleteContactAlert(deletingContact!)
-            case .clearChatAlert: return clearChatAlert()
-            }
+            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .alert(item: $alert) { alertItem in
+            switch(alertItem) {
+            case .deleteContactAlert: return deleteContactAlert()
+            case .clearChatAlert: return clearChatAlert()
+            case .networkStatusAlert: return networkStatusAlert()
+            }
+        }
+    }
+
+    func contactInfoHeader() -> some View {
+        VStack {
+            let cInfo = chat.chatInfo
+            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
+                .frame(width: 192, height: 192)
+                .padding(.top, 12)
+                .padding()
+            Text(cInfo.displayName)
+                .font(.largeTitle)
+                .lineLimit(1)
+                .padding(.bottom, 2)
+            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+                Text(cInfo.fullName)
+                    .font(.title2)
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    func networkStatusRow() -> some View {
+        HStack {
+            Text("Network status")
+            Image(systemName: "info.circle")
+                .foregroundColor(.accentColor)
+                .font(.system(size: 14))
+            Spacer()
+            Text(chat.serverInfo.networkStatus.statusString)
+                .foregroundColor(.secondary)
+            serverImage()
+        }
     }
 
     func serverImage() -> some View {
         let status = chat.serverInfo.networkStatus
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : .secondary)
+            .font(.system(size: 12))
     }
 
-    private func deleteContactAlert(_ contact: Contact) -> Alert {
+    func deleteContactButton() -> some View {
+        Button(role: .destructive) {
+            alert = .deleteContactAlert
+        } label: {
+            Label("Delete contact", systemImage: "trash")
+                .foregroundColor(Color.red)
+        }
+    }
+
+    func clearChatButton() -> some View {
+        Button() {
+            alert = .clearChatAlert
+        } label: {
+            Label("Clear conversation", systemImage: "gobackward")
+                .foregroundColor(Color.orange)
+        }
+    }
+
+    private func deleteContactAlert() -> Alert {
         Alert(
             title: Text("Delete contact?"),
             message: Text("Contact and all messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
-                        try await apiDeleteChat(type: .direct, id: contact.apiId)
-                        DispatchQueue.main.async {
-                            chatModel.removeChat(contact.id)
-                            showChatInfo = false
+                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
+                        await MainActor.run {
+                            chatModel.removeChat(chat.chatInfo.id)
+                            dismiss()
                         }
                     } catch let error {
-                        logger.error("ChatInfoView.deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        logger.error("deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
                     }
                 }
             },
@@ -105,19 +185,23 @@ struct ChatInfoView: View {
             primaryButton: .destructive(Text("Clear")) {
                 Task {
                     await clearChat(chat)
-                    DispatchQueue.main.async {
-                        showChatInfo = false
-                    }
+                    await MainActor.run { dismiss() }
                 }
             },
             secondaryButton: .cancel()
+        )
+    }
+
+    private func networkStatusAlert() -> Alert {
+        Alert(
+            title: Text("Network status"),
+            message: Text(chat.serverInfo.networkStatus.statusExplanation)
         )
     }
 }
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var showChatInfo = true
-        return ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), showChatInfo: $showChatInfo, contact: Contact.sampleData)
+        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
     }
 }

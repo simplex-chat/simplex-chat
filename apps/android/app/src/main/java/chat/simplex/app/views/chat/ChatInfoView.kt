@@ -1,7 +1,12 @@
 package chat.simplex.app.views.chat
 
+import InfoRow
+import SectionDivider
+import SectionItemView
+import SectionSpacer
+import SectionView
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -13,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -22,23 +27,25 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, close: () -> Unit) {
+fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     ChatInfoLayout(
       chat,
-      close = close,
-      deleteContact = { deleteChatDialog(chat.chatInfo, chatModel, close) },
+      connStats,
+      developerTools,
+      deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
     )
   }
 }
 
-fun deleteChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.delete_chat_question),
-    text = generalGetString(R.string.delete_chat_all_messages_deleted_cannot_undo_warning),
+    title = generalGetString(R.string.delete_contact_question),
+    text = generalGetString(R.string.delete_contact_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
@@ -72,122 +79,186 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
   )
 }
 
-// TODO move to GroupChatInfoView
-fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(R.string.leave_group_question),
-    text = generalGetString(R.string.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
-    confirmText = generalGetString(R.string.leave_group_button),
-    onConfirm = {
-      withApi { chatModel.controller.leaveGroup(groupInfo.groupId) }
-    }
-  )
-}
-
 @Composable
 fun ChatInfoLayout(
   chat: Chat,
-  close: () -> Unit,
+  connStats: ConnectionStats?,
+  developerTools: Boolean,
   deleteContact: () -> Unit,
   clearChat: () -> Unit
 ) {
   Column(
     Modifier
-      .fillMaxSize()
-      .background(MaterialTheme.colors.background)
-      .padding(horizontal = 8.dp),
-    horizontalAlignment = Alignment.CenterHorizontally
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState()),
+    horizontalAlignment = Alignment.Start
   ) {
-    CloseSheetBar(close)
-    Spacer(Modifier.size(48.dp))
-    val cInfo = chat.chatInfo
-    ChatInfoImage(cInfo, size = 192.dp)
-    Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.onBackground,
-      modifier = Modifier
-        .padding(top = 32.dp)
-        .padding(bottom = 8.dp)
-    )
-    Text(
-      cInfo.fullName, style = MaterialTheme.typography.h2,
-      color = MaterialTheme.colors.onBackground,
-      modifier = Modifier.padding(bottom = 16.dp)
-    )
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center
+    ) {
+      ChatInfoHeader(chat.chatInfo)
+    }
+    SectionSpacer()
 
-    if (cInfo is ChatInfo.Direct) {
-      Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(Modifier.padding(horizontal = 32.dp)) {
-          ServerImage(chat)
-          Text(
-            chat.serverInfo.networkStatus.statusString,
-            textAlign = TextAlign.Center,
-            color = MaterialTheme.colors.onBackground,
-            modifier = Modifier.padding(start = 8.dp)
-          )
+    if (connStats != null) {
+      SectionView(title = stringResource(R.string.conn_stats_section_title_servers)) {
+        SectionItemView {
+          NetworkStatusRow(chat.serverInfo.networkStatus)
         }
-        Text(
-          chat.serverInfo.networkStatus.statusExplanation,
-          style = MaterialTheme.typography.body2,
-          color = MaterialTheme.colors.onBackground,
-          textAlign = TextAlign.Center,
-          modifier = Modifier
-            .padding(top = 16.dp)
-            .padding(horizontal = 16.dp)
-        )
+        val rcvServers = connStats.rcvServers
+        if (rcvServers != null && rcvServers.isNotEmpty()) {
+          SectionDivider()
+          SimplexServers(stringResource(R.string.receiving_via), rcvServers)
+        }
+        val sndServers = connStats.sndServers
+        if (sndServers != null && sndServers.isNotEmpty()) {
+          SectionDivider()
+          SimplexServers(stringResource(R.string.sending_via), sndServers)
+        }
       }
+      SectionSpacer()
+    }
 
-      Spacer(Modifier.weight(1F))
+    SectionView {
+      SectionItemView {
+        ClearChatButton(clearChat)
+      }
+      SectionDivider()
+      SectionItemView {
+        DeleteContactButton(deleteContact)
+      }
+    }
+    SectionSpacer()
 
-      Box(Modifier.padding(4.dp)) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
       }
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.button_delete_contact),
-          icon = Icons.Outlined.Delete,
-          color = Color.Red,
-          click = deleteContact
-        )
-      }
-    } else if (cInfo is ChatInfo.Group) {
-      Spacer(Modifier.weight(1F))
-
-      Box(
-        Modifier
-          .padding(4.dp)
-          .padding(bottom = 32.dp)
-      ) {
-        SimpleButton(
-          stringResource(R.string.clear_chat_button),
-          icon = Icons.Outlined.Restore,
-          color = WarningOrange,
-          click = clearChat
-        )
-      }
+      SectionSpacer()
     }
   }
 }
 
 @Composable
-fun ServerImage(chat: Chat) {
-  when (chat.serverInfo.networkStatus) {
-    is Chat.NetworkStatus.Connected ->
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
-    is Chat.NetworkStatus.Disconnected ->
-      Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
-    is Chat.NetworkStatus.Error ->
-      Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
-    else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+fun ChatInfoHeader(cInfo: ChatInfo) {
+  Column(
+    Modifier.padding(horizontal = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    Text(
+      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.onBackground,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      Text(
+        cInfo.fullName, style = MaterialTheme.typography.h2,
+        color = MaterialTheme.colors.onBackground,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+      )
+    }
+  }
+}
+
+@Composable
+fun NetworkStatusRow(networkStatus: Chat.NetworkStatus) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.network_status),
+          networkStatus.statusExplanation
+        )
+      },
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Text(stringResource(R.string.network_status))
+      Icon(
+        Icons.Outlined.Info,
+        stringResource(R.string.network_status),
+        tint = MaterialTheme.colors.primary
+      )
+    }
+
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+      Text(
+        networkStatus.statusString,
+        color = HighOrLowlight
+      )
+      ServerImage(networkStatus)
+    }
+  }
+}
+
+@Composable
+fun ServerImage(networkStatus: Chat.NetworkStatus) {
+  Box(Modifier.size(18.dp)) {
+    when (networkStatus) {
+      is Chat.NetworkStatus.Connected ->
+        Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_server_status_connected), tint = MaterialTheme.colors.primaryVariant)
+      is Chat.NetworkStatus.Disconnected ->
+        Icon(Icons.Filled.Pending, stringResource(R.string.icon_descr_server_status_disconnected), tint = HighOrLowlight)
+      is Chat.NetworkStatus.Error ->
+        Icon(Icons.Filled.Error, stringResource(R.string.icon_descr_server_status_error), tint = HighOrLowlight)
+      else -> Icon(Icons.Outlined.Circle, stringResource(R.string.icon_descr_server_status_pending), tint = HighOrLowlight)
+    }
+  }
+}
+
+@Composable
+fun SimplexServers(text: String, servers: List<String>) {
+  val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
+  InfoRow(text, info)
+}
+
+@Composable
+fun ClearChatButton(clearChat: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { clearChat() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Restore,
+      stringResource(R.string.clear_chat_button),
+      tint = WarningOrange
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.clear_chat_button), color = WarningOrange)
+  }
+}
+
+@Composable
+fun DeleteContactButton(deleteContact: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { deleteContact() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Delete,
+      stringResource(R.string.button_delete_contact),
+      tint = Color.Red
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_delete_contact), color = Color.Red)
   }
 }
 
@@ -201,7 +272,9 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
-      close = {}, deleteContact = {}, clearChat = {}
+      developerTools = false,
+      connStats = null,
+      deleteContact = {}, clearChat = {}
     )
   }
 }

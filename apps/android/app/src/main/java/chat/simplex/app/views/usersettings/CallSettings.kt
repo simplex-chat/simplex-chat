@@ -1,5 +1,8 @@
 package chat.simplex.app.views.usersettings
 
+import SectionDivider
+import SectionItemView
+import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -29,18 +32,17 @@ fun CallSettingsLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    @Composable fun divider() = Divider(Modifier.padding(horizontal = 8.dp))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     Text(
       stringResource(R.string.your_calls),
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SettingsSectionView(stringResource(R.string.settings_section_title_settings)) {
-      Box(Modifier.padding(start = 10.dp)) {
+    SectionView(stringResource(R.string.settings_section_title_settings)) {
+      SectionItemView() {
         SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)
       }
-      divider()
+      SectionDivider()
 
       Column(Modifier.padding(start = 10.dp, top = 12.dp)) {
         Text(stringResource(R.string.call_on_lock_screen))
@@ -75,8 +77,7 @@ fun SharedPreferenceToggle(
       colors = SwitchDefaults.colors(
         checkedThumbColor = MaterialTheme.colors.primary,
         uncheckedThumbColor = HighOrLowlight
-      ),
-      modifier = Modifier.padding(end = 6.dp)
+      )
     )
   }
 }
