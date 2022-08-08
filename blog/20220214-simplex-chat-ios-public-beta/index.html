@@ -48,7 +48,7 @@
 <li>additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).</li>
 <li>additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).</li>
 </ul>
-<p>You can read more details in our recent <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released/">v1 announcement</a>.</p>
+<p>You can read more details in our recent <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md">v1 announcement</a>.</p>
 <h2>Join our public beta!</h2>
 <p>Install the app <a href="https://testflight.apple.com/join/DWuT2LQu">via TestFlight</a>, connect to us (via <strong>Connect to SimpleX team</strong> link in the app) and to a couple of your friends you usually send messages to - and please let us know what you think!</p>
 <p>We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.</p>
@@ -64,7 +64,7 @@
 <p>We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.</p>
 <p>The first application built on the platform is Simplex Chat, which is available for terminal (command line in Windows/Mac/Linux) and as iOS public beta - with Android app coming in a few weeks. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.</p>
 <p>SimpleX also allows people to host their own servers to have control of their chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages). It should be considered though that while self-hosting the servers provides more control, it may reduce meta-data privacy, as it is easier to correlate the traffic of servers with small number of messages coming through.</p>
-<p>Further details on platform objectives and technical design are available <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/">in SimpleX platform overview</a>.</p>
+<p>Further details on platform objectives and technical design are available <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">in SimpleX platform overview</a>.</p>
 
         </div>
     </section>

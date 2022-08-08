@@ -41,16 +41,16 @@
 <p><strong>Published:</strong> Jul 23, 2022</p>
 <h2>What's new</h2>
 <ul>
-<li>terminal app: <a href="#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor">access to messaging servers via SOCKS5 proxy</a> (e.g., Tor).</li>
-<li>mobile apps: <a href="#mobile-apps-join-and-leave-chat-groups">join and leave chat groups</a>.</li>
-<li><a href="#optimized-battery-and-traffic-usage---up-to-90x-reduction">optimized battery and traffic usage - up to 90x reduction!</a>.</li>
-<li><a href="#docker-configuration-for-self-hosted-smp-servers">two docker configurations for self-hosted SMP servers</a>.</li>
+<li>terminal app: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor">access to messaging servers via SOCKS5 proxy</a> (e.g., Tor).</li>
+<li>mobile apps: <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#mobile-apps-join-and-leave-chat-groups">join and leave chat groups</a>.</li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#optimized-battery-and-traffic-usage---up-to-90x-reduction">optimized battery and traffic usage - up to 90x reduction!</a>.</li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#docker-configuration-for-self-hosted-smp-servers">two docker configurations for self-hosted SMP servers</a>.</li>
 </ul>
 <h3>Terminall app: access to messaging servers via SOCKS5 proxy / Tor</h3>
 <img src="/img/images/20220723-tor.jpg" width="480">
 <p>While SMP protocol is focussed on protecting application-level meta-data by using pairwise connection identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.</p>
 <p>This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who self-host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without necessarily requiring that the other party uses Tor as well.</p>
-<p>To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with <code>-x</code> option. See <a href="../docs/CLI/#access-messaging-servers-via-tor-beta">terminal app docs</a> for more information.</p>
+<p>To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with <code>-x</code> option. See <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md#access-messaging-servers-via-tor-beta">terminal app docs</a> for more information.</p>
 <p>As this is a beta release, to install it you need to use this command:</p>
 <pre><code class="language-sh">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/install.sh | sh -s -- v3.1.0-beta.0
 </code></pre>
@@ -79,9 +79,9 @@
 <h2>SimpleX platform</h2>
 <p>We are building a new platform for distributed Internet applications where privacy of the messages <em>and</em> the network matter. <a href="https://github.com/simplex-chat/simplex-chat">SimpleX Chat</a> is our first application, a messaging application built on the SimpleX platform.</p>
 <h3>The first (and the only?) messaging platform without user identifiers of any kind - 100% private by design!</h3>
-<p>To protect identities of users and their connections, instead of user identifiers visible to the servers and/or the network (that are used by all other messaging platforms), SimpleX Chat uses <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">pairwise identifiers</a> of connections between the users – there are two queues in each connection, each queue having 2 different identifiers to send and to receive the messages. It increases the number of used identifiers to the square of the number of users, making it more difficult (or impossible) to determine who is talking to whom. I <a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements/#why-having-users-identifiers-is-bad-for-the-users">wrote previously</a> why it is bad for the users' privacy to have any identifiers, even random numbers, associated with their profiles.</p>
+<p>To protect identities of users and their connections, instead of user identifiers visible to the servers and/or the network (that are used by all other messaging platforms), SimpleX Chat uses <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">pairwise identifiers</a> of connections between the users – there are two queues in each connection, each queue having 2 different identifiers to send and to receive the messages. It increases the number of used identifiers to the square of the number of users, making it more difficult (or impossible) to determine who is talking to whom. I <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users">wrote previously</a> why it is bad for the users' privacy to have any identifiers, even random numbers, associated with their profiles.</p>
 <h3>If SimpleX has no user identifiers, how can it deliver messages?</h3>
-<p>I wrote about it in <a href="/blog/20220511-simplex-chat-v2-images-files/">v2 release announcement</a> and you can get more information about SimpleX platform objectives and technical design in <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr/">the whitepaper</a>.</p>
+<p>I wrote about it in <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220511-simplex-chat-v2-images-files.md">v2 release announcement</a> and you can get more information about SimpleX platform objectives and technical design in <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">the whitepaper</a>.</p>
 <h3>Privacy: technical details and limitations</h3>
 <p>SimpleX design follows &quot;defence in depth&quot; security principles having multiple overlapping defensive mechanisms to protect users privacy and security:</p>
 <ul>
@@ -103,7 +103,7 @@
 <li>using Tor v3 hidden service addresses for messaging servers.</li>
 <li>passphrase-based local database encryption.</li>
 </ul>
-<p>SimpleX Chat <a href="../README/#privacy-technical-details-and-limitations">README page</a> has more details about it.</p>
+<p>SimpleX Chat <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#privacy-technical-details-and-limitations">README page</a> has more details about it.</p>
 <h2>We ask you to help us pay for 3rd party security audit</h2>
 <p>I will get straight to the point: I ask you to support SimpleX Chat with donations.</p>
 <p>We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.</p>
