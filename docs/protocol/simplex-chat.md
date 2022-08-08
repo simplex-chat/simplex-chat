@@ -142,7 +142,7 @@ If the sending client uses `x.info.probe` messages, it MUST send them to all new
 
 ### x.msg.new - a new content message
 
-When chat clients receive or send this message, they MUST create a new chat item in the conversation. top level `msgId` property is defined to allow referencing this chat item or message in the future, e.g. to delete, update or quote chat item, or to accept file.
+When chat clients receive or send this message, they MUST create a new chat item in the conversation. Top level `msgId` property is defined to allow referencing this chat item or message in the future, e.g. to delete, update or quote chat item, or to accept file.
 
 This message uses `params` property of the message as content message container, without any top level properties for the container. Message container (`params`) includes message `content` property, an optional "invitation" to receive file or image attachment in `file` property (that is interpreted depending on message content type) and optional indication whether this message is forwarded (`"forward": true` property of container) or sent in reply to other message (`"quote": {<quoted message>}`). See `/definition/msgContainer` in [JTD schema](./simplex-chat.schema.json) for message container format.
 
@@ -163,7 +163,7 @@ If the referenced message does not exist, the clients MUST create a new chat ite
 
 ### x.msg.del - request to delete previously sent message
 
-This message is used to delete previously sent chat items. Receiving clients MUST implement it as soft-delete, replacing the original chat item with a special chat item indicating that "message is deleted" that can be fully deleted by the user. If the referenced message does not exist or was sent by the different user than the one sedning `x.msg.del`, the receiving clients MUST ignore this message. Clients are also RECOMMENDED to limit the time during which message deletion is allowed, both for senders and for the recipients.
+This message is used to delete previously sent chat items. Receiving clients MUST implement it as soft-delete, replacing the original chat item with a special chat item indicating that "message is deleted" that can be fully deleted by the user. If the referenced message does not exist or was sent by the different user than the one sending `x.msg.del`, the receiving clients MUST ignore this message. Clients are also RECOMMENDED to limit the time during which message deletion is allowed, both for senders and for the recipients.
 
 ## Sub-protocol for sending and receiving files
 
@@ -211,7 +211,7 @@ Currently members can have one of three roles - `owner`, `admin` and `member`. T
 
 `x.grp.mem.fwd` message is used by the inviting user to forward the invitations received from invited member in `x.grp.mem.inv` messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.
 
-`x.grp.mem.info` this message is sent as part of member connection handshake - it includes group member profile. This message MUST only be sent by members with `owner` role. Receiving clients MUST ignore this message if it is received from member other than with `owner` role.
+`x.grp.mem.info` this message is sent as part of member connection handshake - it includes group member profile.
 
 `x.grp.mem.del` message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with `member` role.
 
