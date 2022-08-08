@@ -9,13 +9,13 @@ date: 2022-07-11
 
 ## New in version 3
 
-- [instant notifications for iOS](#instant-notifications-for-ios)
-- [database export and import](#database-export-and-import)
-- [protocol privacy and performance improvements](#protocol-privacy-and-performance-improvements)
+- [instant notifications for iOS](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#instant-notifications-for-ios)
+- [database export and import](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#database-export-and-import)
+- [protocol privacy and performance improvements](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#protocol-privacy-and-performance-improvements)
 
 ### Instant notifications for iOS
 
-I wrote previously about [our design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
+I wrote previously about [our design for iOS notifications](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
 
 To deliver the notifications to iOS devices we use our notification server, as there is a single private key that Apple issues for the app. This server has minimal amount of information about your chat activity:
 
@@ -58,7 +58,7 @@ Adding push notifications for iOS required SimpleX Messaging Protocol changes. W
 
 We also improved the protocol flow for establishing bidirectional connection between two users - it is substantially faster now, consuming much less network traffic and battery. It improves the time it takes to connect to your contacts and to start delivering images and files.
 
-All these changes did not affect backward compatibility - if your contact has the previous version of the client, or you are connecting to a previous version of the server, the previous version of the protocol will be used - SimpleX has independent version negotiation in 4 protocol layers [since v1](./20220112-simplex-chat-v1-released.md#stable-protocol-implementation), allowing us to evolve the protocols without any disruption to the users.
+All these changes did not affect backward compatibility - if your contact has the previous version of the client, or you are connecting to a previous version of the server, the previous version of the protocol will be used - SimpleX has independent version negotiation in 4 protocol layers [since v1](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md#stable-protocol-implementation), allowing us to evolve the protocols without any disruption to the users.
 
 ## SimpleX platform
 
@@ -78,7 +78,7 @@ SimpleX platform avoids these risks by not having any user identity in its desig
 
 Many people asked: _if SimpleX has no user identifiers, how can it deliver messages?_
 
-I wrote about it in [v2 release announcement](./20220511-simplex-chat-v2-images-files.md) and you can get more information about SimpleX platform objectives and technical design in [the whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).
+I wrote about it in [v2 release announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220511-simplex-chat-v2-images-files.md) and you can get more information about SimpleX platform objectives and technical design in [the whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).
 
 ## We ask you to help us pay for 3rd party security audit
 
