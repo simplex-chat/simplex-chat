@@ -40,7 +40,7 @@ danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing}
 chatTests :: Spec
 chatTests = do
   describe "direct messages" $ do
-    fdescribe "add contact and send/receive message" testAddContact
+    describe "add contact and send/receive message" testAddContact
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
     it "direct message delete" testDirectMessageDelete
