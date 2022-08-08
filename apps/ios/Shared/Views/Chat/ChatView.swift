@@ -41,6 +41,7 @@ struct ChatView: View {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems.reversed()) { ci in
                                 chatItemView(ci, maxWidth)
+                                    .rotationEffect(.degrees(180))
                                     .onAppear { loadChatItems(cInfo, ci) }
                             }
                             .onAppear {
@@ -214,7 +215,6 @@ struct ChatView: View {
     private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
-            .rotationEffect(.degrees(180))
             .contextMenu {
                 if ci.isMsgContent() {
                     Button {
