@@ -25,6 +25,5 @@ We’ve been using the terminal client between us and a few other people for a c
 
 We're building a new kind of chat network - the only network that lets you control your chat. We'd really appreciate your feedback, criticism and support - a star on the github repo, signing up to the mailing list or any contribution to the project will help. There is so much more to do!
 
----
 
-Originally published at https://www.reddit.com/r/haskell/comments/naw6lz/simplex_chat_prototype_terminal_ui_made_in_haskell/
+Originally published at [reddit](https://www.reddit.com/r/haskell/comments/naw6lz/simplex_chat_prototype_terminal_ui_made_in_haskell/)

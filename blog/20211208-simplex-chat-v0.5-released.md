@@ -32,6 +32,5 @@ We'd really appreciate your comments, criticism and support - a star on the GitH
 
 Our goal is to create a new kind of chat platform that lets you control your chat!
 
----
 
-Originally published at https://www.reddit.com/r/haskell/comments/rc0xkn/simplex_chat_the_first_chat_platform_that_is_100/
+Originally published at [reddit](https://www.reddit.com/r/haskell/comments/rc0xkn/simplex_chat_the_first_chat_platform_that_is_100/)

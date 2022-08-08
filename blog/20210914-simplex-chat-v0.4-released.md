@@ -44,6 +44,5 @@ We'd really appreciate your comments, criticism and support - a star on the GitH
 
 Our goal is to create a new kind of chat platform that lets you control your chat!
 
----
 
-Originally published at https://www.reddit.com/r/selfhosted/comments/poal79/simplex_chat_an_opensource_decentralized_chat/
+Originally published at [reddit](https://www.reddit.com/r/selfhosted/comments/poal79/simplex_chat_an_opensource_decentralized_chat/)
