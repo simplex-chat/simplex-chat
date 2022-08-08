@@ -29,7 +29,7 @@ ul li,ol li{
     letter-spacing: 0.6px;
 }
 pre{
-    overflow: scroll;
+    overflow: auto;
 }
 /* code{
     width: 100%;

@@ -40,7 +40,7 @@
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">{{ blog.data.title }}</h1>
             <p class="text-sm">{{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}</p>
-            <a class="inline-block mt-5" href="{{ blog.url }}">{{ blog.data.title }}</a>
+            <a class="inline-block mt-5 hover:underline" href="{{ blog.url }}">{{ blog.data.title }}</a>
             <br>
         </article>
         {% endfor %}
