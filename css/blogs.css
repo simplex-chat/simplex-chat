@@ -55,7 +55,7 @@ input {
 button,
 span.button {
   display: inline-block;
-  background-color: #07b4b9;
+  background-color: #02C0FF;
   color: #fff;
   text-align: center;
   cursor: pointer;
@@ -94,7 +94,7 @@ nav .logo {
 button,
 span.button {
   display: inline-block;
-  background-color: #07b4b9;
+  background-color: #02C0FF;
   color: #fff;
   font-family: Raleway;
   text-align: center;

@@ -1,3 +1,37 @@
-body{
-    background-color: yellowgreen;
+h1{
+    font-size: 1.8rem;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    margin-bottom: 1rem;
 }
+
+h2{
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+}
+
+h3{
+    font-size: 1.3rem;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    margin-bottom: 1rem;
+    margin-top: 1rem;
+}
+
+ul li,ol li{
+    text-decoration: none;
+    list-style: none;
+    font-size: 1.1rem;
+    line-height: 30px;
+    letter-spacing: 0.6px;
+}
+pre{
+    overflow: auto;
+}
+/* code{
+    width: 100%;
+    height: auto;
+} */
