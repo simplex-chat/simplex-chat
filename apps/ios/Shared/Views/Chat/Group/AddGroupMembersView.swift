@@ -14,7 +14,6 @@ struct AddGroupMembersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
     var groupInfo: GroupInfo
-    var membersToAdd: [Contact]
     var showSkip: Bool = false
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
@@ -22,6 +21,8 @@ struct AddGroupMembersView: View {
 
     var body: some View {
         NavigationView {
+            let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
+
             let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -132,6 +133,6 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
-        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData, membersToAdd: [])
+        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData)
     }
 }

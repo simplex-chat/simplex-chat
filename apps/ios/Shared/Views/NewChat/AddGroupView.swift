@@ -26,7 +26,6 @@ struct AddGroupView: View {
         if let chat = chat, let groupInfo = groupInfo {
             AddGroupMembersView(chat: chat,
                                 groupInfo: groupInfo,
-                                membersToAdd: filterMembersToAdd([]),
                                 showSkip: true) { _ in
                 dismiss()
                 DispatchQueue.main.async {
@@ -148,6 +147,7 @@ struct AddGroupView: View {
         hideKeyboard()
         do {
             let gInfo = try apiNewGroup(profile)
+            Task { await populateGroupMembers(gInfo) }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
             m.addChat(c)
             withAnimation {

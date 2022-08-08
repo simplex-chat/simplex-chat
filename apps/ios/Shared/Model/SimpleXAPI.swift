@@ -624,6 +624,11 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
+func populateGroupMembers(_ groupInfo: GroupInfo) async {
+    let groupMembers = await apiListMembers(groupInfo.groupId)
+    DispatchQueue.main.async { ChatModel.shared.groupMembers = groupMembers }
+}
+
 func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
     return ChatModel.shared.chats
