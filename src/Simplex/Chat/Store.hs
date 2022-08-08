@@ -2973,45 +2973,49 @@ getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> Exc
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
-  chatItemIds <- liftIO getGroupChatItemIdsAfter_
+  afterChatItem <- getGroupChatItem db user groupId afterChatItemId
+  chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) chatItems stats
   where
-    getGroupChatItemIdsAfter_ :: IO [ChatItemId]
-    getGroupChatItemIdsAfter_ = do
+    getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
+    getGroupChatItemIdsAfter_ afterChatItemTs = do
       map fromOnly
         <$> DB.query
           db
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND chat_item_id > ? AND item_deleted != 1
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+              AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
           |]
-          (userId, groupId, afterChatItemId, count)
+          (userId, groupId, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
-  chatItemIds <- liftIO getGroupChatItemIdsBefore_
+  beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
+  chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
-    getGroupChatItemIdsBefore_ :: IO [ChatItemId]
-    getGroupChatItemIdsBefore_ = do
+    getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
+    getGroupChatItemIdsBefore_ beforeChatItemTs = do
       map fromOnly
         <$> DB.query
           db
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND chat_item_id < ? AND item_deleted != 1
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+              AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, beforeChatItemId, count)
+          (userId, groupId, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
 
 getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getGroupChatStats_ db userId groupId =
