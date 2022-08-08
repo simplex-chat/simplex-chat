@@ -236,9 +236,9 @@ processChatCommand = \case
   APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
   APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
-  APIGetChat (ChatRef cType cId) pagination searchString -> withUser $ \user -> case cType of
-    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination searchString)
-    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination searchString)
+  APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
+    CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
+    CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination search)
     CTContactRequest -> pure $ chatCmdError "not implemented"
     CTContactConnection -> pure $ chatCmdError "not supported"
   APIGetChatItems _pagination -> pure $ chatCmdError "not implemented"
@@ -2459,7 +2459,7 @@ chatCommandP =
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
-      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (A.space *> searchString)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (A.space *> search)),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
@@ -2588,7 +2588,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    searchString = T.unpack . safeDecodeUtf8 <$> A.takeByteString
+    search = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

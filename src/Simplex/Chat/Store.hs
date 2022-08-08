@@ -2789,15 +2789,15 @@ toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUser
   PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, createdAt, updatedAt}
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChat db user contactId pagination searchString_ = do
-  let searchString = fromMaybe "" searchString_
+getDirectChat db user contactId pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getDirectChatLast_ db user contactId count searchString
-    CPAfter afterId count -> getDirectChatAfter_ db user contactId afterId count searchString
-    CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count searchString
+    CPLast count -> getDirectChatLast_ db user contactId count search
+    CPAfter afterId count -> getDirectChatAfter_ db user contactId afterId count search
+    CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db User {userId} contactId count searchString  = do
+getDirectChatLast_ db User {userId} contactId count search  = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsLast_
@@ -2825,10 +2825,10 @@ getDirectChatLast_ db User {userId} contactId count searchString  = do
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
-          (userId, contactId, searchString, count)
+          (userId, contactId, search, count)
 
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db User {userId} contactId afterChatItemId count searchString = do
+getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsAfter_
@@ -2857,10 +2857,10 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count searchStrin
             ORDER BY i.chat_item_id ASC
             LIMIT ?
           |]
-          (userId, contactId, searchString, afterChatItemId, count)
+          (userId, contactId, search, afterChatItemId, count)
 
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatBefore_ db User {userId} contactId beforeChatItemId count searchString = do
+getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsBefore_
@@ -2889,7 +2889,7 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count searchStr
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
-          (userId, contactId, searchString, beforeChatItemId, count)
+          (userId, contactId, search, beforeChatItemId, count)
 
 getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getDirectChatStats_ db userId contactId =
@@ -2944,15 +2944,15 @@ getContact db userId contactId =
       (userId, contactId, ConnReady, ConnSndReady)
 
 getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChat db user groupId pagination searchString_ = do
-  let searchString = fromMaybe "" searchString_
+getGroupChat db user groupId pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getGroupChatLast_ db user groupId count searchString
-    CPAfter afterId count -> getGroupChatAfter_ db user groupId afterId count searchString
-    CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count searchString
+    CPLast count -> getGroupChatLast_ db user groupId count search
+    CPAfter afterId count -> getGroupChatAfter_ db user groupId afterId count search
+    CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count search
 
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatLast_ db user@User {userId} groupId count searchString = do
+getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   chatItemIds <- liftIO getGroupChatItemIdsLast_
@@ -2971,10 +2971,10 @@ getGroupChatLast_ db user@User {userId} groupId count searchString = do
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, searchString, count)
+          (userId, groupId, search, count)
 
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count searchString = do
+getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
@@ -2995,10 +2995,10 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count searchStr
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
           |]
-          (userId, groupId, searchString, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
+          (userId, groupId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count searchString = do
+getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
@@ -3019,7 +3019,7 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count searchS
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, searchString, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
+          (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
 
 getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getGroupChatStats_ db userId groupId =
