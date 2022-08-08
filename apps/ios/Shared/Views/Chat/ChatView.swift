@@ -23,6 +23,9 @@ struct ChatView: View {
     @FocusState private var keyboardVisible: Bool
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
+    @State private var loadingItems = false
+    @State private var firstPage = false
+    @State private var scrolledToUnread = false
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -37,28 +40,16 @@ struct ChatView: View {
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems) { ci in
-                                if case let .groupRcv(member) = ci.chatDir {
-                                    let prevItem = chatModel.getPrevChatItem(ci)
-                                    HStack(alignment: .top, spacing: 0) {
-                                        let showMember = prevItem == nil || showMemberImage(member, prevItem)
-                                        if showMember {
-                                            ProfileImage(imageStr: member.memberProfile.image)
-                                                .frame(width: memberImageSize, height: memberImageSize)
-                                        } else {
-                                            Rectangle().fill(.clear)
-                                                .frame(width: memberImageSize, height: memberImageSize)
-                                        }
-                                        chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
-                                    }
-                                    .padding(.trailing)
-                                    .padding(.leading, 12)
-                                } else {
-                                    chatItemWithMenu(ci, maxWidth).padding(.horizontal)
+                                chatItemView(ci, maxWidth).onAppear {
+                                    loadChatItems(cInfo, ci, proxy)
                                 }
                             }
                             .onAppear {
                                 DispatchQueue.main.async {
                                     scrollToFirstUnread(proxy)
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                                        scrolledToUnread = true
+                                    }
                                 }
                                 markAllRead()
                             }
@@ -170,6 +161,60 @@ struct ChatView: View {
             }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
+        }
+    }
+
+    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
+        if let i = chatModel.chatItems.firstIndex(where: { ci.id == $0.id }), i < 2,
+           let firstItem = chatModel.chatItems.first {
+            if loadingItems || firstPage || !scrolledToUnread { return }
+            loadingItems = true
+            Task {
+                do {
+                    let items = try await apiGetChatItems(
+                        type: cInfo.chatType,
+                        id: cInfo.apiId,
+                        pagination: .before(chatItemId: firstItem.id, count: 50)
+                    )
+                    await MainActor.run {
+                        if items.count == 0 {
+                            firstPage = true
+                        } else {
+                            chatModel.chatItems.insert(contentsOf: items, at: 0)
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                proxy.scrollTo(ci.id, anchor: .top)
+                            }
+                        }
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+//                            loadingItems = false
+//                        }
+                    }
+                } catch let error {
+                    logger.error("apiGetChat error: \(responseError(error))")
+                    await MainActor.run { loadingItems = false }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
+        if case let .groupRcv(member) = ci.chatDir {
+            let prevItem = chatModel.getPrevChatItem(ci)
+            HStack(alignment: .top, spacing: 0) {
+                let showMember = prevItem == nil || showMemberImage(member, prevItem)
+                if showMember {
+                    ProfileImage(imageStr: member.memberProfile.image)
+                        .frame(width: memberImageSize, height: memberImageSize)
+                } else {
+                    Rectangle().fill(.clear)
+                        .frame(width: memberImageSize, height: memberImageSize)
+                }
+                chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
+            }
+            .padding(.trailing)
+            .padding(.leading, 12)
+        } else {
+            chatItemWithMenu(ci, maxWidth).padding(.horizontal)
         }
     }
 
