@@ -113,10 +113,8 @@ struct AddGroupMembersView: View {
         let checked = selectedContacts.contains(contact.apiId)
         return Button {
             if checked {
-                logger.error("############################### remove \(contact.apiId)")
                 selectedContacts.remove(contact.apiId)
             } else {
-                logger.error("############################### insert \(contact.apiId)")
                 selectedContacts.insert(contact.apiId)
             }
         } label: {
