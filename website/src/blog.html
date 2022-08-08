@@ -4,13 +4,65 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link href="/css/blogs.css" rel="stylesheet" />
     <title>Blogs</title>
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
 </head>
-<body>
-    {% for blog in collections.blogs  %}
-    <h1>{{ blog.title }}</h1>
-    <a href="{{ blog.url }}">{{ blog.data.title }}</a>
-    <br>
-    {% endfor %}
+<body class="bg-gray-100">
+    <header>
+        <nav class="container">
+          <a href="/">
+            <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+          </a>
+    
+          <div class="nav__buttons">
+            <div class="github">
+              <a
+                class="github-button"
+                href="https://github.com/simplex-chat/simplex-chat"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star simplex-chat on GitHub"
+                >Star</a>
+            </div>
+    
+            <div class="donate d-none-576">
+              <a href="https://opencollective.com/simplex-chat" target="_blank">
+                <span class="button">Donate</span></a>
+            </div>
+          </div>
+        </nav>
+    </header>
+    <section class="container">
+        {% for blog in collections.blogs  %}
+        <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
+            <h1 class="text-xl font-medium">{{ blog.data.title }}</h1>
+            <p class="text-sm">{{ blog.data.date.toUTCString().split(' ').slice(0, 4).join(' ') }}</p>
+            <a class="inline-block mt-5" href="{{ blog.url }}">{{ blog.data.title }}</a>
+            <br>
+        </article>
+        {% endfor %}
+    </section>
+    <footer>
+        <div class="container">
+          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                src="/img/icons/github.svg"></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                src="/img/icons/reddit.svg"></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                src="/img/icons/twitter.svg"></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                src="/img/icons/linkedin.svg"></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
+          </p>
+          <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+          </div>
+        </div>
+    </footer>
 </body>
 </html>
