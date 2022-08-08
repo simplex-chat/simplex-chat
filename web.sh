@@ -10,8 +10,8 @@ for f in website/src/blog/*.md
 do
     sed -i 's@\.\./images@/img/images@g' $f
     sed -i 's@\./images@/img/images@g' $f
-    sed -i 's@(\./@(/blog/@g' $f
-    sed -i 's@\.md@/@g' $f
+    # sed -i 's@(\./@(/blog/@g' $f
+    # sed -i 's@\.md@/@g' $f
 	echo "$f"
 done
 cd website
