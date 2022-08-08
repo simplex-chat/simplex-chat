@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=\, initial-scale=1.0">
+    <title>SimpleX Chat v3.1 is released</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blogs.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+<body class="sm:bg-gray-100">
+    <header>
+        <nav class="container">
+          <a href="/">
+            <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+          </a>
+    
+          <div class="nav__buttons">
+            <div class="github">
+              <a
+                class="github-button"
+                href="https://github.com/simplex-chat/simplex-chat"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star simplex-chat on GitHub"
+                >Star</a>
+            </div>
+    
+            <div class="donate d-none-576">
+              <a href="https://opencollective.com/simplex-chat" target="_blank">
+                <span class="button">Donate</span></a>
+            </div>
+          </div>
+        </nav>
+    </header>
+
+    <section class="container">
+        <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-12 lg:px-16">
+            <h1>SimpleX Chat v3.1 is released</h1>
+<p><strong>Published:</strong> Aug 8, 2022</p>
+<h2>What's new</h2>
+<ul>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#secret-chat-groups">secret chat groups</a>!</li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#access-to-messaging-servers-via-tor">access to messaging servers via Tor</a></li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#advanced-network-settings">advanced network settings</a></li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#published-chat-protocol">published chat protocol</a></li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#new-app-icons">new app icons</a></li>
+<li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#other-changes-since-v3">other changes since v3</a>
+<ul>
+<li>optimized battery and traffic usage - up to 90x reduction!</li>
+<li>two docker configurations for self-hosted SMP servers</li>
+</ul>
+</li>
+</ul>
+<h3>Secret chat groups</h3>
+<p><img src="/img/images/20220808-group1.png" width="330"> <img src="/img/images/20220808-group2.png" width="330"> <img src="/img/images/20220808-group3.png" width="330"></p>
+<p>It's been <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20210914-simplex-chat-v0.4-released.md">nearly a year</a> since the users of SimpleX Chat terminal app started experimenting with the groups, and now it is available to mobile app users as well. Many bugs were fixed, the stability was improved, but there are both the features we need to add and the bugs we need to fix to make groups more useful - we really look forward to your feedback. You can send any suggestions via the app by choosing <code>Chat with the developers</code> via app Settings (or using <code>/simplex</code> command in the terminal app) – this would connect you to SimpleX team via its <a href="https://simplex.chat/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D">fixed chat address</a>.</p>
+<p>SimpleX network is decentralized, so how do groups work? Unlike Matrix or Signal that host the group profile and the list of group members on their servers, SimpleX servers have no information about the group's existence - only its members do. SimpleX network does not assign any globally unique identifiers to the group, there is only a local database identifier and the list of members stored on members' devices. A user has an independent connection to each member in a group. When a user sends a message to the group, the app sends this message independently to each member. You can read more about how groups work in <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md#sub-protocol-for-chat-groups">SimpleX Chat Protocol</a>.</p>
+<p>But how can it scale, you might ask? It simply won't, and the current design for the groups is only suitable for relatively small groups of people who know each other well, definitely not larger than few hundred members – this design prioritized privacy and security of the group over its size or performance. For example, to send a message to the group of 100 members a user would need to send a total of ~1.6mb of data (as each message uses a fixed size block of 16kb). And if you were to send a 1mb file then it would also require sending it 100 times (provided each member accepts it).</p>
+<p>What if you need to send many large files to group members? We will be developing a file hosting server where the users will be able to upload the file (or image) once, and only send the file link and credentials to all group members, without the need to send the actual file. A small hosting quota will be available to all users for free, paid for by donations, and for larger files or to increase the total quota the users would either have to pay a small hosting cost or to self-host this server – it will be available as an open-source code.</p>
+<p>What if you need to have a large group - e.g. 100,000 members or more? We will be introducing SimpleX channels later this year, that can be both public and private. These channels would require a server to host them, either provided by SimpleX Chat or self-hosted - same as for a website. If this is a public channel it would be optionally accessible via the web browser as well, and it will be possible to embed it into any webpage.</p>
+<p>Other group improvements we will add soon:</p>
+<ul>
+<li>manage notifications in each group independently.</li>
+<li>search for messages - it is useful for direct conversations too, but more important for groups.</li>
+</ul>
+<h3>Access messaging servers via Tor</h3>
+<p><img src="/img/images/20220808-tor1.png" width="330">   <img src="/img/images/20220808-tor2.png" width="330"></p>
+<p>SimpleX protocols are focussed on protecting application-level meta-data – they don't have any user identifiers used by all other messaging platforms, instead relying on pairwise connection identifiers.</p>
+<p>But there are scenarios when users need to protect their IP addresses from the servers and any network observers – this is best done by using Tor to access any network services.</p>
+<p>This release allows to access SimpleX messaging servers via Tor on all platforms:</p>
+<ul>
+<li>terminal app beta supported it for a couple weeks now: to access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with <code>-x</code> option. See <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md#access-messaging-servers-via-tor-beta">terminal app docs</a> for more information.</li>
+<li>Android app supports access via Tor using Orbot SOCKS proxy. Once you install and start Orbot, you need to enable <code>Network &amp; Servers / Use SOCKS proxy</code> setting in the app to access SimpleX servers via Tor.</li>
+<li>iOS app can also be used with Orbot iOS app (that is installed as a system-wide VPN provider). The only setting you might need to change is to increase network timeouts in the app - to do that you have to enable <code>Developer tools</code>, and then chose <code>Network &amp; Servers / Advanced network settings / Set timeouts for proxy</code>.</li>
+</ul>
+<p>Currently all servers are accessed via their public Internet addresses, and while users can self-host messaging servers on .onion addresses (as v3 hidden services), it would require both connected contacts to use Tor. We are planning to add support for dual server addresses very soon, to allow the same server to be accessed both via its public Internet address and via .onion address, so that users can access servers without exiting Tor (via .onion address), but their contacts can access the same servers without using Tor.</p>
+<h3>Advanced network settings</h3>
+<p>To reduce traffic on slow networks we added network access settings. To use these settings, you need to first enable <code>Developer tools</code> and then choose <code>Network &amp; Servers / Advanced network settings</code>:</p>
+<ul>
+<li>if your connections to the servers are unstable, and you frequently see the spinners in the list of chats, please increase the connection and protocol timeouts - it should reduce the traffic, but it may also make the app a bit slower when your Internet connection is slow.</li>
+<li>if your connection to the servers appears stable, but the traffic usage is high, please try disabling TCP keep-alive setting or increasing keep-alive idle period (<code>TCP_KEEP_IDLE</code>) and interval (<code>TCP_KEEP_INTVL</code>).</li>
+</ul>
+<p>Once we investigated how these settings affect traffic and user experience we will simplify them - huge thanks to everyone testing them and reporting any traffic issues.</p>
+<h3>New app icons</h3>
+<img src="/img/images/20220808-icons.png" width="330">
+<p>Many users asked to allow customizing the app, this is just a start - you can now choose either light or dark icon option via <code>Appearance</code> settings.</p>
+<p>More options to customize the app are coming - please let us know what are the most important.</p>
+<h3>Published chat protocol</h3>
+<p>The <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/">low level SimpleX protocols</a> were published long time ago, and updated to reflect the evolution of the protocols, the high level chat protocol was not published before. The reason for that was to allow us to iterate it quickly, without committing to any of the decisions.</p>
+<p>This is the <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md">first draft of SimpleX Chat Protocol</a> - let us know any questions or suggestions.</p>
+<p>### Other changes since v3</p>
+<p>Since v3 release we also optimized battery and traffic usage - with up to 90x traffic reduction in some cases – and published two docker configurations for self-hosted SMP servers. Read more about it in the previous <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md">beta version announcement</a>.</p>
+<h2>SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<h2>We ask you to help us pay for 3rd party security audit</h2>
+<p>I will get straight to the point: I ask you to support SimpleX Chat with donations.</p>
+<p>We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.</p>
+<p>We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20000+ expense could be covered with donations.</p>
+<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations for the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
+<p>If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.</p>
+<p>It is possible to donate via:</p>
+<ul>
+<li><a href="https://github.com/sponsors/simplex-chat">GitHub</a>: it is commission-free for us.</li>
+<li><a href="https://opencollective.com/simplex-chat">OpenCollective</a>: it also accepts donations in crypto-currencies, but charges a commission.</li>
+<li>Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt</li>
+</ul>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
+
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                src="/img/icons/github.svg"></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                src="/img/icons/reddit.svg"></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                src="/img/icons/twitter.svg"></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                src="/img/icons/linkedin.svg"></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
+          </p>
+          <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+          </div>
+        </div>
+    </footer>
+</body>
+</html>

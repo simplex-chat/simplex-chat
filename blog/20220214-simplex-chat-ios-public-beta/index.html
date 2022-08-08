@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=\, initial-scale=1.0">
+    <title>SimpleX announces SimpleX Chat public beta for iOS</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blogs.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+<body class="sm:bg-gray-100">
+    <header>
+        <nav class="container">
+          <a href="/">
+            <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+          </a>
+    
+          <div class="nav__buttons">
+            <div class="github">
+              <a
+                class="github-button"
+                href="https://github.com/simplex-chat/simplex-chat"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star simplex-chat on GitHub"
+                >Star</a>
+            </div>
+    
+            <div class="donate d-none-576">
+              <a href="https://opencollective.com/simplex-chat" target="_blank">
+                <span class="button">Donate</span></a>
+            </div>
+          </div>
+        </nav>
+    </header>
+
+    <section class="container">
+        <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-12 lg:px-16">
+            <h1>SimpleX announces SimpleX Chat public beta for iOS</h1>
+<p><strong>Published:</strong> Feb 14, 2022</p>
+<h2>Private and secure chat and application platform - <a href="https://testflight.apple.com/join/DWuT2LQu">public beta is now available</a> for iPhones with iOS 15.</h2>
+<p>Our new iPhone app is very basic - right now it only supports text messages and emojis.</p>
+<p>Even though the app is new, it uses the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 a month ago:</p>
+<ul>
+<li><a href="https://www.signal.org/docs/specifications/doubleratchet/">double-ratchet</a> E2E encryption.</li>
+<li>separate keys for each contact.</li>
+<li>additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).</li>
+<li>additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).</li>
+</ul>
+<p>You can read more details in our recent <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md">v1 announcement</a>.</p>
+<h2>Join our public beta!</h2>
+<p>Install the app <a href="https://testflight.apple.com/join/DWuT2LQu">via TestFlight</a>, connect to us (via <strong>Connect to SimpleX team</strong> link in the app) and to a couple of your friends you usually send messages to - and please let us know what you think!</p>
+<p>We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.</p>
+<p>Should it be:</p>
+<ul>
+<li>images,</li>
+<li>link previews,</li>
+<li>or maybe something else we couldn't think of.</li>
+</ul>
+<p>Please vote on the features you think are the most needed in our <a href="https://app.loopedin.io/simplex">app roadmap</a>.</p>
+<h2>What is SimpleX?</h2>
+<p>We are building a new platform for distributed Internet applications where privacy of the messages <em>and</em> the network matter.</p>
+<p>We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.</p>
+<p>The first application built on the platform is Simplex Chat, which is available for terminal (command line in Windows/Mac/Linux) and as iOS public beta - with Android app coming in a few weeks. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.</p>
+<p>SimpleX also allows people to host their own servers to have control of their chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages). It should be considered though that while self-hosting the servers provides more control, it may reduce meta-data privacy, as it is easier to correlate the traffic of servers with small number of messages coming through.</p>
+<p>Further details on platform objectives and technical design are available <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">in SimpleX platform overview</a>.</p>
+
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                src="/img/icons/github.svg"></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                src="/img/icons/reddit.svg"></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                src="/img/icons/twitter.svg"></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                src="/img/icons/linkedin.svg"></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
+          </p>
+          <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+          </div>
+        </div>
+    </footer>
+</body>
+</html>

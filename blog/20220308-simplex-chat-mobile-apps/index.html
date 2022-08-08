@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=\, initial-scale=1.0">
+    <title>SimpleX announces SimpleX Chat mobile apps for iOS and Android</title>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
+    <link href="/css/tailwind.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/blogs.css">
+    <link rel="stylesheet" href="/css/blog.css">
+    <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+<body class="sm:bg-gray-100">
+    <header>
+        <nav class="container">
+          <a href="/">
+            <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+          </a>
+    
+          <div class="nav__buttons">
+            <div class="github">
+              <a
+                class="github-button"
+                href="https://github.com/simplex-chat/simplex-chat"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star simplex-chat on GitHub"
+                >Star</a>
+            </div>
+    
+            <div class="donate d-none-576">
+              <a href="https://opencollective.com/simplex-chat" target="_blank">
+                <span class="button">Donate</span></a>
+            </div>
+          </div>
+        </nav>
+    </header>
+
+    <section class="container">
+        <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-12 lg:px-16">
+            <h1>SimpleX announces SimpleX Chat mobile apps for iOS and Android</h1>
+<p><strong>Published:</strong> March 8, 2022</p>
+<h2>SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections graph</h2>
+<p>We have now released iPhone and Android apps to <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084">Apple AppStore</a> and <a href="https://play.google.com/store/apps/details?id=chat.simplex.app">Google Play Store</a>, <a href="https://github.com/simplex-chat/website/raw/master/simplex.apk">APK for Android</a> is also available for direct download.</p>
+<p><strong>Please note</strong>: the current version is only supported on iPhone 8+ and on Android 10+ - we are planning to add support for iPad and older devices very soon, and we will announce it on our <a href="https://www.reddit.com/r/SimpleXChat/">Reddit</a> and <a href="https://twitter.com/SimpleXChat">Twitter</a> channels - please subscribe to follow our updates there.</p>
+<h2>What is SimpleX</h2>
+<p>We are building a new platform for distributed Internet applications where privacy of the messages <em>and</em> the network matter.</p>
+<p>We aim to provide the best possible protection of messages and metadata. Today there is no messaging application that works without global user identities, so we believe we provide better metadata privacy than alternatives. SimpleX is designed to be truly distributed with no central server, and without any global user identities. This allows for high scalability at low cost, and also makes it virtually impossible to snoop on the network graph.</p>
+<p>The first application built on the platform is Simplex Chat. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.</p>
+<p>Further details on platform objectives and technical design are available <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">in SimpleX platform overview</a>.</p>
+<h2>Why we are building it</h2>
+<p>Evgeny (SimpleX Chat founder): I have been working on this platform for a long time to provide a place where all people can communicate freely with each other, without fear of persecution because of what they said and who they are connected with. Not sharing information about your connections is very important, particularly for people living in oppressive regimes. Because of the terrible conflict between Russia and Ukraine, people of both countries – I have friends and family there – could be at risk when sharing their opinions or just from being connected to people who were prosecuted. Every messenger app that knows who you are can end up sharing all of your connections with undesirable third parties, either as a result of a court order or as a result of attack - so even Signal, which has strong encryption, cannot protect your connection graph. I hope our messenger can help people living in the oppressive regimes to express their opinions without fear and risk of prosecution.</p>
+<h2>Huge thanks to our testers!</h2>
+<p>Thanks a lot to everybody who helped testing and improving the apps!</p>
+<p>If you have a <a href="https://testflight.apple.com/join/DWuT2LQu">TestFlight version</a> installed you can continue using it.</p>
+<p>We plan to keep it as stable as we can, and it will give you access to all new features 1-2 weeks earlier - it's limited to 10,000 users, so you can grab it while it's available. You can still communicate with people who use a public version – we are committed to maintaining backwards compatibility.</p>
+<p>You can always migrate from a public App Store version to a TestFlight version. The opposite migration - from TestFlight to public version - is only possible when we have the same app versions released, as there are usually some database migrations that cannot be reversed. To migrate to public version you have to disable automatic updates on TestFlight, wait until public version catches up and then install it from App Store. In any case, it is safe installing the public version, but it might crash if you have a newer version from TestFlight - in this case you just need to re-install the app from TestFlight and install App Store version a bit later - you would not lose any of your data.</p>
+<h2>It's not all new - our core code has been used for a long time by a few thousand people in our terminal app.</h2>
+<p>The apps use the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:</p>
+<ul>
+<li><a href="https://www.signal.org/docs/specifications/doubleratchet/">double-ratchet</a> E2E encryption.</li>
+<li>separate keys for each contact.</li>
+<li>additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).</li>
+<li>additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).</li>
+</ul>
+<p>You can read more technical details in our recent <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md">v1 announcement</a>.</p>
+<p>A big thank you to <a href="https://github.com/angerman">@angerman</a> for making it possible to compile our Haskell code to mobile platforms and getting it approved on app stores - it has been a non-trivial project, and it is still ongoing.</p>
+<h2>Install the apps and make a private connection!</h2>
+<p>Once you install the app, you can connect to anybody:</p>
+<ol>
+<li>Create your local chat profile - it is not shared with SimpleX servers, it is local to your devices, and it will be shared with your contacts when you connect.</li>
+<li>To make a private connection, you need to create a one-time connection link / QR code via &quot;Add contact&quot; button in the app. You can either show the QR code to your contact in person or via a video call - this is the most secure way to create a connection - or you can share the link via any other channel - only one user can connect via this link.</li>
+<li>Once another user scans the QR code or opens the app via the link (they also should create their profile first) the connection will be created and you can send e2e encrypted messages privately, without anybody knowing you are connected.</li>
+</ol>
+<h2>New features and improvements that are coming soon</h2>
+<ul>
+<li>push notification server. Currently the apps load messages in the background periodically, that can be quite infrequent on iOS if you don't open the app regularly. With push notifications you would know about the new messages instantly.</li>
+<li>e2e encrypted audio and video calls via WebRTC.</li>
+<li>export and import of the chat database.</li>
+<li>&quot;reply to message&quot; - feature allowing you to quote the message you are replying to.</li>
+<li>localization - we will let you know once you can contribute the translations to your languages.</li>
+<li>configuring your servers in the apps - this will be released this week, both for iOS and Android. By default the apps are using SimpleX Chat servers, but you will be able to configure your own and still be connected to other users who use our app with our servers.</li>
+<li>user profile images.</li>
+<li>sending images and files - image preview will be sent via the servers, so it can be asynchronous, and large files/full resolution images via WebRTC, so both devices will have to be online.</li>
+</ul>
+<p>Please let us know what else you think is important and if you find any bugs.</p>
+
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+          <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+          <p class="copyright">&#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                src="/img/icons/github.svg"></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                src="/img/icons/reddit.svg"></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                src="/img/icons/twitter.svg"></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                src="/img/icons/linkedin.svg"></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg"></a>
+          </p>
+          <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+              data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+          </div>
+        </div>
+    </footer>
+</body>
+</html>
