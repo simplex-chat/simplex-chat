@@ -16,6 +16,7 @@ struct AddGroupMembersView: View {
     var groupInfo: GroupInfo
     var membersToAdd: [Contact]
     var showSkip: Bool = false
+    var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .admin
@@ -41,15 +42,17 @@ struct AddGroupMembersView: View {
                         inviteMembersButton()
                             .disabled(count < 1)
                     } footer: {
-                        if (count >= 1) {
-                            HStack {
-                                Button { selectedContacts.removeAll() } label: { Text("Clear") }
-                                Spacer()
-                                Text("\(count) contact(s) selected")
+                        if showFooterCounter {
+                            if count >= 1 {
+                                HStack {
+                                    Button { selectedContacts.removeAll() } label: { Text("Clear") }
+                                    Spacer()
+                                    Text("\(count) contact(s) selected")
+                                }
+                            } else {
+                                Text("No contacts selected")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
                             }
-                        } else {
-                            Text("No contacts selected")
-                                .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
 
@@ -110,8 +113,10 @@ struct AddGroupMembersView: View {
         let checked = selectedContacts.contains(contact.apiId)
         return Button {
             if checked {
+                logger.error("############################### remove \(contact.apiId)")
                 selectedContacts.remove(contact.apiId)
             } else {
+                logger.error("############################### insert \(contact.apiId)")
                 selectedContacts.insert(contact.apiId)
             }
         } label: {

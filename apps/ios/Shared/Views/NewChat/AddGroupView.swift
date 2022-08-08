@@ -24,10 +24,13 @@ struct AddGroupView: View {
 
     var body: some View {
         if let chat = chat, let groupInfo = groupInfo {
-            AddGroupMembersView(chat: chat,
-                                groupInfo: groupInfo,
-                                membersToAdd: filterMembersToAdd([]),
-                                showSkip: true) { _ in
+            AddGroupMembersView(
+                chat: chat,
+                groupInfo: groupInfo,
+                membersToAdd: filterMembersToAdd([]),
+                showSkip: true,
+                showFooterCounter: false
+            ) { _ in
                 dismiss()
                 DispatchQueue.main.async {
                     m.chatId = groupInfo.id
