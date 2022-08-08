@@ -1,5 +1,13 @@
 # Blog
 
+Aug 8, 2022 [SimpleX Chat v3.1 released](./20220808-simplex-chat-v3.1-chat-groups.md)
+
+- finally, secret chat groups!
+- access to messaging servers via Tor on all platforms
+- advanced network settings to optimize traffic usage
+- published chat protocol
+- new app icons
+
 Jul 23, 2022 [SimpleX Chat v3.1-beta released](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
 
 - terminal app: access to messaging servers via SOCKS5 proxy (e.g., Tor).
