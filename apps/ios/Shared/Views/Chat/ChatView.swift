@@ -11,6 +11,8 @@ import SimpleXChat
 
 private let memberImageSize: CGFloat = 34
 
+private let upsideDown = CGSize(width: 1, height: -1)
+
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
@@ -39,17 +41,15 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
-                            ForEach(chatModel.chatItems) { ci in
-                                chatItemView(ci, maxWidth).onAppear {
-                                    loadChatItems(cInfo, ci, proxy)
-                                }
+                            ForEach(chatModel.chatItems.reversed()) { ci in
+                                chatItemView(ci, maxWidth)
+                                    .scaleEffect(upsideDown, anchor: .center)
+                                    .onAppear { loadChatItems(cInfo, ci) }
                             }
                             .onAppear {
                                 DispatchQueue.main.async {
                                     scrollToFirstUnread(proxy)
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                                        scrolledToUnread = true
-                                    }
+                                    scrolledToUnread = true
                                 }
                                 markAllRead()
                             }
@@ -68,6 +68,7 @@ struct ChatView: View {
                     .onTapGesture { hideKeyboard() }
                 }
             }
+            .scaleEffect(upsideDown, anchor: .center)
 
             Spacer(minLength: 0)
 
@@ -78,6 +79,7 @@ struct ChatView: View {
             )
             .disabled(!chat.chatInfo.sendMsgEnabled)
         }
+        .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -164,9 +166,8 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
-        if let i = chatModel.chatItems.firstIndex(where: { ci.id == $0.id }), i < 2,
-           let firstItem = chatModel.chatItems.first {
+    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
+        if let firstItem = chatModel.chatItems.first, firstItem.id == ci.id {
             if loadingItems || firstPage || !scrolledToUnread { return }
             loadingItems = true
             Task {
@@ -181,13 +182,8 @@ struct ChatView: View {
                             firstPage = true
                         } else {
                             chatModel.chatItems.insert(contentsOf: items, at: 0)
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                proxy.scrollTo(ci.id, anchor: .top)
-                            }
                         }
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-//                            loadingItems = false
-//                        }
+                        loadingItems = false
                     }
                 } catch let error {
                     logger.error("apiGetChat error: \(responseError(error))")
