@@ -2956,7 +2956,7 @@ getGroupChatLast_ db user@User {userId} groupId count = do
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
-    getGroupChatItemIdsLast_ = do
+    getGroupChatItemIdsLast_ =
       map fromOnly
         <$> DB.query
           db
@@ -2979,7 +2979,7 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count = do
   pure $ Chat (GroupChat groupInfo) chatItems stats
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
-    getGroupChatItemIdsAfter_ afterChatItemTs = do
+    getGroupChatItemIdsAfter_ afterChatItemTs =
       map fromOnly
         <$> DB.query
           db
@@ -3003,7 +3003,7 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count = do
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
-    getGroupChatItemIdsBefore_ beforeChatItemTs = do
+    getGroupChatItemIdsBefore_ beforeChatItemTs =
       map fromOnly
         <$> DB.query
           db
