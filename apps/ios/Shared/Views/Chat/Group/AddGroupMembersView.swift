@@ -82,11 +82,21 @@ struct AddGroupMembersView: View {
     func inviteMembersButton() -> some View {
         Button {
             Task {
-                for contactId in selectedContacts {
-                    await addMember(groupInfo: groupInfo, contactId: contactId, memberRole: selectedRole)
+                do {
+                    for contactId in selectedContacts {
+                        try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
+                        // await MainActor.run { ChatModel.shared.upsertGroupMember(groupInfo, member) }
+                    }
+                    await MainActor.run { dismiss() }
+                    if let cb = addedMembersCb { cb(selectedContacts) }
+                } catch {
+                    AlertManager.shared.showAlert(
+                        Alert(
+                            title: Text("Error adding member"),
+                            message: Text(responseError(error))
+                        )
+                    )
                 }
-                await MainActor.run { dismiss() }
-                if let cb = addedMembersCb { cb(selectedContacts) }
             }
         } label: {
             HStack {

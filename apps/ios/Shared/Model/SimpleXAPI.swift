@@ -567,22 +567,13 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func addMember(groupInfo: GroupInfo, contactId: Int64, memberRole: GroupMemberRole) async {
-    do {
-        try await apiAddMember(groupId: groupInfo.groupId, contactId: contactId, memberRole: memberRole)
-//        DispatchQueue.main.async { ChatModel.shared.upsertGroupMember(groupInfo, member) }
-    } catch let error {
-        logger.error("addMember error: \(responseError(error))")
-    }
-}
-
-func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
     if case .sentGroupInvitation = r { return }
     throw r
 }
 
-//func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws -> GroupMember {
+//func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
 //    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
 //    if case let .sentGroupInvitation(_, _, member) = r { return member }
 //    throw r
