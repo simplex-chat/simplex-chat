@@ -42,6 +42,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
       withApi {
         selectedContacts.forEach {
           chatModel.controller.apiAddMember(groupInfo.groupId, it, selectedRole.value)
+          // chatModel.upsertGroupMember(groupInfo, member)
         }
         close.invoke()
       }
