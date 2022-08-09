@@ -98,7 +98,7 @@
 
     <provider
         android:name="androidx.core.content.FileProvider"
-        android:authorities="chat.simplex.app.provider"
+        android:authorities="${provider_authorities}"
         android:exported="false"
         android:grantUriPermissions="true">
       <meta-data
