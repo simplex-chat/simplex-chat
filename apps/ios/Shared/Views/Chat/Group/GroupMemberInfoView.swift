@@ -114,12 +114,6 @@ struct GroupMemberInfoView: View {
                         }
                     } catch let error {
                         logger.error("apiRemoveMember error: \(responseError(error))")
-                        AlertManager.shared.showAlert(
-                            Alert(
-                                title: Text("Error removing member"),
-                                message: Text(responseError(error))
-                            )
-                        )
                     }
                 }
             },
