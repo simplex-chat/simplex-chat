@@ -106,8 +106,21 @@ struct GroupMemberInfoView: View {
             message: Text("Member will be removed from group - this cannot be undone!"),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
-                    await removeMember(groupInfo, member.groupMemberId)
-                    dismiss()
+                    do {
+                        let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
+                        await MainActor.run {
+                            ChatModel.shared.removeGroupMember(groupInfo, member)
+                            dismiss()
+                        }
+                    } catch let error {
+                        logger.error("apiRemoveMember error: \(responseError(error))")
+                        AlertManager.shared.showAlert(
+                            Alert(
+                                title: Text("Error removing member"),
+                                message: Text(responseError(error))
+                            )
+                        )
+                    }
                 }
             },
             secondaryButton: .cancel()

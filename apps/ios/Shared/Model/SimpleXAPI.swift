@@ -595,15 +595,6 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func removeMember(_ groupInfo: GroupInfo, _ memberId: Int64) async {
-    do {
-        let member = try await apiRemoveMember(groupInfo.groupId, memberId)
-        DispatchQueue.main.async { ChatModel.shared.removeGroupMember(groupInfo, member) }
-    } catch let error {
-        logger.error("removeMember error: \(responseError(error))")
-    }
-}
-
 func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupMember {
     let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
     if case let .userDeletedMember(_, member) = r { return member }
