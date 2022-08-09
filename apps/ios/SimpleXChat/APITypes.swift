@@ -256,6 +256,7 @@ public enum ChatResponse: Decodable, Error {
     // group events
     case groupCreated(groupInfo: GroupInfo)
     case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
+//    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(groupInfo: GroupInfo)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
@@ -268,11 +269,11 @@ public enum ChatResponse: Decodable, Error {
     case leftMember(groupInfo: GroupInfo, member: GroupMember)
     case groupDeleted(groupInfo: GroupInfo, member: GroupMember)
     case contactsMerged(intoContact: Contact, mergedContact: Contact)
-    case groupInvitation(groupInfo: GroupInfo)
+    case groupInvitation(groupInfo: GroupInfo) // unused
     case userJoinedGroup(groupInfo: GroupInfo)
     case joinedGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
-    case groupRemoved(groupInfo: GroupInfo)
+    case groupRemoved(groupInfo: GroupInfo) // unused
     case groupUpdated(toGroup: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)

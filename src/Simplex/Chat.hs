@@ -695,24 +695,24 @@ processChatCommand = \case
     when (userRole < GRAdmin || userRole < memRole) $ throwChatError CEGroupUserRole
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
-    let sendInvitation groupMemberId memberId cReq = do
+    let sendInvitation member@GroupMember {groupMemberId, memberId} cReq = do
           let groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
           let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
           setActive $ ActiveG localDisplayName
-          pure $ CRSentGroupInvitation gInfo contact
+          pure $ CRSentGroupInvitation gInfo contact member
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        GroupMember {memberId, groupMemberId} <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
-        sendInvitation groupMemberId memberId cReq
-      Just GroupMember {groupMemberId, memberId, memberStatus}
+        member <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
+        sendInvitation member cReq
+      Just member@GroupMember {groupMemberId, memberStatus}
         | memberStatus == GSMemInvited ->
           withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> sendInvitation groupMemberId memberId cReq
+            Just cReq -> sendInvitation member cReq
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
