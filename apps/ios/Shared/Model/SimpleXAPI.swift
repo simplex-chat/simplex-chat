@@ -823,9 +823,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         case let .deletedMemberUser(groupInfo, _): // TODO update user member
             m.updateGroup(groupInfo)
         case let .deletedMember(groupInfo, _, deletedMember):
-            m.removeGroupMember(groupInfo, deletedMember)
+            _ = m.upsertGroupMember(groupInfo, deletedMember)
         case let .leftMember(groupInfo, member):
-            m.removeGroupMember(groupInfo, member)
+            _ = m.upsertGroupMember(groupInfo, member)
         case let .groupDeleted(groupInfo, _): // TODO update user member
             m.updateGroup(groupInfo)
         case let .userJoinedGroup(groupInfo):

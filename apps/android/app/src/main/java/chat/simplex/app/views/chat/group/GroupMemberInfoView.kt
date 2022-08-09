@@ -37,19 +37,22 @@ fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: Co
       member,
       connStats,
       developerTools,
-      removeMember = { removeMemberDialog(member, chatModel, close) }
+      removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
   }
 }
 
-fun removeMemberDialog(member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.button_remove_member),
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(R.string.remove_member_confirmation),
     onConfirm = {
       withApi {
-        chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
+        val removedMember = chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
+        if (removedMember != null) {
+          chatModel.upsertGroupMember(groupInfo, removedMember)
+        }
         close?.invoke()
       }
     }

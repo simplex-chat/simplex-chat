@@ -248,6 +248,22 @@ class ChatModel(val controller: ChatController) {
   fun removeChat(id: String) {
     chats.removeAll { it.id == id }
   }
+
+  fun upsertGroupMember(groupInfo: GroupInfo, member: GroupMember): Boolean {
+    // update current chat
+    return if (chatId.value == groupInfo.id) {
+      val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
+      if (memberIndex >= 0) {
+        groupMembers[memberIndex] = member
+        false
+      } else {
+        groupMembers.add(member)
+        true
+      }
+    } else {
+      false
+    }
+  }
 }
 
 enum class ChatType(val type: String) {
