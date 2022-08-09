@@ -111,8 +111,11 @@ struct ChatView: View {
                         }
                     } else if case let .group(groupInfo) = cInfo {
                         Task {
-                            await setGroupMembers(groupInfo)
-                            await MainActor.run { showChatInfoSheet = true }
+                            let groupMembers = await apiListMembers(groupInfo.groupId)
+                            await MainActor.run {
+                                ChatModel.shared.groupMembers = groupMembers
+                                showChatInfoSheet = true
+                            }
                         }
                     }
                 } label: {
@@ -163,8 +166,11 @@ struct ChatView: View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
                 Task {
-                    await setGroupMembers(gInfo)
-                    await MainActor.run { showAddMembersSheet = true }
+                    let groupMembers = await apiListMembers(gInfo.groupId)
+                    await MainActor.run {
+                        ChatModel.shared.groupMembers = groupMembers
+                        showAddMembersSheet = true
+                    }
                 }
             }
         } label: {

@@ -92,7 +92,7 @@ struct AddGroupMembersView: View {
                 } catch {
                     AlertManager.shared.showAlert(
                         Alert(
-                            title: Text("Error adding member"),
+                            title: Text("Error adding member(s)"),
                             message: Text(responseError(error))
                         )
                     )

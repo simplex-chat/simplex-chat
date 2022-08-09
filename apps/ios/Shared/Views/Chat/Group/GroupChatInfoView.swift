@@ -124,8 +124,11 @@ struct GroupChatInfoView: View {
     private func addMembersButton() -> some View {
         Button {
             Task {
-                await setGroupMembers(groupInfo)
-                await MainActor.run { showAddMembersSheet = true }
+                let groupMembers = await apiListMembers(groupInfo.groupId)
+                await MainActor.run {
+                    ChatModel.shared.groupMembers = groupMembers
+                    showAddMembersSheet = true
+                }
             }
         } label: {
             Label("Invite members", systemImage: "plus")

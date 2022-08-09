@@ -147,7 +147,12 @@ struct AddGroupView: View {
         hideKeyboard()
         do {
             let gInfo = try apiNewGroup(profile)
-            Task { await setGroupMembers(gInfo) }
+            Task {
+                let groupMembers = await apiListMembers(gInfo.groupId)
+                await MainActor.run {
+                    ChatModel.shared.groupMembers = groupMembers
+                }
+            }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
             m.addChat(c)
             withAnimation {
