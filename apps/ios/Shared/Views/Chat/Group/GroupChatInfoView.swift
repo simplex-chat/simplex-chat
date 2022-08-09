@@ -124,7 +124,7 @@ struct GroupChatInfoView: View {
     private func addMembersButton() -> some View {
         Button {
             Task {
-                await populateGroupMembers(groupInfo)
+                await setGroupMembers(groupInfo)
                 await MainActor.run { showAddMembersSheet = true }
             }
         } label: {

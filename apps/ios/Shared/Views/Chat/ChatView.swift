@@ -111,7 +111,7 @@ struct ChatView: View {
                         }
                     } else if case let .group(groupInfo) = cInfo {
                         Task {
-                            await populateGroupMembers(groupInfo)
+                            await setGroupMembers(groupInfo)
                             await MainActor.run { showChatInfoSheet = true }
                         }
                     }
@@ -163,7 +163,7 @@ struct ChatView: View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
                 Task {
-                    await populateGroupMembers(gInfo)
+                    await setGroupMembers(gInfo)
                     await MainActor.run { showAddMembersSheet = true }
                 }
             }

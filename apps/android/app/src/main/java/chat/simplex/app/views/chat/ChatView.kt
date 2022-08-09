@@ -37,7 +37,7 @@ import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chatlist.openChat
-import chat.simplex.app.views.chatlist.populateGroupMembers
+import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -106,7 +106,7 @@ fun ChatView(chatModel: ChatModel) {
               }
             }
           } else if (cInfo is ChatInfo.Group) {
-            populateGroupMembers(cInfo.groupInfo, chatModel)
+            setGroupMembers(cInfo.groupInfo, chatModel)
             ModalManager.shared.showCustomModal { close ->
               ModalView(
                 close = close, modifier = Modifier,
@@ -160,7 +160,7 @@ fun ChatView(chatModel: ChatModel) {
       },
       addMembers = { groupInfo ->
         withApi {
-          populateGroupMembers(groupInfo, chatModel)
+          setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,

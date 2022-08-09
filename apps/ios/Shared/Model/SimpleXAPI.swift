@@ -640,7 +640,7 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
-func populateGroupMembers(_ groupInfo: GroupInfo) async {
+func setGroupMembers(_ groupInfo: GroupInfo) async {
     let groupMembers = await apiListMembers(groupInfo.groupId)
     DispatchQueue.main.async { ChatModel.shared.groupMembers = groupMembers }
 }
