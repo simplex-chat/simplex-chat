@@ -8,6 +8,7 @@
 
 import SwiftUI
 import SimpleXChat
+import Introspect
 
 private let memberImageSize: CGFloat = 34
 
@@ -40,33 +41,34 @@ struct ChatView: View {
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems.reversed()) { ci in
-                                chatItemView(ci, maxWidth)
-                                    .rotationEffect(.degrees(180))
-                                    .onAppear { loadChatItems(cInfo, ci) }
-                            }
-                            .onAppear {
-                                DispatchQueue.main.async {
-                                    scrollToFirstUnread(proxy)
-                                    scrolledToUnread = true
+                                addContextMenu(ci, maxWidth) {
+                                    chatItemView(ci, maxWidth).scaleEffect(x: 1, y: -1, anchor: .center)
                                 }
-                                markAllRead()
+                                .onAppear { loadChatItems(cInfo, ci, proxy) }
                             }
-                            .onChange(of: chatModel.chatItems.last?.id) { _ in
-                                scrollToBottom(proxy)
-                            }
-                            .onChange(of: keyboardVisible) { _ in
-                                if keyboardVisible {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                        scrollToBottom(proxy, animation: .easeInOut(duration: 1))
-                                    }
-                                }
+                        }
+                    }
+                    .onAppear {
+                        DispatchQueue.main.async {
+                            scrollToFirstUnread(proxy)
+                            scrolledToUnread = true
+                        }
+                        markAllRead()
+                    }
+                    .onChange(of: chatModel.chatItems.last?.id) { _ in
+                        scrollToBottom(proxy)
+                    }
+                    .onChange(of: keyboardVisible) { _ in
+                        if keyboardVisible {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                scrollToBottom(proxy, animation: .easeInOut(duration: 1))
                             }
                         }
                     }
                     .onTapGesture { hideKeyboard() }
                 }
             }
-            .rotationEffect(.degrees(180))
+            .scaleEffect(x: 1, y: -1, anchor: .center)
 
             Spacer(minLength: 0)
 
@@ -164,7 +166,7 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
+    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
         if let firstItem = chatModel.chatItems.first, firstItem.id == ci.id {
             if loadingItems || firstPage || !scrolledToUnread { return }
             loadingItems = true
@@ -203,19 +205,21 @@ struct ChatView: View {
                     Rectangle().fill(.clear)
                         .frame(width: memberImageSize, height: memberImageSize)
                 }
-                chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
+                ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
+//                chatItemWithMenu(ci, maxWidth, showMember: showMember).padding(.leading, 8)
             }
             .padding(.trailing)
             .padding(.leading, 12)
         } else {
-            chatItemWithMenu(ci, maxWidth).padding(.horizontal)
+            ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: false, maxWidth: maxWidth)
+            .padding(.horizontal)
+//            chatItemWithMenu(ci, maxWidth).padding(.horizontal)
         }
     }
 
-    private func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat, showMember: Bool = false) -> some View {
+    private func addContextMenu<V: View>(_ ci: ChatItem, _ maxWidth: CGFloat, content: () -> V) -> some View {
         let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-        return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
-            .contextMenu {
+        return content().contextMenu {
                 if ci.isMsgContent() {
                     Button {
                         withAnimation {
