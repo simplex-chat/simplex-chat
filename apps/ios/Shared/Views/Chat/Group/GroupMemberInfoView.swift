@@ -107,10 +107,13 @@ struct GroupMemberInfoView: View {
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        dismiss()
+                        let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
+                        await MainActor.run {
+                            ChatModel.shared.removeGroupMember(groupInfo, member)
+                            dismiss()
+                        }
                     } catch let error {
-                        logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
+                        logger.error("apiRemoveMember error: \(responseError(error))")
                     }
                 }
             },

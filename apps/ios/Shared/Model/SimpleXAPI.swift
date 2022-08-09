@@ -567,19 +567,17 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func addMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async {
-    do {
-        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole)
-    } catch let error {
-        logger.error("addMember error: \(responseError(error))")
-    }
-}
-
-func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
     if case .sentGroupInvitation = r { return }
     throw r
 }
+
+//func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
+//    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
+//    if case let .sentGroupInvitation(_, _, member) = r { return member }
+//    throw r
+//}
 
 enum JoinGroupResult {
     case joined(groupInfo: GroupInfo)
@@ -597,7 +595,7 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func apiRemoveMember(groupId: Int64, memberId: Int64) async throws -> GroupMember {
+func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupMember {
     let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
     if case let .userDeletedMember(_, member) = r { return member }
     throw r
@@ -820,12 +818,22 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 chatItems: []
             ))
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .joinedGroupMemberConnecting(groupInfo, _, member):
+            _ = m.upsertGroupMember(groupInfo, member)
+        case let .deletedMemberUser(groupInfo, _): // TODO update user member
+            m.updateGroup(groupInfo)
+        case let .deletedMember(groupInfo, _, deletedMember):
+            m.removeGroupMember(groupInfo, deletedMember)
+        case let .leftMember(groupInfo, member):
+            m.removeGroupMember(groupInfo, member)
+        case let .groupDeleted(groupInfo, _): // TODO update user member
+            m.updateGroup(groupInfo)
         case let .userJoinedGroup(groupInfo):
             m.updateGroup(groupInfo)
-        case let .groupDeleted(groupInfo, _):
-            m.updateGroup(groupInfo)
-        case let .deletedMemberUser(groupInfo, _):
-            m.updateGroup(groupInfo)
+        case let .joinedGroupMember(groupInfo, member):
+            _ = m.upsertGroupMember(groupInfo, member)
+        case let .connectedToGroupMember(groupInfo, member):
+            _ = m.upsertGroupMember(groupInfo, member)
         case let .groupUpdated(toGroup):
             m.updateGroup(toGroup)
         case let .rcvFileStart(aChatItem):

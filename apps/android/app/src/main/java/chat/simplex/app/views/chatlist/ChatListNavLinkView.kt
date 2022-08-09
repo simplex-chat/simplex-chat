@@ -96,7 +96,7 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
-suspend fun populateGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
+suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
   chatModel.groupMembers.clear()
   chatModel.groupMembers.addAll(groupMembers)

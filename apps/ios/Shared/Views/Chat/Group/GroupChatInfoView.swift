@@ -15,7 +15,6 @@ struct GroupChatInfoView: View {
     @ObservedObject var chat: Chat
     var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
-    @State private var members: [GroupMember] = []
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
@@ -33,6 +32,10 @@ struct GroupChatInfoView: View {
 
     var body: some View {
         NavigationView {
+            let members = chatModel.groupMembers
+                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
+                .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
+
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
@@ -57,7 +60,7 @@ struct GroupChatInfoView: View {
                     }
                 }
                 .sheet(isPresented: $showAddMembersSheet) {
-                    AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: filterMembersToAdd(members))
+                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
                 .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
                     GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats)
@@ -96,14 +99,6 @@ struct GroupChatInfoView: View {
             case .leaveGroupAlert: return leaveGroupAlert()
             }
         }
-        .task {
-            let ms = await apiListMembers(chat.chatInfo.apiId)
-                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
-                .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
-            await MainActor.run {
-                members = ms
-            }
-        }
     }
 
     func groupInfoHeader() -> some View {
@@ -128,7 +123,13 @@ struct GroupChatInfoView: View {
 
     private func addMembersButton() -> some View {
         Button {
-            showAddMembersSheet = true
+            Task {
+                let groupMembers = await apiListMembers(groupInfo.groupId)
+                await MainActor.run {
+                    ChatModel.shared.groupMembers = groupMembers
+                    showAddMembersSheet = true
+                }
+            }
         } label: {
             Label("Invite members", systemImage: "plus")
         }

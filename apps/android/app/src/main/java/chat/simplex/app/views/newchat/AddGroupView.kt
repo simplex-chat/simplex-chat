@@ -21,7 +21,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.chat.group.AddGroupMembersView
-import chat.simplex.app.views.chatlist.populateGroupMembers
+import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.onboarding.ReadableText
@@ -41,7 +41,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
           chatModel.chatItems.clear()
           chatModel.chatId.value = groupInfo.id
-          populateGroupMembers(groupInfo, chatModel)
+          setGroupMembers(groupInfo, chatModel)
           close.invoke()
           ModalManager.shared.showCustomModal { close ->
             ModalView(
