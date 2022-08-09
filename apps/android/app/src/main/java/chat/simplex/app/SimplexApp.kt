@@ -84,7 +84,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     lateinit var context: SimplexApp private set
 
     init {
-      val socketName = "local.socket.address.listen.native.cmd2"
+      val socketName = BuildConfig.APPLICATION_ID + ".local.socket.address.listen.native.cmd2"
       val s = Semaphore(0)
       thread(name="stdout/stderr pipe") {
         Log.d(TAG, "starting server")
