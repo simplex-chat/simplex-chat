@@ -106,12 +106,8 @@ struct GroupMemberInfoView: View {
             message: Text("Member will be removed from group - this cannot be undone!"),
             primaryButton: .destructive(Text("Remove")) {
                 Task {
-                    do {
-                        _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        dismiss()
-                    } catch let error {
-                        logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
-                    }
+                    await removeMember(groupInfo, member.groupMemberId)
+                    dismiss()
                 }
             },
             secondaryButton: .cancel()

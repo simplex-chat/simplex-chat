@@ -83,7 +83,7 @@ struct AddGroupMembersView: View {
         Button {
             Task {
                 for contactId in selectedContacts {
-                    await addMember(groupId: chat.chatInfo.apiId, contactId: contactId, memberRole: selectedRole)
+                    await addMember(groupInfo: groupInfo, contactId: contactId, memberRole: selectedRole)
                 }
                 await MainActor.run { dismiss() }
                 if let cb = addedMembersCb { cb(selectedContacts) }

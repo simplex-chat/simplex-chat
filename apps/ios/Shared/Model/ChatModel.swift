@@ -292,6 +292,34 @@ final class ChatModel: ObservableObject {
             chats.removeAll(where: { $0.id == id })
         }
     }
+
+    func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
+        // update current chat
+        if chatId == groupInfo.id {
+            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
+                withAnimation(.default) {
+                    self.groupMembers[i] = member
+                }
+                return false
+            } else {
+                withAnimation { groupMembers.append(member) }
+                return true
+            }
+        } else {
+            return false
+        }
+    }
+
+    func removeGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) {
+        // remove from current chat
+        if chatId == groupInfo.id {
+            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
+                _ = withAnimation {
+                    self.groupMembers.remove(at: i)
+                }
+            }
+        }
+    }
 }
 
 final class Chat: ObservableObject, Identifiable {
