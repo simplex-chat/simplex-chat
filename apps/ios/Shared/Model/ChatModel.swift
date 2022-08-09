@@ -309,17 +309,6 @@ final class ChatModel: ObservableObject {
             return false
         }
     }
-
-    func removeGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) {
-        // remove from current chat
-        if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
-                _ = withAnimation {
-                    self.groupMembers.remove(at: i)
-                }
-            }
-        }
-    }
 }
 
 final class Chat: ObservableObject, Identifiable {

@@ -109,7 +109,7 @@ struct GroupMemberInfoView: View {
                     do {
                         let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
                         await MainActor.run {
-                            ChatModel.shared.removeGroupMember(groupInfo, member)
+                            _ = ChatModel.shared.upsertGroupMember(groupInfo, member)
                             dismiss()
                         }
                     } catch let error {
