@@ -9,6 +9,8 @@ buildscript {
         kotlin_version = localProperties['kotlin_version'] ?: '1.6.21'
         gradle_plugin_version = localProperties['gradle_plugin_version'] ?: '7.2.0'
 
+        // Name that will be shown for debug build
+        app_name = localProperties['app_name'] ?: "SimpleX Debug"
         // Whether the app is debuggable or not. Specify `false` if you want good performance in debug builds
         enable_debuggable = localProperties['debuggable'] ?: true
         // Ending part of package name. Allows debug & release versions to coexist
