@@ -14,14 +14,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,17 +34,17 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.chatlist.openChat
-import chat.simplex.app.views.chatlist.setGroupMembers
+import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 
 @Composable
 fun ChatView(chatModel: ChatModel) {
-  val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+  var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
@@ -54,9 +52,10 @@ fun ChatView(chatModel: ChatModel) {
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
-  if (chat == null || user == null) {
+  if (activeChat == null || user == null) {
     chatModel.chatId.value = null
   } else {
+    val chat = activeChat!!
     BackHandler { chatModel.chatId.value = null }
     // TODO a more advanced version would mark as read only if in view
     LaunchedEffect(chat.chatItems) {
@@ -118,11 +117,16 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      openDirectChat = { contactId ->
+      showChat = { apiId, chatType, pagination ->
         val c = chatModel.chats.firstOrNull {
-          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
+          it.chatInfo.chatType == chatType && it.chatInfo.apiId == apiId
         }
-        if (c != null) withApi { openChat(c.chatInfo, chatModel) }
+        if (c != null) {
+          withApi { showChat(c.chatInfo, chatModel, pagination) }
+          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+          if (c.chatInfo.apiId != activeChat?.chatInfo?.apiId || c.chatInfo.chatType != activeChat?.chatInfo?.chatType)
+            activeChat = c
+        }
       },
       deleteMessage = { itemId, mode ->
         withApi {
@@ -188,13 +192,13 @@ fun ChatLayout(
   useLinkPreviews: Boolean,
   back: () -> Unit,
   info: () -> Unit,
-  openDirectChat: (Long) -> Unit,
+  showChat: (Long, ChatType, ChatPagination) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
-  addMembers: (GroupInfo) -> Unit
+  addMembers: (GroupInfo) -> Unit,
 ) {
   Surface(
     Modifier
@@ -219,8 +223,10 @@ fun ChatLayout(
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding()
         ) { contentPadding ->
-          Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, useLinkPreviews, openDirectChat, deleteMessage, receiveFile, joinGroup, acceptCall)
+          BoxWithConstraints(Modifier.padding(contentPadding)) {
+            ChatItemsList(user, chat, composeState, chatItems,
+              useLinkPreviews, showChat, deleteMessage,
+              receiveFile, joinGroup, acceptCall)
           }
         }
       }
@@ -323,34 +329,51 @@ val CIListStateSaver = run {
 }
 
 @Composable
-fun ChatItemsList(
+fun BoxWithConstraintsScope.ChatItemsList(
   user: User,
   chat: Chat,
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
   useLinkPreviews: Boolean,
-  openDirectChat: (Long) -> Unit,
+  showChat: (Long, ChatType, ChatPagination) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
 ) {
-  val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
-  val keyboardState by getKeyboardState()
-  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
-    mutableStateOf(CIListState(false, chatItems.count(), keyboardState))
-  }
+  val firstVisibleOffset = -with(LocalDensity.current) { maxHeight.roundToPx() }
+
+  // Places first unread message at the top of a screen
+  val listState = rememberLazyListState(
+    initialFirstVisibleItemIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0),
+    initialFirstVisibleItemScrollOffset = firstVisibleOffset
+  )
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
-  LazyColumn(state = listState) {
-    itemsIndexed(chatItems) { i, cItem ->
-      if (i == 0) {
-        Spacer(Modifier.size(8.dp))
+
+  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType) {
+    val firstVisibleIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0)
+    if (listState.firstVisibleItemIndex != firstVisibleIndex) {
+      scope.launch {
+        // Places first unread message at the top of a screen after moving from group to direct chat
+        listState.scrollToItem(firstVisibleIndex, firstVisibleOffset)
       }
+    }
+  }
+
+  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c, items ->
+    showChat(c.chatInfo.apiId, c.chatInfo.chatType, ChatPagination.Before(items.first().id, ChatPagination.PRELOAD_COUNT))
+  }
+
+  Spacer(Modifier.size(8.dp))
+
+  LazyColumn(state = listState, reverseLayout = true) {
+    val reversedChatItems = chatItems.reversed()
+    itemsIndexed(reversedChatItems) { i, cItem ->
       if (chat.chatInfo is ChatInfo.Group) {
         if (cItem.chatDir is CIDirection.GroupRcv) {
-          val prevItem = if (i > 0) chatItems[i - 1] else null
+          val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
           val member = cItem.chatDir.groupMember
           val showMember = showMemberImage(member, prevItem)
           Row(Modifier.padding(start = 8.dp, end = 66.dp)) {
@@ -362,7 +385,9 @@ fun ChatItemsList(
                 Box(
                   Modifier
                     .clip(CircleShape)
-                    .clickable { openDirectChat(contactId) }
+                    .clickable {
+                      showChat(contactId, ChatType.Direct, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+                    }
                 ) {
                   MemberImage(member)
                 }
@@ -390,13 +415,36 @@ fun ChatItemsList(
         }
       }
     }
-    val len = chatItems.count()
-    if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
-      scope.launch {
-        ciListState.value = CIListState(true, len, keyboardState)
-        listState.animateScrollToItem(len - 1)
-      }
+  }
+}
+
+@Composable
+fun PreloadItems(
+  listState: LazyListState,
+  remaining: Int = 10,
+  chat: Chat,
+  chatItems: List<ChatItem>,
+  onLoadMore: (chat: Chat, chatItems: List<ChatItem>) -> Unit,
+) {
+  val loadMore = remember {
+    derivedStateOf {
+      val layoutInfo = listState.layoutInfo
+      val totalItemsNumber = layoutInfo.totalItemsCount
+      val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+      if (lastVisibleItemIndex > (totalItemsNumber - remaining))
+        totalItemsNumber
+      else
+        0
     }
+  }
+
+  LaunchedEffect(loadMore, chat) {
+    snapshotFlow { loadMore.value }
+      .distinctUntilChanged()
+      .filter { it > 0 }
+      .collect {
+        onLoadMore(chat, chatItems)
+      }
   }
 }
 
@@ -453,13 +501,13 @@ fun PreviewChatLayout() {
       useLinkPreviews = true,
       back = {},
       info = {},
-      openDirectChat = {},
+      showChat = {_, _, _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      addMembers = { _ -> }
+      addMembers = { _ -> },
     )
   }
 }
@@ -502,7 +550,7 @@ fun PreviewGroupChatLayout() {
       useLinkPreviews = true,
       back = {},
       info = {},
-      openDirectChat = {},
+      showChat = { _, _, _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},

@@ -1265,6 +1265,12 @@ sealed class ChatPagination {
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
   }
+
+  companion object {
+    const val INITIAL_COUNT = 50
+    const val PRELOAD_COUNT = 20
+    const val UNTIL_PRELOAD_COUNT = 10
+  }
 }
 
 @Serializable
