@@ -599,10 +599,11 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
-  suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole) {
+  suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole): GroupMember? {
     val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
-    if (r is CR.SentGroupInvitation) return
+    if (r is CR.SentGroupInvitation) return r.member
     Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun apiJoinGroup(groupId: Long) {
@@ -756,12 +757,22 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.addChat(Chat(chatInfo = ChatInfo.Group(r.groupInfo), chatItems = listOf()))
         // TODO NtfManager.shared.notifyGroupInvitation
       }
+      is CR.JoinedGroupMemberConnecting ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.DeletedMemberUser -> // TODO update user member
+        chatModel.updateGroup(r.groupInfo)
+      is CR.DeletedMember ->
+        chatModel.upsertGroupMember(r.groupInfo, r.deletedMember)
+      is CR.LeftMember ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.GroupDeleted -> // TODO update user member
+        chatModel.updateGroup(r.groupInfo)
       is CR.UserJoinedGroup ->
         chatModel.updateGroup(r.groupInfo)
-      is CR.GroupDeleted ->
-        chatModel.updateGroup(r.groupInfo)
-      is CR.DeletedMemberUser ->
-        chatModel.updateGroup(r.groupInfo)
+      is CR.JoinedGroupMember ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.ConnectedToGroupMember ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.GroupUpdated ->
         chatModel.updateGroup(r.toGroup)
       is CR.RcvFileStart ->
@@ -1390,7 +1401,7 @@ sealed class CR {
   @Serializable @SerialName("contactsList") class ContactsList(val contacts: List<Contact>): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val groupInfo: GroupInfo): CR()
-  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact): CR()
+  @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val groupInfo: GroupInfo): CR()
@@ -1403,11 +1414,11 @@ sealed class CR {
   @Serializable @SerialName("leftMember") class LeftMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("contactsMerged") class ContactsMerged(val intoContact: Contact, val mergedContact: Contact): CR()
-  @Serializable @SerialName("groupInvitation") class GroupInvitation(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupInvitation") class GroupInvitation(val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR()
+  @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val toGroup: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
@@ -1559,7 +1570,7 @@ sealed class CR {
     is ChatItemDeleted -> "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}"
     is ContactsList -> json.encodeToString(contacts)
     is GroupCreated -> json.encodeToString(groupInfo)
-    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact"
+    is SentGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmember: $member"
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
     is UserDeletedMember -> "groupInfo: $groupInfo\nmember: $member"
     is LeftMemberUser -> json.encodeToString(groupInfo)

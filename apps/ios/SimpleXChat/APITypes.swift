@@ -255,8 +255,7 @@ public enum ChatResponse: Decodable, Error {
     case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
-    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
-//    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
+    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(groupInfo: GroupInfo)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
@@ -437,7 +436,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
-            case let .sentGroupInvitation(groupInfo, contact): return "groupInfo: \(groupInfo)\ncontact: \(contact)"
+            case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
             case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
             case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .leftMemberUser(groupInfo): return String(describing: groupInfo)

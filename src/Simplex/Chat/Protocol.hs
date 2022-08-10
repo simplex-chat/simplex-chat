@@ -452,6 +452,7 @@ hasNotification = \case
   XFile_ -> True
   XContact_ -> True
   XGrpInv_ -> True
+  XGrpMemFwd_ -> True
   XGrpDel_ -> True
   XCallInv_ -> True
   _ -> False
