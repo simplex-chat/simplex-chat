@@ -84,8 +84,8 @@ struct AddGroupMembersView: View {
             Task {
                 do {
                     for contactId in selectedContacts {
-                        try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
-                        // await MainActor.run { ChatModel.shared.upsertGroupMember(groupInfo, member) }
+                        let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
+                        await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
                     }
                     await MainActor.run { dismiss() }
                     if let cb = addedMembersCb { cb(selectedContacts) }
