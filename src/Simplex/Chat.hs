@@ -1252,10 +1252,10 @@ processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
   SUSPENDED -> toView CRChatSuspended
   _ -> pure ()
   where
-    serverEvent srv@(SMPServer host port _) conns event str = do
+    serverEvent srv@(SMPServer host _ _) conns event str = do
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
-      showToast ("server " <> str) (safeDecodeUtf8 . strEncode $ SrvLoc host port)
+      showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
