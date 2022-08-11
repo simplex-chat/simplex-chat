@@ -221,7 +221,7 @@ import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Migrations.M20220626_auto_reply
 import Simplex.Chat.Migrations.M20220702_calls
 import Simplex.Chat.Migrations.M20220715_groups_chat_item_id
-import Simplex.Chat.Migrations.M20220811_idx_chat_items_item_ts_chat_item_id
+import Simplex.Chat.Migrations.M20220811_chat_items_indices
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -250,7 +250,7 @@ schemaMigrations =
     ("20220626_auto_reply", m20220626_auto_reply),
     ("20220702_calls", m20220702_calls),
     ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id),
-    ("20220811_idx_chat_items_item_ts_chat_item_id", m20220811_idx_chat_items_item_ts_chat_item_id)
+    ("20220811_chat_items_indices", m20220811_chat_items_indices)
   ]
 
 -- | The list of migrations in ascending order by date
