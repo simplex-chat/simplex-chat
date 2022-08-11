@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -354,14 +355,18 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
 
-  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType, chatItems.count { it.isRcvNew }) {
-    val firstVisibleIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0)
-    if (listState.firstVisibleItemIndex != firstVisibleIndex) {
+  // Prevent scrolling to bottom on orientation change
+  var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
+  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType) {
+    val firstUnreadIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0)
+    if (shouldAutoScroll && listState.firstVisibleItemIndex != firstUnreadIndex) {
       scope.launch {
         // Places first unread message at the top of a screen after moving from group to direct chat
-        listState.scrollToItem(firstVisibleIndex, firstVisibleOffset)
+        listState.scrollToItem(firstUnreadIndex, firstVisibleOffset)
       }
     }
+    // Don't autoscroll next time until it will be needed
+    shouldAutoScroll = false
   }
 
   PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c, items ->
@@ -389,6 +394,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     .clip(CircleShape)
                     .clickable {
                       showChat(contactId, ChatType.Direct, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+                      // Scroll to first unread message when direct chat will be loaded
+                      shouldAutoScroll = true
                     }
                 ) {
                   MemberImage(member)
