@@ -615,15 +615,20 @@ processChatCommand = \case
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
-    -- TODO incognito: generate profile for connection
+    -- / TODO incognito: generate profile for connection
+    incognito <- readTVarIO =<< asks incognito
+    incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
-    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnNew
+    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    -- TODO incognito: generate profile to send
-    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profile
-    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnJoined
+    -- / TODO incognito: generate profile to send
+    incognito <- readTVarIO =<< asks incognito
+    incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+    let profileToSend = fromMaybe profile incognitoProfile
+    connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profileToSend
+    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnJoined incognitoProfile
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
@@ -1014,6 +1019,9 @@ processChatCommand = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
+
+generateIncognitoProfile :: IO Profile
+generateIncognitoProfile = pure $ Profile {displayName = "incognito", fullName = "", image = Nothing}
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do

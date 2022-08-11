@@ -184,7 +184,7 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
-    -- incognitoProfile :: Maybe Profile,
+    -- incognitoProfileId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -703,7 +703,7 @@ data Connection = Connection
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
-    incognitoProfile :: Maybe Profile,
+    incognitoProfileId :: Maybe Int64,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
@@ -721,6 +721,7 @@ data PendingContactConnection = PendingContactConnection
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
+    incognitoProfileId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
