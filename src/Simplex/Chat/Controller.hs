@@ -86,7 +86,8 @@ data ChatController = ChatController
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
-    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
+    filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
+    incognito :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -105,6 +106,7 @@ data ChatCommand
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
+  | SetIncognito Bool
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage

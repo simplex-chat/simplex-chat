@@ -184,6 +184,7 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
+    -- incognitoProfile :: Maybe Profile,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -289,6 +290,10 @@ data GroupMember = GroupMember
     localDisplayName :: ContactName,
     memberProfile :: Profile,
     memberContactId :: Maybe Int64,
+    -- TODO incognito: to display member's non-incognito contact profile in member info / terminal messages for host
+    -- incognitoKnownContact :: Bool,
+    -- or
+    -- incognitoMemberContactProfile :: Maybe Profile,
     activeConn :: Maybe Connection
   }
   deriving (Eq, Show, Generic)
@@ -698,6 +703,7 @@ data Connection = Connection
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
+    incognitoProfile :: Maybe Profile,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)

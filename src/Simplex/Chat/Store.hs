@@ -222,6 +222,7 @@ import Simplex.Chat.Migrations.M20220626_auto_reply
 import Simplex.Chat.Migrations.M20220702_calls
 import Simplex.Chat.Migrations.M20220715_groups_chat_item_id
 import Simplex.Chat.Migrations.M20220811_chat_items_indices
+import Simplex.Chat.Migrations.M20220812_incognito_profiles
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -250,7 +251,8 @@ schemaMigrations =
     ("20220626_auto_reply", m20220626_auto_reply),
     ("20220702_calls", m20220702_calls),
     ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id),
-    ("20220811_chat_items_indices", m20220811_chat_items_indices)
+    ("20220811_chat_items_indices", m20220811_chat_items_indices),
+    ("20220812_incognito_profiles", m20220812_incognito_profiles)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -404,7 +406,7 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, connLevel, connStatus = ConnNew, createdAt = currentTs}
+  pure Connection {connId, agentConnId = AgentConnId acId, connType, entityId, viaContact, viaUserContactLink, connLevel, connStatus = ConnNew, incognitoProfile = Nothing, createdAt = currentTs}
   where
     ent ct = if connType == ct then entityId else Nothing
 
@@ -950,7 +952,7 @@ type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Ma
 toConnection :: ConnectionRow -> Connection
 toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, connStatus, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt) =
   let entityId = entityId_ connType
-   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, connStatus, connType, entityId, createdAt}
+   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, connStatus, connType, entityId, incognitoProfile = Nothing, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId

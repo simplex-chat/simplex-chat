@@ -123,8 +123,8 @@ data ChatMsgEvent
   | XFileCancel SharedMsgId
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
-  | XGrpInv GroupInvitation
-  | XGrpAcpt MemberId
+  | XGrpInv GroupInvitation (Maybe Profile)
+  | XGrpAcpt MemberId (Maybe Profile)
   | XGrpMemNew MemberInfo
   | XGrpMemIntro MemberInfo
   | XGrpMemInv MemberId IntroInvitation
@@ -412,8 +412,8 @@ toCMEventTag = \case
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
-  XGrpInv _ -> XGrpInv_
-  XGrpAcpt _ -> XGrpAcpt_
+  XGrpInv _ _ -> XGrpInv_
+  XGrpAcpt _ _ -> XGrpAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -478,8 +478,8 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
-      XGrpInv_ -> XGrpInv <$> p "groupInvitation"
-      XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
+      XGrpInv_ -> XGrpInv <$> p "groupInvitation" <*> opt "profile"
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -520,8 +520,8 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
-      XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
-      XGrpAcpt memId -> o ["memberId" .= memId]
+      XGrpInv groupInv profile -> o $ ("profile" .=? profile) ["groupInvitation" .= groupInv]
+      XGrpAcpt memId profile -> o $ ("profile" .=? profile) ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
