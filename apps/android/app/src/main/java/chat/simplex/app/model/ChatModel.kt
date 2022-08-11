@@ -211,25 +211,32 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun markChatItemsRead(cInfo: ChatInfo) {
+  fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null) {
+    // update current chat
+    var markedRead = 0
+    if (chatId.value == cInfo.id) {
+      var i = 0
+      while (i < chatItems.count()) {
+        val item = chatItems[i]
+        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from..range.to).contains(item.id))) {
+          chatItems[i] = item.withStatus(CIStatus.RcvRead())
+          markedRead++
+        }
+        i += 1
+      }
+    }
     // update preview
     val chatIdx = getChatIndex(cInfo.id)
     if (chatIdx >= 0) {
       val chat = chats[chatIdx]
       val lastId = chat.chatItems.lastOrNull()?.id
       if (lastId != null) {
-        chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = lastId + 1))
-      }
-    }
-    // update current chat
-    if (chatId.value == cInfo.id) {
-      var i = 0
-      while (i < chatItems.count()) {
-        val item = chatItems[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew) {
-          chatItems[i] = item.withStatus(CIStatus.RcvRead())
-        }
-        i += 1
+        chats[chatIdx] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            unreadCount = if (range != null) chat.chatStats.unreadCount - markedRead else 0,
+            minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
+          )
+        )
       }
     }
   }

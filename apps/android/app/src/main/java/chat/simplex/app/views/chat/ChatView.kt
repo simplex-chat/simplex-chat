@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
@@ -27,7 +26,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
@@ -57,22 +55,7 @@ fun ChatView(chatModel: ChatModel) {
   } else {
     val chat = activeChat!!
     BackHandler { chatModel.chatId.value = null }
-    // TODO a more advanced version would mark as read only if in view
-    LaunchedEffect(chat.chatItems) {
-      Log.d(TAG, "ChatView ${chatModel.chatId.value}: LaunchedEffect")
-      delay(750L)
-      if (chat.chatItems.isNotEmpty()) {
-        chatModel.markChatItemsRead(chat.chatInfo)
-        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        withApi {
-          chatModel.controller.apiChatRead(
-            chat.chatInfo.chatType,
-            chat.chatInfo.apiId,
-            CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
-          )
-        }
-      }
-    }
+
     ChatLayout(
       user,
       chat,
@@ -122,7 +105,13 @@ fun ChatView(chatModel: ChatModel) {
           it.chatInfo.chatType == chatType && it.chatInfo.apiId == apiId
         }
         if (c != null) {
-          withApi { showChat(c.chatInfo, chatModel, pagination) }
+          // If there are more unread messages than pagination.count wants, load all unread
+          if (pagination is ChatPagination.Last && c.chatStats.unreadCount > pagination.count) {
+            val after = ChatPagination.After(kotlin.math.max(0, c.chatStats.minUnreadItemId - 1), c.chatStats.unreadCount)
+            withApi { showChat(c.chatInfo, chatModel, after) }
+          } else {
+            withApi { showChat(c.chatInfo, chatModel, pagination) }
+          }
           // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
           if (c.chatInfo.apiId != activeChat?.chatInfo?.apiId || c.chatInfo.chatType != activeChat?.chatInfo?.chatType)
             activeChat = c
@@ -174,6 +163,17 @@ fun ChatView(chatModel: ChatModel) {
             }
           }
         }
+      },
+      markRead = { range ->
+        chatModel.markChatItemsRead(chat.chatInfo, range)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+        withApi {
+          chatModel.controller.apiChatRead(
+            chat.chatInfo.chatType,
+            chat.chatInfo.apiId,
+            range
+          )
+        }
       }
     )
   }
@@ -199,6 +199,7 @@ fun ChatLayout(
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  markRead: (CC.ItemRange) -> Unit,
 ) {
   Surface(
     Modifier
@@ -226,7 +227,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier.padding(contentPadding)) {
             ChatItemsList(user, chat, composeState, chatItems,
               useLinkPreviews, showChat, deleteMessage,
-              receiveFile, joinGroup, acceptCall)
+              receiveFile, joinGroup, acceptCall, markRead)
           }
         }
       }
@@ -340,6 +341,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
+  markRead: (CC.ItemRange) -> Unit,
 ) {
   val firstVisibleOffset = -with(LocalDensity.current) { maxHeight.roundToPx() }
 
@@ -352,7 +354,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
 
-  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType) {
+  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType, chatItems.count { it.isRcvNew }) {
     val firstVisibleIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0)
     if (listState.firstVisibleItemIndex != firstVisibleIndex) {
       scope.launch {
@@ -412,6 +414,15 @@ fun BoxWithConstraintsScope.ChatItemsList(
           )
         ) {
           ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+        }
+      }
+
+      if (cItem.isRcvNew) {
+        LaunchedEffect(cItem.id) {
+          scope.launch {
+            delay(750)
+            markRead(CC.ItemRange(cItem.id, cItem.id))
+          }
         }
       }
     }
@@ -508,6 +519,7 @@ fun PreviewChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       addMembers = { _ -> },
+      markRead = { _ -> },
     )
   }
 }
@@ -556,7 +568,8 @@ fun PreviewGroupChatLayout() {
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      addMembers = { _ -> }
+      addMembers = { _ -> },
+      markRead = { _ -> },
     )
   }
 }
