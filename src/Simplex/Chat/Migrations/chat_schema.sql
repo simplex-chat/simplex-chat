@@ -382,3 +382,14 @@ CREATE TABLE calls(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE INDEX idx_chat_items_groups ON chat_items(
+  user_id,
+  group_id,
+  item_ts,
+  chat_item_id
+);
+CREATE INDEX idx_chat_items_contacts ON chat_items(
+  user_id,
+  contact_id,
+  chat_item_id
+);

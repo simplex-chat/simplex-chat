@@ -26,9 +26,18 @@ android {
                 cppFlags ''
             }
         }
+        manifestPlaceholders.app_name = "@string/app_name"
+        manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix "$application_id_suffix"
+            debuggable new Boolean("$enable_debuggable")
+            manifestPlaceholders.app_name = "$app_name"
+            // Provider can't be the same for different apps on the same device
+            manifestPlaceholders.provider_authorities = "chat.simplex.app${application_id_suffix}.provider"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

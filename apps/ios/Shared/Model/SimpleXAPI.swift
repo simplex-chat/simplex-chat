@@ -567,17 +567,11 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws {
+func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
-    if case .sentGroupInvitation = r { return }
+    if case let .sentGroupInvitation(_, _, member) = r { return member }
     throw r
 }
-
-//func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
-//    let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
-//    if case let .sentGroupInvitation(_, _, member) = r { return member }
-//    throw r
-//}
 
 enum JoinGroupResult {
     case joined(groupInfo: GroupInfo)
