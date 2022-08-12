@@ -202,6 +202,7 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData
+    -- incognito field should not be read as is into this data type to prevent sending it as part of profile to contacts
   }
   deriving (Eq, Show, Generic, FromJSON)
 
