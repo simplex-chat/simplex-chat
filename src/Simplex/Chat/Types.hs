@@ -22,6 +22,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
@@ -87,6 +88,9 @@ contactConn = activeConn
 
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
+
+contactConnIncognito :: Contact -> Bool
+contactConnIncognito ct = isJust . connIncognitoProfileId $ activeConn (ct :: Contact)
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -708,6 +712,9 @@ data Connection = Connection
 
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
+
+connIncognitoProfileId :: Connection -> Maybe Int64
+connIncognitoProfileId Connection {incognitoProfileId} = incognitoProfileId
 
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}

@@ -632,11 +632,11 @@ processChatCommand = \case
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
-    -- TODO incognito: generate profile to send
+    -- / TODO incognito: generate profile to send
     connectViaContact userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex -> withUser $ \User {userId, profile} ->
-    -- TODO incognito: generate profile to send
+    -- / TODO incognito: generate profile to send
     connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db userId cName
@@ -927,8 +927,16 @@ processChatCommand = \case
         (_, xContactId_) -> procCmd $ do
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
           xContactId <- maybe randomXContactId pure xContactId_
-          connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profile $ Just xContactId)
-          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId
+          -- / TODO incognito: generate profile to send
+          -- if user makes a contact request using main profile, then turns on incognito mode and repeats the request,
+          -- an incognito profile will be sent even though the address holder will have user's main profile received as well;
+          -- we ignore this edge case as we already allow profile updates on repeat contact requests;
+          -- alternatively we can re-send the main profile even if incognito mode is enabled
+          incognito <- readTVarIO =<< asks incognito
+          incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+          let profileToSend = fromMaybe profile incognitoProfile
+          connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profileToSend $ Just xContactId)
+          conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile
           toView $ CRNewContactConnection conn
           pure CRSentInvitation
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
@@ -947,8 +955,10 @@ processChatCommand = \case
         withStore $ \db -> updateUserProfile db user p'
         let user' = (user :: User) {localDisplayName = displayName, profile = p'}
         asks currentUser >>= atomically . (`writeTVar` Just user')
-        -- TODO incognito: filter out contacts with whom user has incognito connections
-        contacts <- filter isReady <$> withStore' (`getUserContacts` user)
+        -- / TODO incognito: filter out contacts with whom user has incognito connections
+        contacts <-
+          filter (\ct -> isReady ct && not (contactConnIncognito ct))
+            <$> withStore' (`getUserContacts` user)
         withChatLock . procCmd $ do
           forM_ contacts $ \ct ->
             void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
@@ -1138,8 +1148,11 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
-  -- TODO incognito: generate profile to send
-  connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profile
+  -- / TODO incognito: generate profile to send
+  incognito <- readTVarIO =<< asks incognito
+  incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+  let profileToSend = fromMaybe profile incognitoProfile
+  connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profileToSend
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()

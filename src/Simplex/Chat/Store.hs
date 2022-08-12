@@ -326,21 +326,32 @@ setActiveUser db userId = do
   DB.execute_ db "UPDATE users SET active_user = 0"
   DB.execute db "UPDATE users SET active_user = 1 WHERE user_id = ?" (Only userId)
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> IO PendingContactConnection
-createConnReqConnection db userId acId cReqHash xContactId = do
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> IO PendingContactConnection
+createConnReqConnection db userId acId cReqHash xContactId incognitoProfile = do
   createdAt <- getCurrentTime
+  incognitoProfileId <- case incognitoProfile of
+    Just Profile {displayName, fullName, image} -> do
+      DB.execute
+        db
+        [sql|
+          INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?)
+        |]
+        (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+      pure <$> Just =<< insertedRowId db
+    Nothing -> pure Nothing
   let pccConnStatus = ConnJoined
   DB.execute
     db
     [sql|
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type,
-        created_at, updated_at, via_contact_uri_hash, xcontact_id
-      ) VALUES (?,?,?,?,?,?,?,?)
+        via_contact_uri_hash, xcontact_id, incognito_profile_id, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?)
     |]
-    (userId, acId, pccConnStatus, ConnContact, createdAt, createdAt, cReqHash, xContactId)
+    (userId, acId, pccConnStatus, ConnContact, cReqHash, xContactId, incognitoProfileId, createdAt, createdAt)
   pccConnId <- insertedRowId db
-  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, incognitoProfileId = Nothing, createdAt, updatedAt = createdAt}
+  pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = True, viaUserContactLink = Nothing, incognitoProfileId, createdAt, updatedAt = createdAt}
 
 getConnReqContactXContactId :: DB.Connection -> UserId -> ConnReqUriHash -> IO (Maybe Contact, Maybe XContactId)
 getConnReqContactXContactId db userId cReqHash = do
