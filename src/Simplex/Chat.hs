@@ -712,9 +712,9 @@ processChatCommand = \case
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation member@GroupMember {groupMemberId, memberId} cReq = do
-          let groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-          -- TODO incognito: send incognito profile unless already connected as incognito (check contact)
-          msg <- sendDirectContactMessage contact $ XGrpInv groupInv Nothing
+          let groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile Nothing
+          -- TODO incognito: if membership is incognito, send its incognito profile in GroupInvitation
+          msg <- sendDirectContactMessage contact $ XGrpInv groupInv
           let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
@@ -735,7 +735,7 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- TODO incognito: generate profile to send unless already connected as incognito (check contact on fromMember)
+      -- TODO incognito: if membership is incognito, send its incognito profile in XGrpAcpt
       agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember)) Nothing
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
@@ -1342,8 +1342,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileCancel sharedMsgId -> xFileCancel ct sharedMsgId msgMeta
               XInfo p -> xInfo ct p
-              -- TODO incognito: use host's profile for his group member
-              XGrpInv gInv _incognitoProfile_ -> processGroupInvitation ct gInv msg msgMeta
+              XGrpInv gInv -> processGroupInvitation ct gInv msg msgMeta
               XInfoProbe probe -> xInfoProbe ct probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck ct probeHash
               XInfoProbeOk probe -> xInfoProbeOk ct probe
@@ -1852,11 +1851,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c} inv@(GroupInvitation (MemberIdRole fromMemId fromRole) (MemberIdRole memId memRole) _ _) msg msgMeta = do
+    processGroupInvitation ct@Contact {localDisplayName = c} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), fromMemberIncognitoProfile = _p} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-      -- TODO incognito: when creating membership use incognito profile from connection if present
+      -- TODO incognito: if incognito mode is on or received group invitation has host's incognito profile, create membership with new incognito profile
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv
       let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing

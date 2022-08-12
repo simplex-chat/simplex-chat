@@ -123,7 +123,7 @@ data ChatMsgEvent
   | XFileCancel SharedMsgId
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
-  | XGrpInv GroupInvitation (Maybe Profile)
+  | XGrpInv GroupInvitation
   | XGrpAcpt MemberId (Maybe Profile)
   | XGrpMemNew MemberInfo
   | XGrpMemIntro MemberInfo
@@ -412,7 +412,7 @@ toCMEventTag = \case
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
-  XGrpInv _ _ -> XGrpInv_
+  XGrpInv _ -> XGrpInv_
   XGrpAcpt _ _ -> XGrpAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ -> XGrpMemIntro_
@@ -478,7 +478,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
-      XGrpInv_ -> XGrpInv <$> p "groupInvitation" <*> opt "profile"
+      XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "profile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
@@ -520,7 +520,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
-      XGrpInv groupInv profile -> o $ ("profile" .=? profile) ["groupInvitation" .= groupInv]
+      XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId profile -> o $ ("profile" .=? profile) ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]

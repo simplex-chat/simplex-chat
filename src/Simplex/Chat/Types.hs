@@ -184,7 +184,6 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
-    -- incognitoProfileId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -235,11 +234,14 @@ data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile
+    groupProfile :: GroupProfile,
+    fromMemberIncognitoProfile :: Maybe Profile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON GroupInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
@@ -290,10 +292,6 @@ data GroupMember = GroupMember
     localDisplayName :: ContactName,
     memberProfile :: Profile,
     memberContactId :: Maybe Int64,
-    -- TODO incognito: to display member's non-incognito contact profile in member info / terminal messages for host
-    -- incognitoKnownContact :: Bool,
-    -- or
-    -- incognitoMemberContactProfile :: Maybe Profile,
     activeConn :: Maybe Connection
   }
   deriving (Eq, Show, Generic)
