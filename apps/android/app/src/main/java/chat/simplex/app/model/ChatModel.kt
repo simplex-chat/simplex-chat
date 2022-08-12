@@ -212,19 +212,7 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null) {
-    // update current chat
-    var markedRead = 0
-    if (chatId.value == cInfo.id) {
-      var i = 0
-      while (i < chatItems.count()) {
-        val item = chatItems[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from..range.to).contains(item.id))) {
-          chatItems[i] = item.withStatus(CIStatus.RcvRead())
-          markedRead++
-        }
-        i += 1
-      }
-    }
+    val markedRead = markItemsReadInCurrentChat(cInfo.id, range)
     // update preview
     val chatIdx = getChatIndex(cInfo.id)
     if (chatIdx >= 0) {
@@ -234,11 +222,28 @@ class ChatModel(val controller: ChatController) {
         chats[chatIdx] = chat.copy(
           chatStats = chat.chatStats.copy(
             unreadCount = if (range != null) chat.chatStats.unreadCount - markedRead else 0,
-            minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
+            // Can't use minUnreadItemId currently since chat items can have unread items between read items
+            //minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
           )
         )
       }
     }
+  }
+
+  private fun markItemsReadInCurrentChat(infoChatId: ChatId, range: CC.ItemRange? = null): Int {
+    var markedRead = 0
+    if (chatId.value == infoChatId) {
+      var i = 0
+      while (i < chatItems.count()) {
+        val item = chatItems[i]
+        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
+          chatItems[i] = item.withStatus(CIStatus.RcvRead())
+          markedRead++
+        }
+        i += 1
+      }
+    }
+    return markedRead
   }
 
 //  func popChat(_ id: String) {

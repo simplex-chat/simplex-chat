@@ -31,7 +31,7 @@ import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
-import chat.simplex.app.views.chatlist.showChat
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
@@ -333,7 +333,7 @@ fun processNotificationIntent(intent: Intent?, chatModel: ChatModel) {
       if (chatId != null) {
         val cInfo = chatModel.getChat(chatId)?.chatInfo
         chatModel.clearOverlays.value = true
-        if (cInfo != null) withApi { showChat(cInfo, chatModel) }
+        if (cInfo != null) withApi { openChat(cInfo, chatModel) }
       }
     }
     NtfManager.ShowChatsAction -> {

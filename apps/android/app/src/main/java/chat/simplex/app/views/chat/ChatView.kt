@@ -101,21 +101,25 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      showChat = { apiId, chatType, pagination ->
+      openDirectChat = { contactId ->
+        val c = chatModel.chats.firstOrNull {
+          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
+        }
+        if (c != null) {
+          withApi {
+            openChat(c.chatInfo, chatModel)
+            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+            activeChat = c
+          }
+        }
+      },
+      loadPrevMessages = { apiId, chatType ->
         val c = chatModel.chats.firstOrNull {
           it.chatInfo.chatType == chatType && it.chatInfo.apiId == apiId
         }
-        if (c != null) {
-          // If there are more unread messages than pagination.count wants, load all unread
-          if (pagination is ChatPagination.Last && c.chatStats.unreadCount > pagination.count) {
-            val after = ChatPagination.After(kotlin.math.max(0, c.chatStats.minUnreadItemId - 1), c.chatStats.unreadCount)
-            withApi { showChat(c.chatInfo, chatModel, after) }
-          } else {
-            withApi { showChat(c.chatInfo, chatModel, pagination) }
-          }
-          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-          if (c.chatInfo.apiId != activeChat?.chatInfo?.apiId || c.chatInfo.chatType != activeChat?.chatInfo?.chatType)
-            activeChat = c
+        val firstId = chatModel.chatItems.firstOrNull()?.id
+        if (c != null && firstId != null) {
+          withApi { loadPrevMessages(firstId, c.chatInfo, chatModel) }
         }
       },
       deleteMessage = { itemId, mode ->
@@ -193,7 +197,8 @@ fun ChatLayout(
   useLinkPreviews: Boolean,
   back: () -> Unit,
   info: () -> Unit,
-  showChat: (Long, ChatType, ChatPagination) -> Unit,
+  openDirectChat: (Long) -> Unit,
+  loadPrevMessages: (Long, ChatType) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
@@ -227,7 +232,7 @@ fun ChatLayout(
         ) { contentPadding ->
           BoxWithConstraints(Modifier.padding(contentPadding)) {
             ChatItemsList(user, chat, composeState, chatItems,
-              useLinkPreviews, showChat, deleteMessage,
+              useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead)
           }
         }
@@ -337,7 +342,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
   useLinkPreviews: Boolean,
-  showChat: (Long, ChatType, ChatPagination) -> Unit,
+  openDirectChat: (Long) -> Unit,
+  loadPrevMessages: (Long, ChatType) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
@@ -369,14 +375,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
     shouldAutoScroll = false
   }
 
-  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c, items ->
-    showChat(c.chatInfo.apiId, c.chatInfo.chatType, ChatPagination.Before(items.first().id, ChatPagination.PRELOAD_COUNT))
+  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
+    loadPrevMessages(c.chatInfo.apiId, c.chatInfo.chatType)
   }
 
   Spacer(Modifier.size(8.dp))
 
+  val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
-    val reversedChatItems = chatItems.reversed()
     itemsIndexed(reversedChatItems) { i, cItem ->
       if (chat.chatInfo is ChatInfo.Group) {
         if (cItem.chatDir is CIDirection.GroupRcv) {
@@ -393,7 +399,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   Modifier
                     .clip(CircleShape)
                     .clickable {
-                      showChat(contactId, ChatType.Direct, ChatPagination.Last(ChatPagination.INITIAL_COUNT))
+                      openDirectChat(contactId)
                       // Scroll to first unread message when direct chat will be loaded
                       shouldAutoScroll = true
                     }
@@ -441,8 +447,8 @@ fun PreloadItems(
   listState: LazyListState,
   remaining: Int = 10,
   chat: Chat,
-  chatItems: List<ChatItem>,
-  onLoadMore: (chat: Chat, chatItems: List<ChatItem>) -> Unit,
+  items: List<*>,
+  onLoadMore: (chat: Chat) -> Unit,
 ) {
   val loadMore = remember {
     derivedStateOf {
@@ -456,12 +462,12 @@ fun PreloadItems(
     }
   }
 
-  LaunchedEffect(loadMore, chat) {
+  LaunchedEffect(loadMore, chat, items) {
     snapshotFlow { loadMore.value }
       .distinctUntilChanged()
       .filter { it > 0 }
       .collect {
-        onLoadMore(chat, chatItems)
+        onLoadMore(chat)
       }
   }
 }
@@ -519,7 +525,8 @@ fun PreviewChatLayout() {
       useLinkPreviews = true,
       back = {},
       info = {},
-      showChat = {_, _, _ -> },
+      openDirectChat = {},
+      loadPrevMessages = { _, _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
@@ -569,7 +576,8 @@ fun PreviewGroupChatLayout() {
       useLinkPreviews = true,
       back = {},
       info = {},
-      showChat = { _, _, _ -> },
+      openDirectChat = {},
+      loadPrevMessages = { _, _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},

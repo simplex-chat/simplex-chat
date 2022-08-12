@@ -73,7 +73,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
 
 fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   if (chatInfo.ready) {
-    withApi { showChat(chatInfo, chatModel) }
+    withApi { openChat(chatInfo, chatModel) }
   } else {
     pendingContactAlertDialog(chatInfo, chatModel)
   }
@@ -83,28 +83,23 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
-    else -> withApi { showChat(ChatInfo.Group(groupInfo), chatModel) }
+    else -> withApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 
-suspend fun showChat(
-  chatInfo: ChatInfo,
-  chatModel: ChatModel,
-  pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT)
-) {
-  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination) ?: return
-  when (pagination) {
-    is ChatPagination.Last -> {
-      chatModel.chatItems.clear()
-      chatModel.chatItems.addAll(chat.chatItems)
-    }
-    is ChatPagination.Before -> {
-      chatModel.chatItems.addAll(0, chat.chatItems)
-    }
-    is ChatPagination.After -> {
-      chatModel.chatItems.addAll(chat.chatItems)
-    }
+suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
+  if (chat != null) {
+    chatModel.chatItems.clear()
+    chatModel.chatItems.addAll(chat.chatItems)
+    chatModel.chatId.value = chatInfo.id
   }
+}
+
+suspend fun loadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
+  val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  chatModel.chatItems.addAll(0, chat.chatItems)
   chatModel.chatId.value = chatInfo.id
 }
 

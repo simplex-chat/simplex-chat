@@ -314,7 +314,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(100)): Chat? {
+  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT)): Chat? {
     val r = sendCmd(CC.ApiGetChat(type, id, pagination))
     if (r is CR.ApiChat ) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
@@ -1278,7 +1278,7 @@ sealed class ChatPagination {
   }
 
   companion object {
-    const val INITIAL_COUNT = 50
+    const val INITIAL_COUNT = 100
     const val PRELOAD_COUNT = 20
     const val UNTIL_PRELOAD_COUNT = 10
   }
