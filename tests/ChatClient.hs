@@ -91,7 +91,7 @@ testCfg =
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
-    { smpAgentVersion = 1,
+    { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
       smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
     }
