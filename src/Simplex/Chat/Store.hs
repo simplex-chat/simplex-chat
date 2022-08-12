@@ -27,6 +27,7 @@ module Simplex.Chat.Store
     setActiveUser,
     createDirectConnection,
     createConnReqConnection,
+    getProfileById,
     getConnReqContactXContactId,
     createDirectContact,
     getContactGroupNames,
@@ -369,7 +370,7 @@ getConnReqContactXContactId db userId cReqHash = do
               -- Contact
               ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
               -- Connection
-              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.conn_status, c.conn_type,
+              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -410,6 +411,21 @@ createDirectConnection db userId acId pccConnStatus incognitoProfile = do
     (userId, acId, pccConnStatus, ConnContact, incognitoProfileId, createdAt, createdAt)
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, incognitoProfileId, createdAt, updatedAt = createdAt}
+
+getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO Profile
+getProfileById db userId profileId =
+  ExceptT . firstRow toProfile (SEProfileNotFound profileId) $
+    DB.query
+      db
+      [sql|
+        SELECT display_name, full_name, image
+        FROM contact_profiles
+        WHERE user_id = ? AND contact_profile_id = ?
+      |]
+      (userId, profileId)
+  where
+    toProfile :: (ContactName, Text, Maybe ImageData) -> Profile
+    toProfile (displayName, fullName, image) = Profile {displayName, fullName, image}
 
 createMemberContactConnection_ :: DB.Connection -> UserId -> ConnId -> Maybe Int64 -> Int -> UTCTime -> IO Connection
 createMemberContactConnection_ db userId agentConnId viaContact = createConnection_ db userId ConnContact Nothing agentConnId viaContact Nothing
@@ -621,7 +637,7 @@ getUserContactLinks db User {userId} =
     <$> DB.queryNamed
       db
       [sql|
-        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           uc.user_contact_link_id, uc.conn_req_contact
         FROM connections c
@@ -766,7 +782,7 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
               -- Contact
               ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
               -- Connection
-              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.conn_status, c.conn_type,
+              c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id, c.conn_status, c.conn_type,
               c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -955,7 +971,7 @@ getContactConnections db userId Contact {contactId} =
       DB.query
         db
         [sql|
-          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
             c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -967,14 +983,14 @@ getContactConnections db userId Contact {contactId} =
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, ConnStatus, ConnType) :. EntityIdsRow :. Only UTCTime
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Maybe Int64, ConnStatus, ConnType) :. EntityIdsRow :. Only UTCTime
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe ConnStatus, Maybe ConnType) :. EntityIdsRow :. Only (Maybe UTCTime)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Int64, Maybe ConnStatus, Maybe ConnType) :. EntityIdsRow :. Only (Maybe UTCTime)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, connStatus, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, incognitoProfileId, connStatus, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt) =
   let entityId = entityId_ connType
-   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, connStatus, connType, entityId, incognitoProfileId = Nothing, createdAt}
+   in Connection {connId, agentConnId = AgentConnId acId, connLevel, viaContact, viaUserContactLink, incognitoProfileId, connStatus, connType, entityId, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -984,8 +1000,8 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, connStat
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just connStatus, Just connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only (Just createdAt)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, connStatus, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt)
+toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, incognitoProfileId, Just connStatus, Just connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only (Just createdAt)) =
+  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, incognitoProfileId, connStatus, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. Only createdAt)
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: DB.Connection -> UserId -> Contact -> IO [Contact]
@@ -1149,7 +1165,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         DB.query
           db
           [sql|
-            SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link,
+            SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, incognito_profile_id,
               conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
@@ -1277,7 +1293,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           -- from GroupMember
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1442,7 +1458,7 @@ getGroupMember db user@User {userId} groupId groupMemberId =
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1464,7 +1480,7 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
         JOIN contact_profiles p ON p.contact_profile_id = m.contact_profile_id
@@ -1822,7 +1838,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           -- via GroupMember
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, p.display_name, p.full_name, p.image,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
@@ -1854,7 +1870,7 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
       [sql|
         SELECT
           ct.contact_id, ct.local_display_name, p.display_name, p.full_name, p.image, ct.via_group, ct.created_at, ct.updated_at,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM contacts ct
         JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
@@ -2617,7 +2633,7 @@ getDirectChatPreviews_ db User {userId} = do
           -- Contact
           ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
           -- Connection
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.conn_status, c.conn_type,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
@@ -2949,7 +2965,7 @@ getContact db userId contactId =
           -- Contact
           ct.contact_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, ct.created_at, ct.updated_at,
           -- Connection
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.conn_status, c.conn_type,
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.incognito_profile_id, c.conn_status, c.conn_type,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -3865,6 +3881,7 @@ data StoreError
   | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
   | SEChatItemNotFoundByGroupId {groupId :: GroupId}
+  | SEProfileNotFound {profileId :: Int64}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

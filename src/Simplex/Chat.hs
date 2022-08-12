@@ -1325,11 +1325,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink} = \case
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, incognitoProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
+          -- / TODO incognito: send saved profile
+          incognitoProfile <- case incognitoProfileId of
+            Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+            Nothing -> pure Nothing
+          let profileToSend = fromMaybe profile incognitoProfile
           saveConnInfo conn connInfo
-          allowAgentConnection conn confId $ XInfo profile
+          allowAgentConnection conn confId $ XInfo profileToSend
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do

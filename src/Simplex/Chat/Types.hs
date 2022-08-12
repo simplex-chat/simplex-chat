@@ -702,10 +702,10 @@ data Connection = Connection
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
+    incognitoProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
-    incognitoProfileId :: Maybe Int64,
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
