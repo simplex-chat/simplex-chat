@@ -212,7 +212,7 @@ class ChatModel(val controller: ChatController) {
   }
 
   fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null) {
-    val markedRead = markItemsReadInCurrentChat(cInfo.id, range)
+    val markedRead = markItemsReadInCurrentChat(cInfo, range)
     // update preview
     val chatIdx = getChatIndex(cInfo.id)
     if (chatIdx >= 0) {
@@ -230,9 +230,9 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  private fun markItemsReadInCurrentChat(infoChatId: ChatId, range: CC.ItemRange? = null): Int {
+  private fun markItemsReadInCurrentChat(cInfo: ChatInfo, range: CC.ItemRange? = null): Int {
     var markedRead = 0
-    if (chatId.value == infoChatId) {
+    if (chatId.value == cInfo.id) {
       var i = 0
       while (i < chatItems.count()) {
         val item = chatItems[i]

@@ -96,7 +96,7 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
-suspend fun loadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun apiLoadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination) ?: return
   chatModel.chatItems.addAll(0, chat.chatItems)

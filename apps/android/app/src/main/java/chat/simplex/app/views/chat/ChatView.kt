@@ -113,13 +113,11 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      loadPrevMessages = { apiId, chatType ->
-        val c = chatModel.chats.firstOrNull {
-          it.chatInfo.chatType == chatType && it.chatInfo.apiId == apiId
-        }
+      loadPrevMessages = { cInfo ->
+        val c = chatModel.getChat(cInfo.id)
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
-          withApi { loadPrevMessages(firstId, c.chatInfo, chatModel) }
+          withApi { apiLoadPrevMessages(firstId, c.chatInfo, chatModel) }
         }
       },
       deleteMessage = { itemId, mode ->
@@ -198,7 +196,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
-  loadPrevMessages: (Long, ChatType) -> Unit,
+  loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
@@ -343,7 +341,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   chatItems: List<ChatItem>,
   useLinkPreviews: Boolean,
   openDirectChat: (Long) -> Unit,
-  loadPrevMessages: (Long, ChatType) -> Unit,
+  loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
@@ -376,7 +374,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   }
 
   PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
-    loadPrevMessages(c.chatInfo.apiId, c.chatInfo.chatType)
+    loadPrevMessages(c.chatInfo)
   }
 
   Spacer(Modifier.size(8.dp))
@@ -526,7 +524,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
-      loadPrevMessages = { _, _ -> },
+      loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
@@ -577,7 +575,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
-      loadPrevMessages = { _, _ -> },
+      loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
