@@ -129,8 +129,8 @@ responseToView testView = \case
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
-  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> smpServer srv <> " (" <> contactList cs <> ")"]
-  CRContactsSubscribed srv cs -> [plain $ "server connected " <> smpServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
+  CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
   CRContactSubSummary summary ->
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
@@ -201,10 +201,11 @@ responseToView testView = \case
               _ -> Nothing
     viewErrorsSummary :: [a] -> StyledString -> [StyledString]
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
-    smpServer :: SMPServer -> String
-    smpServer SMP.ProtocolServer {host, port} = B.unpack . strEncode $ SrvLoc host port
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
+
+showSMPServer :: SMPServer -> String
+showSMPServer = B.unpack . strEncode . host
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
@@ -526,7 +527,7 @@ viewServers :: [SMPServer] -> StyledString
 viewServers = plain . intercalate ", " . map (B.unpack . strEncode)
 
 viewServerHosts :: [SMPServer] -> StyledString
-viewServerHosts = plain . intercalate ", " . map host
+viewServerHosts = plain . intercalate ", " . map showSMPServer
 
 viewUserProfileUpdated :: Profile -> Profile -> [StyledString]
 viewUserProfileUpdated Profile {displayName = n, fullName, image} Profile {displayName = n', fullName = fullName', image = image'}

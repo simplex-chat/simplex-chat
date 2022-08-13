@@ -193,6 +193,7 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -231,6 +232,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
@@ -2799,7 +2801,7 @@ getDirectChat db user contactId pagination search_ = do
     CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db User {userId} contactId count search  = do
+getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsLast_
@@ -3692,7 +3694,7 @@ getSMPServers db User {userId} =
       |]
       (Only userId)
   where
-    toSmpServer :: (String, String, C.KeyHash) -> SMPServer
+    toSmpServer :: (NonEmpty TransportHost, String, C.KeyHash) -> SMPServer
     toSmpServer (host, port, keyHash) = SMPServer host port keyHash
 
 overwriteSMPServers :: DB.Connection -> User -> [SMPServer] -> ExceptT StoreError IO ()
