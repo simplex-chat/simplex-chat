@@ -1482,11 +1482,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
+            -- TODO incognito: chat item & event with indication that host connected incognito
             memberConnectedChatItem gInfo m
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
+            -- TODO incognito: chat item & event with indication that invitee connected incognito
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
