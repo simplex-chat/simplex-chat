@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
@@ -577,11 +577,15 @@ private fun TopEndFloatingButton(
     val interactionSource = interactionSourceWithDetection(onClick, onLongClick)
     FloatingActionButton(
       {}, // no action here
-      modifier,
+      modifier.size(48.dp),
       elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
       interactionSource = interactionSource,
     ) {
-      Text(unreadCount.toString(), color = contentColorFor(MaterialTheme.colors.background))
+      Text(
+        unreadCountStr(unreadCount),
+        color = MaterialTheme.colors.primary,
+        fontSize = 14.sp,
+      )
     }
   }
   else -> {
@@ -599,9 +603,14 @@ private fun bottomEndFloatingButton(
     {
       FloatingActionButton(
         onClick = onClickCounter,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.size(48.dp)
       ) {
-        Text(unreadCount.toString(), color = contentColorFor(MaterialTheme.colors.background))
+        Text(
+          unreadCountStr(unreadCount),
+          color = MaterialTheme.colors.primary,
+          fontSize = 14.sp,
+        )
       }
     }
   }
@@ -609,12 +618,13 @@ private fun bottomEndFloatingButton(
     {
       FloatingActionButton(
         onClick = onClickArrowDown,
-        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.size(48.dp)
       ) {
         Icon(
-          imageVector = Icons.Default.ArrowDownward,
+          imageVector = Icons.Default.KeyboardArrowDown,
           contentDescription = null,
-          tint = contentColorFor(MaterialTheme.colors.background)
+          tint = MaterialTheme.colors.primary
         )
       }
     }
