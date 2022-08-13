@@ -569,13 +569,14 @@ data CIGroupInvitation = CIGroupInvitation
     groupMemberId :: GroupMemberId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    status :: CIGroupInvitationStatus
+    status :: CIGroupInvitationStatus,
+    invitedIncognito :: Maybe Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON CIGroupInvitation where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data CIGroupInvitationStatus
   = CIGISPending

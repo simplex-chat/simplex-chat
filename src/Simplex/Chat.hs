@@ -719,7 +719,7 @@ processChatCommand = \case
           let incognitoProfile = if membershipIncognito then Just (memberProfile membership) else Nothing
               groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile incognitoProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
-          let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+          let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just membershipIncognito}) memRole
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
           setActive $ ActiveG localDisplayName
@@ -1884,7 +1884,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       incognito <- readTVarIO =<< asks incognito
       incognitoProfile <- if incognito || isJust fromMemberIncognitoProfile then Just <$> liftIO generateIncognitoProfile else pure Nothing
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv incognitoProfile
-      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just $ isJust fromMemberIncognitoProfile}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
