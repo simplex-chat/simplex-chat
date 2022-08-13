@@ -899,7 +899,10 @@ ttyFromContactDeleted :: ContactName -> StyledString
 ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
 
 ttyToContact' :: Contact -> StyledString
-ttyToContact' Contact {localDisplayName = c} = ttyToContact c
+ttyToContact' Contact {localDisplayName = c, activeConn = Connection {incognitoProfileId}} =
+  ttyToContact (c <> incognito)
+  where
+    incognito = maybe "" (const " [incognito]") incognitoProfileId
 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
