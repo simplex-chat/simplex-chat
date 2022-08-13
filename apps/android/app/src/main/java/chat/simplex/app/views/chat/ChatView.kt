@@ -461,7 +461,10 @@ fun BoxWithConstraintsScope.FloatingButtons(
   val scope = rememberCoroutineScope()
 
   val bottomUnreadCount by remember { derivedStateOf {
-    chatItems.subList(chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1, chatItems.size).count { it.isRcvNew } }
+    chatItems.subList(
+      chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex,
+      chatItems.size
+    ).count { it.isRcvNew } }
   }
 
   val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
@@ -478,8 +481,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
         scope.launch { listState.animateScrollToItem(0) }
       },
       onClickCounter = {
-        val firstUnreadIndex = kotlin.math.max(kotlin.math.min(chatItems.size - 1, chatItems.count { it.isRcvNew }), 0)
-        scope.launch { listState.animateScrollToItem(firstUnreadIndex, firstVisibleOffset) }
+        scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
       }
     )
   }
