@@ -52,7 +52,7 @@ chatOpts appDir defaultDbFileName = do
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "Comma separated list of SMP server(s) to use"
+          <> help "Semicolon-separated list of SMP server(s) to use (each server can have more than one hostname)"
           <> value []
       )
   socksProxy <-
@@ -151,7 +151,7 @@ serverPortP :: A.Parser (Maybe String)
 serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 smpServersP :: A.Parser [SMPServer]
-smpServersP = strP `A.sepBy1` A.char ','
+smpServersP = strP `A.sepBy1` A.char ';'
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =
