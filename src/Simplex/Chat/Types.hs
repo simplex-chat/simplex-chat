@@ -188,6 +188,7 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
+    membershipIncognito :: Bool,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -197,10 +198,6 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
-
-membershipIncognito :: GroupInfo -> Profile -> Bool
-membershipIncognito GroupInfo {membership = GroupMember {memberProfile}} userProfile =
-  memberProfile /= userProfile
 
 data Profile = Profile
   { displayName :: ContactName,
