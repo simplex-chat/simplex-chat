@@ -809,6 +809,7 @@ viewChatError = \case
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
+    CEGroupNotIncognitoCantInvite -> ["you're using main profile for this group - prohibited to invite contact to whom you are connected incognito"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]

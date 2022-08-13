@@ -381,6 +381,7 @@ data ChatErrorType
   | CEContactNotReady {contact :: Contact}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
+  | CEGroupNotIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId
