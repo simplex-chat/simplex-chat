@@ -70,6 +70,7 @@ mobileChatOpts =
       smpServers = [],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
+      logServerHosts = True,
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,

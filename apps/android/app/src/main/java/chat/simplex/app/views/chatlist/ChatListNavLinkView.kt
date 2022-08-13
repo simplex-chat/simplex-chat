@@ -96,6 +96,13 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
+suspend fun apiLoadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
+  val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  chatModel.chatItems.addAll(0, chat.chatItems)
+  chatModel.chatId.value = chatInfo.id
+}
+
 suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
   chatModel.groupMembers.clear()
@@ -247,12 +254,16 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 }
 
 fun markChatRead(chat: Chat, chatModel: ChatModel) {
+  // Just to be sure
+  if (chat.chatStats.unreadCount == 0) return
+
+  val minUnreadItemId = chat.chatStats.minUnreadItemId
   chatModel.markChatItemsRead(chat.chatInfo)
   withApi {
     chatModel.controller.apiChatRead(
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
-      CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
+      CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
     )
   }
 }

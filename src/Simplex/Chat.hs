@@ -99,19 +99,20 @@ defaultChatConfig =
       fileChunkSize = 15780,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
+      hostEvents = False,
       testView = False
     }
 
 _defaultSMPServers :: NonEmpty SMPServer
 _defaultSMPServers =
   L.fromList
-    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im",
-      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im"
+    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion"
     ]
 
 _defaultNtfServers :: [NtfServer]
-_defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im"]
+_defaultNtfServers = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"]
 
 maxImageSize :: Integer
 maxImageSize = 236700
@@ -123,9 +124,9 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, networkConfig, logConnections} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
   let f = chatStoreFile dbFilePrefix
-      config = cfg {subscriptionEvents = logConnections}
+      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
       sendNotification = fromMaybe (const $ pure ()) sendToast
   activeTo <- newTVarIO ActiveNone
   firstTime <- not <$> doesFileExist f
@@ -1247,15 +1248,18 @@ subscribeUserConnections agentBatchSubscribe user = do
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
 processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
+  CONNECT p h -> hostEvent $ CRHostConnected p h
+  DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
   UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
   SUSPENDED -> toView CRChatSuspended
   _ -> pure ()
   where
-    serverEvent srv@(SMPServer host port _) conns event str = do
+    hostEvent = whenM (asks $ hostEvents . config) . toView
+    serverEvent srv@(SMPServer host _ _) conns event str = do
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
-      showToast ("server " <> str) (safeDecodeUtf8 . strEncode $ SrvLoc host port)
+      showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
