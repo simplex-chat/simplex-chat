@@ -177,8 +177,8 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      markRead = { range ->
-        chatModel.markChatItemsRead(chat.chatInfo, range)
+      markRead = { range, unreadCountAfter ->
+        chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
         chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
         withApi {
           chatModel.controller.apiChatRead(
@@ -214,7 +214,7 @@ fun ChatLayout(
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
-  markRead: (CC.ItemRange) -> Unit,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
 ) {
   Surface(
     Modifier
@@ -362,7 +362,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
-  markRead: (CC.ItemRange) -> Unit,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   floatingButton: MutableState<@Composable () -> Unit>
 ) {
   val listState = rememberLazyListState()
@@ -440,7 +440,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
         LaunchedEffect(cItem.id) {
           scope.launch {
             delay(750)
-            markRead(CC.ItemRange(cItem.id, cItem.id))
+            markRead(CC.ItemRange(cItem.id, cItem.id), null)
           }
         }
       }
@@ -454,14 +454,14 @@ fun BoxWithConstraintsScope.FloatingButtons(
   chatItems: List<ChatItem>,
   unreadCount: State<Int>,
   minUnreadItemId: Long,
-  markRead: (CC.ItemRange) -> Unit,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   floatingButton: MutableState<@Composable () -> Unit>,
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
 
   val bottomUnreadCount by remember { derivedStateOf {
-    chatItems.subList(chatItems.size - listState.firstVisibleItemIndex - 1, chatItems.size).count { it.isRcvNew } }
+    chatItems.subList(chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1, chatItems.size).count { it.isRcvNew } }
   }
 
   val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
@@ -508,7 +508,10 @@ fun BoxWithConstraintsScope.FloatingButtons(
   ) {
     DropdownMenuItem(
       onClick = {
-        markRead(CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id))
+        markRead(
+          CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+          bottomUnreadCount
+        )
         showDropDown = false
       }
     ) {
@@ -672,7 +675,7 @@ fun PreviewChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       addMembers = { _ -> },
-      markRead = { _ -> },
+      markRead = { _, _ -> },
     )
   }
 }
@@ -725,7 +728,7 @@ fun PreviewGroupChatLayout() {
       startCall = {},
       acceptCall = { _ -> },
       addMembers = { _ -> },
-      markRead = { _ -> },
+      markRead = { _, _ -> },
     )
   }
 }

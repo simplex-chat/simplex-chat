@@ -211,7 +211,7 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null) {
+  fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
     val markedRead = markItemsReadInCurrentChat(cInfo, range)
     // update preview
     val chatIdx = getChatIndex(cInfo.id)
@@ -221,7 +221,7 @@ class ChatModel(val controller: ChatController) {
       if (lastId != null) {
         chats[chatIdx] = chat.copy(
           chatStats = chat.chatStats.copy(
-            unreadCount = if (range != null) chat.chatStats.unreadCount - markedRead else 0,
+            unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0,
             // Can't use minUnreadItemId currently since chat items can have unread items between read items
             //minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
           )
