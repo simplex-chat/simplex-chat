@@ -51,6 +51,7 @@ testOpts =
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
+      logServerHosts = False,
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,

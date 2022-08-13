@@ -28,6 +28,7 @@ data ChatOpts = ChatOpts
     smpServers :: [SMPServer],
     networkConfig :: NetworkConfig,
     logConnections :: Bool,
+    logServerHosts :: Bool,
     logAgent :: Bool,
     chatCmd :: String,
     chatCmdDelay :: Int,
@@ -56,12 +57,12 @@ chatOpts appDir defaultDbFileName = do
           <> value []
       )
   socksProxy <-
-    flag' (Just defaultSocksProxy) (short 'x' <> help "use local SOCKS5 proxy at :9050")
+    flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
         parseSocksProxy
         ( long "socks-proxy"
             <> metavar "SOCKS5"
-            <> help "`ipv4:port` or `:port` of SOCKS5 proxy"
+            <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
         )
   t <-
@@ -78,10 +79,15 @@ chatOpts appDir defaultDbFileName = do
           <> short 'c'
           <> help "Log every contact and group connection on start"
       )
+  logServerHosts <-
+    switch
+      ( long "log-hosts"
+          <> short 'l'
+          <> help "Log connections to servers"
+      )
   logAgent <-
     switch
       ( long "log-agent"
-          <> short 'l'
           <> help "Enable logs from SMP agent"
       )
   chatCmd <-
@@ -123,6 +129,7 @@ chatOpts appDir defaultDbFileName = do
         smpServers,
         networkConfig = fullNetworkConfig socksProxy $ useTcpTimeout socksProxy t,
         logConnections,
+        logServerHosts,
         logAgent,
         chatCmd,
         chatCmdDelay,

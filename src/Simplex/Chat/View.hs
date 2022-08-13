@@ -14,6 +14,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Char (toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -42,8 +43,9 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..))
+import Simplex.Messaging.Protocol (AProtocolType, ProtocolServer (..))
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow)
 import System.Console.ANSI.Types
 
@@ -136,6 +138,8 @@ responseToView testView = \case
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
+  CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
+  CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
     [groupInvitation' ldn fullName]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
@@ -206,6 +210,9 @@ responseToView testView = \case
 
 showSMPServer :: SMPServer -> String
 showSMPServer = B.unpack . strEncode . host
+
+viewHostEvent :: AProtocolType -> TransportHost -> String
+viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
@@ -863,6 +870,8 @@ viewChatError = \case
         \ secured with different credentials, or due to a bug - please re-create the connection"
       ]
     AGENT A_DUPLICATE -> []
+    AGENT A_PROHIBITED -> []
+    CONN NOT_FOUND -> []
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
