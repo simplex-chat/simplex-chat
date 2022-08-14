@@ -42,8 +42,6 @@ struct ChatView: View {
                     ScrollView {
                         LazyVStack(spacing: 5)  {
                             ForEach(chatModel.chatItems.reversed()) { ci in
-//                                addUIKitContextMenu(ci, maxWidth) {
-//                                }
                                 chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear { loadChatItems(cInfo, ci, proxy) }
@@ -302,8 +300,17 @@ struct ChatView: View {
             )
         }
 
+        var _size = CGSize(width: 0, height: 0)
+        let size = Binding(get: { _size }, set: { _size = $0 })
+
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
-            .contextMenuWithPreview(actions: menu)
+            .contextMenuWithPreview(actions: menu, size: size)
+            .overlay {
+                GeometryReader { g in
+                    Color.clear.preference(key: SizePreferenceKey.self, value: g.size)
+                }
+            }
+            .onPreferenceChange(SizePreferenceKey.self) { size.wrappedValue = $0 }
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                 Button("Delete for me", role: .destructive) {
                     deleteMessage(.cidmInternal)
@@ -319,7 +326,14 @@ struct ChatView: View {
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
     }
-    
+
+    struct SizePreferenceKey: PreferenceKey {
+        static var defaultValue = CGSize(width: 0, height: 0)
+        static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+            value = nextValue()
+        }
+    }
+
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
         case .groupSnd: return true

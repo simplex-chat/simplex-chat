@@ -11,21 +11,25 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func contextMenuWithPreview(title: String = "", actions: [UIAction]) -> some View {
+    func contextMenuWithPreview(title: String = "", actions: [UIAction], size: Binding<CGSize>) -> some View {
         self.overlay(
-            InteractionView(
+            InteractionView(config: InteractionConfig(
                 preview: self,
                 menu: UIMenu(title: title, children: actions),
-                didTapPreview: {}
-            )
+                size: size
+            ))
         )
     }
 }
 
-private struct InteractionView<Content: View>: UIViewRepresentable {
+private struct InteractionConfig<Content: View> {
     let preview: Content
     let menu: UIMenu
-    let didTapPreview: () -> Void
+    let size: Binding<CGSize>
+}
+
+private struct InteractionView<Content: View>: UIViewRepresentable {
+    let config: InteractionConfig<Content>
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
@@ -38,26 +42,17 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) { }
 
     func makeCoordinator() -> InteractionViewCoordinator<Content> {
-        InteractionViewCoordinator(
-            interactionView: self,
-            preview: preview,
-            menu: menu,
-            didTapPreview: didTapPreview
-        )
+        InteractionViewCoordinator(interactionView: self, config: config)
     }
 }
 
 private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenuInteractionDelegate {
     let interactionView: InteractionView<Content>
-    let preview: Content
-    let menu: UIMenu
-    let didTapPreview: () -> Void
+    let config: InteractionConfig<Content>
 
-    init(interactionView: InteractionView<Content>, preview: Content, menu: UIMenu, didTapPreview: @escaping () -> Void) {
+    init(interactionView: InteractionView<Content>, config: InteractionConfig<Content>) {
         self.interactionView = interactionView
-        self.preview = preview
-        self.menu = menu
-        self.didTapPreview = didTapPreview
+        self.config = config
     }
 
     func contextMenuInteraction(
@@ -66,25 +61,26 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
     ) -> UIContextMenuConfiguration? {
         UIContextMenuConfiguration(
             identifier: nil,
-            previewProvider: nil,
-//            { [weak self] () -> UIViewController? in
-//                guard let self = self else { return nil }
-//                return PreviewHostingController(rootView: self.preview)
-//            },
+            previewProvider: { [weak self] () -> UIViewController? in
+                guard let self = self else { return nil }
+                let s = self.config.size.wrappedValue
+                return PreviewHostingController(rootView: self.config.preview.frame(width: s.width, height: s.height))
+            },
             actionProvider: { [weak self] _ in
                 guard let self = self else { return nil }
-                return self.menu
+                return self.config.menu
             }
         )
     }
 
-    func contextMenuInteraction(
-        _ interaction: UIContextMenuInteraction,
-        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
-        animator: UIContextMenuInteractionCommitAnimating
-    ) {
-        animator.addCompletion(self.didTapPreview)
-    }
+//    func contextMenuInteraction(
+//        _ interaction: UIContextMenuInteraction,
+//        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
+//        animator: UIContextMenuInteractionCommitAnimating
+//    ) {
+//        animator.preferredCommitStyle = .pop
+//        animator.addCompletion(self.didTapPreview)
+//    }
 
 //    func contextMenuInteraction(
 //        _ interaction: UIContextMenuInteraction,
@@ -99,11 +95,11 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
 //    ) -> UITargetedPreview? {
 //        targetedPreview
 //    }
-
+//
 //    private var targetedPreview: UITargetedPreview? {
 //        let parameters = UIPreviewParameters()
 //        parameters.backgroundColor = .clear
-//        let target = UIPreviewTarget(container: self.view, center: self.view.center)
+//        let target = UIPreviewTarget(container: UIHostingController(rootView: preview).view, center: self.view.center)
 //        return UITargetedPreview(view: UIImageView(image: preview.snapshot), parameters: parameters, target: target)
 //    }
 }
