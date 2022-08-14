@@ -24,7 +24,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
-import chat.simplex.app.views.chatlist.populateGroupMembers
+import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -43,7 +43,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       developerTools,
       addMembers = {
         withApi {
-          populateGroupMembers(groupInfo, chatModel)
+          setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,

@@ -255,7 +255,7 @@ public enum ChatResponse: Decodable, Error {
     case contactsList(contacts: [Contact])
     // group events
     case groupCreated(groupInfo: GroupInfo)
-    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact)
+    case sentGroupInvitation(groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(groupInfo: GroupInfo)
     case userDeletedMember(groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(groupInfo: GroupInfo)
@@ -268,11 +268,11 @@ public enum ChatResponse: Decodable, Error {
     case leftMember(groupInfo: GroupInfo, member: GroupMember)
     case groupDeleted(groupInfo: GroupInfo, member: GroupMember)
     case contactsMerged(intoContact: Contact, mergedContact: Contact)
-    case groupInvitation(groupInfo: GroupInfo)
+    case groupInvitation(groupInfo: GroupInfo) // unused
     case userJoinedGroup(groupInfo: GroupInfo)
     case joinedGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
-    case groupRemoved(groupInfo: GroupInfo)
+    case groupRemoved(groupInfo: GroupInfo) // unused
     case groupUpdated(toGroup: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
@@ -436,7 +436,7 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemDeleted(deletedChatItem, toChatItem): return "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))"
             case let .contactsList(contacts): return String(describing: contacts)
             case let .groupCreated(groupInfo): return String(describing: groupInfo)
-            case let .sentGroupInvitation(groupInfo, contact): return "groupInfo: \(groupInfo)\ncontact: \(contact)"
+            case let .sentGroupInvitation(groupInfo, contact, member): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)"
             case let .userAcceptedGroupSent(groupInfo): return String(describing: groupInfo)
             case let .userDeletedMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .leftMemberUser(groupInfo): return String(describing: groupInfo)
@@ -516,6 +516,8 @@ public struct ArchiveConfig: Encodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    public var hostMode: HostMode = .publicHost
+    public var requiredHostMode = false
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -538,6 +540,12 @@ public struct NetCfg: Codable, Equatable {
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public enum HostMode: String, Codable {
+    case onionViaSocks
+    case onionHost = "onion"
+    case publicHost = "public"
 }
 
 public struct KeepAliveOpts: Codable, Equatable {

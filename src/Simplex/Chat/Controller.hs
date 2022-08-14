@@ -40,8 +40,9 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Protocol (CorrId, MsgFlags)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
 import UnliftIO.STM
 
@@ -62,6 +63,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
+    hostEvents :: Bool,
     testView :: Bool
   }
 
@@ -109,7 +111,7 @@ data ChatCommand
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIGetChats {pendingConnections :: Bool}
-  | APIGetChat ChatRef ChatPagination
+  | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
   | APISendMessage ChatRef ComposedMessage
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
@@ -230,7 +232,7 @@ data ChatResponse
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
-  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
@@ -269,6 +271,8 @@ data ChatResponse
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
+  | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
+  | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}

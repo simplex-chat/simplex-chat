@@ -18,7 +18,6 @@ struct ChatView: View {
     @ObservedObject var chat: Chat
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
-    @State private var membersToAdd: [Contact] = []
     @State private var composeState = ComposeState()
     @State private var deletingItem: ChatItem? = nil
     @FocusState private var keyboardVisible: Bool
@@ -103,8 +102,14 @@ struct ChatView: View {
                             }
                             await MainActor.run { showChatInfoSheet = true }
                         }
-                    } else {
-                        showChatInfoSheet = true
+                    } else if case let .group(groupInfo) = cInfo {
+                        Task {
+                            let groupMembers = await apiListMembers(groupInfo.groupId)
+                            await MainActor.run {
+                                ChatModel.shared.groupMembers = groupMembers
+                                showChatInfoSheet = true
+                            }
+                        }
                     }
                 } label: {
                     ChatInfoToolbar(chat: chat)
@@ -131,7 +136,7 @@ struct ChatView: View {
                     if groupInfo.canAddMembers {
                         addMembersButton()
                             .sheet(isPresented: $showAddMembersSheet) {
-                                AddGroupMembersView(chat: chat, groupInfo: groupInfo, membersToAdd: membersToAdd)
+                                AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                             }
                     }
                 default:
@@ -154,9 +159,9 @@ struct ChatView: View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
                 Task {
-                    let ms = await apiListMembers(gInfo.apiId)
+                    let groupMembers = await apiListMembers(gInfo.groupId)
                     await MainActor.run {
-                        membersToAdd = filterMembersToAdd(ms)
+                        ChatModel.shared.groupMembers = groupMembers
                         showAddMembersSheet = true
                     }
                 }

@@ -159,11 +159,13 @@ testAddContact = versionTestMatrix2 runTestAddContact
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
       chatsEmpty alice bob
-      alice #> "@bob hello 🙂"
-      bob <# "alice> hello 🙂"
+      alice #> "@bob hello there 🙂"
+      bob <# "alice> hello there 🙂"
       chatsOneMessage alice bob
-      bob #> "@alice hi"
-      alice <# "bob> hi"
+      bob #> "@alice hello there"
+      alice <# "bob> hello there"
+      bob #> "@alice how are you?"
+      alice <# "bob> how are you?"
       chatsManyMessages alice bob
       -- test adding the same contact one more time - local name will be different
       alice ##> "/c"
@@ -177,15 +179,15 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob <# "alice_1> hello"
       bob #> "@alice_1 hi"
       alice <# "bob_1> hi"
-      alice @@@ [("@bob_1", "hi"), ("@bob", "hi")]
-      bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
+      alice @@@ [("@bob_1", "hi"), ("@bob", "how are you?")]
+      bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
       -- test deleting contact
       alice ##> "/d bob_1"
       alice <## "bob_1: contact is deleted"
       alice ##> "@bob_1 hey"
       alice <## "no contact bob_1"
-      alice @@@ [("@bob", "hi")]
-      bob @@@ [("@alice_1", "hi"), ("@alice", "hi")]
+      alice @@@ [("@bob", "how are you?")]
+      bob @@@ [("@alice_1", "hi"), ("@alice", "how are you?")]
       -- test clearing chat
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
       alice #$> ("/_get chat @2 count=100", chat, [])
@@ -197,18 +199,20 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob @@@ [("@alice", "")]
       bob #$> ("/_get chat @2 count=100", chat, [])
     chatsOneMessage alice bob = do
-      alice @@@ [("@bob", "hello 🙂")]
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂")])
-      bob @@@ [("@alice", "hello 🙂")]
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂")])
+      alice @@@ [("@bob", "hello there 🙂")]
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello there 🙂")])
+      bob @@@ [("@alice", "hello there 🙂")]
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello there 🙂")])
     chatsManyMessages alice bob = do
-      alice @@@ [("@bob", "hi")]
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello 🙂"), (0, "hi")])
-      bob @@@ [("@alice", "hi")]
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello 🙂"), (1, "hi")])
+      alice @@@ [("@bob", "how are you?")]
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "hello there 🙂"), (0, "hello there"), (0, "how are you?")])
+      bob @@@ [("@alice", "how are you?")]
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "hello there 🙂"), (1, "hello there"), (1, "how are you?")])
       -- pagination
-      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hi")])
-      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello 🙂")])
+      alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hello there"), (0, "how are you?")])
+      alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello there 🙂")])
+      -- search
+      alice #$> ("/_get chat @2 count=100 ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
       -- read messages
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
@@ -475,6 +479,7 @@ testGroupShared alice bob cath checkMessages = do
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=5 count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=7 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
+      alice #$> ("/_get chat #1 count=100 team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
@@ -2047,7 +2052,7 @@ testGetSetSMPServers =
       alice #$> ("/smp_servers", id, "no custom SMP servers saved")
       alice #$> ("/smp_servers smp://1234-w==@smp1.example.im", id, "ok")
       alice #$> ("/smp_servers", id, "smp://1234-w==@smp1.example.im")
-      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im,smp://3456-w==@smp3.example.im:5224", id, "ok")
+      alice #$> ("/smp_servers smp://2345-w==@smp2.example.im;smp://3456-w==@smp3.example.im:5224", id, "ok")
       alice #$> ("/smp_servers", id, "smp://2345-w==@smp2.example.im, smp://3456-w==@smp3.example.im:5224")
       alice #$> ("/smp_servers default", id, "ok")
       alice #$> ("/smp_servers", id, "no custom SMP servers saved")

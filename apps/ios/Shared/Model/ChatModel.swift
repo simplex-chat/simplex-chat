@@ -24,6 +24,7 @@ final class ChatModel: ObservableObject {
     @Published var chatId: String?
     @Published var chatItems: [ChatItem] = []
     @Published var chatToTop: String?
+    @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
     @Published var terminalItems: [TerminalItem] = []
     @Published var userAddress: String?
@@ -289,6 +290,23 @@ final class ChatModel: ObservableObject {
     func removeChat(_ id: String) {
         withAnimation {
             chats.removeAll(where: { $0.id == id })
+        }
+    }
+
+    func upsertGroupMember(_ groupInfo: GroupInfo, _ member: GroupMember) -> Bool {
+        // update current chat
+        if chatId == groupInfo.id {
+            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
+                withAnimation(.default) {
+                    self.groupMembers[i] = member
+                }
+                return false
+            } else {
+                withAnimation { groupMembers.append(member) }
+                return true
+            }
+        } else {
+            return false
         }
     }
 }

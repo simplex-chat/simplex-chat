@@ -193,6 +193,7 @@ import Data.Function (on)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -221,6 +222,7 @@ import Simplex.Chat.Migrations.M20220514_profiles_user_id
 import Simplex.Chat.Migrations.M20220626_auto_reply
 import Simplex.Chat.Migrations.M20220702_calls
 import Simplex.Chat.Migrations.M20220715_groups_chat_item_id
+import Simplex.Chat.Migrations.M20220811_chat_items_indices
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -230,6 +232,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
@@ -248,7 +251,8 @@ schemaMigrations =
     ("20220514_profiles_user_id", m20220514_profiles_user_id),
     ("20220626_auto_reply", m20220626_auto_reply),
     ("20220702_calls", m20220702_calls),
-    ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id)
+    ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id),
+    ("20220811_chat_items_indices", m20220811_chat_items_indices)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -2788,15 +2792,16 @@ toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Mayb
 toPendingContactConnection (pccConnId, acId, pccConnStatus, connReqHash, viaUserContactLink, createdAt, updatedAt) =
   PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = isJust connReqHash, viaUserContactLink, createdAt, updatedAt}
 
-getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChat db user contactId pagination = do
+getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChat db user contactId pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getDirectChatLast_ db user contactId count
-    CPAfter afterId count -> getDirectChatAfter_ db user contactId afterId count
-    CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count
+    CPLast count -> getDirectChatLast_ db user contactId count search
+    CPAfter afterId count -> getDirectChatAfter_ db user contactId afterId count search
+    CPBefore beforeId count -> getDirectChatBefore_ db user contactId beforeId count search
 
-getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatLast_ db User {userId} contactId count = do
+getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsLast_
@@ -2820,14 +2825,14 @@ getDirectChatLast_ db User {userId} contactId count = do
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
-          (userId, contactId, count)
+          (userId, contactId, search, count)
 
-getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
+getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsAfter_
@@ -2851,14 +2856,15 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count = do
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id > ? AND i.item_deleted != 1
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+              AND i.chat_item_id > ?
             ORDER BY i.chat_item_id ASC
             LIMIT ?
           |]
-          (userId, contactId, afterChatItemId, count)
+          (userId, contactId, search, afterChatItemId, count)
 
-getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTDirect)
-getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
+getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
+getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
   chatItems <- ExceptT getDirectChatItemsBefore_
@@ -2882,11 +2888,12 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count = do
             FROM chat_items i
             LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
             LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
-            WHERE i.user_id = ? AND i.contact_id = ? AND i.chat_item_id < ? AND i.item_deleted != 1
+            WHERE i.user_id = ? AND i.contact_id = ? AND i.item_deleted != 1 AND i.item_text LIKE '%' || ? || '%'
+              AND i.chat_item_id < ?
             ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
-          (userId, contactId, beforeChatItemId, count)
+          (userId, contactId, search, beforeChatItemId, count)
 
 getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getDirectChatStats_ db userId contactId =
@@ -2940,15 +2947,16 @@ getContact db userId contactId =
       |]
       (userId, contactId, ConnReady, ConnSndReady)
 
-getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChat db user groupId pagination = do
+getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChat db user groupId pagination search_ = do
+  let search = fromMaybe "" search_
   case pagination of
-    CPLast count -> getGroupChatLast_ db user groupId count
-    CPAfter afterId count -> getGroupChatAfter_ db user groupId afterId count
-    CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count
+    CPLast count -> getGroupChatLast_ db user groupId count search
+    CPAfter afterId count -> getGroupChatAfter_ db user groupId afterId count search
+    CPBefore beforeId count -> getGroupChatBefore_ db user groupId beforeId count search
 
-getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatLast_ db user@User {userId} groupId count = do
+getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   chatItemIds <- liftIO getGroupChatItemIdsLast_
@@ -2963,14 +2971,14 @@ getGroupChatLast_ db user@User {userId} groupId count = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, count)
+          (userId, groupId, search, count)
 
-getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count = do
+getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
@@ -2986,15 +2994,15 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
               AND (item_ts > ? OR (item_ts = ? AND chat_item_id > ?))
             ORDER BY item_ts ASC, chat_item_id ASC
             LIMIT ?
           |]
-          (userId, groupId, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
+          (userId, groupId, search, afterChatItemTs, afterChatItemTs, afterChatItemId, count)
 
-getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count = do
+getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
@@ -3010,12 +3018,12 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_deleted != 1
+            WHERE user_id = ? AND group_id = ? AND item_deleted != 1 AND item_text LIKE '%' || ? || '%'
               AND (item_ts < ? OR (item_ts = ? AND chat_item_id < ?))
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
-          (userId, groupId, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
+          (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
 
 getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
 getGroupChatStats_ db userId groupId =
@@ -3686,7 +3694,7 @@ getSMPServers db User {userId} =
       |]
       (Only userId)
   where
-    toSmpServer :: (String, String, C.KeyHash) -> SMPServer
+    toSmpServer :: (NonEmpty TransportHost, String, C.KeyHash) -> SMPServer
     toSmpServer (host, port, keyHash) = SMPServer host port keyHash
 
 overwriteSMPServers :: DB.Connection -> User -> [SMPServer] -> ExceptT StoreError IO ()

@@ -211,27 +211,39 @@ class ChatModel(val controller: ChatController) {
     }
   }
 
-  fun markChatItemsRead(cInfo: ChatInfo) {
+  fun markChatItemsRead(cInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
+    val markedRead = markItemsReadInCurrentChat(cInfo, range)
     // update preview
     val chatIdx = getChatIndex(cInfo.id)
     if (chatIdx >= 0) {
       val chat = chats[chatIdx]
       val lastId = chat.chatItems.lastOrNull()?.id
       if (lastId != null) {
-        chats[chatIdx] = chat.copy(chatStats = chat.chatStats.copy(unreadCount = 0, minUnreadItemId = lastId + 1))
+        chats[chatIdx] = chat.copy(
+          chatStats = chat.chatStats.copy(
+            unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0,
+            // Can't use minUnreadItemId currently since chat items can have unread items between read items
+            //minUnreadItemId = if (range != null) kotlin.math.max(chat.chatStats.minUnreadItemId, range.to + 1) else lastId + 1
+          )
+        )
       }
     }
-    // update current chat
+  }
+
+  private fun markItemsReadInCurrentChat(cInfo: ChatInfo, range: CC.ItemRange? = null): Int {
+    var markedRead = 0
     if (chatId.value == cInfo.id) {
       var i = 0
       while (i < chatItems.count()) {
         val item = chatItems[i]
-        if (item.meta.itemStatus is CIStatus.RcvNew) {
+        if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
           chatItems[i] = item.withStatus(CIStatus.RcvRead())
+          markedRead++
         }
         i += 1
       }
     }
+    return markedRead
   }
 
 //  func popChat(_ id: String) {
@@ -247,6 +259,22 @@ class ChatModel(val controller: ChatController) {
 
   fun removeChat(id: String) {
     chats.removeAll { it.id == id }
+  }
+
+  fun upsertGroupMember(groupInfo: GroupInfo, member: GroupMember): Boolean {
+    // update current chat
+    return if (chatId.value == groupInfo.id) {
+      val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
+      if (memberIndex >= 0) {
+        groupMembers[memberIndex] = member
+        false
+      } else {
+        groupMembers.add(member)
+        true
+      }
+    } else {
+      false
+    }
   }
 }
 
