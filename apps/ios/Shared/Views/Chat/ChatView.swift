@@ -224,10 +224,6 @@ struct ChatView: View {
                 UIAction(
                     title: NSLocalizedString("Reply", comment: "chat item action"),
                     image: UIImage(systemName: "arrowshape.turn.up.left")
-//                    identifier: nil,
-//                    discoverabilityTitle: nil,
-//                    attributes: [],
-//                    state: .off
                 ) { _ in
                     withAnimation {
                         if composeState.editing() {
@@ -236,8 +232,74 @@ struct ChatView: View {
                             composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
                         }
                     }
+                },
+                UIAction(
+                    title: NSLocalizedString("Share", comment: "chat item action"),
+                    image: UIImage(systemName: "square.and.arrow.up")
+                ) { _ in
+                    var shareItems: [Any] = [ci.content.text]
+                    if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
+                        shareItems.append(image)
+                    }
+                    showShareSheet(items: shareItems)
+                },
+                UIAction(
+                    title: NSLocalizedString("Copy", comment: "chat item action"),
+                    image: UIImage(systemName: "doc.on.doc")
+                ) { _ in
+                    if case let .image(text, _) = ci.content.msgContent,
+                       text == "",
+                       let image = getLoadedImage(ci.file) {
+                        UIPasteboard.general.image = image
+                    } else {
+                        UIPasteboard.general.string = ci.content.text
+                    }
                 }
             ])
+            if case .image = ci.content.msgContent,
+               let image = getLoadedImage(ci.file) {
+                menu.append(
+                    UIAction(
+                        title: NSLocalizedString("Save", comment: "chat item action"),
+                        image: UIImage(systemName: "square.and.arrow.down")
+                    ) { _ in
+                        UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+                    }
+                )
+            }
+            if ci.meta.editable {
+                menu.append(
+                    UIAction(
+                        title: NSLocalizedString("Edit", comment: "chat item action"),
+                        image: UIImage(systemName: "square.and.pencil")
+                    ) { _ in
+                        withAnimation {
+                            composeState = ComposeState(editingItem: ci)
+                        }
+                    }
+                )
+            }
+            menu.append(
+                UIAction(
+                    title: NSLocalizedString("Delete", comment: "chat item action"),
+                    image: UIImage(systemName: "trash"),
+                    attributes: [.destructive]
+                ) { _ in
+                    showDeleteMessage = true
+                    deletingItem = ci
+                }
+            )
+        } else if ci.isDeletedContent() {
+            menu.append(
+                UIAction(
+                    title: NSLocalizedString("Delete", comment: "chat item action"),
+                    image: UIImage(systemName: "trash"),
+                    attributes: [.destructive]
+                ) { _ in
+                    showDeleteMessage = true
+                    deletingItem = ci
+                }
+            )
         }
 
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
@@ -257,140 +319,6 @@ struct ChatView: View {
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
     }
-//        return content().contextMenu {
-//                if ci.isMsgContent() {
-//                    Button {
-//                        withAnimation {
-//                            if composeState.editing() {
-//                                composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-//                            } else {
-//                                composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
-//                            }
-//                        }
-//                    } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-//                    Button {
-//                        var shareItems: [Any] = [ci.content.text]
-//                        if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-//                            shareItems.append(image)
-//                        }
-//                        showShareSheet(items: shareItems)
-//                    } label: { Label("Share", systemImage: "square.and.arrow.up") }
-//                    Button {
-//                        if case let .image(text, _) = ci.content.msgContent,
-//                           text == "",
-//                           let image = getLoadedImage(ci.file) {
-//                            UIPasteboard.general.image = image
-//                        } else {
-//                            UIPasteboard.general.string = ci.content.text
-//                        }
-//                    } label: { Label("Copy", systemImage: "doc.on.doc") }
-//                    if case .image = ci.content.msgContent,
-//                       let image = getLoadedImage(ci.file) {
-//                        Button {
-//                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-//                        } label: { Label("Save", systemImage: "square.and.arrow.down") }
-//                    }
-//                    if ci.meta.editable {
-//                        Button {
-//                            withAnimation {
-//                                composeState = ComposeState(editingItem: ci)
-//                            }
-//                        } label: { Label("Edit", systemImage: "square.and.pencil") }
-//                    }
-//                    Button(role: .destructive) {
-//                        showDeleteMessage = true
-//                        deletingItem = ci
-//                    } label: { Label("Delete", systemImage: "trash") }
-//                } else if ci.isDeletedContent() {
-//                    Button(role: .destructive) {
-//                        showDeleteMessage = true
-//                        deletingItem = ci
-//                    } label: { Label("Delete", systemImage: "trash") }
-//                }
-//            }
-//            .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-//                Button("Delete for me", role: .destructive) {
-//                    deleteMessage(.cidmInternal)
-//                }
-//                if let di = deletingItem {
-//                    if di.meta.editable {
-//                        Button("Delete for everyone",role: .destructive) {
-//                            deleteMessage(.cidmBroadcast)
-//                        }
-//                    }
-//                }
-//            }
-//            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-//            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)    }
-
-//    private func addContextMenu<V: View>(_ ci: ChatItem, _ maxWidth: CGFloat, content: () -> V) -> some View {
-//        let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-//        return content().contextMenu {
-//                if ci.isMsgContent() {
-//                    Button {
-//                        withAnimation {
-//                            if composeState.editing() {
-//                                composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-//                            } else {
-//                                composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
-//                            }
-//                        }
-//                    } label: { Label("Reply", systemImage: "arrowshape.turn.up.left") }
-//                    Button {
-//                        var shareItems: [Any] = [ci.content.text]
-//                        if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-//                            shareItems.append(image)
-//                        }
-//                        showShareSheet(items: shareItems)
-//                    } label: { Label("Share", systemImage: "square.and.arrow.up") }
-//                    Button {
-//                        if case let .image(text, _) = ci.content.msgContent,
-//                           text == "",
-//                           let image = getLoadedImage(ci.file) {
-//                            UIPasteboard.general.image = image
-//                        } else {
-//                            UIPasteboard.general.string = ci.content.text
-//                        }
-//                    } label: { Label("Copy", systemImage: "doc.on.doc") }
-//                    if case .image = ci.content.msgContent,
-//                       let image = getLoadedImage(ci.file) {
-//                        Button {
-//                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-//                        } label: { Label("Save", systemImage: "square.and.arrow.down") }
-//                    }
-//                    if ci.meta.editable {
-//                        Button {
-//                            withAnimation {
-//                                composeState = ComposeState(editingItem: ci)
-//                            }
-//                        } label: { Label("Edit", systemImage: "square.and.pencil") }
-//                    }
-//                    Button(role: .destructive) {
-//                        showDeleteMessage = true
-//                        deletingItem = ci
-//                    } label: { Label("Delete", systemImage: "trash") }
-//                } else if ci.isDeletedContent() {
-//                    Button(role: .destructive) {
-//                        showDeleteMessage = true
-//                        deletingItem = ci
-//                    } label: { Label("Delete", systemImage: "trash") }
-//                }
-//            }
-//            .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-//                Button("Delete for me", role: .destructive) {
-//                    deleteMessage(.cidmInternal)
-//                }
-//                if let di = deletingItem {
-//                    if di.meta.editable {
-//                        Button("Delete for everyone",role: .destructive) {
-//                            deleteMessage(.cidmBroadcast)
-//                        }
-//                    }
-//                }
-//            }
-//            .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-//            .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-//    }
     
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
         switch (prevItem?.chatDir) {
