@@ -11,7 +11,7 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func contextMenuWithPreview(title: String = "", actions: [UIAction], size: Binding<CGSize>) -> some View {
+    func uiKitContextMenu(title: String = "", actions: [UIAction], size: Binding<CGSize>) -> some View {
         self.overlay(
             InteractionView(config: InteractionConfig(
                 preview: self,
@@ -30,7 +30,7 @@ private struct InteractionConfig<Content: View> {
 
 private struct InteractionView<Content: View>: UIViewRepresentable {
     let config: InteractionConfig<Content>
-    let view = UIView()
+    let view = MyView()
 
     func makeUIView(context: Context) -> UIView {
         view.backgroundColor = .clear
@@ -46,8 +46,14 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
     }
 }
 
+private class MyView: UIView {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        !(gestureRecognizer is UITapGestureRecognizer)
+    }
+}
+
 private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenuInteractionDelegate {
-    let interactionView: UIView
+    let interactionView: MyView
     let config: InteractionConfig<Content>
 
     private var preview: some View {
@@ -55,7 +61,7 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
         return self.config.preview.frame(width: s.width, height: s.height)
     }
 
-    init(interactionView: UIView, config: InteractionConfig<Content>) {
+    init(interactionView: MyView, config: InteractionConfig<Content>) {
         self.interactionView = interactionView
         self.config = config
     }
@@ -77,13 +83,15 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
         )
     }
 
-//    func contextMenuInteraction(
-//        _ interaction: UIContextMenuInteraction,
-//        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
-//        animator: UIContextMenuInteractionCommitAnimating
-//    ) {
-//        animator.addCompletion(self.didTapPreview)
-//    }
+    func contextMenuInteraction(
+        _ interaction: UIContextMenuInteraction,
+        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
+        animator: UIContextMenuInteractionCommitAnimating
+    ) {
+        animator.addCompletion {
+            print("user tapped")
+        }
+    }
 
     func contextMenuInteraction(
         _ interaction: UIContextMenuInteraction,

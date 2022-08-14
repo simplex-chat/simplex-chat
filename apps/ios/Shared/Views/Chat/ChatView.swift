@@ -304,7 +304,7 @@ struct ChatView: View {
         let size = Binding(get: { _size }, set: { _size = $0 })
 
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
-            .contextMenuWithPreview(actions: menu, size: size)
+            .uiKitContextMenu(actions: menu, size: size)
             .overlay {
                 GeometryReader { g in
                     Color.clear.preference(key: SizePreferenceKey.self, value: g.size)
