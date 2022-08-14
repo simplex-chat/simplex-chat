@@ -30,9 +30,9 @@ private struct InteractionConfig<Content: View> {
 
 private struct InteractionView<Content: View>: UIViewRepresentable {
     let config: InteractionConfig<Content>
+    let view = UIView()
 
     func makeUIView(context: Context) -> UIView {
-        let view = UIView()
         view.backgroundColor = .clear
         let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
         view.addInteraction(menuInteraction)
@@ -42,15 +42,20 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) { }
 
     func makeCoordinator() -> InteractionViewCoordinator<Content> {
-        InteractionViewCoordinator(interactionView: self, config: config)
+        InteractionViewCoordinator(interactionView: view, config: config)
     }
 }
 
 private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenuInteractionDelegate {
-    let interactionView: InteractionView<Content>
+    let interactionView: UIView
     let config: InteractionConfig<Content>
 
-    init(interactionView: InteractionView<Content>, config: InteractionConfig<Content>) {
+    private var preview: some View {
+        let s = self.config.size.wrappedValue
+        return self.config.preview.frame(width: s.width, height: s.height)
+    }
+
+    init(interactionView: UIView, config: InteractionConfig<Content>) {
         self.interactionView = interactionView
         self.config = config
     }
@@ -63,8 +68,7 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
             identifier: nil,
             previewProvider: { [weak self] () -> UIViewController? in
                 guard let self = self else { return nil }
-                let s = self.config.size.wrappedValue
-                return PreviewHostingController(rootView: self.config.preview.frame(width: s.width, height: s.height))
+                return PreviewHostingController(rootView: self.preview)
             },
             actionProvider: { [weak self] _ in
                 guard let self = self else { return nil }
@@ -78,30 +82,40 @@ private class InteractionViewCoordinator<Content: View>: NSObject, UIContextMenu
 //        willPerformPreviewActionForMenuWith configuration: UIContextMenuConfiguration,
 //        animator: UIContextMenuInteractionCommitAnimating
 //    ) {
-//        animator.preferredCommitStyle = .pop
 //        animator.addCompletion(self.didTapPreview)
 //    }
 
-//    func contextMenuInteraction(
-//        _ interaction: UIContextMenuInteraction,
-//        previewForHighlightingMenuWithConfiguration configuration: UIContextMenuConfiguration
-//    ) -> UITargetedPreview? {
-//        targetedPreview
-//    }
-//
-//    func contextMenuInteraction(
-//        _ interaction: UIContextMenuInteraction,
-//        previewForDismissingMenuWithConfiguration configuration: UIContextMenuConfiguration
-//    ) -> UITargetedPreview? {
-//        targetedPreview
-//    }
-//
-//    private var targetedPreview: UITargetedPreview? {
-//        let parameters = UIPreviewParameters()
-//        parameters.backgroundColor = .clear
-//        let target = UIPreviewTarget(container: UIHostingController(rootView: preview).view, center: self.view.center)
-//        return UITargetedPreview(view: UIImageView(image: preview.snapshot), parameters: parameters, target: target)
-//    }
+    func contextMenuInteraction(
+        _ interaction: UIContextMenuInteraction,
+        previewForHighlightingMenuWithConfiguration configuration: UIContextMenuConfiguration
+    ) -> UITargetedPreview? {
+        targetedPreview
+    }
+
+    func contextMenuInteraction(
+        _ interaction: UIContextMenuInteraction,
+        previewForDismissingMenuWithConfiguration configuration: UIContextMenuConfiguration
+    ) -> UITargetedPreview? {
+        targetedPreview
+    }
+
+    private var targetedPreview: UITargetedPreview? {
+        let parameters = UIPreviewParameters()
+        parameters.backgroundColor = .clear
+        let target = UIPreviewTarget(container: interactionView, center: interactionView.center)
+        return UITargetedPreview(view: UIImageView(image: snapshot), parameters: parameters, target: target)
+    }
+
+    private var snapshot: UIImage {
+        let controller = UIHostingController(rootView: preview)
+        let view = controller.view
+        let size = controller.view.intrinsicContentSize
+        view?.bounds = CGRect(origin: .zero, size: size)
+        view?.backgroundColor = .clear
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            view?.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: false)
+        }
+    }
 }
 
 private final class PreviewHostingController<Content: View>: UIHostingController<Content> {
@@ -109,22 +123,9 @@ private final class PreviewHostingController<Content: View>: UIHostingController
         super.viewWillAppear(animated)
         preferredContentSize = view.intrinsicContentSize
     }
-}
 
-extension View {
-    var snapshot: UIImage {
-        let controller = UIHostingController(rootView: self)
-        let view = controller.view
-
-        let targetSize = controller.view.intrinsicContentSize
-        view?.bounds = CGRect(origin: .zero, size: targetSize)
-        view?.backgroundColor = .clear
-
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-
-        return renderer.image { _ in
-            view?.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
-        }
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        preferredContentSize = view.intrinsicContentSize
     }
 }
-

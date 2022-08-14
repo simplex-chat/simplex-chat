@@ -300,7 +300,7 @@ struct ChatView: View {
             )
         }
 
-        var _size = CGSize(width: 0, height: 0)
+        var _size = CGSize(width: maxWidth, height: 24)
         let size = Binding(get: { _size }, set: { _size = $0 })
 
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
@@ -315,11 +315,9 @@ struct ChatView: View {
                 Button("Delete for me", role: .destructive) {
                     deleteMessage(.cidmInternal)
                 }
-                if let di = deletingItem {
-                    if di.meta.editable {
-                        Button("Delete for everyone",role: .destructive) {
-                            deleteMessage(.cidmBroadcast)
-                        }
+                if let di = deletingItem, di.meta.editable {
+                    Button("Delete for everyone",role: .destructive) {
+                        deleteMessage(.cidmBroadcast)
                     }
                 }
             }
