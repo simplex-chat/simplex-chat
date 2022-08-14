@@ -516,6 +516,8 @@ public struct ArchiveConfig: Encodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    public var hostMode: HostMode = .publicHost
+    public var requiredHostMode = false
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -538,6 +540,12 @@ public struct NetCfg: Codable, Equatable {
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public enum HostMode: String, Codable {
+    case onionViaSocks
+    case onionHost = "onion"
+    case publicHost = "public"
 }
 
 public struct KeepAliveOpts: Codable, Equatable {

@@ -1293,6 +1293,8 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 @Serializable
 data class NetCfg(
   val socksProxy: String? = null,
+  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val requiredHostMode: Boolean = false,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpKeepAlive: KeepAliveOpts?,
@@ -1320,6 +1322,13 @@ data class NetCfg(
         smpPingInterval = 600_000_000
       )
   }
+}
+
+@Serializable
+enum class HostMode {
+  @SerialName("onionViaSocks") OnionViaSocks,
+  @SerialName("onion") Onion,
+  @SerialName("public") Public;
 }
 
 @Serializable
