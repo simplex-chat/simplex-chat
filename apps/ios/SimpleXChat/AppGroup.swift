@@ -15,6 +15,7 @@ public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
+let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL = "networkSMPPingInterval"
@@ -29,6 +30,7 @@ public let groupDefaults = UserDefaults(suiteName: APP_GROUP_NAME)!
 
 public func registerGroupDefaults() {
     groupDefaults.register(defaults: [
+        GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL: NetCfg.defaults.smpPingInterval,
@@ -83,6 +85,12 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
+
+public let networkUseOnionHostsGroupDefault = EnumDefault<OnionHosts>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS,
+    withDefault: .no
+)
 
 public class DateDefault {
     var defaults: UserDefaults
@@ -157,6 +165,8 @@ public class Default<T> {
 }
 
 public func getNetCfg() -> NetCfg {
+    let onionHosts = networkUseOnionHostsGroupDefault.get()
+    let (hostMode, requiredHostMode) = onionHosts.hostMode
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let smpPingInterval = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
@@ -171,6 +181,8 @@ public func getNetCfg() -> NetCfg {
         tcpKeepAlive = nil
     }
     return NetCfg(
+        hostMode: hostMode,
+        requiredHostMode: requiredHostMode,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpKeepAlive: tcpKeepAlive,
@@ -179,6 +191,7 @@ public func getNetCfg() -> NetCfg {
 }
 
 public func setNetCfg(_ cfg: NetCfg) {
+    networkUseOnionHostsGroupDefault.set(OnionHosts(netCfg: cfg))
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.smpPingInterval, forKey: GROUP_DEFAULT_NETWORK_SMP_PING_INTERVAL)
