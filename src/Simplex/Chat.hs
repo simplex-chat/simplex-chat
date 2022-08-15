@@ -615,7 +615,7 @@ processChatCommand = \case
   ChatHelp section -> pure $ CRChatHelp section
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
-    -- / TODO incognito: generate profile for connection
+    -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognito
     incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
@@ -623,7 +623,7 @@ processChatCommand = \case
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
-    -- / TODO incognito: generate profile to send
+    -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognito
     incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
     let profileToSend = fromMaybe profile incognitoProfile
@@ -632,11 +632,11 @@ processChatCommand = \case
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
-    -- / TODO incognito: generate profile to send
+    -- [incognito] generate profile to send
     connectViaContact userId cReq profile
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex -> withUser $ \User {userId, profile} ->
-    -- / TODO incognito: generate profile to send
+    -- [incognito] generate profile to send
     connectViaContact userId adminContactReq profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db userId cName
@@ -699,14 +699,14 @@ processChatCommand = \case
     processChatCommand $ APIUpdateChatItem chatRef editedItemId mc
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
-    -- / TODO incognito: create membership with incognito profile
+    -- [incognito] create membership with incognito profile
     incognito <- readTVarIO =<< asks incognito
     incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
     CRGroupCreated <$> withStore (\db -> createNewGroup db gVar user gProfile incognitoProfile)
   APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
-    -- / TODO incognito: forbid to invite contact to whom user is connected as incognito if user's membership is not incognito
+    -- [incognito] forbid to invite contact to whom user is connected as incognito if user's membership is not incognito
     let Group gInfo@GroupInfo {localDisplayName, groupProfile, membership, membershipIncognito} members = group
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         Contact {localDisplayName = cName} = contact
@@ -715,7 +715,7 @@ processChatCommand = \case
     when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation member@GroupMember {groupMemberId, memberId} cReq = do
-          -- / TODO incognito: if membership is incognito, send its incognito profile in GroupInvitation
+          -- [incognito] if membership is incognito, send its incognito profile in GroupInvitation
           let incognitoProfile = if membershipIncognito then Just (memberProfile membership) else Nothing
               groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile incognitoProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
@@ -723,7 +723,7 @@ processChatCommand = \case
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
           setActive $ ActiveG localDisplayName
-          pure $ CRSentGroupInvitation gInfo contact member
+          pure $ CRSentGroupInvitation gInfo contact member membershipIncognito
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
@@ -739,15 +739,24 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- / TODO incognito: if membership is incognito, send its incognito profile in XGrpAcpt
-      let incognitoProfile = if membershipIncognito g then Just (memberProfile membership) else Nothing
-      agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember)) incognitoProfile
+      -- [incognito] if incognito mode is enabled [and membership is not incognito] update membership to use incognito profile
+      incognito <- readTVarIO =<< asks incognito
+      g'@GroupInfo {membership = membership'} <-
+        if incognito && not (membershipIncognito g)
+          then do
+            incognitoProfile <- liftIO generateIncognitoProfile
+            membership' <- withStore $ \db -> createIncognitoProfileForGroupMember db userId membership (Just incognitoProfile)
+            pure g {membership = membership', membershipIncognito = True}
+          else pure g
+      -- [incognito] if membership is incognito, send its incognito profile in XGrpAcpt
+      let incognitoProfile = if membershipIncognito g' then Just (memberProfile membership') else Nothing
+      agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage $ XGrpAcpt (memberId (membership' :: GroupMember)) incognitoProfile
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
         updateGroupMemberStatus db userId fromMember GSMemAccepted
-        updateGroupMemberStatus db userId membership GSMemAccepted
+        updateGroupMemberStatus db userId membership' GSMemAccepted
       updateCIGroupInvitationStatus user
-      pure $ CRUserAcceptedGroupSent g {membership = membership {memberStatus = GSMemAccepted}}
+      pure $ CRUserAcceptedGroupSent g' {membership = membership' {memberStatus = GSMemAccepted}}
     where
       updateCIGroupInvitationStatus user@User {userId} = do
         AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db user groupId
@@ -932,7 +941,7 @@ processChatCommand = \case
         (_, xContactId_) -> procCmd $ do
           let randomXContactId = XContactId <$> (asks idsDrg >>= liftIO . (`randomBytes` 16))
           xContactId <- maybe randomXContactId pure xContactId_
-          -- / TODO incognito: generate profile to send
+          -- [incognito] generate profile to send
           -- if user makes a contact request using main profile, then turns on incognito mode and repeats the request,
           -- an incognito profile will be sent even though the address holder will have user's main profile received as well;
           -- we ignore this edge case as we already allow profile updates on repeat contact requests;
@@ -960,7 +969,7 @@ processChatCommand = \case
         withStore $ \db -> updateUserProfile db user p'
         let user' = (user :: User) {localDisplayName = displayName, profile = p'}
         asks currentUser >>= atomically . (`writeTVar` Just user')
-        -- / TODO incognito: filter out contacts with whom user has incognito connections
+        -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
           filter (\ct -> isReady ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
@@ -1153,7 +1162,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
-  -- / TODO incognito: generate profile to send, create connection with incognito profile
+  -- [incognito] generate profile to send, create connection with incognito profile
   incognito <- readTVarIO =<< asks incognito
   incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
   let profileToSend = fromMaybe profile incognitoProfile
@@ -1333,7 +1342,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, incognitoProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
-          -- / TODO incognito: send saved profile
+          -- [incognito] send saved profile
           incognitoProfile <- case incognitoProfileId of
             Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
             Nothing -> pure Nothing
@@ -1400,7 +1409,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CON ->
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
-              toView $ CRContactConnected ct
+              -- [incognito] print incognito profile used for this contact
+              case incognitoProfileId of
+                Just profileId -> do
+                  incognitoProfile <- withStore (\db -> getProfileById db userId profileId)
+                  toView $ CRContactConnectedIncognito ct incognitoProfile
+                Nothing -> toView $ CRContactConnected ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId -> do
@@ -1438,7 +1452,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership} m = case agentMsg of
+    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership, membershipIncognito} m = case agentMsg of
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
@@ -1446,10 +1460,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             case chatMsgEvent of
               XGrpAcpt memId incognitoProfile
                 | sameMemberId memId m -> do
-                  -- / TODO incognito: update member profile to incognito profile
+                  -- [incognito] update member profile to incognito profile
                   withStore $ \db -> do
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    createIncognitoProfileForGroupMember db userId m incognitoProfile
+                    void $ createIncognitoProfileForGroupMember db userId m incognitoProfile
                   allowAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
@@ -1458,7 +1472,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                   -- TODO update member profile
-                  -- / TODO incognito: send membership incognito profile
+                  -- [incognito] send membership incognito profile
                   allowAgentConnection conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
@@ -1482,15 +1496,21 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
-            -- / TODO incognito: chat item & event with indication that host connected incognito
-            memberConnectedChatItem gInfo m
-            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
+            -- [incognito] chat item & event with indication that host connected incognito
+            mainProfile <- case mainProfileId m of
+              Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+              Nothing -> pure Nothing
+            memberConnectedChatItem gInfo m mainProfile
+            toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected} membershipIncognito
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
-            -- / TODO incognito: chat item & event with indication that invitee connected incognito
-            memberConnectedChatItem gInfo m
-            toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected}
+            -- [incognito] chat item & event with indication that invitee connected incognito
+            mainProfile <- case mainProfileId m of
+              Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+              Nothing -> pure Nothing
+            memberConnectedChatItem gInfo m mainProfile
+            toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected} mainProfile
             setActive $ ActiveG gName
             showToast ("#" <> gName) $ "member " <> localDisplayName (m :: GroupMember) <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
@@ -1677,12 +1697,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         cancelRcvFileTransfer user ft
         throwChatError $ CEFileRcvChunk err
 
-    memberConnectedChatItem :: GroupInfo -> GroupMember -> m ()
-    memberConnectedChatItem gInfo m@GroupMember {mainProfileId, memberProfile} = do
+    memberConnectedChatItem :: GroupInfo -> GroupMember -> Maybe Profile -> m ()
+    memberConnectedChatItem gInfo m@GroupMember {memberProfile} mainProfile_ = do
       createdAt <- liftIO getCurrentTime
-      mainProfile_ <- case mainProfileId of
-        Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-        Nothing -> pure Nothing
       let content = case mainProfile_ of
             Just mainProfile -> CIRcvGroupEvent $ RGEMemberConnectedIncognito mainProfile memberProfile
             Nothing -> CIRcvGroupEvent RGEMemberConnected
@@ -1694,7 +1711,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     notifyMemberConnected :: GroupInfo -> GroupMember -> m ()
     notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} = do
-      memberConnectedChatItem gInfo m
+      memberConnectedChatItem gInfo m Nothing
       toView $ CRConnectedToGroupMember gInfo m
       let g = groupName' gInfo
       setActive $ ActiveG g
@@ -1887,15 +1904,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-      -- / TODO incognito: if incognito mode is on or received group invitation has host's incognito profile, create membership with new incognito profile
-      incognito <- readTVarIO =<< asks incognito
-      incognitoProfile <- if incognito || isJust fromMemberIncognitoProfile then Just <$> liftIO generateIncognitoProfile else pure Nothing
+      -- [incognito] if received group invitation has host's incognito profile, create membership with new incognito profile; incognito mode is checked when joining group
+      let invitedIncognito = isJust fromMemberIncognitoProfile
+      incognitoProfile <- if invitedIncognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv incognitoProfile
-      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just $ isJust fromMemberIncognitoProfile}) memRole
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just invitedIncognito}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-      toView $ CRReceivedGroupInvitation gInfo ct memRole
+      toView $ CRReceivedGroupInvitation gInfo ct memRole invitedIncognito
       showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
@@ -1919,14 +1936,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     xInfoProbe :: Contact -> Probe -> m ()
     xInfoProbe c2 probe =
-      -- / TODO incognito: unless connected incognito
+      -- [incognito] unless connected incognito
       unless (contactConnIncognito c2) $ do
         r <- withStore' $ \db -> matchReceivedProbe db userId c2 probe
         forM_ r $ \c1 -> probeMatch c1 c2 probe
 
     xInfoProbeCheck :: Contact -> ProbeHash -> m ()
     xInfoProbeCheck c1 probeHash =
-      -- / TODO incognito: unless connected incognito
+      -- [incognito] unless connected incognito
       unless (contactConnIncognito c1) $ do
         r <- withStore' $ \db -> matchReceivedProbeHash db userId c1 probeHash
         forM_ r . uncurry $ probeMatch c1
@@ -2078,7 +2095,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             else do
               (groupConnId, groupConnReq) <- withAgent (`createConnection` SCMInvitation)
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
-              -- / TODO incognito: direct connection with member has to be established using same incognito profile
+              -- [incognito] direct connection with member has to be established using same incognito profile
               incognitoProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
               newMember <- withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId incognitoProfileId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
@@ -2109,7 +2126,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         Nothing -> withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
         Just m' -> pure m'
       withStore' $ \db -> saveMemberInvitation db toMember introInv
-      -- / TODO incognito: send membership incognito profile, create direct connection as incognito
+      -- [incognito] send membership incognito profile, create direct connection as incognito
       let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (memberProfile membership)
       groupConnId <- withAgent $ \a -> joinConnection a groupConnReq $ directMessage msg
       directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg

@@ -1556,8 +1556,8 @@ updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
-createIncognitoProfileForGroupMember :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO ()
-createIncognitoProfileForGroupMember db userId GroupMember {groupMemberId, memberContactId} incognitoProfile = do
+createIncognitoProfileForGroupMember :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
+createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, memberContactId, memberProfile} incognitoProfile = do
   currentTs <- liftIO getCurrentTime
   incognitoProfileId <- liftIO $ createIncognitoProfile_ db userId currentTs incognitoProfile
   mainProfileId <- case memberContactId of
@@ -1576,6 +1576,7 @@ createIncognitoProfileForGroupMember db userId GroupMember {groupMemberId, membe
           WHERE user_id = ? AND group_member_id = ?
         |]
         (profileId, mainProfileId, currentTs, userId, groupMemberId)
+  pure m {mainProfileId, memberProfile = fromMaybe memberProfile incognitoProfile}
 
 getContactProfileId_ :: DB.Connection -> UserId -> ContactId -> ExceptT StoreError IO Int64
 getContactProfileId_ db userId contactId =

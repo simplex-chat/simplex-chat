@@ -90,7 +90,7 @@ responseToView testView = \case
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
-  CRSentGroupInvitation g c _ -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+  CRSentGroupInvitation g c _ invitedIncognito -> viewSentGroupInvitation g c invitedIncognito
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
@@ -128,6 +128,7 @@ responseToView testView = \case
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
+  CRContactConnectedIncognito ct userIncognitoProfile -> viewContactConnectedIncognito ct userIncognitoProfile
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> smpServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> smpServer srv <> " (" <> contactList cs <> ")"]
@@ -136,11 +137,11 @@ responseToView testView = \case
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
-  CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} ->
-    [groupInvitation' ldn fullName]
-  CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
-  CRUserJoinedGroup g _ -> [ttyGroup' g <> ": you joined the group"]
-  CRJoinedGroupMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+  CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membershipIncognito} ->
+    [groupInvitation' ldn fullName membershipIncognito]
+  CRReceivedGroupInvitation g c role invitedIncognito -> viewReceivedGroupInvitation g c role invitedIncognito
+  CRUserJoinedGroup g _ incognito -> viewUserJoinedGroup g incognito
+  CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
   CRDeletedMemberUser g by -> [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
@@ -355,6 +356,12 @@ viewConnReqInvitation cReq =
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
+viewSentGroupInvitation :: GroupInfo -> Contact -> Bool -> [StyledString]
+viewSentGroupInvitation g c incognito =
+  if incognito
+    then ["invitation to join the group " <> ttyGroup' g <> " incognito sent to " <> ttyContact' c]
+    else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+
 viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   DirectChat ct -> [ttyContact' ct <> ": all messages are removed locally ONLY"]
@@ -407,11 +414,27 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
-viewReceivedGroupInvitation g c role =
-  [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
+viewUserJoinedGroup :: GroupInfo -> Bool -> [StyledString]
+viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incognito =
+  if incognito
+    then [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' memberProfile]
+    else [ttyGroup' g <> ": you joined the group"]
+
+viewJoinedGroupMember :: GroupInfo -> GroupMember -> Maybe Profile -> [StyledString]
+viewJoinedGroupMember g m@GroupMember {memberProfile} = \case
+  Just Profile {displayName = mainProfileName} -> [ttyGroup' g <> ": " <> ttyContact mainProfileName <> " joined the group incognito as " <> incognitoProfile' memberProfile]
+  Nothing -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+
+viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Bool -> [StyledString]
+viewReceivedGroupInvitation g c role invitedIncognito =
+  [ ttyFullGroup g <> ": " <> ttyContact' c <> invitationText <> plain (strEncode role),
     "use " <> highlight ("/j " <> groupName' g) <> " to accept"
   ]
+  where
+    invitationText =
+      if invitedIncognito
+        then " invites you to join the group incognito as "
+        else " invites you to join the group as "
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
@@ -442,14 +465,20 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> "created group"
       _ -> ""
 
+viewContactConnectedIncognito :: Contact -> Profile -> [StyledString]
+viewContactConnectedIncognito ct@Contact {localDisplayName} userIncognitoProfile =
+  [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' userIncognitoProfile,
+    "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
+  ]
+
 viewGroupsList :: [GroupInfo] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
+    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, membershipIncognito} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation' ldn fullName
+        GSMemInvited -> groupInvitation' ldn fullName membershipIncognito
         s -> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
       where
         viewMemberStatus = \case
@@ -459,15 +488,20 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           _ -> ""
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
 
-groupInvitation' :: GroupName -> Text -> StyledString
-groupInvitation' displayName fullName =
+groupInvitation' :: GroupName -> Text -> Bool -> StyledString
+groupInvitation' displayName fullName membershipIncognito =
   highlight ("#" <> displayName)
     <> optFullName displayName fullName
-    <> " - you are invited ("
+    <> invitationText
     <> highlight ("/j " <> displayName)
     <> " to join, "
     <> highlight ("/d #" <> displayName)
     <> " to delete invitation)"
+  where
+    invitationText =
+      if membershipIncognito
+        then " - you are invited incognito ("
+        else " - you are invited ("
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
 viewContactsMerged _into@Contact {localDisplayName = c1} _merged@Contact {localDisplayName = c2} =
@@ -901,9 +935,7 @@ ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
 
 ttyToContact' :: Contact -> StyledString
 ttyToContact' Contact {localDisplayName = c, activeConn = Connection {incognitoProfileId}} =
-  ttyToContact (c <> incognito)
-  where
-    incognito = maybe "" (const " [incognito]") incognitoProfileId
+  maybe "" (const incognitoPrefix) incognitoProfileId <> ttyToContact c
 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
@@ -946,7 +978,8 @@ ttyFromGroup' :: GroupInfo -> GroupMember -> StyledString
 ttyFromGroup' g GroupMember {localDisplayName = m} = ttyFromGroup g m
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup GroupInfo {localDisplayName = g} = styled (colored Cyan) $ "#" <> g <> " "
+ttyToGroup GroupInfo {localDisplayName = g, membershipIncognito} =
+  (if membershipIncognito then incognitoPrefix else "") <> styled (colored Cyan) ("#" <> g <> " ")
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
@@ -954,11 +987,23 @@ ttyFilePath = plain
 optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
 
+incognitoPrefix :: StyledString
+incognitoPrefix = styleIncognito' "x "
+
+incognitoProfile' :: Profile -> StyledString
+incognitoProfile' Profile {displayName, fullName} = styleIncognito displayName <> optFullName displayName fullName
+
 highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan
 
 highlight' :: String -> StyledString
 highlight' = highlight
+
+styleIncognito :: StyledFormat a => a -> StyledString
+styleIncognito = styled $ colored Magenta
+
+styleIncognito' :: String -> StyledString
+styleIncognito' = styleIncognito
 
 styleTime :: String -> StyledString
 styleTime = Styled [SetColor Foreground Vivid Black]
