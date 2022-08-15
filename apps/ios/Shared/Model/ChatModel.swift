@@ -160,16 +160,6 @@ final class ChatModel: ObservableObject {
         // add to current chat
         if chatId == cInfo.id {
             withAnimation { reversedChatItems.insert(cItem, at: 0) }
-            if case .rcvNew = cItem.meta.itemStatus {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    if self.chatId == cInfo.id {
-                        Task {
-                            await apiMarkChatItemRead(cInfo, cItem)
-                            NtfManager.shared.decNtfBadgeCount()
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -312,6 +302,25 @@ final class ChatModel: ObservableObject {
             return false
         }
     }
+
+    func unreadChatItemCounts(itemsInView: Set<Int64>) -> UnreadChatItemCounts {
+        var i = 0
+        var totalBelow = 0
+        var unreadBelow = 0
+        while i < reversedChatItems.count - 1 && !itemsInView.contains(reversedChatItems[i].id) {
+            totalBelow += 1
+            if reversedChatItems[i].isRcvNew() {
+                unreadBelow += 1
+            }
+            i += 1
+        }
+        return UnreadChatItemCounts(totalBelow: totalBelow, unreadBelow: unreadBelow)
+    }
+}
+
+struct UnreadChatItemCounts {
+    var totalBelow: Int
+    var unreadBelow: Int
 }
 
 final class Chat: ObservableObject, Identifiable {

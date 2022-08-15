@@ -26,48 +26,19 @@ struct ChatView: View {
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
-    @State private var scrolledToUnread = false
+    @State private var itemsInView: Set<Int64> = []
+    @State private var scrollProxy: ScrollViewProxy?
 
     var body: some View {
         let cInfo = chat.chatInfo
 
         return VStack {
-            GeometryReader { g in
-                let maxWidth =
-                    cInfo.chatType == .group
-                    ? (g.size.width - 28) * 0.84 - 42
-                    : (g.size.width - 32) * 0.84
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 5)  {
-                            ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
-                                chatItemView(ci, maxWidth)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
-                                .onAppear { loadChatItems(cInfo, ci, proxy) }
-                            }
-                        }
-                    }
-                    .onAppear {
-                        DispatchQueue.main.async {
-                            scrollToFirstUnread(proxy)
-                            scrolledToUnread = true
-                        }
-                        markAllRead()
-                    }
-                    .onChange(of: chatModel.reversedChatItems.first?.id) { _ in
-                        scrollToBottom(proxy)
-                    }
-                    .onChange(of: keyboardVisible) { _ in
-                        if keyboardVisible {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                scrollToBottom(proxy, animation: .easeInOut(duration: 1))
-                            }
-                        }
-                    }
-                    .onTapGesture { hideKeyboard() }
+            ZStack(alignment: .trailing) {
+                chatItemsList(cInfo)
+                if let proxy = scrollProxy {
+                    floatingButtons(proxy)
                 }
             }
-            .scaleEffect(x: 1, y: -1, anchor: .center)
 
             Spacer(minLength: 0)
 
@@ -154,6 +125,88 @@ struct ChatView: View {
         .navigationBarBackButtonHidden(true)
     }
 
+    private func chatItemsList(_ cInfo: ChatInfo) -> some View {
+        GeometryReader { g in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    let maxWidth =
+                        cInfo.chatType == .group
+                        ? (g.size.width - 28) * 0.84 - 42
+                        : (g.size.width - 32) * 0.84
+                    LazyVStack(spacing: 5)  {
+                        ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
+                            chatItemView(ci, maxWidth)
+                            .scaleEffect(x: 1, y: -1, anchor: .center)
+                            .onAppear {
+                                itemsInView.insert(ci.id)
+                                loadChatItems(cInfo, ci, proxy)
+                                if ci.isRcvNew() {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                                        if chatModel.chatId == cInfo.id && itemsInView.contains(ci.id) {
+                                            Task {
+                                                await apiMarkChatItemRead(cInfo, ci)
+                                                NtfManager.shared.decNtfBadgeCount()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            .onDisappear {
+                                itemsInView.remove(ci.id)
+                            }
+                        }
+                    }
+                }
+                .onAppear {
+                    scrollProxy = proxy
+                }
+                .onTapGesture { hideKeyboard() }
+            }
+        }
+        .scaleEffect(x: 1, y: -1, anchor: .center)
+    }
+
+    private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
+        let counts = chatModel.unreadChatItemCounts(itemsInView: itemsInView)
+        print(itemsInView)
+        print(counts)
+        return VStack {
+            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
+            if unreadAbove > 0 {
+                circleButton {
+                    Text("\(unreadAbove)")
+                        .font(.callout)
+                        .foregroundColor(.accentColor)
+                }
+            }
+            Spacer()
+            if counts.unreadBelow > 0 {
+                circleButton {
+                    Text("\(counts.unreadBelow)")
+                        .font(.callout)
+                        .foregroundColor(.accentColor)
+                }
+                .onTapGesture { scrollToBottom(proxy) }
+            } else if counts.totalBelow > 16 {
+                circleButton {
+                    Image(systemName: "chevron.down")
+                        .foregroundColor(.accentColor)
+                }
+                .onTapGesture { scrollToBottom(proxy) }
+            }
+        }
+        .padding()
+    }
+
+    private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
+        ZStack {
+            Circle()
+                .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                .frame(width: 44, height: 44)
+            content()
+        }
+    }
+
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
             CallController.shared.startCall(contact, media)
@@ -180,7 +233,7 @@ struct ChatView: View {
 
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
         if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
-            if loadingItems || firstPage || !scrolledToUnread { return }
+            if loadingItems || firstPage { return }
             loadingItems = true
             Task {
                 do {
@@ -341,28 +394,11 @@ struct ChatView: View {
     }
 
     func scrollToBottom_(_ proxy: ScrollViewProxy) {
-        if let id = chatModel.reversedChatItems.first?.id {
-            proxy.scrollTo(id, anchor: .top)
+        if let id = chatModel.reversedChatItems.first?.viewId {
+            proxy.scrollTo(id)
         }
     }
 
-    // align first unread with the top or the last unread with bottom
-    func scrollToFirstUnread(_ proxy: ScrollViewProxy) {
-        if let cItem = chatModel.reversedChatItems.last(where: { $0.isRcvNew() }) {
-            proxy.scrollTo(cItem.id, anchor: .bottom)
-        } else {
-            scrollToBottom_(proxy)
-        }
-    }
-
-    func markAllRead() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            if chatModel.chatId == chat.id {
-                Task { await markChatRead(chat) }
-            }
-        }
-    }
-    
     func deleteMessage(_ mode: CIDeleteMode) {
         logger.debug("ChatView deleteMessage")
         Task {
