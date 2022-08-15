@@ -1241,7 +1241,7 @@ subscribeUserConnections agentBatchSubscribe user = do
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
-        sortBy (comparing $ \(Group GroupInfo {localDisplayName = g} _) -> g) gs
+        sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
       toView . CRMemberSubSummary $ map (uncurry MemberSubStatus) mRs
       where
         mRs = resultsFor rs ms
