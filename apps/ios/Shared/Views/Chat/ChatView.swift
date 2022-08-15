@@ -83,7 +83,14 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button { chatModel.chatId = nil } label: {
+                Button {
+                    chatModel.chatId = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        if chatModel.chatId == nil {
+                            chatModel.reversedChatItems = []
+                        }
+                    }
+                } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.backward")
                         Text("Chats", comment: "back button to return to chats list")
