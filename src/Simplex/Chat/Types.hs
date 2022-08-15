@@ -56,6 +56,7 @@ instance IsContact Contact where
 data User = User
   { userId :: UserId,
     userContactId :: ContactId,
+    userProfileId :: ProfileId,
     localDisplayName :: ContactName,
     profile :: Profile,
     activeUser :: Bool
@@ -68,8 +69,11 @@ type UserId = ContactId
 
 type ContactId = Int64
 
+type ProfileId = Int64
+
 data Contact = Contact
   { contactId :: ContactId,
+    contactProfileId :: ProfileId,
     localDisplayName :: ContactName,
     profile :: Profile,
     activeConn :: Connection,
@@ -298,7 +302,8 @@ data GroupMember = GroupMember
     localDisplayName :: ContactName,
     memberProfile :: Profile,
     memberContactId :: Maybe Int64,
-    activeConn :: Maybe Connection
+    activeConn :: Maybe Connection,
+    mainProfileId :: Maybe Int64 -- contact profile id if member connected incognito, only used for hosts and invitees
   }
   deriving (Eq, Show, Generic)
 

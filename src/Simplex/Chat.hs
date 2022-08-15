@@ -1447,8 +1447,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XGrpAcpt memId incognitoProfile
                 | sameMemberId memId m -> do
                   -- / TODO incognito: update member profile to incognito profile
-                  withStore' $ \db -> do
-                    updateGroupMemberStatus db userId m GSMemAccepted
+                  withStore $ \db -> do
+                    liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                     createIncognitoProfileForGroupMember db userId m incognitoProfile
                   allowAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
@@ -1482,13 +1482,13 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         sendPendingGroupMessages m conn
         case memberCategory m of
           GCHostMember -> do
-            -- TODO incognito: chat item & event with indication that host connected incognito
+            -- / TODO incognito: chat item & event with indication that host connected incognito
             memberConnectedChatItem gInfo m
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
-            -- TODO incognito: chat item & event with indication that invitee connected incognito
+            -- / TODO incognito: chat item & event with indication that invitee connected incognito
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected}
             setActive $ ActiveG gName
@@ -1678,9 +1678,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> GroupMember -> m ()
-    memberConnectedChatItem gInfo m = do
+    memberConnectedChatItem gInfo m@GroupMember {mainProfileId, memberProfile} = do
       createdAt <- liftIO getCurrentTime
-      let content = CIRcvGroupEvent RGEMemberConnected
+      mainProfile_ <- case mainProfileId of
+        Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+        Nothing -> pure Nothing
+      let content = case mainProfile_ of
+            Just mainProfile -> CIRcvGroupEvent $ RGEMemberConnectedIncognito mainProfile memberProfile
+            Nothing -> CIRcvGroupEvent RGEMemberConnected
           cd = CDGroupRcv gInfo m
       -- first ts should be broker ts but we don't have it for CON
       ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt

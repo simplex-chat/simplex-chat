@@ -503,6 +503,7 @@ rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> memberProfileToText p
   RGEMemberConnected -> "connected"
+  RGEMemberConnectedIncognito mainProfile incognitoProfile -> memberProfileToText mainProfile <> " connected incognito as " <> memberProfileToText incognitoProfile
   RGEMemberLeft -> "left"
   RGEMemberDeleted _ p -> "removed " <> memberProfileToText p
   RGEUserDeleted -> "removed you"
@@ -537,6 +538,7 @@ deriving instance Show (CIContent d)
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
+  | RGEMemberConnectedIncognito {mainProfile :: Profile, incognitoProfile :: Profile} -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
