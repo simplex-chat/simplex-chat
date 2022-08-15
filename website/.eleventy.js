@@ -10,7 +10,7 @@ module.exports = function (eleventyConfig) {
     eleventyConfig.addPassthroughCopy("src/app-demo");
 
     eleventyConfig.addCollection('blogs', function (collection) {
-        return collection.getFilteredByGlob('src/blog/*.md');
+        return collection.getFilteredByGlob('src/blog/*.md').reverse();
     });
 
     eleventyConfig.addWatchTarget("src/css");
