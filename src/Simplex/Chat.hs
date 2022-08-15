@@ -600,11 +600,21 @@ processChatCommand = \case
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
-    ct <- withStore $ \db -> getContact db userId contactId
-    CRContactInfo ct <$> withAgent (`getConnectionServers` contactConnId ct)
-  APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
-    CRGroupMemberInfo g m <$> mapM (withAgent . flip getConnectionServers) (memberConnId m)
+    -- [incognito] print contact incognito profile
+    ct@Contact {activeConn = Connection {incognitoProfileId}} <- withStore $ \db -> getContact db userId contactId
+    incognitoProfile <- case incognitoProfileId of
+      Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+      Nothing -> pure Nothing
+    connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
+    pure $ CRContactInfo ct connectionStats incognitoProfile
+  APIGroupMemberInfo gId gMemberId -> withUser $ \user@User {userId} -> do
+    -- [incognito] print group member main profile
+    (g, m@GroupMember {mainProfileId}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    mainProfile <- case mainProfileId of
+      Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
+      Nothing -> pure Nothing
+    connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
+    pure $ CRGroupMemberInfo g m connectionStats mainProfile
   ContactInfo cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db userId cName
     processChatCommand $ APIContactInfo contactId

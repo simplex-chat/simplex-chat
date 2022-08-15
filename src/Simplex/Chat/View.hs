@@ -62,8 +62,8 @@ responseToView testView = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNetworkConfig cfg -> viewNetworkConfig cfg
-  CRContactInfo ct cStats -> viewContactInfo ct cStats
-  CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
+  CRContactInfo ct cStats incognitoProfile -> viewContactInfo ct cStats incognitoProfile
+  CRGroupMemberInfo g m cStats mainProfile -> viewGroupMemberInfo g m cStats mainProfile
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -371,7 +371,8 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
-   in map ttyFullContact . sortOn ldn
+      incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
+   in map (\ct -> incognito ct <> ttyFullContact ct) . sortOn ldn
 
 viewUserContactLinkDeleted :: [StyledString]
 viewUserContactLinkDeleted =
@@ -449,7 +450,8 @@ viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
-    groupMember m = ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
+    groupMember m = incognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
+    incognito GroupMember {mainProfileId} = if isJust mainProfileId then incognitoPrefix else ""
     role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
@@ -540,16 +542,24 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
     "use `/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]` to change settings"
   ]
 
-viewContactInfo :: Contact -> ConnectionStats -> [StyledString]
-viewContactInfo Contact {contactId} stats =
+viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
+viewContactInfo Contact {contactId} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
+    <> maybe
+      ["you've shared main profile with this contact"]
+      (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
+      incognitoProfile
 
-viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats =
+viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats mainProfile =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
+    <> maybe
+      ["unknown whether group member uses his main profile or incognito one for the group"]
+      (\Profile {displayName, fullName} -> [incognitoPrefix <> "member is using incognito profile for the group, main profile known: " <> ttyFullName displayName fullName])
+      mainProfile
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =

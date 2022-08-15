@@ -210,8 +210,8 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats}
-  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, incognitoProfile :: Maybe Profile}
+  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats, mainProfile :: Maybe Profile}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
