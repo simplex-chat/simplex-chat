@@ -5,9 +5,9 @@ date: 2021-12-08
 ---
 # SimpleX announces SimpleX Chat v0.5 
 
-## Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph
-
 **Published:** Dec 08, 2021
+
+## Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph
 
 We are building a new platform for distributed Internet applications where privacy of the messages _and_ the network matter. [SimpleX Chat](https://github.com/simplex-chat/simplex-chat) is our first application, a chat application built on the SimpleX platform that  serves as an example of the power of the platform and as a reference application.
 
