@@ -12,7 +12,8 @@ import SwiftUI
 
 extension View {
     func uiKitContextMenu(title: String = "", actions: [UIAction]) -> some View {
-        self.hidden().overlay(
+        self.overlay(Color(uiColor: .systemBackground))
+        .overlay(
             InteractionView(content: self, menu: UIMenu(title: title, children: actions))
         )
     }
