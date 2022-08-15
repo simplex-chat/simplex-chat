@@ -397,7 +397,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   LazyColumn(state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
       val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
-      val directions = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd)
+      val directions = setOf(DismissDirection.EndToStart)
       val swipeableModifier = SwipeToDismissModifier(
         state = dismissState,
         directions = directions,
