@@ -710,7 +710,7 @@ public struct ChatItem: Identifiable, Decodable {
         self.quotedItem = quotedItem
         self.file = file
     }
-    
+
     public var chatDir: CIDirection
     public var meta: CIMeta
     public var content: CIContent
@@ -718,9 +718,11 @@ public struct ChatItem: Identifiable, Decodable {
     public var quotedItem: CIQuote?
     public var file: CIFile?
 
-    public var id: Int64 { get { meta.itemId } }
+    public var id: Int64 { meta.itemId }
 
-    public var timestampText: Text { get { meta.timestampText } }
+    public var viewId: String { "\(meta.itemId) \(meta.itemStatus.id) \(meta.updatedAt.timeIntervalSince1970)" }
+
+    public var timestampText: Text { meta.timestampText }
 
     public var text: String {
         get {
@@ -855,6 +857,7 @@ public struct CIMeta: Decodable {
     var itemText: String
     public var itemStatus: CIStatus
     var createdAt: Date
+    var updatedAt: Date
     public var itemDeleted: Bool
     public var itemEdited: Bool
     public var editable: Bool
@@ -868,6 +871,7 @@ public struct CIMeta: Decodable {
             itemText: text,
             itemStatus: status,
             createdAt: ts,
+            updatedAt: ts,
             itemDeleted: itemDeleted,
             itemEdited: itemEdited,
             editable: editable
@@ -892,6 +896,17 @@ public enum CIStatus: Decodable {
     case sndError(agentError: AgentErrorType)
     case rcvNew
     case rcvRead
+
+    var id: String {
+        switch self {
+        case .sndNew: return  "sndNew"
+        case .sndSent: return  "sndSent"
+        case .sndErrorAuth: return  "sndErrorAuth"
+        case .sndError: return  "sndError"
+        case .rcvNew: return  "rcvNew"
+        case .rcvRead: return "rcvRead"
+        }
+    }
 }
 
 public enum CIDeleteMode: String, Decodable {

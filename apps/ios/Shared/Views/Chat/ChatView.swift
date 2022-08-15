@@ -40,7 +40,7 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
-                            ForEach(chatModel.reversedChatItems) { ci in
+                            ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
                                 chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear { loadChatItems(cInfo, ci, proxy) }
