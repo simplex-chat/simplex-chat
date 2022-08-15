@@ -248,11 +248,21 @@
     padding-left: 3rem;
     padding-right: 3rem
   }
+
+  .md\:px-16 {
+    padding-left: 4rem;
+    padding-right: 4rem
+  }
 }
 
 @media (min-width: 1024px) {
   .lg\:px-16 {
     padding-left: 4rem;
     padding-right: 4rem
+  }
+
+  .lg\:px-20 {
+    padding-left: 5rem;
+    padding-right: 5rem
   }
 }
