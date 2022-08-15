@@ -40,7 +40,7 @@ struct ChatView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 5)  {
-                            ForEach(chatModel.chatItems.reversed()) { ci in
+                            ForEach(chatModel.reversedChatItems) { ci in
                                 chatItemView(ci, maxWidth)
                                 .scaleEffect(x: 1, y: -1, anchor: .center)
                                 .onAppear { loadChatItems(cInfo, ci, proxy) }
@@ -54,7 +54,7 @@ struct ChatView: View {
                         }
                         markAllRead()
                     }
-                    .onChange(of: chatModel.chatItems.last?.id) { _ in
+                    .onChange(of: chatModel.reversedChatItems.first?.id) { _ in
                         scrollToBottom(proxy)
                     }
                     .onChange(of: keyboardVisible) { _ in
@@ -172,7 +172,7 @@ struct ChatView: View {
     }
 
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
-        if let firstItem = chatModel.chatItems.first, firstItem.id == ci.id {
+        if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
             if loadingItems || firstPage || !scrolledToUnread { return }
             loadingItems = true
             Task {
@@ -186,7 +186,7 @@ struct ChatView: View {
                         if items.count == 0 {
                             firstPage = true
                         } else {
-                            chatModel.chatItems.insert(contentsOf: items, at: 0)
+                            chatModel.reversedChatItems.append(contentsOf: items.reversed())
                         }
                         loadingItems = false
                     }
@@ -334,15 +334,15 @@ struct ChatView: View {
     }
 
     func scrollToBottom_(_ proxy: ScrollViewProxy) {
-        if let id = chatModel.chatItems.last?.id {
-            proxy.scrollTo(id, anchor: .bottom)
+        if let id = chatModel.reversedChatItems.first?.id {
+            proxy.scrollTo(id, anchor: .top)
         }
     }
 
     // align first unread with the top or the last unread with bottom
     func scrollToFirstUnread(_ proxy: ScrollViewProxy) {
-        if let cItem = chatModel.chatItems.first(where: { $0.isRcvNew() }) {
-            proxy.scrollTo(cItem.id)
+        if let cItem = chatModel.reversedChatItems.last(where: { $0.isRcvNew() }) {
+            proxy.scrollTo(cItem.id, anchor: .bottom)
         } else {
             scrollToBottom_(proxy)
         }
@@ -384,7 +384,7 @@ struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.chatId = "@1"
-        chatModel.chatItems = [
+        chatModel.reversedChatItems = [
             ChatItem.getSample(1, .directSnd, .now, "hello"),
             ChatItem.getSample(2, .directRcv, .now, "hi"),
             ChatItem.getSample(3, .directRcv, .now, "hi there"),

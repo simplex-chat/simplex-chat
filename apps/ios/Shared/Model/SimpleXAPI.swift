@@ -203,7 +203,7 @@ func loadChat(chat: Chat) {
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
         let m = ChatModel.shared
         m.updateChatInfo(chat.chatInfo)
-        m.chatItems = chat.chatItems
+        m.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
@@ -554,10 +554,11 @@ func markChatRead(_ chat: Chat) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
+        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
+        await MainActor.run { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
-        logger.error("markChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
     }
 }
 
