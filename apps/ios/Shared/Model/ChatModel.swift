@@ -22,7 +22,7 @@ final class ChatModel: ObservableObject {
     @Published var chats: [Chat] = []
     // current chat
     @Published var chatId: String?
-    @Published var chatItems: [ChatItem] = []
+    @Published var reversedChatItems: [ChatItem] = []
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
@@ -159,7 +159,7 @@ final class ChatModel: ObservableObject {
         }
         // add to current chat
         if chatId == cInfo.id {
-            withAnimation { chatItems.append(cItem) }
+            withAnimation { reversedChatItems.insert(cItem, at: 0) }
             if case .rcvNew = cItem.meta.itemStatus {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                     if self.chatId == cInfo.id {
@@ -187,13 +187,14 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == cInfo.id {
-            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
+            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
                 withAnimation(.default) {
-                    self.chatItems[i] = cItem
+                    self.reversedChatItems[i] = cItem
+                    self.reversedChatItems[i].viewTimestamp = .now
                 }
                 return false
             } else {
-                withAnimation { chatItems.append(cItem) }
+                withAnimation { reversedChatItems.insert(cItem, at: 0) }
                 return true
             }
         } else {
@@ -210,12 +211,12 @@ final class ChatModel: ObservableObject {
         }
         // remove from current chat
         if chatId == cInfo.id {
-            if let i = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-                if chatItems[i].isRcvNew() == true {
+            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+                if reversedChatItems[i].isRcvNew() == true {
                     NtfManager.shared.decNtfBadgeCount()
                 }
                 _ = withAnimation {
-                    self.chatItems.remove(at: i)
+                    self.reversedChatItems.remove(at: i)
                 }
             }
         }
@@ -230,9 +231,10 @@ final class ChatModel: ObservableObject {
         // update current chat
         if chatId == cInfo.id {
             var i = 0
-            while i < chatItems.count {
-                if case .rcvNew = chatItems[i].meta.itemStatus {
-                    chatItems[i].meta.itemStatus = .rcvRead
+            while i < reversedChatItems.count {
+                if case .rcvNew = reversedChatItems[i].meta.itemStatus {
+                    reversedChatItems[i].meta.itemStatus = .rcvRead
+                    reversedChatItems[i].viewTimestamp = .now
                 }
                 i = i + 1
             }
@@ -249,7 +251,7 @@ final class ChatModel: ObservableObject {
         }
         // clear current chat
         if chatId == cInfo.id {
-            chatItems = []
+            reversedChatItems = []
         }
     }
 
@@ -259,8 +261,9 @@ final class ChatModel: ObservableObject {
             chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
         }
         // update current chat
-        if chatId == cInfo.id, let j = chatItems.firstIndex(where: { $0.id == cItem.id }) {
-            chatItems[j].meta.itemStatus = .rcvRead
+        if chatId == cInfo.id, let j = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            reversedChatItems[j].meta.itemStatus = .rcvRead
+            reversedChatItems[j].viewTimestamp = .now
         }
     }
 
@@ -269,8 +272,8 @@ final class ChatModel: ObservableObject {
     }
 
     func getPrevChatItem(_ ci: ChatItem) -> ChatItem? {
-        if let i = chatItems.firstIndex(where: { $0.id == ci.id }), i > 0  {
-            return chatItems[i - 1]
+        if let i = reversedChatItems.firstIndex(where: { $0.id == ci.id }), i < reversedChatItems.count - 1  {
+            return reversedChatItems[i + 1]
         } else {
             return nil
         }
