@@ -305,17 +305,8 @@ struct ChatView: View {
             )
         }
 
-        var _size = CGSize(width: maxWidth, height: 24)
-        let size = Binding(get: { _size }, set: { _size = $0 })
-
         return ChatItemView(chatInfo: chat.chatInfo, chatItem: ci, showMember: showMember, maxWidth: maxWidth)
-            .uiKitContextMenu(actions: menu, size: size)
-            .overlay {
-                GeometryReader { g in
-                    Color.clear.preference(key: SizePreferenceKey.self, value: g.size)
-                }
-            }
-            .onPreferenceChange(SizePreferenceKey.self) { size.wrappedValue = $0 }
+            .uiKitContextMenu(actions: menu)
             .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                 Button("Delete for me", role: .destructive) {
                     deleteMessage(.cidmInternal)
@@ -328,13 +319,6 @@ struct ChatView: View {
             }
             .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-    }
-
-    struct SizePreferenceKey: PreferenceKey {
-        static var defaultValue = CGSize(width: 0, height: 0)
-        static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
-            value = nextValue()
-        }
     }
 
     private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
