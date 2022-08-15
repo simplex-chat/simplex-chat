@@ -31,20 +31,18 @@ private struct InteractionView<Content: View>: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let view = UIView()
         view.backgroundColor = .clear
-        DispatchQueue.main.async {
-            let hostView = UIHostingController(rootView: content)
-            hostView.view.translatesAutoresizingMaskIntoConstraints = false
-            let constraints = [
-                hostView.view.topAnchor.constraint(equalTo: view.topAnchor),
-                hostView.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                hostView.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-                hostView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                hostView.view.widthAnchor.constraint(equalTo: view.widthAnchor),
-                hostView.view.heightAnchor.constraint(equalTo: view.heightAnchor)
-            ]
-            view.addSubview(hostView.view)
-            view.addConstraints(constraints)
-        }
+        let hostView = UIHostingController(rootView: content)
+        hostView.view.translatesAutoresizingMaskIntoConstraints = false
+        let constraints = [
+            hostView.view.topAnchor.constraint(equalTo: view.topAnchor),
+            hostView.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            hostView.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            hostView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            hostView.view.widthAnchor.constraint(equalTo: view.widthAnchor),
+            hostView.view.heightAnchor.constraint(equalTo: view.heightAnchor)
+        ]
+        view.addSubview(hostView.view)
+        view.addConstraints(constraints)
         let menuInteraction = UIContextMenuInteraction(delegate: context.coordinator)
         view.addInteraction(menuInteraction)
         return view
