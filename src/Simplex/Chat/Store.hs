@@ -1843,14 +1843,14 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
         ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
             :. (userId, localDisplayName' userOrContact, contactId' userOrContact, contactId' userOrContact, connRequest, createdAt, createdAt)
         )
-    insertMemberIncognitoProfile_ incognitoProfileId mainProfileId = do
+    insertMemberIncognitoProfile_ mainProfileId incognitoProfileId = do
       DB.execute
         db
         [sql|
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by,
               user_id, local_display_name, contact_profile_id, contact_id, main_profile_id, sent_inv_queue_info, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
             :. (userId, localDisplayName' userOrContact, incognitoProfileId, contactId' userOrContact, mainProfileId, connRequest, createdAt, createdAt)

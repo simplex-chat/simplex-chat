@@ -955,7 +955,8 @@ ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
 ttyQuotedMember _ = "> " <> ttyFrom "?"
 
 ttyFromContact' :: Contact -> StyledString
-ttyFromContact' Contact {localDisplayName = c} = ttyFromContact c
+ttyFromContact' Contact {localDisplayName = c, activeConn = Connection {incognitoProfileId}} =
+  maybe "" (const incognitoPrefix) incognitoProfileId <> ttyFromContact c
 
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (colored Blue) $ "#" <> g
@@ -985,7 +986,8 @@ ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
 
 ttyFromGroup' :: GroupInfo -> GroupMember -> StyledString
-ttyFromGroup' g GroupMember {localDisplayName = m} = ttyFromGroup g m
+ttyFromGroup' g@GroupInfo {membershipIncognito} GroupMember {localDisplayName = m} =
+  (if membershipIncognito then incognitoPrefix else "") <> ttyFromGroup g m
 
 ttyToGroup :: GroupInfo -> StyledString
 ttyToGroup GroupInfo {localDisplayName = g, membershipIncognito} =
