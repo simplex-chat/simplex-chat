@@ -718,9 +718,15 @@ public struct ChatItem: Identifiable, Decodable {
     public var quotedItem: CIQuote?
     public var file: CIFile?
 
+    public var viewTimestamp = Date.now
+
+    private enum CodingKeys: String, CodingKey {
+        case chatDir, meta, content, formattedText, quotedItem, file
+    }
+
     public var id: Int64 { meta.itemId }
 
-    public var viewId: String { "\(meta.itemId) \(meta.itemStatus.id) \(meta.updatedAt.timeIntervalSince1970)" }
+    public var viewId: String { "\(meta.itemId) \(viewTimestamp.timeIntervalSince1970)" }
 
     public var timestampText: Text { meta.timestampText }
 

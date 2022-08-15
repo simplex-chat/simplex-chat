@@ -190,6 +190,7 @@ final class ChatModel: ObservableObject {
             if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
                 withAnimation(.default) {
                     self.reversedChatItems[i] = cItem
+                    self.reversedChatItems[i].viewTimestamp = .now
                 }
                 return false
             } else {
@@ -233,6 +234,7 @@ final class ChatModel: ObservableObject {
             while i < reversedChatItems.count {
                 if case .rcvNew = reversedChatItems[i].meta.itemStatus {
                     reversedChatItems[i].meta.itemStatus = .rcvRead
+                    reversedChatItems[i].viewTimestamp = .now
                 }
                 i = i + 1
             }
@@ -261,6 +263,7 @@ final class ChatModel: ObservableObject {
         // update current chat
         if chatId == cInfo.id, let j = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
             reversedChatItems[j].meta.itemStatus = .rcvRead
+            reversedChatItems[j].viewTimestamp = .now
         }
     }
 
