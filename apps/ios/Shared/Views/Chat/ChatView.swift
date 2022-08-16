@@ -26,7 +26,7 @@ struct ChatView: View {
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
-    @State private var itemsInView: Set<Int64> = []
+    @State private var itemsInView: Set<String> = []
     @State private var scrollProxy: ScrollViewProxy?
 
     var body: some View {
@@ -138,11 +138,11 @@ struct ChatView: View {
                             chatItemView(ci, maxWidth)
                             .scaleEffect(x: 1, y: -1, anchor: .center)
                             .onAppear {
-                                itemsInView.insert(ci.id)
+                                itemsInView.insert(ci.viewId)
                                 loadChatItems(cInfo, ci, proxy)
                                 if ci.isRcvNew() {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                                        if chatModel.chatId == cInfo.id && itemsInView.contains(ci.id) {
+                                        if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                             Task {
                                                 await apiMarkChatItemRead(cInfo, ci)
                                                 NtfManager.shared.decNtfBadgeCount()
@@ -152,7 +152,7 @@ struct ChatView: View {
                                 }
                             }
                             .onDisappear {
-                                itemsInView.remove(ci.id)
+                                itemsInView.remove(ci.viewId)
                             }
                         }
                     }
@@ -174,15 +174,28 @@ struct ChatView: View {
             let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
             if unreadAbove > 0 {
                 circleButton {
-                    Text("\(unreadAbove)")
+                    unreadCountText(unreadAbove)
                         .font(.callout)
                         .foregroundColor(.accentColor)
+                }
+                .onTapGesture { scrollUp(proxy) }
+                .contextMenu {
+                    Button {
+                        if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
+                            print(ci)
+                            Task {
+                                await markChatRead(chat, aboveItem: ci)
+                            }
+                        }
+                    } label: {
+                        Label("Mark read", systemImage: "checkmark")
+                    }
                 }
             }
             Spacer()
             if counts.unreadBelow > 0 {
                 circleButton {
-                    Text("\(counts.unreadBelow)")
+                    unreadCountText(counts.unreadBelow)
                         .font(.callout)
                         .foregroundColor(.accentColor)
                 }
@@ -201,7 +214,7 @@ struct ChatView: View {
     private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
         ZStack {
             Circle()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
                 .frame(width: 44, height: 44)
             content()
         }
@@ -389,17 +402,19 @@ struct ChatView: View {
         }
     }
 
-    func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
-        withAnimation(animation) { scrollToBottom_(proxy) }
-    }
-
-    func scrollToBottom_(_ proxy: ScrollViewProxy) {
-        if let id = chatModel.reversedChatItems.first?.viewId {
-            proxy.scrollTo(id)
+    private func scrollToBottom(_ proxy: ScrollViewProxy) {
+        if let ci = chatModel.reversedChatItems.first {
+            withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
 
-    func deleteMessage(_ mode: CIDeleteMode) {
+    private func scrollUp(_ proxy: ScrollViewProxy) {
+        if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
+            withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
+        }
+    }
+
+    private func deleteMessage(_ mode: CIDeleteMode) {
         logger.debug("ChatView deleteMessage")
         Task {
             logger.debug("ChatView deleteMessage: in Task")

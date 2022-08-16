@@ -108,7 +108,7 @@ struct ChatPreviewView: View {
                     .padding(.trailing, 36)
                     .padding(.bottom, 4)
                 if unread > 0 {
-                    Text(unread > 999 ? "\(unread / 1000)k" : "\(unread)")
+                    unreadCountText(unread)
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
@@ -168,6 +168,10 @@ struct ChatPreviewView: View {
             ProgressView()
         }
     }
+}
+
+func unreadCountText(_ n: Int) -> Text {
+    Text(n > 999 ? "\(n / 1000)k" : "\(n)")
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {
