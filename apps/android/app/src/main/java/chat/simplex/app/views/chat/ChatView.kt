@@ -1,16 +1,17 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
@@ -20,33 +21,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.chatlist.openChat
-import chat.simplex.app.views.chatlist.setGroupMembers
+import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 
 @Composable
 fun ChatView(chatModel: ChatModel) {
-  val chat: Chat? = chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+  var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
@@ -54,29 +52,24 @@ fun ChatView(chatModel: ChatModel) {
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
-  if (chat == null || user == null) {
+  if (activeChat == null || user == null) {
     chatModel.chatId.value = null
   } else {
+    val chat = activeChat!!
     BackHandler { chatModel.chatId.value = null }
-    // TODO a more advanced version would mark as read only if in view
-    LaunchedEffect(chat.chatItems) {
-      Log.d(TAG, "ChatView ${chatModel.chatId.value}: LaunchedEffect")
-      delay(750L)
-      if (chat.chatItems.isNotEmpty()) {
-        chatModel.markChatItemsRead(chat.chatInfo)
-        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-        withApi {
-          chatModel.controller.apiChatRead(
-            chat.chatInfo.chatType,
-            chat.chatInfo.apiId,
-            CC.ItemRange(chat.chatStats.minUnreadItemId, chat.chatItems.last().id)
-          )
-        }
+
+    // We need to have real unreadCount value for displaying it inside top right button
+    // Having activeChat reloaded on every change in it is inefficient (UI lags)
+    val unreadCount = remember {
+      derivedStateOf {
+        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
+
     ChatLayout(
       user,
       chat,
+      unreadCount,
       composeState,
       composeView = {
         if (chat.chatInfo.sendMsgEnabled) {
@@ -122,7 +115,20 @@ fun ChatView(chatModel: ChatModel) {
         val c = chatModel.chats.firstOrNull {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
         }
-        if (c != null) withApi { openChat(c.chatInfo, chatModel) }
+        if (c != null) {
+          withApi {
+            openChat(c.chatInfo, chatModel)
+            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+            activeChat = c
+          }
+        }
+      },
+      loadPrevMessages = { cInfo ->
+        val c = chatModel.getChat(cInfo.id)
+        val firstId = chatModel.chatItems.firstOrNull()?.id
+        if (c != null && firstId != null) {
+          withApi { apiLoadPrevMessages(firstId, c.chatInfo, chatModel) }
+        }
       },
       deleteMessage = { itemId, mode ->
         withApi {
@@ -170,6 +176,17 @@ fun ChatView(chatModel: ChatModel) {
             }
           }
         }
+      },
+      markRead = { range, unreadCountAfter ->
+        chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+        withApi {
+          chatModel.controller.apiChatRead(
+            chat.chatInfo.chatType,
+            chat.chatInfo.apiId,
+            range
+          )
+        }
       }
     )
   }
@@ -179,6 +196,7 @@ fun ChatView(chatModel: ChatModel) {
 fun ChatLayout(
   user: User,
   chat: Chat,
+  unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable () -> Unit),
   attachmentOption: MutableState<AttachmentOption?>,
@@ -189,12 +207,14 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
+  loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
   acceptCall: (Contact) -> Unit,
-  addMembers: (GroupInfo) -> Unit
+  addMembers: (GroupInfo) -> Unit,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
 ) {
   Surface(
     Modifier
@@ -214,13 +234,25 @@ fun ChatLayout(
         sheetState = attachmentBottomSheetState,
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
+        val floatingButton: MutableState<@Composable () -> Unit> = remember { mutableStateOf({}) }
         Scaffold(
           topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers) },
           bottomBar = composeView,
-          modifier = Modifier.navigationBarsWithImePadding()
+          modifier = Modifier.navigationBarsWithImePadding(),
+          floatingActionButton = floatingButton.value,
         ) { contentPadding ->
-          Box(Modifier.padding(contentPadding)) {
-            ChatItemsList(user, chat, composeState, chatItems, useLinkPreviews, openDirectChat, deleteMessage, receiveFile, joinGroup, acceptCall)
+          CompositionLocalProvider(
+            // Makes horizontal and vertical scrolling to coexist nicely.
+            // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
+            LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+          ) {
+            BoxWithConstraints(Modifier.padding(contentPadding)) {
+              ChatItemsList(
+                user, chat, unreadCount, composeState, chatItems,
+                useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
+                receiveFile, joinGroup, acceptCall, markRead, floatingButton
+              )
+            }
           }
         }
       }
@@ -323,37 +355,74 @@ val CIListStateSaver = run {
 }
 
 @Composable
-fun ChatItemsList(
+fun BoxWithConstraintsScope.ChatItemsList(
   user: User,
   chat: Chat,
+  unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
   useLinkPreviews: Boolean,
   openDirectChat: (Long) -> Unit,
+  loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  floatingButton: MutableState<@Composable () -> Unit>
 ) {
-  val listState = rememberLazyListState(initialFirstVisibleItemIndex = chatItems.size - chatItems.count { it.isRcvNew })
-  val keyboardState by getKeyboardState()
-  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
-    mutableStateOf(CIListState(false, chatItems.count(), keyboardState))
-  }
+  val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
-  LazyColumn(state = listState) {
-    itemsIndexed(chatItems) { i, cItem ->
-      if (i == 0) {
-        Spacer(Modifier.size(8.dp))
+
+  // Helps to scroll to bottom after moving from Group to Direct chat
+  // and prevents scrolling to bottom on orientation change
+  var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
+  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType) {
+    if (shouldAutoScroll && listState.firstVisibleItemIndex != 0) {
+      scope.launch { listState.scrollToItem(0) }
+    }
+    // Don't autoscroll next time until it will be needed
+    shouldAutoScroll = false
+  }
+
+  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
+    loadPrevMessages(c.chatInfo)
+  }
+
+  Spacer(Modifier.size(8.dp))
+
+  val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
+  LazyColumn(state = listState, reverseLayout = true) {
+    itemsIndexed(reversedChatItems) { i, cItem ->
+      val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
+      val directions = setOf(DismissDirection.EndToStart)
+      val swipeableModifier = SwipeToDismissModifier(
+        state = dismissState,
+        directions = directions,
+        swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+      )
+      val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
+      val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
+      if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
+        LaunchedEffect(Unit) {
+          scope.launch {
+            if (composeState.value.editing) {
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+            } else {
+              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            }
+          }
+        }
       }
+
       if (chat.chatInfo is ChatInfo.Group) {
         if (cItem.chatDir is CIDirection.GroupRcv) {
-          val prevItem = if (i > 0) chatItems[i - 1] else null
+          val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
           val member = cItem.chatDir.groupMember
           val showMember = showMemberImage(member, prevItem)
-          Row(Modifier.padding(start = 8.dp, end = 66.dp)) {
+          Row(Modifier.padding(start = 8.dp, end = 66.dp).then(swipeableModifier)) {
             if (showMember) {
               val contactId = member.memberContactId
               if (contactId == null) {
@@ -362,7 +431,11 @@ fun ChatItemsList(
                 Box(
                   Modifier
                     .clip(CircleShape)
-                    .clickable { openDirectChat(contactId) }
+                    .clickable {
+                      openDirectChat(contactId)
+                      // Scroll to first unread message when direct chat will be loaded
+                      shouldAutoScroll = true
+                    }
                 ) {
                   MemberImage(member)
                 }
@@ -374,7 +447,7 @@ fun ChatItemsList(
             ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         } else {
-          Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
+          Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
             ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         }
@@ -384,19 +457,128 @@ fun ChatItemsList(
           Modifier.padding(
             start = if (sent) 76.dp else 12.dp,
             end = if (sent) 12.dp else 76.dp,
-          )
+          ).then(swipeableModifier)
         ) {
           ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
         }
       }
-    }
-    val len = chatItems.count()
-    if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
-      scope.launch {
-        ciListState.value = CIListState(true, len, keyboardState)
-        listState.animateScrollToItem(len - 1)
+
+      if (cItem.isRcvNew) {
+        LaunchedEffect(cItem.id) {
+          scope.launch {
+            delay(750)
+            markRead(CC.ItemRange(cItem.id, cItem.id), null)
+          }
+        }
       }
     }
+  }
+  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, markRead, floatingButton, listState)
+}
+
+@Composable
+fun BoxWithConstraintsScope.FloatingButtons(
+  chatItems: List<ChatItem>,
+  unreadCount: State<Int>,
+  minUnreadItemId: Long,
+  markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  floatingButton: MutableState<@Composable () -> Unit>,
+  listState: LazyListState
+) {
+  val scope = rememberCoroutineScope()
+
+  val bottomUnreadCount by remember { derivedStateOf {
+    chatItems.subList(
+      chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex,
+      chatItems.size
+    ).count { it.isRcvNew } }
+  }
+
+  val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
+  val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
+
+  LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
+    val showButtonWithCounter = bottomUnreadCount > 0 && !firstItemIsVisible
+    val showButtonWithArrow = !showButtonWithCounter && !firstItemIsVisible
+    floatingButton.value = bottomEndFloatingButton(
+      bottomUnreadCount,
+      showButtonWithCounter,
+      showButtonWithArrow,
+      onClickArrowDown = {
+        scope.launch { listState.animateScrollToItem(0) }
+      },
+      onClickCounter = {
+        scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
+      }
+    )
+  }
+
+  val fabSize = 56.dp
+  val topUnreadCount by remember {
+    derivedStateOf { unreadCount.value - bottomUnreadCount }
+  }
+  val showButtonWithCounter = topUnreadCount > 0
+  val height = with(LocalDensity.current) { maxHeight.toPx() }
+  var showDropDown by remember { mutableStateOf(false) }
+
+  TopEndFloatingButton(
+    Modifier.padding(end = 16.dp, top = 24.dp).align(Alignment.TopEnd),
+    topUnreadCount,
+    showButtonWithCounter,
+    onClick = { scope.launch { listState.animateScrollBy(height) } },
+    onLongClick = { showDropDown = true }
+  )
+
+  DropdownMenu(
+    expanded = showDropDown,
+    onDismissRequest = { showDropDown = false },
+    Modifier.width(220.dp),
+    offset = DpOffset(maxWidth - 16.dp, 24.dp + fabSize)
+  ) {
+    DropdownMenuItem(
+      onClick = {
+        markRead(
+          CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+          bottomUnreadCount
+        )
+        showDropDown = false
+      }
+    ) {
+      Text(
+        generalGetString(R.string.mark_read),
+        maxLines = 1,
+      )
+    }
+  }
+}
+
+@Composable
+fun PreloadItems(
+  listState: LazyListState,
+  remaining: Int = 10,
+  chat: Chat,
+  items: List<*>,
+  onLoadMore: (chat: Chat) -> Unit,
+) {
+  val loadMore = remember {
+    derivedStateOf {
+      val layoutInfo = listState.layoutInfo
+      val totalItemsNumber = layoutInfo.totalItemsCount
+      val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+      if (lastVisibleItemIndex > (totalItemsNumber - remaining))
+        totalItemsNumber
+      else
+        0
+    }
+  }
+
+  LaunchedEffect(loadMore, chat, items) {
+    snapshotFlow { loadMore.value }
+      .distinctUntilChanged()
+      .filter { it > 0 }
+      .collect {
+        onLoadMore(chat)
+      }
   }
 }
 
@@ -408,6 +590,88 @@ fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
 @Composable
 fun MemberImage(member: GroupMember) {
   ProfileImage(38.dp, member.memberProfile.image)
+}
+
+@Composable
+private fun TopEndFloatingButton(
+  modifier: Modifier = Modifier,
+  unreadCount: Int,
+  showButtonWithCounter: Boolean,
+  onClick: () -> Unit,
+  onLongClick: () -> Unit
+) = when {
+  showButtonWithCounter -> {
+    val interactionSource = interactionSourceWithDetection(onClick, onLongClick)
+    FloatingActionButton(
+      {}, // no action here
+      modifier.size(48.dp),
+      elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp),
+      interactionSource = interactionSource,
+    ) {
+      Text(
+        unreadCountStr(unreadCount),
+        color = MaterialTheme.colors.primary,
+        fontSize = 14.sp,
+      )
+    }
+  }
+  else -> {
+  }
+}
+
+private fun bottomEndFloatingButton(
+  unreadCount: Int,
+  showButtonWithCounter: Boolean,
+  showButtonWithArrow: Boolean,
+  onClickArrowDown: () -> Unit,
+  onClickCounter: () -> Unit
+): @Composable () -> Unit = when {
+  showButtonWithCounter -> {
+    {
+      FloatingActionButton(
+        onClick = onClickCounter,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.size(48.dp)
+      ) {
+        Text(
+          unreadCountStr(unreadCount),
+          color = MaterialTheme.colors.primary,
+          fontSize = 14.sp,
+        )
+      }
+    }
+  }
+  showButtonWithArrow -> {
+    {
+      FloatingActionButton(
+        onClick = onClickArrowDown,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+        modifier = Modifier.size(48.dp)
+      ) {
+        Icon(
+          imageVector = Icons.Default.KeyboardArrowDown,
+          contentDescription = null,
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    }
+  }
+  else -> {
+    {}
+  }
+}
+
+private fun ViewConfiguration.bigTouchSlop(slop: Float = 80f) = object: ViewConfiguration {
+  override val longPressTimeoutMillis
+    get() =
+      this@bigTouchSlop.longPressTimeoutMillis
+  override val doubleTapTimeoutMillis
+    get() =
+      this@bigTouchSlop.doubleTapTimeoutMillis
+  override val doubleTapMinTimeMillis
+    get() =
+      this@bigTouchSlop.doubleTapMinTimeMillis
+  override val touchSlop: Float get() = slop
 }
 
 @Preview(showBackground = true)
@@ -437,6 +701,7 @@ fun PreviewChatLayout() {
         6, CIDirection.DirectRcv(), Clock.System.now(), "hello"
       )
     )
+    val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     ChatLayout(
       user = User.sampleData,
       chat = Chat(
@@ -444,6 +709,7 @@ fun PreviewChatLayout() {
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
       ),
+      unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
@@ -454,12 +720,14 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
+      loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      addMembers = { _ -> }
+      addMembers = { _ -> },
+      markRead = { _, _ -> },
     )
   }
 }
@@ -486,6 +754,7 @@ fun PreviewGroupChatLayout() {
         6, CIDirection.GroupRcv(GroupMember.sampleData), Clock.System.now(), "hello"
       )
     )
+    val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
     ChatLayout(
       user = User.sampleData,
       chat = Chat(
@@ -493,6 +762,7 @@ fun PreviewGroupChatLayout() {
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
       ),
+      unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
@@ -503,12 +773,14 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       openDirectChat = {},
+      loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
       startCall = {},
       acceptCall = { _ -> },
-      addMembers = { _ -> }
+      addMembers = { _ -> },
+      markRead = { _, _ -> },
     )
   }
 }

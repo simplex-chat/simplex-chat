@@ -185,9 +185,15 @@ func apiGetChats() throws -> [ChatData] {
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination = .last(count: 100)) throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: pagination))
+func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50)))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
+    throw r
+}
+
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination) async throws -> [ChatItem] {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination))
+    if case let .apiChat(chat) = r { return chat.chatItems }
     throw r
 }
 
@@ -197,7 +203,7 @@ func loadChat(chat: Chat) {
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
         let m = ChatModel.shared
         m.updateChatInfo(chat.chatInfo)
-        m.chatItems = chat.chatItems
+        m.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
@@ -534,13 +540,13 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     }
 }
 
-func markChatRead(_ chat: Chat) async {
+func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
         let minItemId = chat.chatStats.minUnreadItemId
-        let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
+        let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
         let cInfo = chat.chatInfo
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
+        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
     } catch {
         logger.error("markChatRead apiChatRead error: \(responseError(error))")
     }
@@ -548,10 +554,11 @@ func markChatRead(_ chat: Chat) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
+        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
+        await MainActor.run { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
-        logger.error("markChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
     }
 }
 

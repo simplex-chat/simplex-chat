@@ -314,7 +314,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(100)): Chat? {
+  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT)): Chat? {
     val r = sendCmd(CC.ApiGetChat(type, id, pagination))
     if (r is CR.ApiChat ) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
@@ -1276,6 +1276,12 @@ sealed class ChatPagination {
     is After -> "after=${this.chatItemId} count=${this.count}"
     is Before -> "before=${this.chatItemId} count=${this.count}"
   }
+
+  companion object {
+    const val INITIAL_COUNT = 100
+    const val PRELOAD_COUNT = 100
+    const val UNTIL_PRELOAD_COUNT = 50
+  }
 }
 
 @Serializable
@@ -1287,6 +1293,8 @@ class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = 
 @Serializable
 data class NetCfg(
   val socksProxy: String? = null,
+  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val requiredHostMode: Boolean = false,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpKeepAlive: KeepAliveOpts?,
@@ -1314,6 +1322,13 @@ data class NetCfg(
         smpPingInterval = 600_000_000
       )
   }
+}
+
+@Serializable
+enum class HostMode {
+  @SerialName("onionViaSocks") OnionViaSocks,
+  @SerialName("onion") Onion,
+  @SerialName("public") Public;
 }
 
 @Serializable

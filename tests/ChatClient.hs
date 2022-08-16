@@ -51,6 +51,7 @@ testOpts =
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
+      logServerHosts = False,
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,
@@ -91,7 +92,7 @@ testCfg =
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
-    { smpAgentVersion = 1,
+    { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
       smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
     }
