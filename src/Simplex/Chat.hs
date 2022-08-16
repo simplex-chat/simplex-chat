@@ -2463,7 +2463,7 @@ chatCommandP =
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
-      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (A.space *> search)),
+      "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
@@ -2592,7 +2592,7 @@ chatCommandP =
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
-    search = T.unpack . safeDecodeUtf8 <$> A.takeByteString
+    searchP = T.unpack . safeDecodeUtf8 <$> (" search=" *> A.takeByteString)
     memberRole =
       (" owner" $> GROwner)
         <|> (" admin" $> GRAdmin)

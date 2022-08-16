@@ -212,7 +212,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
       alice #$> ("/_get chat @2 after=1 count=100", chat, [(0, "hello there"), (0, "how are you?")])
       alice #$> ("/_get chat @2 before=2 count=100", chat, [(1, "hello there 🙂")])
       -- search
-      alice #$> ("/_get chat @2 count=100 ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
+      alice #$> ("/_get chat @2 count=100 search=ello ther", chat, [(1, "hello there 🙂"), (0, "hello there")])
       -- read messages
       alice #$> ("/_read chat @2 from=1 to=100", id, "ok")
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
@@ -479,7 +479,7 @@ testGroupShared alice bob cath checkMessages = do
       -- so we take into account group event items as well as sent group invitations in direct chats
       alice #$> ("/_get chat #1 after=5 count=100", chat, [(0, "hi there"), (0, "hey team")])
       alice #$> ("/_get chat #1 before=7 count=100", chat, [(0, "connected"), (0, "connected"), (1, "hello"), (0, "hi there")])
-      alice #$> ("/_get chat #1 count=100 team", chat, [(0, "hey team")])
+      alice #$> ("/_get chat #1 count=100 search=team", chat, [(0, "hey team")])
       bob @@@ [("@cath", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=100", chat, [(0, "connected"), (0, "added cath (Catherine)"), (0, "connected"), (0, "hello"), (1, "hi there"), (0, "hey team")])
       cath @@@ [("@bob", "hey"), ("#team", "hey team"), ("@alice", "received invitation to join group team as admin")]
