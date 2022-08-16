@@ -160,16 +160,6 @@ final class ChatModel: ObservableObject {
         // add to current chat
         if chatId == cInfo.id {
             withAnimation { reversedChatItems.insert(cItem, at: 0) }
-            if case .rcvNew = cItem.meta.itemStatus {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                    if self.chatId == cInfo.id {
-                        Task {
-                            await apiMarkChatItemRead(cInfo, cItem)
-                            NtfManager.shared.decNtfBadgeCount()
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -230,14 +220,44 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == cInfo.id {
-            var i = 0
-            while i < reversedChatItems.count {
-                if case .rcvNew = reversedChatItems[i].meta.itemStatus {
-                    reversedChatItems[i].meta.itemStatus = .rcvRead
-                    reversedChatItems[i].viewTimestamp = .now
-                }
-                i = i + 1
+            markCurrentChatRead()
+        }
+    }
+
+    private func markCurrentChatRead(fromIndex i: Int = 0) {
+        var j = i
+        while j < reversedChatItems.count {
+            if case .rcvNew = reversedChatItems[j].meta.itemStatus {
+                reversedChatItems[j].meta.itemStatus = .rcvRead
+                reversedChatItems[j].viewTimestamp = .now
             }
+            j += 1
+        }
+    }
+
+    func markChatItemsRead(_ cInfo: ChatInfo, aboveItem: ChatItem? = nil) {
+        if let cItem = aboveItem {
+            if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+                markCurrentChatRead(fromIndex: i)
+                if let chat = getChat(cInfo.id) {
+                    var unreadBelow = 0
+                    var j = i - 1
+                    while j >= 0 {
+                        if case .rcvNew = reversedChatItems[j].meta.itemStatus {
+                            unreadBelow += 1
+                        }
+                        j -= 1
+                    }
+                    // update preview
+                    let markedCount = chat.chatStats.unreadCount - unreadBelow
+                    if markedCount > 0 {
+                        NtfManager.shared.decNtfBadgeCount(by: markedCount)
+                        chat.chatStats.unreadCount -= markedCount
+                    }
+                }
+            }
+        } else {
+            markChatItemsRead(cInfo)
         }
     }
 
@@ -312,6 +332,34 @@ final class ChatModel: ObservableObject {
             return false
         }
     }
+
+    func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
+        var i = 0
+        var totalBelow = 0
+        var unreadBelow = 0
+        while i < reversedChatItems.count - 1 && !itemsInView.contains(reversedChatItems[i].viewId) {
+            totalBelow += 1
+            if reversedChatItems[i].isRcvNew() {
+                unreadBelow += 1
+            }
+            i += 1
+        }
+        return UnreadChatItemCounts(totalBelow: totalBelow, unreadBelow: unreadBelow)
+    }
+
+    func topItemInView(itemsInView: Set<String>) -> ChatItem? {
+        let maxIx = reversedChatItems.count - 1
+        var i = 0
+        let inView = { itemsInView.contains(self.reversedChatItems[$0].viewId) }
+        while i < maxIx && !inView(i) { i += 1 }
+        while i < maxIx && inView(i) { i += 1 }
+        return reversedChatItems[min(i - 1, maxIx)]
+    }
+}
+
+struct UnreadChatItemCounts {
+    var totalBelow: Int
+    var unreadBelow: Int
 }
 
 final class Chat: ObservableObject, Identifiable {

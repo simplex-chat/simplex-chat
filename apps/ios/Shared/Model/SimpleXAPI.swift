@@ -540,13 +540,13 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     }
 }
 
-func markChatRead(_ chat: Chat) async {
+func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
         let minItemId = chat.chatStats.minUnreadItemId
-        let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
+        let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
         let cInfo = chat.chatInfo
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
+        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
     } catch {
         logger.error("markChatRead apiChatRead error: \(responseError(error))")
     }
