@@ -116,11 +116,6 @@ struct SimpleXApp: App {
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id) {
                 loadChat(chat: chat)
-//                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-//                    if chatModel.chatId == chat.id {
-//                        Task { await markChatRead(chat) }
-//                    }
-//                }
             }
             if let chatId = chatModel.ntfContactRequest {
                 chatModel.ntfContactRequest = nil
