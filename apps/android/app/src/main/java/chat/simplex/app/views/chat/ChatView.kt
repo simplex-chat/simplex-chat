@@ -241,12 +241,18 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = floatingButton.value,
         ) { contentPadding ->
-          BoxWithConstraints(Modifier.padding(contentPadding)) {
-            ChatItemsList(
-              user, chat, unreadCount, composeState, chatItems,
-              useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
-              receiveFile, joinGroup, acceptCall, markRead, floatingButton
-            )
+          CompositionLocalProvider(
+            // Makes horizontal and vertical scrolling to coexist nicely.
+            // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
+            LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+          ) {
+            BoxWithConstraints(Modifier.padding(contentPadding)) {
+              ChatItemsList(
+                user, chat, unreadCount, composeState, chatItems,
+                useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
+                receiveFile, joinGroup, acceptCall, markRead, floatingButton
+              )
+            }
           }
         }
       }
@@ -390,12 +396,33 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
+      val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
+      val directions = setOf(DismissDirection.EndToStart)
+      val swipeableModifier = SwipeToDismissModifier(
+        state = dismissState,
+        directions = directions,
+        swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+      )
+      val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
+      val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
+      if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
+        LaunchedEffect(Unit) {
+          scope.launch {
+            if (composeState.value.editing) {
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+            } else {
+              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+            }
+          }
+        }
+      }
+
       if (chat.chatInfo is ChatInfo.Group) {
         if (cItem.chatDir is CIDirection.GroupRcv) {
           val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
           val member = cItem.chatDir.groupMember
           val showMember = showMemberImage(member, prevItem)
-          Row(Modifier.padding(start = 8.dp, end = 66.dp)) {
+          Row(Modifier.padding(start = 8.dp, end = 66.dp).then(swipeableModifier)) {
             if (showMember) {
               val contactId = member.memberContactId
               if (contactId == null) {
@@ -420,7 +447,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
             ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         } else {
-          Box(Modifier.padding(start = 86.dp, end = 12.dp)) {
+          Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
             ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         }
@@ -430,7 +457,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           Modifier.padding(
             start = if (sent) 76.dp else 12.dp,
             end = if (sent) 12.dp else 76.dp,
-          )
+          ).then(swipeableModifier)
         ) {
           ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
         }
@@ -632,6 +659,19 @@ private fun bottomEndFloatingButton(
   else -> {
     {}
   }
+}
+
+private fun ViewConfiguration.bigTouchSlop(slop: Float = 80f) = object: ViewConfiguration {
+  override val longPressTimeoutMillis
+    get() =
+      this@bigTouchSlop.longPressTimeoutMillis
+  override val doubleTapTimeoutMillis
+    get() =
+      this@bigTouchSlop.doubleTapTimeoutMillis
+  override val doubleTapMinTimeMillis
+    get() =
+      this@bigTouchSlop.doubleTapMinTimeMillis
+  override val touchSlop: Float get() = slop
 }
 
 @Preview(showBackground = true)
