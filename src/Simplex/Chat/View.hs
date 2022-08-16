@@ -153,7 +153,7 @@ responseToView testView = \case
   CRGroupUpdated g g' m -> viewGroupUpdated g g' m
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-  CRGroupSubscribed g -> [ttyFullGroup g <> ": connected to server(s)"]
+  CRGroupSubscribed g -> viewGroupSubscribed g
   CRPendingSubSummary _ -> []
   CRSndFileSubError SndFileTransfer {fileId, fileName} e ->
     ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -206,6 +206,12 @@ responseToView testView = \case
     smpServer SMP.ProtocolServer {host, port} = B.unpack . strEncode $ SrvLoc host port
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
+
+viewGroupSubscribed :: GroupInfo -> [StyledString]
+viewGroupSubscribed g@GroupInfo {membershipIncognito} =
+  [incognito <> ttyFullGroup g <> ": connected to server(s)"]
+  where
+    incognito = if membershipIncognito then incognitoPrefix else ""
 
 viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
@@ -422,8 +428,8 @@ viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incog
     else [ttyGroup' g <> ": you joined the group"]
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> Maybe Profile -> [StyledString]
-viewJoinedGroupMember g m@GroupMember {memberProfile} = \case
-  Just Profile {displayName = mainProfileName} -> [ttyGroup' g <> ": " <> ttyContact mainProfileName <> " joined the group incognito as " <> incognitoProfile' memberProfile]
+viewJoinedGroupMember g m@GroupMember {localDisplayName} = \case
+  Just Profile {displayName = mainProfileName} -> [ttyGroup' g <> ": " <> ttyContact mainProfileName <> " joined the group incognito as " <> styleIncognito localDisplayName]
   Nothing -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Bool -> [StyledString]
@@ -481,8 +487,9 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
     groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, membershipIncognito} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' ldn fullName membershipIncognito
-        s -> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
+        s -> incognito <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
       where
+        incognito = if membershipIncognito then incognitoPrefix else ""
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
