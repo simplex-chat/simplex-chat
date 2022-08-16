@@ -40,16 +40,19 @@ import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> ContactId
+  contactProfileId' :: a -> ProfileId
   profile' :: a -> Profile
   localDisplayName' :: a -> ContactName
 
 instance IsContact User where
   contactId' = userContactId
+  contactProfileId' = userProfileId
   profile' = profile
   localDisplayName' = localDisplayName
 
 instance IsContact Contact where
   contactId' = contactId
+  contactProfileId' = contactProfileId
   profile' = profile
   localDisplayName' = localDisplayName
 

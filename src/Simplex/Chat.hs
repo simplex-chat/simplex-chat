@@ -737,7 +737,7 @@ processChatCommand = \case
       Nothing -> do
         gVar <- asks idsDrg
         (agentConnId, cReq) <- withAgent (`createConnection` SCMInvitation)
-        member <- withStore $ \db -> createContactMember db gVar user groupId contact memRole agentConnId cReq
+        member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
       Just member@GroupMember {groupMemberId, memberStatus}
         | memberStatus == GSMemInvited ->
