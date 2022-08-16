@@ -712,7 +712,8 @@ processChatCommand = \case
     -- [incognito] create membership with incognito profile
     incognito <- readTVarIO =<< asks incognito
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    CRGroupCreated <$> withStore (\db -> createNewGroup db gVar user gProfile incognitoProfile)
+    groupInfo <- withStore (\db -> createNewGroup db gVar user gProfile incognitoProfile)
+    pure $ CRGroupCreated groupInfo incognitoProfile
   APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db userId contactId
@@ -1919,7 +1920,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-      toView $ CRReceivedGroupInvitation gInfo ct memRole invitedIncognito
+      toView $ CRReceivedGroupInvitation gInfo ct memRole fromMemberIncognitoProfile
       showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()

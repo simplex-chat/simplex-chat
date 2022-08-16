@@ -87,7 +87,7 @@ responseToView testView = \case
   CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
   CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated g -> viewGroupCreated g
+  CRGroupCreated g incognitoProfile -> viewGroupCreated g incognitoProfile
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
   CRSentGroupInvitation g c _ invitedIncognito -> viewSentGroupInvitation g c invitedIncognito
@@ -139,7 +139,7 @@ responseToView testView = \case
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membershipIncognito} ->
     [groupInvitation' ldn fullName membershipIncognito]
-  CRReceivedGroupInvitation g c role invitedIncognito -> viewReceivedGroupInvitation g c role invitedIncognito
+  CRReceivedGroupInvitation g c role hostIncognitoProfile -> viewReceivedGroupInvitation g c role hostIncognitoProfile
   CRUserJoinedGroup g _ incognito -> viewUserJoinedGroup g incognito
   CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
@@ -409,11 +409,17 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
   ]
 
-viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName} =
-  [ "group " <> ttyFullGroup g <> " is created",
-    "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
-  ]
+viewGroupCreated :: GroupInfo -> Maybe Profile -> [StyledString]
+viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile =
+  case incognitoProfile of
+    Just profile ->
+      [ "group " <> ttyFullGroup g <> " is created incognito, your profile for this group: " <> incognitoProfile' profile,
+        "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+      ]
+    Nothing ->
+      [ "group " <> ttyFullGroup g <> " is created",
+        "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+      ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
@@ -432,16 +438,18 @@ viewJoinedGroupMember g m@GroupMember {localDisplayName} = \case
   Just Profile {displayName = mainProfileName} -> [ttyGroup' g <> ": " <> ttyContact mainProfileName <> " joined the group incognito as " <> styleIncognito localDisplayName]
   Nothing -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
-viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Bool -> [StyledString]
-viewReceivedGroupInvitation g c role invitedIncognito =
-  [ ttyFullGroup g <> ": " <> ttyContact' c <> invitationText <> plain (strEncode role),
-    "use " <> highlight ("/j " <> groupName' g) <> " to accept"
-  ]
-  where
-    invitationText =
-      if invitedIncognito
-        then " invites you to join the group incognito as "
-        else " invites you to join the group as "
+viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Maybe Profile -> [StyledString]
+viewReceivedGroupInvitation g c role hostIncognitoProfile =
+  case hostIncognitoProfile of
+    Just profile ->
+      [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group incognito as " <> plain (strEncode role),
+        ttyContact' c <> " uses following incognito profile for this group: " <> incognitoProfile' profile,
+        "use " <> highlight ("/j " <> groupName' g) <> " to accept"
+      ]
+    Nothing ->
+      [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
+        "use " <> highlight ("/j " <> groupName' g) <> " to accept"
+      ]
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]

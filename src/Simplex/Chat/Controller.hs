@@ -223,7 +223,7 @@ data ChatResponse
   | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
-  | CRGroupCreated {groupInfo :: GroupInfo}
+  | CRGroupCreated {groupInfo :: GroupInfo, incognitoProfile :: Maybe Profile}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
   | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
@@ -273,7 +273,7 @@ data ChatResponse
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
   | CRGroupInvitation {groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole, invitedIncognito :: Bool}
+  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole, hostIncognitoProfile :: Maybe Profile}
   | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember, joinedIncognito :: Bool}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember, mainProfile :: Maybe Profile}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
