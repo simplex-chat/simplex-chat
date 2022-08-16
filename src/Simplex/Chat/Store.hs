@@ -1341,7 +1341,7 @@ createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = Except
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile, fromMemberIncognitoProfile} incognitoProfile = do
+createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInvitation {fromMember, fromMemberProfile, invitedMember, connRequest, groupProfile} incognitoProfile = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     -- TODO treat the case that the invitation details could've changed
@@ -1368,7 +1368,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
               "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
               (profileId, localDisplayName, connRequest, userId, currentTs, currentTs)
             insertedRowId db
-          _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown fromMemberIncognitoProfile currentTs
+          _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown fromMemberProfile currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfile currentTs
           pure GroupInfo {groupId, localDisplayName, groupProfile, membership, membershipIncognito = isJust incognitoProfile, createdAt = currentTs, updatedAt = currentTs}
 

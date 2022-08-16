@@ -450,9 +450,8 @@ viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Maybe 
 viewReceivedGroupInvitation g c role hostIncognitoProfile =
   case hostIncognitoProfile of
     Just profile ->
-      [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group incognito as " <> plain (strEncode role),
-        ttyContact' c <> " uses following incognito profile for this group: " <> incognitoProfile' profile,
-        "use " <> highlight ("/j " <> groupName' g) <> " to accept"
+      [ ttyFullGroup g <> ": " <> ttyContact' c <> " (known to the group as " <> incognitoProfile' profile <>") invites you to join the group incognito as " <> plain (strEncode role),
+        "use " <> highlight ("/j " <> groupName' g) <> " to join this group incognito"
       ]
     Nothing ->
       [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
@@ -1025,7 +1024,7 @@ optFullName :: ContactName -> Text -> StyledString
 optFullName localDisplayName fullName = plain $ optionalFullName localDisplayName fullName
 
 incognitoPrefix :: StyledString
-incognitoPrefix = styleIncognito' "x "
+incognitoPrefix = styleIncognito' "i "
 
 incognitoProfile' :: Profile -> StyledString
 incognitoProfile' Profile {displayName, fullName} = styleIncognito displayName <> optFullName displayName fullName

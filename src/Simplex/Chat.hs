@@ -729,7 +729,7 @@ processChatCommand = \case
     let sendInvitation member@GroupMember {groupMemberId, memberId} cReq = do
           -- [incognito] if membership is incognito, send its incognito profile in GroupInvitation
           let incognitoProfile = if membershipIncognito then Just (memberProfile membership) else Nothing
-              groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile incognitoProfile
+              groupInv = GroupInvitation (MemberIdRole userMemberId userRole) incognitoProfile (MemberIdRole memberId memRole) cReq groupProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
           let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just membershipIncognito}) memRole
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
@@ -1912,19 +1912,19 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), fromMemberIncognitoProfile} msg msgMeta = do
+    processGroupInvitation ct@Contact {localDisplayName = c} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), fromMemberProfile, invitedMember = (MemberIdRole memId memRole)} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if received group invitation has host's incognito profile, create membership with new incognito profile; incognito mode is checked when joining group
-      let invitedIncognito = isJust fromMemberIncognitoProfile
+      let invitedIncognito = isJust fromMemberProfile
       incognitoProfile <- if invitedIncognito then Just <$> liftIO generateRandomProfile else pure Nothing
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv incognitoProfile
       let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just invitedIncognito}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
-      toView $ CRReceivedGroupInvitation gInfo ct memRole fromMemberIncognitoProfile
+      toView $ CRReceivedGroupInvitation gInfo ct memRole fromMemberProfile
       showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()

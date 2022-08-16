@@ -245,10 +245,10 @@ instance FromField ImageData where fromField = fmap ImageData . fromField
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
+    fromMemberProfile :: Maybe Profile,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
-    groupProfile :: GroupProfile,
-    fromMemberIncognitoProfile :: Maybe Profile
+    groupProfile :: GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
