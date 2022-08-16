@@ -88,6 +88,8 @@ chatTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
+  fdescribe "incognito mode" $ do
+    it "connect incognito via invitation link" testConnectIncognitoInvitationLink
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2045,6 +2047,37 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
           alice <# "@bob hello!"
       ]
 
+testConnectIncognitoInvitationLink :: IO ()
+testConnectIncognitoInvitationLink = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice #$> ("/incognito on", id, "ok")
+    bob #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ do
+          bob <## (aliceIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## ("use /info " <> aliceIncognito <> " to print out this incognito profile again"),
+        do
+          alice <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+      ]
+    alice ?#> ("@" <> bobIncognito <> " psst, I'm incognito")
+    bob ?<# (aliceIncognito <> "> psst, I'm incognito")
+    bob ?#> ("@" <> aliceIncognito <> " <whispering> me too")
+    alice ?<# (bobIncognito <> "> <whispering> me too")
+    alice ##> "/p alice"
+    alice <## "user full name removed (your contacts are notified)"
+    -- profile should not change for bob
+    alice ?#> ("@" <> bobIncognito <> " do you see that I've changed profile?")
+    bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
+    bob ?#> ("@" <> aliceIncognito <> " no")
+    alice ?<# (bobIncognito <> "> no")
+
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
@@ -2580,6 +2613,11 @@ cc #> cmd = do
   cc `send` cmd
   cc <# cmd
 
+(?#>) :: TestCC -> String -> IO ()
+cc ?#> cmd = do
+  cc `send` cmd
+  cc <# ("i " <> cmd)
+
 (#$>) :: (Eq a, Show a) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
   cc ##> cmd
@@ -2631,6 +2669,9 @@ getInAnyOrder f cc ls = do
 
 (<#) :: TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+
+(?<#) :: TestCC -> String -> Expectation
+cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 (</) :: TestCC -> Expectation
 (</) = (<// 500000)

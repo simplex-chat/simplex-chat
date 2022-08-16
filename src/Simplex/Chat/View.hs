@@ -130,7 +130,7 @@ responseToView testView = \case
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
-  CRContactConnectedIncognito ct userIncognitoProfile -> viewContactConnectedIncognito ct userIncognitoProfile
+  CRContactConnectedIncognito ct userIncognitoProfile -> viewContactConnectedIncognito ct userIncognitoProfile testView
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
@@ -450,7 +450,7 @@ viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Maybe 
 viewReceivedGroupInvitation g c role hostIncognitoProfile =
   case hostIncognitoProfile of
     Just profile ->
-      [ ttyFullGroup g <> ": " <> ttyContact' c <> " (known to the group as " <> incognitoProfile' profile <>") invites you to join the group incognito as " <> plain (strEncode role),
+      [ ttyFullGroup g <> ": " <> ttyContact' c <> " (known to the group as " <> incognitoProfile' profile <> ") invites you to join the group incognito as " <> plain (strEncode role),
         "use " <> highlight ("/j " <> groupName' g) <> " to join this group incognito"
       ]
     Nothing ->
@@ -488,11 +488,15 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> "created group"
       _ -> ""
 
-viewContactConnectedIncognito :: Contact -> Profile -> [StyledString]
-viewContactConnectedIncognito ct@Contact {localDisplayName} userIncognitoProfile =
-  [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' userIncognitoProfile,
-    "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
-  ]
+viewContactConnectedIncognito :: Contact -> Profile -> Bool -> [StyledString]
+viewContactConnectedIncognito ct@Contact {localDisplayName} userIncognitoProfile testView
+  | testView = incognitoProfile' userIncognitoProfile : message
+  | otherwise = message
+  where
+    message =
+      [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' userIncognitoProfile,
+        "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
+      ]
 
 viewGroupsList :: [GroupInfo] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
@@ -1027,7 +1031,7 @@ incognitoPrefix :: StyledString
 incognitoPrefix = styleIncognito' "i "
 
 incognitoProfile' :: Profile -> StyledString
-incognitoProfile' Profile {displayName, fullName} = styleIncognito displayName <> optFullName displayName fullName
+incognitoProfile' Profile {displayName} = styleIncognito displayName
 
 highlight :: StyledFormat a => a -> StyledString
 highlight = styled $ colored Cyan
