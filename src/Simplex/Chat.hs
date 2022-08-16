@@ -50,6 +50,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
+import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
@@ -626,7 +627,7 @@ processChatCommand = \case
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     -- [incognito] generate profile for connection
     incognito <- readTVarIO =<< asks incognito
-    incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     conn <- withStore' $ \db -> createDirectConnection db userId connId ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
@@ -634,7 +635,7 @@ processChatCommand = \case
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognito
-    incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = fromMaybe profile incognitoProfile
     connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profileToSend
     conn <- withStore' $ \db -> createDirectConnection db userId connId ConnJoined incognitoProfile
@@ -710,7 +711,7 @@ processChatCommand = \case
     gVar <- asks idsDrg
     -- [incognito] create membership with incognito profile
     incognito <- readTVarIO =<< asks incognito
-    incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     CRGroupCreated <$> withStore (\db -> createNewGroup db gVar user gProfile incognitoProfile)
   APIAddMember groupId contactId memRole -> withUser $ \user@User {userId} -> withChatLock $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
@@ -753,7 +754,7 @@ processChatCommand = \case
       g'@GroupInfo {membership = membership'} <-
         if incognito && not (membershipIncognito g)
           then do
-            incognitoProfile <- liftIO generateIncognitoProfile
+            incognitoProfile <- liftIO generateRandomProfile
             membership' <- withStore $ \db -> createIncognitoProfileForGroupMember db userId membership (Just incognitoProfile)
             pure g {membership = membership', membershipIncognito = True}
           else pure g
@@ -956,7 +957,7 @@ processChatCommand = \case
           -- we ignore this edge case as we already allow profile updates on repeat contact requests;
           -- alternatively we can re-send the main profile even if incognito mode is enabled
           incognito <- readTVarIO =<< asks incognito
-          incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+          incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profileToSend $ Just xContactId)
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile
@@ -1052,9 +1053,6 @@ processChatCommand = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-
-generateIncognitoProfile :: IO Profile
-generateIncognitoProfile = pure $ Profile {displayName = "incognito", fullName = "", image = Nothing}
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
@@ -1173,7 +1171,7 @@ acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
   -- [incognito] generate profile to send, create connection with incognito profile
   incognito <- readTVarIO =<< asks incognito
-  incognitoProfile <- if incognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+  incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
   let profileToSend = fromMaybe profile incognitoProfile
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profileToSend
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId incognitoProfile
@@ -1915,7 +1913,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if received group invitation has host's incognito profile, create membership with new incognito profile; incognito mode is checked when joining group
       let invitedIncognito = isJust fromMemberIncognitoProfile
-      incognitoProfile <- if invitedIncognito then Just <$> liftIO generateIncognitoProfile else pure Nothing
+      incognitoProfile <- if invitedIncognito then Just <$> liftIO generateRandomProfile else pure Nothing
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv incognitoProfile
       let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just invitedIncognito}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
