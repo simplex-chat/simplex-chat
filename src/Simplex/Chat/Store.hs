@@ -1639,7 +1639,7 @@ updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
     (memStatus, currentTs, userId, groupMemberId)
 
 createIncognitoProfileForGroupMember :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
-createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, memberContactId, memberProfile} incognitoProfile = do
+createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, localDisplayName, memberContactId} incognitoProfile = do
   currentTs <- liftIO getCurrentTime
   incognitoProfileId <- liftIO $ createIncognitoProfile_ db userId currentTs incognitoProfile
   mainProfileId <- case memberContactId of
@@ -1648,17 +1648,21 @@ createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, mem
         then Just <$> getContactProfileId_ db userId contactId
         else pure Nothing
     Nothing -> pure Nothing
-  forM_ incognitoProfileId $ \profileId ->
-    liftIO $
-      DB.execute
-        db
-        [sql|
-          UPDATE group_members
-          SET contact_profile_id = ?, main_profile_id = ?, updated_at = ?
-          WHERE user_id = ? AND group_member_id = ?
-        |]
-        (profileId, mainProfileId, currentTs, userId, groupMemberId)
-  pure m {mainProfileId, memberProfile = fromMaybe memberProfile incognitoProfile}
+  case (incognitoProfile, incognitoProfileId) of
+    (Just profile@Profile {displayName}, Just profileId) ->
+      ExceptT $
+        withLocalDisplayName db userId displayName $ \incognitoLdn -> do
+          DB.execute
+            db
+            [sql|
+              UPDATE group_members
+              SET local_display_name = ?, contact_profile_id = ?, main_profile_id = ?, updated_at = ?
+              WHERE user_id = ? AND group_member_id = ?
+            |]
+            (incognitoLdn, profileId, mainProfileId, currentTs, userId, groupMemberId)
+          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+          pure . Right $ m {localDisplayName = incognitoLdn, memberProfile = profile, mainProfileId}
+    _ -> pure m
 
 getContactProfileId_ :: DB.Connection -> UserId -> ContactId -> ExceptT StoreError IO Int64
 getContactProfileId_ db userId contactId =
