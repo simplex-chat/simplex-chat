@@ -1639,7 +1639,7 @@ updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
     (memStatus, currentTs, userId, groupMemberId)
 
 createIncognitoProfileForGroupMember :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
-createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, localDisplayName, memberContactId} incognitoProfile = do
+createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, memberContactId} incognitoProfile = do
   currentTs <- liftIO getCurrentTime
   incognitoProfileId <- liftIO $ createIncognitoProfile_ db userId currentTs incognitoProfile
   mainProfileId <- case memberContactId of
@@ -1660,7 +1660,6 @@ createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId, loc
               WHERE user_id = ? AND group_member_id = ?
             |]
             (incognitoLdn, profileId, mainProfileId, currentTs, userId, groupMemberId)
-          DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
           pure . Right $ m {localDisplayName = incognitoLdn, memberProfile = profile, mainProfileId}
     _ -> pure m
 
