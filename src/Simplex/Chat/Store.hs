@@ -1392,11 +1392,11 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
         [sql|
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by,
-              user_id, local_display_name, contact_profile_id, contact_id, created_at, updated_at)
+              user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
-            :. (userId, localDisplayName' userOrContact, contactProfileId' userOrContact, contactId' userOrContact, createdAt, createdAt)
+            :. (userId, localDisplayName' userOrContact, contactId' userOrContact, contactProfileId' userOrContact, createdAt, createdAt)
         )
       pure localDisplayName
     insertMemberIncognitoProfile_ :: ContactName -> Maybe ProfileId -> ProfileId -> ExceptT StoreError IO ContactName
@@ -1407,11 +1407,11 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           [sql|
             INSERT INTO group_members
               ( group_id, member_id, member_role, member_category, member_status, invited_by,
-                user_id, local_display_name, contact_profile_id, contact_id, main_profile_id, created_at, updated_at)
+                user_id, local_display_name, contact_id, contact_profile_id, main_profile_id, created_at, updated_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
-              :. (userId, incognitoLdn, incognitoProfileId, contactId' userOrContact, mainProfileId, createdAt, createdAt)
+              :. (userId, incognitoLdn, contactId' userOrContact, incognitoProfileId, mainProfileId, createdAt, createdAt)
           )
         pure $ Right incognitoLdn
 
@@ -1609,7 +1609,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
             [sql|
               INSERT INTO group_members
                 ( group_id, member_id, member_role, member_category, member_status, invited_by,
-                  user_id, local_display_name, contact_profile_id, contact_id, sent_inv_queue_info, created_at, updated_at)
+                  user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
             ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
