@@ -168,8 +168,6 @@ struct ChatView: View {
 
     private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
         let counts = chatModel.unreadChatItemCounts(itemsInView: itemsInView)
-        print(itemsInView)
-        print(counts)
         return VStack {
             let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
             if unreadAbove > 0 {
@@ -182,7 +180,6 @@ struct ChatView: View {
                 .contextMenu {
                     Button {
                         if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
-                            print(ci)
                             Task {
                                 await markChatRead(chat, aboveItem: ci)
                             }
