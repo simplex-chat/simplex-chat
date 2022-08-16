@@ -16,7 +16,13 @@
 
 package chat.simplex.app.views.helpers
 
+import android.util.Log
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.interaction.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -31,19 +37,19 @@ import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.consumeDownChange
 import androidx.compose.ui.input.pointer.isOutOfBounds
 import androidx.compose.ui.input.pointer.positionChangeConsumed
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import chat.simplex.app.TAG
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 
 /**
  * See original code here: [androidx.compose.foundation.gestures.detectTapGestures]
  * */
-
-interface PressGestureScope : Density {
+interface PressGestureScope: Density {
   suspend fun tryAwaitRelease(): Boolean
 }
 
@@ -67,7 +73,6 @@ suspend fun PointerInputScope.detectGesture(
       if (onPress !== NoPressGesture) launch {
         pressScope.onPress(down.position)
       }
-
       val longPressTimeout = onLongPress?.let {
         viewConfiguration.longPressTimeoutMillis
       } ?: (Long.MAX_VALUE / 2)
@@ -81,7 +86,6 @@ suspend fun PointerInputScope.detectGesture(
         } else {
           if (shouldConsume)
             upOrCancel.consumeDownChange()
-
           // If onLongPress event is needed, cancel short press event
           if (onLongPress != null)
             pressScope.cancel()
@@ -138,7 +142,6 @@ suspend fun AwaitPointerEventScope.waitForUpOrCancellation(): PointerInputChange
     ) {
       return null
     }
-
     val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
     if (consumeCheck.changes.fastAny { it.positionChangeConsumed() }) {
       return null
@@ -148,7 +151,7 @@ suspend fun AwaitPointerEventScope.waitForUpOrCancellation(): PointerInputChange
 
 private class PressGestureScopeImpl(
   density: Density
-) : PressGestureScope, Density by density {
+): PressGestureScope, Density by density {
   private var isReleased = false
   private var isCanceled = false
   private val mutex = Mutex(locked = false)
@@ -175,4 +178,50 @@ private class PressGestureScopeImpl(
     }
     return isCanceled
   }
+}
+
+/**
+ * Captures click events and calls [onLongClick] or [onClick] when such even happens. Otherwise, does nothing.
+ * Apply [MutableInteractionSource] to any element that allows to pass it in (for example, in [Modifier.clickable]).
+ * Works in situations when using [Modifier.combinedClickable] doesn't work because external element overrides [Modifier.clickable]
+ * */
+@Composable
+fun interactionSourceWithDetection(onClick: () -> Unit, onLongClick: () -> Unit): MutableInteractionSource {
+  val interactionSource = remember { MutableInteractionSource() }
+  val longPressTimeoutMillis = LocalViewConfiguration.current.longPressTimeoutMillis
+  var topLevelInteraction: Interaction? by remember { mutableStateOf(null) }
+  LaunchedEffect(interactionSource) {
+    interactionSource.interactions.collect { interaction ->
+      topLevelInteraction = interaction
+    }
+  }
+  LaunchedEffect(topLevelInteraction is PressInteraction.Press) {
+    if (topLevelInteraction !is PressInteraction.Press) return@LaunchedEffect
+    try {
+      withTimeout(longPressTimeoutMillis) {
+        while (isActive) {
+          delay(10)
+          when (topLevelInteraction) {
+            is PressInteraction.Press -> {}
+            is PressInteraction.Release -> {
+              onClick(); break
+            }
+            is PressInteraction.Cancel -> break
+          }
+        }
+      }
+    } catch (_: TimeoutCancellationException) {
+      // Long click happened
+      onLongClick()
+    } catch (ex: CancellationException) {
+      // Canceled coroutine + PressInteraction.Release == short click
+      if (topLevelInteraction is PressInteraction.Release)
+        onClick()
+      Log.e(TAG, ex.stackTraceToString())
+    } catch (ex: Exception) {
+      // Should never be called
+      Log.e(TAG, ex.stackTraceToString())
+    }
+  }
+  return interactionSource
 }

@@ -516,6 +516,8 @@ public struct ArchiveConfig: Encodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    public var hostMode: HostMode = .publicHost
+    public var requiredHostMode = true
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpKeepAlive: KeepAliveOpts?
@@ -538,6 +540,46 @@ public struct NetCfg: Codable, Equatable {
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
+}
+
+public enum HostMode: String, Codable {
+    case onionViaSocks
+    case onionHost = "onion"
+    case publicHost = "public"
+}
+
+public enum OnionHosts: String, Identifiable {
+    case no
+    case prefer
+    case require
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .no: return "No"
+        case .prefer: return "When available"
+        case .require: return "Requred"
+        }
+    }
+
+    public var hostMode: (HostMode, Bool) {
+        switch self {
+        case .no: return (.publicHost, true)
+        case .prefer: return (.onionHost, false)
+        case .require: return (.onionHost, true)
+        }
+    }
+
+    public init(netCfg: NetCfg) {
+        switch netCfg.hostMode {
+        case .onionViaSocks: self = .no
+        case .onionHost: self = netCfg.requiredHostMode ? .require : .prefer
+        case .publicHost: self = .no
+        }
+    }
+
+    public var id: OnionHosts { self }
+
+    public static let values: [OnionHosts] = [.no, .prefer, .require]
 }
 
 public struct KeepAliveOpts: Codable, Equatable {

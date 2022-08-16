@@ -140,7 +140,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           contentAlignment = Alignment.Center
         ) {
           Text(
-            if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
+            unreadCountStr(n),
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
@@ -161,6 +161,11 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
       }
     }
   }
+}
+
+@Composable
+fun unreadCountStr(n: Int): String {
+  return if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation)
 }
 
 @Composable
