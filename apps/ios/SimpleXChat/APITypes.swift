@@ -24,7 +24,7 @@ public enum ChatCommand {
     case apiImportArchive(config: ArchiveConfig) 
     case apiDeleteStorage
     case apiGetChats
-    case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination)
+    case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
@@ -85,7 +85,8 @@ public enum ChatCommand {
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
-            case let .apiGetChat(type, id, pagination): return "/_get chat \(ref(type, id)) \(pagination.cmdString)"
+            case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
+                (search == "" ? "" : " \(search)")
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 return "/_send \(ref(type, id)) json \(msg)"
