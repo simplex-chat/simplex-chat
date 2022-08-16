@@ -4,8 +4,9 @@ set -eu
 
 u="$USER"
 tmp=$(mktemp -d -t)
-commit="${1:-nix-android}"
-commands="nix git gradle unzip curl"
+source="github:simplex-chat/simplex-chat"
+commit="$1"
+commands="nix git curl gradle zip unzip zipalign"
 
 nix_install() {
   # Pre-setup nix
@@ -69,18 +70,26 @@ checks() {
 
 build() {
   # Build simplex lib
-  nix build "$tmp/simplex-chat/#packages.x86_64-linux.aarch64-android:lib:simplex-chat"
+  nix build "$source/$commit#hydraJobs.aarch64-android:lib:simplex-chat.x86_64-linux"
   unzip -o "$PWD/result/pkg-aarch64-android-libsimplex.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
 
   # Build android suppprt lib
-  nix build "$tmp/simplex-chat/#packages.x86_64-linux.aarch64-android:lib:support"
+  nix build "$source/$commit#hydraJobs.aarch64-android:lib:support.x86_64-linux"
   unzip -o "$PWD/result/pkg-aarch64-android-libsupport.zip" -d "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
 
-  gradle -p "$tmp/simplex-chat/apps/android/" clean build
+  sed -i.bak 's/${extract_native_libs}/true/' "$tmp/simplex-chat/apps/android/app/src/main/AndroidManifest.xml"
+
+  gradle -p "$tmp/simplex-chat/apps/android/" clean build assembleRelease
+
+  mkdir -p "$tmp/android"
+  unzip -oqd "$tmp/android/" "$tmp/simplex-chat/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk"
+  
+  (cd "$tmp/android" && zip -rq5 "$tmp/simplex-chat.apk" . && zip -rq0 "$tmp/simplex-chat.apk" resources.arsc res)
+
+  zipalign -p -f 4 "$tmp/simplex-chat.apk" "$PWD/simplex-chat.apk"
 }
 
 final() {
-  cp "$tmp/simplex-chat/apps/android/app/build/outputs/apk/release/app-release-unsigned.apk" "$PWD/simplex-chat.apk"
   printf "Simplex-chat was successfully compiled: %s/simplex-chat.apk\nDelete nix and gradle caches with 'rm -rf /nix && rm \$HOME/.nix* && \$HOME/.gradle/caches' in case if no longer needed.\n" "$PWD"
 }
 
