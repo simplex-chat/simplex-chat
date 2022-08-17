@@ -88,12 +88,13 @@ chatTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
-  fdescribe "incognito mode" $ do
+  describe "incognito mode" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "create group incognito" testCreateGroupIncognito
     it "join group incognito" testJoinGroupIncognito
+    it "can't invite contact to whom user connected incognito to non incognito group" testCantInviteIncognitoConnectionNonIncognitoGroup
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -1926,6 +1927,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "user full name removed (your contacts are notified)"
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+    _ <- getTermLine alice
     alice <## "bob wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -2126,7 +2128,6 @@ testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/ad"
     cLink <- getContactLink alice True
     bob ##> ("/c " <> cLink)
-    _ <- getTermLine alice
     alice <#? bob
     alice #$> ("/incognito on", id, "ok")
     alice ##> "/ac bob"
@@ -2415,6 +2416,30 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
              "i " <> cathMemIncognito <> ": admin, host, connected",
              "i " <> danMemIncognito <> ": admin, you, connected"
            ]
+
+testCantInviteIncognitoConnectionNonIncognitoGroup :: IO ()
+testCantInviteIncognitoConnectionNonIncognitoGroup = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- alice connected incognito to bob
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again"
+      ]
+    -- alice creates group non incognito
+    alice #$> ("/incognito off", id, "ok")
+    alice ##> "/g club"
+    alice <## "group #club is created"
+    alice <## "use /a club <name> to add members"
+    alice ##> "/a club bob"
+    alice <## "you're using main profile for this group - prohibited to invite contact to whom you are connected incognito"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
@@ -3018,6 +3043,7 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 cc1 <#? cc2 = do
   name <- userName cc2
   sName <- showName cc2
+  _ <- getTermLine cc1
   cc2 <## "connection request sent!"
   cc1 <## (sName <> " wants to connect to you!")
   cc1 <## ("to accept: /ac " <> name)
