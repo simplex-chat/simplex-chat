@@ -322,9 +322,9 @@ getUsers db =
       |]
 
 toUser :: (UserId, ContactId, ProfileId, Bool, ContactName, Text, Maybe ImageData) -> User
-toUser (userId, userContactId, userProfileId, activeUser, displayName, fullName, image) =
-  let profile = Profile {displayName, fullName, image}
-   in User {userId, userContactId, userProfileId, localDisplayName = displayName, profile, activeUser}
+toUser (userId, userContactId, profileId, activeUser, displayName, fullName, image) =
+  let profile = LocalProfile {profileId, displayName, fullName, image}
+   in User {userId, userContactId, localDisplayName = displayName, profile, activeUser}
 
 setActiveUser :: DB.Connection -> UserId -> IO ()
 setActiveUser db userId = do
@@ -423,7 +423,7 @@ getProfileById db userId profileId =
     toProfile :: (ContactName, Text, Maybe ImageData) -> Profile
     toProfile (displayName, fullName, image) = Profile {displayName, fullName, image}
 
-createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe Int64 -> Maybe Int64 -> Maybe Int64 -> Int -> UTCTime -> IO Connection
+createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact viaUserContactLink customUserProfileId connLevel currentTs = do
   DB.execute
     db
@@ -444,8 +444,8 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
 createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db userId activeConn@Connection {connId} profile = do
   createdAt <- liftIO getCurrentTime
-  (localDisplayName, contactId, contactProfileId) <- createContact_ db userId connId profile Nothing createdAt
-  pure $ Contact {contactId, contactProfileId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt, updatedAt = createdAt}
+  (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile Nothing createdAt
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile, activeConn, viaGroup = Nothing, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image} viaGroup currentTs =
@@ -513,9 +513,9 @@ deleteContactProfile_ db userId contactId =
     (userId, contactId)
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-updateUserProfile db User {userId, userContactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
+updateUserProfile db User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
-    liftIO $ updateContactProfile_ db userId userContactId p'
+    liftIO $ updateContactProfile_ db userId profileId p'
   | otherwise =
     checkConstraint SEDuplicateName . liftIO $ do
       currentTs <- getCurrentTime
@@ -524,49 +524,35 @@ updateUserProfile db User {userId, userContactId, localDisplayName, profile = Pr
         db
         "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
         (newName, newName, userId, currentTs, currentTs)
-      updateContactProfile_' db userId userContactId p' currentTs
+      updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId userContactId localDisplayName newName currentTs
 
 updateContactProfile :: DB.Connection -> UserId -> Contact -> Profile -> ExceptT StoreError IO Contact
-updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = Profile {displayName}} p'@Profile {displayName = newName}
+updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
-    liftIO $ updateContactProfile_ db userId contactId p' $> (c :: Contact) {profile = p'}
+    liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p'}
   | otherwise =
     ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
-      updateContactProfile_' db userId contactId p' currentTs
+      updateContactProfile_' db userId profileId p' currentTs
       updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = p'}
+      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p'}
 
-updateContactProfile_ :: DB.Connection -> UserId -> Int64 -> Profile -> IO ()
-updateContactProfile_ db userId contactId profile = do
+updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
+updateContactProfile_ db userId profileId profile = do
   currentTs <- getCurrentTime
-  updateContactProfile_' db userId contactId profile currentTs
+  updateContactProfile_' db userId profileId profile currentTs
 
-updateContactProfile_' :: DB.Connection -> UserId -> Int64 -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId contactId Profile {displayName, fullName, image} updatedAt = do
-  DB.executeNamed
+updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
+updateContactProfile_' db userId profileId Profile {displayName, fullName, image} updatedAt = do
+  DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = :display_name,
-          full_name = :full_name,
-          image = :image,
-          updated_at = :updated_at
-      WHERE contact_profile_id IN (
-        SELECT contact_profile_id
-        FROM contacts
-        WHERE user_id = :user_id
-          AND contact_id = :contact_id
-      )
+      SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
     |]
-    [ ":display_name" := displayName,
-      ":full_name" := fullName,
-      ":image" := image,
-      ":updated_at" := updatedAt,
-      ":user_id" := userId,
-      ":contact_id" := contactId
-    ]
+    (displayName, fullName, image, updatedAt, userId, profileId)
 
 updateContact_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
 updateContact_ db userId contactId displayName newName updatedAt = do
@@ -583,17 +569,17 @@ updateContact_ db userId contactId displayName newName updatedAt = do
 type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, UTCTime, UTCTime)
 
 toContact :: ContactRow :. ConnectionRow -> Contact
-toContact ((contactId, contactProfileId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
-  let profile = Profile {displayName, fullName, image}
+toContact ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
+  let profile = LocalProfile {profileId, displayName, fullName, image}
       activeConn = toConnection connRow
-   in Contact {contactId, contactProfileId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
 
 toContactOrError :: ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError ((contactId, contactProfileId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
-  let profile = Profile {displayName, fullName, image}
+toContactOrError ((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, createdAt, updatedAt) :. connRow) =
+  let profile = LocalProfile {profileId, displayName, fullName, image}
    in case toMaybeConnection connRow of
         Just activeConn ->
-          Right Contact {contactId, contactProfileId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
+          Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
         _ -> Left $ SEContactNotReady localDisplayName
 
 -- TODO return the last connection that is ready, not any last connection
@@ -885,7 +871,7 @@ deleteContactRequest db userId contactRequestId = do
     (userId, userId, contactRequestId)
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND contact_request_id = ?" (userId, contactRequestId)
 
-createAcceptedContact :: DB.Connection -> UserId -> ConnId -> ContactName -> Int64 -> Profile -> Int64 -> Maybe XContactId -> Maybe Profile -> IO Contact
+createAcceptedContact :: DB.Connection -> UserId -> ConnId -> ContactName -> ProfileId -> Profile -> Int64 -> Maybe XContactId -> Maybe Profile -> IO Contact
 createAcceptedContact db userId agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
@@ -896,7 +882,7 @@ createAcceptedContact db userId agentConnId localDisplayName profileId profile u
     (userId, localDisplayName, profileId, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
-  pure $ Contact {contactId, contactProfileId = profileId, localDisplayName, profile, activeConn, viaGroup = Nothing, createdAt = createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile, activeConn, viaGroup = Nothing, createdAt = createdAt, updatedAt = createdAt}
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -1000,25 +986,20 @@ toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, v
 toMaybeConnection _ = Nothing
 
 getMatchingContacts :: DB.Connection -> UserId -> Contact -> IO [Contact]
-getMatchingContacts db userId Contact {contactId, profile = Profile {displayName, fullName, image}} = do
+getMatchingContacts db userId Contact {contactId, profile = LocalProfile {displayName, fullName, image}} = do
   contactIds <-
     map fromOnly
-      <$> DB.queryNamed
+      <$> DB.query
         db
         [sql|
           SELECT ct.contact_id
           FROM contacts ct
           JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
-          WHERE ct.user_id = :user_id AND ct.contact_id != :contact_id
-            AND p.display_name = :display_name AND p.full_name = :full_name
-            AND ((p.image IS NULL AND :image IS NULL) OR p.image = :image)
+          WHERE ct.user_id = ? AND ct.contact_id != ?
+            AND p.display_name = ? AND p.full_name = ?
+            AND ((p.image IS NULL AND ? IS NULL) OR p.image = ?)
         |]
-        [ ":user_id" := userId,
-          ":contact_id" := contactId,
-          ":display_name" := displayName,
-          ":full_name" := fullName,
-          ":image" := image
-        ]
+        (userId, contactId, displayName, fullName, image, image)
   rights <$> mapM (runExceptT . getContact db userId) contactIds
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> Contact -> ExceptT StoreError IO (Probe, Int64)
@@ -1179,9 +1160,9 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           |]
           (userId, contactId)
     toContact' :: Int64 -> Connection -> [(ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime, UTCTime)] -> Either StoreError Contact
-    toContact' contactId activeConn [(contactProfileId, localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt)] =
-      let profile = Profile {displayName, fullName, image}
-       in Right $ Contact {contactId, contactProfileId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
+    toContact' contactId activeConn [(profileId, localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt)] =
+      let profile = LocalProfile {profileId, displayName, fullName, image}
+       in Right $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -1371,16 +1352,16 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfile currentTs
           pure GroupInfo {groupId, localDisplayName, groupProfile, membership, membershipIncognito = isJust incognitoProfile, createdAt = currentTs, updatedAt = currentTs}
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> Int64 -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe Profile -> UTCTime -> ExceptT StoreError IO GroupMember
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe Profile -> UTCTime -> ExceptT StoreError IO GroupMember
 createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfile createdAt = do
   customUserProfileId <- liftIO $ createIncognitoProfile_ db userId createdAt incognitoProfile
-  let contactProfileId = contactProfileId' userOrContact
+  let contactProfileId = localProfileId $ profile' userOrContact
       mainProfileId = if isJust customUserProfileId then Just contactProfileId else Nothing
   localDisplayName <- case (incognitoProfile, customUserProfileId) of
     (Just Profile {displayName}, Just profileId) -> insertMemberIncognitoProfile_ displayName mainProfileId profileId
     _ -> liftIO insertMember_
   groupMemberId <- liftIO $ insertedRowId db
-  let memberProfile = fromMaybe (profile' userOrContact) incognitoProfile
+  let memberProfile = fromMaybe (fromLocalProfile $ profile' userOrContact) incognitoProfile
       memberContactId = Just $ contactId' userOrContact
       activeConn = Nothing
   pure GroupMember {..}
@@ -1397,7 +1378,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
         |]
         ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
-            :. (userId, localDisplayName' userOrContact, contactId' userOrContact, contactProfileId' userOrContact, createdAt, createdAt)
+            :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
         )
       pure localDisplayName
     insertMemberIncognitoProfile_ :: ContactName -> Maybe ProfileId -> ProfileId -> ExceptT StoreError IO ContactName
@@ -1577,8 +1558,8 @@ toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just member
   Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus) :. (invitedById, localDisplayName, memberContactId, mainProfileId, displayName, fullName, image))
 toMaybeGroupMember _ _ = Nothing
 
-createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> Int64 -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> ExceptT StoreError IO GroupMember
-createNewContactMember db gVar User {userId, userContactId} groupId Contact {contactId, contactProfileId, localDisplayName, profile} memberRole agentConnId connRequest =
+createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> ExceptT StoreError IO GroupMember
+createNewContactMember db gVar User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile} memberRole agentConnId connRequest =
   createWithRandomId gVar $ \memId -> do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
@@ -1598,7 +1579,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
             memberStatus = GSMemInvited,
             invitedBy = IBUser,
             localDisplayName,
-            memberProfile = profile,
+            memberProfile = fromLocalProfile profile,
             memberContactId = Just contactId,
             activeConn = Nothing,
             mainProfileId = Nothing
@@ -1614,7 +1595,7 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
             ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
-                :. (userId, localDisplayName, contactId, contactProfileId, connRequest, createdAt, createdAt)
+                :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
             )
 
 getMemberInvitation :: DB.Connection -> User -> Int64 -> IO (Maybe ConnReqInvitation)
@@ -1846,7 +1827,7 @@ getGroupMemberProfileId db userId GroupMember {groupMemberId, groupId} =
       |]
       (userId, groupMemberId)
 
-createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> ConnId -> ConnId -> Maybe Int64 -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> ConnId -> ConnId -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) groupAgentConnId directAgentConnId customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
@@ -1867,7 +1848,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     conn <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> UserId -> GroupMember -> GroupMember -> ConnId -> ConnId -> Maybe Int64 -> IO ()
+createIntroToMemberContact :: DB.Connection -> UserId -> GroupMember -> GroupMember -> ConnId -> ConnId -> Maybe ProfileId -> IO ()
 createIntroToMemberContact db userId GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} groupAgentConnId directAgentConnId customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
@@ -1969,10 +1950,10 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
       (userId, groupMemberId)
   where
     toContact' :: (ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe Int64, UTCTime, UTCTime) :. ConnectionRow -> Contact
-    toContact' ((contactId, contactProfileId, localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt) :. connRow) =
-      let profile = Profile {displayName, fullName, image}
+    toContact' ((contactId, profileId, localDisplayName, displayName, fullName, image, viaGroup, createdAt, updatedAt) :. connRow) =
+      let profile = LocalProfile {profileId, displayName, fullName, image}
           activeConn = toConnection connRow
-       in Contact {contactId, contactProfileId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
+       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt}
 
 createSndFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> IO Int64
 createSndFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} acId chunkSize = do

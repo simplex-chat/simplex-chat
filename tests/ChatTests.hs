@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
+import Simplex.Chat.Types (ConnStatus (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -2909,7 +2909,7 @@ connectUsers cc1 cc2 = do
 
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
-  Just User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
+  Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
 createGroup2 :: String -> TestCC -> TestCC -> IO ()

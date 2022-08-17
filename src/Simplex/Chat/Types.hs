@@ -40,28 +40,24 @@ import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> ContactId
-  contactProfileId' :: a -> ProfileId
-  profile' :: a -> Profile
+  profile' :: a -> LocalProfile
   localDisplayName' :: a -> ContactName
 
 instance IsContact User where
   contactId' = userContactId
-  contactProfileId' = userProfileId
   profile' = profile
   localDisplayName' = localDisplayName
 
 instance IsContact Contact where
   contactId' = contactId
-  contactProfileId' = contactProfileId
   profile' = profile
   localDisplayName' = localDisplayName
 
 data User = User
   { userId :: UserId,
     userContactId :: ContactId,
-    userProfileId :: ProfileId,
     localDisplayName :: ContactName,
-    profile :: Profile,
+    profile :: LocalProfile,
     activeUser :: Bool
   }
   deriving (Show, Generic, FromJSON)
@@ -76,9 +72,8 @@ type ProfileId = Int64
 
 data Contact = Contact
   { contactId :: ContactId,
-    contactProfileId :: ProfileId,
     localDisplayName :: ContactName,
-    profile :: Profile,
+    profile :: LocalProfile,
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
     createdAt :: UTCTime,
@@ -217,6 +212,29 @@ data Profile = Profile
 instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data LocalProfile = LocalProfile
+  { profileId :: ProfileId,
+    displayName :: ContactName,
+    fullName :: Text,
+    image :: Maybe ImageData
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON LocalProfile where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+localProfileId :: LocalProfile -> ProfileId
+localProfileId = profileId
+
+toLocalProfile :: ProfileId -> Profile -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, image} =
+  LocalProfile {profileId, displayName, fullName, image}
+
+fromLocalProfile :: LocalProfile -> Profile
+fromLocalProfile LocalProfile {displayName, fullName, image} =
+  Profile {displayName, fullName, image}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,

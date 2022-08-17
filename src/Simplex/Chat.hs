@@ -629,18 +629,18 @@ processChatCommand = \case
     -- [incognito] generate profile to send
     incognito <- readTVarIO =<< asks incognito
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = fromMaybe profile incognitoProfile
+    let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
     connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profileToSend
     conn <- withStore' $ \db -> createDirectConnection db userId connId ConnJoined incognitoProfile
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
     -- [incognito] generate profile to send
-    connectViaContact userId cReq profile
+    connectViaContact userId cReq $ fromLocalProfile profile
   Connect Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex -> withUser $ \User {userId, profile} ->
     -- [incognito] generate profile to send
-    connectViaContact userId adminContactReq profile
+    connectViaContact userId adminContactReq $ fromLocalProfile profile
   DeleteContact cName -> withUser $ \User {userId} -> do
     contactId <- withStore $ \db -> getContactIdByName db userId cName
     processChatCommand $ APIDeleteChat (ChatRef CTDirect contactId)
@@ -902,12 +902,12 @@ processChatCommand = \case
           pure $ CRRcvFileCancelled ftr
   FileStatus fileId ->
     CRFileTransferStatus <$> withUser (\user -> withStore $ \db -> getFileTransferProgress db user fileId)
-  ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile profile
+  ShowProfile -> withUser $ \User {profile} -> pure $ CRUserProfile (fromLocalProfile profile)
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
-    let p = (profile :: Profile) {displayName = displayName, fullName = fullName}
+    let p = (fromLocalProfile profile :: Profile) {displayName = displayName, fullName = fullName}
     updateProfile user p
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
-    let p = (profile :: Profile) {image}
+    let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
@@ -973,11 +973,11 @@ processChatCommand = \case
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize fsFilePath <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p} p'@Profile {displayName}
-      | p' == p = pure CRUserProfileNoChange
+    updateProfile user@User {profile = p@LocalProfile {profileId}} p'@Profile {displayName}
+      | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
         withStore $ \db -> updateUserProfile db user p'
-        let user' = (user :: User) {localDisplayName = displayName, profile = p'}
+        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p'}
         asks currentUser >>= atomically . (`writeTVar` Just user')
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
@@ -986,7 +986,7 @@ processChatCommand = \case
         withChatLock . procCmd $ do
           forM_ contacts $ \ct ->
             void (sendDirectContactMessage ct $ XInfo p') `catchError` (toView . CRChatError)
-          pure $ CRUserProfileUpdated p p'
+          pure $ CRUserProfileUpdated (fromLocalProfile p) p'
     isReady :: Contact -> Bool
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
@@ -1172,7 +1172,7 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   -- [incognito] generate profile to send, create connection with incognito profile
   incognito <- readTVarIO =<< asks incognito
   incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-  let profileToSend = fromMaybe profile incognitoProfile
+  let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profileToSend
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId incognitoProfile
 
@@ -1354,7 +1354,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = fromMaybe profile incognitoProfile
+          let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profileToSend
         INFO connInfo ->
@@ -1931,7 +1931,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           toView $ CRNewChatItem $ AChatItem (chatTypeI @c) SMDRcv (toChatInfo cd) ci
 
     xInfo :: Contact -> Profile -> m ()
-    xInfo c@Contact {profile = p} p' = unless (p == p') $ do
+    xInfo c@Contact {profile = p} p' = unless (fromLocalProfile p == p') $ do
       c' <- withStore $ \db -> updateContactProfile db userId c p'
       toView $ CRContactUpdated c c'
 
@@ -1951,7 +1951,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     probeMatch :: Contact -> Contact -> Probe -> m ()
     probeMatch c1@Contact {profile = p1} c2@Contact {profile = p2} probe =
-      when (p1 == p2) $ do
+      when (fromLocalProfile p1 == fromLocalProfile p2) $ do
         void . sendDirectContactMessage c1 $ XInfoProbeOk probe
         mergeContacts c1 c2
 
@@ -2470,7 +2470,7 @@ getCreateActiveUser st = do
                 withTransaction st (`setActiveUser` userId user)
                 pure user
     userStr :: User -> String
-    userStr User {localDisplayName, profile = Profile {fullName}} =
+    userStr User {localDisplayName, profile = LocalProfile {fullName}} =
       T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
     getContactName :: IO ContactName
     getContactName = do

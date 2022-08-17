@@ -54,7 +54,7 @@ serializeChatResponse = unlines . map unStyle . responseToView False
 
 responseToView :: Bool -> ChatResponse -> [StyledString]
 responseToView testView = \case
-  CRActiveUser User {profile} -> viewUserProfile profile
+  CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
@@ -635,8 +635,8 @@ viewGroupUpdated
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
-  Contact {localDisplayName = n, profile = Profile {fullName}}
-  Contact {localDisplayName = n', profile = Profile {fullName = fullName'}}
+  Contact {localDisplayName = n, profile = LocalProfile {fullName}}
+  Contact {localDisplayName = n', profile = LocalProfile {fullName = fullName'}}
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
@@ -960,7 +960,7 @@ ttyContact' :: Contact -> StyledString
 ttyContact' Contact {localDisplayName = c} = ttyContact c
 
 ttyFullContact :: Contact -> StyledString
-ttyFullContact Contact {localDisplayName, profile = Profile {fullName}} =
+ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName}} =
   ttyFullName localDisplayName fullName
 
 ttyMember :: GroupMember -> StyledString
