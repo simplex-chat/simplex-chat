@@ -1418,11 +1418,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
-              case customUserProfileId of
-                Just profileId -> do
-                  incognitoProfile <- withStore (\db -> getProfileById db userId profileId)
-                  toView $ CRContactConnectedUserCustomProfile ct incognitoProfile
-                Nothing -> toView $ CRContactConnected ct
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+              toView $ CRContactConnected ct incognitoProfile
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId -> do

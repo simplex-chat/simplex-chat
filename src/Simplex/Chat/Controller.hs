@@ -267,8 +267,7 @@ data ChatResponse
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
-  | CRContactConnected {contact :: Contact}
-  | CRContactConnectedUserCustomProfile {contact :: Contact, userCustomProfile :: Profile}
+  | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}

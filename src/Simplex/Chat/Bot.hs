@@ -24,7 +24,7 @@ chatBotRepl welcome answer _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact -> do
+      CRContactConnected contact _ -> do
         contactConnected contact
         void $ sendMsg contact welcome
       CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do
@@ -40,7 +40,7 @@ initializeBotAddress cc = do
   sendChatCmd cc "/show_address" >>= \case
     CRUserContactLink uri _ _ -> showBotAddress uri
     CRChatCmdError (ChatErrorStore SEUserContactLinkNotFound) -> do
-      putStrLn $ "No bot address, creating..."
+      putStrLn "No bot address, creating..."
       sendChatCmd cc "/address" >>= \case
         CRUserContactLinkCreated uri -> showBotAddress uri
         _ -> putStrLn "can't create bot address" >> exitFailure

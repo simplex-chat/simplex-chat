@@ -129,8 +129,7 @@ responseToView testView = \case
   CRSndFileRcvCancelled _ ft@SndFileTransfer {recipientDisplayName = c} ->
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
-  CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
-  CRContactConnectedUserCustomProfile ct userCustomProfile -> viewContactConnectedIncognito ct userCustomProfile testView
+  CRContactConnected ct userCustomProfile -> viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
@@ -502,15 +501,20 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> "created group"
       _ -> ""
 
-viewContactConnectedIncognito :: Contact -> Profile -> Bool -> [StyledString]
-viewContactConnectedIncognito ct@Contact {localDisplayName} userIncognitoProfile testView
-  | testView = incognitoProfile' userIncognitoProfile : message
-  | otherwise = message
-  where
-    message =
-      [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' userIncognitoProfile,
-        "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
-      ]
+viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
+viewContactConnected ct@Contact {localDisplayName} userIncognitoProfile testView =
+  case userIncognitoProfile of
+    Just profile ->
+      if testView
+        then incognitoProfile' profile : message
+        else message
+      where
+        message =
+          [ ttyFullContact ct <> ": contact is connected, your incognito profile for this contact is " <> incognitoProfile' profile,
+            "use " <> highlight ("/info " <> localDisplayName) <> " to print out this incognito profile again"
+          ]
+    Nothing ->
+      [ttyFullContact ct <> ": contact is connected"]
 
 viewGroupsList :: [GroupInfo] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
