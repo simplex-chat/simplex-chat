@@ -233,6 +233,7 @@
     <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> команда</string>
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> логотип</string>
     <string name="icon_descr_email">Email</string>
+    <string name="icon_descr_more_button">Больше</string>
 
     <!-- Add Contact - AddContactView.kt -->
     <string name="invalid_QR_code">Неверный QR код</string>

@@ -2,7 +2,6 @@ package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
-import androidx.annotation.StringRes
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
@@ -12,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
@@ -20,10 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
@@ -34,8 +35,10 @@ import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chat.group.GroupChatInfoView
 import chat.simplex.app.views.chat.item.ChatItemView
+import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.reusable.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
@@ -45,6 +48,7 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
+  val searchValue = remember { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
@@ -83,6 +87,7 @@ fun ChatView(chatModel: ChatModel) {
       scope,
       attachmentBottomSheetState,
       chatModel.chatItems,
+      searchValue,
       useLinkPreviews = useLinkPreviews,
       back = { chatModel.chatId.value = null },
       info = {
@@ -127,7 +132,12 @@ fun ChatView(chatModel: ChatModel) {
         val c = chatModel.getChat(cInfo.id)
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
-          withApi { apiLoadPrevMessages(firstId, c.chatInfo, chatModel) }
+          withApi {
+            if (searchValue.value.isEmpty())
+              apiLoadPrevMessages(firstId, c.chatInfo, chatModel)
+            else
+              apiFindPrevMessages(searchValue.value, firstId, c.chatInfo, chatModel)
+          }
         }
       },
       deleteMessage = { itemId, mode ->
@@ -187,6 +197,14 @@ fun ChatView(chatModel: ChatModel) {
             range
           )
         }
+      },
+      onSearchValueChanged = { value ->
+        if (searchValue.value == value) return@ChatLayout
+        val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
+        withApi {
+          apiFindMessages(value, c.chatInfo, chatModel)
+          searchValue.value = value
+        }
       }
     )
   }
@@ -203,6 +221,7 @@ fun ChatLayout(
   scope: CoroutineScope,
   attachmentBottomSheetState: ModalBottomSheetState,
   chatItems: List<ChatItem>,
+  searchValue: State<String>,
   useLinkPreviews: Boolean,
   back: () -> Unit,
   info: () -> Unit,
@@ -215,6 +234,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  onSearchValueChanged: (String) -> Unit,
 ) {
   Surface(
     Modifier
@@ -236,7 +256,7 @@ fun ChatLayout(
       ) {
         val floatingButton: MutableState<@Composable () -> Unit> = remember { mutableStateOf({}) }
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = floatingButton.value,
@@ -248,7 +268,7 @@ fun ChatLayout(
           ) {
             BoxWithConstraints(Modifier.padding(contentPadding)) {
               ChatItemsList(
-                user, chat, unreadCount, composeState, chatItems,
+                user, chat, unreadCount, composeState, chatItems, searchValue,
                 useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
                 receiveFile, joinGroup, acceptCall, markRead, floatingButton
               )
@@ -266,54 +286,72 @@ fun ChatInfoToolbar(
   back: () -> Unit,
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
-  addMembers: (GroupInfo) -> Unit
+  addMembers: (GroupInfo) -> Unit,
+  onSearchValueChanged: (String) -> Unit,
 ) {
-  @Composable fun toolbarButton(icon: ImageVector, @StringRes textId: Int, modifier: Modifier = Modifier.padding(0.dp), onClick: () -> Unit) {
-    IconButton(onClick, modifier = modifier) {
-      Icon(icon, stringResource(textId), tint = MaterialTheme.colors.primary)
+  var showMenu by remember { mutableStateOf(false) }
+  var showSearch by remember { mutableStateOf(false) }
+  val onBackClicked = {
+    if (!showSearch) {
+      back()
+    } else {
+      onSearchValueChanged("")
+      showSearch = false
     }
   }
-  Column {
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .height(52.dp)
-        .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(horizontal = 4.dp),
-      contentAlignment = Alignment.CenterStart,
-    ) {
-      val cInfo = chat.chatInfo
-      toolbarButton(Icons.Outlined.ArrowBackIos, R.string.back, onClick = back)
-      if (cInfo is ChatInfo.Direct) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-          Box(Modifier.width(85.dp), contentAlignment = Alignment.CenterStart) {
-            toolbarButton(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
-              startCall(CallMediaType.Audio)
-            }
-          }
-          toolbarButton(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
-            startCall(CallMediaType.Video)
-          }
-        }
-      } else if (cInfo is ChatInfo.Group) {
-        if (cInfo.groupInfo.canAddMembers) {
-          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            toolbarButton(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
-              addMembers(cInfo.groupInfo)
-            }
-          }
-        }
-      }
-      Box(
-        Modifier
-          .padding(horizontal = 80.dp).fillMaxWidth()
-          .clickable(onClick = info),
-        contentAlignment = Alignment.Center
-      ) {
-        ChatInfoToolbarTitle(cInfo)
+  BackHandler(onBack = onBackClicked)
+  val menuItems = arrayListOf<@Composable () -> Unit>()
+  menuItems.add {
+    ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), Icons.Outlined.Search, onClick = {
+      showMenu = false
+      showSearch = true
+    })
+  }
+
+  if (chat.chatInfo is ChatInfo.Direct) {
+    menuItems.add {
+      DefaultDropdownMenuItem(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
+        showMenu = false
+        startCall(CallMediaType.Audio)
       }
     }
-    Divider()
+    menuItems.add {
+      DefaultDropdownMenuItem(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
+        showMenu = false
+        startCall(CallMediaType.Video)
+      }
+    }
+  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
+    menuItems.add {
+      DefaultDropdownMenuItem(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
+        showMenu = false
+        addMembers(chat.chatInfo.groupInfo)
+      }
+    }
+  }
+
+  DefaultTopAppBar(
+    navigationButton = { NavigationButtonBack(onBackClicked) },
+    title = { ChatInfoToolbarTitle(chat.chatInfo) },
+    onTitleClick = info,
+    showSearch = showSearch,
+    onSearchValueChanged = onSearchValueChanged,
+    buttons = {
+      IconButton({ showMenu = true }) {
+        Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      }
+    }
+  )
+
+  Divider(Modifier.padding(top = AppBarHeight))
+
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
+    DropdownMenu(
+      expanded = showMenu,
+      onDismissRequest = { showMenu = false },
+    ) {
+      menuItems.forEach { it() }
+    }
   }
 }
 
@@ -361,6 +399,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   chatItems: List<ChatItem>,
+  searchValue: State<String>,
   useLinkPreviews: Boolean,
   openDirectChat: (Long) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
@@ -379,12 +418,18 @@ fun BoxWithConstraintsScope.ChatItemsList(
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
   var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
-  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType) {
+  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType, shouldAutoScroll) {
     if (shouldAutoScroll && listState.firstVisibleItemIndex != 0) {
       scope.launch { listState.scrollToItem(0) }
     }
     // Don't autoscroll next time until it will be needed
     shouldAutoScroll = false
+  }
+  // Scroll to bottom when search value changes from something to nothing and back
+  LaunchedEffect(searchValue.value.isEmpty()) {
+    if (listState.firstVisibleItemIndex != 0) {
+      scope.launch { listState.scrollToItem(0) }
+    }
   }
 
   PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
@@ -473,7 +518,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, markRead, floatingButton, listState)
+  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, floatingButton, listState)
 }
 
 @Composable
@@ -481,24 +526,26 @@ fun BoxWithConstraintsScope.FloatingButtons(
   chatItems: List<ChatItem>,
   unreadCount: State<Int>,
   minUnreadItemId: Long,
+  searchValue: State<String>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   floatingButton: MutableState<@Composable () -> Unit>,
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
+  val bottomUnreadCount by remember {
+    derivedStateOf {
+      val from = chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
+      if (chatItems.size <= from || from < 0) return@derivedStateOf 0
 
-  val bottomUnreadCount by remember { derivedStateOf {
-    chatItems.subList(
-      chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex,
-      chatItems.size
-    ).count { it.isRcvNew } }
+      chatItems.subList(from, chatItems.size).count { it.isRcvNew }
+    }
   }
 
   val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
   val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
 
   LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
-    val showButtonWithCounter = bottomUnreadCount > 0 && !firstItemIsVisible
+    val showButtonWithCounter = bottomUnreadCount > 0 && !firstItemIsVisible && searchValue.value.isEmpty()
     val showButtonWithArrow = !showButtonWithCounter && !firstItemIsVisible
     floatingButton.value = bottomEndFloatingButton(
       bottomUnreadCount,
@@ -512,7 +559,8 @@ fun BoxWithConstraintsScope.FloatingButtons(
       }
     )
   }
-
+  // Don't show top FAB if is in search
+  if (searchValue.value.isNotEmpty()) return
   val fabSize = 56.dp
   val topUnreadCount by remember {
     derivedStateOf { unreadCount.value - bottomUnreadCount }
@@ -702,6 +750,7 @@ fun PreviewChatLayout() {
       )
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
+    val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       user = User.sampleData,
       chat = Chat(
@@ -716,6 +765,7 @@ fun PreviewChatLayout() {
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
+      searchValue,
       useLinkPreviews = true,
       back = {},
       info = {},
@@ -728,6 +778,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      onSearchValueChanged = {},
     )
   }
 }
@@ -755,6 +806,7 @@ fun PreviewGroupChatLayout() {
       )
     )
     val unreadCount = remember { mutableStateOf(chatItems.count { it.isRcvNew }) }
+    val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       user = User.sampleData,
       chat = Chat(
@@ -769,6 +821,7 @@ fun PreviewGroupChatLayout() {
       scope = rememberCoroutineScope(),
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
       chatItems = chatItems,
+      searchValue,
       useLinkPreviews = true,
       back = {},
       info = {},
@@ -781,6 +834,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      onSearchValueChanged = {},
     )
   }
 }

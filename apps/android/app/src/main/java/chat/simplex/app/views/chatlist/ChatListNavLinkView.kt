@@ -103,6 +103,18 @@ suspend fun apiLoadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chat
   chatModel.chatId.value = chatInfo.id
 }
 
+suspend fun apiFindMessages(searchValue: String, chatInfo: ChatInfo, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiFindMessages(searchValue, chatInfo.chatType, chatInfo.apiId) ?: return
+  chatModel.chatItems.clear()
+  chatModel.chatItems.addAll(0, chat.chatItems)
+}
+
+suspend fun apiFindPrevMessages(searchValue: String, beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
+  val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
+  val chat = chatModel.controller.apiFindMessages(searchValue, chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  chatModel.chatItems.addAll(0, chat.chatItems)
+}
+
 suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
   val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
   chatModel.groupMembers.clear()

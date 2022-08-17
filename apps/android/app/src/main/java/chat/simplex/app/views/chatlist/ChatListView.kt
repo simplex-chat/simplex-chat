@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
@@ -20,10 +21,12 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.ToolbarDark
 import chat.simplex.app.ui.theme.ToolbarLight
+import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.AlertManager
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
+import chat.simplex.app.views.reusable.*
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -72,6 +75,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
   BottomSheetScaffold(
+    topBar = { ChatListToolbar(scaffoldCtrl, stopped) },
     scaffoldState = scaffoldCtrl.state,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
@@ -84,8 +88,6 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(scaffoldCtrl, stopped)
-        Divider()
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel)
         } else {
@@ -106,49 +108,42 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 
 @Composable
 fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
-  Row(
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(52.dp)
-      .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-      .padding(horizontal = 8.dp)
-  ) {
-    IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
-      Icon(
-        Icons.Outlined.Menu,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
+  DefaultTopAppBar(
+    navigationButton = { NavigationButtonMenu { scaffoldCtrl.toggleDrawer() } },
+    title = {
+      Text(
+        stringResource(R.string.your_chats),
+        color = MaterialTheme.colors.onBackground,
+        fontWeight = FontWeight.SemiBold,
       )
-    }
-    Text(
-      stringResource(R.string.your_chats),
-      color = MaterialTheme.colors.onBackground,
-      fontWeight = FontWeight.SemiBold,
-      modifier = Modifier.padding(5.dp)
-    )
-    if (!stopped) {
-      IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
-        Icon(
-          Icons.Outlined.AddCircle,
-          stringResource(R.string.add_contact),
-          tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp).size(26.dp)
-        )
+    },
+    onTitleClick = null,
+    showSearch = false,
+    onSearchValueChanged = {},
+    buttons = {
+      if (!stopped) {
+        IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
+          Icon(
+            Icons.Outlined.AddCircle,
+            stringResource(R.string.add_contact),
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(10.dp).size(26.dp)
+          )
+        }
+      } else {
+        IconButton(onClick = { AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_is_stopped_indication),
+          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)) }) {
+          Icon(
+            Icons.Filled.Report,
+            generalGetString(R.string.chat_is_stopped_indication),
+            tint = Color.Red,
+            modifier = Modifier.padding(10.dp)
+          )
+        }
       }
-    } else {
-      IconButton(onClick = { AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_is_stopped_indication), generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)) }) {
-        Icon(
-          Icons.Filled.Report,
-          generalGetString(R.string.chat_is_stopped_indication),
-          tint = Color.Red,
-          modifier = Modifier.padding(10.dp)
-        )
-      }
     }
-  }
+  )
+  Divider()
 }
 
 @Composable
