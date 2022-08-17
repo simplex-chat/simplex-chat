@@ -314,22 +314,10 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT)): Chat? {
-    val r = sendCmd(CC.ApiGetChat(type, id, pagination))
+  suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
+    val r = sendCmd(CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat ) return r.chat
     Log.e(TAG, "apiGetChat bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
-  suspend fun apiFindMessages(
-    searchValue: String,
-    type: ChatType,
-    id: Long,
-    pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT)
-  ): Chat? {
-    val r = sendCmd(CC.ApiSearchInChat(searchValue, type, id, pagination))
-    if (r is CR.ApiChat ) return r.chat
-    Log.e(TAG, "apiFindMessages bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1127,8 +1115,7 @@ sealed class CC {
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
   class ApiGetChats: CC()
-  class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination): CC()
-  class ApiSearchInChat(val searchValue: String, val type: ChatType, val id: Long, val pagination: ChatPagination): CC()
+  class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
@@ -1179,8 +1166,7 @@ sealed class CC {
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
     is ApiGetChats -> "/_get chats pcc=on"
-    is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}"
-    is ApiSearchInChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString} $searchValue"
+    is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " $search")
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
@@ -1232,7 +1218,6 @@ sealed class CC {
     is ApiDeleteStorage -> "apiDeleteStorage"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
-    is ApiSearchInChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"

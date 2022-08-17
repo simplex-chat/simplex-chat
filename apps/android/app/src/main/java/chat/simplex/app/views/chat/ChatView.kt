@@ -48,7 +48,7 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
-  val searchValue = remember { mutableStateOf("") }
+  val searchText = remember { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
@@ -87,7 +87,7 @@ fun ChatView(chatModel: ChatModel) {
       scope,
       attachmentBottomSheetState,
       chatModel.chatItems,
-      searchValue,
+      searchText,
       useLinkPreviews = useLinkPreviews,
       back = { chatModel.chatId.value = null },
       info = {
@@ -133,10 +133,7 @@ fun ChatView(chatModel: ChatModel) {
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
           withApi {
-            if (searchValue.value.isEmpty())
-              apiLoadPrevMessages(firstId, c.chatInfo, chatModel)
-            else
-              apiFindPrevMessages(searchValue.value, firstId, c.chatInfo, chatModel)
+            apiLoadPrevMessages(c.chatInfo, chatModel, firstId, searchText.value)
           }
         }
       },
@@ -199,11 +196,11 @@ fun ChatView(chatModel: ChatModel) {
         }
       },
       onSearchValueChanged = { value ->
-        if (searchValue.value == value) return@ChatLayout
+        if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
         withApi {
-          apiFindMessages(value, c.chatInfo, chatModel)
-          searchValue.value = value
+          apiFindMessages(c.chatInfo, chatModel, value)
+          searchText.value = value
         }
       }
     )
