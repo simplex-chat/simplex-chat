@@ -90,6 +90,8 @@ chatTests = do
     it "auto-reply message" testAutoReplyMessage
   fdescribe "incognito mode" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
+    it "connect incognito via contact address" testConnectIncognitoContactAddress
+    it "accept contact request incognito" testAcceptContactRequestIncognito
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2077,6 +2079,55 @@ testConnectIncognitoInvitationLink = testChat2 aliceProfile bobProfile $
     bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
     bob ?#> ("@" <> aliceIncognito <> " no")
     alice ?<# (bobIncognito <> "> no")
+
+testConnectIncognitoContactAddress :: IO ()
+testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    bobIncognito <- getTermLine alice
+    alice <## (bobIncognito <> " wants to connect to you!")
+    alice <## ("to accept: /ac " <> bobIncognito)
+    alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
+    alice ##> ("/ac " <> bobIncognito)
+    alice <## (bobIncognito <> ": accepting contact request...")
+    _ <- getTermLine bob
+    concurrentlyN_
+      [ do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again",
+        alice <## (bobIncognito <> ": contact is connected")
+      ]
+    alice #> ("@" <> bobIncognito <> " who are you?")
+    bob ?<# "alice> who are you?"
+    bob ?#> "@alice I'm Batman"
+    alice <# (bobIncognito <> "> I'm Batman")
+
+testAcceptContactRequestIncognito :: IO ()
+testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    _ <- getTermLine alice
+    alice <#? bob
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again"
+      ]
+    alice ?#> "@bob my profile is totally inconspicuous"
+    bob <# (aliceIncognito <> "> my profile is totally inconspicuous")
+    bob #> ("@" <> aliceIncognito <> " I know!")
+    alice ?<# "bob> I know!"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

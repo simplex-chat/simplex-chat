@@ -119,7 +119,7 @@ responseToView testView = \case
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
-  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
+  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile testView
   CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
@@ -410,12 +410,16 @@ autoAcceptStatus_ autoAccept autoReply =
   ("auto_accept " <> if autoAccept then "on" else "off") :
   maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
-viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
-viewReceivedContactRequest c Profile {fullName} =
-  [ ttyFullName c fullName <> " wants to connect to you!",
-    "to accept: " <> highlight ("/ac " <> c),
-    "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
-  ]
+viewReceivedContactRequest :: ContactName -> Profile -> Bool -> [StyledString]
+viewReceivedContactRequest c profile@Profile {fullName} testView
+  | testView = incognitoProfile' profile : message
+  | otherwise = message
+  where
+    message =
+      [ ttyFullName c fullName <> " wants to connect to you!",
+        "to accept: " <> highlight ("/ac " <> c),
+        "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
+      ]
 
 viewGroupCreated :: GroupInfo -> Maybe Profile -> [StyledString]
 viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile =
