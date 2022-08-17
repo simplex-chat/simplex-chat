@@ -89,7 +89,7 @@ responseToView testView = \case
   CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
   CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated g incognitoProfile -> viewGroupCreated g incognitoProfile
+  CRGroupCreated g incognitoProfile -> viewGroupCreated g incognitoProfile testView
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
   CRSentGroupInvitation g c _ invitedIncognito -> viewSentGroupInvitation g c invitedIncognito
@@ -142,7 +142,7 @@ responseToView testView = \case
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membershipIncognito} ->
     [groupInvitation' ldn fullName membershipIncognito]
   CRReceivedGroupInvitation g c role hostIncognitoProfile -> viewReceivedGroupInvitation g c role hostIncognitoProfile
-  CRUserJoinedGroup g _ incognito -> viewUserJoinedGroup g incognito
+  CRUserJoinedGroup g _ incognito -> viewUserJoinedGroup g incognito testView
   CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
@@ -421,13 +421,18 @@ viewReceivedContactRequest c profile@Profile {fullName} testView
         "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
       ]
 
-viewGroupCreated :: GroupInfo -> Maybe Profile -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile =
+viewGroupCreated :: GroupInfo -> Maybe Profile -> Bool -> [StyledString]
+viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile testView =
   case incognitoProfile of
     Just profile ->
-      [ "group " <> ttyFullGroup g <> " is created incognito, your profile for this group: " <> incognitoProfile' profile,
-        "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
-      ]
+      if testView
+        then incognitoProfile' profile : message
+        else message
+      where
+        message =
+          [ "group " <> ttyFullGroup g <> " is created incognito, your profile for this group: " <> incognitoProfile' profile,
+            "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+          ]
     Nothing ->
       [ "group " <> ttyFullGroup g <> " is created",
         "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
@@ -439,11 +444,16 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewUserJoinedGroup :: GroupInfo -> Bool -> [StyledString]
-viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incognito =
+viewUserJoinedGroup :: GroupInfo -> Bool -> Bool -> [StyledString]
+viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incognito testView =
   if incognito
-    then [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' memberProfile]
+    then
+      if testView
+        then incognitoProfile' memberProfile : incognitoMessage
+        else incognitoMessage
     else [ttyGroup' g <> ": you joined the group"]
+  where
+    incognitoMessage = [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' memberProfile]
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> Maybe Profile -> [StyledString]
 viewJoinedGroupMember g m@GroupMember {localDisplayName} = \case
