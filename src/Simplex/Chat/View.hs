@@ -64,7 +64,7 @@ responseToView testView = \case
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNetworkConfig cfg -> viewNetworkConfig cfg
-  CRContactInfo ct cStats incognitoProfile -> viewContactInfo ct cStats incognitoProfile
+  CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats mainProfile -> viewGroupMemberInfo g m cStats mainProfile
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
@@ -89,10 +89,10 @@ responseToView testView = \case
   CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
   CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated g incognitoProfile -> viewGroupCreated g incognitoProfile testView
+  CRGroupCreated g customUserProfile -> viewGroupCreated g customUserProfile testView
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
-  CRSentGroupInvitation g c _ invitedIncognito -> viewSentGroupInvitation g c invitedIncognito
+  CRSentGroupInvitation g c _ sentCustomProfile -> viewSentGroupInvitation g c sentCustomProfile
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
@@ -130,7 +130,7 @@ responseToView testView = \case
     [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRContactConnecting _ -> []
   CRContactConnected ct -> [ttyFullContact ct <> ": contact is connected"]
-  CRContactConnectedIncognito ct userIncognitoProfile -> viewContactConnectedIncognito ct userIncognitoProfile testView
+  CRContactConnectedUserCustomProfile ct userCustomProfile -> viewContactConnectedIncognito ct userCustomProfile testView
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
@@ -141,8 +141,8 @@ responseToView testView = \case
       (errors, subscribed) = partition (isJust . contactError) summary
   CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membershipIncognito} ->
     [groupInvitation' ldn fullName membershipIncognito]
-  CRReceivedGroupInvitation g c role hostIncognitoProfile -> viewReceivedGroupInvitation g c role hostIncognitoProfile
-  CRUserJoinedGroup g _ incognito -> viewUserJoinedGroup g incognito testView
+  CRReceivedGroupInvitation g c role receivedCustomProfile -> viewReceivedGroupInvitation g c role receivedCustomProfile
+  CRUserJoinedGroup g _ usedCustomProfile -> viewUserJoinedGroup g usedCustomProfile testView
   CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]

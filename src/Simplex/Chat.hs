@@ -1421,7 +1421,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               case customUserProfileId of
                 Just profileId -> do
                   incognitoProfile <- withStore (\db -> getProfileById db userId profileId)
-                  toView $ CRContactConnectedIncognito ct incognitoProfile
+                  toView $ CRContactConnectedUserCustomProfile ct incognitoProfile
                 Nothing -> toView $ CRContactConnected ct
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"

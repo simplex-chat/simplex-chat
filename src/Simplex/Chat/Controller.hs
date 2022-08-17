@@ -212,7 +212,7 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, incognitoProfile :: Maybe Profile}
+  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats, mainProfile :: Maybe Profile}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
@@ -225,7 +225,7 @@ data ChatResponse
   | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
-  | CRGroupCreated {groupInfo :: GroupInfo, incognitoProfile :: Maybe Profile}
+  | CRGroupCreated {groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
   | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
@@ -234,7 +234,7 @@ data ChatResponse
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
-  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember, invitedIncognito :: Bool}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember, sentCustomProfile :: Bool}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
@@ -268,7 +268,7 @@ data ChatResponse
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact}
-  | CRContactConnectedIncognito {contact :: Contact, userIncognitoProfile :: Profile}
+  | CRContactConnectedUserCustomProfile {contact :: Contact, userCustomProfile :: Profile}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
@@ -277,8 +277,8 @@ data ChatResponse
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole, hostIncognitoProfile :: Maybe Profile}
-  | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember, joinedIncognito :: Bool}
+  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole, receivedCustomProfile :: Maybe Profile}
+  | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember, usedCustomProfile :: Bool}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember, mainProfile :: Maybe Profile}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
