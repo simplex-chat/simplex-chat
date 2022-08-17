@@ -113,7 +113,7 @@ fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
     onTitleClick = null,
     showSearch = false,
     onSearchValueChanged = {},
-    buttons = {
+    buttons = listOf{
       if (!stopped) {
         IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
           Icon(

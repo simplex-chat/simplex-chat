@@ -164,7 +164,8 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
         text,
         modifier = Modifier
           .fillMaxWidth()
-          .weight(1F),
+          .weight(1F)
+          .padding(end = 15.dp),
         color = color
       )
       Icon(icon, text, tint = color)

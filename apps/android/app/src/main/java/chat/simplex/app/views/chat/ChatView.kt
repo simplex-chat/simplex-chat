@@ -38,7 +38,7 @@ import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
-import chat.simplex.app.views.reusable.*
+import chat.simplex.app.views.helpers.AppBarHeight
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
@@ -297,6 +297,7 @@ fun ChatInfoToolbar(
     }
   }
   BackHandler(onBack = onBackClicked)
+  val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   menuItems.add {
     ItemAction(stringResource(android.R.string.search_go).capitalize(Locale.current), Icons.Outlined.Search, onClick = {
@@ -306,24 +307,33 @@ fun ChatInfoToolbar(
   }
 
   if (chat.chatInfo is ChatInfo.Direct) {
-    menuItems.add {
-      DefaultDropdownMenuItem(Icons.Outlined.Phone, R.string.icon_descr_audio_call) {
+    barButtons.add {
+      IconButton({
         showMenu = false
         startCall(CallMediaType.Audio)
+      }) {
+        Icon(Icons.Outlined.Phone, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
       }
     }
     menuItems.add {
-      DefaultDropdownMenuItem(Icons.Outlined.Videocam, R.string.icon_descr_video_call) {
+      ItemAction(stringResource(R.string.icon_descr_video_call).capitalize(Locale.current), Icons.Outlined.Videocam, onClick = {
         showMenu = false
         startCall(CallMediaType.Video)
-      }
+      })
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
-    menuItems.add {
-      DefaultDropdownMenuItem(Icons.Outlined.PersonAdd, R.string.icon_descr_add_members) {
+    barButtons.add {
+      IconButton({
         showMenu = false
         addMembers(chat.chatInfo.groupInfo)
+      }) {
+        Icon(Icons.Outlined.PersonAdd, stringResource(R.string.icon_descr_add_members), tint = MaterialTheme.colors.primary)
       }
+    }
+  }
+  barButtons.add {
+    IconButton({ showMenu = true }) {
+      Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
     }
   }
 
@@ -333,11 +343,7 @@ fun ChatInfoToolbar(
     onTitleClick = info,
     showSearch = showSearch,
     onSearchValueChanged = onSearchValueChanged,
-    buttons = {
-      IconButton({ showMenu = true }) {
-        Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
-      }
-    }
+    buttons = barButtons
   )
 
   Divider(Modifier.padding(top = AppBarHeight))
@@ -346,6 +352,7 @@ fun ChatInfoToolbar(
     DropdownMenu(
       expanded = showMenu,
       onDismissRequest = { showMenu = false },
+      Modifier.widthIn(min = 220.dp)
     ) {
       menuItems.forEach { it() }
     }
