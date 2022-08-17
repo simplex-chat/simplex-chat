@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.Application
 import android.content.*
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -907,6 +908,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         showDisablingServiceNotice()
         appPrefs.runServiceInBackground.set(false)
         chatModel.runServiceInBackground.value = false
+        SimplexService.StartReceiver.toggleReceiver(false)
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization()

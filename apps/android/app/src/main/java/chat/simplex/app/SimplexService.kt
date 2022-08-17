@@ -2,6 +2,7 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.os.*
 import android.provider.Settings
 import android.util.Log
@@ -169,6 +170,17 @@ class SimplexService: Service() {
     override fun onReceive(context: Context, intent: Intent) {
       Log.d(TAG, "StartReceiver: onReceive called")
       scheduleStart(context)
+    }
+    companion object {
+      fun toggleReceiver(enable: Boolean) {
+        Log.d(TAG, "StartReceiver: toggleReceiver enabled: $enable")
+        val component = ComponentName(BuildConfig.APPLICATION_ID, StartReceiver::class.java.name)
+        SimplexApp.context.packageManager.setComponentEnabledSetting(
+          component,
+          if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP
+        )
+      }
     }
   }
 
