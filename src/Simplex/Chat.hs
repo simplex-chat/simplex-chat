@@ -751,10 +751,16 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- [incognito] if incognito mode is enabled [and membership is not incognito] update membership to use incognito profile
+      -- [incognito] if (incognito mode is enabled OR direct connection with host is incognito) [AND membership is not incognito] update membership to use incognito profile
       incognito <- readTVarIO =<< asks incognito
+      hostConnIncognito <- case (incognito, memberContactId fromMember) of
+        (True, _) -> pure True -- we don't need to check whether connection with host is incognito if incognito mode is on
+        (_, Just hostContactId) -> do
+          hostContact <- withStore $ \db -> getContact db userId hostContactId
+          pure $ contactConnIncognito hostContact
+        _ -> pure False
       g'@GroupInfo {membership = membership'} <-
-        if incognito && not (membershipIncognito g)
+        if (incognito || hostConnIncognito) && not (membershipIncognito g)
           then do
             incognitoProfile <- liftIO generateRandomProfile
             membership' <- withStore $ \db -> createIncognitoProfileForGroupMember db userId membership (Just incognitoProfile)
