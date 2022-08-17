@@ -602,7 +602,7 @@ processChatCommand = \case
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
-    -- [incognito] print contact incognito profile
+    -- [incognito] print users' incognito profile for this contact
     ct@Contact {activeConn = Connection {incognitoProfileId}} <- withStore $ \db -> getContact db userId contactId
     incognitoProfile <- case incognitoProfileId of
       Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
