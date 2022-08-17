@@ -92,7 +92,7 @@ contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
 
 contactConnIncognito :: Contact -> Bool
-contactConnIncognito ct = isJust . connCustomUserProfileId $ activeConn (ct :: Contact)
+contactConnIncognito Contact {activeConn = Connection {customUserProfileId}} = isJust customUserProfileId
 
 data ContactRef = ContactRef
   { contactId :: ContactId,

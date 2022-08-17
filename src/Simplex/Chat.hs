@@ -143,9 +143,9 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
   filesFolder <- newTVarIO Nothing
-  incognito <- newTVarIO False
+  incognitoMode <- newTVarIO False
   chatStoreChanged <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognito, filesFolder}
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder}
   where
     resolveServers :: InitialAgentServers -> IO InitialAgentServers
     resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
@@ -235,7 +235,7 @@ processChatCommand = \case
     atomically . writeTVar ff $ Just filesFolder'
     pure CRCmdOk
   SetIncognito onOff -> do
-    incognito <- asks incognito
+    incognito <- asks incognitoMode
     atomically . writeTVar incognito $ onOff
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
@@ -598,7 +598,7 @@ processChatCommand = \case
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
-    -- [incognito] print users' incognito profile for this contact
+    -- [incognito] print user's incognito profile for this contact
     ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db userId contactId
     incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
@@ -619,7 +619,7 @@ processChatCommand = \case
   Welcome -> withUser $ pure . CRWelcome
   AddContact -> withUser $ \User {userId} -> withChatLock . procCmd $ do
     -- [incognito] generate profile for connection
-    incognito <- readTVarIO =<< asks incognito
+    incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     (connId, cReq) <- withAgent (`createConnection` SCMInvitation)
     conn <- withStore' $ \db -> createDirectConnection db userId connId ConnNew incognitoProfile
@@ -627,7 +627,7 @@ processChatCommand = \case
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
     -- [incognito] generate profile to send
-    incognito <- readTVarIO =<< asks incognito
+    incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
     connId <- withAgent $ \a -> joinConnection a cReq . directMessage $ XInfo profileToSend
@@ -703,7 +703,7 @@ processChatCommand = \case
   NewGroup gProfile -> withUser $ \user -> do
     gVar <- asks idsDrg
     -- [incognito] create membership with incognito profile
-    incognito <- readTVarIO =<< asks incognito
+    incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     groupInfo <- withStore (\db -> createNewGroup db gVar user gProfile incognitoProfile)
     pure $ CRGroupCreated groupInfo incognitoProfile
@@ -744,7 +744,7 @@ processChatCommand = \case
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
       -- [incognito] if (incognito mode is enabled OR direct connection with host is incognito) [AND membership is not incognito] update membership to use incognito profile
-      incognito <- readTVarIO =<< asks incognito
+      incognito <- readTVarIO =<< asks incognitoMode
       hostConnIncognito <- case (incognito, memberContactId fromMember) of
         (True, _) -> pure True -- we don't need to check whether connection with host is incognito if incognito mode is on
         (_, Just hostContactId) -> do
@@ -755,7 +755,7 @@ processChatCommand = \case
         if (incognito || hostConnIncognito) && not (membershipIncognito g)
           then do
             incognitoProfile <- liftIO generateRandomProfile
-            membership' <- withStore $ \db -> createIncognitoProfileForGroupMember db userId membership (Just incognitoProfile)
+            membership' <- withStore $ \db -> createMemberIncognitoProfile db userId membership (Just incognitoProfile)
             pure g {membership = membership', membershipIncognito = True}
           else pure g
       -- [incognito] if membership is incognito, send its incognito profile in XGrpAcpt
@@ -956,7 +956,7 @@ processChatCommand = \case
           -- an incognito profile will be sent even though the address holder will have user's main profile received as well;
           -- we ignore this edge case as we already allow profile updates on repeat contact requests;
           -- alternatively we can re-send the main profile even if incognito mode is enabled
-          incognito <- readTVarIO =<< asks incognito
+          incognito <- readTVarIO =<< asks incognitoMode
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = fromMaybe profile incognitoProfile
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profileToSend $ Just xContactId)
@@ -1170,7 +1170,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
   -- [incognito] generate profile to send, create connection with incognito profile
-  incognito <- readTVarIO =<< asks incognito
+  incognito <- readTVarIO =<< asks incognitoMode
   incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
   let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
   connId <- withAgent $ \a -> acceptContact a invId . directMessage $ XInfo profileToSend
@@ -1469,7 +1469,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   -- [incognito] update member profile to incognito profile
                   withStore $ \db -> do
                     liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                    void $ createIncognitoProfileForGroupMember db userId m incognitoProfile
+                    void $ createMemberIncognitoProfile db userId m incognitoProfile
                   allowAgentConnection conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"

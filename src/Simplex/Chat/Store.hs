@@ -81,7 +81,7 @@ module Simplex.Chat.Store
     getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
-    createIncognitoProfileForGroupMember,
+    createMemberIncognitoProfile,
     createNewGroupMember,
     deleteGroupMember,
     deleteGroupMemberConnection,
@@ -1357,11 +1357,8 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
   customUserProfileId <- liftIO $ createIncognitoProfile_ db userId createdAt incognitoProfile
   (localDisplayName, memberProfile) <- case (incognitoProfile, customUserProfileId) of
     (Just profile@Profile {displayName}, Just profileId) ->
-      (,) <$> insertMemberIncognitoProfile_ displayName profileId
-        <*> pure (toLocalProfile profileId profile)
-    _ ->
-      (,) <$> liftIO insertMember_
-        <*> pure (profile' userOrContact)
+      (,toLocalProfile profileId profile) <$> insertMemberIncognitoProfile_ displayName profileId
+    _ -> (,profile' userOrContact) <$> liftIO insertMember_
   groupMemberId <- liftIO $ insertedRowId db
   pure
     GroupMember
@@ -1633,8 +1630,8 @@ updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
-createIncognitoProfileForGroupMember :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
-createIncognitoProfileForGroupMember db userId m@GroupMember {groupMemberId} incognitoProfile = do
+createMemberIncognitoProfile :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
+createMemberIncognitoProfile db userId m@GroupMember {groupMemberId} incognitoProfile = do
   currentTs <- liftIO getCurrentTime
   customUserProfileId <- liftIO $ createIncognitoProfile_ db userId currentTs incognitoProfile
   case (incognitoProfile, customUserProfileId) of

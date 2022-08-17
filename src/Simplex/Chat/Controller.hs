@@ -89,7 +89,7 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
-    incognito :: TVar Bool
+    incognitoMode :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
