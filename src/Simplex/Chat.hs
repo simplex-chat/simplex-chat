@@ -605,8 +605,8 @@ processChatCommand = \case
     pure $ CRContactInfo ct connectionStats incognitoProfile
   APIGroupMemberInfo gId gMemberId -> withUser $ \user@User {userId} -> do
     -- [incognito] print group member main profile
-    (g, m@GroupMember {mainProfileId}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
-    mainProfile <- forM mainProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+    (g, m@GroupMember {memberContactProfileId}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
+    mainProfile <- if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo g m connectionStats mainProfile
   ContactInfo cName -> withUser $ \User {userId} -> do
@@ -720,7 +720,7 @@ processChatCommand = \case
     unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     let sendInvitation member@GroupMember {groupMemberId, memberId} cReq = do
           -- [incognito] if membership is incognito, send its incognito profile in GroupInvitation
-          let incognitoProfile = if membershipIncognito then Just (memberProfile membership) else Nothing
+          let incognitoProfile = if membershipIncognito then Just (fromLocalProfile $ memberProfile membership) else Nothing
               groupInv = GroupInvitation (MemberIdRole userMemberId userRole) incognitoProfile (MemberIdRole memberId memRole) cReq groupProfile
           msg <- sendDirectContactMessage contact $ XGrpInv groupInv
           let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just membershipIncognito}) memRole
@@ -759,7 +759,7 @@ processChatCommand = \case
             pure g {membership = membership', membershipIncognito = True}
           else pure g
       -- [incognito] if membership is incognito, send its incognito profile in XGrpAcpt
-      let incognitoProfile = if membershipIncognito g' then Just (memberProfile membership') else Nothing
+      let incognitoProfile = if membershipIncognito g' then Just (fromLocalProfile $ memberProfile membership') else Nothing
       agentConnId <- withAgent $ \a -> joinConnection a connRequest . directMessage $ XGrpAcpt (memberId (membership' :: GroupMember)) incognitoProfile
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
@@ -791,7 +791,7 @@ processChatCommand = \case
               withStore' $ \db -> deleteGroupMember db user m
             _ -> do
               msg <- sendGroupMessage gInfo members $ XGrpMemDel mId
-              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId memberProfile) Nothing Nothing
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile)) Nothing Nothing
               toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
               deleteMemberConnection m
               withStore' $ \db -> updateGroupMemberStatus db userId m GSMemRemoved
@@ -1458,7 +1458,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership, membershipIncognito} m = case agentMsg of
+    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership, membershipIncognito} m@GroupMember {memberContactProfileId} = case agentMsg of
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
@@ -1479,7 +1479,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 | sameMemberId memId m -> do
                   -- TODO update member profile
                   -- [incognito] send membership incognito profile
-                  allowAgentConnection conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (memberProfile membership)
+                  allowAgentConnection conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -1503,14 +1503,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         case memberCategory m of
           GCHostMember -> do
             -- [incognito] chat item & event with indication that host connected incognito
-            mainProfile <- forM (mainProfileId m) $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+            mainProfile <- if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected} membershipIncognito
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
             -- [incognito] chat item & event with indication that invitee connected incognito
-            mainProfile <- forM (mainProfileId m) $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+            mainProfile <- if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected} mainProfile
             setActive $ ActiveG gName
@@ -1703,7 +1703,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     memberConnectedChatItem gInfo m@GroupMember {memberProfile} mainProfile_ = do
       createdAt <- liftIO getCurrentTime
       let content = CIRcvGroupEvent $ case mainProfile_ of
-            Just mainProfile -> RGEMemberConnectedIncognito mainProfile memberProfile
+            Just mainProfile -> RGEMemberConnectedIncognito mainProfile $ fromLocalProfile memberProfile
             _ -> RGEMemberConnected
           cd = CDGroupRcv gInfo m
       -- first ts should be broker ts but we don't have it for CON
@@ -2128,7 +2128,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         Just m' -> pure m'
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (memberProfile membership)
+      let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       groupConnId <- withAgent $ \a -> joinConnection a groupConnReq $ directMessage msg
       directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg
       customUserProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
@@ -2153,7 +2153,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               else do
                 deleteMemberConnection member
                 withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
-                ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberDeleted groupMemberId memberProfile) Nothing
+                ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)) Nothing
                 groupMsgToView gInfo m ci msgMeta
                 toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
 

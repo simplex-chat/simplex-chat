@@ -1542,7 +1542,6 @@ adjectives =
     "Ringed",
     "Ripe",
     "Risible",
-    "Roasted",
     "Robust",
     "Rollicking",
     "Romantic",

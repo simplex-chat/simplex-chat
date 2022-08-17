@@ -449,11 +449,11 @@ viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incog
   if incognito
     then
       if testView
-        then incognitoProfile' memberProfile : incognitoMessage
+        then incognitoProfile' (fromLocalProfile memberProfile) : incognitoMessage
         else incognitoMessage
     else [ttyGroup' g <> ": you joined the group"]
   where
-    incognitoMessage = [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' memberProfile]
+    incognitoMessage = [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
 
 viewJoinedGroupMember :: GroupInfo -> GroupMember -> Maybe Profile -> [StyledString]
 viewJoinedGroupMember g m@GroupMember {localDisplayName} = \case
@@ -486,7 +486,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = incognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    incognito GroupMember {mainProfileId} = if isJust mainProfileId then incognitoPrefix else ""
+    incognito m = if memberIncognito m then incognitoPrefix else ""
     role m = plain . strEncode $ memberRole (m :: GroupMember)
     category m = case memberCategory m of
       GCUserMember -> "you, "
@@ -967,7 +967,7 @@ ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
 
 ttyFullMember :: GroupMember -> StyledString
-ttyFullMember GroupMember {localDisplayName, memberProfile = Profile {fullName}} =
+ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName}} =
   ttyFullName localDisplayName fullName
 
 ttyFullName :: ContactName -> Text -> StyledString

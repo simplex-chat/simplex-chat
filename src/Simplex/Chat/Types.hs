@@ -301,7 +301,7 @@ instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptio
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile} =
-  MemberInfo memberId memberRole memberProfile
+  MemberInfo memberId memberRole (fromLocalProfile memberProfile)
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -312,6 +312,8 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
 
 type GroupMemberId = Int64
 
+-- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
+-- if incognito profile was saved for member (used for hosts and invitees in incognito groups)
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
@@ -321,10 +323,10 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
-    memberProfile :: Profile,
-    memberContactId :: Maybe Int64,
-    activeConn :: Maybe Connection,
-    mainProfileId :: Maybe Int64 -- contact profile id if member connected incognito, only used for hosts and invitees
+    memberProfile :: LocalProfile,
+    memberContactId :: Maybe ContactId,
+    memberContactProfileId :: ProfileId,
+    activeConn :: Maybe Connection
   }
   deriving (Eq, Show, Generic)
 
@@ -340,6 +342,9 @@ memberConnId GroupMember {activeConn} = aConnId <$> activeConn
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
+
+memberIncognito :: GroupMember -> Bool
+memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
