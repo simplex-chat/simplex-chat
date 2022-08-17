@@ -185,22 +185,22 @@ func apiGetChats() throws -> [ChatData] {
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50)))
+func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50), search: search))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
 
-func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination) async throws -> [ChatItem] {
-    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination))
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
     if case let .apiChat(chat) = r { return chat.chatItems }
     throw r
 }
 
-func loadChat(chat: Chat) {
+func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         let m = ChatModel.shared
         m.updateChatInfo(chat.chatInfo)
         m.reversedChatItems = chat.chatItems.reversed()

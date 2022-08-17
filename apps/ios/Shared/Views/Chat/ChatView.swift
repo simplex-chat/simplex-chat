@@ -28,13 +28,19 @@ struct ChatView: View {
     @State private var firstPage = false
     @State private var itemsInView: Set<String> = []
     @State private var scrollProxy: ScrollViewProxy?
+    @State private var searchMode = false
+    @State private var searchText: String = ""
+    @FocusState private var searchFocussed
 
     var body: some View {
         let cInfo = chat.chatInfo
-
-        return VStack {
+        return VStack(spacing: 0) {
+            if searchMode {
+                searchToolbar()
+                Divider()
+            }
             ZStack(alignment: .trailing) {
-                chatItemsList(cInfo)
+                chatItemsList()
                 if let proxy = scrollProxy {
                     floatingButtons(proxy)
                 }
@@ -47,11 +53,12 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
-            .disabled(!chat.chatInfo.sendMsgEnabled)
+            .disabled(!cInfo.sendMsgEnabled)
         }
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -62,10 +69,7 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.backward")
-                        Text("Chats", comment: "back button to return to chats list")
-                    }
+                    Image(systemName: "chevron.backward")
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -108,25 +112,75 @@ struct ChatView: View {
                 case let .direct(contact):
                     HStack {
                         callButton(contact, .audio, imageName: "phone")
-                        callButton(contact, .video, imageName: "video")
+                        Menu {
+                            Button {
+                                CallController.shared.startCall(contact, .video)
+                            } label: {
+                                Label("Video call", systemImage: "video")
+                            }
+                            searchButton()
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
                     }
                 case let .group(groupInfo):
-                    if groupInfo.canAddMembers {
-                        addMembersButton()
-                            .sheet(isPresented: $showAddMembersSheet) {
-                                AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                            }
+                    HStack {
+                        if groupInfo.canAddMembers {
+                            addMembersButton()
+                                .sheet(isPresented: $showAddMembersSheet) {
+                                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                }
+                        }
+                        Menu {
+                            searchButton()
+                        } label: {
+                            Image(systemName: "ellipsis")
+                        }
                     }
                 default:
                     EmptyView()
                 }
             }
         }
-        .navigationBarBackButtonHidden(true)
     }
 
-    private func chatItemsList(_ cInfo: ChatInfo) -> some View {
-        GeometryReader { g in
+    private func searchToolbar() -> some View {
+        HStack {
+            HStack {
+                Image(systemName: "magnifyingglass")
+                TextField("Search", text: $searchText)
+                .focused($searchFocussed)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity)
+
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill").opacity(searchText == "" ? 0 : 1)
+                }
+            }
+            .padding(EdgeInsets(top: 8, leading: 6, bottom: 8, trailing: 6))
+            .foregroundColor(.secondary)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(10.0)
+
+            Button ("Cancel") {
+                searchText = ""
+                searchMode = false
+                searchFocussed = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    chatModel.reversedChatItems = []
+                    loadChat(chat: chat)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+    }
+
+    private func chatItemsList() -> some View {
+        let cInfo = chat.chatInfo
+        return GeometryReader { g in
             ScrollViewReader { proxy in
                 ScrollView {
                     let maxWidth =
@@ -161,6 +215,9 @@ struct ChatView: View {
                     scrollProxy = proxy
                 }
                 .onTapGesture { hideKeyboard() }
+                .onChange(of: searchText) { _ in
+                    loadChat(chat: chat, search: searchText)
+                }
             }
         }
         .scaleEffect(x: 1, y: -1, anchor: .center)
@@ -225,6 +282,16 @@ struct ChatView: View {
         }
     }
 
+    private func searchButton() -> some View {
+        Button {
+            searchMode = true
+            searchFocussed = true
+            searchText = ""
+        } label: {
+            Label("Search", systemImage: "magnifyingglass")
+        }
+    }
+
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
@@ -250,7 +317,8 @@ struct ChatView: View {
                     let items = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
-                        pagination: .before(chatItemId: firstItem.id, count: 50)
+                        pagination: .before(chatItemId: firstItem.id, count: 50),
+                        search: searchText
                     )
                     await MainActor.run {
                         if items.count == 0 {
