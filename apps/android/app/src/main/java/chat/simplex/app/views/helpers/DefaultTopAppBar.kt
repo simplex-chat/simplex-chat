@@ -1,4 +1,4 @@
-package chat.simplex.app.views.reusable
+package chat.simplex.app.views.helpers
 
 import chat.simplex.app.R
 import androidx.compose.foundation.*

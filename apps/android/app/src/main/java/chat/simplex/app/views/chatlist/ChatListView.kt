@@ -7,11 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -19,14 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.ToolbarDark
-import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.chat.ChatInfoToolbarTitle
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
-import chat.simplex.app.views.reusable.*
 import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch

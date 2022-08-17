@@ -1,4 +1,4 @@
-package chat.simplex.app.views.reusable
+package chat.simplex.app.views.helpers
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
