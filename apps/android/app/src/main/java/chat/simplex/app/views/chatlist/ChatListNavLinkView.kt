@@ -96,11 +96,16 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   }
 }
 
-suspend fun apiLoadPrevMessages(beforeChatItemId: Long, chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun apiLoadPrevMessages(chatInfo: ChatInfo, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
-  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination) ?: return
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   chatModel.chatItems.addAll(0, chat.chatItems)
-  chatModel.chatId.value = chatInfo.id
+}
+
+suspend fun apiFindMessages(chatInfo: ChatInfo, chatModel: ChatModel, search: String) {
+  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, search = search) ?: return
+  chatModel.chatItems.clear()
+  chatModel.chatItems.addAll(0, chat.chatItems)
 }
 
 suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
