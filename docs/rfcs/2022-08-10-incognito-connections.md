@@ -14,7 +14,7 @@ Parameterize `AddContact`, `Connect` and `ConnectSimplex` API - create connectio
 
 ### Option 1 - random profile
 
-Add nullable field `incognito_profile_id` to `connections` table - `incognitoProfile: Maybe Profile` in `Connection` type; when connection is created as incognito on API call, random profile is created and saved to `profiles` table.
+Add nullable field `custom_user_profile_id` to `connections` table - `incognitoProfile: Maybe Profile` in `Connection` type; when connection is created as incognito on API call, random profile is created and saved to `profiles` table.
 
 Incognito profile is created only with a display name, it can be:
 

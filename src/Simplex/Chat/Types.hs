@@ -97,7 +97,7 @@ contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
 
 contactConnIncognito :: Contact -> Bool
-contactConnIncognito ct = isJust . connIncognitoProfileId $ activeConn (ct :: Contact)
+contactConnIncognito ct = isJust . connCustomUserProfileId $ activeConn (ct :: Contact)
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -712,7 +712,7 @@ data Connection = Connection
     connLevel :: Int,
     viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
-    incognitoProfileId :: Maybe Int64,
+    customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
@@ -723,8 +723,8 @@ data Connection = Connection
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
 
-connIncognitoProfileId :: Connection -> Maybe Int64
-connIncognitoProfileId Connection {incognitoProfileId} = incognitoProfileId
+connCustomUserProfileId :: Connection -> Maybe Int64
+connCustomUserProfileId Connection {customUserProfileId} = customUserProfileId
 
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
@@ -736,7 +736,7 @@ data PendingContactConnection = PendingContactConnection
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
-    incognitoProfileId :: Maybe Int64,
+    customUserProfileId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }

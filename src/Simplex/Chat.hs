@@ -259,16 +259,14 @@ processChatCommand = \case
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
-        setupSndFileTransfer ct = case file_ of
-          Nothing -> pure Nothing
-          Just file -> do
-            (fileSize, chSize) <- checkSndFile file
-            (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
-            let fileName = takeFileName file
-                fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
-            fileId <- withStore' $ \db -> createSndFileTransfer db userId ct file fileInvitation agentConnId chSize
-            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
-            pure $ Just (fileInvitation, ciFile)
+        setupSndFileTransfer ct = forM file_ $ \file -> do
+          (fileSize, chSize) <- checkSndFile file
+          (agentConnId, fileConnReq) <- withAgent (`createConnection` SCMInvitation)
+          let fileName = takeFileName file
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
+          fileId <- withStore' $ \db -> createSndFileTransfer db userId ct file fileInvitation agentConnId chSize
+          let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
+          pure (fileInvitation, ciFile)
         prepareMsg :: Maybe FileInvitation -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
         prepareMsg fileInvitation_ = case quotedItemId_ of
           Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_), Nothing)
@@ -296,15 +294,13 @@ processChatCommand = \case
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       where
         setupSndFileTransfer :: GroupInfo -> m (Maybe (FileInvitation, CIFile 'MDSnd))
-        setupSndFileTransfer gInfo = case file_ of
-          Nothing -> pure Nothing
-          Just file -> do
-            (fileSize, chSize) <- checkSndFile file
-            let fileName = takeFileName file
-                fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
-            fileId <- withStore' $ \db -> createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
-            let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
-            pure $ Just (fileInvitation, ciFile)
+        setupSndFileTransfer gInfo = forM file_ $ \file -> do
+          (fileSize, chSize) <- checkSndFile file
+          let fileName = takeFileName file
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
+          fileId <- withStore' $ \db -> createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
+          let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
+          pure (fileInvitation, ciFile)
         prepareMsg :: Maybe FileInvitation -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
         prepareMsg fileInvitation_ membership = case quotedItemId_ of
           Nothing -> pure (MCSimple (ExtMsgContent mc fileInvitation_), Nothing)
@@ -603,18 +599,14 @@ processChatCommand = \case
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APIContactInfo contactId -> withUser $ \User {userId} -> do
     -- [incognito] print users' incognito profile for this contact
-    ct@Contact {activeConn = Connection {incognitoProfileId}} <- withStore $ \db -> getContact db userId contactId
-    incognitoProfile <- case incognitoProfileId of
-      Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-      Nothing -> pure Nothing
+    ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db userId contactId
+    incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
     pure $ CRContactInfo ct connectionStats incognitoProfile
   APIGroupMemberInfo gId gMemberId -> withUser $ \user@User {userId} -> do
     -- [incognito] print group member main profile
     (g, m@GroupMember {mainProfileId}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
-    mainProfile <- case mainProfileId of
-      Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-      Nothing -> pure Nothing
+    mainProfile <- forM mainProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo g m connectionStats mainProfile
   ContactInfo cName -> withUser $ \User {userId} -> do
@@ -1357,13 +1349,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       _ -> Nothing
 
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
-    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, incognitoProfileId} = \case
+    processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
       Nothing -> case agentMsg of
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
-          incognitoProfile <- case incognitoProfileId of
-            Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-            Nothing -> pure Nothing
+          incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
           let profileToSend = fromMaybe profile incognitoProfile
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profileToSend
@@ -1428,7 +1418,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
-              case incognitoProfileId of
+              case customUserProfileId of
                 Just profileId -> do
                   incognitoProfile <- withStore (\db -> getProfileById db userId profileId)
                   toView $ CRContactConnectedIncognito ct incognitoProfile
@@ -1460,11 +1450,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         -- TODO print errors
         MERR msgId err -> do
           chatItemId_ <- withStore' $ \db -> getChatItemIdByAgentMsgId db connId msgId
-          case chatItemId_ of
-            Nothing -> pure ()
-            Just chatItemId -> do
-              chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId chatItemId (agentErrToItemStatus err)
-              toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+          forM_ chatItemId_ $ \chatItemId -> do
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId chatItemId (agentErrToItemStatus err)
+            toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
@@ -1515,18 +1503,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         case memberCategory m of
           GCHostMember -> do
             -- [incognito] chat item & event with indication that host connected incognito
-            mainProfile <- case mainProfileId m of
-              Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-              Nothing -> pure Nothing
+            mainProfile <- forM (mainProfileId m) $ \profileId -> withStore (\db -> getProfileById db userId profileId)
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected} membershipIncognito
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
             -- [incognito] chat item & event with indication that invitee connected incognito
-            mainProfile <- case mainProfileId m of
-              Just profileId -> Just <$> withStore (\db -> getProfileById db userId profileId)
-              Nothing -> pure Nothing
+            mainProfile <- forM (mainProfileId m) $ \profileId -> withStore (\db -> getProfileById db userId profileId)
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected} mainProfile
             setActive $ ActiveG gName
@@ -1718,9 +1702,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     memberConnectedChatItem :: GroupInfo -> GroupMember -> Maybe Profile -> m ()
     memberConnectedChatItem gInfo m@GroupMember {memberProfile} mainProfile_ = do
       createdAt <- liftIO getCurrentTime
-      let content = case mainProfile_ of
-            Just mainProfile -> CIRcvGroupEvent $ RGEMemberConnectedIncognito mainProfile memberProfile
-            Nothing -> CIRcvGroupEvent RGEMemberConnected
+      let content = CIRcvGroupEvent $ case mainProfile_ of
+            Just mainProfile -> RGEMemberConnectedIncognito mainProfile memberProfile
+            _ -> RGEMemberConnected
           cd = CDGroupRcv gInfo m
       -- first ts should be broker ts but we don't have it for CON
       ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
@@ -1767,13 +1751,12 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveC c
 
     processFileInvitation :: Maybe FileInvitation -> (FileInvitation -> Integer -> m RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
-    processFileInvitation fileInvitation_ createRcvFileTransferF = case fileInvitation_ of
-      Nothing -> pure Nothing
-      Just fileInvitation@FileInvitation {fileName, fileSize} -> do
+    processFileInvitation fileInvitation_ createRcvFileTransferF =
+      forM fileInvitation_ $ \fileInvitation@FileInvitation {fileName, fileSize} -> do
         chSize <- asks $ fileChunkSize . config
         RcvFileTransfer {fileId} <- createRcvFileTransferF fileInvitation chSize
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-        pure $ Just ciFile
+        pure ciFile
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
@@ -2114,8 +2097,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               (groupConnId, groupConnReq) <- withAgent (`createConnection` SCMInvitation)
               (directConnId, directConnReq) <- withAgent (`createConnection` SCMInvitation)
               -- [incognito] direct connection with member has to be established using same incognito profile
-              incognitoProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
-              newMember <- withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId incognitoProfileId
+              customUserProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
+              newMember <- withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId customUserProfileId
               let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
               void $ sendDirectMessage conn msg (GroupId groupId)
               withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
@@ -2148,8 +2131,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (memberProfile membership)
       groupConnId <- withAgent $ \a -> joinConnection a groupConnReq $ directMessage msg
       directConnId <- withAgent $ \a -> joinConnection a directConnReq $ directMessage msg
-      incognitoProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
-      withStore' $ \db -> createIntroToMemberContact db userId m toMember groupConnId directConnId incognitoProfileId
+      customUserProfileId <- if membershipIncognito gInfo then Just <$> withStore (\db -> getGroupMemberProfileId db userId membership) else pure Nothing
+      withStore' $ \db -> createIntroToMemberContact db userId m toMember groupConnId directConnId customUserProfileId
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m memId msg msgMeta = do

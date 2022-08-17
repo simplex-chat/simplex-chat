@@ -238,7 +238,7 @@ CREATE TABLE connections(
   xcontact_id BLOB,
   via_user_contact_link INTEGER DEFAULT NULL
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
-  incognito_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

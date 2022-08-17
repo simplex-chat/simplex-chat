@@ -986,8 +986,8 @@ ttyFromContactDeleted :: ContactName -> StyledString
 ttyFromContactDeleted c = ttyFrom $ c <> "> [deleted] "
 
 ttyToContact' :: Contact -> StyledString
-ttyToContact' Contact {localDisplayName = c, activeConn = Connection {incognitoProfileId}} =
-  maybe "" (const incognitoPrefix) incognitoProfileId <> ttyToContact c
+ttyToContact' Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} =
+  maybe "" (const incognitoPrefix) customUserProfileId <> ttyToContact c
 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ c <> ">"
@@ -997,8 +997,8 @@ ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom c
 ttyQuotedMember _ = "> " <> ttyFrom "?"
 
 ttyFromContact' :: Contact -> StyledString
-ttyFromContact' Contact {localDisplayName = c, activeConn = Connection {incognitoProfileId}} =
-  maybe "" (const incognitoPrefix) incognitoProfileId <> ttyFromContact c
+ttyFromContact' Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} =
+  maybe "" (const incognitoPrefix) customUserProfileId <> ttyFromContact c
 
 ttyGroup :: GroupName -> StyledString
 ttyGroup g = styled (colored Blue) $ "#" <> g
