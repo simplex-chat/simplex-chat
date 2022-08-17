@@ -890,7 +890,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   fun showBackgroundServiceNoticeIfNeeded() {
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
-      // the branch for the new users who has never seen service notice
+      // the branch for the new users who have never seen service notice
       if (isIgnoringBatteryOptimizations(appContext)) {
         showBGServiceNotice()
       } else {
@@ -903,7 +903,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
-        // users have been presented with battery notice before - they did not allow ignoring optimizitions -> disable service
+        // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
         showDisablingServiceNotice()
         appPrefs.runServiceInBackground.set(false)
         chatModel.runServiceInBackground.value = false
@@ -912,6 +912,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         showBGServiceNoticeIgnoreOptimization()
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
       }
+    } else {
+      // service is allowed and battery optimization is disabled
+      SimplexApp.context.schedulePeriodicServiceRestartWorker()
     }
   }
 

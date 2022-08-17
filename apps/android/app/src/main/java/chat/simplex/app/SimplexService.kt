@@ -54,7 +54,10 @@ class SimplexService: Service() {
   override fun onDestroy() {
     Log.d(TAG, "Simplex service destroyed")
     stopService()
-    sendBroadcast(Intent(this, AutoRestartReceiver::class.java)) // Restart if necessary!
+
+    // If private notifications are enabled and battery optimization is disabled, restart the service
+    if (SimplexApp.context.allowToStartServiceAfterAppExit())
+      sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
   }
 
@@ -147,6 +150,11 @@ class SimplexService: Service() {
 
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
+    // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
+    if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
+      return
+    }
+
     val restartServiceIntent = Intent(applicationContext, SimplexService::class.java).also {
       it.setPackage(packageName)
     };

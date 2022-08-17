@@ -4,14 +4,17 @@ import android.app.Application
 import android.net.LocalServerSocket
 import android.util.Log
 import androidx.lifecycle.*
+import androidx.work.*
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.getFilesDirectory
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
+import kotlinx.coroutines.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
 import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 const val TAG = "SIMPLEX"
@@ -78,6 +81,34 @@ class SimplexApp: Application(), LifecycleEventObserver {
         else -> {}
       }
     }
+  }
+
+  fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
+    appPrefs.runServiceInBackground.get() && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
+  }
+
+  /*
+  * It takes 1-10 milliseconds to process this function. Better to do it in a background thread
+  * */
+  fun schedulePeriodicServiceRestartWorker() = CoroutineScope(Dispatchers.Default).launch {
+    if (!allowToStartServiceAfterAppExit()) {
+      return@launch
+    }
+    val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
+    val workPolicy = if (workerVersion == SimplexService.SERVICE_START_WORKER_VERSION) {
+      Log.d(TAG, "ServiceStartWorker version matches: choosing KEEP as existing work policy")
+      ExistingPeriodicWorkPolicy.KEEP
+    } else {
+      Log.d(TAG, "ServiceStartWorker version DOES NOT MATCH: choosing REPLACE as existing work policy")
+      chatController.appPrefs.autoRestartWorkerVersion.set(SimplexService.SERVICE_START_WORKER_VERSION)
+      ExistingPeriodicWorkPolicy.REPLACE
+    }
+    val work = PeriodicWorkRequestBuilder<SimplexService.ServiceStartWorker>(SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES, TimeUnit.MINUTES)
+      .addTag(SimplexService.TAG)
+      .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
+      .build()
+    Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
+    WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   companion object {
