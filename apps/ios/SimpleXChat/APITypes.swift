@@ -86,7 +86,7 @@ public enum ChatCommand {
             case .apiDeleteStorage: return "/_db delete"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
-                (search == "" ? "" : " \(search)")
+                (search == "" ? "" : " search=\(search)")
             case let .apiSendMessage(type, id, file, quotedItemId, mc):
                 let msg = encodeJSON(ComposedMessage(filePath: file, quotedItemId: quotedItemId, msgContent: mc))
                 return "/_send \(ref(type, id)) json \(msg)"
