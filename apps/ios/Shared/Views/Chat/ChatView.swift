@@ -33,9 +33,11 @@ struct ChatView: View {
     @FocusState private var searchFocussed
 
     var body: some View {
-        let v = VStack {
+        let cInfo = chat.chatInfo
+        return VStack(spacing: 0) {
             if searchMode {
                 searchToolbar()
+                Divider()
             }
             ZStack(alignment: .trailing) {
                 chatItemsList()
@@ -51,23 +53,13 @@ struct ChatView: View {
                 composeState: $composeState,
                 keyboardVisible: $keyboardVisible
             )
-            .disabled(!chat.chatInfo.sendMsgEnabled)
+            .disabled(!cInfo.sendMsgEnabled)
         }
         .padding(.top, 1)
-        .navigationTitle(chat.chatInfo.chatViewName)
+        .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
-
-        if searchMode {
-            v.navigationBarHidden(searchMode)
-        } else {
-            chatToolbar(v)
-        }
-    }
-
-    private func chatToolbar<Content: View>(_ content: Content) -> some View {
-        let cInfo = chat.chatInfo
-        return content.toolbar {
+        .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     chatModel.chatId = nil
@@ -77,10 +69,7 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.backward")
-                        Text("Chats", comment: "back button to return to chats list")
-                    }
+                    Image(systemName: "chevron.backward")
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -179,8 +168,10 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                chatModel.reversedChatItems = []
-                loadChat(chat: chat)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    chatModel.reversedChatItems = []
+                    loadChat(chat: chat)
+                }
             }
         }
         .padding(.horizontal)
@@ -295,6 +286,7 @@ struct ChatView: View {
         Button {
             searchMode = true
             searchFocussed = true
+            searchText = ""
         } label: {
             Label("Search", systemImage: "magnifyingglass")
         }
