@@ -13,7 +13,8 @@ CREATE TABLE contact_profiles(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   image TEXT,
-  user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE
+  user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
+  incognito INTEGER
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -145,6 +146,7 @@ CREATE TABLE group_members(
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -236,6 +238,7 @@ CREATE TABLE connections(
   xcontact_id BLOB,
   via_user_contact_link INTEGER DEFAULT NULL
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
+  custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

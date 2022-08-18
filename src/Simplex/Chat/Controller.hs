@@ -88,7 +88,8 @@ data ChatController = ChatController
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
-    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
+    filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
+    incognitoMode :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -107,6 +108,7 @@ data ChatCommand
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
+  | SetIncognito Bool
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
@@ -210,8 +212,8 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats}
-  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats, mainProfile :: Maybe Profile}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -223,7 +225,7 @@ data ChatResponse
   | CRCmdOk
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
-  | CRGroupCreated {groupInfo :: GroupInfo}
+  | CRGroupCreated {groupInfo :: GroupInfo, customUserProfile :: Maybe Profile}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
   | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
@@ -232,14 +234,14 @@ data ChatResponse
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
-  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember, sentCustomProfile :: Maybe Profile}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
   | CRVersionInfo {version :: String}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
-  | CRSentInvitation
+  | CRSentInvitation {customUserProfile :: Maybe Profile}
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
@@ -265,7 +267,7 @@ data ChatResponse
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactConnecting {contact :: Contact}
-  | CRContactConnected {contact :: Contact}
+  | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
@@ -274,9 +276,9 @@ data ChatResponse
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
-  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
-  | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
-  | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
+  | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole, receivedCustomProfile :: Maybe Profile}
+  | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember, usedCustomProfile :: Bool}
+  | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember, mainProfile :: Maybe Profile}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRDeletedMember {groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
@@ -383,6 +385,7 @@ data ChatErrorType
   | CEContactNotReady {contact :: Contact}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
+  | CEGroupNotIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId
