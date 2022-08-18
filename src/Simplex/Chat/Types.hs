@@ -745,9 +745,6 @@ data Connection = Connection
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
 
-connCustomUserProfileId :: Connection -> Maybe Int64
-connCustomUserProfileId Connection {customUserProfileId} = customUserProfileId
-
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}

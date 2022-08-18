@@ -79,7 +79,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact())
+        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {
