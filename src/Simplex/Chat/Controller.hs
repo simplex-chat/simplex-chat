@@ -150,6 +150,7 @@ data ChatCommand
   | SetUserSMPServers [SMPServer]
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
   | ContactInfo ContactName
