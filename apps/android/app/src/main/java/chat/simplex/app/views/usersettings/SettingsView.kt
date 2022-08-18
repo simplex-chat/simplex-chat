@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
-import chat.simplex.app.BuildConfig
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -44,6 +44,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     }
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
     chatModel.runServiceInBackground.value = on
+    SimplexService.StartReceiver.toggleReceiver(on)
   }
 
   if (user != null) {
