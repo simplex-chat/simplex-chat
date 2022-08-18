@@ -19,7 +19,7 @@ import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Types (ConnStatus (..), ImageData (..), Profile (..), User (..))
+import Simplex.Chat.Types (ConnStatus (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -88,6 +88,13 @@ chatTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
+  describe "incognito mode" $ do
+    it "connect incognito via invitation link" testConnectIncognitoInvitationLink
+    it "connect incognito via contact address" testConnectIncognitoContactAddress
+    it "accept contact request incognito" testAcceptContactRequestIncognito
+    it "create group incognito" testCreateGroupIncognito
+    it "join group incognito" testJoinGroupIncognito
+    it "can't invite contact to whom user connected incognito to non incognito group" testCantInviteIncognitoConnectionNonIncognitoGroup
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2045,6 +2052,394 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
           alice <# "@bob hello!"
       ]
 
+testConnectIncognitoInvitationLink :: IO ()
+testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    alice #$> ("/incognito on", id, "ok")
+    bob #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ do
+          bob <## (aliceIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## ("use /info " <> aliceIncognito <> " to print out this incognito profile again"),
+        do
+          alice <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+      ]
+    -- after turning incognito mode off conversation is incognito
+    alice #$> ("/incognito off", id, "ok")
+    bob #$> ("/incognito off", id, "ok")
+    alice ?#> ("@" <> bobIncognito <> " psst, I'm incognito")
+    bob ?<# (aliceIncognito <> "> psst, I'm incognito")
+    bob ?#> ("@" <> aliceIncognito <> " <whispering> me too")
+    alice ?<# (bobIncognito <> "> <whispering> me too")
+    -- new contact is connected non incognito
+    connectUsers alice cath
+    alice <##> cath
+    -- bob is not notified on profile change
+    alice ##> "/p alice"
+    concurrentlyN_
+      [ alice <## "user full name removed (your contacts are notified)",
+        cath <## "contact alice removed full name"
+      ]
+    alice ?#> ("@" <> bobIncognito <> " do you see that I've changed profile?")
+    bob ?<# (aliceIncognito <> "> do you see that I've changed profile?")
+    bob ?#> ("@" <> aliceIncognito <> " no")
+    alice ?<# (bobIncognito <> "> no")
+
+testConnectIncognitoContactAddress :: IO ()
+testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> cLink)
+    bobIncognito <- getTermLine bob
+    bob <## "connection request sent incognito!"
+    alice <## (bobIncognito <> " wants to connect to you!")
+    alice <## ("to accept: /ac " <> bobIncognito)
+    alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
+    alice ##> ("/ac " <> bobIncognito)
+    alice <## (bobIncognito <> ": accepting contact request...")
+    _ <- getTermLine bob
+    concurrentlyN_
+      [ do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again",
+        alice <## (bobIncognito <> ": contact is connected")
+      ]
+    -- after turning incognito mode off conversation is incognito
+    alice #$> ("/incognito off", id, "ok")
+    bob #$> ("/incognito off", id, "ok")
+    alice #> ("@" <> bobIncognito <> " who are you?")
+    bob ?<# "alice> who are you?"
+    bob ?#> "@alice I'm Batman"
+    alice <# (bobIncognito <> "> I'm Batman")
+
+testAcceptContactRequestIncognito :: IO ()
+testAcceptContactRequestIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+    bob ##> ("/c " <> cLink)
+    alice <#? bob
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again"
+      ]
+    -- after turning incognito mode off conversation is incognito
+    alice #$> ("/incognito off", id, "ok")
+    bob #$> ("/incognito off", id, "ok")
+    alice ?#> "@bob my profile is totally inconspicuous"
+    bob <# (aliceIncognito <> "> my profile is totally inconspicuous")
+    bob #> ("@" <> aliceIncognito <> " I know!")
+    alice ?<# "bob> I know!"
+
+testCreateGroupIncognito :: IO ()
+testCreateGroupIncognito = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    -- non incognito connections
+    connectUsers alice cath
+    connectUsers bob cath
+    -- bob connected incognito to alice
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    concurrentlyN_
+      [ do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again",
+        alice <## (bobIncognito <> ": contact is connected")
+      ]
+    -- alice creates group incognito
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/g secret_club"
+    aliceMemIncognito <- getTermLine alice
+    alice <## ("group #secret_club is created incognito, your profile for this group: " <> aliceMemIncognito)
+    alice <## "use /a secret_club <name> to add members"
+    alice ##> ("/a secret_club " <> bobIncognito)
+    concurrentlyN_
+      [ alice <## ("invitation to join the group #secret_club incognito sent to " <> bobIncognito),
+        do
+          bob <## ("#secret_club: alice (known to the group as " <> aliceMemIncognito <> ") invites you to join the group incognito as admin")
+          bob <## "use /j secret_club to join this group incognito"
+      ]
+    -- bob uses different profile when joining group
+    bob ##> "/j secret_club"
+    bobMemIncognito <- getTermLine bob
+    concurrently_
+      (alice <## ("#secret_club: " <> bobIncognito <> " joined the group incognito as " <> bobMemIncognito))
+      (bob <## ("#secret_club: you joined the group incognito as " <> bobMemIncognito))
+    -- cath is invited incognito
+    alice ##> "/a secret_club cath"
+    concurrentlyN_
+      [ alice <## "invitation to join the group #secret_club incognito sent to cath",
+        do
+          cath <## ("#secret_club: alice (known to the group as " <> aliceMemIncognito <> ") invites you to join the group incognito as admin")
+          cath <## "use /j secret_club to join this group incognito"
+      ]
+    cath ##> "/j secret_club"
+    cathMemIncognito <- getTermLine cath
+    -- bob and cath don't merge contacts
+    concurrentlyN_
+      [ alice <## ("#secret_club: cath joined the group incognito as " <> cathMemIncognito),
+        do
+          cath <## ("#secret_club: you joined the group incognito as " <> cathMemIncognito)
+          cath <## ("#secret_club: member " <> bobMemIncognito <> " is connected"),
+        do
+          bob <## ("#secret_club: " <> aliceMemIncognito <> " added " <> cathMemIncognito <> " to the group (connecting...)")
+          bob <## ("#secret_club: new member " <> cathMemIncognito <> " is connected")
+      ]
+    -- send messages - group is incognito for everybody
+    alice #$> ("/incognito off", id, "ok")
+    bob #$> ("/incognito off", id, "ok")
+    cath #$> ("/incognito off", id, "ok")
+    alice ?#> "#secret_club hello"
+    concurrently_
+      (bob ?<# ("#secret_club " <> aliceMemIncognito <> "> hello"))
+      (cath ?<# ("#secret_club " <> aliceMemIncognito <> "> hello"))
+    bob ?#> "#secret_club hi there"
+    concurrently_
+      (alice ?<# ("#secret_club " <> bobMemIncognito <> "> hi there"))
+      (cath ?<# ("#secret_club " <> bobMemIncognito <> "> hi there"))
+    cath ?#> "#secret_club hey"
+    concurrently_
+      (alice ?<# ("#secret_club " <> cathMemIncognito <> "> hey"))
+      (bob ?<# ("#secret_club " <> cathMemIncognito <> "> hey"))
+    -- bob and cath can send messages via direct incognito connections
+    bob ?#> ("@" <> cathMemIncognito <> " hi, I'm bob")
+    cath ?<# (bobMemIncognito <> "> hi, I'm bob")
+    cath ?#> ("@" <> bobMemIncognito <> " hey, I'm cath")
+    bob ?<# (cathMemIncognito <> "> hey, I'm cath")
+    -- non incognito connections are separate
+    bob <##> cath
+    -- list groups
+    alice ##> "/gs"
+    alice <## "i #secret_club"
+    -- list group members
+    alice ##> "/ms secret_club"
+    alice
+      <### [ "i " <> aliceMemIncognito <> ": owner, you, created group",
+             "i " <> bobMemIncognito <> ": admin, invited, connected",
+             "i " <> cathMemIncognito <> ": admin, invited, connected"
+           ]
+    -- remove member
+    bob ##> ("/rm secret_club " <> cathMemIncognito)
+    concurrentlyN_
+      [ bob <## ("#secret_club: you removed " <> cathMemIncognito <> " from the group"),
+        alice <## ("#secret_club: " <> bobMemIncognito <> " removed " <> cathMemIncognito <> " from the group"),
+        do
+          cath <## ("#secret_club: " <> bobMemIncognito <> " removed you from the group")
+          cath <## "use /d #secret_club to delete the group"
+      ]
+    bob ?#> "#secret_club hi"
+    concurrently_
+      (alice ?<# ("#secret_club " <> bobMemIncognito <> "> hi"))
+      (cath </)
+    alice ?#> "#secret_club hello"
+    concurrently_
+      (bob ?<# ("#secret_club " <> aliceMemIncognito <> "> hello"))
+      (cath </)
+    cath ##> "#secret_club hello"
+    cath <## "you are no longer a member of the group"
+    bob ?#> ("@" <> cathMemIncognito <> " I removed you from group")
+    cath ?<# (bobMemIncognito <> "> I removed you from group")
+    cath ?#> ("@" <> bobMemIncognito <> " ok")
+    bob ?<# (cathMemIncognito <> "> ok")
+
+testJoinGroupIncognito :: IO ()
+testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfile $
+  \alice bob cath dan -> do
+    -- non incognito connections
+    connectUsers alice cath
+    connectUsers bob cath
+    connectUsers cath dan
+    -- bob connected incognito to alice
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob #$> ("/incognito on", id, "ok")
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    bobIncognito <- getTermLine bob
+    concurrentlyN_
+      [ do
+          bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+          bob <## "use /info alice to print out this incognito profile again",
+        alice <## (bobIncognito <> ": contact is connected")
+      ]
+    -- alice creates group non incognito
+    alice ##> "/g club"
+    alice <## "group #club is created"
+    alice <## "use /a club <name> to add members"
+    alice ##> ("/a club " <> bobIncognito)
+    concurrentlyN_
+      [ alice <## ("invitation to join the group #club sent to " <> bobIncognito),
+        do
+          bob <## "#club: alice invites you to join the group as admin"
+          bob <## "use /j club to accept"
+      ]
+    -- since bob is connected incognito to host, he uses different profile when joining group even though he turned incognito mode off
+    bob #$> ("/incognito off", id, "ok")
+    bob ##> "/j club"
+    bobMemIncognito <- getTermLine bob
+    concurrently_
+      (alice <## ("#club: " <> bobIncognito <> " joined the group incognito as " <> bobMemIncognito))
+      (bob <## ("#club: you joined the group incognito as " <> bobMemIncognito))
+    -- cath joins incognito
+    alice ##> "/a club cath"
+    concurrentlyN_
+      [ alice <## "invitation to join the group #club sent to cath",
+        do
+          cath <## "#club: alice invites you to join the group as admin"
+          cath <## "use /j club to accept"
+      ]
+    cath #$> ("/incognito on", id, "ok")
+    cath ##> "/j club"
+    cathMemIncognito <- getTermLine cath
+    -- bob and cath don't merge contacts
+    concurrentlyN_
+      [ alice <## ("#club: cath joined the group incognito as " <> cathMemIncognito),
+        do
+          cath <## ("#club: you joined the group incognito as " <> cathMemIncognito)
+          cath <## ("#club: member " <> bobMemIncognito <> " is connected"),
+        do
+          bob <## ("#club: alice added " <> cathMemIncognito <> " to the group (connecting...)")
+          bob <## ("#club: new member " <> cathMemIncognito <> " is connected")
+      ]
+    -- cath invites dan incognito
+    cath ##> "/a club dan"
+    concurrentlyN_
+      [ cath <## "invitation to join the group #club incognito sent to dan",
+        do
+          dan <## ("#club: cath (known to the group as " <> cathMemIncognito <> ") invites you to join the group incognito as admin")
+          dan <## "use /j club to join this group incognito"
+      ]
+    dan ##> "/j club"
+    danMemIncognito <- getTermLine dan
+    concurrentlyN_
+      [ cath <## ("#club: dan joined the group incognito as " <> danMemIncognito),
+        do
+          dan <## ("#club: you joined the group incognito as " <> danMemIncognito)
+          dan
+            <### [ "#club: member alice (Alice) is connected",
+                   "#club: member " <> bobMemIncognito <> " is connected"
+                 ],
+        do
+          alice <## ("#club: " <> cathMemIncognito <> " added " <> danMemIncognito <> " to the group (connecting...)")
+          alice <## ("#club: new member " <> danMemIncognito <> " is connected"),
+        do
+          bob <## ("#club: " <> cathMemIncognito <> " added " <> danMemIncognito <> " to the group (connecting...)")
+          bob <## ("#club: new member " <> danMemIncognito <> " is connected")
+      ]
+    -- send messages - group is incognito for cath and dan
+    alice #$> ("/incognito off", id, "ok")
+    bob #$> ("/incognito off", id, "ok")
+    cath #$> ("/incognito off", id, "ok")
+    dan #$> ("/incognito off", id, "ok")
+    alice #> "#club hello"
+    concurrentlyN_
+      [ bob ?<# "#club alice> hello",
+        cath ?<# "#club alice> hello",
+        dan ?<# "#club alice> hello"
+      ]
+    bob ?#> "#club hi there"
+    concurrentlyN_
+      [ alice <# ("#club " <> bobMemIncognito <> "> hi there"),
+        cath ?<# ("#club " <> bobMemIncognito <> "> hi there"),
+        dan ?<# ("#club " <> bobMemIncognito <> "> hi there")
+      ]
+    cath ?#> "#club hey"
+    concurrentlyN_
+      [ alice <# ("#club " <> cathMemIncognito <> "> hey"),
+        bob ?<# ("#club " <> cathMemIncognito <> "> hey"),
+        dan ?<# ("#club " <> cathMemIncognito <> "> hey")
+      ]
+    dan ?#> "#club how is it going?"
+    concurrentlyN_
+      [ alice <# ("#club " <> danMemIncognito <> "> how is it going?"),
+        bob ?<# ("#club " <> danMemIncognito <> "> how is it going?"),
+        cath ?<# ("#club " <> danMemIncognito <> "> how is it going?")
+      ]
+    -- bob and cath can send messages via direct incognito connections
+    bob ?#> ("@" <> cathMemIncognito <> " hi, I'm bob")
+    cath ?<# (bobMemIncognito <> "> hi, I'm bob")
+    cath ?#> ("@" <> bobMemIncognito <> " hey, I'm cath")
+    bob ?<# (cathMemIncognito <> "> hey, I'm cath")
+    -- non incognito connections are separate
+    bob <##> cath
+    -- bob and dan can send messages via direct incognito connections
+    bob ?#> ("@" <> danMemIncognito <> " hi, I'm bob")
+    dan ?<# (bobMemIncognito <> "> hi, I'm bob")
+    dan ?#> ("@" <> bobMemIncognito <> " hey, I'm dan")
+    bob ?<# (danMemIncognito <> "> hey, I'm dan")
+    -- list group members
+    alice ##> "/ms club"
+    alice
+      <### [ "alice (Alice): owner, you, created group",
+             "i " <> bobMemIncognito <> ": admin, invited, connected",
+             "i " <> cathMemIncognito <> ": admin, invited, connected",
+             danMemIncognito <> ": admin, connected"
+           ]
+    bob ##> "/ms club"
+    bob
+      <### [ "alice (Alice): owner, host, connected",
+             "i " <> bobMemIncognito <> ": admin, you, connected",
+             cathMemIncognito <> ": admin, connected",
+             danMemIncognito <> ": admin, connected"
+           ]
+    cath ##> "/ms club"
+    cath
+      <### [ "alice (Alice): owner, host, connected",
+             bobMemIncognito <> ": admin, connected",
+             "i " <> cathMemIncognito <> ": admin, you, connected",
+             "i " <> danMemIncognito <> ": admin, invited, connected"
+           ]
+    dan ##> "/ms club"
+    dan
+      <### [ "alice (Alice): owner, connected",
+             bobMemIncognito <> ": admin, connected",
+             "i " <> cathMemIncognito <> ": admin, host, connected",
+             "i " <> danMemIncognito <> ": admin, you, connected"
+           ]
+
+testCantInviteIncognitoConnectionNonIncognitoGroup :: IO ()
+testCantInviteIncognitoConnectionNonIncognitoGroup = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- alice connected incognito to bob
+    alice #$> ("/incognito on", id, "ok")
+    alice ##> "/c"
+    inv <- getInvitation alice
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    aliceIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (aliceIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again"
+      ]
+    -- alice creates group non incognito
+    alice #$> ("/incognito off", id, "ok")
+    alice ##> "/g club"
+    alice <## "group #club is created"
+    alice <## "use /a club <name> to add members"
+    alice ##> "/a club bob"
+    alice <## "you're using main profile for this group - prohibited to invite contact to whom you are connected incognito"
+
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
   testChat2 aliceProfile bobProfile $
@@ -2513,7 +2908,7 @@ connectUsers cc1 cc2 = do
 
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _) = do
-  Just User {localDisplayName, profile = Profile {fullName}} <- readTVarIO currentUser
+  Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
   pure . T.unpack $ localDisplayName <> " (" <> fullName <> ")"
 
 createGroup2 :: String -> TestCC -> TestCC -> IO ()
@@ -2580,6 +2975,11 @@ cc #> cmd = do
   cc `send` cmd
   cc <# cmd
 
+(?#>) :: TestCC -> String -> IO ()
+cc ?#> cmd = do
+  cc `send` cmd
+  cc <# ("i " <> cmd)
+
 (#$>) :: (Eq a, Show a) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
   cc ##> cmd
@@ -2631,6 +3031,9 @@ getInAnyOrder f cc ls = do
 
 (<#) :: TestCC -> String -> Expectation
 cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+
+(?<#) :: TestCC -> String -> Expectation
+cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 (</) :: TestCC -> Expectation
 (</) = (<// 500000)
