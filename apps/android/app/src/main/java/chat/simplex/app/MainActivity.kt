@@ -70,7 +70,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         }
       }
     }
-    schedulePeriodicServiceRestartWorker()
+    SimplexApp.context.schedulePeriodicServiceRestartWorker()
   }
 
   override fun onNewIntent(intent: Intent?) {
@@ -129,24 +129,6 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
         }
       )
     }
-  }
-
-  private fun schedulePeriodicServiceRestartWorker() {
-    val workerVersion = chatController.appPrefs.autoRestartWorkerVersion.get()
-    val workPolicy = if (workerVersion == SimplexService.SERVICE_START_WORKER_VERSION) {
-      Log.d(TAG, "ServiceStartWorker version matches: choosing KEEP as existing work policy")
-      ExistingPeriodicWorkPolicy.KEEP
-    } else {
-      Log.d(TAG, "ServiceStartWorker version DOES NOT MATCH: choosing REPLACE as existing work policy")
-      chatController.appPrefs.autoRestartWorkerVersion.set(SimplexService.SERVICE_START_WORKER_VERSION)
-      ExistingPeriodicWorkPolicy.REPLACE
-    }
-    val work = PeriodicWorkRequestBuilder<SimplexService.ServiceStartWorker>(SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES, TimeUnit.MINUTES)
-      .addTag(SimplexService.TAG)
-      .addTag(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC)
-      .build()
-    Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
-    WorkManager.getInstance(this)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
   }
 
   private fun setPerformLA(on: Boolean) {
