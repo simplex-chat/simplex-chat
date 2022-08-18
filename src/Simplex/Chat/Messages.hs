@@ -501,23 +501,24 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
-  RGEMemberAdded _ p -> "added " <> memberProfileToText p
-  RGEMemberConnected -> "connected"
-  RGEMemberConnectedIncognito mainProfile incognitoProfile -> memberProfileToText mainProfile <> " connected incognito as " <> memberProfileToText incognitoProfile
+  RGEMemberAdded _ p -> "added " <> profileToText p
+  RGEMemberConnected contactMainProfile -> case contactMainProfile of
+    Just p -> profileToText p <> " connected incognito"
+    Nothing -> "connected"
   RGEMemberLeft -> "left"
-  RGEMemberDeleted _ p -> "removed " <> memberProfileToText p
+  RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
   RGEGroupUpdated _ -> "group profile updated"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberDeleted _ p -> "removed " <> memberProfileToText p
+  SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
 
-memberProfileToText :: Profile -> Text
-memberProfileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
+profileToText :: Profile -> Text
+profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 data CIContent (d :: MsgDirection) where
@@ -537,8 +538,7 @@ deriving instance Show (CIContent d)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
-  | RGEMemberConnectedIncognito {mainProfile :: Profile, incognitoProfile :: Profile} -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
+  | RGEMemberConnected {contactMainProfile :: Maybe Profile} -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser

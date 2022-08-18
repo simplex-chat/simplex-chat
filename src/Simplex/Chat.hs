@@ -1697,11 +1697,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> GroupMember -> Maybe Profile -> m ()
-    memberConnectedChatItem gInfo m@GroupMember {memberProfile} mainProfile_ = do
+    memberConnectedChatItem gInfo m mainProfile_ = do
       createdAt <- liftIO getCurrentTime
       let content = CIRcvGroupEvent $ case mainProfile_ of
-            Just mainProfile -> RGEMemberConnectedIncognito mainProfile $ fromLocalProfile memberProfile
-            _ -> RGEMemberConnected
+            Just mainProfile -> RGEMemberConnected $ Just mainProfile
+            _ -> RGEMemberConnected Nothing
           cd = CDGroupRcv gInfo m
       -- first ts should be broker ts but we don't have it for CON
       ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt

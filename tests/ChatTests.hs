@@ -2106,6 +2106,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
     alice ##> ("/ac " <> bobIncognito)
     alice <## (bobIncognito <> ": accepting contact request...")
+    _ <- getTermLine bob
     concurrentlyN_
       [ do
           bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
