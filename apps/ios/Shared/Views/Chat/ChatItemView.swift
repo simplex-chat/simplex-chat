@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ChatItemView: View {
     var chatInfo: ChatInfo
@@ -22,6 +23,11 @@ struct ChatItemView: View {
         case .rcvDeleted: deletedItemView()
         case let .sndCall(status, duration): callItemView(status, duration)
         case let .rcvCall(status, duration): callItemView(status, duration)
+        case .rcvIntegrityError: IntegrityErrorItemView(chatItem: chatItem, showMember: showMember)
+        case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+        case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
+        case .rcvGroupEvent: groupEventItemView()
+        case .sndGroupEvent: groupEventItemView()
         }
     }
 
@@ -39,6 +45,14 @@ struct ChatItemView: View {
 
     private func callItemView(_ status: CICallStatus, _ duration: Int) -> some View {
         CICallItemView(chatInfo: chatInfo, chatItem: chatItem, status: status, duration: duration)
+    }
+
+    private func groupInvitationItemView(_ groupInvitation: CIGroupInvitation, _ memberRole: GroupMemberRole) -> some View {
+        CIGroupInvitationView(chatItem: chatItem, groupInvitation: groupInvitation, memberRole: memberRole)
+    }
+
+    private func groupEventItemView() -> some View {
+        CIGroupEventView(chatItem: chatItem)
     }
 }
 

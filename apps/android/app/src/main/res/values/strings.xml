@@ -10,8 +10,9 @@
   <string name="connect_via_link_verb">Connect</string>
 
   <!-- Server info - ChatModel.kt -->
-  <string name="server_connected">Server connected</string>
-  <string name="server_connecting">Connecting server…</string>
+  <string name="server_connected">connected</string>
+  <string name="server_error">error</string>
+  <string name="server_connecting">connecting</string>
   <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
   <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
   <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
@@ -33,9 +34,10 @@
   <string name="description_via_contact_address_link">via contact address link</string>
   <string name="description_via_one_time_link">via one-time link</string>
 
-  <!-- SMP Server Information - SimpleXAPI.kt -->
+  <!-- SimpleXAPI.kt -->
   <string name="error_saving_smp_servers">Error saving SMP servers</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
+  <string name="error_setting_network_config">Error updating network configuration</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="contact_already_exists">Contact already exists</string>
@@ -46,13 +48,13 @@
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
+  <string name="icon_descr_instant_notifications">Instant notifications</string>
   <string name="private_instant_notifications">Private instant notifications!</string>
   <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
@@ -63,6 +65,28 @@
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
+  <string name="hide_notification">Hide</string>
+
+  <!-- local authentication notice - SimpleXAPI.kt -->
+  <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
+  <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled.</string>
+  <string name="la_notice_turn_on">Turn on</string>
+
+  <!-- LocalAuthentication.kt -->
+  <string name="auth_simplex_lock_turned_on">SimpleX Lock turned on</string>
+  <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">You will be required to authenticate when you start or resume the app after 30 seconds in background.</string>
+  <string name="auth_unlock">Unlock</string>
+  <string name="auth_log_in_using_credential">Log in using your credential</string>
+  <string name="auth_enable_simplex_lock">Enable SimpleX Lock</string>
+  <string name="auth_disable_simplex_lock">Disable SimpleX Lock</string>
+  <string name="auth_confirm_credential">Confirm your credential</string>
+  <string name="auth_error">Authentication error</string>
+  <string name="auth_error_w_desc">Authentication error: <xliff:g id="desc">%1$s</xliff:g></string>
+  <string name="auth_failed">Authentication failed</string>
+  <string name="auth_unavailable">Authentication unavailable</string>
+  <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
+  <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
+  <string name="auth_retry">Retry</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
@@ -89,6 +113,8 @@
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Your chats</string>
   <string name="contact_connection_pending">connecting…</string>
+  <string name="group_preview_you_are_invited">you are invited to group</string>
+  <string name="group_connection_pending">connecting…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -116,7 +142,7 @@
   <string name="error_saving_file">Error saving file</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
-  <string name="delete_contact__question">Delete contact?</string>
+  <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="icon_descr_server_status_connected">Connected</string>
@@ -136,19 +162,21 @@
   <string name="add_contact">Add contact</string>
 
   <!-- NewChatSheet -->
-  <string name="add_contact_to_start_new_chat">Add contact to start a new chat:</string>
+  <string name="add_contact_or_create_group">Start new chat</string>
   <string name="create_one_time_link">Create link / QR code</string>
   <string name="paste_received_link">Connect via received link</string>
   <string name="scan_QR_code">Scan QR code</string>
+  <string name="create_group">Create secret group</string>
   <string name="to_share_with_your_contact">(to share with your contact)</string>
   <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
   <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
+  <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Use Camera</string>
   <string name="from_gallery_button">From Gallery</string>
-  <string name="choose_file">Choose file\n(new in v2.0)</string>
+  <string name="choose_file">Choose file</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Thank you for installing <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
@@ -205,6 +233,7 @@
   <string name="icon_descr_simplex_team"><xliff:g id="appName">SimpleX</xliff:g> Team</string>
   <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
   <string name="icon_descr_email">Email</string>
+  <string name="icon_descr_more_button">More</string>
 
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Invalid QR code</string>
@@ -229,6 +258,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
+  <string name="database_export_and_import">Database export &amp; import</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
@@ -236,6 +266,7 @@
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
   <string name="private_notifications">Private notifications</string>
+  <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</font></string>
@@ -247,6 +278,15 @@
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
+  <string name="network_and_servers">Network &amp; servers</string>
+  <string name="network_settings">Advanced network settings</string>
+  <string name="network_settings_title">Network settings</string>
+  <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
+  <string name="network_enable_socks">Use SOCKS proxy?</string>
+  <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
+  <string name="network_disable_socks">Use direct Internet connection?</string>
+  <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
+  <string name="appearance_settings">Appearance</string>
 
   <!-- Address Items - UserAddressView.kt -->
   <string name="create_address">Create address</string>
@@ -290,23 +330,25 @@
   <string name="colored">colored</string>
   <string name="secret">secret</string>
 
-  <!-- CICallStatus -->
+  <!-- CICallStatus - in chat items -->
   <string name="callstatus_calling">calling…</string>
-  <string name="callstatus_missed">missed</string>
-  <string name="callstatus_rejected">rejected</string>
-  <string name="callstatus_accepted">accepted</string>
-  <string name="callstatus_connecting">connecting…</string>
-  <string name="callstatus_in_progress">in progress</string>
-  <string name="callstatus_ended">ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
-  <string name="callstatus_error">error</string>
+  <string name="callstatus_missed">missed call</string>
+  <string name="callstatus_rejected">rejected call</string>
+  <string name="callstatus_accepted">accepted call</string>
+  <string name="callstatus_connecting">connecting call…</string>
+  <string name="callstatus_in_progress">call in progress</string>
+  <string name="callstatus_ended">call ended <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+  <string name="callstatus_error">call error</string>
 
   <!-- CallState -->
   <string name="callstate_starting">starting…</string>
   <string name="callstate_waiting_for_answer">waiting for answer…</string>
   <string name="callstate_waiting_for_confirmation">waiting for confirmation…</string>
   <string name="callstate_received_answer">received answer…</string>
+  <string name="callstate_received_confirmation">received confirmation…</string>
   <string name="callstate_connecting">connecting…</string>
   <string name="callstate_connected">connected</string>
+  <string name="callstate_ended">ended</string>
 
   <!-- SimpleXInfo -->
   <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
@@ -349,10 +391,26 @@
   <string name="encrypted_video_call">e2e encrypted video call</string>
   <string name="audio_call_no_encryption">audio call (not e2e encrypted)</string>
   <string name="encrypted_audio_call">e2e encrypted audio call</string>
-  <string name="answer">Answer</string>
+  <string name="accept">Accept</string>
+  <string name="reject">Reject</string>
+  <string name="ignore">Ignore</string>
   <string name="call_already_ended">Call already ended!</string>
   <string name="icon_descr_video_call">video call</string>
   <string name="icon_descr_audio_call">audio call</string>
+
+  <!-- Call settings -->
+  <string name="settings_audio_video_calls">Audio &amp; video calls</string>
+  <string name="your_calls">Your calls</string>
+  <string name="connect_calls_via_relay">Connect via relay</string>
+  <string name="call_on_lock_screen">Calls on lock screen:</string>
+  <string name="accept_call_on_lock_screen">Accept</string>
+  <string name="show_call_on_lock_screen">Show</string>
+  <string name="no_call_on_lock_screen">Disable</string>
+
+  <!-- Call Lock Screen -->
+  <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
+  <string name="allow_accepting_calls_from_lock_screen">Enable calls from lock screen via Settings.</string>
+  <string name="open_verb">Open</string>
 
   <!-- Call overlay -->
   <string name="status_e2e_encrypted">e2e encrypted</string>
@@ -366,6 +424,8 @@
   <string name="icon_descr_video_on">Video on</string>
   <string name="icon_descr_audio_off">Audio off</string>
   <string name="icon_descr_audio_on">Audio on</string>
+  <string name="icon_descr_speaker_off">Speaker off</string>
+  <string name="icon_descr_speaker_on">Speaker on</string>
   <string name="icon_descr_flip_camera">Flip camera</string>
 
   <!-- Call items -->
@@ -376,4 +436,197 @@
   <string name="icon_descr_call_progress">Call in progress</string>
   <string name="icon_descr_call_ended">Call ended</string>
   <string name="answer_call">Answer call</string>
+
+  <!-- Message integrity -->
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> skipped message(s)</string>
+  <string name="integrity_msg_bad_hash">bad message hash</string>
+  <string name="integrity_msg_bad_id">bad message ID</string>
+  <string name="integrity_msg_duplicate">duplicate message</string>
+  <string name="alert_title_skipped_messages">Skipped messages</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages.</string>
+
+  <!-- Privacy settings -->
+  <string name="privacy_and_security">Privacy &amp; security</string>
+  <string name="your_privacy">Your privacy</string>
+  <string name="auto_accept_images">Auto-accept images</string>
+  <string name="send_link_previews">Send link previews</string>
+
+  <!-- Settings sections -->
+  <string name="settings_section_title_you">YOU</string>
+  <string name="settings_section_title_settings">SETTINGS</string>
+  <string name="settings_section_title_help">HELP</string>
+  <string name="settings_section_title_develop">DEVELOP</string>
+  <string name="settings_section_title_device">DEVICE</string>
+  <string name="settings_section_title_chats">CHATS</string>
+  <string name="settings_developer_tools">Developer tools</string>
+  <string name="settings_experimental_features">Experimental features</string>
+  <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_icon">APP ICON</string>
+
+  <!-- DatabaseView.kt -->
+  <string name="your_chat_database">Your chat database</string>
+  <string name="run_chat_section">RUN CHAT</string>
+  <string name="chat_is_running">Chat is running</string>
+  <string name="chat_is_stopped">Chat is stopped</string>
+  <string name="chat_database_section">CHAT DATABASE</string>
+  <string name="export_database">Export database</string>
+  <string name="import_database">Import database</string>
+  <string name="new_database_archive">New database archive</string>
+  <string name="old_database_archive">Old database archive</string>
+  <string name="delete_database">Delete database</string>
+  <string name="error_starting_chat">Error starting chat</string>
+  <string name="stop_chat_question">Stop chat?</string>
+  <string name="stop_chat_to_export_import_or_delete_chat_database">Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</string>
+  <string name="stop_chat_confirmation">Stop</string>
+  <string name="error_stopping_chat">Error stopping chat</string>
+  <string name="error_exporting_chat_database">Error exporting chat database</string>
+  <string name="import_database_question">Import chat database?</string>
+  <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Your current chat database will be DELETED and REPLACED with the imported one.\nThis action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="import_database_confirmation">Import</string>
+  <string name="error_deleting_database">Error deleting chat database</string>
+  <string name="error_importing_database">Error importing chat database</string>
+  <string name="chat_database_imported">Chat database imported</string>
+  <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
+  <string name="delete_chat_profile_question">Delete chat profile?</string>
+  <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
+  <string name="chat_database_deleted">Chat database deleted</string>
+  <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
+  <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
+  <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
+  <string name="restart_the_app_to_use_new_chat_database">Restart the app to use new chat database.</string>
+
+  <!-- ChatModel.chatRunning interactions -->
+  <string name="chat_is_stopped_indication">Chat is stopped</string>
+  <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+
+  <!-- ChatArchiveView.kt -->
+  <string name="chat_archive_header">Chat archive</string>
+  <string name="chat_archive_section">CHAT ARCHIVE</string>
+  <string name="save_archive">Save archive</string>
+  <string name="delete_archive">Delete archive</string>
+  <string name="archive_created_on_ts">Created on <xliff:g id="archive_ts">%1$s</xliff:g></string>
+  <string name="delete_chat_archive_question">Delete chat archive?</string>
+
+  <!-- Groups -->
+  <string name="group_invitation_item_description">invitation to group <xliff:g id="group_name">%1$s</xliff:g></string>
+  <string name="join_group_question">Join group?</string>
+  <string name="you_are_invited_to_group_join_to_connect_with_group_members">You are invited to group. Join to connect with group members.</string>
+  <string name="join_group_button">Join</string>
+  <string name="joining_group">Joining group</string>
+  <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
+  <string name="leave_group_button">Leave</string>
+  <string name="leave_group_question">Leave group?</string>
+  <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">You will stop receiving messages from this group. Chat history will be preserved.</string>
+  <string name="icon_descr_add_members">Invite members</string>
+  <string name="icon_descr_group_inactive">Group inactive</string>
+  <string name="alert_title_group_invitation_expired">Invitation expired!</string>
+  <string name="alert_message_group_invitation_expired">Group invitation is no longer valid, it was removed by sender.</string>
+  <string name="alert_title_no_group">Group not found!</string>
+  <string name="alert_message_no_group">This group no longer exists.</string>
+  <string name="alert_title_join_group_error">Error joining group</string>
+
+  <!-- CIGroupInvitationView.kt -->
+  <string name="you_sent_group_invitation">You sent group invitation</string>
+  <string name="you_are_invited_to_group">You are invited to group</string>
+  <string name="group_invitation_tap_to_join">Tap to join</string>
+  <string name="you_joined_this_group">You joined this group</string>
+  <string name="you_rejected_group_invitation">You rejected group invitation</string>
+  <string name="group_invitation_expired">Group invitation expired</string>
+
+  <!-- Group event chat items -->
+  <string name="rcv_group_event_member_added">invited <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_member_connected">connected</string>
+  <string name="rcv_group_event_member_left">left</string>
+  <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_user_deleted">removed you</string>
+  <string name="rcv_group_event_group_deleted">deleted group</string>
+  <string name="rcv_group_event_updated_group_profile">updated group profile</string>
+  <string name="snd_group_event_member_deleted">you removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="snd_group_event_user_left">you left</string>
+  <string name="snd_group_event_group_profile_updated">group profile updated</string>
+
+  <!-- GroupMemberRole -->
+  <string name="group_member_role_member">member</string>
+  <string name="group_member_role_admin">admin</string>
+  <string name="group_member_role_owner">owner</string>
+
+  <!-- GroupMemberStatus -->
+  <string name="group_member_status_removed">removed</string>
+  <string name="group_member_status_left">left</string>
+  <string name="group_member_status_group_deleted">group deleted</string>
+  <string name="group_member_status_invited">invited</string>
+  <string name="group_member_status_introduced">connecting (introduced)</string>
+  <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
+  <string name="group_member_status_accepted">connecting (accepted)</string>
+  <string name="group_member_status_announced">connecting (announced)</string>
+  <string name="group_member_status_connected">connected</string>
+  <string name="group_member_status_complete">complete</string>
+  <string name="group_member_status_creator">creator</string>
+
+  <string name="group_member_status_connecting">connecting</string>
+
+  <!-- AddGroupMembersView.kt -->
+  <string name="no_contacts_to_add">No contacts to add</string>
+  <string name="new_member_role">New member role</string>
+  <string name="icon_descr_expand_role">Expand role selection</string>
+  <string name="invite_to_group_button">Invite to group</string>
+  <string name="icon_descr_contact_checked">Contact checked</string>
+  <string name="clear_contacts_selection_button">Clear</string>
+  <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contact(s) selected</string>
+  <string name="no_contacts_selected">No contacts selected</string>
+
+  <!-- GroupChatInfoView.kt -->
+  <string name="button_add_members">Invite members</string>
+  <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBERS</string>
+  <string name="group_info_member_you">you: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+  <string name="button_delete_group">Delete group</string>
+  <string name="delete_group_question">Delete group?</string>
+  <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+  <string name="button_leave_group">Leave group</string>
+  <string name="button_edit_group_profile">Edit group profile</string>
+
+  <!-- For Console chat info section -->
+  <string name="section_title_for_console">FOR CONSOLE</string>
+  <string name="info_row_local_name">Local name</string>
+  <string name="info_row_database_id">Database ID</string>
+
+  <!-- GroupMemberInfoView.kt -->
+  <string name="button_remove_member">Remove member</string>
+  <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
+  <string name="remove_member_confirmation">Remove</string>
+  <string name="member_info_section_title_member">MEMBER</string>
+  <string name="info_row_group">Group</string>
+  <string name="info_row_connection">Connection</string>
+  <string name="conn_level_desc_direct">direct</string>
+  <string name="conn_level_desc_indirect">indirect (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+  <!-- ConnectionStats -->
+  <string name="conn_stats_section_title_servers">SERVERS</string>
+  <string name="receiving_via">Receiving via</string>
+  <string name="sending_via">Sending via</string>
+  <string name="network_status">Network status</string>
+
+  <!-- AddGroupView.kt -->
+  <string name="create_secret_group_title">Create secret group</string>
+  <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
+  <string name="group_display_name_field">Group display name:</string>
+  <string name="group_full_name_field">Group full name:</string>
+
+  <!-- GroupProfileView.kt -->
+  <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
+  <string name="save_group_profile">Save group profile</string>
+  <string name="error_saving_group_profile">Error saving group profile</string>
+
+  <!-- AdvancedNetworkSettings.kt -->
+  <string name="network_options_reset_to_defaults">Reset to defaults</string>
+  <string name="network_option_seconds_label">sec</string>
+  <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
+  <string name="network_option_protocol_timeout">Protocol timeout</string>
+  <string name="network_option_ping_interval">PING interval</string>
+  <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
+  <string name="network_options_revert">Revert</string>
+  <string name="network_options_save">Save</string>
+  <string name="update_network_settings_question">Update network settings?</string>
+  <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
+  <string name="update_network_settings_confirmation">Update</string>
 </resources>

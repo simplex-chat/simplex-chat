@@ -18,7 +18,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.outlined.Collections
+import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
@@ -87,12 +88,20 @@ private fun compressImageData(bitmap: Bitmap): ByteArrayOutputStream {
   return stream
 }
 
+val errorBitmapBytes = Base64.decode("iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAKVJREFUeF7t1kENACEUQ0FQhnVQ9lfGO+xggITQdvbMzArPey+8fa3tAfwAEdABZQspQStgBssEcgAIkSAJkiAJljtEgiRIgmUCSZAESZAESZAEyx0iQRIkwTKBJEiCv5fgvTd1wDmn7QAP4AeIgA4oW0gJWgEzWCZwbQ7gAA7ggLKFOIADOKBMIAeAEAmSIAmSYLlDJEiCJFgmkARJkARJ8N8S/ADTZUewBvnTOQAAAABJRU5ErkJggg==", Base64.NO_WRAP)
+val errorBitmap: Bitmap = BitmapFactory.decodeByteArray(errorBitmapBytes, 0, errorBitmapBytes.size)
+
 fun base64ToBitmap(base64ImageString: String): Bitmap {
   val imageString = base64ImageString
     .removePrefix("data:image/png;base64,")
     .removePrefix("data:image/jpg;base64,")
-  val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
-  return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+  try {
+    val imageBytes = Base64.decode(imageString, Base64.NO_WRAP)
+    return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+  } catch (e: Exception) {
+    Log.e(TAG, "base64ToBitmap error: $e")
+    return errorBitmap
+  }
 }
 
 class CustomTakePicturePreview: ActivityResultContract<Void?, Bitmap?>() {

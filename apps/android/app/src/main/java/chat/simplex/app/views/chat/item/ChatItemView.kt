@@ -1,6 +1,6 @@
 package chat.simplex.app.views.chat.item
 
-import android.content.Context
+import android.content.*
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,8 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,8 +35,10 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
+  useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
+  joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit
 ) {
   val context = LocalContext.current
@@ -60,7 +61,8 @@ fun ChatItemView(
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
-          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile)
+          val onLinkLongClick = { _: String -> showMenu.value = true }
+          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
         }
         DropdownMenu(
           expanded = showMenu.value,
@@ -69,7 +71,7 @@ fun ChatItemView(
         ) {
           ItemAction(stringResource(R.string.reply_verb), Icons.Outlined.Reply, onClick = {
             if (composeState.value.editing) {
-              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem))
+              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
             } else {
               composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
             }
@@ -98,7 +100,7 @@ fun ChatItemView(
           }
           if (cItem.meta.editable) {
             ItemAction(stringResource(R.string.edit_verb), Icons.Filled.Edit, onClick = {
-              composeState.value = ComposeState(editingItem = cItem)
+              composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
               showMenu.value = false
             })
           }
@@ -144,6 +146,11 @@ fun ChatItemView(
         is CIContent.RcvDeleted -> DeletedItem()
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
+        is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
+        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
+        is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
       }
     }
   }
@@ -157,7 +164,8 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
         text,
         modifier = Modifier
           .fillMaxWidth()
-          .weight(1F),
+          .weight(1F)
+          .padding(end = 15.dp),
         color = color
       )
       Icon(icon, text, tint = color)
@@ -202,10 +210,12 @@ fun PreviewChatItemView() {
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
       ),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      useLinkPreviews = true,
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       acceptCall = { _ -> }
     )
   }
@@ -219,10 +229,12 @@ fun PreviewChatItemViewDeletedContent() {
       User.sampleData,
       ChatInfo.Direct.sampleData,
       ChatItem.getDeletedContentSampleData(),
-      composeState = remember { mutableStateOf(ComposeState()) },
+      useLinkPreviews = true,
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
       deleteMessage = { _, _ -> },
       receiveFile = {},
+      joinGroup = {},
       acceptCall = { _ -> }
     )
   }

@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 29
         targetSdk 32
-        versionCode 34
-        versionName "2.1.1"
+        versionCode 48
+        versionName "3.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -26,9 +26,18 @@ android {
                 cppFlags ''
             }
         }
+        manifestPlaceholders.app_name = "@string/app_name"
+        manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix "$application_id_suffix"
+            debuggable new Boolean("$enable_debuggable")
+            manifestPlaceholders.app_name = "$app_name"
+            // Provider can't be the same for different apps on the same device
+            manifestPlaceholders.provider_authorities = "chat.simplex.app${application_id_suffix}.provider"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -52,7 +61,6 @@ android {
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
-            version '3.10.2'
         }
     }
     buildFeatures {
@@ -76,9 +84,11 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.1'
     implementation 'androidx.lifecycle:lifecycle-process:2.4.1'
     implementation 'androidx.activity:activity-compose:1.4.0'
+    implementation 'androidx.fragment:fragment:1.4.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-datetime:0.3.2'
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.2'
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+    implementation "androidx.compose.ui:ui-util:$compose_version"
     implementation "androidx.navigation:navigation-compose:2.4.1"
     implementation "com.google.accompanist:accompanist-insets:0.23.0"
     implementation 'androidx.webkit:webkit:1.4.0'
@@ -102,6 +112,9 @@ dependencies {
 
     // Link Previews
     implementation 'org.jsoup:jsoup:1.13.1'
+
+    // Biometric authentication
+    implementation 'androidx.biometric:biometric:1.2.0-alpha04'
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

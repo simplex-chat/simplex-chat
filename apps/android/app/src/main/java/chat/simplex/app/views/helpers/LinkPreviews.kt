@@ -66,23 +66,36 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
 
 
 @Composable
-fun ComposeLinkView(linkPreview: LinkPreview, cancelPreview: () -> Unit) {
+fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit) {
   Row(
     Modifier.fillMaxWidth().padding(top = 8.dp).background(SentColorLight),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    val imageBitmap = base64ToBitmap(linkPreview.image).asImageBitmap()
-    Image(
-      imageBitmap,
-      stringResource(R.string.image_descr_link_preview),
-      modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
-    )
-    Column(Modifier.fillMaxWidth().weight(1F)) {
-      Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-      Text(
-        linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.body2
+    if (linkPreview == null) {
+      Box(
+        Modifier.fillMaxWidth().weight(1f).height(60.dp).padding(start = 16.dp),
+        contentAlignment = Alignment.CenterStart
+      ) {
+        CircularProgressIndicator(
+          Modifier.size(16.dp),
+          color = HighOrLowlight,
+          strokeWidth = 2.dp
+        )
+      }
+    } else {
+      val imageBitmap = base64ToBitmap(linkPreview.image).asImageBitmap()
+      Image(
+        imageBitmap,
+        stringResource(R.string.image_descr_link_preview),
+        modifier = Modifier.width(80.dp).height(60.dp).padding(end = 8.dp)
       )
+      Column(Modifier.fillMaxWidth().weight(1F)) {
+        Text(linkPreview.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(
+          linkPreview.uri, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          style = MaterialTheme.typography.body2
+        )
+      }
     }
     IconButton(onClick = cancelPreview, modifier = Modifier.padding(0.dp)) {
       Icon(
@@ -138,5 +151,13 @@ fun PreviewChatItemLinkView() {
 fun PreviewComposeLinkView() {
   SimpleXTheme {
     ComposeLinkView(LinkPreview.sampleData) { -> }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewComposeLinkViewLoading() {
+  SimpleXTheme {
+    ComposeLinkView(null) { -> }
   }
 }

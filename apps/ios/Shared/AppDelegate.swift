@@ -8,6 +8,7 @@
 
 import Foundation
 import UIKit
+import SimpleXChat
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -20,18 +21,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
-        m.deviceToken = token
-        UserDefaults.standard.set(false, forKey: DEFAULT_USE_NOTIFICATIONS)
-//        let useNotifications = UserDefaults.standard.bool(forKey: "useNotifications")
-//        if useNotifications {
-//            Task {
-//                do {
-//                    m.tokenStatus = try await apiRegisterToken(token: token)
-//                } catch {
-//                    logger.error("apiRegisterToken error: \(responseError(error))")
-//                }
-//            }
-//        }
+        let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
+        m.deviceToken = deviceToken
+        if m.savedToken != nil {
+            registerToken(token: deviceToken)
+        }
     }
 
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
@@ -42,19 +36,19 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
+        print("*** userInfo", userInfo)
+        let m = ChatModel.shared
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
-           UserDefaults.standard.bool(forKey: "useNotifications") {
+           m.notificationMode != .off {
             if let verification = ntfData["verification"] as? String,
                let nonce = ntfData["nonce"] as? String {
                 if let token = ChatModel.shared.deviceToken {
                     logger.debug("AppDelegate: didReceiveRemoteNotification: verification, confirming \(verification)")
                     Task {
-                        let m = ChatModel.shared
                         do {
                             if case .active = m.tokenStatus {} else { m.tokenStatus = .confirmed }
-                            try await apiVerifyToken(token: token, code: verification, nonce: nonce)
+                            try await apiVerifyToken(token: token, nonce: nonce, code: verification)
                             m.tokenStatus = .active
-                            try await apiIntervalNofication(token: token, interval: 20)
                         } catch {
                             if let cr = error as? ChatResponse, case .chatCmdError(.errorAgent(.NTF(.AUTH))) = cr {
                                 m.tokenStatus = .expired
@@ -67,21 +61,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                     completionHandler(.noData)
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
-                // TODO check if app in background
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                // TODO remove
-                NtfManager.shared.notifyCheckingMessages()
-                receiveMessages(completionHandler)
-            } else if let smpQueue = ntfData["checkMessage"] as? String {
-                // TODO check if app in background
-                logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessage \(smpQueue)")
-                receiveMessages(completionHandler)
+                if appStateGroupDefault.get().inactive {
+                    receiveMessages(completionHandler)
+                } else {
+                    completionHandler(.noData)
+                }
             } else {
                 completionHandler(.noData)
             }
         } else {
             completionHandler(.noData)
         }
+    }
+
+    func applicationWillTerminate(_ application: UIApplication) {
+        logger.debug("AppDelegate: applicationWillTerminate")
+        terminateChat()
     }
 
     private func receiveMessages(_ completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {

@@ -1,8 +1,32 @@
 # Blog
 
-May 24, 2022 [Clearing messages for better conversation privacy](./20220524-simplex-chat-better-privacy.md)
+Aug 8, 2022 [SimpleX Chat v3.1 released](./20220808-simplex-chat-v3.1-chat-groups.md)
 
-May 11, 2022 [Sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files.md)
+- finally, secret chat groups!
+- access to messaging servers via Tor on all platforms
+- advanced network settings to optimize traffic usage
+- published chat protocol
+- new app icons
+
+Jul 23, 2022 [SimpleX Chat v3.1-beta released](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+
+- terminal app: access to messaging servers via SOCKS5 proxy (e.g., Tor).
+- mobile apps: join and leave chat groups.
+- optimized battery and traffic usage - up to 90x reduction!
+- two docker configurations for self-hosted SMP servers.
+
+Jul 11, 2022 [SimpleX Chat v3 released](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
+
+- instant push notifications for iOS
+- e2e encrypted WebRTC audio/video calls
+- chat database export and import
+- protocol privacy and performance improvements
+
+Jun 4, 2022 [v2.2: the new Privacy and Security settings](./20220604-simplex-chat-new-privacy-security-settings.md)
+
+May 24, 2022 [v2.1: clearing messages for better conversation privacy](./20220524-simplex-chat-better-privacy.md)
+
+May 11, 2022 [v2.0 released - sending images and files in mobile apps](./20220511-simplex-chat-v2-images-files.md)
 
 Apr 04, 2022 [Instant notifications for SimpleX Chat mobile apps](./20220404-simplex-chat-instant-notifications.md)
 

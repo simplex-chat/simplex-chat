@@ -13,61 +13,63 @@ struct UserAddress: View {
     @State private var deleteAddressAlert = false
 
     var body: some View {
-        VStack (alignment: .leading) {
-            Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
-                .padding(.bottom)
-            if let userAdress = chatModel.userAddress {
-                QRCode(uri: userAdress)
-                HStack {
-                    Button {
-                        showShareSheet(items: [userAdress])
-                    } label: {
-                        Label("Share link", systemImage: "square.and.arrow.up")
-                    }
-                    .padding()
+        ScrollView {
+            VStack (alignment: .leading) {
+                Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
+                    .padding(.bottom)
+                if let userAdress = chatModel.userAddress {
+                    QRCode(uri: userAdress)
+                    HStack {
+                        Button {
+                            showShareSheet(items: [userAdress])
+                        } label: {
+                            Label("Share link", systemImage: "square.and.arrow.up")
+                        }
+                        .padding()
 
-                    Button(role: .destructive) { deleteAddressAlert = true } label: {
-                        Label("Delete address", systemImage: "trash")
-                    }
-                    .padding()
-                    .alert(isPresented: $deleteAddressAlert) {
-                        Alert(
-                            title: Text("Delete address?"),
-                            message: Text("All your contacts will remain connected"),
-                            primaryButton: .destructive(Text("Delete")) {
-                                Task {
-                                    do {
-                                        try await apiDeleteUserAddress()
-                                        DispatchQueue.main.async {
-                                            chatModel.userAddress = nil
+                        Button(role: .destructive) { deleteAddressAlert = true } label: {
+                            Label("Delete address", systemImage: "trash")
+                        }
+                        .padding()
+                        .alert(isPresented: $deleteAddressAlert) {
+                            Alert(
+                                title: Text("Delete address?"),
+                                message: Text("All your contacts will remain connected"),
+                                primaryButton: .destructive(Text("Delete")) {
+                                    Task {
+                                        do {
+                                            try await apiDeleteUserAddress()
+                                            DispatchQueue.main.async {
+                                                chatModel.userAddress = nil
+                                            }
+                                        } catch let error {
+                                            logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
                                         }
-                                    } catch let error {
-                                        logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
                                     }
-                                }
-                            }, secondaryButton: .cancel()
-                        )
-                    }
-                }
-                .frame(maxWidth: .infinity)
-            } else {
-                Button {
-                    Task {
-                        do {
-                            let userAddress = try await apiCreateUserAddress()
-                            DispatchQueue.main.async {
-                                chatModel.userAddress = userAddress
-                            }
-                        } catch let error {
-                            logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                                }, secondaryButton: .cancel()
+                            )
                         }
                     }
-                } label: { Label("Create address", systemImage: "qrcode") }
-                .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    Button {
+                        Task {
+                            do {
+                                let userAddress = try await apiCreateUserAddress()
+                                DispatchQueue.main.async {
+                                    chatModel.userAddress = userAddress
+                                }
+                            } catch let error {
+                                logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                            }
+                        }
+                    } label: { Label("Create address", systemImage: "qrcode") }
+                    .frame(maxWidth: .infinity)
+                }
             }
+            .padding()
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 }
 

@@ -10,13 +10,14 @@ import SwiftUI
 
 struct SimpleXInfo: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.colorScheme) var colorScheme: ColorScheme
     @State private var showHowItWorks = false
     var onboarding: Bool
 
     var body: some View {
         GeometryReader { g in
             VStack(alignment: .leading) {
-                Image("logo")
+                Image(colorScheme == .light ? "logo" : "logo-light")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: g.size.width * 0.7)
@@ -77,7 +78,7 @@ struct OnboardingActionButton: View {
         if m.currentUser == nil {
             actionButton("Create your profile", onboarding: .step2_CreateProfile)
         } else {
-            actionButton("Make a private connection", onboarding: .step3_MakeConnection)
+            actionButton("Make a private connection", onboarding: .step4_MakeConnection)
         }
     }
 

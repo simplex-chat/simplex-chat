@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -17,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chat.ComposeState
-import chat.simplex.app.views.chat.SendMsgView
+import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
-  val composeState = remember { mutableStateOf(ComposeState()) }
+  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
   BackHandler(onBack = close)
   TerminalLayout(
     chatModel.terminalItems,
@@ -35,7 +35,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       withApi {
         // show "in progress"
         chatModel.controller.sendCmd(CC.Console(composeState.value.message))
-        composeState.value = ComposeState()
+        composeState.value = ComposeState(useLinkPreviews = false)
         // hide "in progress"
       }
     },
@@ -82,6 +82,10 @@ fun TerminalLayout(
 @Composable
 fun TerminalLog(terminalItems: List<TerminalItem>) {
   val listState = rememberLazyListState()
+  val keyboardState by getKeyboardState()
+  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
+    mutableStateOf(CIListState(false, terminalItems.count(), keyboardState))
+  }
   val scope = rememberCoroutineScope()
   LazyColumn(state = listState) {
     items(terminalItems) { item ->
@@ -101,8 +105,9 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
       )
     }
     val len = terminalItems.count()
-    if (len > 1) {
+    if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
       scope.launch {
+        ciListState.value = CIListState(true, len, keyboardState)
         listState.animateScrollToItem(len - 1)
       }
     }
@@ -120,7 +125,7 @@ fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
       terminalItems = TerminalItem.sampleData,
-      composeState = remember { mutableStateOf(ComposeState()) },
+      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
       close = {}
     )

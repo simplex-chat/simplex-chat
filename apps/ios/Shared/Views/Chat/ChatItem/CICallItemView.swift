@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CICallItemView: View {
     @EnvironmentObject var m: ChatModel
@@ -26,7 +27,7 @@ struct CICallItemView: View {
                     acceptCallButton()
                 }
             case .missed: missedCallIcon(sent).foregroundColor(.red)
-            case .rejected: Image(systemName: "phone.down").foregroundColor(.secondary)
+            case .rejected: Image(systemName: "phone.down").foregroundColor(.red)
             case .accepted: connectingCallIcon()
             case .negotiated: connectingCallIcon()
             case .progress: Image(systemName: "phone.and.waveform.fill").foregroundColor(.green)
@@ -61,16 +62,9 @@ struct CICallItemView: View {
     @ViewBuilder private func acceptCallButton() -> some View {
         if case let .direct(contact) = chatInfo {
             Button {
-                if let invitation = m.callInvitations.removeValue(forKey: contact.id) {
-                    m.activeCallInvitation = nil
-                    m.activeCall = Call(
-                        contact: contact,
-                        callState: .invitationReceived,
-                        localMedia: invitation.peerMedia,
-                        sharedKey: invitation.sharedKey
-                    )
-                    m.showCallView = true
-                    m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+                if let invitation = m.callInvitations[contact.id] {
+                    CallController.shared.answerCall(invitation: invitation)
+                    logger.debug("acceptCallButton call answered")
                 } else {
                     AlertManager.shared.showAlertMsg(title: "Call already ended!")
                 }

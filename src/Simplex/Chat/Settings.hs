@@ -16,10 +16,9 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Type.Equality
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import Simplex.Chat.Util (eitherToMaybe)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (fromTextField_)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data SettingType = TString | TBool | TInt
 

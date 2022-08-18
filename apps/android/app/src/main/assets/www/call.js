@@ -24,8 +24,8 @@ var TransformOperation;
 let activeCall;
 const processCommand = (function () {
     const defaultIceServers = [
-        { urls: ["stun:stun.simplex.chat:5349"] },
-        { urls: ["turn:turn.simplex.chat:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
+        { urls: ["stun:stun.simplex.im:5349"] },
+        { urls: ["turn:turn.simplex.im:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
         return {
@@ -96,7 +96,7 @@ const processCommand = (function () {
         const pc = new RTCPeerConnection(config.peerConnectionConfig);
         const remoteStream = new MediaStream();
         const localCamera = VideoCamera.User;
-        const localStream = await navigator.mediaDevices.getUserMedia(callMediaConstraints(mediaType, localCamera));
+        const localStream = await getLocalMediaStream(mediaType, localCamera);
         const iceCandidates = getIceCandidates(pc, config);
         const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
         await setupMediaStreams(call);
@@ -116,8 +116,10 @@ const processCommand = (function () {
             });
             if (pc.connectionState == "disconnected" || pc.connectionState == "failed") {
                 pc.removeEventListener("connectionstatechange", connectionStateChange);
+                if (activeCall) {
+                    setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
+                }
                 endCall();
-                setTimeout(() => sendMessageToNative({ resp: { type: "ended" } }), 0);
             }
             else if (pc.connectionState == "connected") {
                 const stats = (await pc.getStats());
@@ -133,7 +135,7 @@ const processCommand = (function () {
                                 remoteCandidate: stats.get(iceCandidatePair.remoteCandidateId),
                             },
                         };
-                        setTimeout(() => sendMessageToNative({ resp }), 0);
+                        setTimeout(() => sendMessageToNative({ resp }), 500);
                         break;
                     }
                 }
@@ -153,11 +155,17 @@ const processCommand = (function () {
         try {
             switch (command.type) {
                 case "capabilities":
+                    console.log("starting outgoing call - capabilities");
+                    if (activeCall)
+                        endCall();
+                    // This request for local media stream is made to prompt for camera/mic permissions on call start
+                    if (command.media)
+                        await getLocalMediaStream(command.media, VideoCamera.User);
                     const encryption = supportsInsertableStreams(command.useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
                 case "start": {
-                    console.log("starting call");
+                    console.log("starting incoming call - create webrtc session");
                     if (activeCall)
                         endCall();
                     const { media, useWorker, iceServers, relay } = command;
@@ -256,19 +264,9 @@ const processCommand = (function () {
                     if (!activeCall || !pc) {
                         resp = { type: "error", message: "camera: call not started" };
                     }
-                    else if (activeCall.localMedia == CallMediaType.Audio) {
-                        resp = { type: "error", message: "camera: no video" };
-                    }
                     else {
-                        try {
-                            if (command.camera != activeCall.localCamera) {
-                                await replaceCamera(activeCall, command.camera);
-                            }
-                            resp = { type: "ok" };
-                        }
-                        catch (e) {
-                            resp = { type: "error", message: `camera: ${e.message}` };
-                        }
+                        await replaceMedia(activeCall, command.camera);
+                        resp = { type: "ok" };
                     }
                     break;
                 case "end":
@@ -281,7 +279,7 @@ const processCommand = (function () {
             }
         }
         catch (e) {
-            resp = { type: "error", message: e.message };
+            resp = { type: "error", message: `${command.type}: ${e.message}` };
         }
         const apiResp = { corrId, resp, command };
         sendMessageToNative(apiResp);
@@ -323,6 +321,8 @@ const processCommand = (function () {
             if (call.useWorker && !call.worker) {
                 const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
+                call.worker.onerror = ({ error, filename, lineno, message }) => console.log(JSON.stringify({ error, filename, lineno, message }));
+                call.worker.onmessage = ({ data }) => console.log(JSON.stringify({ message: data }));
             }
         }
     }
@@ -346,14 +346,20 @@ const processCommand = (function () {
         // Pull tracks from remote stream as they arrive add them to remoteStream video
         const pc = call.connection;
         pc.ontrack = (event) => {
-            if (call.aesKey && call.key) {
-                console.log("set up decryption for receiving");
-                setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
-            }
-            for (const stream of event.streams) {
-                for (const track of stream.getTracks()) {
-                    call.remoteStream.addTrack(track);
+            try {
+                if (call.aesKey && call.key) {
+                    console.log("set up decryption for receiving");
+                    setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
                 }
+                for (const stream of event.streams) {
+                    for (const track of stream.getTracks()) {
+                        call.remoteStream.addTrack(track);
+                    }
+                }
+                console.log(`ontrack success`);
+            }
+            catch (e) {
+                console.log(`ontrack error: ${e.message}`);
             }
         };
     }
@@ -385,7 +391,7 @@ const processCommand = (function () {
             }
         }
     }
-    async function replaceCamera(call, camera) {
+    async function replaceMedia(call, camera) {
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
@@ -393,14 +399,15 @@ const processCommand = (function () {
         for (const t of call.localStream.getTracks())
             t.stop();
         call.localCamera = camera;
-        const constraints = callMediaConstraints(call.localMedia, camera);
-        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        const localStream = await getLocalMediaStream(call.localMedia, camera);
         replaceTracks(pc, localStream.getVideoTracks());
         replaceTracks(pc, localStream.getAudioTracks());
         call.localStream = localStream;
         videos.local.srcObject = localStream;
     }
     function replaceTracks(pc, tracks) {
+        if (!tracks.length)
+            return;
         const sender = pc.getSenders().find((s) => { var _a; return ((_a = s.track) === null || _a === void 0 ? void 0 : _a.kind) === tracks[0].kind; });
         if (sender)
             for (const t of tracks)
@@ -426,6 +433,10 @@ const processCommand = (function () {
         else {
             console.log(`no ${operation}`);
         }
+    }
+    function getLocalMediaStream(mediaType, facingMode) {
+        const constraints = callMediaConstraints(mediaType, facingMode);
+        return navigator.mediaDevices.getUserMedia(constraints);
     }
     function callMediaConstraints(mediaType, facingMode) {
         switch (mediaType) {
@@ -494,8 +505,8 @@ function callCryptoFunction() {
             const initial = data.subarray(0, n);
             const plaintext = data.subarray(n, data.byteLength);
             try {
-                const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext);
-                frame.data = concatN(initial, new Uint8Array(ciphertext), iv).buffer;
+                const ciphertext = new Uint8Array(plaintext.length ? await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv.buffer }, key, plaintext) : 0);
+                frame.data = concatN(initial, ciphertext, iv).buffer;
                 controller.enqueue(frame);
             }
             catch (e) {
@@ -512,8 +523,8 @@ function callCryptoFunction() {
             const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH);
             const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength);
             try {
-                const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-                frame.data = concatN(initial, new Uint8Array(plaintext)).buffer;
+                const plaintext = new Uint8Array(ciphertext.length ? await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext) : 0);
+                frame.data = concatN(initial, plaintext).buffer;
                 controller.enqueue(frame);
             }
             catch (e) {
@@ -619,9 +630,15 @@ function workerFunction() {
     // encryption using RTCRtpScriptTransform.
     if ("RTCTransformEvent" in self) {
         self.addEventListener("rtctransform", async ({ transformer }) => {
-            const { operation, aesKey } = transformer.options;
-            const { readable, writable } = transformer;
-            await setupTransform({ operation, aesKey, readable, writable });
+            try {
+                const { operation, aesKey } = transformer.options;
+                const { readable, writable } = transformer;
+                await setupTransform({ operation, aesKey, readable, writable });
+                self.postMessage({ result: "setupTransform success" });
+            }
+            catch (e) {
+                self.postMessage({ message: `setupTransform error: ${e.message}` });
+            }
         });
     }
     async function setupTransform({ operation, aesKey, readable, writable }) {

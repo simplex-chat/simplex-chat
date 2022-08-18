@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.SupervisedUserCircle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -23,25 +24,26 @@ import chat.simplex.app.model.ChatInfo
 import chat.simplex.app.ui.theme.SimpleXTheme
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
   val icon =
     if (chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
-  ProfileImage(size, chatInfo.image, icon)
+  ProfileImage(size, chatInfo.image, icon, iconColor)
 }
 
 @Composable
 fun ProfileImage(
   size: Dp,
   image: String? = null,
-  icon: ImageVector = Icons.Filled.AccountCircle
+  icon: ImageVector = Icons.Filled.AccountCircle,
+  color: Color = MaterialTheme.colors.secondary
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
       Icon(
         icon,
         contentDescription = stringResource(R.string.icon_descr_profile_image_placeholder),
-        tint = MaterialTheme.colors.secondary,
+        tint = color,
         modifier = Modifier.fillMaxSize()
       )
     } else {

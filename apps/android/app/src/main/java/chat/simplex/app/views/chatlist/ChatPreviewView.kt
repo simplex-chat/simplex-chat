@@ -2,10 +2,12 @@ package chat.simplex.app.views.chatlist
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,36 +27,100 @@ import chat.simplex.app.views.helpers.ChatInfoImage
 import chat.simplex.app.views.helpers.badgeLayout
 
 @Composable
-fun ChatPreviewView(chat: Chat) {
+fun ChatPreviewView(chat: Chat, stopped: Boolean) {
+  val cInfo = chat.chatInfo
+
+  @Composable
+  fun groupInactiveIcon() {
+    Icon(
+      Icons.Filled.Cancel,
+      stringResource(R.string.icon_descr_group_inactive),
+      Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
+      tint = HighOrLowlight
+    )
+  }
+
+  @Composable
+  fun chatPreviewImageOverlayIcon() {
+    if (cInfo is ChatInfo.Group) {
+      when (cInfo.groupInfo.membership.memberStatus) {
+        GroupMemberStatus.MemLeft -> groupInactiveIcon()
+        GroupMemberStatus.MemRemoved -> groupInactiveIcon()
+        GroupMemberStatus.MemGroupDeleted -> groupInactiveIcon()
+        else -> {}
+      }
+    }
+  }
+
+  @Composable
+  fun chatPreviewTitleText(color: Color = Color.Unspecified) {
+    Text(
+      cInfo.chatViewName,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      style = MaterialTheme.typography.h3,
+      fontWeight = FontWeight.Bold,
+      color = color
+    )
+  }
+
+  @Composable
+  fun chatPreviewTitle() {
+    when (cInfo) {
+      is ChatInfo.Direct ->
+        chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
+      is ChatInfo.Group ->
+        when (cInfo.groupInfo.membership.memberStatus) {
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
+          GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
+          else -> chatPreviewTitleText()
+        }
+      else -> chatPreviewTitleText()
+    }
+  }
+
+  @Composable
+  fun chatPreviewText() {
+    val ci = chat.chatItems.lastOrNull()
+    if (ci != null) {
+      MarkdownText(
+        ci.text, ci.formattedText, ci.memberDisplayName,
+        metaText = ci.timestampText,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+      )
+    } else {
+      when (cInfo) {
+        is ChatInfo.Direct ->
+          if (!cInfo.ready) {
+            Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
+          }
+        is ChatInfo.Group ->
+          when (cInfo.groupInfo.membership.memberStatus) {
+            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.group_preview_you_are_invited))
+            GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
+            else -> {}
+          }
+        else -> {}
+      }
+    }
+  }
+
   Row {
-    val cInfo = chat.chatInfo
-    ChatInfoImage(cInfo, size = 72.dp)
+    Box(contentAlignment = Alignment.BottomEnd) {
+      ChatInfoImage(cInfo, size = 72.dp)
+      Box(Modifier.padding(end = 6.dp, bottom = 6.dp)) {
+        chatPreviewImageOverlayIcon()
+      }
+    }
     Column(
       modifier = Modifier
         .padding(horizontal = 8.dp)
         .weight(1F)
     ) {
-      Text(
-        cInfo.chatViewName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.h3,
-        fontWeight = FontWeight.Bold,
-        color = if (cInfo.ready) Color.Unspecified else HighOrLowlight
-      )
-      if (cInfo.ready) {
-        val ci = chat.chatItems.lastOrNull()
-        if (ci != null) {
-          MarkdownText(
-            ci.text, ci.formattedText, ci.memberDisplayName,
-            metaText = ci.timestampText,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-          )
-        }
-      } else {
-        Text(stringResource(R.string.contact_connection_pending), color = HighOrLowlight)
-      }
+      chatPreviewTitle()
+      chatPreviewText()
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
@@ -74,11 +140,11 @@ fun ChatPreviewView(chat: Chat) {
           contentAlignment = Alignment.Center
         ) {
           Text(
-            if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
+            unreadCountStr(n),
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -95,6 +161,11 @@ fun ChatPreviewView(chat: Chat) {
       }
     }
   }
+}
+
+@Composable
+fun unreadCountStr(n: Int): String {
+  return if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation)
 }
 
 @Composable
@@ -129,6 +200,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData)
+    ChatPreviewView(Chat.sampleData, stopped = false)
   }
 }

@@ -87,7 +87,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
         val createModifier: Modifier
         val createColor: Color
         if (enabled) {
-          createModifier = Modifier.padding(8.dp).clickable { createProfile(chatModel, displayName.value, fullName.value) }
+          createModifier = Modifier.clickable { createProfile(chatModel, displayName.value, fullName.value) }.padding(8.dp)
           createColor = MaterialTheme.colors.primary
         } else {
           createModifier = Modifier.padding(8.dp)
@@ -114,8 +114,8 @@ fun createProfile(chatModel: ChatModel, displayName: String, fullName: String) {
       Profile(displayName, fullName, null)
     )
     chatModel.controller.startChat(user)
-    SimplexService.start(chatModel.controller.appContext)
     chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+    SimplexService.start(chatModel.controller.appContext)
     chatModel.onboardingStage.value = OnboardingStage.OnboardingComplete
   }
 }

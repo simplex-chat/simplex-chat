@@ -5,6 +5,7 @@ import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
 import chat.simplex.app.model.Contact
 import chat.simplex.app.views.helpers.generalGetString
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -17,6 +18,7 @@ data class Call(
   val sharedKey: String? = null,
   val audioEnabled: Boolean = true,
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
+  val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
   val connectionInfo: ConnectionInfo? = null
 ) {
@@ -26,7 +28,7 @@ data class Call(
   val encryptionStatus: String @Composable get() = when(callState) {
     CallState.WaitCapabilities -> ""
     CallState.InvitationSent -> stringResource(if (localEncrypted) R.string.status_e2e_encrypted else R.string.status_no_e2e_encryption)
-    CallState.InvitationReceived -> stringResource(if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_contact_has_e2e_encryption)
+    CallState.InvitationAccepted -> stringResource(if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_contact_has_e2e_encryption)
     else -> stringResource(if (!localEncrypted) R.string.status_no_e2e_encryption else if (sharedKey == null) R.string.status_contact_has_no_e2e_encryption else R.string.status_e2e_encrypted)
   }
 
@@ -36,20 +38,24 @@ data class Call(
 enum class CallState {
   WaitCapabilities,
   InvitationSent,
-  InvitationReceived,
+  InvitationAccepted,
   OfferSent,
   OfferReceived,
+  AnswerReceived,
   Negotiated,
-  Connected;
+  Connected,
+  Ended;
 
   val text: String @Composable get() = when(this) {
     WaitCapabilities -> stringResource(R.string.callstate_starting)
     InvitationSent -> stringResource(R.string.callstate_waiting_for_answer)
-    InvitationReceived -> stringResource(R.string.callstate_starting)
+    InvitationAccepted -> stringResource(R.string.callstate_starting)
     OfferSent -> stringResource(R.string.callstate_waiting_for_confirmation)
     OfferReceived -> stringResource(R.string.callstate_received_answer)
+    AnswerReceived -> stringResource(R.string.callstate_received_confirmation)
     Negotiated -> stringResource(R.string.callstate_connecting)
     Connected -> stringResource(R.string.callstate_connected)
+    Ended -> stringResource(R.string.callstate_ended)
   }
 }
 
@@ -85,18 +91,18 @@ sealed class WCallResponse {
 @Serializable class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
 @Serializable class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
-@Serializable class CallInvitation(val peerMedia: CallMediaType, val sharedKey: String?) {
-  val callTypeText: String get() = generalGetString(when(peerMedia) {
+@Serializable class RcvCallInvitation(val contact: Contact, val callType: CallType, val sharedKey: String?, val callTs: Instant) {
+  val callTypeText: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> if (sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
     CallMediaType.Audio -> if (sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
   })
-  val callTitle: String get() = generalGetString(when(peerMedia) {
+  val callTitle: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> R.string.incoming_video_call
     CallMediaType.Audio -> R.string.incoming_audio_call
   })
 }
 @Serializable class CallCapabilities(val encryption: Boolean)
-@Serializable class ConnectionInfo(val localCandidate: RTCIceCandidate?, val remoteCandidate: RTCIceCandidate) {
+@Serializable class ConnectionInfo(private val localCandidate: RTCIceCandidate?, private val remoteCandidate: RTCIceCandidate?) {
   val text: String @Composable get() = when {
     localCandidate?.candidateType == RTCIceCandidateType.Host && remoteCandidate?.candidateType == RTCIceCandidateType.Host ->
       stringResource(R.string.call_connection_peer_to_peer)

@@ -22,7 +22,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
+import Data.Maybe (isJust)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Typeable
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -38,7 +40,7 @@ import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
   contactId' :: a -> ContactId
-  profile' :: a -> Profile
+  profile' :: a -> LocalProfile
   localDisplayName' :: a -> ContactName
 
 instance IsContact User where
@@ -55,7 +57,7 @@ data User = User
   { userId :: UserId,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
-    profile :: Profile,
+    profile :: LocalProfile,
     activeUser :: Bool
   }
   deriving (Show, Generic, FromJSON)
@@ -66,10 +68,12 @@ type UserId = ContactId
 
 type ContactId = Int64
 
+type ProfileId = Int64
+
 data Contact = Contact
   { contactId :: ContactId,
     localDisplayName :: ContactName,
-    profile :: Profile,
+    profile :: LocalProfile,
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
     createdAt :: UTCTime,
@@ -87,6 +91,9 @@ contactConn = activeConn
 contactConnId :: Contact -> ConnId
 contactConnId Contact {activeConn} = aConnId activeConn
 
+contactConnIncognito :: Contact -> Bool
+contactConnIncognito Contact {activeConn = Connection {customUserProfileId}} = isJust customUserProfileId
+
 data ContactRef = ContactRef
   { contactId :: ContactId,
     localDisplayName :: ContactName
@@ -99,7 +106,11 @@ data UserContact = UserContact
   { userContactLinkId :: Int64,
     connReqContact :: ConnReqContact
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON UserContact where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
@@ -162,13 +173,20 @@ type ContactName = Text
 
 type GroupName = Text
 
+optionalFullName :: ContactName -> Text -> Text
+optionalFullName displayName fullName
+  | T.null fullName || displayName == fullName = ""
+  | otherwise = " (" <> fullName <> ")"
+
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show, Generic)
 
 instance ToJSON Group where toEncoding = J.genericToEncoding J.defaultOptions
 
+type GroupId = Int64
+
 data GroupInfo = GroupInfo
-  { groupId :: Int64,
+  { groupId :: GroupId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
@@ -186,12 +204,36 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData
+    -- incognito field should not be read as is into this data type to prevent sending it as part of profile to contacts
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data LocalProfile = LocalProfile
+  { profileId :: ProfileId,
+    displayName :: ContactName,
+    fullName :: Text,
+    image :: Maybe ImageData
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON LocalProfile where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+localProfileId :: LocalProfile -> ProfileId
+localProfileId = profileId
+
+toLocalProfile :: ProfileId -> Profile -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, image} =
+  LocalProfile {profileId, displayName, fullName, image}
+
+fromLocalProfile :: LocalProfile -> Profile
+fromLocalProfile LocalProfile {displayName, fullName, image} =
+  Profile {displayName, fullName, image}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -220,13 +262,16 @@ instance FromField ImageData where fromField = fmap ImageData . fromField
 
 data GroupInvitation = GroupInvitation
   { fromMember :: MemberIdRole,
+    fromMemberProfile :: Maybe Profile,
     invitedMember :: MemberIdRole,
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile
   }
   deriving (Eq, Show, Generic, FromJSON)
 
-instance ToJSON GroupInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON GroupInvitation where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
@@ -255,7 +300,7 @@ instance ToJSON MemberInfo where toEncoding = J.genericToEncoding J.defaultOptio
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile} =
-  MemberInfo memberId memberRole memberProfile
+  MemberInfo memberId memberRole (fromLocalProfile memberProfile)
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -264,17 +309,22 @@ data ReceivedGroupInvitation = ReceivedGroupInvitation
   }
   deriving (Eq, Show)
 
+type GroupMemberId = Int64
+
+-- memberProfile's profileId is COALESCE(member_profile_id, contact_profile_id), member_profile_id is non null
+-- if incognito profile was saved for member (used for hosts and invitees in incognito groups)
 data GroupMember = GroupMember
-  { groupMemberId :: Int64,
-    groupId :: Int64,
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
-    memberProfile :: Profile,
-    memberContactId :: Maybe Int64,
+    memberProfile :: LocalProfile,
+    memberContactId :: Maybe ContactId,
+    memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection
   }
   deriving (Eq, Show, Generic)
@@ -288,6 +338,12 @@ memberConn = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
+
+groupMemberId' :: GroupMember -> GroupMemberId
+groupMemberId' GroupMember {groupMemberId} = groupMemberId
+
+memberIncognito :: GroupMember -> Bool
+memberIncognito GroupMember {memberProfile, memberContactProfileId} = localProfileId memberProfile /= memberContactProfileId
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
@@ -524,6 +580,9 @@ data SndFileTransfer = SndFileTransfer
 
 instance ToJSON SndFileTransfer where toEncoding = J.genericToEncoding J.defaultOptions
 
+sndFileTransferConnId :: SndFileTransfer -> ConnId
+sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
+
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation
@@ -568,6 +627,14 @@ data RcvFileInfo = RcvFileInfo
   deriving (Eq, Show, Generic)
 
 instance ToJSON RcvFileInfo where toEncoding = J.genericToEncoding J.defaultOptions
+
+liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
+liveRcvFileTransferConnId RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted fi -> acId fi
+  RFSConnected fi -> acId fi
+  _ -> Nothing
+  where
+    acId RcvFileInfo {agentConnId = AgentConnId cId} = Just cId
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Show)
@@ -665,7 +732,9 @@ data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
     connLevel :: Int,
-    viaContact :: Maybe Int64,
+    viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
+    viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
+    customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
@@ -676,6 +745,9 @@ data Connection = Connection
 aConnId :: Connection -> ConnId
 aConnId Connection {agentConnId = AgentConnId cId} = cId
 
+connCustomUserProfileId :: Connection -> Maybe Int64
+connCustomUserProfileId Connection {customUserProfileId} = customUserProfileId
+
 instance ToJSON Connection where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
@@ -685,6 +757,8 @@ data PendingContactConnection = PendingContactConnection
     pccAgentConnId :: AgentConnId,
     pccConnStatus :: ConnStatus,
     viaContactUri :: Bool,
+    viaUserContactLink :: Maybe Int64,
+    customUserProfileId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }

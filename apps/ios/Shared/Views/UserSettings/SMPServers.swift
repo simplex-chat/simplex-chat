@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 private let serversFont = Font.custom("Menlo", size: 14)
 
@@ -23,58 +24,72 @@ struct SMPServers: View {
     @FocusState private var keyboardVisible: Bool
 
     var body: some View {
-        return VStack(alignment: .leading) {
-            Toggle("Configure SMP servers", isOn: $isUserSMPServersToggle)
-                .onChange(of: isUserSMPServersToggle) { _ in
-                    if (isUserSMPServersToggle) {
-                        isUserSMPServers = true
-                    } else {
-                        let servers = chatModel.userSMPServers ?? []
-                        if (!servers.isEmpty) {
-                            showResetServersAlert = true
+        List {
+            Section {
+                Toggle("Configure SMP servers", isOn: $isUserSMPServersToggle)
+                    .onChange(of: isUserSMPServersToggle) { _ in
+                        if (isUserSMPServersToggle) {
+                            isUserSMPServers = true
                         } else {
-                            isUserSMPServers = false
-                            userSMPServersStr = ""
-                        }
-                    }
-                }
-                .padding(.bottom)
-                .alert(isPresented: $showResetServersAlert) {
-                    Alert(
-                        title: Text("Use SimpleX Chat servers?"),
-                        message: Text("Saved SMP servers will be removed"),
-                        primaryButton: .destructive(Text("Confirm")) {
-                            saveSMPServers(smpServers: [])
-                            isUserSMPServers = false
-                            userSMPServersStr = ""
-                        }, secondaryButton: .cancel() {
-                            withAnimation() {
-                                isUserSMPServersToggle = true
+                            let servers = chatModel.userSMPServers ?? []
+                            if (!servers.isEmpty) {
+                                showResetServersAlert = true
+                            } else {
+                                isUserSMPServers = false
+                                userSMPServersStr = ""
                             }
                         }
-                    )
+                    }
+                    .alert(isPresented: $showResetServersAlert) {
+                        Alert(
+                            title: Text("Use SimpleX Chat servers?"),
+                            message: Text("Saved SMP servers will be removed"),
+                            primaryButton: .destructive(Text("Confirm")) {
+                                saveSMPServers(smpServers: [])
+                                isUserSMPServers = false
+                                userSMPServersStr = ""
+                            }, secondaryButton: .cancel() {
+                                withAnimation() {
+                                    isUserSMPServersToggle = true
+                                }
+                            }
+                        )
+                    }
+            } header: {
+                Text("")
+            } footer: {
+                if !isUserSMPServers {
+                    Text("Using SimpleX Chat servers.")
                 }
+            }
             
-            if !isUserSMPServers {
-                Text("Using SimpleX Chat servers.")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                VStack(alignment: .leading) {
-                    Text("Enter one SMP server per line:")
+            if isUserSMPServers {
+                Section {
                     if editSMPServers {
                         TextEditor(text: $userSMPServersStr)
                             .focused($keyboardVisible)
                             .font(serversFont)
                             .disableAutocorrection(true)
                             .textInputAutocapitalization(.never)
-                            .padding(.horizontal, 5)
-                            .padding(.top, 2)
-                            .frame(height: 112)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                            )
-                        HStack(spacing: 20) {
+                            .padding(.horizontal, -5)
+                            .padding(.top, -8)
+                            .frame(height: 160, alignment: .topLeading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        ScrollView {
+                            Text(userSMPServersStr)
+                                .font(serversFont)
+                                .frame(minHeight: 0, alignment: .topLeading)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(height: 160)
+                    }
+                } header: {
+                    Text("SMP servers (one per line)")
+                } footer: {
+                    HStack(spacing: 20) {
+                        if editSMPServers {
                             Button("Cancel") {
                                 initialize()
                             }
@@ -86,22 +101,7 @@ struct SMPServers: View {
                             }
                             Spacer()
                             howToButton()
-                        }
-                    } else {
-                        ScrollView {
-                            Text(userSMPServersStr)
-                                .font(serversFont)
-                                .padding(10)
-                                .frame(minHeight: 0, alignment: .topLeading)
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(height: 160)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                        )
-                        HStack {
+                        } else {
                             Button("Edit") {
                                 editSMPServers = true
                             }
@@ -109,12 +109,10 @@ struct SMPServers: View {
                             howToButton()
                         }
                     }
+                    .font(.body)
                 }
-                .frame(maxWidth: .infinity)
             }
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
         .onAppear { initialize() }
     }
     

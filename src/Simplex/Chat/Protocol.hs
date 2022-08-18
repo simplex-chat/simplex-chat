@@ -31,10 +31,10 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
-import Simplex.Chat.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Parsers (fromTextField_, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -42,7 +42,11 @@ data ConnectionEntity
   | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON ConnectionEntity where
+  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
+  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
@@ -120,17 +124,18 @@ data ChatMsgEvent
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
-  | XGrpAcpt MemberId
+  | XGrpAcpt MemberId (Maybe Profile)
   | XGrpMemNew MemberInfo
   | XGrpMemIntro MemberInfo
   | XGrpMemInv MemberId IntroInvitation
   | XGrpMemFwd MemberInfo IntroInvitation
   | XGrpMemInfo MemberId Profile
-  | XGrpMemCon MemberId
-  | XGrpMemConAll MemberId
+  | XGrpMemCon MemberId -- TODO not implemented
+  | XGrpMemConAll MemberId -- TODO not implemented
   | XGrpMemDel MemberId
   | XGrpLeave
   | XGrpDel
+  | XGrpInfo GroupProfile
   | XInfoProbe Probe
   | XInfoProbeCheck ProbeHash
   | XInfoProbeOk Probe
@@ -311,6 +316,7 @@ data CMEventTag
   | XGrpMemDel_
   | XGrpLeave_
   | XGrpDel_
+  | XGrpInfo_
   | XInfoProbe_
   | XInfoProbeCheck_
   | XInfoProbeOk_
@@ -347,6 +353,7 @@ instance StrEncoding CMEventTag where
     XGrpMemDel_ -> "x.grp.mem.del"
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
+    XGrpInfo_ -> "x.grp.info"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -380,6 +387,7 @@ instance StrEncoding CMEventTag where
     "x.grp.mem.del" -> Right XGrpMemDel_
     "x.grp.leave" -> Right XGrpLeave_
     "x.grp.del" -> Right XGrpDel_
+    "x.grp.info" -> Right XGrpInfo_
     "x.info.probe" -> Right XInfoProbe_
     "x.info.probe.check" -> Right XInfoProbeCheck_
     "x.info.probe.ok" -> Right XInfoProbeOk_
@@ -405,7 +413,7 @@ toCMEventTag = \case
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
   XGrpInv _ -> XGrpInv_
-  XGrpAcpt _ -> XGrpAcpt_
+  XGrpAcpt _ _ -> XGrpAcpt_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -416,6 +424,7 @@ toCMEventTag = \case
   XGrpMemDel _ -> XGrpMemDel_
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
+  XGrpInfo _ -> XGrpInfo_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -436,6 +445,17 @@ serializeCMEventTag = decodeLatin1 . strEncode
 instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
 
 instance ToField CMEventTag where toField = toField . serializeCMEventTag
+
+hasNotification :: CMEventTag -> Bool
+hasNotification = \case
+  XMsgNew_ -> True
+  XFile_ -> True
+  XContact_ -> True
+  XGrpInv_ -> True
+  XGrpMemFwd_ -> True
+  XGrpDel_ -> True
+  XCallInv_ -> True
+  _ -> False
 
 appToChatMessage :: AppMessage -> Either String ChatMessage
 appToChatMessage AppMessage {msgId, event, params} = do
@@ -459,7 +479,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
-      XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
+      XGrpAcpt_ -> XGrpAcpt <$> p "memberId" <*> opt "memberProfile"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -470,6 +490,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
+      XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -500,7 +521,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
-      XGrpAcpt memId -> o ["memberId" .= memId]
+      XGrpAcpt memId profile -> o $ ("memberProfile" .=? profile) ["memberId" .= memId]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
@@ -511,6 +532,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XGrpMemDel memId -> o ["memberId" .= memId]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
+      XGrpInfo p -> o ["groupProfile" .= p]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

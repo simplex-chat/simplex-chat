@@ -1,22 +1,31 @@
 package chat.simplex.app.model
 
 import android.app.*
-import android.content.Context
-import android.content.Intent
+import android.content.*
+import android.graphics.BitmapFactory
+import android.media.AudioAttributes
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import chat.simplex.app.*
-import chat.simplex.app.views.call.CallInvitation
-import chat.simplex.app.views.call.CallMediaType
+import chat.simplex.app.views.call.*
+import chat.simplex.app.views.helpers.base64ToBitmap
+import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Clock
 
-class NtfManager(val context: Context) {
+class NtfManager(val context: Context, private val appPreferences: AppPreferences) {
   companion object {
     const val MessageChannel: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
     const val MessageGroup: String = "chat.simplex.app.MESSAGE_NOTIFICATION"
     const val OpenChatAction: String = "chat.simplex.app.OPEN_CHAT"
     const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
+
+    // DO NOT change notification channel settings / names
+    const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION"
+    const val LockScreenCallChannel: String = "chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION"
+    const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
+    const val CallNotificationId: Int = -1
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -24,11 +33,22 @@ class NtfManager(val context: Context) {
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    manager.createNotificationChannel(NotificationChannel(
-      MessageChannel,
-      "SimpleX Chat messages",
-      NotificationManager.IMPORTANCE_HIGH
-    ))
+    manager.createNotificationChannel(NotificationChannel(MessageChannel, "SimpleX Chat messages", NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, "SimpleX Chat calls (lock screen)", NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(callNotificationChannel())
+  }
+
+  private fun callNotificationChannel(): NotificationChannel {
+    val callChannel = NotificationChannel(CallChannel, "SimpleX Chat calls", NotificationManager.IMPORTANCE_HIGH)
+    val attrs = AudioAttributes.Builder()
+      .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+      .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+      .build()
+    val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+    Log.d(TAG,"callNotificationChannel sound: $soundUri")
+    callChannel.setSound(soundUri, attrs)
+    callChannel.enableVibration(true)
+    return callChannel
   }
 
   fun cancelNotificationsForChat(chatId: String) {
@@ -44,21 +64,25 @@ class NtfManager(val context: Context) {
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
-    Log.d(TAG, "notifyMessageReceived ${cInfo.id}")
+    notifyMessageReceived(chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
+  }
+
+  fun notifyMessageReceived(chatId: String, displayName: String, msgText: String) {
+    Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
-    val recentNotification = (now - prevNtfTime.getOrDefault(cInfo.id, 0) < msgNtfTimeoutMs)
-    prevNtfTime[cInfo.id] = now
+    val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
+    prevNtfTime[chatId] = now
 
     val notification = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(cInfo.displayName)
-      .setContentText(hideSecrets(cItem))
+      .setContentTitle(displayName)
+      .setContentText(msgText)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setSmallIcon(R.drawable.ntf_icon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setContentIntent(getMsgPendingIntent(cInfo.id))
+      .setContentIntent(chatPendingIntent(OpenChatAction, chatId))
       .setSilent(recentNotification)
       .build()
 
@@ -68,45 +92,60 @@ class NtfManager(val context: Context) {
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setGroupSummary(true)
-      .setContentIntent(getSummaryNtfIntent())
+      .setContentIntent(chatPendingIntent(ShowChatsAction))
       .build()
 
     with(NotificationManagerCompat.from(context)) {
       // using cInfo.id only shows one notification per chat and updates it when the message arrives
-      notify(cInfo.id.hashCode(), notification)
+      notify(chatId.hashCode(), notification)
       notify(0, summary)
     }
   }
 
-  fun notifyCallInvitation(contact: Contact, invitation: CallInvitation) {
-    Log.d(TAG, "notifyCallInvitationReceived ${contact.id}")
-
-    val notification = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(contact.displayName)
-      .setContentText("Incoming ${invitation.peerMedia} call (${if (invitation.sharedKey == null) "not e2e encrypted" else "e2e encrypted"})")
+  fun notifyCallInvitation(invitation: RcvCallInvitation) {
+    if (isAppOnForeground(context)) return
+    val contactId = invitation.contact.id
+    Log.d(TAG, "notifyCallInvitation $contactId")
+    val keyguardManager = getKeyguardManager(context)
+    val image = invitation.contact.image
+    var ntfBuilder =
+      if (keyguardManager.isDeviceLocked && appPreferences.callOnLockScreen.get() != CallOnLockScreen.DISABLE) {
+        val fullScreenIntent = Intent(context, IncomingCallActivity::class.java)
+        val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, fullScreenIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        NotificationCompat.Builder(context, LockScreenCallChannel)
+          .setFullScreenIntent(fullScreenPendingIntent, true)
+          .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+          .setSilent(true)
+      } else {
+        val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+        NotificationCompat.Builder(context, CallChannel)
+          .setContentIntent(chatPendingIntent(OpenChatAction, invitation.contact.id))
+          .addAction(R.drawable.ntf_icon, generalGetString(R.string.accept), chatPendingIntent(AcceptCallAction, contactId))
+          .setSound(soundUri)
+      }
+    val text = generalGetString(
+      if (invitation.callType.media == CallMediaType.Video) {
+        if (invitation.sharedKey == null) R.string.video_call_no_encryption else R.string.encrypted_video_call
+      } else {
+        if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
+      }
+    )
+    ntfBuilder = ntfBuilder
+      .setContentTitle(invitation.contact.displayName)
+      .setContentText(text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
-      .setGroup(MessageGroup)
-      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setCategory(NotificationCompat.CATEGORY_CALL)
       .setSmallIcon(R.drawable.ntf_icon)
+      .setLargeIcon(if (image == null) BitmapFactory.decodeResource(context.resources, R.drawable.icon) else base64ToBitmap(image))
       .setColor(0x88FFFF)
       .setAutoCancel(true)
-      .setContentIntent(getMsgPendingIntent(contact.id))
-      .setSilent(false)
-      .build()
-
-//    val summary = NotificationCompat.Builder(context, MessageChannel)
-//      .setSmallIcon(R.drawable.ntf_icon)
-//      .setColor(0x88FFFF)
-//      .setGroup(MessageGroup)
-//      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
-//      .setGroupSummary(true)
-//      .setContentIntent(getSummaryNtfIntent())
-//      .build()
-
     with(NotificationManagerCompat.from(context)) {
-      notify(0, notification)
-//      notify(0, summary)
+      notify(CallNotificationId, ntfBuilder.build())
     }
+  }
+
+  fun cancelCallNotification() {
+    manager.cancel(CallNotificationId)
   }
 
   private fun hideSecrets(cItem: ChatItem) : String {
@@ -126,25 +165,13 @@ class NtfManager(val context: Context) {
     }
   }
 
-  private fun getMsgPendingIntent(chatId: String) : PendingIntent{
-    Log.d(TAG, "getMsgPendingIntent $chatId")
+  private fun chatPendingIntent(intentAction: String, chatId: String? = null): PendingIntent {
+    Log.d(TAG, "chatPendingIntent for $intentAction")
     val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
-    val intent = Intent(context, MainActivity::class.java)
+    var intent = Intent(context, MainActivity::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-      .putExtra("chatId", chatId)
-      .setAction(OpenChatAction)
-    return TaskStackBuilder.create(context).run {
-      addNextIntentWithParentStack(intent)
-      getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)
-    }
-  }
-
-  private fun getSummaryNtfIntent() : PendingIntent{
-    Log.d(TAG, "getSummaryNtfIntent")
-    val uniqueInt = (System.currentTimeMillis() and 0xfffffff).toInt()
-    val intent = Intent(context, MainActivity::class.java)
-      .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-      .setAction(ShowChatsAction)
+      .setAction(intentAction)
+    if (chatId != null) intent = intent.putExtra("chatId", chatId)
     return TaskStackBuilder.create(context).run {
       addNextIntentWithParentStack(intent)
       getPendingIntent(uniqueInt, PendingIntent.FLAG_IMMUTABLE)

@@ -13,6 +13,7 @@ val Inter = FontFamily(
   Font(R.font.inter_bold, weight = FontWeight.Bold),
   Font(R.font.inter_semi_bold, weight = FontWeight.SemiBold),
   Font(R.font.inter_medium, weight = FontWeight.Medium),
+  Font(R.font.inter_light, weight = FontWeight.Light),
 )
 
 // Set of Material typography styles to start with
@@ -30,7 +31,7 @@ val Typography = Typography(
   h3 = TextStyle(
     fontFamily = Inter,
     fontWeight = FontWeight.Normal,
-    fontSize = 19.sp
+    fontSize = 18.5.sp
   ),
   body1 = TextStyle(
     fontFamily = Inter,

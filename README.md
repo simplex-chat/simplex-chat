@@ -24,7 +24,26 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
-## Why privacy of communications matter
+## Contents
+
+- [Why privacy matters](#why-privacy-matters)
+- [SimpleX approach to privacy and security](#simplex-approach-to-privacy-and-security)
+  - [Complete privacy](#complete-privacy-of-your-identity-profile-contacts-and-metadata)
+  - [Protection against spam and abuse](#the-best-protection-against-spam-and-abuse)
+  - [Ownership and security of your data](#complete-ownership-control-and-security-of-your-data)
+  - [Users own SimpleX network](#users-own-simplex-network)
+- [Frequently asked questions](#frequently-asked-questions)
+- [News and updates](#news-and-updates)
+- [Make a private connection](#make-a-private-connection)
+- [Quick installation of a terminal app](#zap-quick-installation-of-a-terminal-app)
+- [SimpleX Platform design](#simplex-platform-design)
+- [Privacy: technical details and limitations](#privacy-technical-details-and-limitations)
+- [For developers](#for-developers)
+- [Roadmap](#roadmap)
+- [Help us pay for 3rd party security audit](#help-us-pay-for-3rd-party-security-audit)
+- [Disclaimer, License](#disclaimer)
+
+## Why privacy matters
 
 Everyone should care about privacy and security of their communications - innocuous conversations can put you in danger even if there is nothing to hide.
 
@@ -32,9 +51,9 @@ One of the most shocking stories is the experience of [Mohamedou Ould Salahi](ht
 
 It is not enough to use an end-to-end encrypted messenger, we all should use the messengers that protect the privacy of our personal networks - who we are connected with.
 
-## SimpleX unique approach to privacy and security
+## SimpleX approach to privacy and security
 
-### Full privacy of your identity, profile, contacts and metadata
+### Complete privacy of your identity, profile, contacts and metadata
 
 **Unlike any other existing messaging platform, SimpleX has no identifiers assigned to the users** - not even random numbers. This protects the privacy of who are you communicating with, hiding it from SimpleX platform servers and from any observers. [Read more](./docs/SIMPLEX.md#full-privacy-of-your-identity-profile-contacts-and-metadata).
 
@@ -50,24 +69,27 @@ SimpleX stores all user data on client devices, the messages are only held tempo
 
 You can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers. [Read more](./docs/SIMPLEX.md#users-own-simplex-network).
 
-## For developers
+## Frequently asked questions
 
-We plan that the SimpleX platform will grow into the platform supporting any distributed Internet application. This will allow you to build any service that people can access via chat, with custom web-based UI widgets that anybody with basic HTML/CSS/JavaScript knowledge can create in a few hours.
+1. _How SimpleX can deliver messages without any user identifiers?_ See [v2 release annoucement](./blog/20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers) explaining how SimpleX works.
 
-You already can:
+2. _Why should I not just use Signal?_ Signal is a centralised platform that uses phone numbers to identify its users and their contacts. It means that while the content of your messages on Signal is protected with robust end-to-end encryption, there is a large amount of meta-data visible to Signal - who you talk with and when.
 
-- use SimpleX Chat library to integrate chat functionality into your apps.
-- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon).
-
-If you are considering developing with SimpleX platform please get in touch for any advice and support.
+3. _How is it different from Matrix, Session, Ricochet, Cwtch, etc., that also don't require user identites?_ Although these platforms do not require a _real identity_, they do rely on anonymous user identities to deliver messages – it can be, for example, an identity key or a random number. Using a persistent user identity, even anonymous, creates a risk that user's connection graph becomes known to the observers and/or service providers, and it can lead to de-anonymizing some users. If the same user profile is used to connect to two different people via any messenger other than SimpleX, these two people can confirm if they are connected to the same person - they would use the same user identifier in the messages. With SimpleX there is no meta-data in common between your conversations with different contacts - the quality that no other messaging platform has.
 
 ## News and updates
 
+Selected updates:
+
+[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced netwrok settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
+
+[Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
+
 [May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
 
-[Apr 04, 2022. Instant notifications for SimpleX Chat mobile apps](./blog/20220404-simplex-chat-instant-notifications.md)
-
 [Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
+
+[Jan 12, 2022. SimpleX v1 released: the only messaging and application platform without user identities](./20220112-simplex-chat-v1-released.md)
 
 [All updates](./blog)
 
@@ -101,7 +123,43 @@ Unlike federated networks, the server nodes **do not have records of the users**
 
 Only the client devices have information about users, their contacts and groups.
 
-See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md) for more information on platform objectives and technical design.
+
+See [SimpleX Chat Protocol](./docs/protocol/simplex-chat.md) for the format of messages sent between chat clients over [SimpleX Messaging Protocol](https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md).
+
+## Privacy: technical details and limitations
+
+SimpleX Chat is a work in progress – we are releasing improvements as they are ready. You have to decide if the current state is good enough for your usage scenario.
+
+What is already implemented:
+
+1. Instead of user profile identifiers used by all other platforms, even the most private ones, SimpleX uses pairwise per-queue identifiers (2 addresses for each unidirectional message queue, with an optional 3rd address for push notificaitons on iOS, 2 queues in each connection between the users). It makes observing the network graph on the application level more difficult, as for `n` users there can be up to `n * (n-1)` message queues.
+2. End-to-end encryption in each message queue using [NaCl cryptobox](https://nacl.cr.yp.to/box.html). This is added to allow redundancy in the future (passing each message via several servers), to avoid having the same ciphertext in different queues (that would only be visible to the attacker if TLS is compromised). The encryption keys used for this encryption are not rotated, instead we are planning to rotate the queues. Curve25519 keys are used for key negotiation.
+3. [Double ratchet](https://signal.org/docs/specifications/doubleratchet/) end-to-end encryption in each conversation between two users (or group members). This is the same algorithm that is used in Signal and many other messaging apps; it provides OTR messaging with forward secrecy (each message is encrypted by its own ephemeral key), break-in recovery (the keys are frequently re-negotiated as part of the message exchange). Two pairs of Curve448 keys are used for the initial key agreement, initiating party passes these keys via the connection link, accepting side - in the header of the confirmation message.
+4. Additional layer of encryption using NaCL cryptobox for the messages delivered from the server to the recipient. This layer avoids having any ciphertext in common between sent and received traffic of the server inside TLS (and there are no identifiers in common as well).
+5. Several levels of content padding to frustrate message size attacks.
+6. Starting from v2 of SMP protocol (the current version is v4) all message metadata, including the time when the message was received by the server (rounded to a second) is sent to the recipients inside an encrypted envelope, so even if TLS is compromised it cannot be observed.
+7. Only TLS 1.2/1.3 are allowed for client-server connections, limited to cryptographic algorithms: CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
+8. To protect against replay attacks SimpleX servers require [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) as session ID in each client command signed with per-queue ephemeral key.
+9. To protect your IP address all SimpleX Chat clients support accessing messaging servers via Tor - see [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) for more details.
+
+We plan to add soon:
+
+1. Message queue rotation. Currently the queues created between two users are used until the contact is deleted, providing a long-term pairwise identifiers of the conversation. We are planning to add queue rotation to make these identifiers termporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+2. Local database encryption. Currently the local chat database stored on your device is not encrypted.
+3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+4. Independent implementation audit.
+
+## For developers
+
+We plan that the SimpleX platform will grow into the platform supporting any distributed Internet application. This will allow you to build any service that people can access via chat, with custom web-based UI widgets that anybody with basic HTML/CSS/JavaScript knowledge can create in a few hours.
+
+You already can:
+
+- use SimpleX Chat library to integrate chat functionality into your apps.
+- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon).
+
+If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
 ## Roadmap
 
@@ -113,12 +171,16 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - ✅ Private instant notifications for Android using background service.
 - ✅ Haskell chat bot templates.
 - ✅ v2.0 - supporting images and files in mobile apps.
-- 🏗 End-to-end encrypted audio and video calls via the mobile apps.
-- 🏗 Automatic chat history deletion.
-- 🏗 Privacy preserving instant notifications for iOS using Apple Push Notification service (in progress).
+- ✅ Manual chat history deletion.
+- ✅ End-to-end encrypted WebRTC audio and video calls via the mobile apps.
+- ✅ Privacy preserving instant notifications for iOS using Apple Push Notification service.
+- ✅ Chat database export and import
+- ✅ Chat groups in mobile apps.
+- ✅ Connecting to messaging servers via Tor.
+- 🏗 Dual server addresses to access messaging servers as v3 hidden services (in progress).
 - 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- Groups support for mobile apps.
-- Chat database portability and encryption.
+- Chat database encryption.
+- Disappearing messages, with mutual agreement.
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
   - SMP queue redundancy and rotation.
@@ -127,8 +189,32 @@ See [SimpleX whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/p
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
-- Media server to optimize sending large files to groups.
 - Channels server for large groups and broadcast channels.
+- Media server to optimize sending large files to groups.
+
+## Help us pay for 3rd party security audit
+
+I will get straight to the point: I ask you to support SimpleX Chat with donations.
+
+We are prioritizing users privacy and security - it would be impossible without your support we were lucky to have so far.
+
+We are planning a 3rd party security audit for the app, and it would hugely help us if some part of this $20,000+ expense could be covered with donations.
+
+Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
+
+If you are already using SimpleX Chat, or plan to use it in the future when it has more features, please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.
+
+It is possible to donate via:
+
+- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
+- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
+- Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+
+Thank you,
+
+Evgeny
+
+SimpleX Chat founder
 
 ## Disclaimer
 
@@ -139,3 +225,13 @@ You are likely to discover some bugs - we would really appreciate if you use it 
 ## License
 
 [AGPL v3](./LICENSE)
+
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+&nbsp;
+[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+&nbsp;
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+&nbsp;
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+&nbsp;
+[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/website/raw/master/simplex.apk)

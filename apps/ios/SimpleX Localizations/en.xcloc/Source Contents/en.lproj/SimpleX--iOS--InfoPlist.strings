@@ -2,6 +2,8 @@
 "CFBundleName" = "SimpleX";
 /* Privacy - Camera Usage Description */
 "NSCameraUsageDescription" = "SimpleX needs camera access to scan QR codes to connect to other users and for video calls.";
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX uses Face ID for local authentication";
 /* Privacy - Microphone Usage Description */
 "NSMicrophoneUsageDescription" = "SimpleX needs microphone access for audio and video calls.";
 /* Privacy - Photo Library Additions Usage Description */

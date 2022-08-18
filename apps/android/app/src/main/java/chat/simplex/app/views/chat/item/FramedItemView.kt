@@ -39,7 +39,8 @@ fun FramedItemView(
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long) -> Unit
+  receiveFile: (Long) -> Unit,
+  onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val sent = ci.chatDir.sent
 
@@ -121,7 +122,7 @@ fun FramedItemView(
           Column(Modifier.fillMaxWidth()) {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, showMenu)
+                CIImageView(image = mc.image, file = ci.file, showMenu, receiveFile)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {
@@ -136,9 +137,9 @@ fun FramedItemView(
               }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, showMember, uriHandler)
+                CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
               }
-              else -> CIMarkdownText(ci, showMember, uriHandler)
+              else -> CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
             }
           }
         }
@@ -151,11 +152,17 @@ fun FramedItemView(
 }
 
 @Composable
-fun CIMarkdownText(ci: ChatItem, showMember: Boolean, uriHandler: UriHandler?) {
+fun CIMarkdownText(
+  ci: ChatItem,
+  showMember: Boolean,
+  uriHandler: UriHandler?,
+  onLinkLongClick: (link: String) -> Unit = {}
+) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     MarkdownText(
       ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
-      metaText = ci.timestampText, edited = ci.meta.itemEdited, uriHandler = uriHandler, senderBold = true
+      metaText = ci.timestampText, edited = ci.meta.itemEdited,
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
   }
 }

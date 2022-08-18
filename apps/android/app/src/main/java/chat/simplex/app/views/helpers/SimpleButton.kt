@@ -29,13 +29,12 @@ fun SimpleButton(text: String, icon: ImageVector,
 }
 
 @Composable
-fun SimpleButtonFrame(click: () -> Unit, content: @Composable () -> Unit) {
+fun SimpleButtonFrame(click: () -> Unit, disabled: Boolean = false, content: @Composable () -> Unit) {
   Surface(shape = RoundedCornerShape(20.dp)) {
+    val modifier = if (disabled) Modifier else Modifier.clickable { click() }
     Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier
-        .clickable { click() }
-        .padding(8.dp)
+      modifier = modifier.padding(8.dp)
     ) { content() }
   }
 }

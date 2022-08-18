@@ -7,9 +7,9 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct DeletedItemView: View {
-    @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var showMember = false
 
@@ -29,11 +29,6 @@ struct DeletedItemView: View {
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .cornerRadius(18)
         .textSelection(.disabled)
-//        .background(Color(uiColor: .systemBackground))
-//        .overlay(
-//            RoundedRectangle(cornerRadius: 18)
-//                .stroke(.quaternary, lineWidth: 1)
-//        )
     }
 }
 

@@ -12,25 +12,27 @@ import CoreImage.CIFilterBuiltins
 struct AddContactView: View {
     var connReqInvitation: String
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("One-time invitation link")
-                .font(.title)
-                .padding(.vertical)
-            Text("Your contact can scan it from the app")
-                .padding(.bottom)
-            QRCode(uri: connReqInvitation)
-                .padding(.bottom)
-            Text("If you can't meet in person, **show QR code in the video call**, or share the link.")
-                .padding(.bottom)
-            Button {
-                showShareSheet(items: [connReqInvitation])
-            } label: {
-                Label("Share invitation link", systemImage: "square.and.arrow.up")
+        ScrollView {
+            VStack(alignment: .leading) {
+                Text("One-time invitation link")
+                    .font(.title)
+                    .padding(.vertical)
+                Text("Your contact can scan it from the app")
+                    .padding(.bottom)
+                QRCode(uri: connReqInvitation)
+                    .padding(.bottom)
+                Text("If you can't meet in person, **show QR code in the video call**, or share the link.")
+                    .padding(.bottom)
+                Button {
+                    showShareSheet(items: [connReqInvitation])
+                } label: {
+                    Label("Share invitation link", systemImage: "square.and.arrow.up")
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
+            .padding()
+            .frame(maxHeight: .infinity, alignment: .top)
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 }
 

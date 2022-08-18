@@ -7,22 +7,21 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
-    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
-
-    var user: User
 
     var body: some View {
         let v = NavigationView {
             List {
-                ForEach(filteredChats()) { chat in
+                ForEach(filteredChats(), id: \.viewId) { chat in
                     ChatListNavLink(chat: chat)
                         .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -33,7 +32,7 @@ struct ChatListView: View {
             }
             .onChange(of: chatModel.chats.isEmpty) { empty in
                 if !empty { return }
-                withAnimation { chatModel.onboardingStage = .step3_MakeConnection }
+                withAnimation { chatModel.onboardingStage = .step4_MakeConnection }
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
             .onAppear() { connectViaUrl() }
@@ -46,30 +45,11 @@ struct ChatListView: View {
                     SettingsButton()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    NewChatButton()
-                }
-            }
-            .fullScreenCover(isPresented: $chatModel.showCallView) {
-                ActiveCallView()
-            }
-            .onChange(of: chatModel.showCallView) { _ in
-                if (chatModel.showCallView) { return }
-                if let call = chatModel.activeCall {
-                    Task {
-                        do {
-                            try await apiEndCall(call.contact)
-                        } catch {
-                            logger.error("ChatListView apiEndCall error: \(error.localizedDescription)")
-                        }
+                    switch chatModel.chatRunning {
+                    case .some(true): NewChatButton()
+                    case .some(false): chatStoppedIcon()
+                    case .none: EmptyView()
                     }
-                }
-                chatModel.callCommand = .end
-            }
-            .onChange(of: chatModel.activeCallInvitation) { _ in
-                if let contactRef = chatModel.activeCallInvitation,
-                   case let .direct(contact) = chatModel.getChat(contactRef.id)?.chatInfo,
-                   let invitation = chatModel.callInvitations[contactRef.id] {
-                    answerCallAlert(contact, invitation)
                 }
             }
         }
@@ -84,44 +64,23 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == "" && pendingConnections
+        return s == ""
             ? chatModel.chats
-            : s == ""
-            ? chatModel.chats.filter {
-                pendingConnections || $0.chatInfo.chatType != .contactConnection
-            }
             : chatModel.chats.filter {
-                (pendingConnections || $0.chatInfo.chatType != .contactConnection) &&
+                $0.chatInfo.chatType != .contactConnection &&
                 $0.chatInfo.chatViewName.localizedLowercase.contains(s)
             }
     }
+}
 
-    private func answerCallAlert(_ contact: Contact, _ invitation: CallInvitation) {
-        return AlertManager.shared.showAlert(Alert(
-            title: Text(invitation.callTitle),
-            message: Text(contact.profile.displayName).bold() +
-                Text(" wants to connect with you via ") +
-                Text(invitation.callTypeText),
-            primaryButton: .default(Text("Answer")) {
-                if let activeCallInvitation = chatModel.activeCallInvitation {
-                    chatModel.callInvitations.removeValue(forKey: activeCallInvitation.id)
-                    chatModel.activeCallInvitation = nil
-                    chatModel.activeCall = Call(
-                        contact: contact,
-                        callState: .invitationReceived,
-                        localMedia: invitation.peerMedia,
-                        sharedKey: invitation.sharedKey
-                    )
-                    chatModel.showCallView = true
-                    chatModel.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
-                } else {
-                    DispatchQueue.main.async {
-                        AlertManager.shared.showAlertMsg(title: "Call already ended!")
-                    }
-                }
-            },
-            secondaryButton: .cancel()
-        ))
+func chatStoppedIcon() -> some View {
+    Button {
+        AlertManager.shared.showAlertMsg(
+            title: "Chat is stopped",
+            message: "You can start chat via app Settings / Database or by restarting the app"
+        )
+    } label: {
+        Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
     }
 }
 
@@ -144,9 +103,9 @@ struct ChatListView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatListView(user: User.sampleData)
+            ChatListView()
                 .environmentObject(chatModel)
-            ChatListView(user: User.sampleData)
+            ChatListView()
                 .environmentObject(ChatModel())
         }
     }

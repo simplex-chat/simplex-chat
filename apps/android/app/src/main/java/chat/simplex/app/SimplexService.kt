@@ -2,7 +2,9 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.os.*
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -47,14 +49,16 @@ class SimplexService: Service() {
     val text = getString(R.string.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
     serviceNotification = createNotification(title, text)
-
     startForeground(SIMPLEX_SERVICE_ID, serviceNotification)
   }
 
   override fun onDestroy() {
     Log.d(TAG, "Simplex service destroyed")
     stopService()
-    sendBroadcast(Intent(this, AutoRestartReceiver::class.java)) // Restart if necessary!
+
+    // If private notifications are enabled and battery optimization is disabled, restart the service
+    if (SimplexApp.context.allowToStartServiceAfterAppExit())
+      sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
   }
 
@@ -71,7 +75,6 @@ class SimplexService: Service() {
         } else {
           Log.w(TAG, "Starting foreground service")
           chatController.startChat(user)
-          chatController.startReceiver()
           isServiceStarted = true
           saveServiceState(self, ServiceState.STARTED)
           wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
@@ -98,7 +101,6 @@ class SimplexService: Service() {
     } catch (e: Exception) {
       Log.d(TAG, "Service stopped without being started: ${e.message}")
     }
-
     isServiceStarted = false
     saveServiceState(this, ServiceState.STOPPED)
   }
@@ -120,15 +122,27 @@ class SimplexService: Service() {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
-    return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-      .setSmallIcon(R.drawable.ntf_icon)
+
+    val builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+      .setSmallIcon(R.drawable.ntf_service_icon)
       .setColor(0x88FFFF)
       .setContentTitle(title)
       .setContentText(text)
       .setContentIntent(pendingIntent)
-      .setSound(null)
+      .setSilent(true)
       .setShowWhen(false) // no date/time
-      .build()
+
+    // Shows a button which opens notification channel settings
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      val setupIntent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+      setupIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+      setupIntent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFICATION_CHANNEL_ID)
+      val setup = PendingIntent.getActivity(this, 0, setupIntent, flags)
+      builder.addAction(0, getString(R.string.hide_notification), setup)
+    }
+
+    return builder.build()
   }
 
   override fun onBind(intent: Intent): IBinder? {
@@ -137,6 +151,11 @@ class SimplexService: Service() {
 
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
+    // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
+    if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
+      return
+    }
+
     val restartServiceIntent = Intent(applicationContext, SimplexService::class.java).also {
       it.setPackage(packageName)
     };
@@ -151,6 +170,17 @@ class SimplexService: Service() {
     override fun onReceive(context: Context, intent: Intent) {
       Log.d(TAG, "StartReceiver: onReceive called")
       scheduleStart(context)
+    }
+    companion object {
+      fun toggleReceiver(enable: Boolean) {
+        Log.d(TAG, "StartReceiver: toggleReceiver enabled: $enable")
+        val component = ComponentName(BuildConfig.APPLICATION_ID, StartReceiver::class.java.name)
+        SimplexApp.context.packageManager.setComponentEnabledSetting(
+          component,
+          if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP
+        )
+      }
     }
   }
 

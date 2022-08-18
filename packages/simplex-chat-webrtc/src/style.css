@@ -1,12 +1,10 @@
-video::-webkit-media-controls {
-  display: none;
-}
 html,
 body {
   padding: 0;
   margin: 0;
   background-color: black;
 }
+
 #remote-video-stream {
   position: absolute;
   width: 100%;
@@ -23,4 +21,21 @@ body {
   border-radius: 16px;
   top: 0;
   right: 0;
+}
+
+*::-webkit-media-controls {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none !important;
 }

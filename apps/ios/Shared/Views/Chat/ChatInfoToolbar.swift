@@ -7,12 +7,14 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
-private let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
-private let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2                                                     )
+let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
+let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2)
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
+    var imageSize: CGFloat = 32
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -23,7 +25,7 @@ struct ChatInfoToolbar: View {
                         ? chatImageColorDark
                         : chatImageColorLight
             )
-            .frame(width: 32, height: 32)
+            .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
                 Text(cInfo.displayName).font(.headline)
@@ -33,6 +35,7 @@ struct ChatInfoToolbar: View {
             }
         }
         .foregroundColor(.primary)
+        .frame(width: 220)
     }
 }
 

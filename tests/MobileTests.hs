@@ -31,9 +31,9 @@ activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\"
 
 activeUser :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}}"
+activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}}"
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}"
+activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\"},\"activeUser\":true}}}"
 #endif
 
 chatStarted :: String
@@ -41,6 +41,34 @@ chatStarted :: String
 chatStarted = "{\"resp\":{\"chatStarted\":{}}}"
 #else
 chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
+#endif
+
+contactSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+contactSubSummary = "{\"resp\":{\"contactSubSummary\":{\"contactSubscriptions\":[]}}}"
+#else
+contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\",\"contactSubscriptions\":[]}}"
+#endif
+
+memberSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+memberSubSummary = "{\"resp\":{\"memberSubSummary\":{\"memberSubscriptions\":[]}}}"
+#else
+memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\",\"memberSubscriptions\":[]}}"
+#endif
+
+pendingSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubscriptions\":[]}}}"
+#else
+pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\",\"pendingSubscriptions\":[]}}"
+#endif
+
+parsedMarkdown :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello\"}]}"
+#else
+parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 #endif
 
 testChatApiNoUser :: IO ()
@@ -54,9 +82,15 @@ testChatApiNoUser = withTmpFiles $ do
 testChatApi :: IO ()
 testChatApi = withTmpFiles $ do
   let f = chatStoreFile $ testDBPrefix <> "1"
-  st <- createStore f 1 True
-  Right _ <- runExceptT $ createUser st aliceProfile True
+  st <- createStore f True
+  Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile True
   cc <- chatInit $ testDBPrefix <> "1"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
+  chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` memberSubSummary
+  chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
+  chatRecvMsgWait cc 10000 `shouldReturn` ""
+  chatParseMarkdown "hello" `shouldBe` "{}"
+  chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown

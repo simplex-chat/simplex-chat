@@ -10,25 +10,103 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var alertManager = AlertManager.shared
-    @State private var showNotificationAlert = false
+    @ObservedObject var callController = CallController.shared
+    @Binding var doAuthenticate: Bool
+    @Binding var userAuthorized: Bool?
+    @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
+    @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
 
     var body: some View {
         ZStack {
-            if let step = chatModel.onboardingStage {
+            if prefPerformLA && userAuthorized != true {
+                Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+            } else if !chatModel.v3DBMigration.startChat {
+                MigrateToAppGroupView()
+            } else if let step = chatModel.onboardingStage  {
                 if case .onboardingComplete = step,
-                   let user = chatModel.currentUser {
-                    ChatListView(user: user)
-                    .onAppear {
-                        NtfManager.shared.requestAuthorization(onDeny: {
-                            alertManager.showAlert(notificationAlert())
-                        })
-                    }
+                   chatModel.currentUser != nil {
+                    mainView()
                 } else {
                     OnboardingView(onboarding: step)
                 }
             }
         }
+        .onAppear {
+            if doAuthenticate { runAuthenticate() }
+        }
+        .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
+    }
+
+    private func mainView() -> some View {
+        ZStack(alignment: .top) {
+            ChatListView()
+            .onAppear {
+                NtfManager.shared.requestAuthorization(onDeny: {
+                    alertManager.showAlert(notificationAlert())
+                })
+                // Local Authentication notice is to be shown on next start after onboarding is complete
+                if (!prefLANoticeShown && prefShowLANotice) {
+                    prefLANoticeShown = true
+                    alertManager.showAlert(laNoticeAlert())
+                }
+                prefShowLANotice = true
+            }
+            if chatModel.showCallView, let call = chatModel.activeCall {
+                ActiveCallView(call: call)
+            }
+            IncomingCallView()
+        }
+    }
+
+    private func runAuthenticate() {
+        if !prefPerformLA {
+            userAuthorized = true
+        } else {
+            dismissAllSheets(animated: false) {
+                justAuthenticate()
+            }
+        }
+    }
+
+    private func justAuthenticate() {
+        userAuthorized = false
+        authenticate(reason: NSLocalizedString("Unlock", comment: "authentication reason")) { laResult in
+            switch (laResult) {
+            case .success:
+                userAuthorized = true
+            case .failed:
+                break
+            case .unavailable:
+                userAuthorized = true
+                prefPerformLA = false
+                AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+            }
+        }
+    }
+
+    func laNoticeAlert() -> Alert {
+        Alert(
+            title: Text("SimpleX Lock"),
+            message: Text("To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled."),
+            primaryButton: .default(Text("Turn on")) {
+                authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
+                    switch laResult {
+                    case .success:
+                        prefPerformLA = true
+                        alertManager.showAlert(laTurnedOnAlert())
+                    case .failed:
+                        prefPerformLA = false
+                        alertManager.showAlert(laFailedAlert())
+                    case .unavailable:
+                        prefPerformLA = false
+                        alertManager.showAlert(laUnavailableInstructionAlert())
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+         )
     }
 
     func notificationAlert() -> Alert {
@@ -90,11 +168,15 @@ final class AlertManager: ObservableObject {
     }
 
     func showAlertMsg(title: LocalizedStringKey, message: LocalizedStringKey? = nil) {
-        if let message = message {
-            showAlert(Alert(title: Text(title), message: Text(message)))
-        } else {
-            showAlert(Alert(title: Text(title)))
-        }
+        showAlert(mkAlert(title: title, message: message))
+    }
+}
+
+func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> Alert {
+    if let message = message {
+        return Alert(title: Text(title), message: Text(message))
+    } else {
+        return Alert(title: Text(title))
     }
 }
 

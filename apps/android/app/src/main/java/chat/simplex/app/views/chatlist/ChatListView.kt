@@ -7,9 +7,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -17,9 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.ToolbarDark
-import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
 import chat.simplex.app.views.usersettings.SettingsView
@@ -64,16 +62,15 @@ fun scaffoldController(): ScaffoldController {
 }
 
 @Composable
-fun ChatListView(chatModel: ChatModel) {
+fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val scaffoldCtrl = scaffoldController()
-  if (chatModel.clearOverlays.value) {
-    scaffoldCtrl.collapse()
-    ModalManager.shared.closeModal()
-    chatModel.clearOverlays.value = false
+  LaunchedEffect(chatModel.clearOverlays.value) {
+    if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
   BottomSheetScaffold(
+    topBar = { ChatListToolbar(scaffoldCtrl, stopped) },
     scaffoldState = scaffoldCtrl.state,
-    drawerContent = { SettingsView(chatModel) },
+    drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
@@ -84,8 +81,6 @@ fun ChatListView(chatModel: ChatModel) {
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(scaffoldCtrl)
-        Divider()
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel)
         } else {
@@ -105,76 +100,43 @@ fun ChatListView(chatModel: ChatModel) {
 }
 
 @Composable
-fun Help(scaffoldCtrl: ScaffoldController, displayName: String?) {
-  Column(
-    Modifier
-      .verticalScroll(rememberScrollState())
-      .fillMaxWidth()
-      .padding(16.dp)
-  ) {
-    val welcomeMsg = if (displayName != null) {
-      String.format(stringResource(R.string.personal_welcome), displayName)
-    } else stringResource(R.string.welcome)
-    Text(
-      text = welcomeMsg,
-      Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1,
-      color = MaterialTheme.colors.onBackground
-    )
-    ChatHelpView { scaffoldCtrl.toggleSheet() }
-    Row(
-      Modifier.padding(top = 30.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
+fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
+  DefaultTopAppBar(
+    navigationButton = { NavigationButtonMenu { scaffoldCtrl.toggleDrawer() } },
+    title = {
       Text(
-        stringResource(R.string.this_text_is_available_in_settings),
-        color = MaterialTheme.colors.onBackground
+        stringResource(R.string.your_chats),
+        color = MaterialTheme.colors.onBackground,
+        fontWeight = FontWeight.SemiBold,
       )
-      Icon(
-        Icons.Outlined.Settings,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.onBackground,
-        modifier = Modifier.clickable(onClick = { scaffoldCtrl.toggleDrawer() })
-      )
+    },
+    onTitleClick = null,
+    showSearch = false,
+    onSearchValueChanged = {},
+    buttons = listOf{
+      if (!stopped) {
+        IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
+          Icon(
+            Icons.Outlined.AddCircle,
+            stringResource(R.string.add_contact),
+            tint = MaterialTheme.colors.primary,
+            modifier = Modifier.padding(10.dp).size(26.dp)
+          )
+        }
+      } else {
+        IconButton(onClick = { AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_is_stopped_indication),
+          generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)) }) {
+          Icon(
+            Icons.Filled.Report,
+            generalGetString(R.string.chat_is_stopped_indication),
+            tint = Color.Red,
+            modifier = Modifier.padding(10.dp)
+          )
+        }
+      }
     }
-  }
-}
-
-@Composable
-fun ChatListToolbar(scaffoldCtrl: ScaffoldController) {
-  Row(
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(52.dp)
-      .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-      .padding(horizontal = 8.dp)
-  ) {
-    IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
-      Icon(
-        Icons.Outlined.Menu,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
-    }
-    Text(
-      stringResource(R.string.your_chats),
-      color = MaterialTheme.colors.onBackground,
-      fontWeight = FontWeight.SemiBold,
-      modifier = Modifier.padding(5.dp)
-    )
-    IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
-      Icon(
-        Icons.Outlined.PersonAdd,
-        stringResource(R.string.add_contact),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
-    }
-  }
+  )
+  Divider()
 }
 
 @Composable

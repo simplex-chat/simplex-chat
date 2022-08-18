@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 let simplexTeamURL = URL(string: "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")!
 
@@ -14,63 +15,121 @@ let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionS
 
 let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? String
 
-let DEFAULT_USE_NOTIFICATIONS = "useNotifications"
-let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
+let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
+let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
+let DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
+let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
+let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
+let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
+let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
+let DEFAULT_DEVELOPER_TOOLS = "developerTools"
+
+let appDefaults: [String: Any] = [
+    DEFAULT_SHOW_LA_NOTICE: false,
+    DEFAULT_LA_NOTICE_SHOWN: false,
+    DEFAULT_PERFORM_LA: false,
+    DEFAULT_WEBRTC_POLICY_RELAY: true,
+    DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
+    DEFAULT_PRIVACY_LINK_PREVIEWS: true,
+    DEFAULT_EXPERIMENTAL_CALLS: false,
+    DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
+    DEFAULT_DEVELOPER_TOOLS: false
+]
 
 private var indent: CGFloat = 36
+
+let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
+
+func setGroupDefaults() {
+    privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
+}
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_USE_NOTIFICATIONS) private var useNotifications = false
-    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
-    @State var showNotificationsAlert: Bool = false
-    @State var whichNotificationsAlert = NotificationAlert.enable
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     var body: some View {
         let user: User = chatModel.currentUser!
 
-        return NavigationView {
+        NavigationView {
             List {
                 Section("You") {
                     NavigationLink {
                         UserProfile()
                             .navigationTitle("Your chat profile")
                     } label: {
-                        HStack {
-                            ProfileImage(imageStr: user.image)
-                                .frame(width: 44, height: 44)
-                                .padding(.trailing, 6)
-                                .padding(.vertical, 6)
-                            VStack(alignment: .leading) {
-                                Text(user.displayName)
-                                    .fontWeight(.bold)
-                                    .font(.title2)
-                                Text(user.fullName)
-                            }
-                        }
+                        ProfilePreview(profileOf: user)
                         .padding(.leading, -8)
                     }
+                    .disabled(chatModel.chatRunning != true)
+
                     NavigationLink {
                         UserAddress()
                             .navigationTitle("Your chat address")
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+
+                    NavigationLink {
+                        DatabaseView(showSettings: $showSettings)
+                            .navigationTitle("Your chat database")
+                    } label: {
+                        settingsRow("internaldrive") {
+                            HStack {
+                                Text("Database export & import")
+                                Spacer()
+                                if chatModel.chatRunning == false {
+                                    Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)
+                                }
+                            }
+                        }
+                    }
                 }
                 
                 Section("Settings") {
-                    settingsRow("link") {
-                        Toggle("Show pending connections", isOn: $pendingConnections)
+                    NavigationLink {
+                        NotificationsView()
+                            .navigationTitle("Notifications")
+                    } label: {
+                        HStack {
+                            notificationsIcon()
+                            Text("Notifications")
+                        }
                     }
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("Your SMP servers")
+                        CallSettings()
+                            .navigationTitle("Your calls")
                     } label: {
-                        settingsRow("server.rack") { Text("SMP servers") }
+                        settingsRow("video") { Text("Audio & video calls") }
+                    }
+                    NavigationLink {
+                        PrivacySettings()
+                            .navigationTitle("Your privacy")
+                    } label: {
+                        settingsRow("lock") { Text("Privacy & security") }
+                    }
+                    if UIApplication.shared.supportsAlternateIcons {
+                        NavigationLink {
+                            AppearanceSettings()
+                                .navigationTitle("Appearance")
+                        } label: {
+                            settingsRow("sun.max") { Text("Appearance") }
+                        }
+                    }
+                    NavigationLink {
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
+                    } label: {
+                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
                 }
+                .disabled(chatModel.chatRunning != true)
 
                 Section("Help") {
                     NavigationLink {
@@ -104,6 +163,7 @@ struct SettingsView: View {
                             Text("Chat with the developers")
                         }
                     }
+                    .disabled(chatModel.chatRunning != true)
                     settingsRow("envelope") { Text("[Send us email](mailto:chat@simplex.chat)") }
                 }
 
@@ -113,35 +173,28 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
+                    .disabled(chatModel.chatRunning != true)
+                    settingsRow("gear") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
                             .frame(width: 24, height: 24)
+                            .opacity(0.5)
                         Text("Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)")
                             .padding(.leading, indent)
                     }
-//                    if let token = chatModel.deviceToken {
-//                        HStack {
-//                            notificationsIcon()
-//                            notificationsToggle(token)
-//                        }
-//                    }
 //                    NavigationLink {
-//                        CallViewDebug()
-//                            .frame(maxHeight: .infinity, alignment: .top)
+//                        ExperimentalFeaturesView()
+//                            .navigationTitle("Experimental features")
 //                    } label: {
-                        Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
+//                        settingsRow("gauge") { Text("Experimental features") }
 //                    }
+                    Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                 }
             }
             .navigationTitle("Your settings")
-        }
-    }
-
-    private func settingsRow<Content : View>(_ icon: String, content: @escaping () -> Content) -> some View {
-        ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-            content().padding(.leading, indent)
         }
     }
 
@@ -156,13 +209,13 @@ struct SettingsView: View {
         switch (chatModel.tokenStatus) {
         case .new:
             icon = "bolt"
-            color = .primary
+            color = .secondary
         case .registered:
             icon = "bolt.fill"
-            color = .primary
+            color = .secondary
         case .invalid:
             icon = "bolt.slash"
-            color = .primary
+            color = .secondary
         case .confirmed:
             icon = "bolt.fill"
             color = .yellow
@@ -171,74 +224,41 @@ struct SettingsView: View {
             color = .green
         case .expired:
             icon = "bolt.slash.fill"
-            color = .primary
+            color = .secondary
+        case .none:
+            icon = "bolt"
+            color = .secondary
         }
         return Image(systemName: icon)
             .padding(.trailing, 9)
             .foregroundColor(color)
     }
+}
 
-    private func notificationsToggle(_ token:  String) -> some View {
-        Toggle("Check messages", isOn: $useNotifications)
-            .onChange(of: useNotifications) { enable in
-                if enable {
-                    showNotificationsAlert = true
-                    whichNotificationsAlert = .enable
-                } else {
-                    Task {
-                        do {
-                            try await apiDeleteToken(token: token)
-                            chatModel.tokenStatus = .new
-                        }
-                        catch {
-                            DispatchQueue.main.async {
-                                if let cr = error as? ChatResponse {
-                                    let err = String(describing: cr)
-                                    logger.error("apiDeleteToken error: \(err)")
-                                    showNotificationsAlert = true
-                                    whichNotificationsAlert = .error("Error deleting token", err)
-                                } else {
-                                    logger.error("apiDeleteToken unknown error: \(error.localizedDescription)")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .alert(isPresented: $showNotificationsAlert) {
-                switch (whichNotificationsAlert) {
-                case .enable: return enableNotificationsAlert(token)
-                case let .error(title, err): return Alert(title: Text(title), message: Text(err))
-                }
-            }
+func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, content: @escaping () -> Content) -> some View {
+    ZStack(alignment: .leading) {
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(color)
+        content().padding(.leading, indent)
     }
+}
 
-    private func enableNotificationsAlert(_ token: String) -> Alert {
-        Alert(
-            title: Text("Enable notifications? (BETA)"),
-            message: Text("The app can receive background notifications every 20 minutes to check the new messages.\n*Please note*: if you confirm, your device token will be sent to SimpleX Chat notifications server."),
-            primaryButton: .destructive(Text("Confirm")) {
-                Task {
-                    do {
-                        chatModel.tokenStatus = try await apiRegisterToken(token: token)
-                    } catch {
-                        DispatchQueue.main.async {
-                            useNotifications = false
-                            if let cr = error as? ChatResponse {
-                                let err = String(describing: cr)
-                                logger.error("apiRegisterToken error: \(err)")
-                                showNotificationsAlert = true
-                                whichNotificationsAlert = .error("Error registering token", err)
-                            } else {
-                                logger.error("apiRegisterToken unknown error: \(error.localizedDescription)")
-                            }
-                        }
-                    }
-                }
-            }, secondaryButton: .cancel() {
-                withAnimation() { useNotifications = false }
+struct ProfilePreview: View {
+    var profileOf: NamedChat
+    var color = Color(uiColor: .tertiarySystemGroupedBackground)
+
+    var body: some View {
+        HStack {
+            ProfileImage(imageStr: profileOf.image, color: color)
+                .frame(width: 44, height: 44)
+                .padding(.trailing, 6)
+                .padding(.vertical, 6)
+            VStack(alignment: .leading) {
+                Text(profileOf.displayName)
+                    .fontWeight(.bold)
+                    .font(.title2)
+                Text(profileOf.fullName)
             }
-        )
+        }
     }
 }
 
