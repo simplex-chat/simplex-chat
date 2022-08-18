@@ -17,7 +17,7 @@ Even though the app is new, it uses the same core code as our terminal app, that
 - additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).
 - additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).
 
-You can read more details in our recent [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md).
+You can read more details in our recent [v1 announcement](./20220112-simplex-chat-v1-released.md).
 
 ## Join our public beta!
 

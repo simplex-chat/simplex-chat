@@ -8,7 +8,7 @@ date: 2022-06-04
 
 **Published:** June 4, 2022
 
-See [v2 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platfom, has no identity keys or any numbers that identify its users.
+See [v2 announcement](./20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platform, has no identity keys or any numbers that identify its users.
 
 ## New Privacy and Security settings in version 2.2
 
@@ -47,6 +47,6 @@ You can discover additional features we are currently testing in Experimental Fe
 
 ## More information
 
-See [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md) for information on how SimpleX protects the security of the messages.
+See [v1 announcement](./20220112-simplex-chat-v1-released.md) for information on how SimpleX protects the security of the messages.
 
 Read about SimpleX design in [whitepaper](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md).

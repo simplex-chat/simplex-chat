@@ -10,7 +10,7 @@ date: 2022-04-04
 
 ## SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections
 
-Since we released SimpleX Chat mobile apps couple of weeks ago we've had a lot of excitement from our users - nearly 2000 people downloaded the app after [the announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220308-simplex-chat-mobile-apps.md)!
+Since we released SimpleX Chat mobile apps couple of weeks ago we've had a lot of excitement from our users - nearly 2000 people downloaded the app after [the announcement](./20220308-simplex-chat-mobile-apps.md)!
 
 Huge thanks to everybody who downloaded and connected to us via the chat - there were many great questions and suggestions, and on some days I spent most of the time chatting to our users :)
 
@@ -74,7 +74,7 @@ We already have background refresh in the iOS app that periodically checks for n
 
 The only solution known to us is using Apple's push notifications service (APN) to deliver push notifications.
 
-We planned for it, so we added to [v1 of SMP](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md) (the protocol used by our servers) an extension allowing the client to subscribe to notifications from message queues, via separate queue addresses, and using separate cryptographic keys for each queue. This has to be enabled by the client for each queue separately. We haven't used this extension so far, and now we are building a SimpleX notification service based on it.
+We planned for it, so we added to [v1 of SMP](./20220112-simplex-chat-v1-released.md) (the protocol used by our servers) an extension allowing the client to subscribe to notifications from message queues, via separate queue addresses, and using separate cryptographic keys for each queue. This has to be enabled by the client for each queue separately. We haven't used this extension so far, and now we are building a SimpleX notification service based on it.
 
 If the user enables push notifications, then for each contact the app would enable a notification subscription and pass credentials to the notification server together with the device token required to deliver push notifications to user's device.
 

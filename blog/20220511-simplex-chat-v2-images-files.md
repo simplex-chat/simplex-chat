@@ -18,7 +18,7 @@ To make file and images work for mobile apps we made a breaking change in Simple
 
 In the mobile app, to send and receive files both devices must have version 2.0 installed - so please check it with your contacts. Receiving images works in the previous version, so even if your contacts did not yet upgrade the app, they should be able to receive the images.
 
-## The first messaging platform without user identifiers.
+## The first messaging platform without user identifiers
 
 To protect identities of users and their connections, SimpleX Chat has no user identifiers visible to the network – unlike any other messaging platform.
 
