@@ -9,10 +9,10 @@ date: 2022-07-23
 
 ## What's new
 
-- terminal app: [access to messaging servers via SOCKS5 proxy](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor) (e.g., Tor).
-- mobile apps: [join and leave chat groups](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#mobile-apps-join-and-leave-chat-groups).
-- [optimized battery and traffic usage - up to 90x reduction!](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#optimized-battery-and-traffic-usage---up-to-90x-reduction).
-- [two docker configurations for self-hosted SMP servers](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md#docker-configuration-for-self-hosted-smp-servers).
+- terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app:-access-to-messaging-servers-via-socks5-proxy-/-tor) (e.g., Tor).
+- mobile apps: [join and leave chat groups](#mobile-apps:-join-and-leave-chat-groups).
+- [optimized battery and traffic usage - up to 90x reduction!](#optimized-battery-and-traffic-usage---up-to-90x-reduction).
+- [two docker configurations for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
 
 ### Terminall app: access to messaging servers via SOCKS5 proxy / Tor
 
@@ -46,7 +46,7 @@ To manage groups via terminal app or via chat console in the mobile apps you hav
 
 Accepting group invitations, leaving and deleting groups no longer requires using console commands.
 
-### Optimized battery and traffic usage - up to 90x reduction!
+### Optimized battery and traffic usage - up to 90x reduction
 
 To reduce battery and traffic usage this release updated SMP protocol to allow batching multiple server commands (up to 90!) into one traffic block – provided both the server and the client are upgraded. It means that if you have 90 contacts (or group members) on one server, to subscribe to all messaging queues you now need to send only one 16kb block instead of ~1.5Mb of traffic (90 blocks). It also hides how many contacts you have from any attackers who observe your network.
 

@@ -9,9 +9,9 @@ date: 2022-07-11
 
 ## New in version 3
 
-- [instant notifications for iOS](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#instant-notifications-for-ios)
-- [database export and import](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#database-export-and-import)
-- [protocol privacy and performance improvements](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#protocol-privacy-and-performance-improvements)
+- [instant notifications for iOS](#instant-notifications-for-ios)
+- [database export and import](#database-export-and-import)
+- [protocol privacy and performance improvements](#protocol-privacy-and-performance-improvements)
 
 ### Instant notifications for iOS
 

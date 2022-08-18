@@ -3,20 +3,19 @@ layout: layouts/article.html
 title: "SimpleX Chat v3.1 is released"
 date: 2022-08-08
 ---
+
 # SimpleX Chat v3.1 is released
 
 **Published:** Aug 8, 2022
 
 ## What's new
 
-- [secret chat groups](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#secret-chat-groups)!
-- [access to messaging servers via Tor](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#access-to-messaging-servers-via-tor)
-- [advanced network settings](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#advanced-network-settings)
-- [published chat protocol](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#published-chat-protocol)
-- [new app icons](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#new-app-icons)
-- [other changes since v3](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220808-simplex-chat-v3.1-chat-groups.md#other-changes-since-v3)
-  - optimized battery and traffic usage - up to 90x reduction!
-  - two docker configurations for self-hosted SMP servers
+- [secret chat groups](#secret-chat-groups)!
+- [access to messaging servers via Tor](#access-messaging-servers-via-tor)
+- [advanced network settings](#advanced-network-settings)
+- [published chat protocol](#published-chat-protocol)
+- [new app icons](#new-app-icons)
+- [other changes since v3](#other-changes-since-v3)
 
 ### Secret chat groups
 
@@ -76,7 +75,7 @@ The [low level SimpleX protocols](https://github.com/simplex-chat/simplexmq/blob
 
 This is the [first draft of SimpleX Chat Protocol](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md) - let us know any questions or suggestions.
 
-### Other changes since v3
+### Other changes since v3
 
 Since v3 release we also optimized battery and traffic usage - with up to 90x traffic reduction in some cases – and published two docker configurations for self-hosted SMP servers. Read more about it in the previous [beta version announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.md).
 
