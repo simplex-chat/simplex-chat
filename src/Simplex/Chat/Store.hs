@@ -1172,7 +1172,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, pu.incognito, g.created_at, g.updated_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1260,7 +1260,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, pu.incognito, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1317,7 +1317,7 @@ createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = Except
     memberId <- liftIO $ encodedRandomBytes gVar 12
     -- TODO ldn from incognito profile
     membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser incognitoProfile currentTs
-    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, membershipIncognito = isJust incognitoProfile, createdAt = currentTs, updatedAt = currentTs}
+    pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe Profile -> ExceptT StoreError IO GroupInfo
@@ -1350,7 +1350,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
             insertedRowId db
           _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown fromMemberProfile currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfile currentTs
-          pure GroupInfo {groupId, localDisplayName, groupProfile, membership, membershipIncognito = isJust incognitoProfile, createdAt = currentTs, updatedAt = currentTs}
+          pure GroupInfo {groupId, localDisplayName, groupProfile, membership, createdAt = currentTs, updatedAt = currentTs}
 
 createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe Profile -> UTCTime -> ExceptT StoreError IO GroupMember
 createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfile createdAt = do
@@ -1461,7 +1461,7 @@ getUserGroupDetails db User {userId, userContactId} =
     <$> DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mp.incognito, g.created_at, g.updated_at,
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
           m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, mp.contact_profile_id, mp.display_name, mp.full_name, mp.image
         FROM groups g
@@ -1477,12 +1477,12 @@ getGroupInfoByName db user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db user gId
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, Maybe Bool, UTCTime, UTCTime) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe ImageData, UTCTime, UTCTime) :. GroupMemberRow
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
-toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, incognito, createdAt, updatedAt) :. userMemberRow) =
+toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, image, createdAt, updatedAt) :. userMemberRow) =
   let membership = toGroupMember userContactId userMemberRow
-   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, membershipIncognito = fromMaybe False incognito, createdAt, updatedAt}
+   in GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName, fullName, image}, membership, createdAt, updatedAt}
 
 getGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db user@User {userId} groupId groupMemberId =
@@ -1882,7 +1882,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, pu.incognito, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2745,7 +2745,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, pu.incognito, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3137,7 +3137,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, pu.incognito, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,

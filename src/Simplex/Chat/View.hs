@@ -138,8 +138,8 @@ responseToView testView = \case
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
-  CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membershipIncognito} ->
-    [groupInvitation' ldn fullName membershipIncognito]
+  CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} ->
+    [groupInvitation' ldn fullName $ memberIncognito membership]
   CRReceivedGroupInvitation g c role receivedCustomProfile -> viewReceivedGroupInvitation g c role receivedCustomProfile
   CRUserJoinedGroup g _ usedCustomProfile -> viewUserJoinedGroup g usedCustomProfile testView
   CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
@@ -209,10 +209,10 @@ responseToView testView = \case
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
-viewGroupSubscribed g@GroupInfo {membershipIncognito} =
+viewGroupSubscribed g@GroupInfo {membership} =
   [incognito <> ttyFullGroup g <> ": connected to server(s)"]
   where
-    incognito = if membershipIncognito then incognitoPrefix else ""
+    incognito = if memberIncognito membership then incognitoPrefix else ""
 
 showSMPServer :: SMPServer -> String
 showSMPServer = B.unpack . strEncode . host
@@ -528,12 +528,12 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, membershipIncognito} =
+    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation' ldn fullName membershipIncognito
+        GSMemInvited -> groupInvitation' ldn fullName $ memberIncognito membership
         s -> incognito <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
       where
-        incognito = if membershipIncognito then incognitoPrefix else ""
+        incognito = if memberIncognito membership then incognitoPrefix else ""
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
@@ -1039,12 +1039,12 @@ ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
 
 ttyFromGroup' :: GroupInfo -> GroupMember -> StyledString
-ttyFromGroup' g@GroupInfo {membershipIncognito} GroupMember {localDisplayName = m} =
-  (if membershipIncognito then incognitoPrefix else "") <> ttyFromGroup g m
+ttyFromGroup' g@GroupInfo {membership} GroupMember {localDisplayName = m} =
+  (if memberIncognito membership then incognitoPrefix else "") <> ttyFromGroup g m
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup GroupInfo {localDisplayName = g, membershipIncognito} =
-  (if membershipIncognito then incognitoPrefix else "") <> styled (colored Cyan) ("#" <> g <> " ")
+ttyToGroup GroupInfo {localDisplayName = g, membership} =
+  (if memberIncognito membership then incognitoPrefix else "") <> styled (colored Cyan) ("#" <> g <> " ")
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

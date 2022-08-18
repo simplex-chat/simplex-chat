@@ -190,7 +190,6 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
-    membershipIncognito :: Bool,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
