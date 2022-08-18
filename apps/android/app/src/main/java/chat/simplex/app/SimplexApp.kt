@@ -54,6 +54,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     super.onCreate()
     context = this
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    withApi {
+      val user = chatController.apiGetActiveUser()
+      if (user == null) {
+        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+      } else {
+        chatController.startChat(user)
+      }
+    }
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
