@@ -609,7 +609,7 @@ viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats mainPr
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe
       ["unknown whether group member uses his main profile or incognito one for the group"]
-      (\Profile {displayName, fullName} -> [incognitoPrefix <> "member is using incognito profile for the group, main profile known: " <> ttyFullName displayName fullName])
+      (\Profile {displayName, fullName} -> ["member is using " <> styleIncognito' "incognito" <> " profile for the group, main profile known: " <> ttyFullName displayName fullName])
       mainProfile
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
