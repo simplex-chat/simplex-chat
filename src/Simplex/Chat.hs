@@ -597,6 +597,14 @@ processChatCommand = \case
     pure CRCmdOk
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
+  APISetChatSettings contactOrGroupId settings -> withUser' $ \user -> do
+    withStore $ \db -> setChatSettings db user contactOrGroupId settings
+    pure CRCmdOk
+  -- case M.lookup SNNotifications settings of
+  --   Just (ASV STBool (SVBool enableNtfs)) -> case contactOrGroupId of
+  --     COGContact contactId -> do
+  --       Contact <- withStore $ \db -> getContact db user contactId
+  --       withAgent $ \a -> toggleConnectionNtfs c connId enable
   APIContactInfo contactId -> withUser $ \User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
     ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db userId contactId

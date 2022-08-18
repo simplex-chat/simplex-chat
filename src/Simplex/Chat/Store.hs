@@ -176,6 +176,7 @@ module Simplex.Chat.Store
     getCalls,
     getPendingContactConnection,
     deletePendingContactConnection,
+    setChatSettings,
     withTransaction,
   )
 where
@@ -197,6 +198,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.Map as M
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -229,6 +231,7 @@ import Simplex.Chat.Migrations.M20220811_chat_items_indices
 import Simplex.Chat.Migrations.M20220812_incognito_profiles
 import Simplex.Chat.Migrations.M20220818_chat_settings
 import Simplex.Chat.Protocol
+import Simplex.Chat.Settings
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
@@ -2735,7 +2738,7 @@ getDirectChatPreviews_ db User {userId} = do
       let contact = toContact $ contactRow :. connRow
           ci_ = toDirectChatItemList tz currentTs ciRow_
           stats = toChatStats statsRow
-       in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
+       in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats M.empty
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
@@ -2802,7 +2805,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       let groupInfo = toGroupInfo userContactId groupInfoRow
           ci_ = toGroupChatItemList tz currentTs userContactId ciRow_
           stats = toChatStats statsRow
-       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats
+       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats M.empty
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getContactRequestChatPreviews_ db User {userId} =
@@ -2824,7 +2827,7 @@ getContactRequestChatPreviews_ db User {userId} =
     toContactRequestChatPreview cReqRow =
       let cReq = toContactRequest cReqRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
-       in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
+       in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats M.empty
 
 getContactConnectionChatPreviews_ :: DB.Connection -> User -> Bool -> IO [AChat]
 getContactConnectionChatPreviews_ _ _ False = pure []
@@ -2843,7 +2846,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
-       in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
+       in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats M.empty
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
 getPendingContactConnection db userId connId = do
@@ -2893,8 +2896,9 @@ getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT
 getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
+  settings <- getChatSettings_ db userId $ COGContact contactId
   chatItems <- ExceptT getDirectChatItemsLast_
-  pure $ Chat (DirectChat contact) (reverse chatItems) stats
+  pure $ Chat (DirectChat contact) (reverse chatItems) stats settings
   where
     getDirectChatItemsLast_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsLast_ = do
@@ -2924,8 +2928,9 @@ getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> St
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
+  settings <- getChatSettings_ db userId $ COGContact contactId
   chatItems <- ExceptT getDirectChatItemsAfter_
-  pure $ Chat (DirectChat contact) chatItems stats
+  pure $ Chat (DirectChat contact) chatItems stats settings
   where
     getDirectChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsAfter_ = do
@@ -2956,8 +2961,9 @@ getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> S
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
   stats <- liftIO $ getDirectChatStats_ db userId contactId
+  settings <- getChatSettings_ db userId $ COGContact contactId
   chatItems <- ExceptT getDirectChatItemsBefore_
-  pure $ Chat (DirectChat contact) (reverse chatItems) stats
+  pure $ Chat (DirectChat contact) (reverse chatItems) stats settings
   where
     getDirectChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsBefore_ = do
@@ -3000,6 +3006,54 @@ getDirectChatStats_ db userId contactId =
     toChatStats' :: [ChatStatsRow] -> ChatStats
     toChatStats' [statsRow] = toChatStats statsRow
     toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+
+setChatSettings :: DB.Connection -> User -> ContactOrGroupId -> ChatSettings -> ExceptT StoreError IO ()
+setChatSettings db User {userId} contactOrGroupId settings =
+  forM_ (M.assocs settings) $ \(name, ASV st value) -> do
+    (settingId :: Int64, ASettingType st') <-
+      ExceptT . firstRow id (SEInternalError "unknown setting") $
+        DB.query db "SELECT chat_setting_id, value_type FROM chat_settings WHERE setting_name = ?" (Only name)
+    case testEquality st st' of
+      Just Refl ->
+        liftIO $
+          DB.execute
+            db
+            [sql|
+              INSERT INTO chat_setting_values (chat_setting_id, user_id, contact_id, group_id, setting_value) VALUES (?, ?, ?, ?, ?)
+              ON CONFLICT (chat_setting_id, user_id, contact_id, group_id)
+              DO UPDATE SET setting_value = ?
+            |]
+            (settingId, userId, contactId_, groupId_, value, value)
+      _ -> pure ()
+  where
+    (contactId_, groupId_) = contactAndGroupIds contactOrGroupId
+
+getChatSettings_ :: DB.Connection -> UserId -> ContactOrGroupId -> ExceptT StoreError IO ChatSettings
+getChatSettings_ db userId contactOrGroupId =
+  ExceptT $
+    fmap M.fromList . mapM chatSetting
+      <$> DB.query
+        db
+        [sql|
+          SELECT s.setting_name, s.value_type, COALESCE (v.setting_value, s.value_default)
+          FROM chat_settings s
+          LEFT JOIN chat_setting_values v USING (chat_setting_id)
+          WHERE v.user_id = ?
+            AND (v.contact_id IS NULL OR v.contact_id = ?)
+            AND (v.group_id IS NULL OR v.group_id = ?)
+        |]
+        (userId, contactId_, groupId_)
+  where
+    (contactId_, groupId_) = contactAndGroupIds contactOrGroupId
+    chatSetting :: (SettingName, ASettingType, ASettingValue) -> Either StoreError (SettingName, ASettingValue)
+    chatSetting (name, ASettingType st, value@(ASV st' _)) = case testEquality st st' of
+      Just Refl -> Right $ (name, value)
+      _ -> Left $ SEInternalError "invalid chat setting"
+
+contactAndGroupIds :: ContactOrGroupId -> (Maybe ContactId, Maybe GroupId)
+contactAndGroupIds = \case
+  COGContact contactId -> (Just contactId, Nothing)
+  COGGroup groupId -> (Nothing, Just groupId)
 
 getContactIdByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db userId cName =
@@ -3048,9 +3102,10 @@ getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT 
 getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
+  settings <- getChatSettings_ db userId $ COGGroup groupId
   chatItemIds <- liftIO getGroupChatItemIdsLast_
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
-  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats settings
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
     getGroupChatItemIdsLast_ =
@@ -3070,10 +3125,11 @@ getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> Str
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
+  settings <- getChatSettings_ db userId $ COGGroup groupId
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
-  pure $ Chat (GroupChat groupInfo) chatItems stats
+  pure $ Chat (GroupChat groupInfo) chatItems stats settings
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
     getGroupChatItemIdsAfter_ afterChatItemTs =
@@ -3094,10 +3150,11 @@ getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> St
 getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   stats <- liftIO $ getGroupChatStats_ db userId groupId
+  settings <- getChatSettings_ db userId $ COGGroup groupId
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
-  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
+  pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats settings
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
     getGroupChatItemIdsBefore_ beforeChatItemTs =

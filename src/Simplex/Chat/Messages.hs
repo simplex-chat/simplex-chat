@@ -31,6 +31,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Protocol
+import Simplex.Chat.Settings (ChatSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
@@ -195,7 +196,8 @@ data NewChatItem d = NewChatItem
 data Chat c = Chat
   { chatInfo :: ChatInfo c,
     chatItems :: [CChatItem c],
-    chatStats :: ChatStats
+    chatStats :: ChatStats,
+    chatSettings :: ChatSettings
   }
   deriving (Show, Generic)
 

@@ -169,6 +169,9 @@ instance ToJSON ConnReqUriHash where
 
 data ContactOrRequest = CORContact Contact | CORRequest UserContactRequest
 
+data ContactOrGroupId = COGContact ContactId | COGGroup GroupId
+  deriving (Show)
+
 type ContactName = Text
 
 type GroupName = Text
