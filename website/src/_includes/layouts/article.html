@@ -16,9 +16,17 @@
 <body class="sm:bg-gray-100">
   <header>
     <nav class="container">
-      <a href="/">
-        <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
-      </a>
+      <div class="flex items-center gap-4 h-full">
+        <a href="/">
+          <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+        </a>
+
+        <div class="hidden lg:flex rounded gap-[1px]">
+          <a class="text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-1 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 white-paper-nav-btn" href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+          <a class="text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-1 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 comparison-nav-btn" href="/#comparison">Comparison</a>
+          <a class="text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-1 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 blog-nav-btn" href="/blog">Blog</a>
+        </div>
+      </div>
 
       <div class="nav__buttons">
         <div class="github">
@@ -32,6 +40,11 @@
       </div>
     </nav>
   </header>
+  <div class="flex lg:hidden w-full sticky top-[62px]">
+    <a class="flex-1 flex justify-center text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 white-paper-nav-btn" href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+    <a class="flex-1 flex justify-center text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 comparison-nav-btn" href="/#comparison">Comparison</a>
+    <a class="flex-1 flex justify-center text-gray-800 bg-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-solid border-gray-300 blog-nav-btn" href="/blog">Blog</a>
+  </div>
 
   <section class="container">
     <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20">{{ content | safe }}</div>

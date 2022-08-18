@@ -1,0 +1,34 @@
+html {
+  scroll-behavior: smooth;
+}
+
+h1::before,
+h2::before,
+h3::before 
+#comparison::before {
+  display: block;
+  content: " ";
+  margin-top: -80px;
+  height: 100px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media screen and (max-width: 1024px) {
+    h1::before,
+    h2::before,
+    h3::before 
+    #comparison::before {
+      display: block;
+      content: " ";
+      margin-top: -125px;
+      height: 205px;
+      visibility: hidden;
+      pointer-events: none;
+    }
+}
+
+.nav-button-active{
+    background-color: #00C8FB;
+    color: #fff;
+}
