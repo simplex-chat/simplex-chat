@@ -71,22 +71,55 @@
     window.addEventListener("click", (e) => {
       if (e.target.tagName === "A") {
         e.preventDefault();
-
-        if (e.target.href.split("#")[1]) {
-          const id = e.target.href.split("#")[1];
+        if (e.target.getAttribute("href").split("#")[0] == "") {
+          const id = e.target.getAttribute("href").split("#")[1];
           const element = document.getElementById(id);
-          const yOffset = -80; // Offset for fixed header
+          const yOffset = 0; // Offset for fixed header
           const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
           window.scrollTo({
             top: y,
             behavior: 'smooth'
           });
-        } else {
-          window.open(e.target.href, "_blank");
+        }
+        else {
+          window.open(e.target.href, "_self");
         }
       }
     });
+
+    // convert relative blog links to absolute links
+    document.querySelectorAll("a").forEach((a) => {
+      const dotSepList = a.getAttribute("href").split(".");
+      if (dotSepList[0] == "") {
+        const hashSepList = dotSepList[dotSepList.length - 1].split("#")
+        if (hashSepList[0] == "md") {
+          let str = `/blog${dotSepList[1]}`;
+          for (let i = 2; i < dotSepList.length; i++) {
+            if (dotSepList[i].substring(0, 2) != "md") {
+              str += "." + dotSepList[i];
+            } else break;
+          }
+          if (hashSepList[1]) {
+            str += "#" + hashSepList[1];
+          }
+          a.setAttribute("href", str);
+        }
+      }
+    });
+
+    const url = window.location.href;
+    const hash = url.split("#")[1];
+    if (hash) {
+      console.log("entered")
+      const element = document.getElementById(hash);
+      const yOffset = 0; // Offset for fixed header
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth'
+      });
+    }
   </script>
 </body>
 
