@@ -727,7 +727,7 @@ processChatCommand = \case
           ci <- saveSndChatItem user (CDDirectSnd contact) msg content Nothing Nothing
           toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat contact) ci
           setActive $ ActiveG localDisplayName
-          pure $ CRSentGroupInvitation gInfo contact member membershipIncognito
+          pure $ CRSentGroupInvitation gInfo contact member incognitoProfile
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
@@ -962,7 +962,7 @@ processChatCommand = \case
           connId <- withAgent $ \a -> joinConnection a cReq $ directMessage (XContact profileToSend $ Just xContactId)
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile
           toView $ CRNewContactConnection conn
-          pure CRSentInvitation
+          pure $ CRSentInvitation incognitoProfile
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->

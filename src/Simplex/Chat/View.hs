@@ -100,7 +100,7 @@ responseToView testView = \case
   CRChatCmdError e -> viewChatError e
   CRInvitation cReq -> viewConnReqInvitation cReq
   CRSentConfirmation -> ["confirmation sent!"]
-  CRSentInvitation -> ["connection request sent!"]
+  CRSentInvitation customUserProfile -> viewSentInvitation customUserProfile testView
   CRContactDeleted c -> [ttyContact' c <> ": contact is deleted"]
   CRChatCleared chatInfo -> viewChatCleared chatInfo
   CRAcceptingContactRequest c -> [ttyFullContact c <> ": accepting contact request..."]
@@ -119,7 +119,7 @@ responseToView testView = \case
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
-  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile testView
+  CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
   CRRcvFileStart ci -> receivingFile_' "started" ci
   CRRcvFileComplete ci -> receivingFile_' "completed" ci
   CRRcvFileSndCancelled ft -> viewRcvFileSndCancelled ft
@@ -369,9 +369,9 @@ viewConnReqInvitation cReq =
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
-viewSentGroupInvitation :: GroupInfo -> Contact -> Bool -> [StyledString]
-viewSentGroupInvitation g c incognito =
-  if incognito
+viewSentGroupInvitation :: GroupInfo -> Contact -> Maybe Profile -> [StyledString]
+viewSentGroupInvitation g c sentCustomProfile =
+  if isJust sentCustomProfile
     then ["invitation to join the group " <> ttyGroup' g <> " incognito sent to " <> ttyContact' c]
     else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
 
@@ -409,16 +409,23 @@ autoAcceptStatus_ autoAccept autoReply =
   ("auto_accept " <> if autoAccept then "on" else "off") :
   maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
-viewReceivedContactRequest :: ContactName -> Profile -> Bool -> [StyledString]
-viewReceivedContactRequest c profile@Profile {fullName} testView
-  | testView = incognitoProfile' profile : message
-  | otherwise = message
-  where
-    message =
-      [ ttyFullName c fullName <> " wants to connect to you!",
-        "to accept: " <> highlight ("/ac " <> c),
-        "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
-      ]
+viewSentInvitation :: Maybe Profile -> Bool -> [StyledString]
+viewSentInvitation incognitoProfile testView =
+  case incognitoProfile of
+    Just profile ->
+      if testView
+        then incognitoProfile' profile : message
+        else message
+      where
+        message = ["connection request sent incognito!"]
+    Nothing -> ["connection request sent!"]
+
+viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
+viewReceivedContactRequest c Profile {fullName} =
+  [ ttyFullName c fullName <> " wants to connect to you!",
+    "to accept: " <> highlight ("/ac " <> c),
+    "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
+  ]
 
 viewGroupCreated :: GroupInfo -> Maybe Profile -> Bool -> [StyledString]
 viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile testView =

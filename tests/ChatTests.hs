@@ -1927,7 +1927,6 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "user full name removed (your contacts are notified)"
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
-    _ <- getTermLine alice
     alice <## "bob wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -2100,14 +2099,13 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     cLink <- getContactLink alice True
     bob #$> ("/incognito on", id, "ok")
     bob ##> ("/c " <> cLink)
-    bob <## "connection request sent!"
-    bobIncognito <- getTermLine alice
+    bobIncognito <- getTermLine bob
+    bob <## "connection request sent incognito!"
     alice <## (bobIncognito <> " wants to connect to you!")
     alice <## ("to accept: /ac " <> bobIncognito)
     alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
     alice ##> ("/ac " <> bobIncognito)
     alice <## (bobIncognito <> ": accepting contact request...")
-    _ <- getTermLine bob
     concurrentlyN_
       [ do
           bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
@@ -3043,7 +3041,6 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 cc1 <#? cc2 = do
   name <- userName cc2
   sName <- showName cc2
-  _ <- getTermLine cc1
   cc2 <## "connection request sent!"
   cc1 <## (sName <> " wants to connect to you!")
   cc1 <## ("to accept: /ac " <> name)
