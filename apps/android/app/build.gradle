@@ -177,7 +177,6 @@ tasks.register("compressApk") {
                      "$compression_level",  \
                      "$outputDir",  \
                      "$sdkDir",  \
-                     "$buildType",  \
                      "$storeFile",  \
                      "$storePassword",  \
                      "$keyAlias",  \
