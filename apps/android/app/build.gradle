@@ -145,6 +145,7 @@ if (compression_level != "0") {
 
 tasks.register("compressApk") {
     doLast {
+        def javaHome = System.properties['java.home'] ?: org.gradle.internal.jvm.Jvm.current().getJavaHome()
         def sdkDir = android.getSdkDirectory().getAbsolutePath()
         def keyAlias = ""
         def keyPassword = ""
@@ -171,15 +172,16 @@ tasks.register("compressApk") {
 
         exec {
             workingDir '../../../scripts/android'
+            setEnvironment(['JAVA_HOME': "$javaHome"])
             commandLine './compress-and-sign-apk.sh',  \
                      "$compression_level",  \
-                     "'$outputDir'",  \
-                     "'$sdkDir'",  \
+                     "$outputDir",  \
+                     "$sdkDir",  \
                      "$buildType",  \
-                     "'$storeFile'",  \
-                     "'$storePassword'",  \
-                     "'$keyAlias'",  \
-                     "'$keyPassword'"
+                     "$storeFile",  \
+                     "$storePassword",  \
+                     "$keyAlias",  \
+                     "$keyPassword"
         }
 
         // View all gradle properties set

@@ -31,13 +31,13 @@ rm $ORIG_NAME
 #(cd apk && 7z a -r -mx=0 -tzip ../$ORIG_NAME resources.arsc)
 
 ALL_TOOLS=($sdk_dir/build-tools/*/)
-BIN_DIR="${ALL_TOOLS}"
+BIN_DIR="${ALL_TOOLS[1]}"
 
 $BIN_DIR/zipalign -p -f 4 app-${build_type}.apk app-${build_type}2.apk
 
 mv app-${build_type}{2,}.apk
 
-echo $BIN_DIR/apksigner sign \
+$BIN_DIR/apksigner sign \
   --ks "$store_file" --ks-key-alias "$key_alias" --ks-pass "pass:$store_password" \
   --key-pass "pass:$key_password" app-${build_type}.apk
 
