@@ -252,13 +252,9 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: Profile
     public var activeConn: Connection
     public var viaGroup: Int64?
-    public var chatSettings: ChatSettings = ChatSettings.defaults
+    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
-
-    private enum CodingKeys: String, CodingKey {
-        case contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt
-    }
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
@@ -447,13 +443,9 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
-    public var chatSettings: ChatSettings = ChatSettings.defaults
+    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
-
-    private enum CodingKeys: String, CodingKey {
-        case groupId, localDisplayName, groupProfile, membership, createdAt, updatedAt
-    }
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
