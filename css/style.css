@@ -6,7 +6,7 @@ html {
   display: block;
   content: " ";
   margin-top: -80px;
-  height: 80px;
+  height: 120px;
   visibility: hidden;
   pointer-events: none;
 }
