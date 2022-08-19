@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - website
+    paths:
+      - blog/**
 
 jobs:
   build:
