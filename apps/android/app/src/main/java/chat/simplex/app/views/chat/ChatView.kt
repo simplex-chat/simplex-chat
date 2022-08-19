@@ -536,16 +536,36 @@ fun BoxWithConstraintsScope.FloatingButtons(
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
+
+  var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
+  var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
+  var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0)  }
+
+  LaunchedEffect(listState) {
+    snapshotFlow { listState.firstVisibleItemIndex }
+      .distinctUntilChanged()
+      .collect {
+        firstVisibleIndex = it
+        firstItemIsVisible = firstVisibleIndex == 0
+      }
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
+      .distinctUntilChanged()
+      .collect {
+        lastIndexOfVisibleItems = it
+      }
+  }
+
   val bottomUnreadCount by remember {
     derivedStateOf {
-      val from = chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
+      if (unreadCount.value == 0) return@derivedStateOf 0
+
+      val from = chatItems.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
       if (chatItems.size <= from || from < 0) return@derivedStateOf 0
 
       chatItems.subList(from, chatItems.size).count { it.isRcvNew }
     }
   }
 
-  val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
   val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
 
   LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
