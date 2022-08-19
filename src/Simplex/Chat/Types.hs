@@ -202,6 +202,7 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
+-- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
   { enableNtfs :: Bool
   }

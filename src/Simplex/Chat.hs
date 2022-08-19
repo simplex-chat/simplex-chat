@@ -1472,7 +1472,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership} m@GroupMember {memberContactProfileId} = case agentMsg of
+    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m@GroupMember {memberContactProfileId} = case agentMsg of
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
@@ -1514,6 +1514,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           unless (memberActive membership) $
             updateGroupMemberStatus db userId membership GSMemConnected
         sendPendingGroupMessages m conn
+        unless (enableNtfs chatSettings) . withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) False
         case memberCategory m of
           GCHostMember -> do
             -- [incognito] chat item & event with indication that host connected incognito
@@ -2596,6 +2597,7 @@ chatCommandP =
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
+      "/_settings" *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
