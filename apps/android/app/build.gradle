@@ -184,6 +184,10 @@ tasks.register("compressApk") {
                      "$keyPassword"
         }
 
+        if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
+            new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+        }
+
         // View all gradle properties set
         // project.properties.each { k, v -> println "$k -> $v" }
     }

@@ -43,4 +43,4 @@ $BIN_DIR/apksigner sign \
 
 # cleanup
 rm -rf apk || true
-rm ${ORIG_NAME}.idsig || true
+rm ${ORIG_NAME}.idsig 2> /dev/null || true
