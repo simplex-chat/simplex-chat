@@ -74,16 +74,3 @@ h3::before {
   visibility: hidden;
   pointer-events: none;
 }
-
-@media screen and (max-width: 1024px) {
-    h1::before,
-    h2::before,
-    h3::before {
-      display: block;
-      content: " ";
-      margin-top: -125px;
-      height: 125px;
-      visibility: hidden;
-      pointer-events: none;
-    }
-}

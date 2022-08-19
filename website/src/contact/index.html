@@ -21,35 +21,7 @@
 </head>
 
 <body>
-  <header>
-    <nav class="container">
-      <a href="/">
-        <img alt="simplex logo" class="logo" src="../img/simplex.svg" />
-      </a>
-
-      <div class="nav__buttons">
-        <div class="github">
-          <a
-            class="github-button"
-            href="https://github.com/simplex-chat/simplex-chat"
-            data-size="large"
-            data-show-count="true"
-            aria-label="Star simplex-chat on GitHub"
-            >Star</a>
-        </div>
-
-        <div class="donate d-none-576">
-          <a href="https://opencollective.com/simplex-chat" target="_blank">
-            <span class="button">Donate</span></a>
-        </div>
-      </div>
-    </nav>
-  </header>
-  <div class="flex lg:hidden w-full sticky top-[62px] z-[99] bg-[#00C8FB]">
-    <a class="flex-1 flex justify-center text-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] white-paper-nav-btn" href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
-    <a class="flex-1 flex justify-center text-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] border-x-[2px] border-y-0 border-solid border-white comparison-nav-btn" href="/#comparison">Comparison</a>
-    <a class="flex-1 flex justify-center text-white tracking-[1px] font-medium text-base px-3 py-2 rounded hover:bg-[#00C8FB] hover:text-white border-[1px] blog-nav-btn" href="/blog">Blog</a>
-  </div>
+  {% include "nav.html" %}
 
   <section id="conn_req">
     <div class="container">
