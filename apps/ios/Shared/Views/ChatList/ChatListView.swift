@@ -44,6 +44,11 @@ struct ChatListView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
                 }
+                if (m.incognito) {
+                    ToolbarItem(placement: .principal) {
+                        Image(systemName: "theatermasks.fill").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     switch chatModel.chatRunning {
                     case .some(true): NewChatButton()

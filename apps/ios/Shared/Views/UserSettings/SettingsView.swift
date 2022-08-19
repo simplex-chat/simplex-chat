@@ -68,6 +68,17 @@ struct SettingsView: View {
                     }
                     .disabled(chatModel.chatRunning != true)
 
+                    settingsRow(
+                        m.incognito ? "theatermasks.fill" : "theatermasks",
+                        color: m.incognito ? Color.indigo : .secondary
+                    ) {
+                        Toggle("Incognito", isOn: $m.incognito)
+                            .onChange(of: m.incognito) { incognito in
+                                incognitoGroupDefault.set(incognito)
+                                apiSetIncognito(incognito: incognito)
+                            }
+                    }
+
                     NavigationLink {
                         UserAddress()
                             .navigationTitle("Your chat address")

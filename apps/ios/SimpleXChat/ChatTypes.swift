@@ -212,6 +212,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var incognito: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.contactConnIncognito
+            case let .group(groupInfo): return groupInfo.membership.memberIncognito
+            case .contactRequest: return false
+            case let .contactConnection(contactConnection): return contactConnection.incognito
+            }
+        }
+    }
+
     public var contact: Contact? {
         get {
             switch self {
@@ -405,6 +416,10 @@ public struct PendingContactConnection: Decodable, NamedChat {
     public var fullName: String { get { "" } }
     public var image: String? { get { nil } }
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
+
+    public var incognito: Bool {
+        customUserProfileId != nil
+    }
 
     public var description: String {
         get {
