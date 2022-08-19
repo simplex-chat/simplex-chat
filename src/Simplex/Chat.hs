@@ -2597,7 +2597,7 @@ chatCommandP =
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
-      "/_settings" *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
+      "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),
       ("/info #" <|> "/i #") *> (GroupMemberInfo <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
