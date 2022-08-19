@@ -23,9 +23,9 @@ struct ChatInfoToolbar: View {
                 chat: chat,
                 color: colorScheme == .dark
                         ? chatImageColorDark
-                        : chatImageColorLight
+                        : chatImageColorLight,
+                imageSize: imageSize
             )
-            .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
                 Text(cInfo.displayName).font(.headline)

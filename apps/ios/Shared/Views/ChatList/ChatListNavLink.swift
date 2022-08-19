@@ -86,7 +86,7 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button("Join group") { Task { await joinGroup(groupInfo.groupId) } }
+                    Button(joinGroupIncognito ? "Join incognito" : "Join group") { Task { await joinGroup(groupInfo.groupId) } }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -130,11 +130,17 @@ struct ChatListNavLink: View {
         }
     }
 
+    private var joinGroupIncognito: Bool {
+        // TODO there is a third condition where we would join incognito - if direct connection with host is incognito,
+        // though we don't have this information easily accessible in types
+        chat.chatInfo.incognito || chatModel.incognito
+    }
+
     private func joinGroupButton() -> some View {
         Button {
             Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
-            Label("Join", systemImage: "ipad.and.arrow.forward")
+            Label("Join", systemImage: joinGroupIncognito ? "theatermasks.fill" : "ipad.and.arrow.forward")
         }
         .tint(Color.accentColor)
     }
@@ -168,8 +174,9 @@ struct ChatListNavLink: View {
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button { Task { await acceptContactRequest(contactRequest) } }
-                label: { Label("Accept", systemImage: "checkmark") }
+            Button {
+                Task { await acceptContactRequest(contactRequest) }
+            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks.fill" : "checkmark") }
                 .tint(Color.accentColor)
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
@@ -180,7 +187,7 @@ struct ChatListNavLink: View {
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
+            Button(chatModel.incognito ? "Accept incognito" : "Accept contact") { Task { await acceptContactRequest(contactRequest) } }
             Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }

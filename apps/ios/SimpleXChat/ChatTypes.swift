@@ -1346,7 +1346,9 @@ public struct CIGroupInvitation: Decodable {
     public var invitedIncognito: Bool?
 
     var text: String {
-        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+        (invitedIncognito ?? false) ?
+        String.localizedStringWithFormat(NSLocalizedString("incognito invitation to group %@", comment: "group name"), groupProfile.displayName)
+        : String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
     }
 
     public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
@@ -1376,7 +1378,7 @@ public enum RcvGroupEvent: Decodable {
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
         case let .memberConnected(contactMainProfile):
             if let contactMainProfile = contactMainProfile {
-                return String.localizedStringWithFormat(NSLocalizedString("%@ connected incognito", comment: "rcv group event chat item"), contactMainProfile.profileViewName)
+                return String.localizedStringWithFormat(NSLocalizedString("known to you as %@ connected incognito", comment: "rcv group event chat item"), contactMainProfile.profileViewName)
             } else {
                 return NSLocalizedString("member connected", comment: "rcv group event chat item")
             }

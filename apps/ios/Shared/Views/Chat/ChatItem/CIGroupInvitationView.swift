@@ -29,10 +29,13 @@ struct CIGroupInvitationView: View {
                 Divider().frame(width: frameWidth)
 
                 if action {
-                    groupInvitationText().overlay(DetermineWidth())
-                    Text("Tap to join")
+                    groupInvitationText()
+                        .overlay(DetermineWidth())
+                    Text((groupInvitation.invitedIncognito ?? false) ? "Tap to join incognito" : "Tap to join")
                         .foregroundColor(.accentColor)
                         .font(.callout)
+                        .padding(.trailing, 60)
+                        .overlay(DetermineWidth())
                 } else {
                     groupInvitationText()
                         .padding(.trailing, 60)
@@ -60,10 +63,18 @@ struct CIGroupInvitationView: View {
 
     private func groupInfoView(_ action: Bool) -> some View {
         HStack(alignment: .top) {
-            ProfileImage(
-                iconName: "person.2.circle.fill",
-                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
-            )
+            ZStack(alignment: .bottomTrailing) {
+                ProfileImage(
+                    imageStr: groupInvitation.groupProfile.image,
+                    iconName: "person.2.circle.fill",
+                    color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+                )
+                if (groupInvitation.invitedIncognito ?? false) {
+                    Image(systemName: "theatermasks.circle.fill")
+                        .foregroundColor(.indigo)
+                        .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+                }
+            }
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
@@ -84,11 +95,11 @@ struct CIGroupInvitationView: View {
 
     private func groupInvitationStr() -> LocalizedStringKey {
         if chatItem.chatDir.sent {
-            return "You sent group invitation"
+            return (groupInvitation.invitedIncognito ?? false) ? "You sent group invitation incognito" : "You sent group invitation"
         } else {
             switch groupInvitation.status {
             case .pending: return "You are invited to group"
-            case .accepted: return "You joined this group"
+            case .accepted: return (groupInvitation.invitedIncognito ?? false) ? "You joined this group incognito" : "You joined this group"
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
