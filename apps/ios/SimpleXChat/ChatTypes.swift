@@ -244,6 +244,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: Profile
     public var activeConn: Connection
     public var viaGroup: Int64?
+//    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
 
@@ -433,6 +434,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
+//    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
 

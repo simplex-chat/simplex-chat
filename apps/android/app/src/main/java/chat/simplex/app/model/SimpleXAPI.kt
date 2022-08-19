@@ -1136,6 +1136,7 @@ sealed class CC {
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
+  class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class AddContact: CC()
@@ -1186,6 +1187,7 @@ sealed class CC {
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
+    is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is AddContact -> "/connect"
@@ -1237,6 +1239,7 @@ sealed class CC {
     is SetUserSMPServers -> "setUserSMPServers"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
     is APIGetNetworkConfig -> "/apiGetNetworkConfig"
+    is APISetChatSettings -> "/apiSetChatSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is AddContact -> "addContact"
@@ -1347,6 +1350,11 @@ data class KeepAliveOpts(
       KeepAliveOpts(keepIdle = 30, keepIntvl = 15, keepCnt = 4)
   }
 }
+
+@Serializable
+data class ChatSettings(
+  val enableNtfs: Boolean
+)
 
 val json = Json {
   prettyPrint = true

@@ -54,6 +54,7 @@ is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
+  enable_ntfs INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -119,7 +120,8 @@ CREATE TABLE groups(
   inv_queue_info BLOB,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL, -- received
+  chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
+  enable_ntfs INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
