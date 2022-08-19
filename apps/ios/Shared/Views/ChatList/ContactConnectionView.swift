@@ -14,13 +14,17 @@ struct ContactConnectionView: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
-                .resizable()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .frame(width: 63, height: 63)
-                .padding(.leading, 4)
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
+                    .resizable()
+                    .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .frame(width: 63, height: 63)
+                    .padding(.leading, 4)
+                incognitoIcon()
+                    .padding([.bottom, .trailing], 1)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .top) {
                     Text(contactConnection.chatViewName)
@@ -44,6 +48,16 @@ struct ContactConnectionView: View {
                     .padding(.bottom, 4)
                     .padding(.top, 1)
             }
+        }
+    }
+
+    @ViewBuilder private func incognitoIcon() -> some View {
+        if contactConnection.incognito {
+            Image(systemName: "theatermasks.circle.fill")
+                .foregroundColor(.indigo)
+                .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+        } else {
+            EmptyView()
         }
     }
 }

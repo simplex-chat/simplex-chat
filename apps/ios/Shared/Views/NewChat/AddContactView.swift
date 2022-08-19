@@ -10,6 +10,7 @@ import SwiftUI
 import CoreImage.CIFilterBuiltins
 
 struct AddContactView: View {
+    @EnvironmentObject var chatModel: ChatModel
     var connReqInvitation: String
     var body: some View {
         ScrollView {
@@ -19,6 +20,14 @@ struct AddContactView: View {
                     .padding(.vertical)
                 Text("Your contact can scan it from the app")
                     .padding(.bottom)
+                if (chatModel.incognito) {
+                    HStack {
+                        Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                        Spacer().frame(width: 12)
+                        Text("Instead of your main profile, your contact will see a random profile")
+                    }
+                    .padding(.bottom)
+                }
                 QRCode(uri: connReqInvitation)
                     .padding(.bottom)
                 Text("If you can't meet in person, **show QR code in the video call**, or share the link.")

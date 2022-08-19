@@ -69,13 +69,17 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
 
                     settingsRow(
-                        m.incognito ? "theatermasks.fill" : "theatermasks",
-                        color: m.incognito ? Color.indigo : .secondary
+                        chatModel.incognito ? "theatermasks.fill" : "theatermasks",
+                        color: chatModel.incognito ? Color.indigo : .secondary
                     ) {
-                        Toggle("Incognito", isOn: $m.incognito)
-                            .onChange(of: m.incognito) { incognito in
+                        Toggle("Incognito", isOn: $chatModel.incognito)
+                            .onChange(of: chatModel.incognito) { incognito in
                                 incognitoGroupDefault.set(incognito)
-                                apiSetIncognito(incognito: incognito)
+                                do {
+                                    try apiSetIncognito(incognito: incognito)
+                                } catch {
+                                    logger.error("apiSetIncognito: cannot set incognito \(responseError(error))")
+                                }
                             }
                     }
 

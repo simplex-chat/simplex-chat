@@ -424,11 +424,27 @@ public struct PendingContactConnection: Decodable, NamedChat {
     public var description: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated && !viaContactUri
-                ? NSLocalizedString("you shared one-time link", comment: "chat list item description")
-                : viaContactUri
-                ? NSLocalizedString("via contact address link", comment: "chat list item description")
-                : NSLocalizedString("via one-time link", comment: "chat list item description")
+                var desc: String
+                if initiated && !viaContactUri {
+                    if incognito {
+                        desc = NSLocalizedString("you shared one-time link incognito", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("you shared one-time link", comment: "chat list item description")
+                    }
+                } else if viaContactUri {
+                    if incognito {
+                        desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                    }
+                } else {
+                    if incognito {
+                        desc = NSLocalizedString("incognito via one-time link", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("via one-time link", comment: "chat list item description")
+                    }
+                }
+                return desc
             } else {
                 return ""
             }

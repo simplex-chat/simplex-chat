@@ -43,8 +43,15 @@ struct AddGroupView: View {
                 .font(.largeTitle)
                 .padding(.vertical, 4)
             Text("The group is fully decentralized – it is visible only to the members.")
-                .padding(.bottom, 4)
                 .padding(.bottom)
+            if (m.incognito) {
+                HStack {
+                    Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                    Spacer().frame(width: 12)
+                    Text("You will use a random profile for this group")
+                }
+                .padding(.bottom)
+            }
 
             ZStack(alignment: .center) {
                 ZStack(alignment: .topTrailing) {

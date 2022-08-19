@@ -47,6 +47,7 @@ struct ChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     var connectionStats: ConnectionStats?
+    var customUserProfile: Profile?
     @State private var alert: ChatInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -63,6 +64,12 @@ struct ChatInfoView: View {
             List {
                 contactInfoHeader()
                     .listRowBackground(Color.clear)
+
+                if let customUserProfile = customUserProfile {
+                    Section("Incognito") {
+                        infoRow("Your random profile", customUserProfile.chatViewName)
+                    }
+                }
 
                 if let connStats = connectionStats {
                     Section("Servers") {

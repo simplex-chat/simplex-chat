@@ -23,7 +23,6 @@ struct ChatPreviewView: View {
                     .frame(width: 63, height: 63)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
-
             }
             .padding(.leading, 4)
 
@@ -66,25 +65,21 @@ struct ChatPreviewView: View {
             case .memGroupDeleted:
                 groupInactiveIcon()
             default:
-                if chat.chatInfo.incognito {
-                    incognitoIcon()
-                } else {
-                    EmptyView()
-                }
+                incognitoIcon()
             }
         } else {
-            if chat.chatInfo.incognito {
-                incognitoIcon()
-            } else {
-                EmptyView()
-            }
+            incognitoIcon()
         }
     }
 
     @ViewBuilder private func incognitoIcon() -> some View {
-        Image(systemName: "theatermasks.circle.fill")
-            .foregroundColor(.indigo)
-            .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+        if chat.chatInfo.incognito {
+            Image(systemName: "theatermasks.circle.fill")
+                .foregroundColor(.indigo)
+                .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+        } else {
+            EmptyView()
+        }
     }
 
     @ViewBuilder private func groupInactiveIcon() -> some View {

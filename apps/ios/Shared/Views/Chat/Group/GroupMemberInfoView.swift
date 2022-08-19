@@ -15,6 +15,7 @@ struct GroupMemberInfoView: View {
     var groupInfo: GroupInfo
     var member: GroupMember
     var connectionStats: ConnectionStats?
+    var mainProfile: Profile?
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -32,6 +33,9 @@ struct GroupMemberInfoView: View {
 
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
+                    if let mainProfile = mainProfile {
+                        mainProfileRow(mainProfile)
+                    }
                     // TODO change role
                     // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
@@ -69,6 +73,20 @@ struct GroupMemberInfoView: View {
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
             }
+        }
+    }
+
+    private func mainProfileRow(_ mainProfile: Profile) -> some View {
+        HStack {
+            Text("Known main profile")
+            Spacer()
+            if (mainProfile.image != nil) {
+                ProfileImage(imageStr: member.image)
+                    .frame(width: 38, height: 38)
+                    .padding(.trailing, 2)
+            }
+            Text(mainProfile.chatViewName)
+                .foregroundColor(.secondary)
         }
     }
 

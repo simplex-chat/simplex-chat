@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct PasteToConnectView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var connectionLink: String = ""
 
@@ -18,8 +19,18 @@ struct PasteToConnectView: View {
                 .font(.title)
                 .padding(.vertical)
             Text("Paste the link you received into the box below to connect with your contact.")
-            Text("Your profile will be sent to the contact that you received this link from")
                 .padding(.bottom)
+            if (chatModel.incognito) {
+                HStack {
+                    Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                    Spacer().frame(width: 12)
+                    Text("Random profile will be sent to the contact that you received this link from")
+                }
+                .padding(.bottom)
+            } else {
+                Text("Your profile will be sent to the contact that you received this link from")
+                    .padding(.bottom)
+            }
             TextEditor(text: $connectionLink)
                 .onSubmit(connect)
                 .textInputAutocapitalization(.never)

@@ -8,7 +8,6 @@
 
 import SwiftUI
 import SimpleXChat
-import Introspect
 
 private let memberImageSize: CGFloat = 34
 
@@ -23,6 +22,7 @@ struct ChatView: View {
     @FocusState private var keyboardVisible: Bool
     @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
+    @State private var customUserProfile: Profile?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -77,8 +77,11 @@ struct ChatView: View {
                     if case .direct = cInfo {
                         Task {
                             do {
-                                let (stats, customUserProfile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
-                                await MainActor.run { connectionStats = stats }
+                                let (stats, profile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
+                                await MainActor.run {
+                                    connectionStats = stats
+                                    customUserProfile = profile
+                                }
                             } catch let error {
                                 logger.error("apiContactInfo error: \(responseError(error))")
                             }
@@ -99,7 +102,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatInfoSheet) {
                     switch cInfo {
                     case .direct:
-                        ChatInfoView(chat: chat, connectionStats: connectionStats)
+                        ChatInfoView(chat: chat, connectionStats: connectionStats, customUserProfile: customUserProfile)
                     case let .group(groupInfo):
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     default:

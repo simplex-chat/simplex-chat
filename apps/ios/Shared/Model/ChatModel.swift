@@ -36,7 +36,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
-    @Published var incognito: Bool? = incognitoGroupDefault.get()
+    @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: ChatId?
     @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?

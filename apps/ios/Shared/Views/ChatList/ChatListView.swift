@@ -44,9 +44,13 @@ struct ChatListView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
                 }
-                if (m.incognito) {
-                    ToolbarItem(placement: .principal) {
-                        Image(systemName: "theatermasks.fill").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                ToolbarItem(placement: .principal) {
+                    if (chatModel.incognito) {
+                        HStack {
+                            Text("Your chats").font(.headline)
+                            Spacer().frame(width: 16)
+                            Image(systemName: "theatermasks.fill").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
