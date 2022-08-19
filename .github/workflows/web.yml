@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - website
+      - stable
     paths:
       - blog/**
       - website/**
