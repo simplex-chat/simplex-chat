@@ -522,14 +522,16 @@ func toggleNotifications(chat: Chat, enableNtfs: Bool) {
         do {
             let chatSettings = ChatSettings(enableNtfs: enableNtfs)
             try await apiSetChatSettings(type: cInfo.chatType, id: cInfo.apiId, chatSettings: chatSettings)
-            switch cInfo {
-            case var .direct(contact):
-                contact.chatSettings = chatSettings
-                chat.chatInfo = .direct(contact: contact)
-            case var .group(groupInfo):
-                groupInfo.chatSettings = chatSettings
-                chat.chatInfo = .group(groupInfo: groupInfo)
-            default: ()
+            await MainActor.run {
+                switch cInfo {
+                case var .direct(contact):
+                    contact.chatSettings = chatSettings
+                    chat.chatInfo = .direct(contact: contact)
+                case var .group(groupInfo):
+                    groupInfo.chatSettings = chatSettings
+                    chat.chatInfo = .group(groupInfo: groupInfo)
+                default: ()
+                }
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
