@@ -6,132 +6,249 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="/css/tailwind.css" rel="stylesheet" />
     <link href="/css/blogs.css" rel="stylesheet" />
+    <link href="/css/style.css" rel="stylesheet" />
     <title>Blogs</title>
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico">
     <script async defer src="https://buttons.github.io/buttons.js"></script>
 </head>
 <body class="bg-gray-100">
     <header>
-        <nav class="container">
-          <a href="/">
-            <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
-          </a>
-    
-          <div class="nav__buttons">
-            <div class="github">
-              <a
-                class="github-button"
-                href="https://github.com/simplex-chat/simplex-chat"
-                data-size="large"
-                data-show-count="true"
-                aria-label="Star simplex-chat on GitHub"
-                >Star</a>
+    <nav class="container">
+        <div class="flex items-center gap-[16px] h-full">
+            <a href="/">
+                <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+            </a>
+
+            <div class="hidden lg:flex gap-[16px]">
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium white-paper-nav-btn"
+                    href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium comparison-nav-btn"
+                    href="/#comparison">Comparison</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium blog-nav-btn" href="/blog">Blog</a>
             </div>
-    
-            <div class="donate d-none-576">
-              <a href="https://opencollective.com/simplex-chat" target="_blank">
-                <span class="button">Donate</span></a>
+        </div>
+
+        <div class="flex gap-4">
+            <div class="nav__buttons">
+                <div class="github">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="donate d-none-576">
+                    <a href="https://opencollective.com/simplex-chat" target="_blank">
+                        <span class="button">Donate</span></a>
+                </div>
             </div>
-          </div>
-        </nav>
-    </header>
+
+            <div class="toggle self-stretch">
+                <label class="toggle-btn"><span></span></i></label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="w-full fixed top-[60px] z-[99] bg-[#fbd561] mobile-nav">
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 white-paper-nav-btn"
+            href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 comparison-nav-btn"
+            href="/#comparison">Comparison</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 blog-nav-btn"
+            href="/blog">Blog</a>
+    </div>
+</header>
+
+<script>
+    const toggleBtn = document.querySelector(".toggle-btn")
+
+    toggleBtn.addEventListener("click", () => {
+        if (toggleBtn.classList.contains("active-toggle-btn")) {
+            console.log("unchecked")
+            document.querySelector(".mobile-nav").classList.remove("mobile-nav-active")
+            toggleBtn.classList.remove("active-toggle-btn")
+        } else {
+            console.log("checked")
+            document.querySelector(".mobile-nav").classList.add("mobile-nav-active")
+            toggleBtn.classList.add("active-toggle-btn")
+        }
+    })
+</script>
+
+<style>
+    header {
+        overflow: hidden;
+    }
+
+    /* ====== NAV TOGGLE BUTTON ====== */
+    .toggle {
+        display: none;
+    }
+
+    .toggle-btn {
+        height: 100%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toggle-btn span {
+        width: 20px;
+        height: 2px;
+        background-color: #062d56;
+        position: relative;
+    }
+
+    .toggle-btn span::after,
+    .toggle-btn span::before {
+        content: "";
+        width: 100%;
+        height: 100%;
+        background-color: #062d56;
+        position: absolute;
+        left: 0;
+    }
+
+    span::before {
+        top: -8px;
+    }
+
+    span::after {
+        top: 8px;
+    }
+
+    /* ====== Styles Applied AFTER the CLICK of TOGGLE BUTTON ====== */
+    .active-toggle-btn span {
+        background-color: transparent;
+    }
+
+    .active-toggle-btn span::before {
+        top: 0;
+        transform: rotate(45deg);
+        background-color: #062d56;
+    }
+
+    .active-toggle-btn span::after {
+        top: 0;
+        transform: rotate(-45deg);
+        background-color: #062d56;
+    }
+
+    .mobile-nav {
+        display: block;
+        transform: translateX(-100%);
+        transition: transform 0.5s ease-out;
+    }
+
+    .mobile-nav-active {
+        display: block;
+        transform: translateX(0%);
+        transition: transform 0.5s cubic-bezier(0.02, 0.48, 0.59, 1.48);
+    }
+
+    @media (max-width: 1024px) {
+        .toggle {
+            display: inline-block;
+        }
+    }
+</style>
+    
     <section class="container">
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX Chat v3.1 is released</h1>
             <p class="text-sm">Mon, 08 Aug 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220808-simplex-chat-v3.1-chat-groups/">SimpleX Chat v3.1 is released</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220808-simplex-chat-v3.1-chat-groups/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX Chat v3.1-beta is released</h1>
             <p class="text-sm">Sat, 23 Jul 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency/">SimpleX Chat v3.1-beta is released</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat v3</h1>
             <p class="text-sm">Mon, 11 Jul 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements/">SimpleX announces SimpleX Chat v3</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!</h1>
             <p class="text-sm">Sat, 04 Jun 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220604-simplex-chat-new-privacy-security-settings/">SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220604-simplex-chat-new-privacy-security-settings/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX Chat v2.1 - better conversation privacy</h1>
             <p class="text-sm">Tue, 24 May 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220524-simplex-chat-better-privacy/">SimpleX Chat v2.1 - better conversation privacy</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220524-simplex-chat-better-privacy/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX Chat v2.0 - sending images and files in mobile apps</h1>
             <p class="text-sm">Wed, 11 May 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220511-simplex-chat-v2-images-files/">SimpleX Chat v2.0 - sending images and files in mobile apps</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220511-simplex-chat-v2-images-files/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">Instant notifications for SimpleX Chat mobile apps</h1>
             <p class="text-sm">Mon, 04 Apr 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220404-simplex-chat-instant-notifications/">Instant notifications for SimpleX Chat mobile apps</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220404-simplex-chat-instant-notifications/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat mobile apps for iOS and Android</h1>
             <p class="text-sm">Tue, 08 Mar 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220308-simplex-chat-mobile-apps/">SimpleX announces SimpleX Chat mobile apps for iOS and Android</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220308-simplex-chat-mobile-apps/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat public beta for iOS</h1>
             <p class="text-sm">Mon, 14 Feb 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220214-simplex-chat-ios-public-beta/">SimpleX announces SimpleX Chat public beta for iOS</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220214-simplex-chat-ios-public-beta/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat v1</h1>
             <p class="text-sm">Wed, 12 Jan 2022</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20220112-simplex-chat-v1-released/">SimpleX announces SimpleX Chat v1</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20220112-simplex-chat-v1-released/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat v0.5</h1>
             <p class="text-sm">Wed, 08 Dec 2021</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20211208-simplex-chat-v0.5-released/">SimpleX announces SimpleX Chat v0.5</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20211208-simplex-chat-v0.5-released/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">SimpleX announces SimpleX Chat v0.4</h1>
             <p class="text-sm">Tue, 14 Sep 2021</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20210914-simplex-chat-v0.4-released/">SimpleX announces SimpleX Chat v0.4</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20210914-simplex-chat-v0.4-released/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">Announcing SimpleX Chat Prototype!</h1>
             <p class="text-sm">Wed, 12 May 2021</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20210512-simplex-chat-terminal-ui/">Announcing SimpleX Chat Prototype!</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20210512-simplex-chat-terminal-ui/">Read More</a>
             <br>
         </article>
         
         <article class="bg-white my-3 py-8 px-6 sm:px-8 md:px-12 lg:px-16 rounded-lg hover:shadow-md ">
             <h1 class="text-xl font-medium">Simplex Chat</h1>
             <p class="text-sm">Thu, 22 Oct 2020</p>
-            <a class="inline-block mt-5 hover:underline" href="/blog/20201022-simplex-chat/">Simplex Chat</a>
+            <a class="inline-block mt-5 hover:underline" href="/blog/20201022-simplex-chat/">Read More</a>
             <br>
         </article>
         
