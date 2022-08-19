@@ -429,8 +429,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
     // Don't autoscroll next time until it will be needed
     shouldAutoScroll = false
   }
+  var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
+    // They are equal when orientation was changed, don't need to scroll.
+    // LaunchedEffect unaware of this event since it uses remember, not rememberSaveable
+    if (prevSearchEmptiness == searchValue.value.isEmpty()) return@LaunchedEffect
+    prevSearchEmptiness = searchValue.value.isEmpty()
+
     if (listState.firstVisibleItemIndex != 0) {
       scope.launch { listState.scrollToItem(0) }
     }
@@ -536,16 +542,36 @@ fun BoxWithConstraintsScope.FloatingButtons(
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
+
+  var firstVisibleIndex by remember { mutableStateOf(listState.firstVisibleItemIndex) }
+  var lastIndexOfVisibleItems by remember { mutableStateOf(listState.layoutInfo.visibleItemsInfo.lastIndex) }
+  var firstItemIsVisible by remember { mutableStateOf(firstVisibleIndex == 0)  }
+
+  LaunchedEffect(listState) {
+    snapshotFlow { listState.firstVisibleItemIndex }
+      .distinctUntilChanged()
+      .collect {
+        firstVisibleIndex = it
+        firstItemIsVisible = firstVisibleIndex == 0
+      }
+    snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
+      .distinctUntilChanged()
+      .collect {
+        lastIndexOfVisibleItems = it
+      }
+  }
+
   val bottomUnreadCount by remember {
     derivedStateOf {
-      val from = chatItems.lastIndex - listState.firstVisibleItemIndex - listState.layoutInfo.visibleItemsInfo.lastIndex
+      if (unreadCount.value == 0) return@derivedStateOf 0
+
+      val from = chatItems.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
       if (chatItems.size <= from || from < 0) return@derivedStateOf 0
 
       chatItems.subList(from, chatItems.size).count { it.isRcvNew }
     }
   }
 
-  val firstItemIsVisible by remember { derivedStateOf { listState.firstVisibleItemIndex == 0 } }
   val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
 
   LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
@@ -612,20 +638,16 @@ fun PreloadItems(
   items: List<*>,
   onLoadMore: (chat: Chat) -> Unit,
 ) {
-  val loadMore = remember {
-    derivedStateOf {
-      val layoutInfo = listState.layoutInfo
-      val totalItemsNumber = layoutInfo.totalItemsCount
-      val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-      if (lastVisibleItemIndex > (totalItemsNumber - remaining))
-        totalItemsNumber
-      else
-        0
-    }
-  }
-
-  LaunchedEffect(loadMore, chat, items) {
-    snapshotFlow { loadMore.value }
+  LaunchedEffect(listState, chat, items) {
+    snapshotFlow { listState.layoutInfo }
+      .map {
+        val totalItemsNumber = it.totalItemsCount
+        val lastVisibleItemIndex = (it.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+        if (lastVisibleItemIndex > (totalItemsNumber - remaining))
+          totalItemsNumber
+        else
+          0
+      }
       .distinctUntilChanged()
       .filter { it > 0 }
       .collect {

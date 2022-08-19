@@ -26,6 +26,7 @@
       android:allowBackup="true"
       android:icon="@mipmap/icon"
       android:label="${app_name}"
+      android:extractNativeLibs="${extract_native_libs}"
       android:supportsRtl="true"
       android:theme="@style/Theme.SimpleX">
 

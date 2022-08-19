@@ -8,7 +8,6 @@
 
 import SwiftUI
 import SimpleXChat
-import Introspect
 
 private let memberImageSize: CGFloat = 34
 

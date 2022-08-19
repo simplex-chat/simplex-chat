@@ -18,6 +18,9 @@ buildscript {
         // to allow debug & release versions to coexist
         application_id_suffix = localProperties['application_id_suffix'] ?: ''
 
+        // Compression level for debug AND release apk. 0 = disable compression. Max is 9
+        compression_level = localProperties['compression_level'] ?: '0'
+
         // NOTE: If you need a different version of something, provide it in `local.properties`
         // like so: compose_version=123, or gradle_plugin_version=1.2.3, etc
     }
