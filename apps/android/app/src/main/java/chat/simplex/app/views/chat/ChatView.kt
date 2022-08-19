@@ -429,8 +429,14 @@ fun BoxWithConstraintsScope.ChatItemsList(
     // Don't autoscroll next time until it will be needed
     shouldAutoScroll = false
   }
+  var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
+    // They are equal when orientation was changed, don't need to scroll.
+    // LaunchedEffect unaware of this event since it uses remember, not rememberSaveable
+    if (prevSearchEmptiness == searchValue.value.isEmpty()) return@LaunchedEffect
+    prevSearchEmptiness = searchValue.value.isEmpty()
+
     if (listState.firstVisibleItemIndex != 0) {
       scope.launch { listState.scrollToItem(0) }
     }
@@ -632,20 +638,16 @@ fun PreloadItems(
   items: List<*>,
   onLoadMore: (chat: Chat) -> Unit,
 ) {
-  val loadMore = remember {
-    derivedStateOf {
-      val layoutInfo = listState.layoutInfo
-      val totalItemsNumber = layoutInfo.totalItemsCount
-      val lastVisibleItemIndex = (layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-      if (lastVisibleItemIndex > (totalItemsNumber - remaining))
-        totalItemsNumber
-      else
-        0
-    }
-  }
-
-  LaunchedEffect(loadMore, chat, items) {
-    snapshotFlow { loadMore.value }
+  LaunchedEffect(listState, chat, items) {
+    snapshotFlow { listState.layoutInfo }
+      .map {
+        val totalItemsNumber = it.totalItemsCount
+        val lastVisibleItemIndex = (it.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+        if (lastVisibleItemIndex > (totalItemsNumber - remaining))
+          totalItemsNumber
+        else
+          0
+      }
       .distinctUntilChanged()
       .filter { it > 0 }
       .collect {
