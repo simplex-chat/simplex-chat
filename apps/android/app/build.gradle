@@ -173,13 +173,13 @@ tasks.register("compressApk") {
             workingDir '../../../scripts/android'
             commandLine './compress-and-sign-apk.sh',  \
                      "$compression_level",  \
-                     "$outputDir",  \
-                     "$sdkDir",  \
+                     "'$outputDir'",  \
+                     "'$sdkDir'",  \
                      "$buildType",  \
-                     "$storeFile",  \
-                     "$storePassword",  \
-                     "$keyAlias",  \
-                     "$keyPassword"
+                     "'$storeFile'",  \
+                     "'$storePassword'",  \
+                     "'$keyAlias'",  \
+                     "'$keyPassword'"
         }
 
         // View all gradle properties set
