@@ -2,14 +2,11 @@ html {
   scroll-behavior: smooth;
 }
 
-h1::before,
-h2::before,
-h3::before, 
 #comparison::before {
   display: block;
   content: " ";
   margin-top: -80px;
-  height: 100px;
+  height: 120px;
   visibility: hidden;
   pointer-events: none;
 }
