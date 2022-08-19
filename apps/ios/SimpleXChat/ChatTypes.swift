@@ -78,11 +78,11 @@ public struct LocalProfile: Codable, NamedChat {
     )
 }
 
-func toLocalProfile (_ profileId: Int64, _ profile: Profile ) -> LocalProfile {
+public func toLocalProfile (_ profileId: Int64, _ profile: Profile ) -> LocalProfile {
     LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
 }
 
-func fromLocalProfile (_ profile: LocalProfile) -> Profile {
+public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
     Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
 }
 

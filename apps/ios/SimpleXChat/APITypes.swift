@@ -20,6 +20,7 @@ public enum ChatCommand {
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setFilesFolder(filesFolder: String)
+    case setIncognito(incognito: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig) 
     case apiDeleteStorage
@@ -81,6 +82,7 @@ public enum ChatCommand {
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .setIncognito(incognito): return "/incognito \(incognito ? "on" : "off")"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -146,6 +148,7 @@ public enum ChatCommand {
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
             case .setFilesFolder: return "setFilesFolder"
+            case .setIncognito: return "setIncognito"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -222,8 +225,8 @@ public enum ChatResponse: Decodable, Error {
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [String])
     case networkConfig(networkConfig: NetCfg)
-    case contactInfo(contact: Contact, connectionStats: ConnectionStats)
-    case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case contactInfo(contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
+    case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?, mainProfile: Profile?)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -404,8 +407,8 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChat(chat): return String(describing: chat)
             case let .userSMPServers(smpServers): return String(describing: smpServers)
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
-            case let .contactInfo(contact, connectionStats): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))"
-            case let .groupMemberInfo(groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\\nconnectionStats_: \(String(describing: connectionStats_))"
+            case let .contactInfo(contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
+            case let .groupMemberInfo(groupInfo, member, connectionStats_, mainProfile): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))\nmainProfile: \(String(describing: mainProfile))"
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails

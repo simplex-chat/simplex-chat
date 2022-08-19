@@ -49,7 +49,7 @@ struct GroupChatInfoView: View {
                         Button {
                             Task {
                                 do {
-                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                                    let (stats, mainProfile) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                                     await MainActor.run { connectionStats = stats }
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
