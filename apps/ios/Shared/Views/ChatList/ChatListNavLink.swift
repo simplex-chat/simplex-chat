@@ -41,10 +41,13 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat) },
             disabled: !contact.ready
         )
-        .swipeActions(edge: .leading) {
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if chat.chatStats.unreadCount > 0 {
                 markReadButton()
             }
+        }
+        .swipeActions(edge: .leading) {
+            toggleNtfsButton(chat: chat, enableNtfs: !contact.chatSettings.enableNtfs)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             clearChatButton()
@@ -104,10 +107,13 @@ struct ChatListNavLink: View {
                 disabled: !groupInfo.ready
             )
             .frame(height: 80)
-            .swipeActions(edge: .leading) {
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 if chat.chatStats.unreadCount > 0 {
                     markReadButton()
                 }
+            }
+            .swipeActions(edge: .leading) {
+                toggleNtfsButton(chat: chat, enableNtfs: !groupInfo.chatSettings.enableNtfs)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 clearChatButton()

@@ -113,7 +113,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
                         .frame(minWidth: 18, minHeight: 18)
-                        .background(Color.accentColor)
+                        .background(chat.chatInfo.chatSettings?.enableNtfs ?? true ? Color.accentColor : Color.secondary)
                         .cornerRadius(10)
                 }
             }

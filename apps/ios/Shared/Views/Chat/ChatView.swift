@@ -119,6 +119,7 @@ struct ChatView: View {
                                 Label("Video call", systemImage: "video")
                             }
                             searchButton()
+                            toggleNtfsButton(chat: chat, enableNtfs: !contact.chatSettings.enableNtfs)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -133,6 +134,7 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
+                            toggleNtfsButton(chat: chat, enableNtfs: !groupInfo.chatSettings.enableNtfs)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -499,6 +501,39 @@ struct ChatView: View {
             } catch {
                 logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
             }
+        }
+    }
+}
+
+func toggleNtfsButton(chat: Chat, enableNtfs: Bool) -> some View {
+    Button {
+        toggleNotifications(chat: chat, enableNtfs: enableNtfs)
+    } label: {
+        if enableNtfs {
+            Label("Unmute", systemImage: "speaker")
+        } else {
+            Label("Mute", systemImage: "speaker.slash")
+        }
+    }
+}
+
+func toggleNotifications(chat: Chat, enableNtfs: Bool) {
+    let cInfo = chat.chatInfo
+    Task {
+        do {
+            let chatSettings = ChatSettings(enableNtfs: enableNtfs)
+            try await apiSetChatSettings(type: cInfo.chatType, id: cInfo.apiId, chatSettings: chatSettings)
+            switch cInfo {
+            case var .direct(contact):
+                contact.chatSettings = chatSettings
+                chat.chatInfo = .direct(contact: contact)
+            case var .group(groupInfo):
+                groupInfo.chatSettings = chatSettings
+                chat.chatInfo = .group(groupInfo: groupInfo)
+            default: ()
+            }
+        } catch let error {
+            logger.error("apiSetChatSettings error \(responseError(error))")
         }
     }
 }

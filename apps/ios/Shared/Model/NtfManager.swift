@@ -200,7 +200,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
 
     func notifyMessageReceived(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         logger.debug("NtfManager.notifyMessageReceived")
-        addNotification(createMessageReceivedNtf(cInfo, cItem))
+        if cInfo.chatSettings?.enableNtfs ?? true {
+            addNotification(createMessageReceivedNtf(cInfo, cItem))
+        }
     }
 
     func notifyCallInvitation(_ invitation: RcvCallInvitation) {

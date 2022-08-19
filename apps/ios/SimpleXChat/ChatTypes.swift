@@ -189,6 +189,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var chatSettings: ChatSettings? {
+        switch self {
+        case let .direct(contact): return contact.chatSettings
+        case let .group(groupInfo): return groupInfo.chatSettings
+        default: return nil
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -244,9 +252,13 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: Profile
     public var activeConn: Connection
     public var viaGroup: Int64?
-//    public var chatSettings: ChatSettings
+    public var chatSettings: ChatSettings = ChatSettings.defaults
     var createdAt: Date
     var updatedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case contactId, localDisplayName, profile, activeConn, viaGroup, createdAt, updatedAt
+    }
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
@@ -265,6 +277,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         localDisplayName: "alice",
         profile: Profile.sampleData,
         activeConn: Connection.sampleData,
+        chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
     )
@@ -434,9 +447,13 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
-//    public var chatSettings: ChatSettings
+    public var chatSettings: ChatSettings = ChatSettings.defaults
     var createdAt: Date
     var updatedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case groupId, localDisplayName, groupProfile, membership, createdAt, updatedAt
+    }
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
@@ -463,6 +480,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
         membership: GroupMember.sampleData,
+        chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
     )

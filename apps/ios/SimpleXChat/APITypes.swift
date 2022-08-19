@@ -597,6 +597,10 @@ public struct KeepAliveOpts: Codable, Equatable {
 public struct ChatSettings: Codable {
     public var enableNtfs: Bool
 
+    public init(enableNtfs: Bool) {
+        self.enableNtfs = enableNtfs
+    }
+
     public static let defaults: ChatSettings = ChatSettings(enableNtfs: true)
 }
 
