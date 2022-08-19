@@ -29,8 +29,12 @@ struct ChatInfoImage: View {
                 color: color
             )
             .frame(width: imageSize, height: imageSize)
-            chatPreviewImageOverlayIcon()
-                .padding([.bottom, .trailing], 1)
+            ZStack {
+                chatPreviewImageOverlayIcon()
+                    .padding([.bottom, .trailing], 0.1 * imageSize)
+                    .scaledToFill()
+            }
+            .frame(width: 0.2 * imageSize, height: 0.2 * imageSize)
         }
     }
 

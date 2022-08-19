@@ -63,18 +63,11 @@ struct CIGroupInvitationView: View {
 
     private func groupInfoView(_ action: Bool) -> some View {
         HStack(alignment: .top) {
-            ZStack(alignment: .bottomTrailing) {
-                ProfileImage(
-                    imageStr: groupInvitation.groupProfile.image,
-                    iconName: "person.2.circle.fill",
-                    color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
-                )
-                if (groupInvitation.invitedIncognito ?? false) {
-                    Image(systemName: "theatermasks.circle.fill")
-                        .foregroundColor(.indigo)
-                        .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
-                }
-            }
+            ProfileImage(
+                imageStr: groupInvitation.groupProfile.image,
+                iconName: "person.2.circle.fill",
+                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+            )
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {
