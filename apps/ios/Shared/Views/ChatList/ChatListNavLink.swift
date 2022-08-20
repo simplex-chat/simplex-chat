@@ -41,15 +41,13 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat) },
             disabled: !contact.ready
         )
-        .swipeActions(edge: .leading) {
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if chat.chatStats.unreadCount > 0 {
                 markReadButton()
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             clearChatButton()
-        }
-        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     contact.ready
@@ -78,8 +76,6 @@ struct ChatListNavLink: View {
                 .frame(height: 80)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
-                }
-                .swipeActions(edge: .trailing) {
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
@@ -104,15 +100,13 @@ struct ChatListNavLink: View {
                 disabled: !groupInfo.ready
             )
             .frame(height: 80)
-            .swipeActions(edge: .leading) {
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 if chat.chatStats.unreadCount > 0 {
                     markReadButton()
                 }
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 clearChatButton()
-            }
-            .swipeActions(edge: .trailing) {
                 if (groupInfo.membership.memberCurrent) {
                     Button {
                         AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
