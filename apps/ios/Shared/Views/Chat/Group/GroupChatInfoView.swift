@@ -154,7 +154,7 @@ struct GroupChatInfoView: View {
             VStack(alignment: .leading) {
                 Text(member.chatViewName)
                     .lineLimit(1)
-                    .foregroundColor(.primary)
+                    .foregroundColor(member.memberIncognito ? .indigo : .primary)
                 let s = Text(member.memberStatus.shortText)
                 (user ? Text ("you: ") + s : s)
                     .lineLimit(1)
