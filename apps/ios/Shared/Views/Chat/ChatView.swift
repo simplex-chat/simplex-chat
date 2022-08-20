@@ -511,7 +511,7 @@ struct ChatView: View {
         if chat.chatInfo.ntfsEnabled {
             Label("Mute", systemImage: "speaker.slash")
         } else {
-            Label("Unmute", systemImage: "speaker")
+            Label("Unmute", systemImage: "speaker.wave.2")
         }
     }
 }
