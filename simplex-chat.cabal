@@ -45,6 +45,7 @@ library
       Simplex.Chat.Migrations.M20220811_chat_items_indices
       Simplex.Chat.Migrations.M20220812_incognito_profiles
       Simplex.Chat.Migrations.M20220818_chat_notifications
+      Simplex.Chat.Migrations.M20220820_invited_by_conn_custom_user_profile_id
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

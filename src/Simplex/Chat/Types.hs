@@ -387,24 +387,33 @@ instance ToJSON MemberId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
+data InvitedBy
+  = IBContact {byContactId :: ContactId, customUserProfileId :: Maybe ProfileId}
+  | IBUser
+  | IBUnknown
   deriving (Eq, Show, Generic)
 
 instance ToJSON InvitedBy where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "IB"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "IB"
 
-toInvitedBy :: Int64 -> Maybe Int64 -> InvitedBy
-toInvitedBy userCtId (Just ctId)
+toInvitedBy :: ContactId -> Maybe ContactId -> Maybe ProfileId -> InvitedBy
+toInvitedBy userCtId (Just ctId) customUserProfileId
   | userCtId == ctId = IBUser
-  | otherwise = IBContact ctId
-toInvitedBy _ Nothing = IBUnknown
+  | otherwise = IBContact ctId customUserProfileId
+toInvitedBy _ Nothing _ = IBUnknown
 
 fromInvitedBy :: Int64 -> InvitedBy -> Maybe Int64
 fromInvitedBy userCtId = \case
   IBUnknown -> Nothing
-  IBContact ctId -> Just ctId
+  IBContact ctId _ -> Just ctId
   IBUser -> Just userCtId
+
+fromInvitedByCustomUserProfileId :: InvitedBy -> Maybe ProfileId
+fromInvitedByCustomUserProfileId = \case
+  IBUnknown -> Nothing
+  IBContact _ customUserProfileId -> customUserProfileId
+  IBUser -> Nothing
 
 data GroupMemberRole = GRMember | GRAdmin | GROwner
   deriving (Eq, Show, Ord)
@@ -745,9 +754,9 @@ data Connection = Connection
   { connId :: Int64,
     agentConnId :: AgentConnId,
     connLevel :: Int,
-    viaContact :: Maybe Int64, -- group member contact ID, if not direct connection
+    viaContact :: Maybe ContactId, -- group member contact ID, if not direct connection
     viaUserContactLink :: Maybe Int64, -- user contact link ID, if connected via "user address"
-    customUserProfileId :: Maybe Int64,
+    customUserProfileId :: Maybe ProfileId,
     connType :: ConnType,
     connStatus :: ConnStatus,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID

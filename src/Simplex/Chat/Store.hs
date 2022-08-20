@@ -230,6 +230,7 @@ import Simplex.Chat.Migrations.M20220715_groups_chat_item_id
 import Simplex.Chat.Migrations.M20220811_chat_items_indices
 import Simplex.Chat.Migrations.M20220812_incognito_profiles
 import Simplex.Chat.Migrations.M20220818_chat_notifications
+import Simplex.Chat.Migrations.M20220820_invited_by_conn_custom_user_profile_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -261,7 +262,8 @@ schemaMigrations =
     ("20220715_groups_chat_item_id", m20220715_groups_chat_item_id),
     ("20220811_chat_items_indices", m20220811_chat_items_indices),
     ("20220812_incognito_profiles", m20220812_incognito_profiles),
-    ("20220818_chat_notifications", m20220818_chat_notifications)
+    ("20220818_chat_notifications", m20220818_chat_notifications),
+    ("20220820_invited_by_conn_custom_user_profile_id", m20220820_invited_by_conn_custom_user_profile_id)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1182,12 +1184,12 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-              mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+              mu.member_status, mu.invited_by, mu.invited_by_conn_custom_user_profile_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
               -- GroupInfo {membership = GroupMember {memberProfile}}
               pu.display_name, pu.full_name, pu.image,
               -- from GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-              m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image
+              m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             JOIN groups g ON g.group_id = m.group_id
@@ -1270,12 +1272,12 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+          mu.member_status, mu.invited_by, mu.invited_by_conn_custom_user_profile_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           -- GroupInfo {membership = GroupMember {memberProfile}}
           pu.display_name, pu.full_name, pu.image,
           -- from GroupMember
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
+          m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
@@ -1329,7 +1331,7 @@ createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = Except
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInvitation {fromMember, fromMemberProfile, invitedMember, connRequest, groupProfile} incognitoProfile = do
+createGroupInvitation db user@User {userId} contact@Contact {contactId, activeConn = Connection {customUserProfileId}} GroupInvitation {fromMember, fromMemberProfile, invitedMember, connRequest, groupProfile} incognitoProfile = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     -- TODO treat the case that the invitation details could've changed
@@ -1357,7 +1359,7 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId} GroupInv
               (profileId, localDisplayName, connRequest, userId, True, currentTs, currentTs)
             insertedRowId db
           _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown fromMemberProfile currentTs
-          membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfile currentTs
+          membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId customUserProfileId) incognitoProfile currentTs
           let chatSettings = ChatSettings {enableNtfs = True}
           pure GroupInfo {groupId, localDisplayName, groupProfile, membership, chatSettings, createdAt = currentTs, updatedAt = currentTs}
 
@@ -1392,11 +1394,11 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
         db
         [sql|
           INSERT INTO group_members
-            ( group_id, member_id, member_role, member_category, member_status, invited_by,
+            ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_conn_custom_user_profile_id,
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
+        ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, fromInvitedByCustomUserProfileId invitedBy)
             :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
         )
       pure localDisplayName
@@ -1407,11 +1409,11 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_conn_custom_user_profile_id,
                 user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy)
+          ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, fromInvitedByCustomUserProfileId invitedBy)
               :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
           )
         pure $ Right incognitoLdn
@@ -1472,7 +1474,7 @@ getUserGroupDetails db User {userId, userContactId} =
       [sql|
         SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
           m.group_member_id, g.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, mp.contact_profile_id, mp.display_name, mp.full_name, mp.image
+          m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, mp.contact_profile_id, mp.display_name, mp.full_name, mp.image
         FROM groups g
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members m USING (group_id)
@@ -1502,7 +1504,7 @@ getGroupMember db user@User {userId} groupId groupMemberId =
       [sql|
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
+          m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
@@ -1524,7 +1526,7 @@ getGroupMembers db user@User {userId, userContactId} GroupInfo {groupId} = do
       [sql|
         SELECT
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
+          m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
@@ -1559,23 +1561,23 @@ getGroupInvitation db user groupId = do
       firstRow fromOnly (SEGroupNotFound groupId) $
         DB.query db "SELECT g.inv_queue_info FROM groups g WHERE g.group_id = ? AND g.user_id = ?" (groupId, userId)
     findFromContact :: InvitedBy -> [GroupMember] -> Maybe GroupMember
-    findFromContact (IBContact contactId) = find ((== Just contactId) . memberContactId)
+    findFromContact (IBContact contactId _) = find ((== Just contactId) . memberContactId)
     findFromContact _ = const Nothing
 
-type GroupMemberRow = ((Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus) :. (Maybe Int64, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData))
+type GroupMemberRow = ((Int64, Int64, MemberId, GroupMemberRole, GroupMemberCategory, GroupMemberStatus) :. (Maybe ContactId, Maybe ProfileId, ContactName, Maybe ContactId, ProfileId, ProfileId, ContactName, Text, Maybe ImageData))
 
-type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus) :. (Maybe Int64, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData))
+type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus) :. (Maybe ContactId, Maybe ProfileId, Maybe ContactName, Maybe ContactId, Maybe ProfileId, Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe ImageData))
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus) :. (invitedById, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus) :. (invitedById, invitedByConnCustomUserProfileId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image}
-      invitedBy = toInvitedBy userContactId invitedById
+      invitedBy = toInvitedBy userContactId invitedById invitedByConnCustomUserProfileId
       activeConn = Nothing
    in GroupMember {..}
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus) :. (invitedById, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus) :. (invitedById, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just memberRole, Just memberCategory, Just memberStatus) :. (invitedById, invitedByConnCustomUserProfileId, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus) :. (invitedById, invitedByConnCustomUserProfileId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image))
 toMaybeGroupMember _ _ = Nothing
 
 createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> ExceptT StoreError IO GroupMember
@@ -1610,11 +1612,11 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
             db
             [sql|
               INSERT INTO group_members
-                ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_conn_custom_user_profile_id,
                   user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
+            ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, fromInvitedByCustomUserProfileId IBUser)
                 :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
             )
 
@@ -1697,16 +1699,19 @@ createNewMember_
     }
   createdAt = do
     let invitedById = fromInvitedBy userContactId invitedBy
+        invitedByConnCustomUserProfileId = fromInvitedByCustomUserProfileId invitedBy
         activeConn = Nothing
     DB.execute
       db
       [sql|
         INSERT INTO group_members
-          (group_id, member_id, member_role, member_category, member_status,
-           invited_by, user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+          (group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_conn_custom_user_profile_id,
+           user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      (groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
+      ( (groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, invitedByConnCustomUserProfileId)
+          :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
+      )
     groupMemberId <- insertedRowId db
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile, memberContactId, memberContactProfileId, activeConn}
 
@@ -1895,12 +1900,12 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+          mu.member_status, mu.invited_by, mu.invited_by_conn_custom_user_profile_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           -- GroupInfo {membership = GroupMember {memberProfile}}
           pu.display_name, pu.full_name, pu.image,
           -- via GroupMember
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status,
-          m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
+          m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image,
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
         FROM group_members m
@@ -2653,7 +2658,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
             SELECT i.chat_item_id, 
               -- GroupMember
               m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-              m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+              m.member_status, m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.image
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -2759,7 +2764,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+          mu.member_status, mu.invited_by, mu.invited_by_conn_custom_user_profile_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           pu.display_name, pu.full_name, pu.image,
           -- ChatStats
           COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
@@ -2769,13 +2774,13 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
           -- Maybe GroupMember - sender
           m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-          m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+          m.member_status, m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
           p.display_name, p.full_name, p.image,
           -- quoted ChatItem
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
           -- quoted GroupMember
           rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
-          rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
+          rm.member_status, rm.invited_by, rm.invited_by_conn_custom_user_profile_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
           rp.display_name, rp.full_name, rp.image
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -3159,7 +3164,7 @@ getGroupInfo db User {userId, userContactId} groupId =
           g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-          mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+          mu.member_status, mu.invited_by, mu.invited_by_conn_custom_user_profile_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           pu.display_name, pu.full_name, pu.image
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -3528,13 +3533,13 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             f.file_id, f.file_name, f.file_size, f.file_path, f.ci_file_status,
             -- GroupMember
             m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category,
-            m.member_status, m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+            m.member_status, m.invited_by, m.invited_by_conn_custom_user_profile_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.image,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
             rm.group_member_id, rm.group_id, rm.member_id, rm.member_role, rm.member_category,
-            rm.member_status, rm.invited_by, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
+            rm.member_status, rm.invited_by, rm.invited_by_conn_custom_user_profile_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.image
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
