@@ -610,8 +610,8 @@ processChatCommand = \case
         Group _ ms <- getGroup db user chatId
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
-      withAgent $ \a -> forM_ ms $ \m ->
-        forM_ (memberConnId m) $ \connId -> toggleConnectionNtfs a connId (enableNtfs chatSettings)
+      forM_ (filter memberActive ms) $ \m -> forM_ (memberConnId m) $ \connId ->
+        withAgent (\a -> toggleConnectionNtfs a connId $ enableNtfs chatSettings) `catchError` (toView . CRChatError)
       pure CRCmdOk
     _ -> pure $ chatCmdError "not supported"
   APIContactInfo contactId -> withUser $ \User {userId} -> do
