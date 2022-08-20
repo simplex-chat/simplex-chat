@@ -10,10 +10,12 @@ import SwiftUI
 import SimpleXChat
 
 struct CIGroupInvitationView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
+    var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
@@ -31,7 +33,7 @@ struct CIGroupInvitationView: View {
                 if action {
                     groupInvitationText()
                         .overlay(DetermineWidth())
-                    Text((groupInvitation.invitedIncognito ?? false) ? "Tap to join incognito" : "Tap to join")
+                    Text(joinGroupIncognito ? "Tap to join incognito" : "Tap to join")
                         .foregroundColor(.accentColor)
                         .font(.callout)
                         .padding(.trailing, 60)
@@ -59,6 +61,10 @@ struct CIGroupInvitationView: View {
         } else {
             v
         }
+    }
+
+    private var joinGroupIncognito: Bool {
+        (groupInvitation.invitedIncognito ?? false) || chatModel.incognito || chatIncognito
     }
 
     private func groupInfoView(_ action: Bool) -> some View {
@@ -92,7 +98,7 @@ struct CIGroupInvitationView: View {
         } else {
             switch groupInvitation.status {
             case .pending: return "You are invited to group"
-            case .accepted: return (groupInvitation.invitedIncognito ?? false) ? "You joined this group incognito" : "You joined this group"
+            case .accepted: return "You joined this group"
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
