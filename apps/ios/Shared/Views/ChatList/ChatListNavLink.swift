@@ -46,13 +46,8 @@ struct ChatListNavLink: View {
                 markReadButton()
             }
         }
-        .swipeActions(edge: .leading) {
-            toggleNtfsButton(chat: chat, enableNtfs: !contact.chatSettings.enableNtfs)
-        }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             clearChatButton()
-        }
-        .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(
                     contact.ready
@@ -81,8 +76,6 @@ struct ChatListNavLink: View {
                 .frame(height: 80)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
-                }
-                .swipeActions(edge: .trailing) {
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
@@ -112,13 +105,8 @@ struct ChatListNavLink: View {
                     markReadButton()
                 }
             }
-            .swipeActions(edge: .leading) {
-                toggleNtfsButton(chat: chat, enableNtfs: !groupInfo.chatSettings.enableNtfs)
-            }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 clearChatButton()
-            }
-            .swipeActions(edge: .trailing) {
                 if (groupInfo.membership.memberCurrent) {
                     Button {
                         AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))

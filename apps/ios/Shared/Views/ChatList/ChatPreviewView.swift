@@ -36,7 +36,6 @@ struct ChatPreviewView: View {
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
-
                 }
                 .padding(.top, 4)
                 .padding(.horizontal, 8)
@@ -113,8 +112,11 @@ struct ChatPreviewView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
                         .frame(minWidth: 18, minHeight: 18)
-                        .background(chat.chatInfo.chatSettings?.enableNtfs ?? true ? Color.accentColor : Color.secondary)
+                        .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
                         .cornerRadius(10)
+                } else if !chat.chatInfo.ntfsEnabled {
+                    Image(systemName: "speaker.slash.fill")
+                        .foregroundColor(.secondary)
                 }
             }
         } else {

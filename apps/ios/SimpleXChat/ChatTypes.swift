@@ -189,11 +189,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    public var chatSettings: ChatSettings? {
+    public var ntfsEnabled: Bool {
         switch self {
-        case let .direct(contact): return contact.chatSettings
-        case let .group(groupInfo): return groupInfo.chatSettings
-        default: return nil
+        case let .direct(contact): return contact.chatSettings.enableNtfs
+        case let .group(groupInfo): return groupInfo.chatSettings.enableNtfs
+        default: return false
         }
     }
 

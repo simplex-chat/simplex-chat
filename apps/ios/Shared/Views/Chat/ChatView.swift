@@ -118,7 +118,7 @@ struct ChatView: View {
                                 Label("Video call", systemImage: "video")
                             }
                             searchButton()
-                            toggleNtfsButton(chat: chat, enableNtfs: !contact.chatSettings.enableNtfs)
+                            toggleNtfsButton(chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -133,7 +133,7 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
-                            toggleNtfsButton(chat: chat, enableNtfs: !groupInfo.chatSettings.enableNtfs)
+                            toggleNtfsButton(chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -504,32 +504,31 @@ struct ChatView: View {
     }
 }
 
-func toggleNtfsButton(chat: Chat, enableNtfs: Bool) -> some View {
+@ViewBuilder func toggleNtfsButton(_ chat: Chat) -> some View {
     Button {
-        toggleNotifications(chat: chat, enableNtfs: enableNtfs)
+        toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
     } label: {
-        if enableNtfs {
-            Label("Unmute", systemImage: "speaker")
-        } else {
+        if chat.chatInfo.ntfsEnabled {
             Label("Mute", systemImage: "speaker.slash")
+        } else {
+            Label("Unmute", systemImage: "speaker")
         }
     }
 }
 
-func toggleNotifications(chat: Chat, enableNtfs: Bool) {
-    let cInfo = chat.chatInfo
+func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
     Task {
         do {
             let chatSettings = ChatSettings(enableNtfs: enableNtfs)
-            try await apiSetChatSettings(type: cInfo.chatType, id: cInfo.apiId, chatSettings: chatSettings)
+            try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
             await MainActor.run {
-                switch cInfo {
+                switch chat.chatInfo {
                 case var .direct(contact):
                     contact.chatSettings = chatSettings
-                    chat.chatInfo = .direct(contact: contact)
+                    ChatModel.shared.updateContact(contact)
                 case var .group(groupInfo):
                     groupInfo.chatSettings = chatSettings
-                    chat.chatInfo = .group(groupInfo: groupInfo)
+                    ChatModel.shared.updateGroup(groupInfo)
                 default: ()
                 }
             }
