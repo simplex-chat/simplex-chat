@@ -86,7 +86,13 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button(interactiveIncognito ? "Join incognito" : "Join group") { Task { await joinGroup(groupInfo.groupId) } }
+                    Button(interactiveIncognito ? "Join incognito" : "Join group") {
+                        if unsafeToJoinIncognito {
+                            AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert())
+                        } else {
+                            joinGroup(groupInfo.groupId)
+                        }
+                    }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -136,11 +142,30 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            Task { await joinGroup(chat.chatInfo.apiId) }
+            if unsafeToJoinIncognito {
+                AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert())
+            } else {
+                joinGroup(chat.chatInfo.apiId)
+            }
         } label: {
             Label("Join", systemImage: interactiveIncognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
         .tint(interactiveIncognito ? .indigo : .accentColor)
+    }
+
+    private var unsafeToJoinIncognito: Bool {
+        interactiveIncognito // TODO && connection with host is not incognito
+    }
+
+    private func unsafeToJoinIncognitoAlert() -> Alert {
+        Alert(
+            title: Text("Incognito membership may be compromised"),
+            message: Text("The contact who invited you knows your main profile. If their client is of older version (lower than 3.2) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
+            primaryButton: .destructive(Text("Join anyway")) {
+                joinGroup(chat.chatInfo.apiId)
+            },
+            secondaryButton: .cancel()
+        )
     }
 
     private func markReadButton() -> some View {
@@ -336,32 +361,35 @@ struct ChatListNavLink: View {
     }
 }
 
-func joinGroup(_ groupId: Int64) async {
-    do {
-        let r = try await apiJoinGroup(groupId)
-        switch r {
-        case let .joined(groupInfo):
-            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
-        case .invitationRemoved:
-            AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
-            await deleteGroup()
-        case .groupNotFound:
-            AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
-            await deleteGroup()
-        }
-    } catch let error {
-        let err = responseError(error)
-        AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
-        logger.error("apiJoinGroup error: \(err)")
-    }
-
-    func deleteGroup() async {
+func joinGroup(_ groupId: Int64) {
+    Task {
+        logger.debug("joinGroup")
         do {
-            // TODO this API should update chat item with the invitation as well
-            try await apiDeleteChat(type: .group, id: groupId)
-            await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
-        } catch {
-            logger.error("apiDeleteChat error: \(responseError(error))")
+            let r = try await apiJoinGroup(groupId)
+            switch r {
+            case let .joined(groupInfo):
+                await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+            case .invitationRemoved:
+                AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+                await deleteGroup()
+            case .groupNotFound:
+                AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+                await deleteGroup()
+            }
+        } catch let error {
+            let err = responseError(error)
+            AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
+            logger.error("apiJoinGroup error: \(err)")
+        }
+
+        func deleteGroup() async {
+            do {
+                // TODO this API should update chat item with the invitation as well
+                try await apiDeleteChat(type: .group, id: groupId)
+                await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
+            } catch {
+                logger.error("apiDeleteChat error: \(responseError(error))")
+            }
         }
     }
 }

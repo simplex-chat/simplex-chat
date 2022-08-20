@@ -15,10 +15,12 @@ struct CIGroupInvitationView: View {
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
+    var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
+        let unsafeToJoinIncognito = interactiveIncognito && !chatIncognito
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
                 groupInfoView(action)
@@ -56,7 +58,22 @@ struct CIGroupInvitationView: View {
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
 
         if action {
-            v.onTapGesture { acceptInvitation() }
+            v.onTapGesture {
+                if unsafeToJoinIncognito {
+                    AlertManager.shared.showAlert(
+                        Alert(
+                            title: Text("Incognito membership may be compromised"),
+                            message: Text("The contact who invited you knows your main profile. If their client is of older version (lower than 3.2) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
+                            primaryButton: .destructive(Text("Join anyway")) {
+                                joinGroup(groupInvitation.groupId)
+                            },
+                            secondaryButton: .cancel()
+                        )
+                    )
+                } else {
+                    joinGroup(groupInvitation.groupId)
+                }
+            }
         } else {
             v
         }
@@ -107,13 +124,6 @@ struct CIGroupInvitationView: View {
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
-        }
-    }
-
-    private func acceptInvitation() {
-        Task {
-            logger.debug("acceptInvitation")
-            await joinGroup(groupInvitation.groupId)
         }
     }
 }

@@ -103,7 +103,7 @@ struct AddGroupMembersView: View {
             case .warnUnsafeToInviteIncognito:
                 return Alert(
                     title: Text("Incognito membership may be compromised"),
-                    message: Text("Some contacts you're going to invite know your main profile. If their client is of older version (lower than 4.0) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
+                    message: Text("Some contacts you're going to invite know your main profile. If their client is of older version (lower than 3.2) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
                     primaryButton: .destructive(Text("Invite anyway")) {
                         inviteMembers()
                     }, secondaryButton: .cancel()
