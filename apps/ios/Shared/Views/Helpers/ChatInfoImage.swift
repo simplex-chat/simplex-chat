@@ -12,7 +12,6 @@ import SimpleXChat
 struct ChatInfoImage: View {
     @ObservedObject var chat: Chat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
-    var imageSize: CGFloat = 63
 
     var body: some View {
         var iconName: String
@@ -22,53 +21,11 @@ struct ChatInfoImage: View {
         case .contactRequest: iconName = "person.crop.circle.fill"
         default: iconName = "circle.fill"
         }
-        return ZStack(alignment: .bottomTrailing) {
-            ProfileImage(
-                imageStr: chat.chatInfo.image,
-                iconName: iconName,
-                color: color
-            )
-            .frame(width: imageSize, height: imageSize)
-            ZStack {
-                chatPreviewImageOverlayIcon()
-                    .padding([.bottom, .trailing], 0.1 * imageSize)
-                    .scaledToFill()
-            }
-            .frame(width: 0.2 * imageSize, height: 0.2 * imageSize)
-        }
-    }
-
-    @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
-        if case let .group(groupInfo) = chat.chatInfo {
-            switch (groupInfo.membership.memberStatus) {
-            case .memLeft:
-                groupInactiveIcon()
-            case .memRemoved:
-                groupInactiveIcon()
-            case .memGroupDeleted:
-                groupInactiveIcon()
-            default:
-                incognitoIcon()
-            }
-        } else {
-            incognitoIcon()
-        }
-    }
-
-    @ViewBuilder private func incognitoIcon() -> some View {
-        if chat.chatInfo.incognito {
-            Image(systemName: "theatermasks.circle.fill")
-                .foregroundColor(.indigo)
-                .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
-        } else {
-            EmptyView()
-        }
-    }
-
-    @ViewBuilder private func groupInactiveIcon() -> some View {
-        Image(systemName: "multiply.circle.fill")
-            .foregroundColor(.secondary)
-            .background(Circle().foregroundColor(Color(uiColor: .systemBackground)))
+        return ProfileImage(
+            imageStr: chat.chatInfo.image,
+            iconName: iconName,
+            color: color
+        )
     }
 }
 

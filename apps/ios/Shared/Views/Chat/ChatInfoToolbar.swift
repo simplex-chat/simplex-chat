@@ -19,13 +19,17 @@ struct ChatInfoToolbar: View {
     var body: some View {
         let cInfo = chat.chatInfo
         return HStack {
+            if (cInfo.incognito) {
+                Image(systemName: "theatermasks.fill").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                Spacer().frame(width: 16)
+            }
             ChatInfoImage(
                 chat: chat,
                 color: colorScheme == .dark
                         ? chatImageColorDark
-                        : chatImageColorLight,
-                imageSize: imageSize
+                        : chatImageColorLight
             )
+            .frame(width: imageSize, height: imageSize)
             .padding(.trailing, 4)
             VStack {
                 Text(cInfo.displayName).font(.headline)

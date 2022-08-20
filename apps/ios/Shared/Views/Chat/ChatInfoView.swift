@@ -109,7 +109,8 @@ struct ChatInfoView: View {
     func contactInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
-            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill), imageSize: 192)
+            ChatInfoImage(chat: chat, color: Color(uiColor: .tertiarySystemFill))
+                .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
             Text(cInfo.displayName)
