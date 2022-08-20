@@ -15,7 +15,6 @@ struct CIGroupInvitationView: View {
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
-    var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
@@ -33,8 +32,8 @@ struct CIGroupInvitationView: View {
                 if action {
                     groupInvitationText()
                         .overlay(DetermineWidth())
-                    Text(joinGroupIncognito ? "Tap to join incognito" : "Tap to join")
-                        .foregroundColor(.accentColor)
+                    Text(interactiveIncognito ? "Tap to join incognito" : "Tap to join")
+                        .foregroundColor(interactiveIncognito ? .indigo : .accentColor)
                         .font(.callout)
                         .padding(.trailing, 60)
                         .overlay(DetermineWidth())
@@ -63,16 +62,22 @@ struct CIGroupInvitationView: View {
         }
     }
 
-    private var joinGroupIncognito: Bool {
-        (groupInvitation.invitedIncognito ?? false) || chatModel.incognito || chatIncognito
+    private var interactiveIncognito: Bool {
+        (groupInvitation.invitedIncognito ?? false) || chatModel.incognito
     }
 
     private func groupInfoView(_ action: Bool) -> some View {
-        HStack(alignment: .top) {
+        var color: Color
+        if action {
+            color = interactiveIncognito ? .indigo : .accentColor
+        } else {
+            color = Color(uiColor: .tertiaryLabel)
+        }
+        return HStack(alignment: .top) {
             ProfileImage(
                 imageStr: groupInvitation.groupProfile.image,
                 iconName: "person.2.circle.fill",
-                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+                color: color
             )
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)

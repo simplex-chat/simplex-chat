@@ -43,12 +43,19 @@ struct AddGroupView: View {
                 .font(.largeTitle)
                 .padding(.vertical, 4)
             Text("The group is fully decentralized – it is visible only to the members.")
-                .padding(.bottom)
+                .padding(.bottom, 4)
             if (m.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks").foregroundColor(.indigo)
-                    Spacer().frame(width: 12)
-                    Text("You will use a random profile for this group")
+                    Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("You will use a random profile for this group").font(.footnote)
+                }
+                .padding(.bottom)
+            } else {
+                HStack {
+                    Image(systemName: "info.circle").foregroundColor(.accentColor).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("Your chat profile will be sent to group members").font(.footnote)
                 }
                 .padding(.bottom)
             }

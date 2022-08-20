@@ -86,7 +86,7 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button(joinGroupIncognito ? "Join incognito" : "Join group") { Task { await joinGroup(groupInfo.groupId) } }
+                    Button(interactiveIncognito ? "Join incognito" : "Join group") { Task { await joinGroup(groupInfo.groupId) } }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -119,7 +119,7 @@ struct ChatListNavLink: View {
                     } label: {
                         Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
                     }
-                    .tint(Color.indigo)
+                    .tint(Color.yellow)
                 }
             }
             .swipeActions(edge: .trailing) {
@@ -130,9 +130,7 @@ struct ChatListNavLink: View {
         }
     }
 
-    private var joinGroupIncognito: Bool {
-        // TODO there is a third condition where we would join incognito - if direct connection with host is incognito,
-        // though we don't have this information easily accessible in types
+    private var interactiveIncognito: Bool {
         chat.chatInfo.incognito || chatModel.incognito
     }
 
@@ -140,9 +138,9 @@ struct ChatListNavLink: View {
         Button {
             Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
-            Label("Join", systemImage: joinGroupIncognito ? "theatermasks" : "ipad.and.arrow.forward")
+            Label("Join", systemImage: interactiveIncognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
-        .tint(Color.accentColor)
+        .tint(interactiveIncognito ? .indigo : .accentColor)
     }
 
     private func markReadButton() -> some View {
@@ -177,7 +175,7 @@ struct ChatListNavLink: View {
             Button {
                 Task { await acceptContactRequest(contactRequest) }
             } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
-                .tint(Color.accentColor)
+                .tint(chatModel.incognito ? .indigo : .accentColor)
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {

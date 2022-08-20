@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ContactRequestView: View {
+    @EnvironmentObject var chatModel: ChatModel
     var contactRequest: UserContactRequest
     @ObservedObject var chat: Chat
 
@@ -23,7 +24,7 @@ struct ContactRequestView: View {
                     Text(contactRequest.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(.blue)
+                        .foregroundColor(chatModel.incognito ? .indigo : .accentColor)
                         .padding(.leading, 8)
                         .padding(.top, 4)
                         .frame(maxHeight: .infinity, alignment: .topLeading)

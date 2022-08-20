@@ -18,13 +18,20 @@ struct AddContactView: View {
                 Text("One-time invitation link")
                     .font(.title)
                     .padding(.vertical)
-                Text("Your contact can scan it from the app")
-                    .padding(.bottom)
+                Text("Your contact can scan it from the app.")
+                    .padding(.bottom, 4)
                 if (chatModel.incognito) {
                     HStack {
-                        Image(systemName: "theatermasks").foregroundColor(.indigo)
-                        Spacer().frame(width: 12)
-                        Text("Instead of your main profile, your contact will see a random profile")
+                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                        Spacer().frame(width: 8)
+                        Text("A random profile will be sent to your contact").font(.footnote)
+                    }
+                    .padding(.bottom)
+                } else {
+                    HStack {
+                        Image(systemName: "info.circle").foregroundColor(.accentColor).font(.footnote)
+                        Spacer().frame(width: 8)
+                        Text("Your chat profile will be sent to your contact").font(.footnote)
                     }
                     .padding(.bottom)
                 }

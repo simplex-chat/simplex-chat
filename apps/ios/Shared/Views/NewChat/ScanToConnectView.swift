@@ -20,14 +20,18 @@ struct ScanToConnectView: View {
                 .padding(.vertical)
             if (chatModel.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks").foregroundColor(.indigo)
-                    Spacer().frame(width: 12)
-                    Text("Random profile will be sent to your contact")
+                    Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("A random profile will be sent to your contact").font(.footnote)
                 }
                 .padding(.bottom)
             } else {
-                Text("Your chat profile will be sent to your contact")
-                    .padding(.bottom)
+                HStack {
+                    Image(systemName: "info.circle").foregroundColor(.accentColor).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("Your chat profile will be sent to your contact").font(.footnote)
+                }
+                .padding(.bottom)
             }
             ZStack {
                 CodeScannerView(codeTypes: [.qr], completion: processQRCode)
