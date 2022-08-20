@@ -21,12 +21,14 @@ struct AddGroupMembersView: View {
     @State private var alert: AddGroupMembersAlert?
 
     private enum AddGroupMembersAlert: Identifiable {
-        case prohibitedToInvite
+        case prohibitedToInviteIncognito
+        case warnUnsafeToInviteIncognito
         case error(title: LocalizedStringKey, error: String = "")
 
         var id: String {
             switch self {
-            case .prohibitedToInvite: return "prohibitedToInvite"
+            case .prohibitedToInviteIncognito: return "prohibitedToInviteIncognito"
+            case .warnUnsafeToInviteIncognito: return "warnUnsafeToInviteIncognito"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -35,6 +37,10 @@ struct AddGroupMembersView: View {
     var body: some View {
         NavigationView {
             let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
+            let nonIncognitoConnectionsSelected = membersToAdd
+                .filter{ selectedContacts.contains($0.apiId) }
+                .contains(where: { !$0.contactConnIncognito })
+            let unsafeToInviteIncognito = chat.chatInfo.incognito && nonIncognitoConnectionsSelected
 
             let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
@@ -52,7 +58,7 @@ struct AddGroupMembersView: View {
                     let count = selectedContacts.count
                     Section {
                         rolePicker()
-                        inviteMembersButton()
+                        inviteMembersButton(unsafeToInviteIncognito)
                             .disabled(count < 1)
                     } footer: {
                         if (count >= 1) {
@@ -92,27 +98,28 @@ struct AddGroupMembersView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alert in
             switch alert {
-            case .prohibitedToInvite:
+            case .prohibitedToInviteIncognito:
                 return Alert(title: Text("Can't invite contact to this group!"), message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile"))
+            case .warnUnsafeToInviteIncognito:
+                return Alert(
+                    title: Text("Incognito membership may be compromised"),
+                    message: Text("Some contacts you're going to invite know your main profile. If their client is of older version (lower than 4.0) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
+                    primaryButton: .destructive(Text("Invite anyway")) {
+                        inviteMembers()
+                    }, secondaryButton: .cancel()
+                )
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text("\(error)"))
             }
         }
     }
 
-    func inviteMembersButton() -> some View {
+    private func inviteMembersButton(_ unsafeToInviteIncognito: Bool) -> some View {
         Button {
-            Task {
-                do {
-                    for contactId in selectedContacts {
-                        let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
-                        await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
-                    }
-                    await MainActor.run { dismiss() }
-                    if let cb = addedMembersCb { cb(selectedContacts) }
-                } catch {
-                    alert = .error(title: "Error adding member(s)", error: responseError(error))
-                }
+            if unsafeToInviteIncognito {
+                alert = .warnUnsafeToInviteIncognito
+            } else {
+                inviteMembers()
             }
         } label: {
             HStack {
@@ -123,7 +130,22 @@ struct AddGroupMembersView: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    func rolePicker() -> some View {
+    private func inviteMembers() {
+        Task {
+            do {
+                for contactId in selectedContacts {
+                    let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
+                    await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
+                }
+                await MainActor.run { dismiss() }
+                if let cb = addedMembersCb { cb(selectedContacts) }
+            } catch {
+                alert = .error(title: "Error adding member(s)", error: responseError(error))
+            }
+        }
+    }
+
+    private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
                 if role <= groupInfo.membership.memberRole {
@@ -133,9 +155,10 @@ struct AddGroupMembersView: View {
         }
     }
 
-    func contactCheckView(_ contact: Contact) -> some View {
+    private func contactCheckView(_ contact: Contact) -> some View {
         let checked = selectedContacts.contains(contact.apiId)
         let prohibitedToInviteIncognito = !chat.chatInfo.incognito && contact.contactConnIncognito
+        let safeToInviteIncognito = chat.chatInfo.incognito && contact.contactConnIncognito
         var icon: String
         var iconColor: Color
         if prohibitedToInviteIncognito {
@@ -152,7 +175,7 @@ struct AddGroupMembersView: View {
         }
         return Button {
             if prohibitedToInviteIncognito {
-                alert = .prohibitedToInvite
+                alert = .prohibitedToInviteIncognito
             } else {
                 if checked {
                     selectedContacts.remove(contact.apiId)
@@ -169,6 +192,11 @@ struct AddGroupMembersView: View {
                     .foregroundColor(prohibitedToInviteIncognito ? .secondary : .primary)
                     .lineLimit(1)
                 Spacer()
+                if safeToInviteIncognito {
+                    Image(systemName: "theatermasks")
+                        .foregroundColor(.indigo)
+                        .font(.footnote)
+                }
                 Image(systemName: icon)
                     .foregroundColor(iconColor)
             }
