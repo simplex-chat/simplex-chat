@@ -561,7 +561,7 @@ public enum OnionHosts: String, Identifiable {
         switch self {
         case .no: return "No"
         case .prefer: return "When available"
-        case .require: return "Requred"
+        case .require: return "Required"
         }
     }
 
