@@ -46,7 +46,7 @@ struct AddGroupView: View {
                 .padding(.bottom)
             if (m.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                    Image(systemName: "theatermasks").foregroundColor(.indigo)
                     Spacer().frame(width: 12)
                     Text("You will use a random profile for this group")
                 }

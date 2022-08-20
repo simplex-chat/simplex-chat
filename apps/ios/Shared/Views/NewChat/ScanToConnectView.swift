@@ -20,7 +20,7 @@ struct ScanToConnectView: View {
                 .padding(.vertical)
             if (chatModel.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                    Image(systemName: "theatermasks").foregroundColor(.indigo)
                     Spacer().frame(width: 12)
                     Text("Random profile will be sent to your contact")
                 }

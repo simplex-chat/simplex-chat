@@ -49,7 +49,7 @@ struct ChatListView: View {
                         HStack {
                             Text("Your chats").font(.headline)
                             Spacer().frame(width: 16)
-                            Image(systemName: "theatermasks.fill").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                            Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                         }
                     }
                 }

@@ -22,7 +22,7 @@ struct AddContactView: View {
                     .padding(.bottom)
                 if (chatModel.incognito) {
                     HStack {
-                        Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                        Image(systemName: "theatermasks").foregroundColor(.indigo)
                         Spacer().frame(width: 12)
                         Text("Instead of your main profile, your contact will see a random profile")
                     }

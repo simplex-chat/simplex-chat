@@ -22,7 +22,7 @@ struct PasteToConnectView: View {
                 .padding(.bottom)
             if (chatModel.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks.fill").foregroundColor(.indigo)
+                    Image(systemName: "theatermasks").foregroundColor(.indigo)
                     Spacer().frame(width: 12)
                     Text("Random profile will be sent to the contact that you received this link from")
                 }

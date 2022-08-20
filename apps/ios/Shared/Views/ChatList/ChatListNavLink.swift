@@ -140,7 +140,7 @@ struct ChatListNavLink: View {
         Button {
             Task { await joinGroup(chat.chatInfo.apiId) }
         } label: {
-            Label("Join", systemImage: joinGroupIncognito ? "theatermasks.fill" : "ipad.and.arrow.forward")
+            Label("Join", systemImage: joinGroupIncognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
         .tint(Color.accentColor)
     }
@@ -176,7 +176,7 @@ struct ChatListNavLink: View {
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 Task { await acceptContactRequest(contactRequest) }
-            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks.fill" : "checkmark") }
+            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
                 .tint(Color.accentColor)
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
