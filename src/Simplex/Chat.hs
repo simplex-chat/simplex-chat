@@ -760,16 +760,10 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- [incognito] if (incognito mode is enabled OR direct connection with host is incognito) [AND membership is not incognito] update membership to use incognito profile
+      -- [incognito] if incognito mode is enabled [AND membership is not incognito] update membership to use incognito profile
       incognito <- readTVarIO =<< asks incognitoMode
-      hostConnIncognito <- case (incognito, memberContactId fromMember) of
-        (True, _) -> pure True -- we don't need to check whether connection with host is incognito if incognito mode is on
-        (_, Just hostContactId) -> do
-          hostContact <- withStore $ \db -> getContact db userId hostContactId
-          pure $ contactConnIncognito hostContact
-        _ -> pure False
       g'@GroupInfo {membership = membership'} <-
-        if (incognito || hostConnIncognito) && not (memberIncognito membership)
+        if incognito && not (memberIncognito membership)
           then do
             incognitoProfile <- liftIO generateRandomProfile
             membership' <- withStore $ \db -> createMemberIncognitoProfile db userId membership (Just incognitoProfile)
@@ -1916,15 +1910,16 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       toView . CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupInvitation ct@Contact {localDisplayName = c} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), fromMemberProfile, invitedMember = (MemberIdRole memId memRole)} msg msgMeta = do
+    processGroupInvitation ct@Contact {contactId, localDisplayName = c} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), fromMemberProfile, invitedMember = (MemberIdRole memId memRole)} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
-      -- [incognito] if received group invitation has host's incognito profile, create membership with new incognito profile; incognito mode is checked when joining group
-      let invitedIncognito = isJust fromMemberProfile
-      incognitoProfile <- if invitedIncognito then Just <$> liftIO generateRandomProfile else pure Nothing
+      -- [incognito] if (received group invitation has host's incognito profile OR direct connection with host is incognito), create membership with new incognito profile; incognito mode is checked when joining group
+      hostContact <- withStore $ \db -> getContact db userId contactId
+      let joinGroupIncognito = isJust fromMemberProfile || contactConnIncognito hostContact
+      incognitoProfile <- if joinGroupIncognito then Just <$> liftIO generateRandomProfile else pure Nothing
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv incognitoProfile
-      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just invitedIncognito}) memRole
+      let content = CIRcvGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending, invitedIncognito = Just joinGroupIncognito}) memRole
       ci <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta content Nothing
       withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
