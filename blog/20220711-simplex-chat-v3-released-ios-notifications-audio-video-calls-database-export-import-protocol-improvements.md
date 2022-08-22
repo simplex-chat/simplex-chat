@@ -15,7 +15,7 @@ date: 2022-07-11
 
 ### Instant notifications for iOS
 
-I wrote previously about [our design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive!) - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
+I wrote previously about [our design for iOS notifications](./20220404-simplex-chat-instant-notifications.md#problem---users-expect-to-be-instantly-notified-when-messages-arrive) - this is now released. The app will offer to migrate the database when updated, and then you need to choose notifications mode – instant or periodic push notifications, or previously available periodic background refresh that does not use push notifications.
 
 To deliver the notifications to iOS devices we use our notification server, as there is a single private key that Apple issues for the app. This server has minimal amount of information about your chat activity:
 

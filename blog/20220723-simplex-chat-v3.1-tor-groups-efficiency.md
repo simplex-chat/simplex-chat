@@ -10,8 +10,8 @@ date: 2022-07-23
 
 ## What's new
 
-- terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app:-access-to-messaging-servers-via-socks5-proxy-/-tor) (e.g., Tor).
-- mobile apps: [join and leave chat groups](#mobile-apps:-join-and-leave-chat-groups).
+- terminal app: [access to messaging servers via SOCKS5 proxy](#terminall-app-access-to-messaging-servers-via-socks5-proxy--tor) (e.g., Tor).
+- mobile apps: [join and leave chat groups](#mobile-apps-join-and-leave-chat-groups).
 - [optimized battery and traffic usage - up to 90x reduction!](#optimized-battery-and-traffic-usage---up-to-90x-reduction).
 - [two docker configurations for self-hosted SMP servers](#docker-configuration-for-self-hosted-smp-servers).
 
@@ -70,7 +70,7 @@ We are building a new platform for distributed Internet applications where priva
 
 ### The first (and the only?) messaging platform without user identifiers of any kind - 100% private by design!
 
-To protect identities of users and their connections, instead of user identifiers visible to the servers and/or the network (that are used by all other messaging platforms), SimpleX Chat uses [pairwise identifiers](https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier) of connections between the users – there are two queues in each connection, each queue having 2 different identifiers to send and to receive the messages. It increases the number of used identifiers to the square of the number of users, making it more difficult (or impossible) to determine who is talking to whom. I [wrote previously](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users'-identifiers-is-bad-for-the-users?) why it is bad for the users' privacy to have any identifiers, even random numbers, associated with their profiles.
+To protect identities of users and their connections, instead of user identifiers visible to the servers and/or the network (that are used by all other messaging platforms), SimpleX Chat uses [pairwise identifiers](https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier) of connections between the users – there are two queues in each connection, each queue having 2 different identifiers to send and to receive the messages. It increases the number of used identifiers to the square of the number of users, making it more difficult (or impossible) to determine who is talking to whom. I [wrote previously](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users) why it is bad for the users' privacy to have any identifiers, even random numbers, associated with their profiles.
 
 ### If SimpleX has no user identifiers, how can it deliver messages?
 
