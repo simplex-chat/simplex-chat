@@ -542,6 +542,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
         membership: GroupMember.sampleData,
+        hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
