@@ -230,8 +230,7 @@
             top: y,
             behavior: 'smooth'
           });
-        }
-        else {
+        } else {
           window.open(e.target.href, "_self");
         }
       }
@@ -270,6 +269,18 @@
         behavior: 'smooth'
       });
     }
+
+
+    document.querySelectorAll("[id]").forEach((element) => {
+      let str = element.getAttribute("id");
+      str = str.split(":").join("");
+      str = str.split("?").join("");
+      str = str.split("/").join("");
+      str = str.split("!").join("");
+      str = str.split("'").join("");
+
+      element.setAttribute("id", str);
+    });
   </script>
 </body>
 

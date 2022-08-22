@@ -207,8 +207,8 @@
 <h2>SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
 <p><a href="./20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
-<p><a href="./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users'-identifiers-is-bad-for-the-users?">What are the risks to have identifiers assigned to the users</a>.</p>
-<p><a href="./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy:-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
 <p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
 <h2>We ask you to help us pay for 3rd party security audit</h2>
 <p>I will get straight to the point: I ask you to support SimpleX Chat with donations.</p>
@@ -271,8 +271,7 @@
             top: y,
             behavior: 'smooth'
           });
-        }
-        else {
+        } else {
           window.open(e.target.href, "_self");
         }
       }
@@ -311,6 +310,18 @@
         behavior: 'smooth'
       });
     }
+
+
+    document.querySelectorAll("[id]").forEach((element) => {
+      let str = element.getAttribute("id");
+      str = str.split(":").join("");
+      str = str.split("?").join("");
+      str = str.split("/").join("");
+      str = str.split("!").join("");
+      str = str.split("'").join("");
+
+      element.setAttribute("id", str);
+    });
   </script>
 </body>
 
