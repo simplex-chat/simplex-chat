@@ -17,7 +17,7 @@ struct IncognitoHelp: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     Group {
-                        Text("Turning Incognito mode on allows you to connect to new contacts and join groups without sharing your main profile. When incognito mode is enabled, for each new conversation a new random profile is generated and sent to a person or group you're connecting to.")
+                        Text("Incognito mode allows you to connect to new contacts and join groups without sharing your main profile - a new random profile is generated and sent to a person or group you're connecting to.")
                         Text("When accepting contact requests received via a contact address, you can decide to connect using a random profile by enabling Incognito mode, even if you've created the address itself outside of Incognito mode.")
                         Text("To learn which profile is used in an incognito conversation, open chat information page — for direct contacts this profile is available under \"Your random profile\", and for groups it's your group membership profile.")
                     }
