@@ -27,7 +27,6 @@ struct IncognitoHelp: View {
                         Text("Groups")
                             .font(.title2)
                             .padding(.top)
-                        Text("To minimize user confusion, we've made several decisions regarding how groups operate in Incognito mode:")
                         textListItem("•", "When you create a group in Incognito mode or join incognito, the same random profile is shared with all group members;")
                         textListItem("•", "If your membership in a group is not incognito (i.e. with your main profile), inviting contacts with whom you've connected incognito to this group is prohibited to avoid the possibility of other members sharing or mentioning your main profile to the new member - such contacts will be disabled when inviting group members;")
                         textListItem("•", "If a contact who invites you to a group uses a random profile for this group, you will also join the group using a new random profile. This implies that if a group's creator used a random profile, the whole group will be incognito. You will also join group incognito if you've connected incognito to the contact who invites you, or if you enable Incognito mode before joining.")
