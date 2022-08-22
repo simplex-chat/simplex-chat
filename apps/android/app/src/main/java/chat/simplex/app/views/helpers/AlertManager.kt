@@ -79,7 +79,7 @@ class AlertManager {
         title = { Text(title) },
         text = alertText,
         confirmButton = {
-          Button(onClick = {
+          TextButton(onClick = {
             onConfirm?.invoke()
             hideAlert()
           }) { Text(confirmText) }

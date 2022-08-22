@@ -160,6 +160,7 @@
   <string name="ok">Ok</string>
   <string name="no_details">no details</string>
   <string name="add_contact">Add contact</string>
+  <string name="copied">Copied to clipboard</string>
 
   <!-- NewChatSheet -->
   <string name="add_contact_or_create_group">Start new chat</string>
