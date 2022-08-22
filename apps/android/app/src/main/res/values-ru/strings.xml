@@ -209,7 +209,7 @@
     <string name="mark_read">Прочитано</string>
 
     <!-- Actions - ChatListNavLinkView.kt -->
-    <string name="mute_chat">Загрушить</string>
+    <string name="mute_chat">Без звука</string>
     <string name="unmute_chat">Уведомлять</string>
 
     <!-- Pending contact connection alert dialogues -->
