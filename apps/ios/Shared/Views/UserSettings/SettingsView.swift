@@ -26,6 +26,9 @@ let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
+let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
+let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
+let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -36,7 +39,10 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
-    DEFAULT_DEVELOPER_TOOLS: false
+    DEFAULT_DEVELOPER_TOOLS: false,
+    DEFAULT_ACCENT_COLOR_RED: 0.000,
+    DEFAULT_ACCENT_COLOR_GREEN: 0.533,
+    DEFAULT_ACCENT_COLOR_BLUE: 1.000
 ]
 
 private var indent: CGFloat = 36

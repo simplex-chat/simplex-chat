@@ -32,7 +32,7 @@ struct NetworkAndServers: View {
     var body: some View {
         VStack {
             List {
-                Section("") {
+                Section {
                     NavigationLink {
                         SMPServers()
                             .navigationTitle("Your SMP servers")
@@ -52,6 +52,10 @@ struct NetworkAndServers: View {
                             settingsRow("app.connected.to.app.below.fill") { Text("Advanced network settings") }
                         }
                     }
+                } header: {
+                    Text("")
+                } footer: {
+                    Text("Using .onion hosts requires compatible VPN provider.")
                 }
             }
         }

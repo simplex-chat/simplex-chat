@@ -80,6 +80,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         terminateChat()
     }
 
+    func application(_ application: UIApplication,
+                     configurationForConnecting connectingSceneSession: UISceneSession,
+                     options: UIScene.ConnectionOptions) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
+        if connectingSceneSession.role == .windowApplication {
+            configuration.delegateClass = SceneDelegate.self
+        }
+        return configuration
+    }
+
     private func receiveMessages(_ completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         let complete = BGManager.shared.completionHandler {
             logger.debug("AppDelegate: completed BGManager.receiveMessages")
@@ -87,5 +97,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         BGManager.shared.receiveMessages(complete)
+    }
+}
+
+class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        guard let windowScene = scene as? UIWindowScene else { return }
+        window = windowScene.keyWindow
+        window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
     }
 }

@@ -191,6 +191,7 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
+    hostConnCustomUserProfileId :: Maybe ProfileId,
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
