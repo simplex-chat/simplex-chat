@@ -274,7 +274,7 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
         ) { contentPadding ->
-          BoxWithConstraints(Modifier.padding(contentPadding)) {
+          BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               user, chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
@@ -459,7 +459,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
 
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
-  LazyColumn(state = listState, reverseLayout = true) {
+  LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
