@@ -11,6 +11,42 @@
   <link rel="stylesheet" href="/css/blogs.css" />
   <link rel="stylesheet" href="/css/blog.css" />
   <script async defer src="https://buttons.github.io/buttons.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const h1 = document.querySelectorAll("h1");
+      const h2 = document.querySelectorAll("h2");
+      const h3 = document.querySelectorAll("h3");
+      const h = [...h1, ...h2, ...h3];
+      h.forEach((h) => {
+        h.setAttribute("id", `${h.innerText.split(" ").join("-").toLowerCase()}`);
+      });
+
+      document.querySelectorAll("[id]").forEach((element) => {
+        let str = element.getAttribute("id");
+        str = str.split(":").join("");
+        str = str.split("?").join("");
+        str = str.split("/").join("");
+        str = str.split("!").join("");
+        str = str.split("'").join("");
+
+        element.setAttribute("id", str);
+      });
+
+      const url = window.location.href;
+      const hash = url.split("#")[1];
+      if (hash) {
+        console.log("entered")
+        const element = document.getElementById(hash);
+        const yOffset = 0; // Offset for fixed header
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+
+        window.scrollTo({
+          top: y,
+          behavior: 'smooth'
+        });
+      }
+    });
+  </script>
 </head>
 
 <body class="sm:bg-gray-100">
@@ -267,14 +303,6 @@
   </footer>
 
   <script>
-    const h1 = document.querySelectorAll("h1");
-    const h2 = document.querySelectorAll("h2");
-    const h3 = document.querySelectorAll("h3");
-    const h = [...h1, ...h2, ...h3];
-    h.forEach((h) => {
-      h.setAttribute("id", `${h.innerText.split(" ").join("-").toLowerCase()}`);
-    });
-
     window.addEventListener("click", (e) => {
       if (e.target.tagName === "A") {
         e.preventDefault();
@@ -311,32 +339,6 @@
           a.setAttribute("href", str);
         }
       }
-    });
-
-    const url = window.location.href;
-    const hash = url.split("#")[1];
-    if (hash) {
-      console.log("entered")
-      const element = document.getElementById(hash);
-      const yOffset = 0; // Offset for fixed header
-      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
-
-      window.scrollTo({
-        top: y,
-        behavior: 'smooth'
-      });
-    }
-
-
-    document.querySelectorAll("[id]").forEach((element) => {
-      let str = element.getAttribute("id");
-      str = str.split(":").join("");
-      str = str.split("?").join("");
-      str = str.split("/").join("");
-      str = str.split("!").join("");
-      str = str.split("'").join("");
-
-      element.setAttribute("id", str);
     });
   </script>
 </body>
