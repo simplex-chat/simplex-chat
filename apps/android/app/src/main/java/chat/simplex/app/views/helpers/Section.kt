@@ -5,6 +5,8 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.app.ui.theme.GroupDark
 import chat.simplex.app.ui.theme.HighOrLowlight
@@ -77,6 +79,29 @@ fun InfoRow(title: String, value: String) {
     ) {
       Text(title)
       Text(value, color = HighOrLowlight)
+    }
+  }
+}
+
+@Composable
+fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {
+  SectionItemView {
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      val configuration = LocalConfiguration.current
+      Text(title)
+      Text(value,
+        Modifier
+          .padding(start = 10.dp)
+          .widthIn(max = (configuration.screenWidthDp / 2).dp)
+          .clickable(onClick = onClick),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = HighOrLowlight
+      )
     }
   }
 }

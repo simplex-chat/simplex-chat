@@ -1,10 +1,12 @@
 package chat.simplex.app.views.chat
 
 import InfoRow
+import InfoRowEllipsis
 import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -12,16 +14,20 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -223,7 +229,11 @@ fun ServerImage(networkStatus: Chat.NetworkStatus) {
 @Composable
 fun SimplexServers(text: String, servers: List<String>) {
   val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
-  InfoRow(text, info)
+  val clipboardManager: ClipboardManager = LocalClipboardManager.current
+  InfoRowEllipsis(text, info) {
+    clipboardManager.setText(AnnotatedString(servers.joinToString(separator = ",")))
+    Toast.makeText(SimplexApp.context, generalGetString(R.string.copied), Toast.LENGTH_SHORT).show()
+  }
 }
 
 @Composable

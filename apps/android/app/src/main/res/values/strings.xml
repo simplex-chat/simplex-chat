@@ -160,6 +160,7 @@
   <string name="ok">Ok</string>
   <string name="no_details">no details</string>
   <string name="add_contact">Add contact</string>
+  <string name="copied">Copied to clipboard</string>
 
   <!-- NewChatSheet -->
   <string name="add_contact_or_create_group">Start new chat</string>
@@ -278,7 +279,7 @@
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
   <string name="save_servers_button">Save</string>
-  <string name="network_and_servers">Network &amp; servers</string>
+  <string name="network_and_servers">Network and servers</string>
   <string name="network_settings">Advanced network settings</string>
   <string name="network_settings_title">Network settings</string>
   <string name="network_socks_toggle">Use SOCKS proxy (port 9050)</string>
