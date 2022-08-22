@@ -16,9 +16,9 @@ struct IncognitoHelp: View {
                 .padding(.vertical)
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Text("Incognito mode allows you to connect to new contacts and join groups without sharing your main profile — a new random profile is generated and sent to a person or group you're connecting to.")
-                    Text("This allows you to have incognito conversations where you don't share your main profile without fully switching context.")
-                    Text("The profile name used for an incognito conversation can be found in chat information page — tap the contact or group name.")
+                    Text("Incognito mode protects privacy of your main profile name and image — instead, a new random profile name is sent to contacts and groups.")
+                    Text("It allows having many anonymous connections without any shared data between them in a single chat profile.")
+                    Text("To find the profile name used for an incognito connection, tap the contact or group name on top of the chat.")
                 }
                 .padding(.bottom)
 
@@ -26,24 +26,20 @@ struct IncognitoHelp: View {
                     Text("Incognito groups")
                         .font(.title2)
                         .padding(.top)
+                    Text("When you join a group incognito, your new member profile is created and shared with all members.")
                     Group {
-                        Text("When you join incognito:")
+                        Text("Your are incognito in a group when:")
                             .padding(.top)
-                        textListItem("•", "If the group member who invites you is incognito in group;")
-                        textListItem("•", "If you're connected incognito to the group member who invites you;")
-                        textListItem("•", "If you have Incognito mode enabled.")
+                        textListItem("•", "the group is created in incognito mode,")
+                        textListItem("•", "you or the member who invited you joined in incognito mode,")
+                        textListItem("•", "you have an incognito connection with the member who invited you.")
                     }
                     Group {
-                        Text("What actions are not allowed:")
+                        Text("Risks and limitations:")
                             .padding(.top)
-                        textListItem("•", "Inviting contacts with whom you've shared an incognito profile to a group where you use your main profile.")
-                    }
-                    Group {
-                        Text("What actions show warnings:")
-                            .padding(.top)
-                        textListItem("•", "Inviting contacts with whom you've shared your main profile to a group where you use an incognito profile;")
-                        textListItem("•", "Accepting a group invitation incognito from a contact with whom you've shared your main profile;")
-                        textListItem("•", "In both above cases if your contact uses SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.")
+                        textListItem("•", "It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.")
+                        textListItem("•", "There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown.")
+
                     }
                 }
                 .padding(.bottom)
