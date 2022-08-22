@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -156,7 +157,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           contentAlignment = Alignment.Center
         ) {
           Icon(
-            Icons.Outlined.NotificationsOff,
+            Icons.Filled.NotificationsOff,
             contentDescription = generalGetString(R.string.notifications),
             tint = HighOrLowlight,
             modifier = Modifier
