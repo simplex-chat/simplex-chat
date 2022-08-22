@@ -141,6 +141,9 @@
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
 
+  <!-- Chat Info Settings - ChatInfoView.kt -->
+  <string name="notifications">Notifications</string>
+
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
@@ -204,6 +207,10 @@
   <string name="clear_verb">Clear</string>
   <string name="clear_chat_button">Clear chat</string>
   <string name="mark_read">Mark read</string>
+
+  <!-- Actions - ChatListNavLinkView.kt -->
+  <string name="mute_chat">Mute</string>
+  <string name="unmute_chat">Unmute</string>
 
   <!-- Pending contact connection alert dialogues -->
   <string name="you_invited_your_contact">You invited your contact</string>

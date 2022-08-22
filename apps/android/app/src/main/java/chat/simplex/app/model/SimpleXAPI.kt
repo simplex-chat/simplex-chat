@@ -388,6 +388,17 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
+  suspend fun apiSetSettings(type: ChatType,id: Long, settings: ChatSettings): Boolean {
+    val r = sendCmd(CC.APISetChatSettings(type, id, settings))
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "apiSetSettings bad response: ${r.responseType} ${r.details}")
+        false
+      }
+    }
+  }
+
   suspend fun apiContactInfo(contactId: Long): ConnectionStats? {
     val r = sendCmd(CC.APIContactInfo(contactId))
     if (r is CR.ContactInfo) return r.connectionStats

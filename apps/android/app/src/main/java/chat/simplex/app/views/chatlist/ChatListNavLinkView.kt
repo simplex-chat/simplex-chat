@@ -119,6 +119,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
   if (showMarkRead) {
     MarkReadChatAction(chat, chatModel, showMenu)
   }
+  ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
   ClearChatAction(chat, chatModel, showMenu)
   DeleteContactAction(chat, chatModel, showMenu)
 }
@@ -136,6 +137,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)
       }
+      ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(groupInfo, chatModel, showMenu)
@@ -155,6 +157,18 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
     onClick = {
       markChatRead(chat, chatModel)
       chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled: Boolean, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+    if (ntfsEnabled) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+    onClick = {
+      changeNtfsState(!ntfsEnabled, chat, chatModel)
       showMenu.value = false
     }
   )

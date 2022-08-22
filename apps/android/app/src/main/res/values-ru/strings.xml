@@ -141,6 +141,9 @@
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
 
+    <!-- Chat Info Settings - ChatInfoView.kt -->
+    <string name="notifications">Уведомления</string>
+
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact_question">Удалить контакт?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
@@ -204,6 +207,10 @@
     <string name="clear_verb">Очистить</string>
     <string name="clear_chat_button">Очистить чат</string>
     <string name="mark_read">Прочитано</string>
+
+    <!-- Actions - ChatListNavLinkView.kt -->
+    <string name="mute_chat">Загрушить</string>
+    <string name="unmute_chat">Уведомлять</string>
 
     <!-- Pending contact connection alert dialogues -->
     <string name="you_invited_your_contact">Вы пригласили ваш контакт</string>
