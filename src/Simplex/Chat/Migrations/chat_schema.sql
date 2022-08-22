@@ -121,7 +121,8 @@ CREATE TABLE groups(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
-  enable_ntfs INTEGER, -- received
+  enable_ntfs INTEGER,
+  host_conn_custom_user_profile_id INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
