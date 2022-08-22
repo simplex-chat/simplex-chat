@@ -62,8 +62,8 @@ struct CIGroupInvitationView: View {
                 if unsafeToJoinIncognito {
                     AlertManager.shared.showAlert(
                         Alert(
-                            title: Text("Incognito membership may be compromised"),
-                            message: Text("The contact who invited you knows your main profile. If their client is of older version (lower than 3.2) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
+                            title: Text("Your main profile may be shared"),
+                            message: Text("The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
                             primaryButton: .destructive(Text("Join anyway")) {
                                 joinGroup(groupInvitation.groupId)
                             },
