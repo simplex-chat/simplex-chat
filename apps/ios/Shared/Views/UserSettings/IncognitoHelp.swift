@@ -29,8 +29,8 @@ struct IncognitoHelp: View {
                     Group {
                         Text("When you join incognito:")
                             .padding(.top)
-                        textListItem("•", "If the group member who invites you is incognito in group.")
-                        textListItem("•", "If you're connected incognito to the group member who invites you.")
+                        textListItem("•", "If the group member who invites you is incognito in group;")
+                        textListItem("•", "If you're connected incognito to the group member who invites you;")
                         textListItem("•", "If you have Incognito mode enabled.")
                     }
                     Group {
@@ -41,8 +41,8 @@ struct IncognitoHelp: View {
                     Group {
                         Text("What actions show warnings:")
                             .padding(.top)
-                        textListItem("•", "Inviting contacts with whom you've shared your main profile to a group where you use an incognito profile.")
-                        textListItem("•", "Accepting a group invitation incognito from a contact with whom you've shared your main profile.")
+                        textListItem("•", "Inviting contacts with whom you've shared your main profile to a group where you use an incognito profile;")
+                        textListItem("•", "Accepting a group invitation incognito from a contact with whom you've shared your main profile;")
                         textListItem("•", "In both above cases if your contact uses SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.")
                     }
                 }
