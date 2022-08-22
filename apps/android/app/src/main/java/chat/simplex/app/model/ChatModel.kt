@@ -460,6 +460,7 @@ class Contact(
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
+//  val chatSettings: ChatSettings,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -540,6 +541,7 @@ class GroupInfo (
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
   val membership: GroupMember,
+  //  val chatSettings: ChatSettings,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {

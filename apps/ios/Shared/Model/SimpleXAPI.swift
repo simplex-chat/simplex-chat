@@ -314,6 +314,10 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
     throw r
 }
 
+func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
+    try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
+}
+
 func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
     if case let .contactInfo(_, connStats, customUserProfile) = r { return (connStats, customUserProfile) }

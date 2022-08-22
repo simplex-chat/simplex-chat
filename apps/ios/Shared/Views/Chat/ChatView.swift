@@ -122,6 +122,7 @@ struct ChatView: View {
                                 Label("Video call", systemImage: "video")
                             }
                             searchButton()
+                            toggleNtfsButton(chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -136,6 +137,7 @@ struct ChatView: View {
                         }
                         Menu {
                             searchButton()
+                            toggleNtfsButton(chat)
                         } label: {
                             Image(systemName: "ellipsis")
                         }
@@ -502,6 +504,40 @@ struct ChatView: View {
             } catch {
                 logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
             }
+        }
+    }
+}
+
+@ViewBuilder func toggleNtfsButton(_ chat: Chat) -> some View {
+    Button {
+        toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+    } label: {
+        if chat.chatInfo.ntfsEnabled {
+            Label("Mute", systemImage: "speaker.slash")
+        } else {
+            Label("Unmute", systemImage: "speaker.wave.2")
+        }
+    }
+}
+
+func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
+    Task {
+        do {
+            let chatSettings = ChatSettings(enableNtfs: enableNtfs)
+            try await apiSetChatSettings(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, chatSettings: chatSettings)
+            await MainActor.run {
+                switch chat.chatInfo {
+                case var .direct(contact):
+                    contact.chatSettings = chatSettings
+                    ChatModel.shared.updateContact(contact)
+                case var .group(groupInfo):
+                    groupInfo.chatSettings = chatSettings
+                    ChatModel.shared.updateGroup(groupInfo)
+                default: ()
+                }
+            }
+        } catch let error {
+            logger.error("apiSetChatSettings error \(responseError(error))")
         }
     }
 }

@@ -14,8 +14,16 @@ struct CallSettings: View {
     var body: some View {
         VStack {
             List {
-                Section("Settings") {
+                Section {
                     Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
+                } header: {
+                    Text("Settings")
+                } footer: {
+                    if webrtcPolicyRelay {
+                        Text("Relay server protects your IP address, but it can observe the duration of the call.")
+                    } else {
+                        Text("Relay server is only used if necessary. Another party can observe your IP address.")
+                    }
                 }
 
                 Section("Limitations") {

@@ -46,6 +46,7 @@ public enum ChatCommand {
     case setUserSMPServers(smpServers: [String])
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
+    case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
     case addContact
@@ -110,6 +111,7 @@ public enum ChatCommand {
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
+            case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
             case .addContact: return "/connect"
@@ -173,6 +175,7 @@ public enum ChatCommand {
             case .setUserSMPServers: return "setUserSMPServers"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
+            case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
             case .addContact: return "addContact"
@@ -561,7 +564,7 @@ public enum OnionHosts: String, Identifiable {
         switch self {
         case .no: return "No"
         case .prefer: return "When available"
-        case .require: return "Requred"
+        case .require: return "Required"
         }
     }
 
@@ -592,6 +595,16 @@ public struct KeepAliveOpts: Codable, Equatable {
     public var keepCnt: Int // times
 
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
+}
+
+public struct ChatSettings: Codable {
+    public var enableNtfs: Bool
+
+    public init(enableNtfs: Bool) {
+        self.enableNtfs = enableNtfs
+    }
+
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true)
 }
 
 public struct ConnectionStats: Codable {

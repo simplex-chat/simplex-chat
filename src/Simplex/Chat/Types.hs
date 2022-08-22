@@ -76,6 +76,7 @@ data Contact = Contact
     profile :: LocalProfile,
     activeConn :: Connection,
     viaGroup :: Maybe Int64,
+    chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -190,6 +191,8 @@ data GroupInfo = GroupInfo
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     membership :: GroupMember,
+    hostConnCustomUserProfileId :: Maybe ProfileId,
+    chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -199,6 +202,17 @@ instance ToJSON GroupInfo where toEncoding = J.genericToEncoding J.defaultOption
 
 groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
+
+-- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
+data ChatSettings = ChatSettings
+  { enableNtfs :: Bool
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOptions
+
+defaultChatSettings :: ChatSettings
+defaultChatSettings = ChatSettings {enableNtfs = True}
 
 data Profile = Profile
   { displayName :: ContactName,

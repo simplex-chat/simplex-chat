@@ -232,6 +232,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var ntfsEnabled: Bool {
+        switch self {
+        case let .direct(contact): return contact.chatSettings.enableNtfs
+        case let .group(groupInfo): return groupInfo.chatSettings.enableNtfs
+        default: return false
+        }
+    }
+
     var createdAt: Date {
         switch self {
         case let .direct(contact): return contact.createdAt
@@ -287,6 +295,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var profile: LocalProfile
     public var activeConn: Connection
     public var viaGroup: Int64?
+    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
 
@@ -311,6 +320,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
+        chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
     )
@@ -502,6 +512,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
+    public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
 
@@ -530,6 +541,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
         membership: GroupMember.sampleData,
+        chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
     )

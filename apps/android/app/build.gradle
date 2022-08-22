@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 29
         targetSdk 32
-        versionCode 48
-        versionName "3.1"
+        versionCode 49
+        versionName "3.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -28,6 +28,7 @@ android {
         }
         manifestPlaceholders.app_name = "@string/app_name"
         manifestPlaceholders.provider_authorities = "chat.simplex.app.provider"
+        manifestPlaceholders.extract_native_libs = compression_level != "0"
     }
 
     buildTypes {
@@ -73,6 +74,7 @@ android {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
+        jniLibs.useLegacyPackaging = compression_level != "0"
     }
 }
 
@@ -121,4 +123,71 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+}
+
+def buildType = "unknown"
+// Don't do anything if no compression is needed
+if (compression_level != "0") {
+    tasks.whenTaskAdded { task ->
+        if (task.name == 'packageDebug') {
+            task.doLast {
+                buildType = "debug"
+            }
+            task.finalizedBy compressApk
+        } else if (task.name == 'packageRelease') {
+            task.doLast {
+                buildType = "release"
+            }
+            task.finalizedBy compressApk
+        }
+    }
+}
+
+tasks.register("compressApk") {
+    doLast {
+        def javaHome = System.properties['java.home'] ?: org.gradle.internal.jvm.Jvm.current().getJavaHome()
+        def sdkDir = android.getSdkDirectory().getAbsolutePath()
+        def keyAlias = ""
+        def keyPassword = ""
+        def storeFile = ""
+        def storePassword = ""
+        if (project.properties['android.injected.signing.key.alias'] != null) {
+            keyAlias = project.properties['android.injected.signing.key.alias']
+            keyPassword = project.properties['android.injected.signing.key.password']
+            storeFile = project.properties['android.injected.signing.store.file']
+            storePassword = project.properties['android.injected.signing.store.password']
+        } else if (android.signingConfigs.hasProperty(buildType)) {
+            def gradleConfig = android.signingConfigs[buildType]
+            keyAlias = gradleConfig.keyAlias
+            keyPassword = gradleConfig.keyPassword
+            storeFile = gradleConfig.storeFile
+            storePassword = gradleConfig.storePassword
+        } else {
+            // There is no signing config for current build type, can't sign the apk
+            println("No signing configs for this build type: $buildType")
+            return
+        }
+
+        def outputDir = tasks["package${buildType.capitalize()}"].outputs.files.last()
+
+        exec {
+            workingDir '../../../scripts/android'
+            setEnvironment(['JAVA_HOME': "$javaHome"])
+            commandLine './compress-and-sign-apk.sh',  \
+                     "$compression_level",  \
+                     "$outputDir",  \
+                     "$sdkDir",  \
+                     "$storeFile",  \
+                     "$storePassword",  \
+                     "$keyAlias",  \
+                     "$keyPassword"
+        }
+
+        if (project.properties['android.injected.signing.key.alias'] != null && buildType == 'release') {
+            new File(outputDir, "app-release.apk").renameTo(new File(outputDir, "simplex.apk"))
+        }
+
+        // View all gradle properties set
+        // project.properties.each { k, v -> println "$k -> $v" }
+    }
 }
