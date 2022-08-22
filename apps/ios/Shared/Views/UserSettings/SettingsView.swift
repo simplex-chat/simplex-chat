@@ -52,6 +52,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -68,20 +69,7 @@ struct SettingsView: View {
                     }
                     .disabled(chatModel.chatRunning != true)
 
-                    settingsRow(
-                        chatModel.incognito ? "theatermasks.fill" : "theatermasks",
-                        color: chatModel.incognito ? Color.indigo : .secondary
-                    ) {
-                        Toggle("Incognito", isOn: $chatModel.incognito)
-                            .onChange(of: chatModel.incognito) { incognito in
-                                incognitoGroupDefault.set(incognito)
-                                do {
-                                    try apiSetIncognito(incognito: incognito)
-                                } catch {
-                                    logger.error("apiSetIncognito: cannot set incognito \(responseError(error))")
-                                }
-                            }
-                    }
+                    incognitoRow()
 
                     NavigationLink {
                         UserAddress()
@@ -211,9 +199,49 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
         }
+        .sheet(item: $settingsSheet) { sheet in
+            switch sheet {
+            case .incognitoInfo: IncognitoHelp()
+            }
+        }
     }
 
-    enum NotificationAlert {
+    @ViewBuilder private func incognitoRow() -> some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: chatModel.incognito ? "theatermasks.fill" : "theatermasks")
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                .foregroundColor(chatModel.incognito ? Color.indigo : .secondary)
+            Toggle(isOn: $chatModel.incognito) {
+                HStack {
+                    Text("Incognito")
+                    Spacer().frame(width: 4)
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    settingsSheet = .incognitoInfo
+                }
+            }
+            .onChange(of: chatModel.incognito) { incognito in
+                incognitoGroupDefault.set(incognito)
+                do {
+                    try apiSetIncognito(incognito: incognito)
+                } catch {
+                    logger.error("apiSetIncognito: cannot set incognito \(responseError(error))")
+                }
+            }
+            .padding(.leading, indent)
+        }
+    }
+
+    private enum SettingsSheet: Identifiable {
+        case incognitoInfo
+
+        var id: SettingsSheet { get { self } }
+    }
+
+    private enum NotificationAlert {
         case enable
         case error(LocalizedStringKey, String)
     }
