@@ -160,6 +160,7 @@
     <string name="ok">Oк</string>
     <string name="no_details">нет описания</string>
     <string name="add_contact">Добавить контакт</string>
+    <string name="copied">Скопировано в буфер обмена</string>
 
     <!-- NewChatSheet -->
     <string name="add_contact_or_create_group">Начать новый разговор</string>
@@ -273,7 +274,7 @@
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
     <string name="save_servers_button">Сохранить</string>
-    <string name="network_and_servers">Сеть &amp; серверы</string>
+    <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
     <string name="network_settings_title">Настройки сети</string>
     <string name="network_socks_toggle">Использовать SOCKS прокси (порт 9050)</string>
