@@ -56,6 +56,22 @@ fun ChatView(chatModel: ChatModel) {
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
+  LaunchedEffect(Unit) {
+    // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
+    // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
+    snapshotFlow { chatModel.chatId.value }
+      .distinctUntilChanged()
+      .collect {
+        activeChat = if (chatModel.chatId.value == null) {
+          null
+        } else {
+          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+          // Also for situation when chatId changes after clicking in notification, etc
+          chatModel.getChat(chatModel.chatId.value!!)
+        }
+      }
+  }
+
   if (activeChat == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -121,11 +137,7 @@ fun ChatView(chatModel: ChatModel) {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
         }
         if (c != null) {
-          withApi {
-            openChat(c.chatInfo, chatModel)
-            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-            activeChat = c
-          }
+          withApi { openChat(c.chatInfo, chatModel) }
         }
       },
       loadPrevMessages = { cInfo ->
