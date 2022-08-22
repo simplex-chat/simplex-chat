@@ -252,24 +252,22 @@ fun ChatLayout(
         sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
       ) {
         val floatingButton: MutableState<@Composable () -> Unit> = remember { mutableStateOf({}) }
+        val setFloatingButton = { button: @Composable () -> Unit ->
+          floatingButton.value = button
+        }
+
         Scaffold(
           topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
-          floatingActionButton = floatingButton.value,
+          floatingActionButton = { floatingButton.value() },
         ) { contentPadding ->
-          CompositionLocalProvider(
-            // Makes horizontal and vertical scrolling to coexist nicely.
-            // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
-            LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
-          ) {
-            BoxWithConstraints(Modifier.padding(contentPadding)) {
-              ChatItemsList(
-                user, chat, unreadCount, composeState, chatItems, searchValue,
-                useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
-                receiveFile, joinGroup, acceptCall, markRead, floatingButton
-              )
-            }
+          BoxWithConstraints(Modifier.padding(contentPadding)) {
+            ChatItemsList(
+              user, chat, unreadCount, composeState, chatItems, searchValue,
+              useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
+              receiveFile, joinGroup, acceptCall, markRead, setFloatingButton
+            )
           }
         }
       }
@@ -412,7 +410,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   joinGroup: (Long) -> Unit,
   acceptCall: (Contact) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  floatingButton: MutableState<@Composable () -> Unit>
+  setFloatingButton: (@Composable () -> Unit) -> Unit,
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -451,84 +449,90 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
-      val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
-      val directions = setOf(DismissDirection.EndToStart)
-      val swipeableModifier = SwipeToDismissModifier(
-        state = dismissState,
-        directions = directions,
-        swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-      )
-      val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
-      val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
-      if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
-        LaunchedEffect(Unit) {
-          scope.launch {
-            if (composeState.value.editing) {
-              composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-            } else {
-              composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
-            }
-          }
-        }
-      }
-
-      if (chat.chatInfo is ChatInfo.Group) {
-        if (cItem.chatDir is CIDirection.GroupRcv) {
-          val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
-          val member = cItem.chatDir.groupMember
-          val showMember = showMemberImage(member, prevItem)
-          Row(Modifier.padding(start = 8.dp, end = 66.dp).then(swipeableModifier)) {
-            if (showMember) {
-              val contactId = member.memberContactId
-              if (contactId == null) {
-                MemberImage(member)
+      CompositionLocalProvider(
+        // Makes horizontal and vertical scrolling to coexist nicely.
+        // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
+        LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
+      ) {
+        val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
+        val directions = setOf(DismissDirection.EndToStart)
+        val swipeableModifier = SwipeToDismissModifier(
+          state = dismissState,
+          directions = directions,
+          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+        )
+        val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
+        val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
+        if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
+          LaunchedEffect(Unit) {
+            scope.launch {
+              if (composeState.value.editing) {
+                composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
               } else {
-                Box(
-                  Modifier
-                    .clip(CircleShape)
-                    .clickable {
-                      openDirectChat(contactId)
-                      // Scroll to first unread message when direct chat will be loaded
-                      shouldAutoScroll = true
-                    }
-                ) {
-                  MemberImage(member)
-                }
+                composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
               }
-              Spacer(Modifier.size(4.dp))
-            } else {
-              Spacer(Modifier.size(42.dp))
             }
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
-          }
-        } else {
-          Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
           }
         }
-      } else { // direct message
-        val sent = cItem.chatDir.sent
-        Box(
-          Modifier.padding(
-            start = if (sent) 76.dp else 12.dp,
-            end = if (sent) 12.dp else 76.dp,
-          ).then(swipeableModifier)
-        ) {
-          ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
-        }
-      }
 
-      if (cItem.isRcvNew) {
-        LaunchedEffect(cItem.id) {
-          scope.launch {
-            delay(750)
-            markRead(CC.ItemRange(cItem.id, cItem.id), null)
+        if (chat.chatInfo is ChatInfo.Group) {
+          if (cItem.chatDir is CIDirection.GroupRcv) {
+            val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
+            val member = cItem.chatDir.groupMember
+            val showMember = showMemberImage(member, prevItem)
+            Row(Modifier.padding(start = 8.dp, end = 66.dp).then(swipeableModifier)) {
+              if (showMember) {
+                val contactId = member.memberContactId
+                if (contactId == null) {
+                  MemberImage(member)
+                } else {
+                  Box(
+                    Modifier
+                      .clip(CircleShape)
+                      .clickable {
+                        openDirectChat(contactId)
+                        // Scroll to first unread message when direct chat will be loaded
+                        shouldAutoScroll = true
+                      }
+                  ) {
+                    MemberImage(member)
+                  }
+                }
+                Spacer(Modifier.size(4.dp))
+              } else {
+                Spacer(Modifier.size(42.dp))
+              }
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+            }
+          } else {
+            Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+            }
+          }
+        } else { // direct message
+          val sent = cItem.chatDir.sent
+          Box(
+            Modifier.padding(
+              start = if (sent) 76.dp else 12.dp,
+              end = if (sent) 12.dp else 76.dp,
+            ).then(swipeableModifier)
+          ) {
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+          }
+        }
+
+        if (cItem.isRcvNew) {
+          LaunchedEffect(cItem.id) {
+            scope.launch {
+              delay(750)
+              markRead(CC.ItemRange(cItem.id, cItem.id), null)
+            }
           }
         }
       }
     }
   }
-  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, floatingButton, listState)
+  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
 }
 
 @Composable
@@ -538,7 +542,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
   minUnreadItemId: Long,
   searchValue: State<String>,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  floatingButton: MutableState<@Composable () -> Unit>,
+  setFloatingButton: (@Composable () -> Unit) -> Unit,
   listState: LazyListState
 ) {
   val scope = rememberCoroutineScope()
@@ -577,17 +581,18 @@ fun BoxWithConstraintsScope.FloatingButtons(
   LaunchedEffect(bottomUnreadCount, firstItemIsVisible) {
     val showButtonWithCounter = bottomUnreadCount > 0 && !firstItemIsVisible && searchValue.value.isEmpty()
     val showButtonWithArrow = !showButtonWithCounter && !firstItemIsVisible
-    floatingButton.value = bottomEndFloatingButton(
-      bottomUnreadCount,
-      showButtonWithCounter,
-      showButtonWithArrow,
-      onClickArrowDown = {
-        scope.launch { listState.animateScrollToItem(0) }
-      },
-      onClickCounter = {
-        scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
-      }
-    )
+    setFloatingButton(
+      bottomEndFloatingButton(
+        bottomUnreadCount,
+        showButtonWithCounter,
+        showButtonWithArrow,
+        onClickArrowDown = {
+          scope.launch { listState.animateScrollToItem(0) }
+        },
+        onClickCounter = {
+          scope.launch { listState.animateScrollToItem(kotlin.math.max(0, bottomUnreadCount - 1), firstVisibleOffset) }
+        }
+      ))
   }
   // Don't show top FAB if is in search
   if (searchValue.value.isNotEmpty()) return
@@ -735,7 +740,7 @@ private fun bottomEndFloatingButton(
   }
 }
 
-private fun ViewConfiguration.bigTouchSlop(slop: Float = 80f) = object: ViewConfiguration {
+private fun ViewConfiguration.bigTouchSlop(slop: Float = 50f) = object: ViewConfiguration {
   override val longPressTimeoutMillis
     get() =
       this@bigTouchSlop.longPressTimeoutMillis
