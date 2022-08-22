@@ -131,6 +131,7 @@
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
+		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -317,6 +318,7 @@
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
+		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -553,6 +555,7 @@
 				5C577F7C27C83AA10006112D /* MarkdownHelp.swift */,
 				640F50E227CF991C001E05C2 /* SMPServers.swift */,
 				5C3F1D592844B4DE00EC8A82 /* ExperimentalFeaturesView.swift */,
+				64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */,
 			);
 			path = UserSettings;
 			sourceTree = "<group>";
@@ -869,6 +872,7 @@
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5CB924E427A8683A00ACCCDD /* UserAddress.swift in Sources */,
 				640F50E327CF991C001E05C2 /* SMPServers.swift in Sources */,
+				64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */,
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
