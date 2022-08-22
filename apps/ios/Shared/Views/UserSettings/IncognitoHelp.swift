@@ -24,7 +24,7 @@ struct IncognitoHelp: View {
                     .padding(.bottom)
 
                     Group {
-                        Text("Groups")
+                        Text("Incognito groups")
                             .font(.title2)
                             .padding(.top)
                         textListItem("•", "When you create a group in Incognito mode or join incognito, the same random profile is shared with all group members;")
