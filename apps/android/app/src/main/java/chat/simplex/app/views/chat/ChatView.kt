@@ -570,6 +570,11 @@ fun BoxWithConstraintsScope.FloatingButtons(
         firstVisibleIndex = it
         firstItemIsVisible = firstVisibleIndex == 0
       }
+  }
+
+  LaunchedEffect(listState) {
+    // When both snapshotFlows located in one LaunchedEffect second block will never be called because coroutine is paused on first block
+    // so separate them into two LaunchedEffects
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .collect {
