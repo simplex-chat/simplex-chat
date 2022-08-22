@@ -56,6 +56,22 @@ fun ChatView(chatModel: ChatModel) {
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
+  LaunchedEffect(Unit) {
+    // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
+    // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
+    snapshotFlow { chatModel.chatId.value }
+      .distinctUntilChanged()
+      .collect {
+        activeChat = if (chatModel.chatId.value == null) {
+          null
+        } else {
+          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+          // Also for situation when chatId changes after clicking in notification, etc
+          chatModel.getChat(chatModel.chatId.value!!)
+        }
+      }
+  }
+
   if (activeChat == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -121,11 +137,7 @@ fun ChatView(chatModel: ChatModel) {
           it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
         }
         if (c != null) {
-          withApi {
-            openChat(c.chatInfo, chatModel)
-            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-            activeChat = c
-          }
+          withApi { openChat(c.chatInfo, chatModel) }
         }
       },
       loadPrevMessages = { cInfo ->
@@ -262,7 +274,7 @@ fun ChatLayout(
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
         ) { contentPadding ->
-          BoxWithConstraints(Modifier.padding(contentPadding)) {
+          BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               user, chat, unreadCount, composeState, chatItems, searchValue,
               useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
@@ -447,7 +459,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
 
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
-  LazyColumn(state = listState, reverseLayout = true) {
+  LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
       CompositionLocalProvider(
         // Makes horizontal and vertical scrolling to coexist nicely.
@@ -558,6 +570,11 @@ fun BoxWithConstraintsScope.FloatingButtons(
         firstVisibleIndex = it
         firstItemIsVisible = firstVisibleIndex == 0
       }
+  }
+
+  LaunchedEffect(listState) {
+    // When both snapshotFlows located in one LaunchedEffect second block will never be called because coroutine is paused on first block
+    // so separate them into two LaunchedEffects
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
       .distinctUntilChanged()
       .collect {
