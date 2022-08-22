@@ -953,7 +953,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       },
       confirmButton = {
-        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }
@@ -984,7 +984,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       },
       confirmButton = {
-        Button(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = ignoreOptimization) { Text(stringResource(R.string.ok)) }
       }
     )
   }
@@ -1010,7 +1010,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         }
       },
       confirmButton = {
-        Button(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(R.string.ok)) }
       }
     )
   }

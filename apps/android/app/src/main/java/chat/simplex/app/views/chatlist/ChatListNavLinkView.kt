@@ -332,14 +332,14 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
           .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.End,
       ) {
-        Button(onClick = {
+        TextButton(onClick = {
           AlertManager.shared.hideAlert()
           deleteContactConnectionAlert(connection, chatModel)
         }) {
           Text(stringResource(R.string.delete_verb))
         }
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Button(onClick = { AlertManager.shared.hideAlert() }) {
+        TextButton(onClick = { AlertManager.shared.hideAlert() }) {
           Text(stringResource(R.string.ok))
         }
       }

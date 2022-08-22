@@ -184,13 +184,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.End,
       ) {
-        Button(onClick = {
+        TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(stringResource(R.string.for_me_only)) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
-          Button(onClick = {
+          TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
           }) { Text(stringResource(R.string.for_everybody)) }
