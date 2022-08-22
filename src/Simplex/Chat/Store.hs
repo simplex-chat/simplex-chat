@@ -1179,7 +1179,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
               mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1193,8 +1193,8 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
             JOIN groups g ON g.group_id = m.group_id
             JOIN group_profiles gp USING (group_profile_id)
             JOIN group_members mu ON g.group_id = mu.group_id
-            LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-            LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+            LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+            LEFT JOIN connections hc ON hc.contact_id = h.contact_id
             JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
@@ -1269,7 +1269,7 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1285,8 +1285,8 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
         JOIN groups g ON g.group_id = m.group_id
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu ON g.group_id = mu.group_id
-        LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-        LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+        LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = h.contact_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN connections c ON c.connection_id = (
           SELECT max(cc.connection_id)
@@ -1474,15 +1474,15 @@ getUserGroupDetails db User {userId, userContactId} =
     <$> DB.query
       db
       [sql|
-        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+        SELECT g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
           mu.group_member_id, g.group_id, mu.member_id, mu.member_role, mu.member_category, mu.member_status,
           mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.image
         FROM groups g
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu USING (group_id)
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-        LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-        LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+        LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = h.contact_id
         WHERE g.user_id = ? AND mu.contact_id = ?
       |]
       (userId, userContactId)
@@ -1898,7 +1898,7 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupInfo {membership}
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -1915,8 +1915,8 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
         JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
         JOIN group_profiles gp USING (group_profile_id)
         JOIN group_members mu ON g.group_id = mu.group_id
-        LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-        LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+        LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = h.contact_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN connections c ON c.connection_id = (
           SELECT max(cc.connection_id)
@@ -2764,7 +2764,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2788,8 +2788,8 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
-        LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-        LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+        LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = h.contact_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN (
           SELECT group_id, MAX(chat_item_id) AS MaxId
@@ -3166,7 +3166,7 @@ getGroupInfo db User {userId, userContactId} groupId =
       [sql|
         SELECT
           -- GroupInfo
-          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, mucc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
+          g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.image, hc.custom_user_profile_id, g.enable_ntfs, g.created_at, g.updated_at,
           -- GroupMember - membership
           mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -3174,8 +3174,8 @@ getGroupInfo db User {userId, userContactId} groupId =
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
         JOIN group_members mu ON mu.group_id = g.group_id
-        LEFT JOIN contacts muc ON muc.contact_id = mu.invited_by
-        LEFT JOIN connections mucc ON mucc.contact_id = muc.contact_id
+        LEFT JOIN contacts h ON h.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = h.contact_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
