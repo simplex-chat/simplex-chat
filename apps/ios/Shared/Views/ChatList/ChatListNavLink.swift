@@ -75,7 +75,7 @@ struct ChatListNavLink: View {
             ChatPreviewView(chat: chat)
                 .frame(height: 80)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    joinGroupButton()
+                    joinGroupButton(groupInfo.hostConnCustomUserProfileId)
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
@@ -83,8 +83,8 @@ struct ChatListNavLink: View {
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
                     Button(interactiveIncognito ? "Join incognito" : "Join group") {
-                        if unsafeToJoinIncognito {
-                            AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert())
+                        if unsafeToJoinIncognito(groupInfo.hostConnCustomUserProfileId) {
+                            AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
                         } else {
                             joinGroup(groupInfo.groupId)
                         }
@@ -134,10 +134,10 @@ struct ChatListNavLink: View {
         chat.chatInfo.incognito || chatModel.incognito
     }
 
-    private func joinGroupButton() -> some View {
+    private func joinGroupButton(_ hostConnCustomUserProfileId: Int64?) -> some View {
         Button {
-            if unsafeToJoinIncognito {
-                AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert())
+            if unsafeToJoinIncognito(hostConnCustomUserProfileId) {
+                AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
             } else {
                 joinGroup(chat.chatInfo.apiId)
             }
@@ -147,19 +147,8 @@ struct ChatListNavLink: View {
         .tint(interactiveIncognito ? .indigo : .accentColor)
     }
 
-    private var unsafeToJoinIncognito: Bool {
-        interactiveIncognito // TODO && connection with host is not incognito
-    }
-
-    private func unsafeToJoinIncognitoAlert() -> Alert {
-        Alert(
-            title: Text("Incognito membership may be compromised"),
-            message: Text("The contact who invited you knows your main profile. If their client is of older version (lower than 3.2) or they're using a malicious client, they may not respect your incognito membership and share your main profile with other members."),
-            primaryButton: .destructive(Text("Join anyway")) {
-                joinGroup(chat.chatInfo.apiId)
-            },
-            secondaryButton: .cancel()
-        )
+    private func unsafeToJoinIncognito(_ hostConnCustomUserProfileId: Int64?) -> Bool {
+        interactiveIncognito && hostConnCustomUserProfileId == nil
     }
 
     private func markReadButton() -> some View {
@@ -353,6 +342,17 @@ struct ChatListNavLink: View {
             }
         }
     }
+}
+
+func unsafeToJoinIncognitoAlert(_ groupId: Int64) -> Alert {
+    Alert(
+        title: Text("Your main profile may be shared"),
+        message: Text("The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
+        primaryButton: .destructive(Text("Join anyway")) {
+            joinGroup(groupId)
+        },
+        secondaryButton: .cancel()
+    )
 }
 
 func joinGroup(_ groupId: Int64) {

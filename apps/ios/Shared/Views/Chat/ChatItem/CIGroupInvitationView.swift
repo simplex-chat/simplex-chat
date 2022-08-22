@@ -60,16 +60,7 @@ struct CIGroupInvitationView: View {
         if action {
             v.onTapGesture {
                 if unsafeToJoinIncognito {
-                    AlertManager.shared.showAlert(
-                        Alert(
-                            title: Text("Your main profile may be shared"),
-                            message: Text("The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
-                            primaryButton: .destructive(Text("Join anyway")) {
-                                joinGroup(groupInvitation.groupId)
-                            },
-                            secondaryButton: .cancel()
-                        )
-                    )
+                    AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(groupInvitation.groupId))
                 } else {
                     joinGroup(groupInvitation.groupId)
                 }

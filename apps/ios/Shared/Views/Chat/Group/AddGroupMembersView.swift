@@ -103,7 +103,7 @@ struct AddGroupMembersView: View {
             case .warnUnsafeToInviteIncognito:
                 return Alert(
                     title: Text("Your main profile may be shared"),
-                    message: Text("Some contacts you selected have your main profile. If their SimpleX apps are older than v3.2 (or they use some other client), they may share your main profile instead of a random incognito profile with other members."),
+                    message: Text("Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
                     primaryButton: .destructive(Text("Invite anyway")) {
                         inviteMembers()
                     }, secondaryButton: .cancel()

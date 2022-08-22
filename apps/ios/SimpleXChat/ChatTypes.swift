@@ -512,6 +512,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
+    public var hostConnCustomUserProfileId: Int64?
     public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
