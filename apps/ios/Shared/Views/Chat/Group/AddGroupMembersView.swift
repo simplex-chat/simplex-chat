@@ -99,11 +99,14 @@ struct AddGroupMembersView: View {
         .alert(item: $alert) { alert in
             switch alert {
             case .prohibitedToInviteIncognito:
-                return Alert(title: Text("Can't invite contact to this group!"), message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile"))
+                return Alert(
+                    title: Text("Can't invite contact to this group!"),
+                    message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
+                )
             case .warnUnsafeToInviteIncognito:
                 return Alert(
                     title: Text("Your main profile may be shared"),
-                    message: Text("Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
+                    message: Text("Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
                     primaryButton: .destructive(Text("Invite anyway")) {
                         inviteMembers()
                     }, secondaryButton: .cancel()

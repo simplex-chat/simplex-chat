@@ -726,10 +726,10 @@
 "incognito invitation to group %@" = "инкогнито приглашение в группу %@";
 
 /* No comment provided by engineer. */
-"Incognito mode" = "Режим инкогнито";
+"Incognito mode" = "Режим Инкогнито";
 
 /* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created." = "Режим инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — вместо этого для каждого нового контакта и группы создается новый случайный профиль.";
+"Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created." = "Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта и группы создается новый случайный профиль.";
 
 /* chat list item description */
 "incognito via contact address link" = "инкогнито через ссылку-контакт";
@@ -783,13 +783,13 @@
 "invited to connect" = "приглашение";
 
 /* No comment provided by engineer. */
-"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без каких-либо общих данных между ними в одном профиле чата.";
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.";
 
 /* No comment provided by engineer. */
 "It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.";
 
 /* No comment provided by engineer. */
-"It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile." = "Не разрешается приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.";
+"It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile." = "Нельзя приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
@@ -852,7 +852,7 @@
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*";
 
 /* No comment provided by engineer. */
-"Mark read" = "Отметить прочитанным";
+"Mark read" = "Прочитано";
 
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
@@ -897,7 +897,7 @@
 "Most likely this contact has deleted the connection with you." = "Скорее всего, этот контакт удалил соединение с вами.";
 
 /* No comment provided by engineer. */
-"Mute" = "Отключить нотификации";
+"Mute" = "Без звука";
 
 /* No comment provided by engineer. */
 "Network & servers" = "Сеть & серверы";
@@ -966,13 +966,13 @@
 "One-time invitation link" = "Одноразовая ссылка";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Для подключения потребуются onion хосты. Требуется включенный VPN.";
+"Onion hosts will be required for connection. Requires enabling VPN." = "Подключаться только к onion хостам. Требуется включенный VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion хосты будут использоваться по доступности. Требуется включенный VPN.";
+"Onion hosts will be used when available. Requires enabling VPN." = "Onion хосты используются, если возможно. Требуется включенный VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will not be used." = "Onion хосты не будут использоваться.";
+"Onion hosts will not be used." = "Onion хосты не используются.";
 
 /* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**";
@@ -1077,7 +1077,7 @@
 "rejected call" = "отклонённый звонок";
 
 /* No comment provided by engineer. */
-"Relay server is only used if necessary. Another party can observe your IP address." = "Relay сервер используется только в случае необходимости. Другая сторона может видеть ваш IP адрес.";
+"Relay server is only used if necessary. Another party can observe your IP address." = "Relay сервер используется только при необходимости. Другая сторона может видеть ваш IP адрес.";
 
 /* No comment provided by engineer. */
 "Relay server protects your IP address, but it can observe the duration of the call." = "Relay сервер защищает ваш IP адрес, но может отслеживать продолжительность звонка.";
@@ -1215,7 +1215,7 @@
 "SMP servers (one per line)" = "SMP серверы (один на строке)";
 
 /* No comment provided by engineer. */
-"Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У некоторых выбранных вами контактов есть ваш основной профиль. Если они используют приложение SimpleX старше версии 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.";
+"Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У некоторых выбранных контактов есть ваш основной профиль. Если они используют приложение SimpleX версии раньше чем 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.";
 
 /* notification title */
 "Somebody" = "Контакт";
@@ -1281,7 +1281,7 @@
 "The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
 
 /* No comment provided by engineer. */
-"The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У контакта, который вас пригласил, есть ваш основной профиль. Если он использует приложение SimpleX старше версии 3.2 или другой клиент, он может поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.";
+"The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У контакта есть ваш основной профиль. Если он использует приложение SimpleX версии раньше чем 3.2 или другой клиент, он может поделиться с другими членами группы вашим основным профилем вместо случайного инкогнито профиля.";
 
 /* No comment provided by engineer. */
 "The contact you shared this link with will NOT be able to connect!" = "Контакт, которому вы отправили эту ссылку, не сможет соединиться!";
@@ -1290,7 +1290,7 @@
 "The created archive is available via app Settings / Database / Old database archive." = "Созданный архив доступен через Настройки приложения.";
 
 /* No comment provided by engineer. */
-"the group is created in incognito mode," = "группа создана в режиме инкогнито,";
+"the group is created in Incognito mode," = "группа создана в режиме Инкогнито,";
 
 /* No comment provided by engineer. */
 "The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только членам.";
@@ -1311,7 +1311,7 @@
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
 
 /* No comment provided by engineer. */
-"There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown." = "Если в группе, где вы используете инкогнито профиль, есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.";
+"There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown." = "Если в инкогнито группе есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";
@@ -1329,7 +1329,7 @@
 "To ask any questions and to receive updates:" = "Чтобы задать вопросы и получать уведомления о новых версиях,";
 
 /* No comment provided by engineer. */
-"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Чтобы найти инкогнито профиль, используемый в разговоре, коснитесь имени контакта или группы в верхней части чата.";
+"To find the profile used for an incognito connection, tap the contact or group name on top of the chat." = "Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.";
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Чтобы соединиться";
@@ -1380,7 +1380,7 @@
 "Unlock" = "Разблокировать";
 
 /* No comment provided by engineer. */
-"Unmute" = "Включить нотификации";
+"Unmute" = "Уведомлять";
 
 /* No comment provided by engineer. */
 "Update .onion hosts setting?" = "Обновить настройки .onion хостов?";
@@ -1392,10 +1392,10 @@
 "updated group profile" = "обновил(а) профиль группы";
 
 /* No comment provided by engineer. */
-"Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к переподключению клиента ко всем серверам.";
+"Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.";
 
 /* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Обновление этой настройки приведет к переподключению клиента ко всем серверам.";
+"Updating this setting will re-connect the client to all servers." = "Обновление этих настроек приведет к сбросу и установке нового соединения со всеми серверами.";
 
 /* No comment provided by engineer. */
 "Use .onion hosts" = "Использовать .onion хосты";
@@ -1449,10 +1449,10 @@
 "Welcome %@!" = "Здравствуйте %@!";
 
 /* No comment provided by engineer. */
-"When available" = "По доступности";
+"When available" = "Когда возможно";
 
 /* No comment provided by engineer. */
-"When you join a group incognito, your new member profile is created and shared with all members." = "Когда вы вступаете в группу инкогнито, для вас создается новый профиль, который предоставляется другим членам группы.";
+"When you join a group incognito, your new member profile is created and shared with all members." = "Когда вы вступаете в группу инкогнито, создается новый случайный профиль, который отправляется другим членам группы.";
 
 /* No comment provided by engineer. */
 "You" = "Вы";
@@ -1518,7 +1518,7 @@
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Вы должны всегда использовать самую новую версию данных чата, ТОЛЬКО на одном устройстве, инача вы можете перестать получать сообщения от каких то контактов.";
 
 /* No comment provided by engineer. */
-"you or the member who invited you joined in incognito mode," = "вы или пригласивший вас член группы вступили в группу в режиме инкогнито,";
+"you or the member who invited you joined in Incognito mode," = "вы или пригласивший вас член группы вступили в группу в режиме Инкогнито,";
 
 /* No comment provided by engineer. */
 "You rejected group invitation" = "Вы отклонили приглашение в группу";
@@ -1557,7 +1557,7 @@
 "you: " = "вы: ";
 
 /* No comment provided by engineer. */
-"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Вы пытаетесь пригласить контакт, с которым вы поделились инкогнито профилем, в группу, в которой вы используете свой основной профиль";
+"You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль";
 
 /* No comment provided by engineer. */
 "Your are incognito in a group when:" = "Вы инкогнито в группе, когда:";

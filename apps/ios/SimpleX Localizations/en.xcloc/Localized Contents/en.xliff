@@ -1018,9 +1018,9 @@
         <target>Incognito mode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created." xml:space="preserve">
-        <source>Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created.</source>
-        <target>Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created.</target>
+      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created." xml:space="preserve">
+        <source>Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</source>
+        <target>Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -1703,9 +1703,9 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Skipped messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
-        <source>Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
-        <target>Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</target>
+      <trans-unit id="Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
+        <source>Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
+        <target>Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -1848,9 +1848,9 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>The sender will NOT be notified</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown." xml:space="preserve">
-        <source>There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown.</source>
-        <target>There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown.</target>
+      <trans-unit id="There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown." xml:space="preserve">
+        <source>There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</source>
+        <target>There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -2621,9 +2621,9 @@ SimpleX servers cannot see your profile.</target>
         <target>strike</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="the group is created in incognito mode," xml:space="preserve">
-        <source>the group is created in incognito mode,</source>
-        <target>the group is created in incognito mode,</target>
+      <trans-unit id="the group is created in Incognito mode," xml:space="preserve">
+        <source>the group is created in Incognito mode,</source>
+        <target>the group is created in Incognito mode,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -2701,9 +2701,9 @@ SimpleX servers cannot see your profile.</target>
         <target>you left</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you or the member who invited you joined in incognito mode," xml:space="preserve">
-        <source>you or the member who invited you joined in incognito mode,</source>
-        <target>you or the member who invited you joined in incognito mode,</target>
+      <trans-unit id="you or the member who invited you joined in Incognito mode," xml:space="preserve">
+        <source>you or the member who invited you joined in Incognito mode,</source>
+        <target>you or the member who invited you joined in Incognito mode,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">

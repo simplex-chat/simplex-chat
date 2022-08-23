@@ -1015,12 +1015,12 @@
       </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
         <source>Incognito mode</source>
-        <target>Режим инкогнито</target>
+        <target>Режим Инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created." xml:space="preserve">
-        <source>Incognito mode protects the privacy of your main profile name and image — instead, for each new contact and group a new random profile is created.</source>
-        <target>Режим инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — вместо этого для каждого нового контакта и группы создается новый случайный профиль.</target>
+      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created." xml:space="preserve">
+        <source>Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</source>
+        <target>Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта и группы создается новый случайный профиль.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -1075,7 +1075,7 @@
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target>Это позволяет иметь много анонимных соединений без каких-либо общих данных между ними в одном профиле чата.</target>
+        <target>Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
@@ -1095,7 +1095,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile." xml:space="preserve">
         <source>It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.</source>
-        <target>Не разрешается приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.</target>
+        <target>Нельзя приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
@@ -1185,7 +1185,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Mark read" xml:space="preserve">
         <source>Mark read</source>
-        <target>Отметить прочитанным</target>
+        <target>Прочитано</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -1240,7 +1240,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Mute" xml:space="preserve">
         <source>Mute</source>
-        <target>Отключить нотификации</target>
+        <target>Без звука</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
@@ -1345,17 +1345,17 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>Для подключения потребуются onion хосты. Требуется включенный VPN.</target>
+        <target>Подключаться только к onion хостам. Требуется включенный VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Onion хосты будут использоваться по доступности. Требуется включенный VPN.</target>
+        <target>Onion хосты используются, если возможно. Требуется включенный VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
         <source>Onion hosts will not be used.</source>
-        <target>Onion хосты не будут использоваться.</target>
+        <target>Onion хосты не используются.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." xml:space="preserve">
@@ -1500,7 +1500,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
         <source>Relay server is only used if necessary. Another party can observe your IP address.</source>
-        <target>Relay сервер используется только в случае необходимости. Другая сторона может видеть ваш IP адрес.</target>
+        <target>Relay сервер используется только при необходимости. Другая сторона может видеть ваш IP адрес.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server protects your IP address, but it can observe the duration of the call." xml:space="preserve">
@@ -1703,9 +1703,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Пропущенные сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
-        <source>Some contacts you selected have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
-        <target>У некоторых выбранных вами контактов есть ваш основной профиль. Если они используют приложение SimpleX старше версии 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.</target>
+      <trans-unit id="Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
+        <source>Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
+        <target>У некоторых выбранных контактов есть ваш основной профиль. Если они используют приложение SimpleX версии раньше чем 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -1805,7 +1805,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
         <source>The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
-        <target>У контакта, который вас пригласил, есть ваш основной профиль. Если он использует приложение SimpleX старше версии 3.2 или другой клиент, он может поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.</target>
+        <target>У контакта есть ваш основной профиль. Если он использует приложение SimpleX версии раньше чем 3.2 или другой клиент, он может поделиться с другими членами группы вашим основным профилем вместо случайного инкогнито профиля.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
@@ -1848,9 +1848,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Отправитель не будет уведомлён</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown." xml:space="preserve">
-        <source>There is a risk to have your main profile shared, if you have contacts who know your main profile in a group where you use an incognito profile. Before you invite or join group with such contacts a warning will be shown.</source>
-        <target>Если в группе, где вы используете инкогнито профиль, есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.</target>
+      <trans-unit id="There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown." xml:space="preserve">
+        <source>There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</source>
+        <target>Если в инкогнито группе есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -1875,7 +1875,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="To find the profile used for an incognito connection, tap the contact or group name on top of the chat." xml:space="preserve">
         <source>To find the profile used for an incognito connection, tap the contact or group name on top of the chat.</source>
-        <target>Чтобы найти инкогнито профиль, используемый в разговоре, коснитесь имени контакта или группы в верхней части чата.</target>
+        <target>Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -1959,7 +1959,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Unmute" xml:space="preserve">
         <source>Unmute</source>
-        <target>Включить нотификации</target>
+        <target>Уведомлять</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
@@ -1974,12 +1974,12 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
-        <target>Обновление настроек приведет к переподключению клиента ко всем серверам.</target>
+        <target>Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve">
         <source>Updating this setting will re-connect the client to all servers.</source>
-        <target>Обновление этой настройки приведет к переподключению клиента ко всем серверам.</target>
+        <target>Обновление этих настроек приведет к сбросу и установке нового соединения со всеми серверами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use .onion hosts" xml:space="preserve">
@@ -2029,12 +2029,12 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
         <source>When available</source>
-        <target>По доступности</target>
+        <target>Когда возможно</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you join a group incognito, your new member profile is created and shared with all members." xml:space="preserve">
         <source>When you join a group incognito, your new member profile is created and shared with all members.</source>
-        <target>Когда вы вступаете в группу инкогнито, для вас создается новый профиль, который предоставляется другим членам группы.</target>
+        <target>Когда вы вступаете в группу инкогнито, создается новый случайный профиль, который отправляется другим членам группы.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -2164,7 +2164,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>Вы пытаетесь пригласить контакт, с которым вы поделились инкогнито профилем, в группу, в которой вы используете свой основной профиль</target>
+        <target>Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
@@ -2621,9 +2621,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>зачеркнуть</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="the group is created in incognito mode," xml:space="preserve">
-        <source>the group is created in incognito mode,</source>
-        <target>группа создана в режиме инкогнито,</target>
+      <trans-unit id="the group is created in Incognito mode," xml:space="preserve">
+        <source>the group is created in Incognito mode,</source>
+        <target>группа создана в режиме Инкогнито,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
@@ -2701,9 +2701,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>вы покинули группу</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you or the member who invited you joined in incognito mode," xml:space="preserve">
-        <source>you or the member who invited you joined in incognito mode,</source>
-        <target>вы или пригласивший вас член группы вступили в группу в режиме инкогнито,</target>
+      <trans-unit id="you or the member who invited you joined in Incognito mode," xml:space="preserve">
+        <source>you or the member who invited you joined in Incognito mode,</source>
+        <target>вы или пригласивший вас член группы вступили в группу в режиме Инкогнито,</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
