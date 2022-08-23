@@ -558,14 +558,14 @@ instance ToJSON RcvGroupEvent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RGE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
 
-newtype DBRcvGroupEvent = DBRGE RcvGroupEvent
+newtype DBRcvGroupEvent = RGE RcvGroupEvent
 
 instance FromJSON DBRcvGroupEvent where
-  parseJSON v = DBRGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
+  parseJSON v = RGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
 
 instance ToJSON DBRcvGroupEvent where
-  toJSON (DBRGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
-  toEncoding (DBRGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
+  toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
+  toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
 
 data SndGroupEvent
   = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
@@ -580,14 +580,14 @@ instance ToJSON SndGroupEvent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SGE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SGE"
 
-newtype DBSndGroupEvent = DBSGE SndGroupEvent
+newtype DBSndGroupEvent = SGE SndGroupEvent
 
 instance FromJSON DBSndGroupEvent where
-  parseJSON v = DBSGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
+  parseJSON v = SGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
 
 instance ToJSON DBSndGroupEvent where
-  toJSON (DBSGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
-  toEncoding (DBSGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
+  toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
+  toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
@@ -748,8 +748,8 @@ dbJsonCIContent = \case
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
-  CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ DBRGE rge
-  CISndGroupEvent sge -> DBJCISndGroupEvent $ DBSGE sge
+  CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
+  CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -762,8 +762,8 @@ aciContentDBJSON = \case
   DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
-  DBJCIRcvGroupEvent (DBRGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
-  DBJCISndGroupEvent (DBSGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
+  DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
+  DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
 
 data CICallStatus
   = CISCallPending
