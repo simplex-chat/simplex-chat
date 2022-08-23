@@ -29,7 +29,7 @@ struct PasteToConnectView: View {
                 .padding(.bottom)
             } else {
                 HStack {
-                    Image(systemName: "info.circle").foregroundColor(.accentColor).font(.footnote)
+                    Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
                     Spacer().frame(width: 8)
                     Text("Your profile will be sent to the contact that you received this link from").font(.footnote)
                 }

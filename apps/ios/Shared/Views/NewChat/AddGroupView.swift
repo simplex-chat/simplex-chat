@@ -53,7 +53,7 @@ struct AddGroupView: View {
                 .padding(.bottom)
             } else {
                 HStack {
-                    Image(systemName: "info.circle").foregroundColor(.accentColor).font(.footnote)
+                    Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
                     Spacer().frame(width: 8)
                     Text("Your chat profile will be sent to group members").font(.footnote)
                 }
