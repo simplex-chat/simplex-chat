@@ -521,6 +521,8 @@ profileToText :: Profile -> Text
 profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
 
 -- This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
+-- ! Nested sum types also have to use different encodings for database and API
+-- ! to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 data CIContent (d :: MsgDirection) where
   CISndMsgContent :: MsgContent -> CIContent 'MDSnd
   CIRcvMsgContent :: MsgContent -> CIContent 'MDRcv
@@ -533,6 +535,9 @@ data CIContent (d :: MsgDirection) where
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
+-- ^^^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
+-- ! ^^^ Nested sum types also have to use different encodings for database and API
+-- ! ^^^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
 
@@ -553,14 +558,14 @@ instance ToJSON RcvGroupEvent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RGE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
 
-newtype DBRcvGroupEvent = DBRG RcvGroupEvent
+newtype DBRcvGroupEvent = DBRGE RcvGroupEvent
 
 instance FromJSON DBRcvGroupEvent where
-  parseJSON v = DBRG <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
+  parseJSON v = DBRGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
 
 instance ToJSON DBRcvGroupEvent where
-  toJSON (DBRG v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
-  toEncoding (DBRG v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
+  toJSON (DBRGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
+  toEncoding (DBRGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
 
 data SndGroupEvent
   = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
@@ -575,14 +580,14 @@ instance ToJSON SndGroupEvent where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SGE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SGE"
 
-newtype DBSndGroupEvent = DBSG SndGroupEvent
+newtype DBSndGroupEvent = DBSGE SndGroupEvent
 
 instance FromJSON DBSndGroupEvent where
-  parseJSON v = DBSG <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
+  parseJSON v = DBSGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
 
 instance ToJSON DBSndGroupEvent where
-  toJSON (DBSG v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
-  toEncoding (DBSG v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
+  toJSON (DBSGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
+  toEncoding (DBSGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
@@ -743,8 +748,8 @@ dbJsonCIContent = \case
   CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
-  CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ DBRG rge
-  CISndGroupEvent sge -> DBJCISndGroupEvent $ DBSG sge
+  CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ DBRGE rge
+  CISndGroupEvent sge -> DBJCISndGroupEvent $ DBSGE sge
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
 aciContentDBJSON = \case
@@ -757,8 +762,8 @@ aciContentDBJSON = \case
   DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
-  DBJCIRcvGroupEvent (DBRG rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
-  DBJCISndGroupEvent (DBSG sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
+  DBJCIRcvGroupEvent (DBRGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
+  DBJCISndGroupEvent (DBSGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
 
 data CICallStatus
   = CISCallPending
