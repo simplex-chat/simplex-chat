@@ -231,6 +231,7 @@ import Simplex.Chat.Migrations.M20220811_chat_items_indices
 import Simplex.Chat.Migrations.M20220812_incognito_profiles
 import Simplex.Chat.Migrations.M20220818_chat_notifications
 import Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
+import Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -263,7 +264,8 @@ schemaMigrations =
     ("20220811_chat_items_indices", m20220811_chat_items_indices),
     ("20220812_incognito_profiles", m20220812_incognito_profiles),
     ("20220818_chat_notifications", m20220818_chat_notifications),
-    ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id)
+    ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id),
+    ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items)
   ]
 
 -- | The list of migrations in ascending order by date
