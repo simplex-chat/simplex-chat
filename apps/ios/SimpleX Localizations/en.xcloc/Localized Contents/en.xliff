@@ -288,9 +288,9 @@
         <target>Call already ended!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't invite contact to this group!" xml:space="preserve">
-        <source>Can't invite contact to this group!</source>
-        <target>Can't invite contact to this group!</target>
+      <trans-unit id="Can't invite contact!" xml:space="preserve">
+        <source>Can't invite contact!</source>
+        <target>Can't invite contact!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">

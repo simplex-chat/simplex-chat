@@ -100,7 +100,7 @@ struct AddGroupMembersView: View {
             switch alert {
             case .prohibitedToInviteIncognito:
                 return Alert(
-                    title: Text("Can't invite contact to this group!"),
+                    title: Text("Can't invite contact!"),
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
             case .warnUnsafeToInviteIncognito:

@@ -210,7 +210,7 @@
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
-"Can't invite contact to this group!" = "Невозможно пригласить контакт в эту группу!";
+"Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
 "Cancel" = "Отменить";
