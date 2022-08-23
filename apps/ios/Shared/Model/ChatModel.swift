@@ -36,6 +36,7 @@ final class ChatModel: ObservableObject {
     @Published var tokenStatus: NtfTknStatus?
     @Published var notificationMode = NotificationsMode.off
     @Published var notificationPreview: NotificationPreviewMode? = ntfPreviewModeGroupDefault.get()
+    @Published var incognito: Bool = incognitoGroupDefault.get()
     // pending notification actions
     @Published var ntfContactRequest: ChatId?
     @Published var ntfCallInvitationAction: (ChatId, NtfCallAction)?
@@ -79,7 +80,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateContact(_ contact: Contact) {
-        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact())
+        updateChat(.direct(contact: contact), addMissing: !contact.isIndirectContact)
     }
 
     func updateGroup(_ groupInfo: GroupInfo) {

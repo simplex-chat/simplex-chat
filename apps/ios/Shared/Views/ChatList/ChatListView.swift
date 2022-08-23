@@ -44,6 +44,17 @@ struct ChatListView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
                 }
+                ToolbarItem(placement: .principal) {
+                    if (chatModel.incognito) {
+                        HStack {
+                            if (chatModel.chats.count > 8) {
+                                Text("Your chats").font(.headline)
+                                Spacer().frame(width: 16)
+                            }
+                            Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     switch chatModel.chatRunning {
                     case .some(true): NewChatButton()

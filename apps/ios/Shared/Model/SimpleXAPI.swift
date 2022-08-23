@@ -167,6 +167,12 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
+func apiSetIncognito(incognito: Bool) throws {
+    let r = chatSendCmdSync(.setIncognito(incognito: incognito))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -312,15 +318,15 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
 
-func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
+func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
-    if case let .contactInfo(_, connStats) = r { return connStats }
+    if case let .contactInfo(_, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> ConnectionStats? {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
+    if case let .groupMemberInfo(_, _, connStats_, mainProfile) = r { return (connStats_, mainProfile) }
     throw r
 }
 
@@ -646,6 +652,7 @@ func initializeChat(start: Bool) throws {
     do {
         let m = ChatModel.shared
         try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+        try apiSetIncognito(incognito: incognitoGroupDefault.get())
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo

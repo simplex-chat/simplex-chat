@@ -77,7 +77,7 @@ struct UserProfile: View {
                     profileNameView("Display name:", user.profile.displayName)
                     profileNameView("Full name:", user.profile.fullName)
                     Button("Edit") {
-                        profile = user.profile
+                        profile = fromLocalProfile(user.profile)
                         editProfile = true
                     }
                 }
@@ -131,7 +131,7 @@ struct UserProfile: View {
     }
 
     func startEditingImage(_ user: User) {
-        profile = user.profile
+        profile = fromLocalProfile(user.profile)
         editProfile = true
         showChooseSource = true
     }
@@ -141,7 +141,9 @@ struct UserProfile: View {
             do {
                 if let newProfile = try await apiUpdateProfile(profile: profile) {
                     DispatchQueue.main.async {
-                        chatModel.currentUser?.profile = newProfile
+                        if let profileId = chatModel.currentUser?.profile.profileId {
+                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile)
+                        }
                         profile = newProfile
                     }
                 }
