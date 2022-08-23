@@ -325,6 +325,7 @@ interface SomeChat {
   val apiId: Long
   val ready: Boolean
   val sendMsgEnabled: Boolean
+  val ntfsEnabled: Boolean
   val createdAt: Instant
   val updatedAt: Instant
 }
@@ -383,6 +384,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
     override val sendMsgEnabled get() = contact.sendMsgEnabled
+    override val ntfsEnabled get() = contact.chatSettings.enableNtfs
     override val createdAt get() = contact.createdAt
     override val updatedAt get() = contact.updatedAt
     override val displayName get() = contact.displayName
@@ -402,6 +404,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
     override val sendMsgEnabled get() = groupInfo.sendMsgEnabled
+    override val ntfsEnabled get() = groupInfo.chatSettings.enableNtfs
     override val createdAt get() = groupInfo.createdAt
     override val updatedAt get() = groupInfo.updatedAt
     override val displayName get() = groupInfo.displayName
@@ -421,6 +424,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
     override val sendMsgEnabled get() = contactRequest.sendMsgEnabled
+    override val ntfsEnabled get() = false
     override val createdAt get() = contactRequest.createdAt
     override val updatedAt get() = contactRequest.updatedAt
     override val displayName get() = contactRequest.displayName
@@ -440,6 +444,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
+    override val ntfsEnabled get() = false
     override val createdAt get() = contactConnection.createdAt
     override val updatedAt get() = contactConnection.updatedAt
     override val displayName get() = contactConnection.displayName
@@ -454,13 +459,13 @@ sealed class ChatInfo: SomeChat, NamedChat {
 }
 
 @Serializable
-class Contact(
+data class Contact(
   val contactId: Long,
   override val localDisplayName: String,
   val profile: Profile,
   val activeConn: Connection,
   val viaGroup: Long? = null,
-//  val chatSettings: ChatSettings,
+  val chatSettings: ChatSettings,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -469,6 +474,7 @@ class Contact(
   override val apiId get() = contactId
   override val ready get() = activeConn.connStatus == ConnStatus.Ready
   override val sendMsgEnabled get() = true
+  override val ntfsEnabled get() = chatSettings.enableNtfs
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -482,6 +488,7 @@ class Contact(
       localDisplayName = "alice",
       profile = Profile.sampleData,
       activeConn = Connection.sampleData,
+      chatSettings = ChatSettings(true),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -536,12 +543,12 @@ class Group (
 )
 
 @Serializable
-class GroupInfo (
+data class GroupInfo (
   val groupId: Long,
   override val localDisplayName: String,
   val groupProfile: GroupProfile,
   val membership: GroupMember,
-  //  val chatSettings: ChatSettings,
+  val chatSettings: ChatSettings,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -550,6 +557,7 @@ class GroupInfo (
   override val apiId get() = groupId
   override val ready get() = true
   override val sendMsgEnabled get() = membership.memberActive
+  override val ntfsEnabled get() = chatSettings.enableNtfs
   override val displayName get() = groupProfile.displayName
   override val fullName get() = groupProfile.fullName
   override val image get() = groupProfile.image
@@ -569,6 +577,7 @@ class GroupInfo (
       localDisplayName = "team",
       groupProfile = GroupProfile.sampleData,
       membership = GroupMember.sampleData,
+      chatSettings = ChatSettings(true),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -770,6 +779,7 @@ class UserContactRequest (
   override val apiId get() = contactRequestId
   override val ready get() = true
   override val sendMsgEnabled get() = false
+  override val ntfsEnabled get() = false
   override val displayName get() = profile.displayName
   override val fullName get() = profile.fullName
   override val image get() = profile.image
@@ -799,6 +809,7 @@ class PendingContactConnection(
   override val apiId get() = pccConnId
   override val ready get() = false
   override val sendMsgEnabled get() = false
+  override val ntfsEnabled get() = false
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     val initiated = pccConnStatus.initiated

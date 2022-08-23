@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -72,7 +72,10 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
-      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) }
+      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      changeNtfsState = { enabled ->
+        changeNtfsState(enabled, chat, chatModel)
+      },
     )
   }
 }
@@ -122,6 +125,7 @@ fun GroupChatInfoLayout(
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
+  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -151,6 +155,17 @@ fun GroupChatInfoLayout(
         SectionDivider()
       }
       MembersList(members, showMemberInfo)
+    }
+    SectionSpacer()
+
+    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
+      SectionItemView {
+        NtfsSwitch(ntfsEnabled) {
+          ntfsEnabled = !ntfsEnabled
+          changeNtfsState(ntfsEnabled)
+        }
+      }
     }
     SectionSpacer()
 
@@ -322,7 +337,8 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
+      changeNtfsState = {},
     )
   }
 }

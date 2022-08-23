@@ -8,7 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,8 +24,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
-import chat.simplex.app.views.helpers.ChatInfoImage
-import chat.simplex.app.views.helpers.badgeLayout
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun ChatPreviewView(chat: Chat, stopped: Boolean) {
@@ -134,6 +134,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         modifier = Modifier.padding(bottom = 5.dp)
       )
       val n = chat.chatStats.unreadCount
+      val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       if (n > 0) {
         Box(
           Modifier.padding(top = 24.dp),
@@ -144,10 +145,25 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped || showNtfsIcon) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
+          )
+        }
+      } else if (showNtfsIcon) {
+        Box(
+          Modifier.padding(top = 24.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            Icons.Filled.NotificationsOff,
+            contentDescription = generalGetString(R.string.notifications),
+            tint = HighOrLowlight,
+            modifier = Modifier
+              .padding(horizontal = 3.dp)
+              .padding(vertical = 1.dp)
+              .size(17.dp)
           )
         }
       }
