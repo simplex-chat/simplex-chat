@@ -47,8 +47,10 @@ struct ChatListView: View {
                 ToolbarItem(placement: .principal) {
                     if (chatModel.incognito) {
                         HStack {
-                            Text("Your chats").font(.headline)
-                            Spacer().frame(width: 16)
+                            if (chatModel.chats.count > 8) {
+                                Text("Your chats").font(.headline)
+                                Spacer().frame(width: 16)
+                            }
                             Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                         }
                     }
