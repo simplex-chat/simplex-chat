@@ -19,6 +19,7 @@ public struct User: Decodable, NamedChat {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+    public var localAlias: String = ""
 
     public static let sampleData = User(
         userId: 1,
@@ -43,6 +44,7 @@ public struct Profile: Codable, NamedChat {
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var localAlias: String = ""
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -70,7 +72,11 @@ public struct LocalProfile: Codable, NamedChat {
     public var localAlias: String
 
     var profileViewName: String {
-        (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+        if localAlias == "" {
+            return (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+        } else {
+            return localAlias
+        }
     }
 
     static let sampleData = LocalProfile(
@@ -100,13 +106,17 @@ public protocol NamedChat {
     var displayName: String { get }
     var fullName: String { get }
     var image: String? { get }
+    var localAlias: String { get }
 }
 
 extension NamedChat {
     public var chatViewName: String {
         get {
-            
-            displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)")
+            if localAlias == "" {
+                return displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)")
+            } else {
+                return localAlias
+            }
         }
     }
 }
@@ -159,6 +169,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case let .group(groupInfo): return groupInfo.image
             case let .contactRequest(contactRequest): return contactRequest.image
             case let .contactConnection(contactConnection): return contactConnection.image
+            }
+        }
+    }
+
+    public var localAlias: String {
+        get {
+            switch self {
+            case let .direct(contact): return contact.localAlias
+            case let .group(groupInfo): return groupInfo.localAlias
+            case let .contactRequest(contactRequest): return contactRequest.localAlias
+            case let .contactConnection(contactConnection): return contactConnection.localAlias
             }
         }
     }
@@ -312,6 +333,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+    public var localAlias: String { get { profile.localAlias } }
 
     public var isIndirectContact: Bool {
         activeConn.connLevel > 0 || viaGroup != nil
@@ -390,6 +412,7 @@ public struct UserContactRequest: Decodable, NamedChat {
     public var displayName: String { get { profile.displayName } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
+    public var localAlias: String = ""
 
     public static let sampleData = UserContactRequest(
         contactRequestId: 1,
@@ -431,6 +454,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     }
     public var fullName: String { get { "" } }
     public var image: String? { get { nil } }
+    public var localAlias: String = ""
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
     public var incognito: Bool {
@@ -530,6 +554,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     public var displayName: String { get { groupProfile.displayName } }
     public var fullName: String { get { groupProfile.fullName } }
     public var image: String? { get { groupProfile.image } }
+    public var localAlias: String = ""
 
     public var canEdit: Bool {
         return membership.memberRole == .owner && membership.memberCurrent
@@ -565,6 +590,7 @@ public struct GroupProfile: Codable, NamedChat {
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var localAlias: String = ""
 
     public static let sampleData = GroupProfile(
         displayName: "team",
@@ -604,7 +630,11 @@ public struct GroupMember: Identifiable, Decodable {
     public var chatViewName: String {
         get {
             let p = memberProfile
-            return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            if p.localAlias == "" {
+                return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            } else {
+                return p.localAlias
+            }
         }
     }
 
