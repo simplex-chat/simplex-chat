@@ -70,9 +70,9 @@ fun SectionTextFooter(text: String) {
 }
 
 @Composable
-fun SectionCustomFooter(content: (@Composable () -> Unit)) {
+fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 5.dp), content: (@Composable () -> Unit)) {
   Row(
-    Modifier.padding(horizontal = 16.dp).padding(top = 5.dp)
+    Modifier.padding(padding)
   ) {
     content()
   }

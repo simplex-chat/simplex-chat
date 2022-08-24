@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionCustomFooter
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
@@ -132,8 +133,19 @@ fun AppearanceView(
 
         SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }, padding = PaddingValues()) {
           val title = generalGetString(R.string.color_primary)
-          Text(title, color = colors.primary)
+          Text(title)
           Icon(Icons.Filled.Circle, title, tint = colors.primary)
+        }
+      }
+    }
+    if (currentTheme.first.primary != LightColorPalette.primary) {
+      SectionCustomFooter(PaddingValues(start = 7.dp, end = 7.dp, top = 5.dp)) {
+        TextButton(
+          onClick = {
+            ThemeManager.saveAndApplyPrimaryColor(LightColorPalette.primary)
+          },
+        ) {
+          Text(generalGetString(R.string.reset_color))
         }
       }
     }
@@ -156,13 +168,13 @@ fun ColorEditor(
 
     SectionSpacer()
 
-    Button(
+    TextButton(
       onClick = {
         ThemeManager.saveAndApplyPrimaryColor(currentColor)
         close()
       },
       Modifier.align(Alignment.CenterHorizontally),
-      colors = ButtonDefaults.buttonColors(backgroundColor = currentColor)
+      colors = ButtonDefaults.textButtonColors(contentColor = currentColor)
     ) {
       Text(generalGetString(R.string.save_color))
     }
@@ -176,6 +188,7 @@ fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
     modifier = Modifier
       .fillMaxWidth()
       .height(300.dp),
+    showAlphaBar = false,
     onColorChanged = { color: HsvColor ->
       onColorChanged(color.toColor())
     }

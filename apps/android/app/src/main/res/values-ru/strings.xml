@@ -272,7 +272,7 @@
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
-    <string name="install_simplex_chat_for_terminal"><font color="#0088ff"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</font></string>
+    <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
     <string name="saved_SMP_servers_will_br_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
@@ -645,5 +645,6 @@
     <!-- Appearance.kt -->
     <string name="theme">Тема</string>
     <string name="save_color">Сохранить цвет</string>
+    <string name="reset_color">Сбросить цвета</string>
     <string name="color_primary">Акцент</string>
 </resources>

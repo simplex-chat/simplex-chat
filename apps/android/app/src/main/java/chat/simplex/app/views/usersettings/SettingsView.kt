@@ -275,7 +275,7 @@ fun SettingsLayout(
       tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(annotatedStringResource(R.string.install_simplex_chat_for_terminal))
+    Text(generalGetString(R.string.install_simplex_chat_for_terminal), color = MaterialTheme.colors.primary)
   }
 }
 
