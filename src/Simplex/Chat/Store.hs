@@ -309,8 +309,8 @@ createUser db Profile {displayName, fullName, image} activeUser =
       (displayName, displayName, userId, currentTs, currentTs)
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, image, user_alias, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (displayName, fullName, image, "" :: ProfileUserAlias, userId, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (displayName, fullName, image, userId, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -413,10 +413,10 @@ createIncognitoProfile_ db userId createdAt incognitoProfile =
     DB.execute
       db
       [sql|
-        INSERT INTO contact_profiles (display_name, full_name, image, user_alias, user_id, incognito, created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?,?)
+        INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+        VALUES (?,?,?,?,?,?,?)
       |]
-      (displayName, fullName, image, "" :: ProfileUserAlias, userId, Just True, createdAt, createdAt)
+      (displayName, fullName, image, userId, Just True, createdAt, createdAt)
     insertedRowId db
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
@@ -463,8 +463,8 @@ createContact_ db userId connId Profile {displayName, fullName, image} viaGroup 
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, image, user_alias, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (displayName, fullName, image, "" :: ProfileUserAlias, userId, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (displayName, fullName, image, userId, currentTs, currentTs)
     profileId <- insertedRowId db
     DB.execute
       db
@@ -765,8 +765,8 @@ createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayN
         createContactRequest_ currentTs ldn = do
           DB.execute
             db
-            "INSERT INTO contact_profiles (display_name, full_name, image, user_alias, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-            (displayName, fullName, image, "" :: ProfileUserAlias, userId, currentTs, currentTs)
+            "INSERT INTO contact_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+            (displayName, fullName, image, userId, currentTs, currentTs)
           profileId <- insertedRowId db
           DB.execute
             db
@@ -1686,8 +1686,8 @@ createNewGroupMember db user@User {userId} gInfo memInfo@(MemberInfo _ _ Profile
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO contact_profiles (display_name, full_name, image, user_alias, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (displayName, fullName, image, "" :: ProfileUserAlias, userId, currentTs, currentTs)
+      "INSERT INTO contact_profiles (display_name, full_name, image, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (displayName, fullName, image, userId, currentTs, currentTs)
     memProfileId <- insertedRowId db
     let newMember =
           NewGroupMember
