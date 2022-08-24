@@ -95,7 +95,7 @@ chatTests = do
     it "create group incognito" testCreateGroupIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to non incognito group" testCantInviteIncognitoConnectionNonIncognitoGroup
-    it "can set contact alias" testSetAlias
+    it "set contact alias" testSetAlias
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
