@@ -18,10 +18,29 @@ struct AddGroupMembersView: View {
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .admin
+    @State private var alert: AddGroupMembersAlert?
+
+    private enum AddGroupMembersAlert: Identifiable {
+        case prohibitedToInviteIncognito
+        case warnUnsafeToInviteIncognito
+        case error(title: LocalizedStringKey, error: String = "")
+
+        var id: String {
+            switch self {
+            case .prohibitedToInviteIncognito: return "prohibitedToInviteIncognito"
+            case .warnUnsafeToInviteIncognito: return "warnUnsafeToInviteIncognito"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
 
     var body: some View {
         NavigationView {
             let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
+            let nonIncognitoConnectionsSelected = membersToAdd
+                .filter{ selectedContacts.contains($0.apiId) }
+                .contains(where: { !$0.contactConnIncognito })
+            let unsafeToInviteIncognito = chat.chatInfo.incognito && nonIncognitoConnectionsSelected
 
             let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
@@ -39,7 +58,7 @@ struct AddGroupMembersView: View {
                     let count = selectedContacts.count
                     Section {
                         rolePicker()
-                        inviteMembersButton()
+                        inviteMembersButton(unsafeToInviteIncognito)
                             .disabled(count < 1)
                     } footer: {
                         if (count >= 1) {
@@ -77,26 +96,33 @@ struct AddGroupMembersView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .alert(item: $alert) { alert in
+            switch alert {
+            case .prohibitedToInviteIncognito:
+                return Alert(
+                    title: Text("Can't invite contact!"),
+                    message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
+                )
+            case .warnUnsafeToInviteIncognito:
+                return Alert(
+                    title: Text("Your main profile may be shared"),
+                    message: Text("Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
+                    primaryButton: .destructive(Text("Invite anyway")) {
+                        inviteMembers()
+                    }, secondaryButton: .cancel()
+                )
+            case let .error(title, error):
+                return Alert(title: Text(title), message: Text("\(error)"))
+            }
+        }
     }
 
-    func inviteMembersButton() -> some View {
+    private func inviteMembersButton(_ unsafeToInviteIncognito: Bool) -> some View {
         Button {
-            Task {
-                do {
-                    for contactId in selectedContacts {
-                        let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
-                        await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
-                    }
-                    await MainActor.run { dismiss() }
-                    if let cb = addedMembersCb { cb(selectedContacts) }
-                } catch {
-                    AlertManager.shared.showAlert(
-                        Alert(
-                            title: Text("Error adding member(s)"),
-                            message: Text(responseError(error))
-                        )
-                    )
-                }
+            if unsafeToInviteIncognito {
+                alert = .warnUnsafeToInviteIncognito
+            } else {
+                inviteMembers()
             }
         } label: {
             HStack {
@@ -107,7 +133,22 @@ struct AddGroupMembersView: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    func rolePicker() -> some View {
+    private func inviteMembers() {
+        Task {
+            do {
+                for contactId in selectedContacts {
+                    let member = try await apiAddMember(groupInfo.groupId, contactId, selectedRole)
+                    await MainActor.run { _ = ChatModel.shared.upsertGroupMember(groupInfo, member) }
+                }
+                await MainActor.run { dismiss() }
+                if let cb = addedMembersCb { cb(selectedContacts) }
+            } catch {
+                alert = .error(title: "Error adding member(s)", error: responseError(error))
+            }
+        }
+    }
+
+    private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
                 if role <= groupInfo.membership.memberRole {
@@ -117,13 +158,33 @@ struct AddGroupMembersView: View {
         }
     }
 
-    func contactCheckView(_ contact: Contact) -> some View {
+    private func contactCheckView(_ contact: Contact) -> some View {
         let checked = selectedContacts.contains(contact.apiId)
-        return Button {
+        let prohibitedToInviteIncognito = !chat.chatInfo.incognito && contact.contactConnIncognito
+        let safeToInviteIncognito = chat.chatInfo.incognito && contact.contactConnIncognito
+        var icon: String
+        var iconColor: Color
+        if prohibitedToInviteIncognito {
+            icon = "theatermasks.circle.fill"
+            iconColor = Color(uiColor: .tertiaryLabel)
+        } else {
             if checked {
-                selectedContacts.remove(contact.apiId)
+                icon = "checkmark.circle.fill"
+                iconColor = .accentColor
             } else {
-                selectedContacts.insert(contact.apiId)
+                icon = "circle"
+                iconColor = Color(uiColor: .tertiaryLabel)
+            }
+        }
+        return Button {
+            if prohibitedToInviteIncognito {
+                alert = .prohibitedToInviteIncognito
+            } else {
+                if checked {
+                    selectedContacts.remove(contact.apiId)
+                } else {
+                    selectedContacts.insert(contact.apiId)
+                }
             }
         } label: {
             HStack{
@@ -131,11 +192,16 @@ struct AddGroupMembersView: View {
                     .frame(width: 30, height: 30)
                     .padding(.trailing, 2)
                 Text(ChatInfo.direct(contact: contact).chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(prohibitedToInviteIncognito ? .secondary : .primary)
                     .lineLimit(1)
                 Spacer()
-                Image(systemName: checked ? "checkmark.circle.fill": "circle")
-                    .foregroundColor(checked ? .accentColor : Color(uiColor: .tertiaryLabel))
+                if safeToInviteIncognito {
+                    Image(systemName: "theatermasks")
+                        .foregroundColor(.indigo)
+                        .font(.footnote)
+                }
+                Image(systemName: icon)
+                    .foregroundColor(iconColor)
             }
         }
     }

@@ -117,6 +117,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
+  CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -594,23 +595,29 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo Contact {contactId} stats incognitoProfile =
+viewContactInfo Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
       incognitoProfile
+    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["alias not set"]
 
-viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId} stats mainProfile =
+viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> Maybe LocalProfile -> [StyledString]
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias = mpLocalAlias}} stats mainProfile =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
     <> maybe
       ["unknown whether group member uses his main profile or incognito one for the group"]
-      (\Profile {displayName, fullName} -> ["member is using " <> styleIncognito' "incognito" <> " profile for the group, main profile known: " <> ttyFullName displayName fullName])
+      (\LocalProfile {displayName, fullName} -> ["member is using " <> styleIncognito' "incognito" <> " profile for the group, main profile known: " <> ttyFullName displayName fullName])
       mainProfile
+    <> if alias /= "" then ["alias: " <> plain alias] else ["no alias for contact"]
+  where
+    alias = case mainProfile of
+      Nothing -> mpLocalAlias
+      Just LocalProfile {localAlias = lpLocalAlias} -> lpLocalAlias
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
@@ -643,6 +650,11 @@ viewGroupUpdated
     | otherwise = ["group " <> ttyGroup n <> " is changed to " <> ttyFullGroup g' <> byMember]
     where
       byMember = maybe "" ((" by " <>) . ttyMember) m
+
+viewContactAliasUpdated :: Contact -> [StyledString]
+viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
+  | localAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
+  | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain localAlias]
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

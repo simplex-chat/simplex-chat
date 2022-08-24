@@ -10,14 +10,17 @@ import SwiftUI
 import SimpleXChat
 
 struct CIGroupInvitationView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
+    var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
+        let unsafeToJoinIncognito = interactiveIncognito && !chatIncognito
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
                 groupInfoView(action)
@@ -29,10 +32,13 @@ struct CIGroupInvitationView: View {
                 Divider().frame(width: frameWidth)
 
                 if action {
-                    groupInvitationText().overlay(DetermineWidth())
-                    Text("Tap to join")
-                        .foregroundColor(.accentColor)
+                    groupInvitationText()
+                        .overlay(DetermineWidth())
+                    Text(interactiveIncognito ? "Tap to join incognito" : "Tap to join")
+                        .foregroundColor(interactiveIncognito ? .indigo : .accentColor)
                         .font(.callout)
+                        .padding(.trailing, 60)
+                        .overlay(DetermineWidth())
                 } else {
                     groupInvitationText()
                         .padding(.trailing, 60)
@@ -52,17 +58,34 @@ struct CIGroupInvitationView: View {
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
 
         if action {
-            v.onTapGesture { acceptInvitation() }
+            v.onTapGesture {
+                if unsafeToJoinIncognito {
+                    AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(groupInvitation.groupId))
+                } else {
+                    joinGroup(groupInvitation.groupId)
+                }
+            }
         } else {
             v
         }
     }
 
+    private var interactiveIncognito: Bool {
+        (groupInvitation.invitedIncognito ?? false) || chatModel.incognito
+    }
+
     private func groupInfoView(_ action: Bool) -> some View {
-        HStack(alignment: .top) {
+        var color: Color
+        if action {
+            color = interactiveIncognito ? .indigo : .accentColor
+        } else {
+            color = Color(uiColor: .tertiaryLabel)
+        }
+        return HStack(alignment: .top) {
             ProfileImage(
+                imageStr: groupInvitation.groupProfile.image,
                 iconName: "person.2.circle.fill",
-                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+                color: color
             )
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
@@ -84,7 +107,7 @@ struct CIGroupInvitationView: View {
 
     private func groupInvitationStr() -> LocalizedStringKey {
         if chatItem.chatDir.sent {
-            return "You sent group invitation"
+            return (groupInvitation.invitedIncognito ?? false) ? "You sent group invitation incognito" : "You sent group invitation"
         } else {
             switch groupInvitation.status {
             case .pending: return "You are invited to group"
@@ -92,13 +115,6 @@ struct CIGroupInvitationView: View {
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
-        }
-    }
-
-    private func acceptInvitation() {
-        Task {
-            logger.debug("acceptInvitation")
-            await joinGroup(groupInvitation.groupId)
         }
     }
 }

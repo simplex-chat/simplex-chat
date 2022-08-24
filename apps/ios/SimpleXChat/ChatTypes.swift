@@ -13,7 +13,7 @@ public struct User: Decodable, NamedChat {
     var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
-    public var profile: Profile
+    public var profile: LocalProfile
     var activeUser: Bool
 
     public var displayName: String { get { profile.displayName } }
@@ -24,7 +24,7 @@ public struct User: Decodable, NamedChat {
         userId: 1,
         userContactId: 1,
         localDisplayName: "alice",
-        profile: Profile.sampleData,
+        profile: LocalProfile.sampleData,
         activeUser: true
     )
 }
@@ -52,6 +52,38 @@ public struct Profile: Codable, NamedChat {
         displayName: "alice",
         fullName: "Alice"
     )
+}
+
+public struct LocalProfile: Codable, NamedChat {
+    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil) {
+        self.profileId = profileId
+        self.displayName = displayName
+        self.fullName = fullName
+        self.image = image
+    }
+
+    public var profileId: Int64
+    public var displayName: String
+    public var fullName: String
+    public var image: String?
+
+    var profileViewName: String {
+        (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
+    }
+
+    static let sampleData = LocalProfile(
+        profileId: 1,
+        displayName: "alice",
+        fullName: "Alice"
+    )
+}
+
+public func toLocalProfile (_ profileId: Int64, _ profile: Profile ) -> LocalProfile {
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
+}
+
+public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
+    Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
 }
 
 public enum ChatType: String {
@@ -180,6 +212,17 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
+    public var incognito: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.contactConnIncognito
+            case let .group(groupInfo): return groupInfo.membership.memberIncognito
+            case .contactRequest: return false
+            case let .contactConnection(contactConnection): return contactConnection.incognito
+            }
+        }
+    }
+
     public var contact: Contact? {
         get {
             switch self {
@@ -249,7 +292,7 @@ public struct ChatStats: Decodable {
 public struct Contact: Identifiable, Decodable, NamedChat {
     var contactId: Int64
     var localDisplayName: ContactName
-    public var profile: Profile
+    public var profile: LocalProfile
     public var activeConn: Connection
     public var viaGroup: Int64?
     public var chatSettings: ChatSettings
@@ -264,14 +307,18 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
 
-    public func isIndirectContact() -> Bool {
-        return activeConn.connLevel > 0 || viaGroup != nil
+    public var isIndirectContact: Bool {
+        activeConn.connLevel > 0 || viaGroup != nil
+    }
+
+    public var contactConnIncognito: Bool {
+        activeConn.customUserProfileId != nil
     }
 
     public static let sampleData = Contact(
         contactId: 1,
         localDisplayName: "alice",
-        profile: Profile.sampleData,
+        profile: LocalProfile.sampleData,
         activeConn: Connection.sampleData,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
@@ -295,6 +342,7 @@ public struct Connection: Decodable {
     var connId: Int64
     var connStatus: ConnStatus
     public var connLevel: Int
+    public var customUserProfileId: Int64?
 
     public var id: ChatId { get { ":\(connId)" } }
 
@@ -352,6 +400,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
     public var viaContactUri: Bool
+    public var customUserProfileId: Int64?
     var createdAt: Date
     public var updatedAt: Date
 
@@ -378,14 +427,34 @@ public struct PendingContactConnection: Decodable, NamedChat {
     public var image: String? { get { nil } }
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
+    public var incognito: Bool {
+        customUserProfileId != nil
+    }
+
     public var description: String {
         get {
             if let initiated = pccConnStatus.initiated {
-                return initiated && !viaContactUri
-                ? NSLocalizedString("you shared one-time link", comment: "chat list item description")
-                : viaContactUri
-                ? NSLocalizedString("via contact address link", comment: "chat list item description")
-                : NSLocalizedString("via one-time link", comment: "chat list item description")
+                var desc: String
+                if initiated && !viaContactUri {
+                    if incognito {
+                        desc = NSLocalizedString("you shared one-time link incognito", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("you shared one-time link", comment: "chat list item description")
+                    }
+                } else if viaContactUri {
+                    if incognito {
+                        desc = NSLocalizedString("incognito via contact address link", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("via contact address link", comment: "chat list item description")
+                    }
+                } else {
+                    if incognito {
+                        desc = NSLocalizedString("incognito via one-time link", comment: "chat list item description")
+                    } else {
+                        desc = NSLocalizedString("via one-time link", comment: "chat list item description")
+                    }
+                }
+                return desc
             } else {
                 return ""
             }
@@ -443,6 +512,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var membership: GroupMember
+    public var hostConnCustomUserProfileId: Int64?
     public var chatSettings: ChatSettings
     var createdAt: Date
     var updatedAt: Date
@@ -472,6 +542,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
         localDisplayName: "team",
         groupProfile: GroupProfile.sampleData,
         membership: GroupMember.sampleData,
+        hostConnCustomUserProfileId: nil,
         chatSettings: ChatSettings.defaults,
         createdAt: .now,
         updatedAt: .now
@@ -504,8 +575,9 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberStatus: GroupMemberStatus
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
-    public var memberProfile: Profile
+    public var memberProfile: LocalProfile
     public var memberContactId: Int64?
+    public var memberContactProfileId: Int64
     public var activeConn: Connection?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
@@ -568,6 +640,10 @@ public struct GroupMember: Identifiable, Decodable {
             && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
     }
 
+    public var memberIncognito: Bool {
+        memberProfile.profileId != memberContactProfileId
+    }
+
     public static let sampleData = GroupMember(
         groupMemberId: 1,
         groupId: 1,
@@ -577,8 +653,9 @@ public struct GroupMember: Identifiable, Decodable {
         memberStatus: .memComplete,
         invitedBy: .user,
         localDisplayName: "alice",
-        memberProfile: Profile.sampleData,
+        memberProfile: LocalProfile.sampleData,
         memberContactId: 1,
+        memberContactProfileId: 1,
         activeConn: Connection.sampleData
     )
 }
@@ -1280,9 +1357,12 @@ public struct CIGroupInvitation: Decodable {
     public var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var status: CIGroupInvitationStatus
+    public var invitedIncognito: Bool?
 
     var text: String {
-        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+        (invitedIncognito ?? false) ?
+        String.localizedStringWithFormat(NSLocalizedString("incognito invitation to group %@", comment: "group name"), groupProfile.displayName)
+        : String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
     }
 
     public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
@@ -1299,7 +1379,7 @@ public enum CIGroupInvitationStatus: String, Decodable {
 
 public enum RcvGroupEvent: Decodable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
-    case memberConnected
+    case memberConnected(contactMainProfile: Profile?)
     case memberLeft
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
@@ -1310,7 +1390,12 @@ public enum RcvGroupEvent: Decodable {
         switch self {
         case let .memberAdded(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
-        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
+        case let .memberConnected(contactMainProfile):
+            if let contactMainProfile = contactMainProfile {
+                return String.localizedStringWithFormat(NSLocalizedString("known to you as %@ connected incognito", comment: "rcv group event chat item"), contactMainProfile.profileViewName)
+            } else {
+                return NSLocalizedString("member connected", comment: "rcv group event chat item")
+            }
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)

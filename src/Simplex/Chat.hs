@@ -578,6 +578,11 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
+  APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
+    ct' <- withStore $ \db -> do
+      ct <- getContact db userId contactId
+      liftIO $ updateContactAlias db userId ct localAlias
+    pure $ CRContactAliasUpdated ct'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -619,7 +624,7 @@ processChatCommand = \case
     ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db userId contactId
     incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
     connectionStats <- withAgent (`getConnectionServers` contactConnId ct)
-    pure $ CRContactInfo ct connectionStats incognitoProfile
+    pure $ CRContactInfo ct connectionStats (fmap fromLocalProfile incognitoProfile)
   APIGroupMemberInfo gId gMemberId -> withUser $ \user@User {userId} -> do
     -- [incognito] print group member main profile
     (g, m@GroupMember {memberContactProfileId}) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
@@ -984,11 +989,11 @@ processChatCommand = \case
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize fsFilePath <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p@LocalProfile {profileId}} p'@Profile {displayName}
+    updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
         withStore $ \db -> updateUserProfile db user p'
-        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p'}
+        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p' localAlias}
         asks currentUser >>= atomically . (`writeTVar` Just user')
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
@@ -1365,7 +1370,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+          let profileToSend = fromLocalProfile $ fromMaybe profile incognitoProfile
           saveConnInfo conn connInfo
           allowAgentConnection conn confId $ XInfo profileToSend
         INFO connInfo ->
@@ -1430,7 +1435,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              toView $ CRContactConnected ct incognitoProfile
+              toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId -> do
@@ -1512,14 +1517,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         case memberCategory m of
           GCHostMember -> do
             -- [incognito] chat item & event with indication that host connected incognito
-            mainProfile <- if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
+            mainProfile <- fmap fromLocalProfile <$> if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRUserJoinedGroup gInfo {membership = membership {memberStatus = GSMemConnected}} m {memberStatus = GSMemConnected} (memberIncognito membership)
             setActive $ ActiveG gName
             showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
             -- [incognito] chat item & event with indication that invitee connected incognito
-            mainProfile <- if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
+            mainProfile <- fmap fromLocalProfile <$> if memberIncognito m then Just <$> withStore (\db -> getProfileById db userId memberContactProfileId) else pure Nothing
             memberConnectedChatItem gInfo m mainProfile
             toView $ CRJoinedGroupMember gInfo m {memberStatus = GSMemConnected} mainProfile
             setActive $ ActiveG gName
@@ -2575,6 +2580,7 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> jsonP),
+      "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
@@ -2685,6 +2691,7 @@ chatCommandP =
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
+    textP = safeDecodeUtf8 <$> A.takeByteString
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     searchP = T.unpack . safeDecodeUtf8 <$> (" search=" *> A.takeByteString)
     memberRole =

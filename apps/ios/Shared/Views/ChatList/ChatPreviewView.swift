@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatPreviewView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
@@ -23,7 +24,6 @@ struct ChatPreviewView: View {
                     .frame(width: 63, height: 63)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
-
             }
             .padding(.leading, 4)
 
@@ -89,13 +89,17 @@ struct ChatPreviewView: View {
         case .group(groupInfo: let groupInfo):
             switch (groupInfo.membership.memberStatus) {
             case .memInvited:
-                v.foregroundColor(.accentColor)
+                interactiveIncognito ? v.foregroundColor(.indigo) : v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
             default: v
             }
         default: v
         }
+    }
+
+    private var interactiveIncognito: Bool {
+        chat.chatInfo.incognito || chatModel.incognito
     }
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?, _ unread: Int) -> some View {
@@ -127,7 +131,7 @@ struct ChatPreviewView: View {
                 }
             case let .group(groupInfo):
                 switch (groupInfo.membership.memberStatus) {
-                case .memInvited: chatPreviewInfoText("you are invited to group")
+                case .memInvited: chatPreviewInfoText(groupInfo.membership.memberIncognito ? "you are invited to group incognito" : "you are invited to group")
                 case .memAccepted: chatPreviewInfoText("connecting…")
                 default: EmptyView()
                 }

@@ -39,12 +39,12 @@ struct CallSettings: View {
             }
         }
     }
+}
 
-    private func textListItem(_ n: String, _ text: LocalizedStringKey) -> some View {
-        ZStack(alignment: .topLeading) {
-            Text(n)
-            Text(text).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 20)
-        }
+func textListItem(_ n: String, _ text: LocalizedStringKey) -> some View {
+    ZStack(alignment: .topLeading) {
+        Text(n)
+        Text(text).frame(maxWidth: .infinity, alignment: .leading).padding(.leading, 20)
     }
 }
 

@@ -75,14 +75,20 @@ struct ChatListNavLink: View {
             ChatPreviewView(chat: chat)
                 .frame(height: 80)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    joinGroupButton()
+                    joinGroupButton(groupInfo.hostConnCustomUserProfileId)
                     if groupInfo.canDelete {
                         deleteGroupChatButton(groupInfo)
                     }
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button("Join group") { Task { await joinGroup(groupInfo.groupId) } }
+                    Button(interactiveIncognito ? "Join incognito" : "Join group") {
+                        if unsafeToJoinIncognito(groupInfo.hostConnCustomUserProfileId) {
+                            AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
+                        } else {
+                            joinGroup(groupInfo.groupId)
+                        }
+                    }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
         case .memAccepted:
@@ -113,7 +119,7 @@ struct ChatListNavLink: View {
                     } label: {
                         Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
                     }
-                    .tint(Color.indigo)
+                    .tint(Color.yellow)
                 }
             }
             .swipeActions(edge: .trailing) {
@@ -124,13 +130,25 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func joinGroupButton() -> some View {
+    private var interactiveIncognito: Bool {
+        chat.chatInfo.incognito || chatModel.incognito
+    }
+
+    private func joinGroupButton(_ hostConnCustomUserProfileId: Int64?) -> some View {
         Button {
-            Task { await joinGroup(chat.chatInfo.apiId) }
+            if unsafeToJoinIncognito(hostConnCustomUserProfileId) {
+                AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
+            } else {
+                joinGroup(chat.chatInfo.apiId)
+            }
         } label: {
-            Label("Join", systemImage: "ipad.and.arrow.forward")
+            Label("Join", systemImage: interactiveIncognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
-        .tint(Color.accentColor)
+        .tint(interactiveIncognito ? .indigo : .accentColor)
+    }
+
+    private func unsafeToJoinIncognito(_ hostConnCustomUserProfileId: Int64?) -> Bool {
+        interactiveIncognito && hostConnCustomUserProfileId == nil
     }
 
     private func markReadButton() -> some View {
@@ -162,9 +180,10 @@ struct ChatListNavLink: View {
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         ContactRequestView(contactRequest: contactRequest, chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button { Task { await acceptContactRequest(contactRequest) } }
-                label: { Label("Accept", systemImage: "checkmark") }
-                .tint(Color.accentColor)
+            Button {
+                Task { await acceptContactRequest(contactRequest) }
+            } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
+                .tint(chatModel.incognito ? .indigo : .accentColor)
             Button(role: .destructive) {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
@@ -174,7 +193,7 @@ struct ChatListNavLink: View {
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept contact") { Task { await acceptContactRequest(contactRequest) } }
+            Button(chatModel.incognito ? "Accept incognito" : "Accept contact") { Task { await acceptContactRequest(contactRequest) } }
             Button("Reject contact (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
         }
     }
@@ -325,32 +344,46 @@ struct ChatListNavLink: View {
     }
 }
 
-func joinGroup(_ groupId: Int64) async {
-    do {
-        let r = try await apiJoinGroup(groupId)
-        switch r {
-        case let .joined(groupInfo):
-            await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
-        case .invitationRemoved:
-            AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
-            await deleteGroup()
-        case .groupNotFound:
-            AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
-            await deleteGroup()
-        }
-    } catch let error {
-        let err = responseError(error)
-        AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
-        logger.error("apiJoinGroup error: \(err)")
-    }
+func unsafeToJoinIncognitoAlert(_ groupId: Int64) -> Alert {
+    Alert(
+        title: Text("Your main profile may be shared"),
+        message: Text("The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
+        primaryButton: .destructive(Text("Join anyway")) {
+            joinGroup(groupId)
+        },
+        secondaryButton: .cancel()
+    )
+}
 
-    func deleteGroup() async {
+func joinGroup(_ groupId: Int64) {
+    Task {
+        logger.debug("joinGroup")
         do {
-            // TODO this API should update chat item with the invitation as well
-            try await apiDeleteChat(type: .group, id: groupId)
-            await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
-        } catch {
-            logger.error("apiDeleteChat error: \(responseError(error))")
+            let r = try await apiJoinGroup(groupId)
+            switch r {
+            case let .joined(groupInfo):
+                await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+            case .invitationRemoved:
+                AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+                await deleteGroup()
+            case .groupNotFound:
+                AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+                await deleteGroup()
+            }
+        } catch let error {
+            let err = responseError(error)
+            AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
+            logger.error("apiJoinGroup error: \(err)")
+        }
+
+        func deleteGroup() async {
+            do {
+                // TODO this API should update chat item with the invitation as well
+                try await apiDeleteChat(type: .group, id: groupId)
+                await MainActor.run { ChatModel.shared.removeChat("#\(groupId)") }
+            } catch {
+                logger.error("apiDeleteChat error: \(responseError(error))")
+            }
         }
     }
 }

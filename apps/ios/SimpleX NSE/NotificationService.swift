@@ -160,6 +160,7 @@ func startChat() -> User? {
             let justStarted = try apiStartChat()
             if justStarted {
                 try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+                try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
             }
@@ -244,6 +245,12 @@ func apiStartChat() throws -> Bool {
 
 func apiSetFilesFolder(filesFolder: String) throws {
     let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
+    if case .cmdOk = r { return }
+    throw r
+}
+
+func apiSetIncognito(incognito: Bool) throws {
+    let r = sendSimpleXCmd(.setIncognito(incognito: incognito))
     if case .cmdOk = r { return }
     throw r
 }
