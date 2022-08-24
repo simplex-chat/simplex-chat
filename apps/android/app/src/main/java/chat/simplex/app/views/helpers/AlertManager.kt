@@ -2,8 +2,9 @@ package chat.simplex.app.views.helpers
 
 import android.util.Log
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 
@@ -64,6 +65,53 @@ class AlertManager {
             hideAlert()
           }) { Text(dismissText) }
         }
+      )
+    }
+  }
+
+  @OptIn(ExperimentalComposeUiApi::class)
+  @Composable
+  fun showTextAlertDialog(
+    title: String,
+    initialValue: String,
+    onValueChange: (String) -> Unit,
+    confirmText: String,
+    dismissText: String?,
+    onConfirm: ((String) -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null
+  ) {
+    var value by remember { mutableStateOf(initialValue) }
+
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { hideAlert(); onDismiss?.invoke() },
+        title = { Text(title) },
+        text = {
+          DefaultBasicTextField(
+            Modifier,
+            initialValue,
+            "",
+            selectTextOnFocus = true,
+          )
+          {
+            value = it
+            onValueChange(it)
+          }
+        },
+        confirmButton = {
+          TextButton(onClick = {
+            onConfirm?.invoke(value)
+            hideAlert()
+          }) { Text(confirmText) }
+        },
+        dismissButton = if (dismissText != null) {
+          {
+            TextButton(onClick = {
+              onDismiss?.invoke()
+              hideAlert()
+            }) { Text(dismissText) }
+          }
+        } else null
       )
     }
   }

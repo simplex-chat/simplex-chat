@@ -468,6 +468,7 @@
     <string name="settings_experimental_features">Экспериментальные функции</string>
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
+    <string name="settings_section_title_themes">ТЕМЫ</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>
@@ -635,4 +636,14 @@
     <string name="update_network_settings_question">Обновить настройки сети?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
     <string name="update_network_settings_confirmation">Обновить</string>
+
+    <!-- Default themes -->
+    <string name="theme_system">Системная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Темная</string>
+
+    <!-- Appearance.kt -->
+    <string name="theme">Тема</string>
+    <string name="save_color">Сохранить цвет</string>
+    <string name="color_primary">Акцент</string>
 </resources>

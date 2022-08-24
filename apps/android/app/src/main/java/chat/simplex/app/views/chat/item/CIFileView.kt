@@ -2,7 +2,6 @@ package chat.simplex.app.views.chat.item
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -39,7 +38,7 @@ fun CIFileView(
   @Composable
   fun fileIcon(
     innerIcon: ImageVector? = null,
-    color: Color = if (isSystemInDarkTheme()) FileDark else FileLight
+    color: Color = if (isInDarkTheme()) FileDark else FileLight
   ) {
     Box(
       contentAlignment = Alignment.Center
@@ -105,7 +104,7 @@ fun CIFileView(
   fun progressIndicator() {
     CircularProgressIndicator(
       Modifier.size(32.dp),
-      color = if (isSystemInDarkTheme()) FileDark else FileLight,
+      color = if (isInDarkTheme()) FileDark else FileLight,
       strokeWidth = 4.dp
     )
   }

@@ -87,7 +87,7 @@ fun FramedItemView(
             Modifier
               .padding(top = 6.dp, end = 4.dp)
               .size(22.dp),
-            tint = if (isSystemInDarkTheme()) FileDark else FileLight
+            tint = if (isInDarkTheme()) FileDark else FileLight
           )
         }
         else -> ciQuotedMsgView(qi)

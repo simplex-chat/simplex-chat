@@ -470,6 +470,7 @@
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
   <string name="settings_section_title_icon">APP ICON</string>
+  <string name="settings_section_title_themes">THEMES</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
@@ -637,4 +638,14 @@
   <string name="update_network_settings_question">Update network settings?</string>
   <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
   <string name="update_network_settings_confirmation">Update</string>
+
+  <!-- Default themes -->
+  <string name="theme_system">System</string>
+  <string name="theme_light">Light</string>
+  <string name="theme_dark">Dark</string>
+
+  <!-- Appearance.kt -->
+  <string name="theme">Theme</string>
+  <string name="save_color">Save color</string>
+  <string name="color_primary">Accent</string>
 </resources>

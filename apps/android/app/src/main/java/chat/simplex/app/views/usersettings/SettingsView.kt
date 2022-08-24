@@ -58,24 +58,12 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
         ModalView(close = close, modifier = Modifier,
-          background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+          background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
           modalView(chatModel)
         }
       } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
-      showAppearance = {
-        withApi {
-          ModalManager.shared.showCustomModal { close ->
-            ModalView(
-              close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              AppearanceView()
-            }
-          }
-        }
-      }
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
   }
@@ -88,7 +76,7 @@ val simplexTeamUri =
 //fun showSectionedModal(chatModel: ChatModel, modalView: (@Composable (ChatModel) -> Unit)) {
 //  ModalManager.shared.showCustomModal { close ->
 //    ModalView(close = close, modifier = Modifier,
-//      background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
+//      background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
 //      modalView(chatModel)
 //    }
 //  }
@@ -106,7 +94,6 @@ fun SettingsLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
-  showAppearance: () -> Unit
 //  showVideoChatPrototype: () -> Unit
 ) {
   val uriHandler = LocalUriHandler.current
@@ -114,7 +101,7 @@ fun SettingsLayout(
     Column(
       Modifier
         .fillMaxSize()
-        .background(if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight)
+        .background(if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight)
         .padding(top = 16.dp)
     ) {
       Text(
@@ -142,7 +129,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showAppearance, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(showCustomModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
@@ -355,7 +342,6 @@ fun PreviewSettingsLayout() {
       showSettingsModal = { {} },
       showCustomModal = { {} },
       showTerminal = {},
-      showAppearance = {},
 //      showVideoChatPrototype = {}
     )
   }

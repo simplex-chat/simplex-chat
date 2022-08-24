@@ -114,7 +114,7 @@ fun ChatView(chatModel: ChatModel) {
             ModalManager.shared.showCustomModal { close ->
               ModalView(
                 close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+                background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
                 ChatInfoView(chatModel, connStats, close)
               }
@@ -124,7 +124,7 @@ fun ChatView(chatModel: ChatModel) {
             ModalManager.shared.showCustomModal { close ->
               ModalView(
                 close = close, modifier = Modifier,
-                background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+                background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
                 GroupChatInfoView(chatModel, close)
               }
@@ -189,7 +189,7 @@ fun ChatView(chatModel: ChatModel) {
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
               AddGroupMembersView(groupInfo, chatModel, close)
             }
