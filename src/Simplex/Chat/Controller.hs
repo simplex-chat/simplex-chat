@@ -133,7 +133,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
-  | APISetContactAlias ContactId ProfileUserAlias
+  | APISetContactAlias ContactId LocalAlias
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode

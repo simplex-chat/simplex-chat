@@ -595,16 +595,16 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   ]
 
 viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
-viewContactInfo Contact {contactId, profile = LocalProfile {userAlias}} stats incognitoProfile =
+viewContactInfo Contact {contactId, profile = LocalProfile {localAlias}} stats incognitoProfile =
   ["contact ID: " <> sShow contactId] <> viewConnectionStats stats
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
       incognitoProfile
-    <> if userAlias /= "" then ["alias: " <> plain userAlias] else ["alias not set"]
+    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["alias not set"]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> Maybe LocalProfile -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {userAlias = mpUserAlias}} stats mainProfile =
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias = mpLocalAlias}} stats mainProfile =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
@@ -616,8 +616,8 @@ viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfil
     <> if alias /= "" then ["alias: " <> plain alias] else ["no alias for contact"]
   where
     alias = case mainProfile of
-      Nothing -> mpUserAlias
-      Just LocalProfile {userAlias = lpUserAlias} -> lpUserAlias
+      Nothing -> mpLocalAlias
+      Just LocalProfile {localAlias = lpLocalAlias} -> lpLocalAlias
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
@@ -652,9 +652,9 @@ viewGroupUpdated
       byMember = maybe "" ((" by " <>) . ttyMember) m
 
 viewContactAliasUpdated :: Contact -> [StyledString]
-viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {userAlias}}
-  | userAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
-  | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain userAlias]
+viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
+  | localAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
+  | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain localAlias]
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

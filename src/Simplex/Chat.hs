@@ -578,10 +578,10 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
-  APISetContactAlias contactId userAlias -> withUser $ \User {userId} -> do
+  APISetContactAlias contactId localAlias -> withUser $ \User {userId} -> do
     ct' <- withStore $ \db -> do
       ct <- getContact db userId contactId
-      liftIO $ updateContactAlias db userId ct userAlias
+      liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated ct'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
@@ -989,11 +989,11 @@ processChatCommand = \case
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       (,) <$> getFileSize fsFilePath <*> asks (fileChunkSize . config)
     updateProfile :: User -> Profile -> m ChatResponse
-    updateProfile user@User {profile = p@LocalProfile {profileId, userAlias}} p'@Profile {displayName}
+    updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
       | otherwise = do
         withStore $ \db -> updateUserProfile db user p'
-        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p' userAlias}
+        let user' = (user :: User) {localDisplayName = displayName, profile = toLocalProfile profileId p' localAlias}
         asks currentUser >>= atomically . (`writeTVar` Just user')
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
