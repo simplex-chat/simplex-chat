@@ -218,7 +218,10 @@ data Profile = Profile
   { displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData
-    -- incognito field should not be read as is into this data type to prevent sending it as part of profile to contacts
+    -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
+    -- - contact_profile_id
+    -- - incognito
+    -- - user_alias
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -226,11 +229,14 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+type ProfileUserAlias = Text
+
 data LocalProfile = LocalProfile
   { profileId :: ProfileId,
     displayName :: ContactName,
     fullName :: Text,
-    image :: Maybe ImageData
+    image :: Maybe ImageData,
+    userAlias :: Maybe ProfileUserAlias
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -241,9 +247,9 @@ instance ToJSON LocalProfile where
 localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
-toLocalProfile :: ProfileId -> Profile -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, image} =
-  LocalProfile {profileId, displayName, fullName, image}
+toLocalProfile :: ProfileId -> Profile -> Maybe ProfileUserAlias -> LocalProfile
+toLocalProfile profileId Profile {displayName, fullName, image} userAlias =
+  LocalProfile {profileId, displayName, fullName, image, userAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, image} =

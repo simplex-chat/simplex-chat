@@ -578,6 +578,8 @@ processChatCommand = \case
     withCurrentCall contactId $ \userId ct call ->
       updateCallItemStatus userId ct call receivedStatus Nothing $> Just call
   APIUpdateProfile profile -> withUser (`updateProfile` profile)
+  APISetContactAlias contactId userAlias -> pure CRCmdOk
+  APIUnsetContactAlias contactId -> pure CRCmdOk
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -920,6 +922,12 @@ processChatCommand = \case
   UpdateProfileImage image -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {image}
     updateProfile user p
+  SetContactAlias cName userAlias -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \db -> getContactIdByName db userId cName
+    processChatCommand $ APISetContactAlias contactId userAlias
+  UnsetContactAlias cName -> withUser $ \User {userId} -> do
+    contactId <- withStore $ \db -> getContactIdByName db userId cName
+    processChatCommand $ APIUnsetContactAlias contactId
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
@@ -2575,6 +2583,8 @@ chatCommandP =
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> jsonP),
+      "/_set alias @" *> (APISetContactAlias <$> A.decimal <* A.space <*> textP),
+      "/_unset alias @" *> (APIUnsetContactAlias <$> A.decimal),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
@@ -2649,6 +2659,8 @@ chatCommandP =
       "/profile_image" $> UpdateProfileImage Nothing,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> userNames),
       ("/profile" <|> "/p") $> ShowProfile,
+      "/set alias @" *> (SetContactAlias <$> A.decimal <* A.space <*> textP),
+      "/unset alias @" *> (UnsetContactAlias <$> A.decimal),
       "/incognito " *> (SetIncognito <$> onOffP),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion
@@ -2685,6 +2697,7 @@ chatCommandP =
     fullNameP name = do
       n <- (A.space *> A.takeByteString) <|> pure ""
       pure $ if B.null n then name else safeDecodeUtf8 n
+    textP = safeDecodeUtf8 <$> A.takeByteString
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     searchP = T.unpack . safeDecodeUtf8 <$> (" search=" *> A.takeByteString)
     memberRole =

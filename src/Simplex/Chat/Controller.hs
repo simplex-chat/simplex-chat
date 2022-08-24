@@ -133,6 +133,8 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
+  | APISetContactAlias ContactId ProfileUserAlias
+  | APIUnsetContactAlias ContactId
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -197,6 +199,8 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
+  | SetContactAlias ContactName ProfileUserAlias
+  | UnsetContactAlias ContactName
   | QuitChat
   | ShowVersion
   deriving (Show)
