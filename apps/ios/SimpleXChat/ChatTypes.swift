@@ -55,17 +55,19 @@ public struct Profile: Codable, NamedChat {
 }
 
 public struct LocalProfile: Codable, NamedChat {
-    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil) {
+    public init(profileId: Int64, displayName: String, fullName: String, image: String? = nil, localAlias: String) {
         self.profileId = profileId
         self.displayName = displayName
         self.fullName = fullName
         self.image = image
+        self.localAlias = localAlias
     }
 
     public var profileId: Int64
     public var displayName: String
     public var fullName: String
     public var image: String?
+    public var localAlias: String
 
     var profileViewName: String {
         (fullName == "" || displayName == fullName) ? displayName : "\(displayName) (\(fullName))"
@@ -74,12 +76,13 @@ public struct LocalProfile: Codable, NamedChat {
     static let sampleData = LocalProfile(
         profileId: 1,
         displayName: "alice",
-        fullName: "Alice"
+        fullName: "Alice",
+        localAlias: ""
     )
 }
 
-public func toLocalProfile (_ profileId: Int64, _ profile: Profile ) -> LocalProfile {
-    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image)
+public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
+    LocalProfile(profileId: profileId, displayName: profile.displayName, fullName: profile.fullName, image: profile.image, localAlias: localAlias)
 }
 
 public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
@@ -101,7 +104,10 @@ public protocol NamedChat {
 
 extension NamedChat {
     public var chatViewName: String {
-        get { displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)") }
+        get {
+            
+            displayName + (fullName == "" || fullName == displayName ? "" : " / \(fullName)")
+        }
     }
 }
 
