@@ -95,6 +95,7 @@ chatTests = do
     it "create group incognito" testCreateGroupIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to non incognito group" testCantInviteIncognitoConnectionNonIncognitoGroup
+    it "can set contact alias" testSetAlias
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2439,6 +2440,13 @@ testCantInviteIncognitoConnectionNonIncognitoGroup = testChat2 aliceProfile bobP
     alice <## "use /a club <name> to add members"
     alice ##> "/a club bob"
     alice <## "you're using main profile for this group - prohibited to invite contact to whom you are connected incognito"
+
+testSetAlias :: IO ()
+testSetAlias = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    connectUsers alice bob
+    alice #$> ("/_set alias @2 my friend bob", id, "contact bob alias updated: my friend bob")
+    alice #$> ("/_set alias @2", id, "contact bob alias removed")
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =

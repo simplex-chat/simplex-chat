@@ -14,7 +14,8 @@ CREATE TABLE contact_profiles(
   updated_at TEXT CHECK(updated_at NOT NULL),
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
-  incognito INTEGER
+  incognito INTEGER,
+  user_alias TEXT CHECK(user_alias NOT NULL)
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

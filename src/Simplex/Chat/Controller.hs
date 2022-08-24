@@ -134,7 +134,6 @@ data ChatCommand
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APISetContactAlias ContactId ProfileUserAlias
-  | APIUnsetContactAlias ContactId
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -199,8 +198,6 @@ data ChatCommand
   | ShowProfile
   | UpdateProfile ContactName Text
   | UpdateProfileImage (Maybe ImageData)
-  | SetContactAlias ContactName ProfileUserAlias
-  | UnsetContactAlias ContactName
   | QuitChat
   | ShowVersion
   deriving (Show)
@@ -218,7 +215,7 @@ data ChatResponse
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
-  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats, mainProfile :: Maybe Profile}
+  | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats, localMainProfile :: Maybe LocalProfile}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
   | CRChatItemUpdated {chatItem :: AChatItem}
@@ -271,6 +268,7 @@ data ChatResponse
   | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
+  | CRContactProfileUserAliasUpdated {toContact :: Contact}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}

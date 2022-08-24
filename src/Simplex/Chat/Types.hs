@@ -236,7 +236,7 @@ data LocalProfile = LocalProfile
     displayName :: ContactName,
     fullName :: Text,
     image :: Maybe ImageData,
-    userAlias :: Maybe ProfileUserAlias
+    userAlias :: ProfileUserAlias
   }
   deriving (Eq, Show, Generic, FromJSON)
 
@@ -247,7 +247,7 @@ instance ToJSON LocalProfile where
 localProfileId :: LocalProfile -> ProfileId
 localProfileId = profileId
 
-toLocalProfile :: ProfileId -> Profile -> Maybe ProfileUserAlias -> LocalProfile
+toLocalProfile :: ProfileId -> Profile -> ProfileUserAlias -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, image} userAlias =
   LocalProfile {profileId, displayName, fullName, image, userAlias}
 
