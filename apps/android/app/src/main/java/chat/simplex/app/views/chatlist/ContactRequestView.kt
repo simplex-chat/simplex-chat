@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chatlist
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -33,7 +32,7 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colors.primary
       )
-      Text(stringResource(R.string.contact_wants_to_connect_with_you), maxLines = 2, color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+      Text(stringResource(R.string.contact_wants_to_connect_with_you), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactRequest.contactRequest.updatedAt)
     Column(

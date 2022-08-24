@@ -45,7 +45,7 @@ fun IncomingCallAlertLayout(
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
-  val color = if (isSystemInDarkTheme()) IncomingCallDark else IncomingCallLight
+  val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
   Column(Modifier.background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
     IncomingCallInfo(invitation)
     Spacer(Modifier.height(8.dp))

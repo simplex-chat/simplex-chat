@@ -93,7 +93,7 @@ fun AddGroupMembersLayout(
       ChatInfoToolbarTitle(
         ChatInfo.Group(groupInfo),
         imageSize = 60.dp,
-        iconColor = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight
+        iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
     }
     SectionSpacer()

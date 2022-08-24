@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chatlist
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -37,7 +36,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         fontWeight = FontWeight.Bold,
         color = HighOrLowlight
       )
-      Text(contactConnection.description, maxLines = 2, color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
+      Text(contactConnection.description, maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }
     val ts = getTimestampText(contactConnection.updatedAt)
     Column(
