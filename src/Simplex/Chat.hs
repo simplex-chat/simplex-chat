@@ -581,8 +581,8 @@ processChatCommand = \case
   APISetContactAlias contactId userAlias -> withUser $ \User {userId} -> do
     ct' <- withStore $ \db -> do
       ct <- getContact db userId contactId
-      liftIO $ updateContactProfileUserAlias db userId ct userAlias
-    pure $ CRContactProfileUserAliasUpdated ct'
+      liftIO $ updateContactAlias db userId ct userAlias
+    pure $ CRContactAliasUpdated ct'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)

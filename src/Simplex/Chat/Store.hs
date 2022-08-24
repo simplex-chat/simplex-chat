@@ -38,7 +38,7 @@ module Simplex.Chat.Store
     getContactIdByName,
     updateUserProfile,
     updateContactProfile,
-    updateContactProfileUserAlias,
+    updateContactAlias,
     getUserContacts,
     createUserContactLink,
     getUserContactLinkConnections,
@@ -549,8 +549,8 @@ updateContactProfile db userId c@Contact {contactId, localDisplayName, profile =
       updateContact_ db userId contactId localDisplayName ldn currentTs
       pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' userAlias}
 
-updateContactProfileUserAlias :: DB.Connection -> UserId -> Contact -> ProfileUserAlias -> IO Contact
-updateContactProfileUserAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} userAlias = do
+updateContactAlias :: DB.Connection -> UserId -> Contact -> ProfileUserAlias -> IO Contact
+updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} userAlias = do
   updatedAt <- getCurrentTime
   DB.execute
     db

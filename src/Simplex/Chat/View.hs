@@ -117,7 +117,7 @@ responseToView testView = \case
   CRSndGroupFileCancelled _ ftm fts -> viewSndGroupFileCancelled ftm fts
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
-  CRContactProfileUserAliasUpdated c -> viewContactProfileUserAliasUpdated c
+  CRContactAliasUpdated c -> viewContactAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -651,8 +651,8 @@ viewGroupUpdated
     where
       byMember = maybe "" ((" by " <>) . ttyMember) m
 
-viewContactProfileUserAliasUpdated :: Contact -> [StyledString]
-viewContactProfileUserAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {userAlias}}
+viewContactAliasUpdated :: Contact -> [StyledString]
+viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {userAlias}}
   | userAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
   | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain userAlias]
 
