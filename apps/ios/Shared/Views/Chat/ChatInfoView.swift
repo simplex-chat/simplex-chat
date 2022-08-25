@@ -46,6 +46,7 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
+    var contact: Contact
     var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
     @State var localAlias: String
@@ -122,11 +123,11 @@ struct ChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.displayName)
+            Text(contact.profile.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .lineLimit(2)
@@ -137,10 +138,9 @@ struct ChatInfoView: View {
 
     func localAliasTextEdit(_ localAlias: Binding<String>) -> some View {
         TextField("Set alias…", text: localAlias)
-            .textInputAutocapitalization(.never)
             .disableAutocorrection(true)
-            .lineLimit(2)
             .focused($aliasTextFieldFocused)
+            .submitLabel(.done)
             .onChange(of: aliasTextFieldFocused) { focused in
                 if !focused {
                     setContactAlias()
@@ -151,6 +151,7 @@ struct ChatInfoView: View {
             }
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
+            .foregroundColor(.secondary)
     }
 
     func setContactAlias() {
@@ -250,6 +251,6 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), localAlias: "")
+        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), contact: Contact.sampleData, localAlias: "")
     }
 }

@@ -330,7 +330,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn.connStatus == .ready } }
     public var sendMsgEnabled: Bool { get { true } }
-    public var displayName: String { get { profile.displayName } }
+    public var displayName: String { get { localAlias == "" ? profile.displayName : localAlias } }
     public var fullName: String { get { profile.fullName } }
     public var image: String? { get { profile.image } }
     public var localAlias: String { get { profile.localAlias } }
@@ -613,7 +613,12 @@ public struct GroupMember: Identifiable, Decodable {
     public var activeConn: Connection?
 
     public var id: String { "#\(groupId) @\(groupMemberId)" }
-    public var displayName: String { get { memberProfile.displayName } }
+    public var displayName: String {
+        get {
+            let p = memberProfile
+            return p.localAlias == "" ? p.displayName : p.localAlias
+        }
+    }
     public var fullName: String { get { memberProfile.fullName } }
     public var image: String? { get { memberProfile.image } }
 
@@ -896,7 +901,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
-                return groupMember.memberProfile.displayName
+                return groupMember.displayName
             } else {
                 return nil
             }
