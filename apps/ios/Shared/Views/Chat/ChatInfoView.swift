@@ -72,7 +72,7 @@ struct ChatInfoView: View {
                         aliasTextFieldFocused = false
                     }
 
-                localAliasTextEdit($localAlias)
+                localAliasTextEdit()
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
 
@@ -137,8 +137,8 @@ struct ChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    func localAliasTextEdit(_ localAlias: Binding<String>) -> some View {
-        TextField("Set alias…", text: localAlias)
+    func localAliasTextEdit() -> some View {
+        TextField("Set alias…", text: $localAlias)
             .disableAutocorrection(true)
             .focused($aliasTextFieldFocused)
             .submitLabel(.done)
