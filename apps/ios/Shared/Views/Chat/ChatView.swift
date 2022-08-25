@@ -31,6 +31,9 @@ struct ChatView: View {
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    @State private var selectedMember: GroupMember? = nil
+    @State private var memberConnectionStats: ConnectionStats? // TODO reuse
+    @State private var memberMainProfile: LocalProfile?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -141,6 +144,9 @@ struct ChatView: View {
                         } label: {
                             Image(systemName: "ellipsis")
                         }
+                    }
+                    .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
+                        GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
                     }
                 default:
                     EmptyView()
@@ -349,6 +355,20 @@ struct ChatView: View {
                 if showMember {
                     ProfileImage(imageStr: member.memberProfile.image)
                         .frame(width: memberImageSize, height: memberImageSize)
+                        .onTapGesture {
+                            Task {
+                                do {
+                                    let (stats, profile) = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
+                                    await MainActor.run {
+                                        memberConnectionStats = stats
+                                        memberMainProfile = profile
+                                    }
+                                } catch let error {
+                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                }
+                                await MainActor.run { selectedMember = member }
+                            }
+                        }
                 } else {
                     Rectangle().fill(.clear)
                         .frame(width: memberImageSize, height: memberImageSize)
