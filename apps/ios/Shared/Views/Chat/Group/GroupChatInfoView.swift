@@ -20,7 +20,7 @@ struct GroupChatInfoView: View {
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
-    @State private var mainProfile: Profile?
+    @State private var memberMainProfile: LocalProfile?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
@@ -53,7 +53,7 @@ struct GroupChatInfoView: View {
                                     let (stats, profile) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
                                     await MainActor.run {
                                         connectionStats = stats
-                                        mainProfile = profile
+                                        memberMainProfile = profile
                                     }
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
@@ -67,7 +67,7 @@ struct GroupChatInfoView: View {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
                 .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats, mainProfile: mainProfile)
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats, mainProfile: memberMainProfile)
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)

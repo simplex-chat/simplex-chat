@@ -15,7 +15,7 @@ struct GroupMemberInfoView: View {
     var groupInfo: GroupInfo
     var member: GroupMember
     var connectionStats: ConnectionStats?
-    var mainProfile: Profile?
+    var mainProfile: LocalProfile?
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -76,7 +76,7 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func mainProfileRow(_ mainProfile: Profile) -> some View {
+    private func mainProfileRow(_ mainProfile: LocalProfile) -> some View {
         HStack {
             Text("Known main profile")
             Spacer()

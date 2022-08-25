@@ -46,8 +46,11 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
+    var contact: Contact
     var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
+    @State var localAlias: String
+    @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -64,6 +67,14 @@ struct ChatInfoView: View {
             List {
                 contactInfoHeader()
                     .listRowBackground(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        aliasTextFieldFocused = false
+                    }
+
+                localAliasTextEdit()
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
@@ -113,17 +124,48 @@ struct ChatInfoView: View {
                 .frame(width: 192, height: 192)
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.displayName)
+            Text(contact.profile.displayName)
                 .font(.largeTitle)
                 .lineLimit(1)
                 .padding(.bottom, 2)
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .lineLimit(2)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    func localAliasTextEdit() -> some View {
+        TextField("Set contact name…", text: $localAlias)
+            .disableAutocorrection(true)
+            .focused($aliasTextFieldFocused)
+            .submitLabel(.done)
+            .onChange(of: aliasTextFieldFocused) { focused in
+                if !focused {
+                    setContactAlias()
+                }
+            }
+            .onSubmit {
+                setContactAlias()
+            }
+            .multilineTextAlignment(.center)
+            .foregroundColor(.secondary)
+    }
+
+    private func setContactAlias() {
+        Task {
+            do {
+                if let contact = try await apiSetContactAlias(contactId: chat.chatInfo.apiId, localAlias: localAlias) {
+                    await MainActor.run {
+                        chatModel.updateContact(contact)
+                    }
+                }
+            } catch {
+                logger.error("setContactAlias error: \(responseError(error))")
+            }
+        }
     }
 
     func networkStatusRow() -> some View {
@@ -209,6 +251,6 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), contact: Contact.sampleData, localAlias: "")
     }
 }
