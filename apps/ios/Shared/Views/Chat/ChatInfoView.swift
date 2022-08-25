@@ -72,15 +72,7 @@ struct ChatInfoView: View {
                         aliasTextFieldFocused = false
                     }
 
-                HStack {
-                    localAliasTextEdit()
-                    if aliasTextFieldFocused || localAlias == "" {
-                        clearLocalAlias().hidden()
-                    } else {
-                        clearLocalAlias()
-                    }
-                }
-                .frame(maxWidth: .infinity)
+                localAliasTextEdit()
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
@@ -160,18 +152,6 @@ struct ChatInfoView: View {
             }
             .multilineTextAlignment(.center)
             .foregroundColor(.secondary)
-            .fixedSize()
-    }
-
-    private func clearLocalAlias() -> some View {
-        Button {
-            localAlias = ""
-            setContactAlias()
-        } label: {
-            Image(systemName: "xmark.circle")
-                .foregroundColor(.secondary)
-                .font(.system(size: 14))
-        }
     }
 
     private func setContactAlias() {
