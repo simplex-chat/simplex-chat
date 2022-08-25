@@ -168,7 +168,9 @@ struct ChatInfoView: View {
             localAlias = ""
             setContactAlias()
         } label: {
-            Image(systemName: "multiply")
+            Image(systemName: "xmark.circle")
+                .foregroundColor(.secondary)
+                .font(.system(size: 14))
         }
     }
 
