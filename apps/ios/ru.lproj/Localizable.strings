@@ -125,7 +125,7 @@
 "above, then choose:" = "наверху, затем выберите:";
 
 /* No comment provided by engineer. */
-"Accent color" = "Цвет акцента";
+"Accent color" = "Основной цвет";
 
 /* accept contact request via notification
    accept incoming call via notification */
@@ -1174,6 +1174,9 @@
 
 /* No comment provided by engineer. */
 "Servers" = "Серверы";
+
+/* No comment provided by engineer. */
+"Set contact name…" = "Задать имя контакта…";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Установить таймауты для прокси/VPN";
