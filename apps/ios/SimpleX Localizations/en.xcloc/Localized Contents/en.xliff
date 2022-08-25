@@ -1648,6 +1648,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set contact name…" xml:space="preserve">
+        <source>Set contact name…</source>
+        <target>Set contact name…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
         <source>Set timeouts for proxy/VPN</source>
         <target>Set timeouts for proxy/VPN</target>

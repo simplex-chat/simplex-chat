@@ -194,7 +194,7 @@
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve">
         <source>Accent color</source>
-        <target>Цвет акцента</target>
+        <target>Основной цвет</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -1646,6 +1646,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
         <target>Серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Set contact name…" xml:space="preserve">
+        <source>Set contact name…</source>
+        <target>Имя контакта…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
