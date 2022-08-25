@@ -138,7 +138,7 @@ struct ChatInfoView: View {
     }
 
     func localAliasTextEdit() -> some View {
-        TextField("Set alias…", text: $localAlias)
+        TextField("Set contact name…", text: $localAlias)
             .disableAutocorrection(true)
             .focused($aliasTextFieldFocused)
             .submitLabel(.done)
