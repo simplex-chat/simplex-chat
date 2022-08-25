@@ -152,6 +152,7 @@ struct ChatInfoView: View {
             }
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
+            .font(.title2)
             .foregroundColor(.secondary)
     }
 
