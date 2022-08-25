@@ -72,9 +72,17 @@ struct ChatInfoView: View {
                         aliasTextFieldFocused = false
                     }
 
-                localAliasTextEdit()
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
+                HStack {
+                    localAliasTextEdit()
+                    if aliasTextFieldFocused || localAlias == "" {
+                        clearLocalAlias().hidden()
+                    } else {
+                        clearLocalAlias()
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
@@ -150,17 +158,25 @@ struct ChatInfoView: View {
             .onSubmit {
                 setContactAlias()
             }
-            .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
-            .font(.title2)
             .foregroundColor(.secondary)
+            .fixedSize()
     }
 
-    func setContactAlias() {
+    private func clearLocalAlias() -> some View {
+        Button {
+            localAlias = ""
+            setContactAlias()
+        } label: {
+            Image(systemName: "multiply")
+        }
+    }
+
+    private func setContactAlias() {
         Task {
             do {
                 if let contact = try await apiSetContactAlias(contactId: chat.chatInfo.apiId, localAlias: localAlias) {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         chatModel.updateContact(contact)
                     }
                 }
