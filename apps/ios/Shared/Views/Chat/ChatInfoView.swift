@@ -48,6 +48,8 @@ struct ChatInfoView: View {
     @ObservedObject var chat: Chat
     var connectionStats: ConnectionStats?
     var customUserProfile: Profile?
+    @State var localAlias: String
+    @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -64,6 +66,10 @@ struct ChatInfoView: View {
             List {
                 contactInfoHeader()
                     .listRowBackground(Color.clear)
+
+                localAliasTextEdit($localAlias)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
                 if let customUserProfile = customUserProfile {
                     Section("Incognito") {
@@ -97,6 +103,9 @@ struct ChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onTapGesture {
+            aliasTextFieldFocused = false
+        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
@@ -124,6 +133,38 @@ struct ChatInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    func localAliasTextEdit(_ localAlias: Binding<String>) -> some View {
+        TextField("Set alias…", text: localAlias)
+            .textInputAutocapitalization(.never)
+            .disableAutocorrection(true)
+            .lineLimit(2)
+            .focused($aliasTextFieldFocused)
+            .onChange(of: aliasTextFieldFocused) { focused in
+                if !focused {
+                    setContactAlias()
+                }
+            }
+            .onSubmit {
+                setContactAlias()
+            }
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+    }
+
+    func setContactAlias() {
+        Task {
+            do {
+                if let contact = try await apiSetContactAlias(contactId: chat.chatInfo.apiId, localAlias: localAlias) {
+                    DispatchQueue.main.async {
+                        chatModel.updateContact(contact)
+                    }
+                }
+            } catch {
+                logger.error("setContactAlias error: \(responseError(error))")
+            }
+        }
     }
 
     func networkStatusRow() -> some View {
@@ -209,6 +250,6 @@ struct ChatInfoView: View {
 
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+        ChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []), localAlias: "")
     }
 }

@@ -102,7 +102,7 @@ struct ChatView: View {
                 .sheet(isPresented: $showChatInfoSheet) {
                     switch cInfo {
                     case .direct:
-                        ChatInfoView(chat: chat, connectionStats: connectionStats, customUserProfile: customUserProfile)
+                        ChatInfoView(chat: chat, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
                     case let .group(groupInfo):
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
                     default:
