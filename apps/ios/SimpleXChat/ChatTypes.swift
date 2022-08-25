@@ -629,11 +629,9 @@ public struct GroupMember: Identifiable, Decodable {
     public var chatViewName: String {
         get {
             let p = memberProfile
-            if p.localAlias == "" {
-                return p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
-            } else {
-                return p.localAlias
-            }
+            return p.localAlias == ""
+            ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+            : p.localAlias
         }
     }
 
