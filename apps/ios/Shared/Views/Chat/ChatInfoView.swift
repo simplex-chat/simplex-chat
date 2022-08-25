@@ -67,6 +67,10 @@ struct ChatInfoView: View {
             List {
                 contactInfoHeader()
                     .listRowBackground(Color.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        aliasTextFieldFocused = false
+                    }
 
                 localAliasTextEdit($localAlias)
                     .listRowBackground(Color.clear)
@@ -104,9 +108,6 @@ struct ChatInfoView: View {
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .onTapGesture {
-            aliasTextFieldFocused = false
-        }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
