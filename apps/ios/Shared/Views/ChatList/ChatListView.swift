@@ -78,13 +78,14 @@ struct ChatListView: View {
         return s == ""
             ? chatModel.chats
             : chatModel.chats.filter { chat in
+                let contains = chat.chatInfo.chatViewName.localizedLowercase.contains(s)
                 switch chat.chatInfo {
                 case let .direct(contact):
-                    return contact.chatViewName.localizedLowercase.contains(s)
+                    return contains
                     || contact.profile.displayName.localizedLowercase.contains(s)
                     || contact.fullName.localizedLowercase.contains(s)
                 case .contactConnection: return false
-                default: return chat.chatInfo.chatViewName.localizedLowercase.contains(s)
+                default: return contains
                 }
             }
     }
