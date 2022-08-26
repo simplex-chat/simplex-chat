@@ -142,6 +142,7 @@ fun ChatInfoLayout(
     }
 
     if (customUserProfile != null) {
+      SectionSpacer()
       SectionView(generalGetString(R.string.incognito).uppercase()) {
         InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
       }
