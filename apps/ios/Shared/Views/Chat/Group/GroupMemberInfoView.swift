@@ -31,11 +31,11 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-                if let contactId = member.memberContactId {
-                    Section {
-                        openDirectChatButton(contactId)
-                    }
-                }
+//                if let contactId = member.memberContactId {
+//                    Section {
+//                        openDirectChatButton(contactId)
+//                    }
+//                }
 
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
