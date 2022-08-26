@@ -37,6 +37,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
+  MaintainIncognitoState(chatModel)
+
   fun setRunServiceInBackground(on: Boolean) {
     chatModel.controller.appPrefs.runServiceInBackground.set(on)
     if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
@@ -120,7 +122,7 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsPreferenceItemWithInfo(Icons.Filled.TheaterComedy, stringResource(R.string.incognito), { onClickIncognitoInfo(showModal) }, incognitoPref, incognito)
+        SettingsIncognitoActionItem(incognitoPref, incognito) { onClickIncognitoInfo(showModal) }
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         SectionDivider()
@@ -169,8 +171,43 @@ fun SettingsLayout(
   }
 }
 
+@Composable
+fun SettingsIncognitoActionItem(
+  incognitoPref: Preference<Boolean>,
+  incognito: MutableState<Boolean>,
+  onClickInfo: () -> Unit,
+) {
+  SettingsPreferenceItemWithInfo(
+    if (incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
+    if (incognito.value) Indigo else HighOrLowlight,
+    stringResource(R.string.incognito),
+    onClickInfo,
+    incognitoPref,
+    incognito
+  )
+}
+
 private val onClickIncognitoInfo: ((@Composable (ChatModel) -> Unit) -> (() -> Unit)) -> Unit = { showModal ->
   showModal { IncognitoView() }()
+}
+
+@Composable
+fun MaintainIncognitoState(chatModel: ChatModel) {
+  // Cache previous value and once it changes in background, update it via API
+  var cachedIncognito by remember { mutableStateOf(chatModel.incognito.value) }
+  LaunchedEffect(chatModel.incognito.value) {
+    // Don't do anything if nothing changed
+    if (cachedIncognito == chatModel.incognito.value) return@LaunchedEffect
+    try {
+      chatModel.controller.apiSetIncognito(chatModel.incognito.value)
+    } catch (e: Exception) {
+      // Rollback the state
+      chatModel.controller.appPrefs.incognito.set(cachedIncognito)
+      // Crash the app
+      throw e
+    }
+    cachedIncognito = chatModel.incognito.value
+  }
 }
 
 @Composable private fun DatabaseItem(openDatabaseView: () -> Unit, stopped: Boolean) {
@@ -335,6 +372,7 @@ fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boo
 @Composable
 fun SettingsPreferenceItemWithInfo(
   icon: ImageVector,
+  iconTint: Color,
   text: String,
   onClickInfo: () -> Unit,
   pref: Preference<Boolean>,
@@ -342,7 +380,7 @@ fun SettingsPreferenceItemWithInfo(
 ) {
   SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(icon, text, tint = HighOrLowlight)
+      Icon(icon, text, tint = iconTint)
       Spacer(Modifier.padding(horizontal = 4.dp))
       SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, onClickInfo, pref, prefState)
     }

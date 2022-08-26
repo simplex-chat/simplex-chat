@@ -301,10 +301,10 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
-  private suspend fun apiSetIncognito(incognito: Boolean) {
+  suspend fun apiSetIncognito(incognito: Boolean) {
     val r = sendCmd(CC.SetIncognito(incognito))
     if (r is CR.CmdOk) return
-    throw Error("failed to set incognito: ${r.responseType} ${r.details}")
+    throw Exception("failed to set incognito: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
