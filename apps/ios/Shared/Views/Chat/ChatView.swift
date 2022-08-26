@@ -31,8 +31,9 @@ struct ChatView: View {
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
-    @State private var memberConnectionStats: ConnectionStats? // TODO reuse
+    @State private var memberConnectionStats: ConnectionStats?
     @State private var memberMainProfile: LocalProfile?
 
     var body: some View {
@@ -76,8 +77,8 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .principal) {
-                Button {
-                    if case .direct = cInfo {
+                if case let .direct(contact) = cInfo {
+                    Button {
                         Task {
                             do {
                                 let (stats, profile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
@@ -90,7 +91,14 @@ struct ChatView: View {
                             }
                             await MainActor.run { showChatInfoSheet = true }
                         }
-                    } else if case let .group(groupInfo) = cInfo {
+                    } label: {
+                        ChatInfoToolbar(chat: chat)
+                    }
+                    .sheet(isPresented: $showChatInfoSheet, onDismiss: { connectionStats = nil }) {
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                    }
+                } else if case let .group(groupInfo) = cInfo {
+                    Button {
                         Task {
                             let groupMembers = await apiListMembers(groupInfo.groupId)
                             await MainActor.run {
@@ -98,18 +106,14 @@ struct ChatView: View {
                                 showChatInfoSheet = true
                             }
                         }
+                    } label: {
+                        ChatInfoToolbar(chat: chat)
                     }
-                } label: {
-                    ChatInfoToolbar(chat: chat)
-                }
-                .sheet(isPresented: $showChatInfoSheet) {
-                    switch cInfo {
-                    case let .direct(contact):
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
-                    case let .group(groupInfo):
+                    .sheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
-                    default:
-                        EmptyView()
+                    }
+                    .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
+                        GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
                     }
                 }
             }
@@ -144,9 +148,6 @@ struct ChatView: View {
                         } label: {
                             Image(systemName: "ellipsis")
                         }
-                    }
-                    .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                        GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
                     }
                 default:
                     EmptyView()
