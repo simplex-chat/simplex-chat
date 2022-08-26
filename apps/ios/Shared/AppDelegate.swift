@@ -107,5 +107,6 @@ class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         window = windowScene.keyWindow
         window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
+        window?.overrideUserInterfaceStyle = getUserInterfaceStyleDefault()
     }
 }
