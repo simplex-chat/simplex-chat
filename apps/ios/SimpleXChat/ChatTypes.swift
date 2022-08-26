@@ -311,7 +311,7 @@ public struct ChatStats: Decodable {
 }
 
 public struct Contact: Identifiable, Decodable, NamedChat {
-    var contactId: Int64
+    public var contactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
     public var activeConn: Connection

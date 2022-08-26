@@ -31,6 +31,12 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
+//                if let contactId = member.memberContactId {
+//                    Section {
+//                        openDirectChatButton(contactId)
+//                    }
+//                }
+
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
                     if let mainProfile = mainProfile {
@@ -73,6 +79,23 @@ struct GroupMemberInfoView: View {
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
             }
+        }
+    }
+
+    func openDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            if let i = chatModel.chats.firstIndex(where: { chat in
+                switch chat.chatInfo {
+                case let .direct(contact): return contact.contactId == contactId
+                default: return false
+                }
+            }) {
+                dismissAllSheets(animated: true)
+                chatModel.chatId = chatModel.chats[i].chatInfo.id
+            }
+        } label: {
+            Label("Send direct message", systemImage: "message")
+                .foregroundColor(.accentColor)
         }
     }
 
