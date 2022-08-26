@@ -8,8 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.Indigo
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
@@ -68,7 +71,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
   BottomSheetScaffold(
-    topBar = { ChatListToolbar(scaffoldCtrl, stopped) },
+    topBar = { ChatListToolbar(chatModel, scaffoldCtrl, stopped) },
     scaffoldState = scaffoldCtrl.state,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
@@ -100,15 +103,25 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 }
 
 @Composable
-fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
+fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stopped: Boolean) {
   DefaultTopAppBar(
     navigationButton = { NavigationButtonMenu { scaffoldCtrl.toggleDrawer() } },
     title = {
-      Text(
-        stringResource(R.string.your_chats),
-        color = MaterialTheme.colors.onBackground,
-        fontWeight = FontWeight.SemiBold,
-      )
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          stringResource(R.string.your_chats),
+          color = MaterialTheme.colors.onBackground,
+          fontWeight = FontWeight.SemiBold,
+        )
+        if (chatModel.incognito.value) {
+          Icon(
+            Icons.Filled.TheaterComedy,
+            stringResource(R.string.incognito),
+            tint = Indigo,
+            modifier = Modifier.padding(10.dp).size(26.dp)
+          )
+        }
+      }
     },
     onTitleClick = null,
     showSearch = false,

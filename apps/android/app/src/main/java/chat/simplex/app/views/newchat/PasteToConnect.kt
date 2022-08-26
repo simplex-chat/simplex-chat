@@ -31,6 +31,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
   val clipboard = getSystemService(context, ClipboardManager::class.java)
   BackHandler(onBack = close)
   PasteToConnectLayout(
+    chatModel.incognito.value,
     connectionLink = connectionLink,
     pasteFromClipboard = {
       connectionLink.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as String
@@ -55,6 +56,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
 
 @Composable
 fun PasteToConnectLayout(
+  chatModelIncognito: Boolean,
   connectionLink: MutableState<String>,
   pasteFromClipboard: () -> Unit,
   connectViaLink: (String) -> Unit,
@@ -71,7 +73,12 @@ fun PasteToConnectLayout(
         modifier = Modifier.padding(bottom = 16.dp)
       )
       Text(stringResource(R.string.paste_connection_link_below_to_connect))
-      Text(stringResource(R.string.profile_will_be_sent_to_contact_sending_link))
+
+      InfoAboutIncognito(
+        chatModelIncognito,
+        generalGetString(R.string.incognito_random_profile_from_contact_description),
+        generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
+      )
 
       Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
         TextEditor(Modifier.height(180.dp), text = connectionLink)
@@ -111,6 +118,7 @@ fun PasteToConnectLayout(
 fun PreviewPasteToConnectTextbox() {
   SimpleXTheme {
     PasteToConnectLayout(
+      chatModelIncognito = false,
       connectionLink = remember { mutableStateOf("") },
       pasteFromClipboard = {},
       connectViaLink = { link ->

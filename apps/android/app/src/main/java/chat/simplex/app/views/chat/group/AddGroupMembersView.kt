@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -110,13 +113,21 @@ fun AddGroupMembersLayout(
         )
       }
     } else {
+      val nonIncognitoConnectionsSelected = contactsToAdd
+        .filter { toAdd -> selectedContacts.any { it == toAdd.apiId } }
+        .any { !it.contactConnIncognito }
+      val unsafeToInviteIncognito = groupInfo.membership.memberIncognito && nonIncognitoConnectionsSelected
+      val onClickInvite = {
+        if (unsafeToInviteIncognito) showUnsafeToInviteIncognitoAlertDialog(inviteMembers) else inviteMembers()
+      }
+
       SectionView {
         SectionItemView {
           RoleSelectionRow(groupInfo, selectedRole)
         }
         SectionDivider()
         SectionItemView {
-          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
+          InviteMembersButton(onClickInvite, disabled = selectedContacts.isEmpty())
         }
       }
       SectionCustomFooter {
@@ -125,7 +136,7 @@ fun AddGroupMembersLayout(
       SectionSpacer()
 
       SectionView {
-        ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+        ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, addContact, removeContact)
       }
       SectionSpacer()
     }
@@ -255,6 +266,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) 
 fun ContactList(
   contacts: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
+  groupInfo: GroupInfo,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit
 ) {
@@ -262,7 +274,7 @@ fun ContactList(
     contacts.forEachIndexed { index, contact ->
       SectionItemView {
         ContactCheckRow(
-          contact, addContact, removeContact,
+          contact, groupInfo, addContact, removeContact,
           checked = selectedContacts.contains(contact.apiId)
         )
       }
@@ -276,14 +288,36 @@ fun ContactList(
 @Composable
 fun ContactCheckRow(
   contact: Contact,
+  groupInfo: GroupInfo,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
   checked: Boolean
 ) {
+  val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
+  val safeToInviteIncognito = groupInfo.membership.memberIncognito && contact.contactConnIncognito
+  val icon: ImageVector
+  val iconColor: Color
+  if (prohibitedToInviteIncognito) {
+    icon = Icons.Filled.TheaterComedy
+    iconColor = Indigo
+  } else if (checked) {
+    icon = Icons.Filled.CheckCircle
+    iconColor = MaterialTheme.colors.primary
+  } else {
+    icon = Icons.Outlined.Circle
+    iconColor = HighOrLowlight
+  }
   Row(
     Modifier
       .fillMaxSize()
-      .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
+      .clickable {
+        if (prohibitedToInviteIncognito) {
+          showProhibitedToInviteIncognitoAlertDialog()
+        } else if (!checked)
+          addContact(contact.apiId)
+        else
+          removeContact(contact.apiId)
+      },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -292,14 +326,44 @@ fun ContactCheckRow(
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       ProfileImage(size = 36.dp, contact.image)
-      Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      Text(
+        contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
+      )
+      if (safeToInviteIncognito) {
+        Icon(
+          Icons.Filled.TheaterComedy,
+          contentDescription = generalGetString(R.string.incognito),
+          Modifier.padding(start = 4.dp),
+          tint = Indigo
+        )
+      }
     }
     Icon(
-      if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+      icon,
       contentDescription = stringResource(R.string.icon_descr_contact_checked),
-      tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
+      tint = iconColor
     )
   }
+}
+
+fun showUnsafeToInviteIncognitoAlertDialog(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.incognito_profile_can_be_shared),
+    text = generalGetString(R.string.invite_when_have_main_profile),
+    confirmText = generalGetString(R.string.invite_anyway),
+    onConfirm = onConfirm,
+    onDismiss = { }
+  )
+}
+
+fun showProhibitedToInviteIncognitoAlertDialog() {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.invite_prohibited),
+    text = generalGetString(R.string.invite_prohibited_description),
+    confirmText = generalGetString(R.string.ok),
+    onDismiss = { }
+  )
 }
 
 @Preview

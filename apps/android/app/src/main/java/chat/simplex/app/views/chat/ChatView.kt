@@ -105,18 +105,19 @@ fun ChatView(chatModel: ChatModel) {
       chatModel.chatItems,
       searchText,
       useLinkPreviews = useLinkPreviews,
+      chatModelIncognito = chatModel.incognito.value,
       back = { chatModel.chatId.value = null },
       info = {
         withApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showCustomModal { close ->
               ModalView(
                 close = close, modifier = Modifier,
                 background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
-                ChatInfoView(chatModel, connStats, close)
+                ChatInfoView(chatModel, contactInfo?.first, contactInfo?.second, close)
               }
             }
           } else if (cInfo is ChatInfo.Group) {
@@ -232,6 +233,7 @@ fun ChatLayout(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
+  chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -277,7 +279,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               user, chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
+              useLinkPreviews, chatModelIncognito, openDirectChat, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead, setFloatingButton
             )
           }
@@ -375,6 +377,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
+    if (cInfo.incognito) {
+      IncognitoImage(size = imageSize, Indigo)
+    }
     ChatInfoImage(cInfo, size = imageSize, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
@@ -415,6 +420,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
+  chatModelIncognito: Boolean,
   openDirectChat: (Long) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -514,11 +520,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           } else {
             Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           }
         } else { // direct message
@@ -529,7 +535,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
           }
         }
 
@@ -815,6 +821,7 @@ fun PreviewChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      chatModelIncognito = false,
       back = {},
       info = {},
       openDirectChat = {},
@@ -871,6 +878,7 @@ fun PreviewGroupChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      chatModelIncognito = false,
       back = {},
       info = {},
       openDirectChat = {},

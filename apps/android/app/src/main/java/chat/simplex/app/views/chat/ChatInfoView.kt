@@ -33,7 +33,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
+fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, customUserProfile: Profile?, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -41,6 +41,7 @@ fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () ->
     ChatInfoLayout(
       chat,
       connStats,
+      customUserProfile,
       developerTools,
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
@@ -121,6 +122,7 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 fun ChatInfoLayout(
   chat: Chat,
   connStats: ConnectionStats?,
+  customUserProfile: Profile?,
   developerTools: Boolean,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
@@ -138,6 +140,13 @@ fun ChatInfoLayout(
     ) {
       ChatInfoHeader(chat.chatInfo)
     }
+
+    if (customUserProfile != null) {
+      SectionView(generalGetString(R.string.incognito).uppercase()) {
+        InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
+      }
+    }
+
     SectionSpacer()
 
     if (connStats != null) {
@@ -361,6 +370,7 @@ fun PreviewChatInfoLayout() {
       changeNtfsState = {},
       developerTools = false,
       connStats = null,
+      customUserProfile = null,
       deleteContact = {}, clearChat = {}
     )
   }

@@ -27,7 +27,14 @@ import chat.simplex.app.views.chat.SimplexServers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: ConnectionStats?, chatModel: ChatModel, close: () -> Unit) {
+fun GroupMemberInfoView(
+  groupInfo: GroupInfo,
+  member: GroupMember,
+  connStats: ConnectionStats?,
+  mainProfile: Profile?,
+  chatModel: ChatModel,
+  close: () -> Unit
+) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -36,6 +43,7 @@ fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: Co
       groupInfo,
       member,
       connStats,
+      mainProfile,
       developerTools,
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
@@ -64,6 +72,7 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
+  mainProfile: Profile?,
   developerTools: Boolean,
   removeMember: () -> Unit,
 ) {
@@ -83,6 +92,9 @@ fun GroupMemberInfoLayout(
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
+      if (mainProfile != null) {
+        MainProfileRow(member, mainProfile)
+      }
       val conn = member.activeConn
       if (conn != null) {
         SectionDivider()
@@ -130,6 +142,18 @@ fun GroupMemberInfoLayout(
       }
       SectionSpacer()
     }
+  }
+}
+
+@Composable
+private fun MainProfileRow(member: GroupMember, mainProfile: Profile) {
+  Row(Modifier.fillMaxWidth()) {
+    Text(generalGetString(R.string.incognito_known_main_profile))
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    if (mainProfile.image != null) {
+      ProfileImage(size = 38.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    }
+    Text(mainProfile.chatViewName, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -183,6 +207,7 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
+      mainProfile = null,
       developerTools = false,
       removeMember = {}
     )

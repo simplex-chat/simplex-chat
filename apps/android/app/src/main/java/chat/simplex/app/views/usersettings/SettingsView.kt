@@ -9,7 +9,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,6 +51,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     SettingsLayout(
       profile = user.profile,
       stopped,
+      chatModel.incognito,
+      chatModel.controller.appPrefs.incognito,
       runServiceInBackground = chatModel.runServiceInBackground,
       developerTools = chatModel.controller.appPrefs.developerTools,
       setRunServiceInBackground = ::setRunServiceInBackground,
@@ -86,6 +88,8 @@ val simplexTeamUri =
 fun SettingsLayout(
   profile: Profile,
   stopped: Boolean,
+  incognito: MutableState<Boolean>,
+  incognitoPref: Preference<Boolean>,
   runServiceInBackground: MutableState<Boolean>,
   developerTools: Preference<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
@@ -115,6 +119,8 @@ fun SettingsLayout(
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
+        SectionDivider()
+        SettingsPreferenceItemWithInfo(Icons.Filled.TheaterComedy, stringResource(R.string.incognito), { onClickIncognitoInfo(showModal) }, incognitoPref, incognito)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         SectionDivider()
@@ -161,6 +167,10 @@ fun SettingsLayout(
       }
     }
   }
+}
+
+private val onClickIncognitoInfo: ((@Composable (ChatModel) -> Unit) -> (() -> Unit)) -> Unit = { showModal ->
+  showModal { IncognitoView() }()
 }
 
 @Composable private fun DatabaseItem(openDatabaseView: () -> Unit, stopped: Boolean) {
@@ -322,6 +332,23 @@ fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boo
   }
 }
 
+@Composable
+fun SettingsPreferenceItemWithInfo(
+  icon: ImageVector,
+  text: String,
+  onClickInfo: () -> Unit,
+  pref: Preference<Boolean>,
+  prefState: MutableState<Boolean>? = null
+) {
+  SectionItemView() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(icon, text, tint = HighOrLowlight)
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, onClickInfo, pref, prefState)
+    }
+  }
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -334,6 +361,8 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = Profile.sampleData,
       stopped = false,
+      incognito = remember { mutableStateOf(false) },
+      incognitoPref = Preference({ false}, {}),
       runServiceInBackground = remember { mutableStateOf(true) },
       developerTools = Preference({ false }, {}),
       setRunServiceInBackground = {},

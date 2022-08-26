@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 
@@ -45,7 +46,8 @@ class AlertManager {
     confirmText: String = generalGetString(R.string.ok),
     onConfirm: (() -> Unit)? = null,
     dismissText: String = generalGetString(R.string.cancel_verb),
-    onDismiss: (() -> Unit)? = null
+    onDismiss: (() -> Unit)? = null,
+    destructive: Boolean = false
   ) {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
@@ -57,7 +59,7 @@ class AlertManager {
           TextButton(onClick = {
             onConfirm?.invoke()
             hideAlert()
-          }) { Text(confirmText) }
+          }) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
         },
         dismissButton = {
           TextButton(onClick = {

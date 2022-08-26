@@ -3,11 +3,15 @@ package chat.simplex.app.views.usersettings
 import SectionDivider
 import SectionItemView
 import SectionView
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -67,6 +71,37 @@ fun SharedPreferenceToggle(
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Text(text, Modifier.padding(end = 24.dp))
+    Spacer(Modifier.fillMaxWidth().weight(1f))
+    Switch(
+      checked = prefState.value,
+      onCheckedChange = {
+        preference.set(it)
+        prefState.value = it
+      },
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      )
+    )
+  }
+}
+
+@Composable
+fun SharedPreferenceToggleWithIcon(
+  text: String,
+  icon: ImageVector,
+  onClickInfo: () -> Unit,
+  preference: Preference<Boolean>,
+  preferenceState: MutableState<Boolean>? = null
+) {
+  val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
+  Row(Modifier.fillMaxWidth().clickable(onClick = onClickInfo), verticalAlignment = Alignment.CenterVertically) {
+    Text(text, Modifier.padding(end = 4.dp))
+    Icon(
+      icon,
+      null,
+      tint = MaterialTheme.colors.primary
+    )
     Spacer(Modifier.fillMaxWidth().weight(1f))
     Switch(
       checked = prefState.value,

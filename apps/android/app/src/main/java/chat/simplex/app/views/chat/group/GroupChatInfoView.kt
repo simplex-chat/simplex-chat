@@ -56,13 +56,13 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       },
       showMemberInfo = { member ->
         withApi {
-          val connStats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val info = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              GroupMemberInfoView(groupInfo, member, connStats, chatModel, close)
+              GroupMemberInfoView(groupInfo, member, info?.first, info?.second, chatModel, close)
             }
           }
         }
@@ -251,7 +251,8 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
     ) {
       ProfileImage(size = 46.dp, member.image)
       Column {
-        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        color = if (member.memberIncognito) Indigo else Color.Unspecified)
         val s = member.memberStatus.shortText
         val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(

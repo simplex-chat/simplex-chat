@@ -1,10 +1,12 @@
 package chat.simplex.app.views.newchat
 
+import SectionItemView
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.helpers.shareText
 
 @Composable
@@ -28,6 +30,7 @@ fun AddContactView(chatModel: ChatModel) {
   if (connReq != null) {
     val cxt = LocalContext.current
     AddContactLayout(
+      chatModelIncognito = chatModel.incognito.value,
       connReq = connReq,
       share = { shareText(cxt, connReq) }
     )
@@ -35,7 +38,7 @@ fun AddContactView(chatModel: ChatModel) {
 }
 
 @Composable
-fun AddContactLayout(connReq: String, share: () -> Unit) {
+fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> Unit) {
   BoxWithConstraints {
     val screenHeight = maxHeight
     Column(
@@ -50,6 +53,11 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
         style = MaterialTheme.typography.h3,
         textAlign = TextAlign.Center,
+      )
+      InfoAboutIncognito(
+        chatModelIncognito,
+        generalGetString(R.string.incognito_random_profile_description),
+        generalGetString(R.string.your_profile_will_be_sent)
       )
       QRCode(
         connReq, Modifier
@@ -71,6 +79,33 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
   }
 }
 
+@Composable
+fun ColumnScope.InfoAboutIncognito(chatModelIncognito: Boolean, onText: String, offText: String) {
+  Spacer(Modifier.padding(top = 10.dp))
+  if (chatModelIncognito) {
+    SectionItemView {
+      Icon(
+        Icons.Filled.TheaterComedy,
+        stringResource(R.string.incognito),
+        tint = Indigo,
+        modifier = Modifier.padding(10.dp).size(26.dp)
+      )
+      Text(generalGetString(R.string.incognito_random_profile_description), textAlign = TextAlign.Center)
+    }
+  } else {
+    SectionItemView {
+      Icon(
+        Icons.Outlined.Info,
+        stringResource(R.string.incognito),
+        tint = MaterialTheme.colors.primary,
+        modifier = Modifier.padding(10.dp).size(26.dp)
+      )
+      Text(stringResource(R.string.profile_will_be_sent_to_contact_sending_link), textAlign = TextAlign.Center)
+    }
+  }
+  Spacer(Modifier.padding(top = 10.dp))
+}
+
 @Preview
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -81,6 +116,7 @@ fun AddContactLayout(connReq: String, share: () -> Unit) {
 fun PreviewAddContactView() {
   SimpleXTheme {
     AddContactLayout(
+      chatModelIncognito = false,
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       share = {}
     )

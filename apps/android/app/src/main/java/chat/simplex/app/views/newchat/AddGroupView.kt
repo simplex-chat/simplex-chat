@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
+    chatModel.incognito.value,
     createGroup = { groupProfile ->
       withApi {
         val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
@@ -59,7 +60,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 @Composable
-fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
+fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
   val displayName = remember { mutableStateOf("") }
@@ -96,6 +97,11 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
               modifier = Modifier.padding(vertical = 5.dp)
             )
             ReadableText(R.string.group_is_decentralized)
+            InfoAboutIncognito(
+              chatModelIncognito,
+              generalGetString(R.string.group_random_profile_sent),
+              generalGetString(R.string.group_main_profile_sent)
+            )
             Spacer(Modifier.height(10.dp))
             Box(
               Modifier
@@ -170,6 +176,7 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
 fun PreviewAddGroupLayout() {
   SimpleXTheme {
     AddGroupLayout(
+      chatModelIncognito = false,
       createGroup = {},
       close = {}
     )

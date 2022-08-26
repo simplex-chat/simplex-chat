@@ -95,6 +95,7 @@ class AppPreferences(val context: Context) {
   val networkTCPKeepIdle = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_IDLE, KeepAliveOpts.defaults.keepIdle)
   val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults.keepIntvl)
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
+  val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
@@ -165,6 +166,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_IDLE = "NetworkTCPKeepIdle"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_INTVL = "NetworkTCPKeepIntvl"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
+    private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
   }
@@ -179,6 +181,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   init {
     chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
     chatModel.performLA.value = appPrefs.performLA.get()
+    chatModel.incognito.value = appPrefs.incognito.get()
   }
 
   suspend fun startChat(user: User) {
@@ -189,6 +192,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
+        apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
         chatModel.userSMPServers.value = getUserSMPServers()
         val chats = apiGetChats()
@@ -295,6 +299,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+  }
+
+  private suspend fun apiSetIncognito(incognito: Boolean) {
+    val r = sendCmd(CC.SetIncognito(incognito))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set incognito: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
@@ -405,16 +415,16 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun apiContactInfo(contactId: Long): ConnectionStats? {
+  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
-    if (r is CR.ContactInfo) return r.connectionStats
+    if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
     Log.e(TAG, "apiContactInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): ConnectionStats? {
+  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): Pair<ConnectionStats?, Profile?>? {
     val r = sendCmd(CC.APIGroupMemberInfo(groupId, groupMemberId))
-    if (r is CR.GroupMemberInfo) return r.connectionStats_
+    if (r is CR.GroupMemberInfo) return r.connectionStats_ to r.mainProfile
     Log.e(TAG, "apiGroupMemberInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -1133,6 +1143,7 @@ sealed class CC {
   class StartChat: CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class SetIncognito(val incognito: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -1185,6 +1196,7 @@ sealed class CC {
     is StartChat -> "/_start"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is SetIncognito -> "/incognito ${if (incognito) "on" else "off"}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -1237,6 +1249,7 @@ sealed class CC {
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
     is SetFilesFolder -> "setFilesFolder"
+    is SetIncognito -> "setIncognito"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -1412,8 +1425,8 @@ sealed class CR {
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
-  @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats): CR()
-  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?, val mainProfile: Profile? = null): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
