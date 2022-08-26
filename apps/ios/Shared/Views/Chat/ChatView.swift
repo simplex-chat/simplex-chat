@@ -94,7 +94,10 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet, onDismiss: { connectionStats = nil }) {
+                    .sheet(isPresented: $showChatInfoSheet, onDismiss: {
+                        connectionStats = nil
+                        customUserProfile = nil
+                    }) {
                         ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
                     }
                 } else if case let .group(groupInfo) = cInfo {
@@ -111,9 +114,6 @@ struct ChatView: View {
                     }
                     .sheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
-                    }
-                    .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
-                        GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
                     }
                 }
             }
@@ -349,7 +349,8 @@ struct ChatView: View {
     }
 
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        if case let .groupRcv(member) = ci.chatDir {
+        if case let .groupRcv(member) = ci.chatDir,
+           case let .group(groupInfo) = chat.chatInfo {
             let prevItem = chatModel.getPrevChatItem(ci)
             HStack(alignment: .top, spacing: 0) {
                 let showMember = prevItem == nil || showMemberImage(member, prevItem)
@@ -369,6 +370,12 @@ struct ChatView: View {
                                 }
                                 await MainActor.run { selectedMember = member }
                             }
+                        }
+                        .sheet(item: $selectedMember, onDismiss: {
+                            memberConnectionStats = nil
+                            memberMainProfile = nil
+                        }) { member in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
                         }
                 } else {
                     Rectangle().fill(.clear)
