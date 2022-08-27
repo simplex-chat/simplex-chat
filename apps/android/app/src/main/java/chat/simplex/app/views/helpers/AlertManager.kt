@@ -2,8 +2,9 @@ package chat.simplex.app.views.helpers
 
 import android.util.Log
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
 import chat.simplex.app.R
 import chat.simplex.app.TAG
 

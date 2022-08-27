@@ -1,5 +1,8 @@
 package chat.simplex.app.views.usersettings
 
+import SectionCustomFooter
+import SectionItemViewSpaceBetween
+import SectionSpacer
 import SectionView
 import android.content.ComponentName
 import android.content.pm.PackageManager
@@ -10,11 +13,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -24,7 +29,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.app.*
 import chat.simplex.app.R
+import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.helpers.*
+import com.godaddy.android.colorpicker.*
 
 enum class AppIcon(val resId: Int) {
   DEFAULT(R.mipmap.icon),
@@ -32,7 +40,9 @@ enum class AppIcon(val resId: Int) {
 }
 
 @Composable
-fun AppearanceView() {
+fun AppearanceView(
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
   fun setAppIcon(newIcon: AppIcon) {
@@ -54,18 +64,33 @@ fun AppearanceView() {
 
   AppearanceLayout(
     appIcon,
-    changeIcon = ::setAppIcon
+    changeIcon = ::setAppIcon,
+    showThemeSelector = showCustomModal { _, close ->
+      ModalView(
+        close = close, modifier = Modifier,
+        background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
+      ) { ThemeSelectorView() }
+    },
+    editPrimaryColor = { primary ->
+      showCustomModal { _, close ->
+        ModalView(
+          close = close, modifier = Modifier,
+          background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
+        ) { ColorEditor(primary, close) }
+      }()
+    },
   )
 }
 
 @Composable fun AppearanceLayout(
   icon: MutableState<AppIcon>,
-  changeIcon: (AppIcon) -> Unit
+  changeIcon: (AppIcon) -> Unit,
+  showThemeSelector: () -> Unit,
+  editPrimaryColor: (Color) -> Unit,
 ) {
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     Text(
       stringResource(R.string.appearance_settings),
@@ -73,10 +98,7 @@ fun AppearanceView() {
       style = MaterialTheme.typography.h1
     )
     SectionView(stringResource(R.string.settings_section_title_icon)) {
-      LazyRow(
-        Modifier
-          .padding(horizontal = 8.dp)
-      ) {
+      LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
           val mipmap = ContextCompat.getDrawable(LocalContext.current, item.resId)!!
@@ -97,7 +119,80 @@ fun AppearanceView() {
         }
       }
     }
+
+    SectionSpacer()
+    val currentTheme by CurrentColors.collectAsState()
+    SectionView(stringResource(R.string.settings_section_title_themes)) {
+      Column(
+        Modifier.padding(horizontal = 8.dp)
+      ) {
+        SectionItemViewSpaceBetween(showThemeSelector, padding = PaddingValues()) {
+          Text(generalGetString(R.string.theme))
+        }
+        Spacer(Modifier.padding(horizontal = 4.dp))
+
+        SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }, padding = PaddingValues()) {
+          val title = generalGetString(R.string.color_primary)
+          Text(title)
+          Icon(Icons.Filled.Circle, title, tint = colors.primary)
+        }
+      }
+    }
+    if (currentTheme.first.primary != LightColorPalette.primary) {
+      SectionCustomFooter(PaddingValues(start = 7.dp, end = 7.dp, top = 5.dp)) {
+        TextButton(
+          onClick = {
+            ThemeManager.saveAndApplyPrimaryColor(LightColorPalette.primary)
+          },
+        ) {
+          Text(generalGetString(R.string.reset_color))
+        }
+      }
+    }
   }
+}
+
+@Composable
+fun ColorEditor(
+  initialColor: Color,
+  close: () -> Unit,
+) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+  ) {
+    var currentColor by remember { mutableStateOf(initialColor) }
+    ColorPicker(initialColor) {
+      currentColor = it
+    }
+
+    SectionSpacer()
+
+    TextButton(
+      onClick = {
+        ThemeManager.saveAndApplyPrimaryColor(currentColor)
+        close()
+      },
+      Modifier.align(Alignment.CenterHorizontally),
+      colors = ButtonDefaults.textButtonColors(contentColor = currentColor)
+    ) {
+      Text(generalGetString(R.string.save_color))
+    }
+  }
+}
+
+@Composable
+fun ColorPicker(initialColor: Color, onColorChanged: (Color) -> Unit) {
+  ClassicColorPicker(
+    color = initialColor,
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(300.dp),
+    showAlphaBar = false,
+    onColorChanged = { color: HsvColor ->
+      onColorChanged(color.toColor())
+    }
+  )
 }
 
 private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
@@ -112,7 +207,9 @@ fun PreviewAppearanceSettings() {
   SimpleXTheme {
     AppearanceLayout(
       icon = remember { mutableStateOf(AppIcon.DARK_BLUE) },
-      changeIcon = {}
+      changeIcon = {},
+      showThemeSelector = {},
+      editPrimaryColor = {},
     )
   }
 }

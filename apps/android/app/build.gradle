@@ -94,6 +94,7 @@ dependencies {
     implementation "androidx.navigation:navigation-compose:2.4.1"
     implementation "com.google.accompanist:accompanist-insets:0.23.0"
     implementation 'androidx.webkit:webkit:1.4.0'
+    implementation "com.godaddy.android.colorpicker:compose-color-picker:0.4.2"
 
     def work_version = "2.7.1"
     implementation "androidx.work:work-runtime-ktx:$work_version"

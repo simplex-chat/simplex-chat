@@ -3,7 +3,6 @@ package chat.simplex.app.views.chat.item
 import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -39,7 +38,7 @@ fun CIGroupInvitationView(
     val p = groupInvitation.groupProfile
     val iconColor =
       if (action) MaterialTheme.colors.primary
-      else if (isSystemInDarkTheme()) FileDark else FileLight
+      else if (isInDarkTheme()) FileDark else FileLight
 
     Row(
       Modifier

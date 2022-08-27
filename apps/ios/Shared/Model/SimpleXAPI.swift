@@ -324,9 +324,9 @@ func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?, Profile?) {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?, LocalProfile?) {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, connStats_, mainProfile) = r { return (connStats_, mainProfile) }
+    if case let .groupMemberInfo(_, _, connStats_, localMainProfile) = r { return (connStats_, localMainProfile) }
     throw r
 }
 
@@ -433,6 +433,12 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     case let .userProfileUpdated(_, toProfile): return toProfile
     default: throw r
     }
+}
+
+func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
+    let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
+    if case let .contactAliasUpdated(toContact) = r { return toContact }
+    throw r
 }
 
 func apiCreateUserAddress() async throws -> String {

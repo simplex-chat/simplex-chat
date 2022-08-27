@@ -108,12 +108,6 @@
         "invitedMember": {"ref": "memberIdRole"},
         "connRequest": {"ref": "connReqUri"},
         "groupProfile": {"ref": "profile"}
-      },
-      "optionalProperties": {
-        "fromMemberProfile": {"ref": "profile"},
-        "metadata": {
-          "comment": "fromMemberProfile is user's custom profile to be used in the group - invitee should use this profile for the host's group member"
-        }
       }
     },
     "memberIdRole": {
@@ -323,12 +317,6 @@
         "params": {
           "properties": {
             "memberId": {"ref": "base64url"}
-          },
-          "optionalProperties": {
-            "memberProfile": {"ref": "profile"},
-            "metadata": {
-              "comment": "memberProfile is user's custom profile to be used in the group - host should use this profile for the invitee's group member"
-            }
           }
         }
       }

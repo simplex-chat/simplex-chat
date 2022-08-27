@@ -142,7 +142,7 @@ struct UserProfile: View {
                 if let newProfile = try await apiUpdateProfile(profile: profile) {
                     DispatchQueue.main.async {
                         if let profileId = chatModel.currentUser?.profile.profileId {
-                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile)
+                            chatModel.currentUser?.profile = toLocalProfile(profileId, newProfile, "")
                         }
                         profile = newProfile
                     }

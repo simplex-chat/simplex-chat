@@ -13,8 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import chat.simplex.app.ui.theme.ToolbarDark
-import chat.simplex.app.ui.theme.ToolbarLight
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun DefaultTopAppBar(
@@ -39,7 +38,7 @@ fun DefaultTopAppBar(
         SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
       }
     },
-    backgroundColor = if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight,
+    backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
     centered = !showSearch

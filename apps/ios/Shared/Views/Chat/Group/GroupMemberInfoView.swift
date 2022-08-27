@@ -15,7 +15,7 @@ struct GroupMemberInfoView: View {
     var groupInfo: GroupInfo
     var member: GroupMember
     var connectionStats: ConnectionStats?
-    var mainProfile: Profile?
+    var mainProfile: LocalProfile?
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -30,6 +30,12 @@ struct GroupMemberInfoView: View {
             List {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
+
+//                if let contactId = member.memberContactId {
+//                    Section {
+//                        openDirectChatButton(contactId)
+//                    }
+//                }
 
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
@@ -76,7 +82,24 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func mainProfileRow(_ mainProfile: Profile) -> some View {
+    func openDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            if let i = chatModel.chats.firstIndex(where: { chat in
+                switch chat.chatInfo {
+                case let .direct(contact): return contact.contactId == contactId
+                default: return false
+                }
+            }) {
+                dismissAllSheets(animated: true)
+                chatModel.chatId = chatModel.chats[i].chatInfo.id
+            }
+        } label: {
+            Label("Send direct message", systemImage: "message")
+                .foregroundColor(.accentColor)
+        }
+    }
+
+    private func mainProfileRow(_ mainProfile: LocalProfile) -> some View {
         HStack {
             Text("Known main profile")
             Spacer()

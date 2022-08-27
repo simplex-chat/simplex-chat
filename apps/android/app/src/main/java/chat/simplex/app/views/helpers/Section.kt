@@ -1,5 +1,4 @@
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -8,8 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
-import chat.simplex.app.ui.theme.GroupDark
-import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.ui.theme.*
 
 @Composable
 fun SectionView(title: String? = null, content: (@Composable () -> Unit)) {
@@ -20,7 +18,7 @@ fun SectionView(title: String? = null, content: (@Composable () -> Unit)) {
         modifier = Modifier.padding(start = 16.dp, bottom = 5.dp), fontSize = 12.sp
       )
     }
-    Surface(color = if (isSystemInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
+    Surface(color = if (isInDarkTheme()) GroupDark else MaterialTheme.colors.background) {
       Column(Modifier.padding(horizontal = 6.dp).fillMaxWidth()) { content() }
     }
   }
@@ -41,6 +39,27 @@ fun SectionItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: B
 }
 
 @Composable
+fun SectionItemViewSpaceBetween(
+  click: (() -> Unit)? = null,
+  height: Dp = 46.dp,
+  padding: PaddingValues = PaddingValues(horizontal = 8.dp),
+  disabled: Boolean = false,
+  content: (@Composable () -> Unit)
+) {
+  val modifier = Modifier
+    .padding(padding)
+    .fillMaxWidth()
+    .height(height)
+  Row(
+    if (click == null || disabled) modifier else modifier.clickable(onClick = click),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+  }
+}
+
+@Composable
 fun SectionTextFooter(text: String) {
   Text(
     text,
@@ -51,9 +70,9 @@ fun SectionTextFooter(text: String) {
 }
 
 @Composable
-fun SectionCustomFooter(content: (@Composable () -> Unit)) {
+fun SectionCustomFooter(padding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 5.dp), content: (@Composable () -> Unit)) {
   Row(
-    Modifier.padding(horizontal = 16.dp).padding(top = 5.dp)
+    Modifier.padding(padding)
   ) {
     content()
   }
