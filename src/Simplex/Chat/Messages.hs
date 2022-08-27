@@ -502,9 +502,7 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
-  RGEMemberConnected contactMainProfile -> case contactMainProfile of
-    Just p -> profileToText p <> " connected incognito"
-    Nothing -> "connected"
+  RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
@@ -535,15 +533,15 @@ data CIContent (d :: MsgDirection) where
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
--- ^^^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
--- ! ^^^ Nested sum types also have to use different encodings for database and API
--- ! ^^^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
+-- ^ ^^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
+--  ! ^^^ Nested sum types also have to use different encodings for database and API
+--  ! ^^^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected {contactMainProfile :: Maybe Profile} -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
+  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
@@ -594,8 +592,7 @@ data CIGroupInvitation = CIGroupInvitation
     groupMemberId :: GroupMemberId,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
-    status :: CIGroupInvitationStatus,
-    invitedIncognito :: Maybe Bool
+    status :: CIGroupInvitationStatus
   }
   deriving (Eq, Show, Generic, FromJSON)
 

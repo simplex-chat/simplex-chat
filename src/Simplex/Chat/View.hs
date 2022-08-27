@@ -65,7 +65,7 @@ responseToView testView = \case
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
-  CRGroupMemberInfo g m cStats mainProfile -> viewGroupMemberInfo g m cStats mainProfile
+  CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
   CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
@@ -89,10 +89,10 @@ responseToView testView = \case
   CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
   CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated g customUserProfile -> viewGroupCreated g customUserProfile testView
+  CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
-  CRSentGroupInvitation g c _ sentCustomProfile -> viewSentGroupInvitation g c sentCustomProfile
+  CRSentGroupInvitation g c _ -> viewSentGroupInvitation g c
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
@@ -139,11 +139,10 @@ responseToView testView = \case
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
-  CRGroupInvitation GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} ->
-    [groupInvitation' ldn fullName $ memberIncognito membership]
-  CRReceivedGroupInvitation g c role receivedCustomProfile -> viewReceivedGroupInvitation g c role receivedCustomProfile
-  CRUserJoinedGroup g _ usedCustomProfile -> viewUserJoinedGroup g usedCustomProfile testView
-  CRJoinedGroupMember g m mainProfile -> viewJoinedGroupMember g m mainProfile
+  CRGroupInvitation g -> [groupInvitation' g]
+  CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
+  CRUserJoinedGroup g _ -> viewUserJoinedGroup g
+  CRJoinedGroupMember g m -> viewJoinedGroupMember g m
   CRHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
@@ -370,11 +369,9 @@ viewConnReqInvitation cReq =
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
 
-viewSentGroupInvitation :: GroupInfo -> Contact -> Maybe Profile -> [StyledString]
-viewSentGroupInvitation g c sentCustomProfile =
-  if isJust sentCustomProfile
-    then ["invitation to join the group " <> ttyGroup' g <> " incognito sent to " <> ttyContact' c]
-    else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+viewSentGroupInvitation :: GroupInfo -> Contact -> [StyledString]
+viewSentGroupInvitation g c =
+  ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
 
 viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
@@ -428,22 +425,11 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> c) <> " (the sender will NOT be notified)"
   ]
 
-viewGroupCreated :: GroupInfo -> Maybe Profile -> Bool -> [StyledString]
-viewGroupCreated g@GroupInfo {localDisplayName} incognitoProfile testView =
-  case incognitoProfile of
-    Just profile ->
-      if testView
-        then incognitoProfile' profile : message
-        else message
-      where
-        message =
-          [ "group " <> ttyFullGroup g <> " is created incognito, your profile for this group: " <> incognitoProfile' profile,
-            "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
-          ]
-    Nothing ->
-      [ "group " <> ttyFullGroup g <> " is created",
-        "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
-      ]
+viewGroupCreated :: GroupInfo -> [StyledString]
+viewGroupCreated g@GroupInfo {localDisplayName} =
+  [ "group " <> ttyFullGroup g <> " is created",
+    "use " <> highlight ("/a " <> localDisplayName <> " <name>") <> " to add members"
+  ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
@@ -451,33 +437,22 @@ viewCannotResendInvitation GroupInfo {localDisplayName = gn} c =
     "to re-send invitation: " <> highlight ("/rm " <> gn <> " " <> c) <> ", " <> highlight ("/a " <> gn <> " " <> c)
   ]
 
-viewUserJoinedGroup :: GroupInfo -> Bool -> Bool -> [StyledString]
-viewUserJoinedGroup g@GroupInfo {membership = GroupMember {memberProfile}} incognito testView =
-  if incognito
-    then
-      if testView
-        then incognitoProfile' (fromLocalProfile memberProfile) : incognitoMessage
-        else incognitoMessage
+viewUserJoinedGroup :: GroupInfo -> [StyledString]
+viewUserJoinedGroup g@GroupInfo {membership = membership@GroupMember {memberProfile}} =
+  if memberIncognito membership
+    then [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
     else [ttyGroup' g <> ": you joined the group"]
-  where
-    incognitoMessage = [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
 
-viewJoinedGroupMember :: GroupInfo -> GroupMember -> Maybe Profile -> [StyledString]
-viewJoinedGroupMember g m@GroupMember {localDisplayName} = \case
-  Just Profile {displayName = mainProfileName} -> [ttyGroup' g <> ": " <> ttyContact mainProfileName <> " joined the group incognito as " <> styleIncognito localDisplayName]
-  Nothing -> [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
+viewJoinedGroupMember :: GroupInfo -> GroupMember -> [StyledString]
+viewJoinedGroupMember g m =
+  [ttyGroup' g <> ": " <> ttyMember m <> " joined the group "]
 
-viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> Maybe Profile -> [StyledString]
-viewReceivedGroupInvitation g c role hostIncognitoProfile =
-  case hostIncognitoProfile of
-    Just profile ->
-      [ ttyFullGroup g <> ": " <> ttyContact' c <> " (known to the group as " <> incognitoProfile' profile <> ") invites you to join the group incognito as " <> plain (strEncode role),
-        "use " <> highlight ("/j " <> groupName' g) <> " to join this group incognito"
-      ]
-    Nothing ->
-      [ ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role),
-        "use " <> highlight ("/j " <> groupName' g) <> " to accept"
-      ]
+viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
+viewReceivedGroupInvitation g@GroupInfo {membership = membership@GroupMember {memberProfile}} c role =
+  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role) :
+  if memberIncognito membership
+    then ["use " <> highlight ("/j " <> groupName' g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile memberProfile)]
+    else ["use " <> highlight ("/j " <> groupName' g) <> " to accept"]
 
 groupPreserved :: GroupInfo -> [StyledString]
 groupPreserved g = ["use " <> highlight ("/d #" <> groupName' g) <> " to delete the group"]
@@ -529,9 +504,9 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
+    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
       case memberStatus membership of
-        GSMemInvited -> groupInvitation' ldn fullName $ memberIncognito membership
+        GSMemInvited -> groupInvitation' g
         s -> incognito <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
       where
         incognito = if memberIncognito membership then incognitoPrefix else ""
@@ -542,20 +517,20 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           _ -> ""
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
 
-groupInvitation' :: GroupName -> Text -> Bool -> StyledString
-groupInvitation' displayName fullName membershipIncognito =
-  highlight ("#" <> displayName)
-    <> optFullName displayName fullName
-    <> invitationText
-    <> highlight ("/j " <> displayName)
-    <> " to join, "
-    <> highlight ("/d #" <> displayName)
+groupInvitation' :: GroupInfo -> StyledString
+groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership = membership@GroupMember {memberProfile}} =
+  highlight ("#" <> ldn)
+    <> optFullName ldn fullName
+    <> " - you are invited ("
+    <> highlight ("/j " <> ldn)
+    <> joinText
+    <> highlight ("/d #" <> ldn)
     <> " to delete invitation)"
   where
-    invitationText =
-      if membershipIncognito
-        then " - you are invited incognito ("
-        else " - you are invited ("
+    joinText =
+      if memberIncognito membership
+        then " to join as " <> incognitoProfile' (fromLocalProfile memberProfile) <> ","
+        else " to join, "
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
 viewContactsMerged _into@Contact {localDisplayName = c1} _merged@Contact {localDisplayName = c2} =
@@ -603,21 +578,13 @@ viewContactInfo Contact {contactId, profile = LocalProfile {localAlias}} stats i
       incognitoProfile
     <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["alias not set"]
 
-viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> Maybe LocalProfile -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias = mpLocalAlias}} stats mainProfile =
+viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
+viewGroupMemberInfo GroupInfo {groupId} GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
-    <> maybe
-      ["unknown whether group member uses his main profile or incognito one for the group"]
-      (\LocalProfile {displayName, fullName} -> ["member is using " <> styleIncognito' "incognito" <> " profile for the group, main profile known: " <> ttyFullName displayName fullName])
-      mainProfile
-    <> if alias /= "" then ["alias: " <> plain alias] else ["no alias for contact"]
-  where
-    alias = case mainProfile of
-      Nothing -> mpLocalAlias
-      Just LocalProfile {localAlias = lpLocalAlias} -> lpLocalAlias
+    <> if localAlias /= "" then ["alias: " <> plain localAlias] else ["no alias for contact"]
 
 viewConnectionStats :: ConnectionStats -> [StyledString]
 viewConnectionStats ConnectionStats {rcvServers, sndServers} =
@@ -916,7 +883,8 @@ viewChatError = \case
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole -> ["you have insufficient permissions for this group command"]
-    CEGroupNotIncognitoCantInvite -> ["you're using main profile for this group - prohibited to invite contact to whom you are connected incognito"]
+    CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
+    CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> groupName' g)]
     CEGroupMemberNotActive -> ["you cannot invite other members yet, try later"]

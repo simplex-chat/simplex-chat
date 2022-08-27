@@ -82,14 +82,12 @@ module Simplex.Chat.Store
     getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
-    createMemberIncognitoProfile,
     createNewGroupMember,
     deleteGroupMember,
     deleteGroupMemberConnection,
     createIntroductions,
     updateIntroStatus,
     saveIntroInvitation,
-    getGroupMemberProfileId,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -1325,8 +1323,8 @@ updateConnectionStatus db Connection {connId} connStatus = do
   DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
+createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
+createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
   let GroupProfile {displayName, fullName, image} = groupProfile
   currentTs <- getCurrentTime
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
@@ -1342,14 +1340,13 @@ createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = Except
         (ldn, userId, profileId, True, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
-    -- TODO ldn from incognito profile
-    membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser incognitoProfile currentTs
+    membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
     let chatSettings = ChatSettings {enableNtfs = True}
     pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs}
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
-createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe Profile -> ExceptT StoreError IO GroupInfo
-createGroupInvitation db user@User {userId} contact@Contact {contactId, activeConn = Connection {customUserProfileId}} GroupInvitation {fromMember, fromMemberProfile, invitedMember, connRequest, groupProfile} incognitoProfile = do
+createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO GroupInfo
+createGroupInvitation db user@User {userId} contact@Contact {contactId, activeConn = Connection {customUserProfileId}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     -- TODO treat the case that the invitation details could've changed
@@ -1376,17 +1373,17 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
               "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
               (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs)
             insertedRowId db
-          _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown fromMemberProfile currentTs
-          membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfile currentTs
+          _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs
+          membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs
           let chatSettings = ChatSettings {enableNtfs = True}
           pure GroupInfo {groupId, localDisplayName, groupProfile, membership, hostConnCustomUserProfileId = customUserProfileId, chatSettings, createdAt = currentTs, updatedAt = currentTs}
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe Profile -> UTCTime -> ExceptT StoreError IO GroupMember
-createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfile createdAt = do
-  incognitoProfileId <- liftIO $ createIncognitoProfile_ db userId createdAt incognitoProfile
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> UTCTime -> ExceptT StoreError IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId createdAt = do
+  incognitoProfile <- forM incognitoProfileId $ \profileId -> getProfileById db userId profileId
   (localDisplayName, memberProfile) <- case (incognitoProfile, incognitoProfileId) of
-    (Just profile@Profile {displayName}, Just profileId) ->
-      (,toLocalProfile profileId profile "") <$> insertMemberIncognitoProfile_ displayName profileId
+    (Just profile@LocalProfile {displayName}, Just profileId) ->
+      (,profile) <$> insertMemberIncognitoProfile_ displayName profileId
     _ -> (,profile' userOrContact) <$> liftIO insertMember_
   groupMemberId <- liftIO $ insertedRowId db
   pure
@@ -1660,25 +1657,6 @@ updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
     |]
     (memStatus, currentTs, userId, groupMemberId)
 
-createMemberIncognitoProfile :: DB.Connection -> UserId -> GroupMember -> Maybe Profile -> ExceptT StoreError IO GroupMember
-createMemberIncognitoProfile db userId m@GroupMember {groupMemberId} incognitoProfile = do
-  currentTs <- liftIO getCurrentTime
-  incognitoProfileId <- liftIO $ createIncognitoProfile_ db userId currentTs incognitoProfile
-  case (incognitoProfile, incognitoProfileId) of
-    (Just profile@Profile {displayName}, Just profileId) ->
-      ExceptT $
-        withLocalDisplayName db userId displayName $ \incognitoLdn -> do
-          DB.execute
-            db
-            [sql|
-              UPDATE group_members
-              SET local_display_name = ?, member_profile_id = ?, updated_at = ?
-              WHERE user_id = ? AND group_member_id = ?
-            |]
-            (incognitoLdn, profileId, currentTs, userId, groupMemberId)
-          pure . Right $ m {localDisplayName = incognitoLdn, memberProfile = toLocalProfile profileId profile ""}
-    _ -> pure m
-
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
 createNewGroupMember db user@User {userId} gInfo memInfo@(MemberInfo _ _ Profile {displayName, fullName, image}) memCategory memStatus =
@@ -1833,18 +1811,6 @@ getIntroduction_ db reMember toMember = ExceptT $ do
       let introInvitation = IntroInvitation <$> groupConnReq <*> directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
-
-getGroupMemberProfileId :: DB.Connection -> UserId -> GroupMember -> ExceptT StoreError IO Int64
-getGroupMemberProfileId db userId GroupMember {groupMemberId, groupId} =
-  ExceptT . firstRow fromOnly (SEGroupMemberNotFound {groupId, groupMemberId}) $
-    DB.query
-      db
-      [sql|
-        SELECT contact_profile_id
-        FROM group_members
-        WHERE user_id = ? AND group_member_id = ?
-      |]
-      (userId, groupMemberId)
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> ConnId -> ConnId -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) groupAgentConnId directAgentConnId customUserProfileId = do
