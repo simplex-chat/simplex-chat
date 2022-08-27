@@ -1432,9 +1432,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m
-                -- [incognito] unless connected incognito
                 let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-                when (memberCategory m == GCPreMember && not connectedIncognito) $ probeMatchingContacts ct
+                when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
           withStore' (\db -> getDirectChatItemByAgentMsgId db userId contactId connId msgId) >>= \case
@@ -1522,9 +1521,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m
-                  -- [incognito] unless connected incognito
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
-                  when (memberCategory m == GCPreMember && not connectedIncognito) $ probeMatchingContacts ct
+                  when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
         msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody
         withAckMessage agentConnId msgMeta $
@@ -1711,14 +1709,18 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       setActive $ ActiveG g
       showToast ("#" <> g) $ "member " <> c <> " is connected"
 
-    probeMatchingContacts :: Contact -> m ()
-    probeMatchingContacts ct = do
+    probeMatchingContacts :: Contact -> Bool -> m ()
+    probeMatchingContacts ct connectedIncognito = do
       gVar <- asks idsDrg
       (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId ct
       void . sendDirectContactMessage ct $ XInfoProbe probe
-      cs <- withStore' $ \db -> getMatchingContacts db userId ct
-      let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
-      forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
+      if connectedIncognito
+        then
+          withStore' $ \db -> deleteSentProbe db userId probeId
+        else do
+          cs <- withStore' $ \db -> getMatchingContacts db userId ct
+          let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
+          forM_ cs $ \c -> sendProbeHash c probeHash probeId `catchError` const (pure ())
       where
         sendProbeHash :: Contact -> ProbeHash -> Int64 -> m ()
         sendProbeHash c probeHash probeId = do
