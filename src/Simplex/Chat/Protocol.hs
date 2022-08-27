@@ -112,10 +112,6 @@ instance StrEncoding ChatMessage where
   strDecode = appToChatMessage <=< J.eitherDecodeStrict'
   strP = strDecode <$?> A.takeByteString
 
--- XGrpAcpt MemberId (Maybe Profile):
--- this extended command was used for incognito profile negotiation between invitee and host,
--- but was removed after simplification of the feature
-
 data ChatMsgEvent
   = XMsgNew MsgContainer
   | XMsgUpdate SharedMsgId MsgContent
@@ -128,7 +124,7 @@ data ChatMsgEvent
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
   | XGrpInv GroupInvitation
-  | XGrpAcpt MemberId -- (Maybe Profile) - see above
+  | XGrpAcpt MemberId
   | XGrpMemNew MemberInfo
   | XGrpMemIntro MemberInfo
   | XGrpMemInv MemberId IntroInvitation

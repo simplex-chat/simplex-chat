@@ -533,9 +533,9 @@ data CIContent (d :: MsgDirection) where
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
--- ^ ^^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
---  ! ^^^ Nested sum types also have to use different encodings for database and API
---  ! ^^^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
+-- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
+-- ! ^ Nested sum types also have to use different encodings for database and API
+-- ! ^ to avoid breaking cross-platform compatibility, see RcvGroupEvent and SndGroupEvent
 
 deriving instance Show (CIContent d)
 

@@ -529,7 +529,7 @@ groupInvitation' GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile 
   where
     joinText =
       if memberIncognito membership
-        then " to join as " <> incognitoProfile' (fromLocalProfile memberProfile) <> ","
+        then " to join as " <> incognitoProfile' (fromLocalProfile memberProfile) <> ", "
         else " to join, "
 
 viewContactsMerged :: Contact -> Contact -> [StyledString]
