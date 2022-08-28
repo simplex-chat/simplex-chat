@@ -27,7 +27,7 @@ jobs:
 
       - name: Install dependencies & build
         run: |
-          bash web.sh
+          ./website/web.sh
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
