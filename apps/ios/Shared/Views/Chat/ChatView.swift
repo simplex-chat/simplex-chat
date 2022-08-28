@@ -240,6 +240,7 @@ struct ChatView: View {
                 }
                 .onChange(of: chatModel.chatId) { _ in
                     if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                        showChatInfoSheet = false
                         loadChat(chat: chat)
                         DispatchQueue.main.async {
                             scrollToBottom(proxy)
