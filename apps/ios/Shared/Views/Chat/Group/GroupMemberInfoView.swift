@@ -30,11 +30,11 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
-//                if let contactId = member.memberContactId {
-//                    Section {
-//                        openDirectChatButton(contactId)
-//                    }
-//                }
+                if let contactId = member.memberContactId {
+                    Section {
+                        openDirectChatButton(contactId)
+                    }
+                }
 
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
@@ -80,18 +80,12 @@ struct GroupMemberInfoView: View {
 
     func openDirectChatButton(_ contactId: Int64) -> some View {
         Button {
-            if let i = chatModel.chats.firstIndex(where: { chat in
-                switch chat.chatInfo {
-                case let .direct(contact): return contact.contactId == contactId
-                default: return false
-                }
-            }) {
+            if let chat = chatModel.getContactChat(contactId) {
                 dismissAllSheets(animated: true)
-                chatModel.chatId = chatModel.chats[i].chatInfo.id
+                chatModel.chatId = chat.id
             }
         } label: {
             Label("Send direct message", systemImage: "message")
-                .foregroundColor(.accentColor)
         }
     }
 

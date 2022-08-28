@@ -8,10 +8,9 @@
 
 import SwiftUI
 
-struct NavLinkPlain<V: Hashable, Destination: View, Label: View>: View {
+struct NavLinkPlain<V: Hashable, Label: View>: View {
     @State var tag: V
     @Binding var selection: V?
-    @ViewBuilder var destination: () -> Destination
     @ViewBuilder var label: () -> Label
     var disabled = false
 
@@ -20,10 +19,6 @@ struct NavLinkPlain<V: Hashable, Destination: View, Label: View>: View {
             Button("") { selection = tag }
                 .disabled(disabled)
             label()
-        }
-        .background {
-            NavigationLink("", tag: tag, selection: $selection, destination: destination)
-                .hidden()
         }
     }
 }
