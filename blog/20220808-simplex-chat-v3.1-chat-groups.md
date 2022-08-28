@@ -15,7 +15,9 @@ date: 2022-08-08
 - [advanced network settings](#advanced-network-settings)
 - [published chat protocol](#published-chat-protocol)
 - [new app icons](#new-app-icons)
-- [other changes since v3](#other-changes-since-v3)
+- [other changes since v3](#other-changes-since-v3):
+  - optimized battery and traffic usage - up to 90x reduction!
+  - two docker configurations for self-hosted SMP servers
 
 ### Secret chat groups
 
