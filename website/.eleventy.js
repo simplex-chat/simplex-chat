@@ -1,33 +1,33 @@
 // const Card = require('./src/_includes/components/Card');
 
-module.exports = function (eleventyConfig) {
-    // Keeps the same directory structure.
-    eleventyConfig.addPassthroughCopy("src/assets/");
-    eleventyConfig.addPassthroughCopy("src/img");
-    eleventyConfig.addPassthroughCopy("src/css");
-    eleventyConfig.addPassthroughCopy("src/js");
-    eleventyConfig.addPassthroughCopy("src/contact");
-    eleventyConfig.addPassthroughCopy("src/app-demo");
+module.exports = (ty) => {
+  // Keeps the same directory structure.
+  ty.addPassthroughCopy("src/assets/")
+  ty.addPassthroughCopy("src/img")
+  ty.addPassthroughCopy("src/css")
+  ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/contact")
+  ty.addPassthroughCopy("src/app-demo")
 
-    eleventyConfig.addCollection('blogs', function (collection) {
-        return collection.getFilteredByGlob('src/blog/*.md').reverse();
-    });
+  ty.addCollection("blogs", (collection) =>
+    collection.getFilteredByGlob("src/blog/*.md").reverse()
+  )
 
-    eleventyConfig.addWatchTarget("src/css");
-    eleventyConfig.addWatchTarget("markdown/");
-    eleventyConfig.addWatchTarget("components/Card.js");
+  ty.addWatchTarget("src/css")
+  ty.addWatchTarget("markdown/")
+  ty.addWatchTarget("components/Card.js")
 
-    // eleventyConfig.addShortcode("Card",Card);
+  // ty.addShortcode("Card",Card);
 
-    return {
-        dir: {
-            input: 'src',
-            includes: '_includes',
-            output: '_site',
-        },
-        templateFormats: ['md', 'njk', 'html'],
-        markdownTemplateEngine: 'njk',
-        htmlTemplateEngine: 'njk',
-        dataTemplateEngine: 'njk',
-    };
-};
+  return {
+    dir: {
+      input: 'src',
+      includes: '_includes',
+      output: '_site',
+    },
+    templateFormats: ['md', 'njk', 'html'],
+    markdownTemplateEngine: 'njk',
+    htmlTemplateEngine: 'njk',
+    dataTemplateEngine: 'njk',
+  }
+}
