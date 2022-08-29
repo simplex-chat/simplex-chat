@@ -221,6 +221,7 @@ struct GroupChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
+                            chatModel.chatId = nil
                             dismiss()
                         }
                     } catch let error {

@@ -28,16 +28,10 @@ struct ChatListNavLink: View {
         }
     }
 
-    private func chatView() -> some View {
-        ChatView(chat: chat)
-            .onAppear { loadChat(chat: chat) }
-    }
-
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
         let v = NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            destination: { chatView() },
             label: { ChatPreviewView(chat: chat) },
             disabled: !contact.ready
         )
@@ -97,7 +91,6 @@ struct ChatListNavLink: View {
             NavLinkPlain(
                 tag: chat.chatInfo.id,
                 selection: $chatModel.chatId,
-                destination: { chatView() },
                 label: { ChatPreviewView(chat: chat) },
                 disabled: !groupInfo.ready
             )

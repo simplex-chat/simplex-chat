@@ -72,7 +72,10 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "chevron.backward")
+                    HStack(spacing: 0) {
+                        Image(systemName: "chevron.backward")
+                        Text("Chats")
+                    }
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -234,6 +237,15 @@ struct ChatView: View {
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
+                }
+                .onChange(of: chatModel.chatId) { _ in
+                    if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                        showChatInfoSheet = false
+                        loadChat(chat: chat)
+                        DispatchQueue.main.async {
+                            scrollToBottom(proxy)
+                        }
+                    }
                 }
             }
         }
