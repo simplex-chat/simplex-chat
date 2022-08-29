@@ -1390,12 +1390,9 @@ public struct CIGroupInvitation: Decodable {
     public var localDisplayName: GroupName
     public var groupProfile: GroupProfile
     public var status: CIGroupInvitationStatus
-    public var invitedIncognito: Bool?
 
     var text: String {
-        (invitedIncognito ?? false) ?
-        String.localizedStringWithFormat(NSLocalizedString("incognito invitation to group %@", comment: "group name"), groupProfile.displayName)
-        : String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
+        String.localizedStringWithFormat(NSLocalizedString("invitation to group %@", comment: "group name"), groupProfile.displayName)
     }
 
     public static func getSample(groupId: Int64 = 1, groupMemberId: Int64 = 1, localDisplayName: GroupName = "team", groupProfile: GroupProfile = GroupProfile.sampleData, status: CIGroupInvitationStatus = .pending) -> CIGroupInvitation {
@@ -1412,7 +1409,7 @@ public enum CIGroupInvitationStatus: String, Decodable {
 
 public enum RcvGroupEvent: Decodable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
-    case memberConnected(contactMainProfile: Profile?)
+    case memberConnected
     case memberLeft
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
@@ -1423,12 +1420,7 @@ public enum RcvGroupEvent: Decodable {
         switch self {
         case let .memberAdded(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
-        case let .memberConnected(contactMainProfile):
-            if let contactMainProfile = contactMainProfile {
-                return String.localizedStringWithFormat(NSLocalizedString("known to you as %@ connected incognito", comment: "rcv group event chat item"), contactMainProfile.profileViewName)
-            } else {
-                return NSLocalizedString("member connected", comment: "rcv group event chat item")
-            }
+        case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
