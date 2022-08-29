@@ -86,6 +86,7 @@ defaultChatConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
             dbFile = "simplex_v1",
+            dbKey = "",
             yesToMigrations = False
           },
       yesToMigrations = False,
@@ -124,7 +125,7 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, dbKey, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -132,7 +133,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db", dbKey} servers {netCfg = networkConfig}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -1715,8 +1716,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId ct
       void . sendDirectContactMessage ct $ XInfoProbe probe
       if connectedIncognito
-        then
-          withStore' $ \db -> deleteSentProbe db userId probeId
+        then withStore' $ \db -> deleteSentProbe db userId probeId
         else do
           cs <- withStore' $ \db -> getMatchingContacts db userId ct
           let probeHash = ProbeHash $ C.sha256Hash (unProbe probe)

@@ -31,6 +31,8 @@ import System.Timeout (timeout)
 
 foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
 
+foreign export ccall "chat_init_key" cChatInitKey :: CString -> CString -> IO (StablePtr ChatController)
+
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -43,6 +45,12 @@ foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO C
 -- The active user has to be created and the chat has to be started before most commands can be used.
 cChatInit :: CString -> IO (StablePtr ChatController)
 cChatInit fp = peekCAString fp >>= chatInit >>= newStablePtr
+
+-- | initialize chat controller with encrypted database
+-- The active user has to be created and the chat has to be started before most commands can be used.
+cChatInitKey :: CString -> CString -> IO (StablePtr ChatController)
+cChatInitKey fp key =
+  ((,) <$> peekCAString fp <*> peekCAString key) >>= uncurry chatInitKey >>= newStablePtr
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
@@ -67,6 +75,7 @@ mobileChatOpts :: ChatOpts
 mobileChatOpts =
   ChatOpts
     { dbFilePrefix = undefined,
+      dbKey = "",
       smpServers = [],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
@@ -91,9 +100,12 @@ getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatInit :: String -> IO ChatController
-chatInit dbFilePrefix = do
+chatInit = (`chatInitKey` "")
+
+chatInitKey :: String -> String -> IO ChatController
+chatInitKey dbFilePrefix dbKey = do
   let f = chatStoreFile dbFilePrefix
-  chatStore <- createStore f (yesToMigrations (defaultMobileConfig :: ChatConfig))
+  chatStore <- createStore f dbKey (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
   newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
 

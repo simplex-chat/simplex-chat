@@ -23,7 +23,7 @@ simplexChatCore cfg@ChatConfig {yesToMigrations} opts sendToast chat
   where
     initRun = do
       let f = chatStoreFile $ dbFilePrefix opts
-      st <- createStore f yesToMigrations
+      st <- createStore f (dbKey opts) yesToMigrations
       u <- getCreateActiveUser st
       cc <- newChatController st (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat
