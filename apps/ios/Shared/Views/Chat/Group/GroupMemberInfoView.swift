@@ -85,8 +85,9 @@ struct GroupMemberInfoView: View {
                 do {
                     chat = try apiGetChat(type: .direct, id: contactId)
                     if let chat = chat {
+                        // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+                        chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
                         chatModel.addChat(chat)
-                        // TODO update chat network status
                     }
                 } catch let error {
                     logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
