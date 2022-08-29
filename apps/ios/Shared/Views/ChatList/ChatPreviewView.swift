@@ -176,7 +176,7 @@ struct ChatPreviewView: View {
                 .frame(width: 17, height: 17)
                 .foregroundColor(.secondary)
         default:
-            ProgressView()
+            EmptyView() // ProgressView() -- this is because we don't update chat network status after adding chat to model when opening new direct chat for group member
         }
     }
 }

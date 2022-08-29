@@ -80,7 +80,19 @@ struct GroupMemberInfoView: View {
 
     func openDirectChatButton(_ contactId: Int64) -> some View {
         Button {
-            if let chat = chatModel.getContactChat(contactId) {
+            var chat = chatModel.getContactChat(contactId)
+            if chat == nil {
+                do {
+                    chat = try apiGetChat(type: .direct, id: contactId)
+                    if let chat = chat {
+                        chatModel.addChat(chat)
+                        // TODO update chat network status
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                }
+            }
+            if let chat = chat {
                 dismissAllSheets(animated: true)
                 chatModel.chatId = chat.id
             }
