@@ -51,7 +51,7 @@ struct AddGroupView: View {
                 HStack {
                     Image(systemName: "info.circle").foregroundColor(.orange).font(.footnote)
                     Spacer().frame(width: 8)
-                    Text("Incognito mode is not supported for groups - your main profile will be sent to group members").font(.footnote)
+                    Text("Incognito mode is not supported here - your main profile will be sent to group members").font(.footnote)
                 }
                 .padding(.bottom)
             } else {
