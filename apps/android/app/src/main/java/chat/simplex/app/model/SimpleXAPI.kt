@@ -422,9 +422,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
-  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): Pair<ConnectionStats?, Profile?>? {
+  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): Pair<ConnectionStats?, LocalProfile?>? {
     val r = sendCmd(CC.APIGroupMemberInfo(groupId, groupMemberId))
-    if (r is CR.GroupMemberInfo) return r.connectionStats_ to r.mainProfile
+    if (r is CR.GroupMemberInfo) return r.connectionStats_ to r.localMainProfile
     Log.e(TAG, "apiGroupMemberInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -525,6 +525,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.ApiParseMarkdown(text))
     if (r is CR.ParsedMarkdown) return r.formattedText
     Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiSetContactAlias(contactId: Long, localAlias: String): Contact? {
+    val r = sendCmd(CC.ApiSetContactAlias(contactId, localAlias))
+    if (r is CR.ContactAliasUpdated) return r.toContact
+    Log.e(TAG, "apiSetContactAlias bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1174,6 +1181,7 @@ sealed class CC {
   class ListContacts: CC()
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
+  class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1226,6 +1234,7 @@ sealed class CC {
     is ListContacts -> "/contacts"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
+    is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1279,6 +1288,7 @@ sealed class CC {
     is ListContacts -> "listContacts"
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
+    is ApiSetContactAlias -> "apiSetContactAlias"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1426,7 +1436,7 @@ sealed class CR {
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
-  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?, val mainProfile: Profile? = null): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?, val localMainProfile: LocalProfile? = null): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -1435,6 +1445,7 @@ sealed class CR {
   @Serializable @SerialName("chatCleared") class ChatCleared(val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
@@ -1521,6 +1532,7 @@ sealed class CR {
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
+    is ContactAliasUpdated -> "contactAliasUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
@@ -1596,7 +1608,7 @@ sealed class CR {
     is UserSMPServers -> json.encodeToString(smpServers)
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
-    is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
+    is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}\nlocalMainProfile: ${json.encodeToString(localMainProfile)}"
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()
@@ -1605,6 +1617,7 @@ sealed class CR {
     is ChatCleared -> json.encodeToString(chatInfo)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
+    is ContactAliasUpdated -> json.encodeToString(toContact)
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> connReqContact
     is UserContactLinkCreated -> connReqContact

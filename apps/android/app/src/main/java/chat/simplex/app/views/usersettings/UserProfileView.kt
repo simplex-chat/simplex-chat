@@ -22,8 +22,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.Profile
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
@@ -37,7 +36,7 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
   val user = chatModel.currentUser.value
   if (user != null) {
     val editProfile = remember { mutableStateOf(false) }
-    var profile by remember { mutableStateOf(user.profile) }
+    var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
       close = close,
       editProfile = editProfile,
@@ -47,7 +46,9 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
           val p = Profile(displayName, fullName, image)
           val newProfile = chatModel.controller.apiUpdateProfile(p)
           if (newProfile != null) {
-            chatModel.updateUserProfile(newProfile)
+            chatModel.currentUser.value?.profile?.profileId?.let {
+              chatModel.updateUserProfile(newProfile.toLocalProfile(it))
+            }
             profile = newProfile
           }
           editProfile.value = false

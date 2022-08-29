@@ -151,6 +151,7 @@
     <string name="delete_contact_question">Удалить контакт?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
+    <string name="text_field_set_contact_placeholder">Имя контакта…</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>

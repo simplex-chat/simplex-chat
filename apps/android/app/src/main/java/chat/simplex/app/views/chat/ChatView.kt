@@ -117,7 +117,9 @@ fun ChatView(chatModel: ChatModel) {
                 close = close, modifier = Modifier,
                 background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
-                ChatInfoView(chatModel, contactInfo?.first, contactInfo?.second, close)
+                ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
+                  activeChat = it
+                }
               }
             }
           } else if (cInfo is ChatInfo.Group) {
@@ -389,7 +391,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
         cInfo.displayName, fontWeight = FontWeight.SemiBold,
         maxLines = 1, overflow = TextOverflow.Ellipsis
       )
-      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
           cInfo.fullName,
           maxLines = 1, overflow = TextOverflow.Ellipsis

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -137,7 +138,7 @@ fun GroupChatInfoLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      ChatInfoHeader(chat.chatInfo)
+      GroupChatInfoHeader(chat.chatInfo)
     }
     SectionSpacer()
 
@@ -201,6 +202,30 @@ fun GroupChatInfoLayout(
         InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
       }
       SectionSpacer()
+    }
+  }
+}
+
+@Composable
+fun GroupChatInfoHeader(cInfo: ChatInfo) {
+  Column(
+    Modifier.padding(horizontal = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    Text(
+      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.onBackground,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      Text(
+        cInfo.fullName, style = MaterialTheme.typography.h2,
+        color = MaterialTheme.colors.onBackground,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+      )
     }
   }
 }

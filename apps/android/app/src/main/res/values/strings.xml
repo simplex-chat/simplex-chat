@@ -151,6 +151,7 @@
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
   <string name="button_delete_contact">Delete contact</string>
+  <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
   <string name="icon_descr_server_status_error">Error</string>

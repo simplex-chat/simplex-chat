@@ -88,7 +88,7 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
-  profile: Profile,
+  profile: LocalProfile,
   stopped: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
@@ -397,7 +397,7 @@ fun SettingsPreferenceItemWithInfo(
 fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
-      profile = Profile.sampleData,
+      profile = LocalProfile.sampleData,
       stopped = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = Preference({ false}, {}),

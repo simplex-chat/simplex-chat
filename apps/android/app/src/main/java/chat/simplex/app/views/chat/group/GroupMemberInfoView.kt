@@ -31,7 +31,7 @@ fun GroupMemberInfoView(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
-  mainProfile: Profile?,
+  memberMainProfile: LocalProfile?,
   chatModel: ChatModel,
   close: () -> Unit
 ) {
@@ -43,7 +43,7 @@ fun GroupMemberInfoView(
       groupInfo,
       member,
       connStats,
-      mainProfile,
+      memberMainProfile,
       developerTools,
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
@@ -72,7 +72,7 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
-  mainProfile: Profile?,
+  memberMainProfile: LocalProfile?,
   developerTools: Boolean,
   removeMember: () -> Unit,
 ) {
@@ -92,8 +92,8 @@ fun GroupMemberInfoLayout(
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
-      if (mainProfile != null) {
-        MainProfileRow(member, mainProfile)
+      if (memberMainProfile != null) {
+        MainProfileRow(member, memberMainProfile)
       }
       val conn = member.activeConn
       if (conn != null) {
@@ -146,7 +146,7 @@ fun GroupMemberInfoLayout(
 }
 
 @Composable
-private fun MainProfileRow(member: GroupMember, mainProfile: Profile) {
+private fun MainProfileRow(member: GroupMember, mainProfile: LocalProfile) {
   Row(Modifier.fillMaxWidth()) {
     Text(generalGetString(R.string.incognito_known_main_profile))
     Spacer(Modifier.fillMaxWidth().weight(1f))
@@ -207,7 +207,7 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
-      mainProfile = null,
+      memberMainProfile = null,
       developerTools = false,
       removeMember = {}
     )
