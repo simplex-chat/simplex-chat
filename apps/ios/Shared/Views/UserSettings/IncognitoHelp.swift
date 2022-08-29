@@ -19,7 +19,7 @@ struct IncognitoHelp: View {
                     Group {
                     Text("Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.")
                     Text("It allows having many anonymous connections without any shared data between them in a single chat profile.")
-                    Text("When you join a group, the same profile that is known to the member who invited you will be sent to other group members.")
+                    Text("When a contact who has your incognito profile invites you to a group, the same incognito profile will be used in it.")
                     Text("To find the profile used for an incognito connection, tap the contact or group name on top of the chat.")
                     }
                     .padding(.bottom)
