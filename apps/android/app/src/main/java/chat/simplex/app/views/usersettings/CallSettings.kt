@@ -95,11 +95,12 @@ fun SharedPreferenceToggleWithIcon(
   preferenceState: MutableState<Boolean>? = null
 ) {
   val prefState = preferenceState ?: remember { mutableStateOf(preference.get()) }
-  Row(Modifier.fillMaxWidth().clickable(onClick = onClickInfo), verticalAlignment = Alignment.CenterVertically) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
     Text(text, Modifier.padding(end = 4.dp))
     Icon(
       icon,
       null,
+      Modifier.clickable(onClick = onClickInfo),
       tint = MaterialTheme.colors.primary
     )
     Spacer(Modifier.fillMaxWidth().weight(1f))

@@ -25,6 +25,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
+import chat.simplex.app.views.chatlist.cantInviteIncognitoAlert
 import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 
@@ -50,20 +51,20 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
+              AddGroupMembersView(groupInfo, chatModel, true, close)
             }
           }
         }
       },
       showMemberInfo = { member ->
         withApi {
-          val info = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              GroupMemberInfoView(groupInfo, member, info?.first, info?.second, chatModel, close)
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, close)
             }
           }
         }
@@ -145,7 +146,9 @@ fun GroupChatInfoLayout(
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
         SectionItemView {
-          AddMembersButton(addMembers)
+          val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
+          val onClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+          AddMembersButton(tint, onClick)
         }
         SectionDivider()
       }
@@ -231,7 +234,7 @@ fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-fun AddMembersButton(addMembers: () -> Unit) {
+fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () -> Unit) {
   Row(
     Modifier
       .fillMaxSize()
@@ -241,10 +244,10 @@ fun AddMembersButton(addMembers: () -> Unit) {
     Icon(
       Icons.Outlined.Add,
       stringResource(R.string.button_add_members),
-      tint = MaterialTheme.colors.primary
+      tint = tint
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_add_members), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.button_add_members), color = tint)
   }
 }
 

@@ -36,40 +36,9 @@ fun IncognitoLayout() {
       Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         Text(generalGetString(R.string.incognito_info_protects))
         Text(generalGetString(R.string.incognito_info_allows))
+        Text(generalGetString(R.string.incognito_info_share))
         Text(generalGetString(R.string.incognito_info_find))
       }
-
-      Spacer(Modifier.padding(top = 20.dp))
-
-      Text(generalGetString(R.string.incognito_info_groups), style = MaterialTheme.typography.h2)
-
-      Spacer(Modifier.padding(top = 15.dp))
-
-      Text(generalGetString(R.string.incognito_info_member))
-
-      Spacer(Modifier.padding(top = 15.dp))
-      Text(generalGetString(R.string.incognito_info_when))
-      Spacer(Modifier.padding(top = 10.dp))
-
-      TextListItem("•", generalGetString(R.string.incognito_info_created))
-      TextListItem("•", generalGetString(R.string.incognito_info_invited))
-      TextListItem("•", generalGetString(R.string.incognito_info_connection))
-
-      Spacer(Modifier.padding(top = 15.dp))
-
-      Text(generalGetString(R.string.incognito_info_risks))
-      Spacer(Modifier.padding(top = 10.dp))
-
-      TextListItem("•", generalGetString(R.string.incognito_info_not_allowed))
-      TextListItem("•", generalGetString(R.string.incognito_info_shared))
     }
-  }
-}
-
-@Composable
-fun TextListItem(n: String, text: String) {
-  Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-    Text(n)
-    Text(text)
   }
 }

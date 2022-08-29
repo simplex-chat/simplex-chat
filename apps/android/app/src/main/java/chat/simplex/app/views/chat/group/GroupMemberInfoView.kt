@@ -31,7 +31,6 @@ fun GroupMemberInfoView(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
-  memberMainProfile: LocalProfile?,
   chatModel: ChatModel,
   close: () -> Unit
 ) {
@@ -43,7 +42,6 @@ fun GroupMemberInfoView(
       groupInfo,
       member,
       connStats,
-      memberMainProfile,
       developerTools,
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
@@ -72,7 +70,6 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
-  memberMainProfile: LocalProfile?,
   developerTools: Boolean,
   removeMember: () -> Unit,
 ) {
@@ -92,9 +89,6 @@ fun GroupMemberInfoLayout(
 
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
-      if (memberMainProfile != null) {
-        MainProfileRow(member, memberMainProfile)
-      }
       val conn = member.activeConn
       if (conn != null) {
         SectionDivider()
@@ -142,18 +136,6 @@ fun GroupMemberInfoLayout(
       }
       SectionSpacer()
     }
-  }
-}
-
-@Composable
-private fun MainProfileRow(member: GroupMember, mainProfile: LocalProfile) {
-  Row(Modifier.fillMaxWidth()) {
-    Text(generalGetString(R.string.incognito_known_main_profile))
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-    if (mainProfile.image != null) {
-      ProfileImage(size = 38.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
-    }
-    Text(mainProfile.chatViewName, color = MaterialTheme.colors.secondary)
   }
 }
 
@@ -207,7 +189,6 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
-      memberMainProfile = null,
       developerTools = false,
       removeMember = {}
     )

@@ -31,7 +31,7 @@ import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, showFooterCounter: Boolean = true, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) }
 
@@ -41,6 +41,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
+    showFooterCounter = showFooterCounter,
     inviteMembers = {
       withApi {
         selectedContacts.forEach {
@@ -78,6 +79,7 @@ fun AddGroupMembersLayout(
   contactsToAdd: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
   selectedRole: MutableState<GroupMemberRole>,
+  showFooterCounter: Boolean,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -113,25 +115,19 @@ fun AddGroupMembersLayout(
         )
       }
     } else {
-      val nonIncognitoConnectionsSelected = contactsToAdd
-        .filter { toAdd -> selectedContacts.any { it == toAdd.apiId } }
-        .any { !it.contactConnIncognito }
-      val unsafeToInviteIncognito = groupInfo.membership.memberIncognito && nonIncognitoConnectionsSelected
-      val onClickInvite = {
-        if (unsafeToInviteIncognito) showUnsafeToInviteIncognitoAlertDialog(inviteMembers) else inviteMembers()
-      }
-
       SectionView {
         SectionItemView {
           RoleSelectionRow(groupInfo, selectedRole)
         }
         SectionDivider()
         SectionItemView {
-          InviteMembersButton(onClickInvite, disabled = selectedContacts.isEmpty())
+          InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
         }
       }
-      SectionCustomFooter {
-        InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+      if (showFooterCounter) {
+        SectionCustomFooter {
+          InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+        }
       }
       SectionSpacer()
 
@@ -294,7 +290,6 @@ fun ContactCheckRow(
   checked: Boolean
 ) {
   val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
-  val safeToInviteIncognito = groupInfo.membership.memberIncognito && contact.contactConnIncognito
   val icon: ImageVector
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
@@ -330,14 +325,6 @@ fun ContactCheckRow(
         contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
         color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
       )
-      if (safeToInviteIncognito) {
-        Icon(
-          Icons.Filled.TheaterComedy,
-          contentDescription = generalGetString(R.string.incognito),
-          Modifier.padding(start = 4.dp),
-          tint = Indigo
-        )
-      }
     }
     Icon(
       icon,
@@ -347,22 +334,11 @@ fun ContactCheckRow(
   }
 }
 
-fun showUnsafeToInviteIncognitoAlertDialog(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.incognito_profile_can_be_shared),
-    text = generalGetString(R.string.invite_when_have_main_profile),
-    confirmText = generalGetString(R.string.invite_anyway),
-    onConfirm = onConfirm,
-    onDismiss = { }
-  )
-}
-
 fun showProhibitedToInviteIncognitoAlertDialog() {
-  AlertManager.shared.showAlertDialog(
+  AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.invite_prohibited),
     text = generalGetString(R.string.invite_prohibited_description),
     confirmText = generalGetString(R.string.ok),
-    onDismiss = { }
   )
 }
 
@@ -375,6 +351,7 @@ fun PreviewAddGroupMembersLayout() {
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
+      showFooterCounter = true,
       inviteMembers = {},
       clearSelection = {},
       addContact = {},

@@ -1251,13 +1251,9 @@ class CIGroupInvitation (
   val localDisplayName: String,
   val groupProfile: GroupProfile,
   val status: CIGroupInvitationStatus,
-  val invitedIncognito: Boolean? = null,
   ) {
   val text: String get() = String.format(
-    (if (invitedIncognito == true)
-      generalGetString(R.string.group_invitation_incognito_item_description)
-    else
-      generalGetString(R.string.group_invitation_item_description)),
+    generalGetString(R.string.group_invitation_item_description),
     groupProfile.displayName)
 
   companion object {
@@ -1268,7 +1264,7 @@ class CIGroupInvitation (
       groupProfile: GroupProfile = GroupProfile.sampleData,
       status: CIGroupInvitationStatus = CIGroupInvitationStatus.Pending
     ): CIGroupInvitation =
-      CIGroupInvitation(groupId = groupId, groupMemberId = groupMemberId, localDisplayName = localDisplayName, groupProfile = groupProfile, status = status, invitedIncognito = false)
+      CIGroupInvitation(groupId = groupId, groupMemberId = groupMemberId, localDisplayName = localDisplayName, groupProfile = groupProfile, status = status)
   }
 }
 
@@ -1469,7 +1465,7 @@ sealed class MsgErrorType() {
 @Serializable
 sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
-  @Serializable @SerialName("memberConnected") class MemberConnected(val contactMainProfile: Profile? = null): RcvGroupEvent()
+  @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
   @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
@@ -1478,10 +1474,7 @@ sealed class RcvGroupEvent() {
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
-    is MemberConnected -> if (contactMainProfile != null)
-      String.format(generalGetString(R.string.rcv_group_event_member_connected_incognito), contactMainProfile.profileViewName)
-    else
-      generalGetString(R.string.rcv_group_event_member_connected)
+    is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
     is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
     is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)

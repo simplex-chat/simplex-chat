@@ -117,6 +117,7 @@
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
     <string name="group_preview_you_are_invited">вы приглашены в группу</string>
+    <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->
@@ -524,11 +525,9 @@
 
     <!-- Groups -->
     <string name="group_invitation_item_description">приглашение в группу <xliff:g id="group_name">%1$s</xliff:g></string>
-    <string name="group_invitation_incognito_item_description">инкогнито приглашение в группу <xliff:g id="group_name">%1$s</xliff:g></string>
     <string name="join_group_question">Вступить в группу?</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
     <string name="join_group_button">Вступить</string>
-    <string name="join_group_anyway_button">Вступить</string>
     <string name="join_group_incognito_button">Вступить инкогнито</string>
     <string name="joining_group">Вступление в группу</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившим членом группы.</string>
@@ -542,10 +541,11 @@
     <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
     <string name="alert_title_join_group_error">Ошибка приглашения</string>
+    <string name="alert_title_cant_invite_contacts">Нельзя пригласить контакты!</string>
+    <string name="alert_title_cant_invite_contacts_descr">Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие вашего основного профиля, приглашать контакты не разрешено</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
-    <string name="you_sent_group_invitation_incognito">Вы отправили приглашение в группу инкогнито</string>
     <string name="you_are_invited_to_group">Вы приглашены в группу</string>
     <string name="group_invitation_tap_to_join">Нажмите, чтобы вступить</string>
     <string name="group_invitation_tap_to_join_incognito">Нажмите, чтобы вступить инкогнито</string>
@@ -556,7 +556,6 @@
     <!-- Group event chat items -->
     <string name="rcv_group_event_member_added">пригласил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_member_connected">соединен(а)</string>
-    <string name="rcv_group_event_member_connected_incognito">известный(ая) вам как <xliff:g id="member_name">%1$s</xliff:g>, соединен(а) инкогнито</string>
     <string name="rcv_group_event_member_left">покинул(а) группу</string>
     <string name="rcv_group_event_member_deleted">удалил(а) <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
     <string name="rcv_group_event_user_deleted">удалил(а) вас из группы</string>
@@ -597,8 +596,6 @@
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль</string>
-    <string name="invite_anyway">Пригласить</string>
-    <string name="invite_when_have_main_profile">У некоторых выбранных контактов есть ваш основной профиль. Если они используют приложение SimpleX версии раньше чем 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.</string>
 
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
@@ -636,8 +633,8 @@
     <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
-    <string name="group_random_profile_sent">Вы будете использовать случайный профиль для этой группы</string>
-    <string name="group_main_profile_sent">Ваш профиль чата будет отправлен участникам группы</string>
+    <string name="group_unsupported_incognito_main_profile_sent">Режим Инкогнито здесь не поддерживается - ваш основной профиль будет отправлен членам группы</string>
+    <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
 
     <!-- GroupProfileView.kt -->
     <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
@@ -662,22 +659,11 @@
     <string name="incognito_random_profile">Случайный профиль</string>
     <string name="incognito_random_profile_description">Вашему контакту будет отправлен случайный профиль</string>
     <string name="incognito_random_profile_from_contact_description">Контакту, от которого вы получили эту ссылку, будет отправлен случайный профиль</string>
-    <string name="incognito_known_main_profile">Известный основной профиль</string>
-    <string name="incognito_profile_can_be_shared">Вашим основным профилем могут поделиться</string>
-    <string name="incognito_profile_can_be_shared_description">У контакта есть ваш основной профиль. Если он использует приложение SimpleX версии раньше чем 3.2 или другой клиент, он может поделиться с другими членами группы вашим основным профилем вместо случайного инкогнито профиля.</string>
 
-    <string name="incognito_info_protects">Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта и группы создается новый случайный профиль.</string>
+    <string name="incognito_info_protects">Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта создается новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
+    <string name="incognito_info_share">Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
     <string name="incognito_info_find">Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.</string>
-    <string name="incognito_info_groups">Инкогнито группы</string>
-    <string name="incognito_info_member">Когда вы вступаете в группу инкогнито, создается новый случайный профиль, который отправляется другим членам группы.</string>
-    <string name="incognito_info_when">Вы инкогнито в группе, когда:</string>
-    <string name="incognito_info_created">группа создана в режиме Инкогнито,</string>
-    <string name="incognito_info_invited">вы или пригласивший вас член группы вступили в группу в режиме Инкогнито,</string>
-    <string name="incognito_info_connection">вы соединены инкогнито с членом группы, который вас пригласил.</string>
-    <string name="incognito_info_risks">Риски и ограничения:</string>
-    <string name="incognito_info_not_allowed">Нельзя приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.</string>
-    <string name="incognito_info_shared">Если в инкогнито группе есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.</string>
 
     <!-- Default themes -->
     <string name="theme_system">Системная</string>

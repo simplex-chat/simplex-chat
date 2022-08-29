@@ -379,7 +379,7 @@ fun SettingsPreferenceItemWithInfo(
   prefState: MutableState<Boolean>? = null
 ) {
   SectionItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClickInfo() }) {
       Icon(icon, text, tint = iconTint)
       Spacer(Modifier.padding(horizontal = 4.dp))
       SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, onClickInfo, pref, prefState)

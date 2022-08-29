@@ -148,10 +148,8 @@ fun ChatItemView(
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
-        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup,
-            chatModelIncognito = chatModelIncognito, chatIncognito = cInfo.incognito)
-        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup,
-            chatModelIncognito = chatModelIncognito, chatIncognito = cInfo.incognito)
+        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
         is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
       }

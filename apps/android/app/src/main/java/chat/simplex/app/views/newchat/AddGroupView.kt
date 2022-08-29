@@ -49,7 +49,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
+              AddGroupMembersView(groupInfo, chatModel, false, close)
             }
           }
         }
@@ -99,7 +99,8 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
             ReadableText(R.string.group_is_decentralized)
             InfoAboutIncognito(
               chatModelIncognito,
-              generalGetString(R.string.group_random_profile_sent),
+              false,
+              generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
               generalGetString(R.string.group_main_profile_sent)
             )
             Spacer(Modifier.height(10.dp))

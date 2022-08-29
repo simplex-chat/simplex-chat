@@ -422,9 +422,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     return null
   }
 
-  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): Pair<ConnectionStats?, LocalProfile?>? {
+  suspend fun apiGroupMemberInfo(groupId: Long, groupMemberId: Long): ConnectionStats? {
     val r = sendCmd(CC.APIGroupMemberInfo(groupId, groupMemberId))
-    if (r is CR.GroupMemberInfo) return r.connectionStats_ to r.localMainProfile
+    if (r is CR.GroupMemberInfo) return r.connectionStats_
     Log.e(TAG, "apiGroupMemberInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -1436,7 +1436,7 @@ sealed class CR {
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
-  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?, val localMainProfile: LocalProfile? = null): CR()
+  @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation: CR()
@@ -1608,7 +1608,7 @@ sealed class CR {
     is UserSMPServers -> json.encodeToString(smpServers)
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
-    is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}\nlocalMainProfile: ${json.encodeToString(localMainProfile)}"
+    is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
     is Invitation -> connReqInvitation
     is SentConfirmation -> noDetails()
     is SentInvitation -> noDetails()

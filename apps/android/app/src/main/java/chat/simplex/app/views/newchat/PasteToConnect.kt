@@ -76,6 +76,7 @@ fun PasteToConnectLayout(
 
       InfoAboutIncognito(
         chatModelIncognito,
+        true,
         generalGetString(R.string.incognito_random_profile_from_contact_description),
         generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
       )

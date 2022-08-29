@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
@@ -56,6 +57,7 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
       )
       InfoAboutIncognito(
         chatModelIncognito,
+        true,
         generalGetString(R.string.incognito_random_profile_description),
         generalGetString(R.string.your_profile_will_be_sent)
       )
@@ -80,17 +82,17 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
 }
 
 @Composable
-fun ColumnScope.InfoAboutIncognito(chatModelIncognito: Boolean, onText: String, offText: String) {
+fun ColumnScope.InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean = true, onText: String, offText: String) {
   Spacer(Modifier.padding(top = 10.dp))
   if (chatModelIncognito) {
     SectionItemView {
       Icon(
-        Icons.Filled.TheaterComedy,
+        if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Filled.Circle,
         stringResource(R.string.incognito),
-        tint = Indigo,
+        tint = if (supportedIncognito) Indigo else Orange,
         modifier = Modifier.padding(10.dp).size(26.dp)
       )
-      Text(generalGetString(R.string.incognito_random_profile_description), textAlign = TextAlign.Center)
+      Text(onText, textAlign = TextAlign.Center)
     }
   } else {
     SectionItemView {
@@ -100,7 +102,7 @@ fun ColumnScope.InfoAboutIncognito(chatModelIncognito: Boolean, onText: String, 
         tint = MaterialTheme.colors.primary,
         modifier = Modifier.padding(10.dp).size(26.dp)
       )
-      Text(stringResource(R.string.profile_will_be_sent_to_contact_sending_link), textAlign = TextAlign.Center)
+      Text(offText, textAlign = TextAlign.Center)
     }
   }
   Spacer(Modifier.padding(top = 10.dp))

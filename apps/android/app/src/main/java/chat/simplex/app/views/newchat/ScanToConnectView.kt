@@ -79,6 +79,7 @@ fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable
       )
       InfoAboutIncognito(
         chatModelIncognito,
+        true,
         generalGetString(R.string.incognito_random_profile_description),
         generalGetString(R.string.your_profile_will_be_sent)
       )

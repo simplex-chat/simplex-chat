@@ -38,7 +38,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -46,7 +46,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -123,12 +123,6 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
   ClearChatAction(chat, chatModel, showMenu)
   DeleteContactAction(chat, chatModel, showMenu)
 }
-
-private fun interactiveIncognito(chat: Chat, chatModel: ChatModel) =
-  chat.chatInfo.incognito || chatModel.incognito.value
-
-private fun unsafeToJoinIncognito(chat: Chat, chatModel: ChatModel, hostConnCustomUserProfileId: Long?): Boolean =
-  interactiveIncognito(chat, chatModel) && hostConnCustomUserProfileId == null
 
 @Composable
 fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
@@ -223,15 +217,12 @@ fun DeleteGroupAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<B
 fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
-    if (interactiveIncognito(chat, chatModel)) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
+    if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
     Icons.Outlined.Login,
+    color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
-      if (unsafeToJoinIncognito(chat, chatModel, groupInfo.hostConnCustomUserProfileId)) {
-        unsafeToJoinIncognitoAlertDialog(joinGroup)
-      } else {
-        joinGroup()
-        showMenu.value = false
-      }
+      joinGroup()
+      showMenu.value = false
     }
   )
 }
@@ -407,14 +398,11 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
   )
 }
 
-fun unsafeToJoinIncognitoAlertDialog(onConfirm: () -> Unit) {
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.incognito_profile_can_be_shared),
-    text = generalGetString(R.string.incognito_profile_can_be_shared_description),
-    confirmText = generalGetString(R.string.join_group_anyway_button),
-    onConfirm = onConfirm,
-    onDismiss = { },
-    destructive = true
+fun cantInviteIncognitoAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.alert_title_cant_invite_contacts),
+    text = generalGetString(R.string.alert_title_cant_invite_contacts_descr),
+    confirmText = generalGetString(R.string.ok),
   )
 }
 
@@ -496,6 +484,8 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          false,
+          null,
           stopped = false
         )
       },
@@ -531,6 +521,8 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          false,
+          null,
           stopped = false
         )
       },

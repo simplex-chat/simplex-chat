@@ -18,10 +18,8 @@ import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.chatlist.unsafeToJoinIncognitoAlertDialog
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -29,20 +27,17 @@ fun CIGroupInvitationView(
   ci: ChatItem,
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
-  chatModelIncognito: Boolean,
   chatIncognito: Boolean = false,
   joinGroup: (Long) -> Unit
 ) {
-  val interactiveIncognito = groupInvitation.invitedIncognito == true || chatModelIncognito
   val sent = ci.chatDir.sent
   val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
-  val unsafeToJoinIncognito = interactiveIncognito && !chatIncognito
 
   @Composable
   fun groupInfoView() {
     val p = groupInvitation.groupProfile
     val iconColor =
-      if (action) if (interactiveIncognito) Indigo else MaterialTheme.colors.primary
+      if (action) if (chatIncognito) Indigo else MaterialTheme.colors.primary
       else if (isInDarkTheme()) FileDark else FileLight
 
     Row(
@@ -68,11 +63,7 @@ fun CIGroupInvitationView(
   @Composable
   fun groupInvitationText() {
     when {
-      sent -> Text(stringResource(
-        if (groupInvitation.invitedIncognito == true)
-          R.string.you_sent_group_invitation_incognito
-        else
-          R.string.you_sent_group_invitation))
+      sent -> Text(stringResource(R.string.you_sent_group_invitation))
       !sent && groupInvitation.status == CIGroupInvitationStatus.Pending -> Text(stringResource(R.string.you_are_invited_to_group))
       !sent && groupInvitation.status == CIGroupInvitationStatus.Accepted -> Text(stringResource(R.string.you_joined_this_group))
       !sent && groupInvitation.status == CIGroupInvitationStatus.Rejected -> Text(stringResource(R.string.you_rejected_group_invitation))
@@ -82,11 +73,7 @@ fun CIGroupInvitationView(
 
   Surface(
     modifier = if (action) Modifier.clickable(onClick = {
-      if (unsafeToJoinIncognito) {
-        unsafeToJoinIncognitoAlertDialog { joinGroup(groupInvitation.groupId) }
-      } else {
-        joinGroup(groupInvitation.groupId)
-      }
+      joinGroup(groupInvitation.groupId)
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) SentColorLight else ReceivedColorLight,
@@ -110,8 +97,8 @@ fun CIGroupInvitationView(
           if (action) {
             groupInvitationText()
             Text(stringResource(
-              if (interactiveIncognito) R.string.group_invitation_tap_to_join_incognito else  R.string.group_invitation_tap_to_join),
-              color = MaterialTheme.colors.primary)
+              if (chatIncognito) R.string.group_invitation_tap_to_join_incognito else  R.string.group_invitation_tap_to_join),
+              color = if (chatIncognito) Indigo else MaterialTheme.colors.primary)
           } else {
             Box(Modifier.padding(end = 48.dp)) {
               groupInvitationText()
@@ -141,7 +128,6 @@ fun PendingCIGroupInvitationViewPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
-      chatModelIncognito = false,
       joinGroup = {}
     )
   }
@@ -159,7 +145,6 @@ fun CIGroupInvitationViewAcceptedPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
-      chatModelIncognito = false,
       joinGroup = {}
     )
   }
@@ -176,7 +161,6 @@ fun CIGroupInvitationViewLongNamePreview() {
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,
-      chatModelIncognito = false,
       joinGroup = {}
     )
   }

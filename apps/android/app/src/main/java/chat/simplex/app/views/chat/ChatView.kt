@@ -194,7 +194,7 @@ fun ChatView(chatModel: ChatModel) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
+              AddGroupMembersView(groupInfo, chatModel, true, close)
             }
           }
         }
@@ -335,7 +335,7 @@ fun ChatInfoToolbar(
         startCall(CallMediaType.Video)
       })
     }
-  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
+  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
     barButtons.add {
       IconButton({
         showMenu = false

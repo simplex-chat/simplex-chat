@@ -117,6 +117,7 @@
   <string name="your_chats">Your chats</string>
   <string name="contact_connection_pending">connecting…</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
+  <string name="group_preview_join_as">join as %s</string>
   <string name="group_connection_pending">connecting…</string>
 
   <!-- ComposeView.kt, helpers -->
@@ -525,11 +526,9 @@
 
   <!-- Groups -->
   <string name="group_invitation_item_description">invitation to group <xliff:g id="group_name">%1$s</xliff:g></string>
-  <string name="group_invitation_incognito_item_description">incognito invitation to group <xliff:g id="group_name">%1$s</xliff:g></string>
   <string name="join_group_question">Join group?</string>
   <string name="you_are_invited_to_group_join_to_connect_with_group_members">You are invited to group. Join to connect with group members.</string>
   <string name="join_group_button">Join</string>
-  <string name="join_group_anyway_button">Join anyway</string>
   <string name="join_group_incognito_button">Join incognito</string>
   <string name="joining_group">Joining group</string>
   <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">You joined this group. Connecting to inviting group member.</string>
@@ -543,10 +542,11 @@
   <string name="alert_title_no_group">Group not found!</string>
   <string name="alert_message_no_group">This group no longer exists.</string>
   <string name="alert_title_join_group_error">Error joining group</string>
+  <string name="alert_title_cant_invite_contacts">Can\'t invite contacts!</string>
+  <string name="alert_title_cant_invite_contacts_descr">You\'re using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</string>
 
   <!-- CIGroupInvitationView.kt -->
   <string name="you_sent_group_invitation">You sent group invitation</string>
-  <string name="you_sent_group_invitation_incognito">You sent group invitation incognito</string>
   <string name="you_are_invited_to_group">You are invited to group</string>
   <string name="group_invitation_tap_to_join">Tap to join</string>
   <string name="group_invitation_tap_to_join_incognito">Tap to join incognito</string>
@@ -557,7 +557,6 @@
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">invited <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_member_connected">connected</string>
-  <string name="rcv_group_event_member_connected_incognito">known to you as <xliff:g id="member_name">%1$s</xliff:g> connected incognito</string>
   <string name="rcv_group_event_member_left">left</string>
   <string name="rcv_group_event_member_deleted">removed <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
   <string name="rcv_group_event_user_deleted">removed you</string>
@@ -598,8 +597,6 @@
   <string name="no_contacts_selected">No contacts selected</string>
   <string name="invite_prohibited">Can\'t invite contact!</string>
   <string name="invite_prohibited_description">You\'re trying to invite contact with whom you\'ve shared an incognito profile to the group in which you\'re using your main profile</string>
-  <string name="invite_anyway">Invite anyway</string>
-  <string name="invite_when_have_main_profile">Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</string>
 
   <!-- GroupChatInfoView.kt -->
   <string name="button_add_members">Invite members</string>
@@ -637,7 +634,7 @@
   <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
   <string name="group_display_name_field">Group display name:</string>
   <string name="group_full_name_field">Group full name:</string>
-  <string name="group_random_profile_sent">You will use a random profile for this group</string>
+  <string name="group_unsupported_incognito_main_profile_sent">Incognito mode is not supported here - your main profile will be sent to group members</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
 
 
@@ -664,24 +661,11 @@
   <string name="incognito_random_profile">Your random profile</string>
   <string name="incognito_random_profile_description">A random profile will be sent to your contact</string>
   <string name="incognito_random_profile_from_contact_description">A random profile will be sent to the contact that you received this link from</string>
-  <string name="incognito_known_main_profile">Known main profile</string>
-  <string name="incognito_profile_can_be_shared">Your main profile may be shared</string>
-  <string name="incognito_profile_can_be_shared_description">The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</string>
 
-  <string name="incognito_info_protects">Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</string>
+  <string name="incognito_info_protects">Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</string>
   <string name="incognito_info_allows">It allows having many anonymous connections without any shared data between them in a single chat profile.</string>
+  <string name="incognito_info_share">When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</string>
   <string name="incognito_info_find">To find the profile used for an incognito connection, tap the contact or group name on top of the chat.</string>
-  <string name="incognito_info_groups">Incognito groups</string>
-  <string name="incognito_info_member">When you join a group incognito, your new member profile is created and shared with all members.</string>
-  <string name="incognito_info_when">Your are incognito in a group when:</string>
-  <string name="incognito_info_created">the group is created in Incognito mode,</string>
-  <string name="incognito_info_invited">you or the member who invited you joined in Incognito mode,</string>
-  <string name="incognito_info_connection">you have an incognito connection with the member who invited you.</string>
-  <string name="incognito_info_risks">Risks and limitations:</string>
-  <string name="incognito_info_not_allowed">It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.</string>
-  <string name="incognito_info_shared">There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</string>
-
-
 
   <!-- Default themes -->
   <string name="theme_system">System</string>
