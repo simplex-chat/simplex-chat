@@ -264,7 +264,7 @@ struct GroupChatInfoView: View {
 func cantInviteIncognitoAlert() -> Alert {
     Alert(
         title: Text("Can't invite contacts!"),
-        message: Text("You're using an incognito profile for the group - inviting your contacts may expose your main profile or other incognito profiles you've shared with them")
+        message: Text("You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed")
     )
 }
 
