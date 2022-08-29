@@ -293,6 +293,11 @@
         <target>Can't invite contact!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Can't invite contacts!" xml:space="preserve">
+        <source>Can't invite contacts!</source>
+        <target>Can't invite contacts!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
         <source>Cancel</source>
         <target>Cancel</target>
@@ -1008,19 +1013,19 @@
         <target>Incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito groups" xml:space="preserve">
-        <source>Incognito groups</source>
-        <target>Incognito groups</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
         <source>Incognito mode</source>
         <target>Incognito mode</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created." xml:space="preserve">
-        <source>Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</source>
-        <target>Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.</target>
+      <trans-unit id="Incognito mode is not supported here - your main profile will be sent to group members" xml:space="preserve">
+        <source>Incognito mode is not supported here - your main profile will be sent to group members</source>
+        <target>Incognito mode is not supported here - your main profile will be sent to group members</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." xml:space="preserve">
+        <source>Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</source>
+        <target>Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incoming audio call" xml:space="preserve">
@@ -1058,11 +1063,6 @@
         <target>Invitation expired!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invite anyway" xml:space="preserve">
-        <source>Invite anyway</source>
-        <target>Invite anyway</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve">
         <source>Invite members</source>
         <target>Invite members</target>
@@ -1093,11 +1093,6 @@ Please connect to the developers via Settings to receive the updates about the s
 We will be adding server redundancy to prevent lost messages.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile." xml:space="preserve">
-        <source>It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.</source>
-        <target>It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
         <source>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</source>
         <target>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</target>
@@ -1113,11 +1108,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Join</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Join anyway" xml:space="preserve">
-        <source>Join anyway</source>
-        <target>Join anyway</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Join group</target>
@@ -1131,11 +1121,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Joining group" xml:space="preserve">
         <source>Joining group</source>
         <target>Joining group</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Known main profile" xml:space="preserve">
-        <source>Known main profile</source>
-        <target>Known main profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Large file!" xml:space="preserve">
@@ -1558,11 +1543,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Revert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Risks and limitations:" xml:space="preserve">
-        <source>Risks and limitations:</source>
-        <target>Risks and limitations:</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Run chat</target>
@@ -1616,6 +1596,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Search" xml:space="preserve">
         <source>Search</source>
         <target>Search</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send direct message" xml:space="preserve">
+        <source>Send direct message</source>
+        <target>Send direct message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -1706,11 +1691,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Skipped messages" xml:space="preserve">
         <source>Skipped messages</source>
         <target>Skipped messages</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
-        <source>Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
-        <target>Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -1808,11 +1788,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>The connection you accepted will be cancelled!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." xml:space="preserve">
-        <source>The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</source>
-        <target>The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="The contact you shared this link with will NOT be able to connect!" xml:space="preserve">
         <source>The contact you shared this link with will NOT be able to connect!</source>
         <target>The contact you shared this link with will NOT be able to connect!</target>
@@ -1851,11 +1826,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
         <source>The sender will NOT be notified</source>
         <target>The sender will NOT be notified</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown." xml:space="preserve">
-        <source>There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</source>
-        <target>There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -2037,9 +2007,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>When available</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="When you join a group incognito, your new member profile is created and shared with all members." xml:space="preserve">
-        <source>When you join a group incognito, your new member profile is created and shared with all members.</source>
-        <target>When you join a group incognito, your new member profile is created and shared with all members.</target>
+      <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
+        <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
+        <target>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
@@ -2137,11 +2107,6 @@ To connect, please ask your contact to create another connection link and check 
         <target>You sent group invitation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You sent group invitation incognito" xml:space="preserve">
-        <source>You sent group invitation incognito</source>
-        <target>You sent group invitation incognito</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
         <target>You will be connected when your connection request is accepted, please wait or check later!</target>
@@ -2162,14 +2127,14 @@ To connect, please ask your contact to create another connection link and check 
         <target>You will stop receiving messages from this group. Chat history will be preserved.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will use a random profile for this group" xml:space="preserve">
-        <source>You will use a random profile for this group</source>
-        <target>You will use a random profile for this group</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
         <target>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
+        <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
+        <target>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
@@ -2180,11 +2145,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
         <target>Your SimpleX contact address</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your are incognito in a group when:" xml:space="preserve">
-        <source>Your are incognito in a group when:</source>
-        <target>Your are incognito in a group when:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -2242,11 +2202,6 @@ You can cancel this connection and remove the contact (and try later with a new 
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
         <source>Your current chat database will be DELETED and REPLACED with the imported one.</source>
         <target>Your current chat database will be DELETED and REPLACED with the imported one.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your main profile may be shared" xml:space="preserve">
-        <source>Your main profile may be shared</source>
-        <target>Your main profile may be shared</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
@@ -2476,11 +2431,6 @@ SimpleX servers cannot see your profile.</target>
         <target>group profile updated</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="incognito invitation to group %@" xml:space="preserve">
-        <source>incognito invitation to group %@</source>
-        <target>incognito invitation to group %@</target>
-        <note>group name</note>
-      </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve">
         <source>incognito via contact address link</source>
         <target>incognito via contact address link</target>
@@ -2521,10 +2471,10 @@ SimpleX servers cannot see your profile.</target>
         <target>italic</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="known to you as %@ connected incognito" xml:space="preserve">
-        <source>known to you as %@ connected incognito</source>
-        <target>known to you as %@ connected incognito</target>
-        <note>rcv group event chat item</note>
+      <trans-unit id="join as %@" xml:space="preserve">
+        <source>join as %@</source>
+        <target>join as %@</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve">
         <source>left</source>
@@ -2626,11 +2576,6 @@ SimpleX servers cannot see your profile.</target>
         <target>strike</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="the group is created in Incognito mode," xml:space="preserve">
-        <source>the group is created in Incognito mode,</source>
-        <target>the group is created in Incognito mode,</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>
         <target>this contact</target>
@@ -2691,25 +2636,10 @@ SimpleX servers cannot see your profile.</target>
         <target>you are invited to group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you are invited to group incognito" xml:space="preserve">
-        <source>you are invited to group incognito</source>
-        <target>you are invited to group incognito</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="you have an incognito connection with the member who invited you." xml:space="preserve">
-        <source>you have an incognito connection with the member who invited you.</source>
-        <target>you have an incognito connection with the member who invited you.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
         <target>you left</target>
         <note>snd group event chat item</note>
-      </trans-unit>
-      <trans-unit id="you or the member who invited you joined in Incognito mode," xml:space="preserve">
-        <source>you or the member who invited you joined in Incognito mode,</source>
-        <target>you or the member who invited you joined in Incognito mode,</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
         <source>you removed %@</source>

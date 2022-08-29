@@ -15,34 +15,15 @@ struct IncognitoHelp: View {
                 .font(.largeTitle)
                 .padding(.vertical)
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text("Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created.")
+                VStack(alignment: .leading) {
+                    Group {
+                    Text("Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created.")
                     Text("It allows having many anonymous connections without any shared data between them in a single chat profile.")
+                    Text("When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.")
                     Text("To find the profile used for an incognito connection, tap the contact or group name on top of the chat.")
-                }
-                .padding(.bottom)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Incognito groups")
-                        .font(.title2)
-                        .padding(.top)
-                    Text("When you join a group incognito, your new member profile is created and shared with all members.")
-                    Group {
-                        Text("Your are incognito in a group when:")
-                            .padding(.top)
-                        textListItem("•", "the group is created in Incognito mode,")
-                        textListItem("•", "you or the member who invited you joined in Incognito mode,")
-                        textListItem("•", "you have an incognito connection with the member who invited you.")
                     }
-                    Group {
-                        Text("Risks and limitations:")
-                            .padding(.top)
-                        textListItem("•", "It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile.")
-                        textListItem("•", "There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown.")
-
-                    }
+                    .padding(.bottom)
                 }
-                .padding(.bottom)
             }
         }
         .frame(maxWidth: .infinity)

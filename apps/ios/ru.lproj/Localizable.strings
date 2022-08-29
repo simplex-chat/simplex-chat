@@ -213,6 +213,9 @@
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
+"Can't invite contacts!" = "Нельзя пригласить контакты!";
+
+/* No comment provided by engineer. */
 "Cancel" = "Отменить";
 
 /* No comment provided by engineer. */
@@ -720,16 +723,13 @@
 "Incognito" = "Инкогнито";
 
 /* No comment provided by engineer. */
-"Incognito groups" = "Инкогнито группы";
-
-/* group name */
-"incognito invitation to group %@" = "инкогнито приглашение в группу %@";
-
-/* No comment provided by engineer. */
 "Incognito mode" = "Режим Инкогнито";
 
 /* No comment provided by engineer. */
-"Incognito mode protects the privacy of your main profile name and image — for each new contact and group a new random profile is created." = "Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта и группы создается новый случайный профиль.";
+"Incognito mode is not supported here - your main profile will be sent to group members" = "Режим Инкогнито здесь не поддерживается - ваш основной профиль будет отправлен членам группы";
+
+/* No comment provided by engineer. */
+"Incognito mode protects the privacy of your main profile name and image — for each new contact a new random profile is created." = "Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта создается новый случайный профиль.";
 
 /* chat list item description */
 "incognito via contact address link" = "инкогнито через ссылку-контакт";
@@ -765,9 +765,6 @@
 "invitation to group %@" = "приглашение в группу %@";
 
 /* No comment provided by engineer. */
-"Invite anyway" = "Пригласить";
-
-/* No comment provided by engineer. */
 "Invite members" = "Пригласить членов группы";
 
 /* No comment provided by engineer. */
@@ -789,9 +786,6 @@
 "It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Это может случится, когда:\n1. Сервер удалил сообщения, если они не были доставлены в течение 30 дней.\n2. Сервер, через который вы получаете сообщения от контакта, был обновлён и перезапущен.\n3. Соединение компроментировано.\nПожалуйста, соединитесь с девелоперами через Настройки, чтобы получать уведомления о серверах.\nМы планируем добавить избыточную доставку сообщений, чтобы не терять сообщения.";
 
 /* No comment provided by engineer. */
-"It is not allowed to invite contacts with whom you have an incognito connection to a group where you use your main profile – otherwise they might find out your main profile." = "Нельзя приглашать контакты, с которыми у вас установлено инкогнито соединение, в группу, где вы используете свой основной профиль — иначе они могут узнать ваш основной профиль.";
-
-/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
 
 /* No comment provided by engineer. */
@@ -804,7 +798,7 @@
 "Join" = "Вступить";
 
 /* No comment provided by engineer. */
-"Join anyway" = "Вступить";
+"join as %@" = "вступить как %@";
 
 /* No comment provided by engineer. */
 "Join group" = "Вступить в группу";
@@ -814,12 +808,6 @@
 
 /* No comment provided by engineer. */
 "Joining group" = "Вступление в группу";
-
-/* No comment provided by engineer. */
-"Known main profile" = "Известный основной профиль";
-
-/* rcv group event chat item */
-"known to you as %@ connected incognito" = "известный(ая) вам как %@ соединен(а) инкогнито";
 
 /* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
@@ -1122,9 +1110,6 @@
 "Revert" = "Отменить изменения";
 
 /* No comment provided by engineer. */
-"Risks and limitations:" = "Риски и ограничения:";
-
-/* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
 
 /* chat item action */
@@ -1156,6 +1141,9 @@
 
 /* No comment provided by engineer. */
 "secret" = "секрет";
+
+/* No comment provided by engineer. */
+"Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
@@ -1216,9 +1204,6 @@
 
 /* No comment provided by engineer. */
 "SMP servers (one per line)" = "SMP серверы (один на строке)";
-
-/* No comment provided by engineer. */
-"Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У некоторых выбранных контактов есть ваш основной профиль. Если они используют приложение SimpleX версии раньше чем 3.2 или другой клиент, они могут поделиться с другими участниками вашим основным профилем вместо случайного инкогнито профиля.";
 
 /* notification title */
 "Somebody" = "Контакт";
@@ -1284,16 +1269,10 @@
 "The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
 
 /* No comment provided by engineer. */
-"The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members." = "У контакта есть ваш основной профиль. Если он использует приложение SimpleX версии раньше чем 3.2 или другой клиент, он может поделиться с другими членами группы вашим основным профилем вместо случайного инкогнито профиля.";
-
-/* No comment provided by engineer. */
 "The contact you shared this link with will NOT be able to connect!" = "Контакт, которому вы отправили эту ссылку, не сможет соединиться!";
 
 /* No comment provided by engineer. */
 "The created archive is available via app Settings / Database / Old database archive." = "Созданный архив доступен через Настройки приложения.";
-
-/* No comment provided by engineer. */
-"the group is created in Incognito mode," = "группа создана в режиме Инкогнито,";
 
 /* No comment provided by engineer. */
 "The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только членам.";
@@ -1312,9 +1291,6 @@
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
-
-/* No comment provided by engineer. */
-"There is a risk to have your main profile shared, if you have contacts who know your main profile in an incognito group. Before you invite or join group with such contacts a warning will be shown." = "Если в инкогнито группе есть члены, которые знают ваш основной профиль, существует риск его раскрытия. Перед тем, как вы пригласите ваши контакты или вступите в такую группу, будет показано предупреждение.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";
@@ -1455,7 +1431,7 @@
 "When available" = "Когда возможно";
 
 /* No comment provided by engineer. */
-"When you join a group incognito, your new member profile is created and shared with all members." = "Когда вы вступаете в группу инкогнито, создается новый случайный профиль, который отправляется другим членам группы.";
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.";
 
 /* No comment provided by engineer. */
 "You" = "Вы";
@@ -1474,9 +1450,6 @@
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Вы приглашены в группу";
-
-/* No comment provided by engineer. */
-"you are invited to group incognito" = "вы приглашены в группу инкогнито";
 
 /* No comment provided by engineer. */
 "You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." = "Вы также можете соединиться, открыв ссылку. Если ссылка откроется в браузере, нажмите кнопку **Open in mobile app**.";
@@ -1503,9 +1476,6 @@
 "You could not be verified; please try again." = "Верификация не удалась; пожалуйста, попробуйте ещё раз.";
 
 /* No comment provided by engineer. */
-"you have an incognito connection with the member who invited you." = "вы соединены инкогнито с членом группы, который вас пригласил.";
-
-/* No comment provided by engineer. */
 "You invited your contact" = "Вы пригласили ваш контакт";
 
 /* No comment provided by engineer. */
@@ -1521,9 +1491,6 @@
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Вы должны всегда использовать самую новую версию данных чата, ТОЛЬКО на одном устройстве, инача вы можете перестать получать сообщения от каких то контактов.";
 
 /* No comment provided by engineer. */
-"you or the member who invited you joined in Incognito mode," = "вы или пригласивший вас член группы вступили в группу в режиме Инкогнито,";
-
-/* No comment provided by engineer. */
 "You rejected group invitation" = "Вы отклонили приглашение в группу";
 
 /* snd group event chat item */
@@ -1531,9 +1498,6 @@
 
 /* No comment provided by engineer. */
 "You sent group invitation" = "Вы отправили приглашение в группу";
-
-/* No comment provided by engineer. */
-"You sent group invitation incognito" = "Вы отправили приглашение в группу инкогнито";
 
 /* chat list item description */
 "you shared one-time link" = "вы создали ссылку";
@@ -1554,16 +1518,13 @@
 "You will stop receiving messages from this group. Chat history will be preserved." = "Вы перестанете получать сообщения от этой группы. История чата будет сохранена.";
 
 /* No comment provided by engineer. */
-"You will use a random profile for this group" = "Вы будете использовать случайный профиль для этой группы";
-
-/* No comment provided by engineer. */
 "you: " = "вы: ";
 
 /* No comment provided by engineer. */
 "You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" = "Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль";
 
 /* No comment provided by engineer. */
-"Your are incognito in a group when:" = "Вы инкогнито в группе, когда:";
+"You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие вашего основного профиля, приглашать контакты не разрешено";
 
 /* No comment provided by engineer. */
 "Your calls" = "Ваши звонки";
@@ -1578,7 +1539,7 @@
 "Your chat profile" = "Ваш профиль";
 
 /* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Ваш профиль чата будет отправлен участникам группы";
+"Your chat profile will be sent to group members" = "Ваш профиль чата будет отправлен членам группы";
 
 /* No comment provided by engineer. */
 "Your chat profile will be sent to your contact" = "Ваш профиль будет отправлен вашему контакту";
@@ -1597,9 +1558,6 @@
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.";
-
-/* No comment provided by engineer. */
-"Your main profile may be shared" = "Вашим основным профилем могут поделиться";
 
 /* No comment provided by engineer. */
 "Your privacy" = "Конфиденциальность";

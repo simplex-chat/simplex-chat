@@ -82,12 +82,8 @@ struct ChatListNavLink: View {
                 }
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
-                    Button(interactiveIncognito ? "Join incognito" : "Join group") {
-                        if unsafeToJoinIncognito(groupInfo.hostConnCustomUserProfileId) {
-                            AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
-                        } else {
-                            joinGroup(groupInfo.groupId)
-                        }
+                    Button(chat.chatInfo.incognito ? "Join incognito" : "Join group") {
+                        joinGroup(groupInfo.groupId)
                     }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
@@ -130,25 +126,13 @@ struct ChatListNavLink: View {
         }
     }
 
-    private var interactiveIncognito: Bool {
-        chat.chatInfo.incognito || chatModel.incognito
-    }
-
     private func joinGroupButton(_ hostConnCustomUserProfileId: Int64?) -> some View {
         Button {
-            if unsafeToJoinIncognito(hostConnCustomUserProfileId) {
-                AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(chat.chatInfo.apiId))
-            } else {
-                joinGroup(chat.chatInfo.apiId)
-            }
+            joinGroup(chat.chatInfo.apiId)
         } label: {
-            Label("Join", systemImage: interactiveIncognito ? "theatermasks" : "ipad.and.arrow.forward")
+            Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
-        .tint(interactiveIncognito ? .indigo : .accentColor)
-    }
-
-    private func unsafeToJoinIncognito(_ hostConnCustomUserProfileId: Int64?) -> Bool {
-        interactiveIncognito && hostConnCustomUserProfileId == nil
+        .tint(chat.chatInfo.incognito ? .indigo : .accentColor)
     }
 
     private func markReadButton() -> some View {
@@ -342,17 +326,6 @@ struct ChatListNavLink: View {
             }
         }
     }
-}
-
-func unsafeToJoinIncognitoAlert(_ groupId: Int64) -> Alert {
-    Alert(
-        title: Text("Your main profile may be shared"),
-        message: Text("The contact who invited you has your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
-        primaryButton: .destructive(Text("Join anyway")) {
-            joinGroup(groupId)
-        },
-        secondaryButton: .cancel()
-    )
 }
 
 func joinGroup(_ groupId: Int64) {
