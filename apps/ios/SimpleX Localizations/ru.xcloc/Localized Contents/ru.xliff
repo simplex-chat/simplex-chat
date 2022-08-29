@@ -1600,7 +1600,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Send direct message" xml:space="preserve">
         <source>Send direct message</source>
-        <target>Личное сообщение</target>
+        <target>Отправить сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send link previews" xml:space="preserve">
@@ -2009,7 +2009,7 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target>Когда вы делитесь с контактом инкогнито профилем, этот профиль будет использоваться для групп, в которые он вас пригласит.</target>
+        <target>Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">

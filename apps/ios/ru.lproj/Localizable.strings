@@ -1143,7 +1143,7 @@
 "secret" = "секрет";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Личное сообщение";
+"Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Отправлять картинки ссылок";
@@ -1431,7 +1431,7 @@
 "When available" = "Когда возможно";
 
 /* No comment provided by engineer. */
-"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когда вы делитесь с контактом инкогнито профилем, этот профиль будет использоваться для групп, в которые он вас пригласит.";
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.";
 
 /* No comment provided by engineer. */
 "You" = "Вы";
