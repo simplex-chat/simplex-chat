@@ -614,6 +614,7 @@
 
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Удалить члена группы</string>
+    <string name="button_send_direct_message">Отправить сообщение</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
