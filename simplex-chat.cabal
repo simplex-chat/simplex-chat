@@ -90,7 +90,7 @@ library
     , simple-logger ==0.1.*
     , simplexmq >=3.0
     , socks ==0.6.*
-    , sqlite-simple ==0.4.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , text ==1.2.*
@@ -132,7 +132,7 @@ executable simplex-bot
     , simplex-chat
     , simplexmq >=3.0
     , socks ==0.6.*
-    , sqlite-simple ==0.4.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , text ==1.2.*
@@ -174,7 +174,7 @@ executable simplex-bot-advanced
     , simplex-chat
     , simplexmq >=3.0
     , socks ==0.6.*
-    , sqlite-simple ==0.4.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , text ==1.2.*
@@ -217,7 +217,7 @@ executable simplex-chat
     , simplex-chat
     , simplexmq >=3.0
     , socks ==0.6.*
-    , sqlite-simple ==0.4.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , text ==1.2.*
@@ -269,7 +269,7 @@ test-suite simplex-chat-test
     , simplex-chat
     , simplexmq >=3.0
     , socks ==0.6.*
-    , sqlite-simple ==0.4.*
+    , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
     , text ==1.2.*
