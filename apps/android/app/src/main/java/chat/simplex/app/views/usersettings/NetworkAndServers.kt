@@ -71,14 +71,23 @@ fun NetworkAndServersView(
       }
     },
     useOnion = {
-      withApi {
-        val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
-        val res = chatModel.controller.apiSetNetworkConfig(newCfg)
-        if (res) {
-          chatModel.controller.setNetCfg(newCfg)
-          onionHosts.value = it
+      val prevValue = onionHosts.value
+      onionHosts.value = it
+      updateNetworkSettingsDialog(onDismiss = {
+        onionHosts.value = prevValue
+      }) {
+        withApi {
+          val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
+          val res = chatModel.controller.apiSetNetworkConfig(newCfg)
+          if (res) {
+            chatModel.controller.setNetCfg(newCfg)
+            onionHosts.value = it
+          } else {
+            onionHosts.value = prevValue
+          }
         }
       }
+
     }
   )
 }
@@ -250,6 +259,16 @@ fun <T> ExposedDropDownSettingRow(
       }
     }
   }
+}
+
+private fun updateNetworkSettingsDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.update_network_settings_question),
+    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    confirmText = generalGetString(R.string.update_network_settings_confirmation),
+    onDismiss = onDismiss,
+    onConfirm = onConfirm,
+  )
 }
 
 @Preview(showBackground = true)
