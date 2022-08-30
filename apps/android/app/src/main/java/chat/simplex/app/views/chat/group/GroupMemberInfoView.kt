@@ -24,6 +24,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -45,22 +46,18 @@ fun GroupMemberInfoView(
       connStats,
       developerTools,
       openDirectChat = {
-        chatModel.getContactChat(member.memberContactId ?: return@GroupMemberInfoLayout)?.let {
-          chatModel.chatItems.clear()
-          chatModel.chatItems.addAll(it.chatItems)
-          chatModel.chatId.value = it.id
-
-          closeAll()
-          return@GroupMemberInfoLayout
-        }
         withApi {
-          var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
-          // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
-          newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
-          chatModel.addChat(newChat)
-          chatModel.chatItems.clear()
-          chatModel.chatId.value = newChat.id
-
+          val oldChat = chatModel.getContactChat(member.memberContactId ?: return@withApi)
+          if (oldChat != null) {
+            openChat(oldChat.chatInfo, chatModel)
+          } else {
+            var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
+            // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+            newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
+            chatModel.addChat(newChat)
+            chatModel.chatItems.clear()
+            chatModel.chatId.value = newChat.id
+          }
           closeAll()
         }
       },
