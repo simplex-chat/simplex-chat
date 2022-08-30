@@ -11,11 +11,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,7 +31,7 @@ import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, showFooterCounter: Boolean = true, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) }
 
@@ -38,6 +41,7 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
+    showFooterCounter = showFooterCounter,
     inviteMembers = {
       withApi {
         selectedContacts.forEach {
@@ -75,6 +79,7 @@ fun AddGroupMembersLayout(
   contactsToAdd: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
   selectedRole: MutableState<GroupMemberRole>,
+  showFooterCounter: Boolean,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -119,13 +124,15 @@ fun AddGroupMembersLayout(
           InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
         }
       }
-      SectionCustomFooter {
-        InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+      if (showFooterCounter) {
+        SectionCustomFooter {
+          InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
+        }
       }
       SectionSpacer()
 
       SectionView {
-        ContactList(contacts = contactsToAdd, selectedContacts, addContact, removeContact)
+        ContactList(contacts = contactsToAdd, selectedContacts, groupInfo, addContact, removeContact)
       }
       SectionSpacer()
     }
@@ -255,6 +262,7 @@ fun InviteSectionFooter(selectedContactsCount: Int, clearSelection: () -> Unit) 
 fun ContactList(
   contacts: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
+  groupInfo: GroupInfo,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit
 ) {
@@ -262,7 +270,7 @@ fun ContactList(
     contacts.forEachIndexed { index, contact ->
       SectionItemView {
         ContactCheckRow(
-          contact, addContact, removeContact,
+          contact, groupInfo, addContact, removeContact,
           checked = selectedContacts.contains(contact.apiId)
         )
       }
@@ -276,14 +284,35 @@ fun ContactList(
 @Composable
 fun ContactCheckRow(
   contact: Contact,
+  groupInfo: GroupInfo,
   addContact: (Long) -> Unit,
   removeContact: (Long) -> Unit,
   checked: Boolean
 ) {
+  val prohibitedToInviteIncognito = !groupInfo.membership.memberIncognito && contact.contactConnIncognito
+  val icon: ImageVector
+  val iconColor: Color
+  if (prohibitedToInviteIncognito) {
+    icon = Icons.Filled.TheaterComedy
+    iconColor = HighOrLowlight
+  } else if (checked) {
+    icon = Icons.Filled.CheckCircle
+    iconColor = MaterialTheme.colors.primary
+  } else {
+    icon = Icons.Outlined.Circle
+    iconColor = HighOrLowlight
+  }
   Row(
     Modifier
       .fillMaxSize()
-      .clickable { if (!checked) addContact(contact.apiId) else removeContact(contact.apiId) },
+      .clickable {
+        if (prohibitedToInviteIncognito) {
+          showProhibitedToInviteIncognitoAlertDialog()
+        } else if (!checked)
+          addContact(contact.apiId)
+        else
+          removeContact(contact.apiId)
+      },
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -292,14 +321,25 @@ fun ContactCheckRow(
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       ProfileImage(size = 36.dp, contact.image)
-      Text(contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+      Text(
+        contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        color = if (prohibitedToInviteIncognito) HighOrLowlight else Color.Unspecified
+      )
     }
     Icon(
-      if (checked) Icons.Filled.CheckCircle else Icons.Outlined.Circle,
+      icon,
       contentDescription = stringResource(R.string.icon_descr_contact_checked),
-      tint = if (checked) MaterialTheme.colors.primary else HighOrLowlight
+      tint = iconColor
     )
   }
+}
+
+fun showProhibitedToInviteIncognitoAlertDialog() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.invite_prohibited),
+    text = generalGetString(R.string.invite_prohibited_description),
+    confirmText = generalGetString(R.string.ok),
+  )
 }
 
 @Preview
@@ -311,6 +351,7 @@ fun PreviewAddGroupMembersLayout() {
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
+      showFooterCounter = true,
       inviteMembers = {},
       clearSelection = {},
       addContact = {},

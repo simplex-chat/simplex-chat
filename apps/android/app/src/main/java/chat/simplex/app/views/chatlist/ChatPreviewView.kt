@@ -26,7 +26,7 @@ import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatPreviewView(chat: Chat, stopped: Boolean) {
+fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean) {
   val cInfo = chat.chatInfo
 
   @Composable
@@ -70,7 +70,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
           else -> chatPreviewTitleText()
         }
@@ -79,7 +79,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   }
 
   @Composable
-  fun chatPreviewText() {
+  fun chatPreviewText(chatModelIncognito: Boolean) {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       MarkdownText(
@@ -97,7 +97,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
-            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.group_preview_you_are_invited))
+            GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(chatModelIncognito, currentUserProfileDisplayName, cInfo.groupInfo))
             GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
             else -> {}
           }
@@ -119,7 +119,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         .weight(1F)
     ) {
       chatPreviewTitle()
-      chatPreviewText()
+      chatPreviewText(chatModelIncognito)
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
@@ -179,6 +179,16 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
 }
 
 @Composable
+private fun groupInvitationPreviewText(chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, groupInfo: GroupInfo): String {
+  return if (groupInfo.membership.memberIncognito)
+    String.format(stringResource(R.string.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
+  else if (chatModelIncognito)
+    String.format(stringResource(R.string.group_preview_join_as), currentUserProfileDisplayName ?: "")
+  else
+    stringResource(R.string.group_preview_you_are_invited)
+}
+
+@Composable
 fun unreadCountStr(n: Int): String {
   return if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation)
 }
@@ -215,6 +225,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, stopped = false)
+    ChatPreviewView(Chat.sampleData, false, "", stopped = false)
   }
 }

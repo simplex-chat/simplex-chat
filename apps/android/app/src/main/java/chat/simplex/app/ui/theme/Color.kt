@@ -7,6 +7,7 @@ val Purple500 = Color(0xFF6200EE)
 val Purple700 = Color(0xFF3700B3)
 val Teal200 = Color(0xFF03DAC5)
 val Gray = Color(0x22222222)
+val Indigo = Color(0xff330099)
 val SimplexBlue = Color(0, 136, 255, 255)  // If this value changes also need to update #0088ff in string resource files
 val SimplexGreen = Color(77, 218, 103, 255)
 val SecretColor = Color(0x40808080)

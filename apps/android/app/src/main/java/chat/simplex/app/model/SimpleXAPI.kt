@@ -95,6 +95,7 @@ class AppPreferences(val context: Context) {
   val networkTCPKeepIdle = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_IDLE, KeepAliveOpts.defaults.keepIdle)
   val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults.keepIntvl)
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
+  val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
@@ -165,6 +166,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_IDLE = "NetworkTCPKeepIdle"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_INTVL = "NetworkTCPKeepIntvl"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
+    private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
   }
@@ -179,6 +181,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   init {
     chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
     chatModel.performLA.value = appPrefs.performLA.get()
+    chatModel.incognito.value = appPrefs.incognito.get()
   }
 
   suspend fun startChat(user: User) {
@@ -189,6 +192,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       val justStarted = apiStartChat()
       if (justStarted) {
         apiSetFilesFolder(getAppFilesDirectory(appContext))
+        apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
         chatModel.userSMPServers.value = getUserSMPServers()
         val chats = apiGetChats()
@@ -295,6 +299,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiSetIncognito(incognito: Boolean) {
+    val r = sendCmd(CC.SetIncognito(incognito))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set incognito: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
@@ -405,9 +415,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  suspend fun apiContactInfo(contactId: Long): ConnectionStats? {
+  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
-    if (r is CR.ContactInfo) return r.connectionStats
+    if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
     Log.e(TAG, "apiContactInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -515,6 +525,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.ApiParseMarkdown(text))
     if (r is CR.ParsedMarkdown) return r.formattedText
     Log.e(TAG, "apiParseMarkdown bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun apiSetContactAlias(contactId: Long, localAlias: String): Contact? {
+    val r = sendCmd(CC.ApiSetContactAlias(contactId, localAlias))
+    if (r is CR.ContactAliasUpdated) return r.toContact
+    Log.e(TAG, "apiSetContactAlias bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -1133,6 +1150,7 @@ sealed class CC {
   class StartChat: CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class SetIncognito(val incognito: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -1163,6 +1181,7 @@ sealed class CC {
   class ListContacts: CC()
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
+  class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1185,6 +1204,7 @@ sealed class CC {
     is StartChat -> "/_start"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is SetIncognito -> "/incognito ${if (incognito) "on" else "off"}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -1214,6 +1234,7 @@ sealed class CC {
     is ListContacts -> "/contacts"
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
+    is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1237,6 +1258,7 @@ sealed class CC {
     is StartChat -> "startChat"
     is ApiStopChat -> "apiStopChat"
     is SetFilesFolder -> "setFilesFolder"
+    is SetIncognito -> "setIncognito"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -1266,6 +1288,7 @@ sealed class CC {
     is ListContacts -> "listContacts"
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
+    is ApiSetContactAlias -> "apiSetContactAlias"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1412,7 +1435,7 @@ sealed class CR {
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
-  @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
   @Serializable @SerialName("invitation") class Invitation(val connReqInvitation: String): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation: CR()
@@ -1422,6 +1445,7 @@ sealed class CR {
   @Serializable @SerialName("chatCleared") class ChatCleared(val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
+  @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
@@ -1508,6 +1532,7 @@ sealed class CR {
     is ChatCleared -> "chatCleared"
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
+    is ContactAliasUpdated -> "contactAliasUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
@@ -1592,6 +1617,7 @@ sealed class CR {
     is ChatCleared -> json.encodeToString(chatInfo)
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
+    is ContactAliasUpdated -> json.encodeToString(toContact)
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> connReqContact
     is UserContactLinkCreated -> connReqContact

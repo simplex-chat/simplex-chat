@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,7 +23,9 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,15 +36,29 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
+fun ChatInfoView(
+  chatModel: ChatModel,
+  contact: Contact,
+  connStats: ConnectionStats?,
+  customUserProfile: Profile?,
+  localAlias: String,
+  close: () -> Unit,
+  onChatUpdated: (Chat) -> Unit,
+) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     ChatInfoLayout(
       chat,
+      contact,
       connStats,
+      customUserProfile,
+      localAlias,
       developerTools,
+      onLocalAliasChanged = {
+        setContactAlias(chat.chatInfo.apiId, it, chatModel, onChatUpdated)
+      },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       changeNtfsState = { enabled ->
@@ -120,8 +137,12 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 @Composable
 fun ChatInfoLayout(
   chat: Chat,
+  contact: Contact,
   connStats: ConnectionStats?,
+  customUserProfile: Profile?,
+  localAlias: String,
   developerTools: Boolean,
+  onLocalAliasChanged: (String) -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
   changeNtfsState: (Boolean) -> Unit,
@@ -136,8 +157,18 @@ fun ChatInfoLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      ChatInfoHeader(chat.chatInfo)
+      ChatInfoHeader(chat.chatInfo, contact)
     }
+
+    LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
+
+    if (customUserProfile != null) {
+      SectionSpacer()
+      SectionView(generalGetString(R.string.incognito).uppercase()) {
+        InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
+      }
+    }
+
     SectionSpacer()
 
     if (connStats != null) {
@@ -193,19 +224,20 @@ fun ChatInfoLayout(
 }
 
 @Composable
-fun ChatInfoHeader(cInfo: ChatInfo) {
+fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   Column(
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       maxLines = 1,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(bottom = 8.dp)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
@@ -213,6 +245,31 @@ fun ChatInfoHeader(cInfo: ChatInfo) {
         overflow = TextOverflow.Ellipsis
       )
     }
+  }
+}
+
+@Composable
+private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+  var value by remember { mutableStateOf(initialValue) }
+  DefaultBasicTextField(
+    Modifier.fillMaxWidth().padding(horizontal = 10.dp),
+    initialValue,
+    {
+      Text(
+        generalGetString(R.string.text_field_set_contact_placeholder),
+        Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        color = HighOrLowlight
+      )
+    },
+    color = HighOrLowlight,
+    textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
+    keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+  ) {
+    value = it
+  }
+  DisposableEffect(Unit) {
+    onDispose { updateValue(value) }
   }
 }
 
@@ -348,6 +405,13 @@ fun DeleteContactButton(deleteContact: () -> Unit) {
   }
 }
 
+private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel, onChatUpdated: (Chat) -> Unit) = withApi {
+  chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
+    chatModel.updateContact(it)
+    onChatUpdated(chatModel.getChat(chatModel.chatId.value ?: return@withApi) ?: return@withApi)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -358,9 +422,13 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
+      Contact.sampleData,
+      localAlias = "",
       changeNtfsState = {},
       developerTools = false,
       connStats = null,
+      onLocalAliasChanged = {},
+      customUserProfile = null,
       deleteContact = {}, clearChat = {}
     )
   }

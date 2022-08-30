@@ -10,13 +10,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatInfo
-import chat.simplex.app.model.getTimestampText
+import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ChatInfoImage
 
 @Composable
-fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
+fun ContactRequestView(chatModelIncognito: Boolean, contactRequest: ChatInfo.ContactRequest) {
   Row {
     ChatInfoImage(contactRequest, size = 72.dp)
     Column(
@@ -30,7 +29,7 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.h3,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colors.primary
+        color = if (chatModelIncognito) Indigo else MaterialTheme.colors.primary
       )
       Text(stringResource(R.string.contact_wants_to_connect_with_you), maxLines = 2, color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight)
     }

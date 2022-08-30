@@ -9,7 +9,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -37,6 +37,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
   val user = chatModel.currentUser.value
   val stopped = chatModel.chatRunning.value == false
 
+  MaintainIncognitoState(chatModel)
+
   fun setRunServiceInBackground(on: Boolean) {
     chatModel.controller.appPrefs.runServiceInBackground.set(on)
     if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
@@ -51,6 +53,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     SettingsLayout(
       profile = user.profile,
       stopped,
+      chatModel.incognito,
+      chatModel.controller.appPrefs.incognito,
       runServiceInBackground = chatModel.runServiceInBackground,
       developerTools = chatModel.controller.appPrefs.developerTools,
       setRunServiceInBackground = ::setRunServiceInBackground,
@@ -84,8 +88,10 @@ val simplexTeamUri =
 
 @Composable
 fun SettingsLayout(
-  profile: Profile,
+  profile: LocalProfile,
   stopped: Boolean,
+  incognito: MutableState<Boolean>,
+  incognitoPref: Preference<Boolean>,
   runServiceInBackground: MutableState<Boolean>,
   developerTools: Preference<Boolean>,
   setRunServiceInBackground: (Boolean) -> Unit,
@@ -115,6 +121,8 @@ fun SettingsLayout(
         SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
+        SectionDivider()
+        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         SectionDivider()
@@ -160,6 +168,47 @@ fun SettingsLayout(
         AppVersionItem()
       }
     }
+  }
+}
+
+@Composable
+fun SettingsIncognitoActionItem(
+  incognitoPref: Preference<Boolean>,
+  incognito: MutableState<Boolean>,
+  stopped: Boolean,
+  onClickInfo: () -> Unit,
+) {
+  SettingsPreferenceItemWithInfo(
+    if (incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
+    if (incognito.value) Indigo else HighOrLowlight,
+    stringResource(R.string.incognito),
+    stopped,
+    onClickInfo,
+    incognitoPref,
+    incognito
+  )
+}
+
+private val onClickIncognitoInfo: ((@Composable (ChatModel) -> Unit) -> (() -> Unit)) -> Unit = { showModal ->
+  showModal { IncognitoView() }()
+}
+
+@Composable
+fun MaintainIncognitoState(chatModel: ChatModel) {
+  // Cache previous value and once it changes in background, update it via API
+  var cachedIncognito by remember { mutableStateOf(chatModel.incognito.value) }
+  LaunchedEffect(chatModel.incognito.value) {
+    // Don't do anything if nothing changed
+    if (cachedIncognito == chatModel.incognito.value) return@LaunchedEffect
+    try {
+      chatModel.controller.apiSetIncognito(chatModel.incognito.value)
+    } catch (e: Exception) {
+      // Rollback the state
+      chatModel.controller.appPrefs.incognito.set(cachedIncognito)
+      // Crash the app
+      throw e
+    }
+    cachedIncognito = chatModel.incognito.value
   }
 }
 
@@ -322,6 +371,25 @@ fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boo
   }
 }
 
+@Composable
+fun SettingsPreferenceItemWithInfo(
+  icon: ImageVector,
+  iconTint: Color,
+  text: String,
+  stopped: Boolean,
+  onClickInfo: () -> Unit,
+  pref: Preference<Boolean>,
+  prefState: MutableState<Boolean>? = null
+) {
+  SectionItemView() {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClickInfo() }) {
+      Icon(icon, text, tint = if (stopped) HighOrLowlight else iconTint)
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
+    }
+  }
+}
+
 @Preview(showBackground = true)
 @Preview(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -332,8 +400,10 @@ fun SettingsPreferenceItem(icon: ImageVector, text: String, pref: Preference<Boo
 fun PreviewSettingsLayout() {
   SimpleXTheme {
     SettingsLayout(
-      profile = Profile.sampleData,
+      profile = LocalProfile.sampleData,
       stopped = false,
+      incognito = remember { mutableStateOf(false) },
+      incognitoPref = Preference({ false}, {}),
       runServiceInBackground = remember { mutableStateOf(true) },
       developerTools = Preference({ false }, {}),
       setRunServiceInBackground = {},

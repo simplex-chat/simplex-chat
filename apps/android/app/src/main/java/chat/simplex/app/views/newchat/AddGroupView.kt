@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
+    chatModel.incognito.value,
     createGroup = { groupProfile ->
       withApi {
         val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
@@ -48,7 +50,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
+              AddGroupMembersView(groupInfo, chatModel, false, close)
             }
           }
         }
@@ -59,7 +61,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 @Composable
-fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
+fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
   val displayName = remember { mutableStateOf("") }
@@ -92,11 +94,16 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           ) {
             Text(
               stringResource(R.string.create_secret_group_title),
-              style = MaterialTheme.typography.h4,
+              style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
               modifier = Modifier.padding(vertical = 5.dp)
             )
-            ReadableText(R.string.group_is_decentralized)
-            Spacer(Modifier.height(10.dp))
+            Text(stringResource(R.string.group_is_decentralized))
+            InfoAboutIncognito(
+              chatModelIncognito,
+              false,
+              generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
+              generalGetString(R.string.group_main_profile_sent)
+            )
             Box(
               Modifier
                 .fillMaxWidth()
@@ -170,6 +177,7 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
 fun PreviewAddGroupLayout() {
   SimpleXTheme {
     AddGroupLayout(
+      chatModelIncognito = false,
       createGroup = {},
       close = {}
     )

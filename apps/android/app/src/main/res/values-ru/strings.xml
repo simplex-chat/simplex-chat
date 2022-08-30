@@ -31,8 +31,11 @@
     <string name="display_name_invited_to_connect">приглашение соединиться</string>
     <string name="display_name_connecting">соединяется…</string>
     <string name="description_you_shared_one_time_link">вы создали одноразовую ссылку</string>
+    <string name="description_you_shared_one_time_link_incognito">вы создали одноразовую ссылку инкогнито</string>
     <string name="description_via_contact_address_link">через ссылку-контакт</string>
+    <string name="description_via_contact_address_link_incognito">инкогнито через ссылку-контакт</string>
     <string name="description_via_one_time_link">через одноразовую ссылку</string>
+    <string name="description_via_one_time_link_incognito">инкогнито через одноразовую ссылку</string>
 
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
@@ -114,6 +117,7 @@
     <string name="your_chats">Ваши чаты</string>
     <string name="contact_connection_pending">соединяется…</string>
     <string name="group_preview_you_are_invited">вы приглашены в группу</string>
+    <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
 
     <!-- ComposeView.kt, helpers -->
@@ -148,6 +152,7 @@
     <string name="delete_contact_question">Удалить контакт?</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Контакт и все сообщения будут удалены - это действие нельзя отменить!</string>
     <string name="button_delete_contact">Удалить контакт</string>
+    <string name="text_field_set_contact_placeholder">Имя контакта…</string>
     <string name="icon_descr_server_status_connected">Соединение с сервером установлено</string>
     <string name="icon_descr_server_status_disconnected">Соединение с сервером не установлено</string>
     <string name="icon_descr_server_status_error">Ошибка соединения с сервером</string>
@@ -160,7 +165,7 @@
     <string name="back">Назад</string>
     <string name="cancel_verb">Отменить</string>
     <string name="confirm_verb">Подтвердить</string>
-    <string name="ok">Oк</string>
+    <string name="ok">OK</string>
     <string name="no_details">нет описания</string>
     <string name="add_contact">Добавить контакт</string>
     <string name="copied">Скопировано в буфер обмена</string>
@@ -199,6 +204,7 @@
     <string name="accept_connection_request__question">Принять запрос на соединение?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если вы отклоните запрос на соединение.</string>
     <string name="accept_contact_button">Принять</string>
+    <string name="accept_contact_incognito_button">Принять инкогнито</string>
     <string name="reject_contact_button">Отклонить</string>
 
     <!-- Clear Chat - ChatListNavLinkView.kt -->
@@ -251,13 +257,15 @@
     <string name="connection_request_sent">Запрос на соединение послан!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено когда ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено когда ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Покажите QR код вашему контакту, чтобы сосканировать его из приложения</string>
+    <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Покажите QR код вашему контакту, чтобы сосканировать его из приложения.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Если вы не можете встретиться лично, вы можете <b>показать QR код во время видеозвонка</b> или отправить ссылку через любой другой канал связи.</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен\nвашему контакту</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Если вы не можете встретиться лично, вы можете <b>сосканировать QR код во время видеозвонка</b>, или ваш контакт может отправить вам ссылку.</string>
     <string name="share_invitation_link">Поделиться ссылкой</string>
     <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</string>
-    
+    <string name="your_profile_will_be_sent">Ваш профиль будет отправлен вашему контакту</string>
+
+
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
@@ -469,6 +477,7 @@
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
+    <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>
@@ -519,6 +528,7 @@
     <string name="join_group_question">Вступить в группу?</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Вы приглашены в группу. Вступите, чтобы соединиться с членами группы.</string>
     <string name="join_group_button">Вступить</string>
+    <string name="join_group_incognito_button">Вступить инкогнито</string>
     <string name="joining_group">Вступление в группу</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в эту группу. Устанавливается соединение с пригласившим членом группы.</string>
     <string name="leave_group_button">Выйти</string>
@@ -531,11 +541,14 @@
     <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
     <string name="alert_title_join_group_error">Ошибка приглашения</string>
+    <string name="alert_title_cant_invite_contacts">Нельзя пригласить контакты!</string>
+    <string name="alert_title_cant_invite_contacts_descr">Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие вашего основного профиля, приглашать контакты не разрешено</string>
 
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
     <string name="you_are_invited_to_group">Вы приглашены в группу</string>
     <string name="group_invitation_tap_to_join">Нажмите, чтобы вступить</string>
+    <string name="group_invitation_tap_to_join_incognito">Нажмите, чтобы вступить инкогнито</string>
     <string name="you_joined_this_group">Вы вступили в эту группу</string>
     <string name="you_rejected_group_invitation">Вы отклонили приглашение в группу</string>
     <string name="group_invitation_expired">Приглашение в группу истекло</string>
@@ -581,6 +594,8 @@
     <string name="clear_contacts_selection_button">Очистить</string>
     <string name="num_contacts_selected">Выбрано контактов: <xliff:g id="num_contacts">%1$s</xliff:g></string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
+    <string name="invite_prohibited">Нельзя пригласить контакт!</string>
+    <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где вы используете свой основной профиль</string>
 
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
@@ -618,6 +633,8 @@
     <string name="group_is_decentralized">Группа полностью децентрализована — она видна только членам.</string>
     <string name="group_display_name_field">Имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
+    <string name="group_unsupported_incognito_main_profile_sent">Режим Инкогнито здесь не поддерживается - ваш основной профиль будет отправлен членам группы</string>
+    <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
 
     <!-- GroupProfileView.kt -->
     <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
@@ -636,6 +653,17 @@
     <string name="update_network_settings_question">Обновить настройки сети?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
     <string name="update_network_settings_confirmation">Обновить</string>
+
+    <!-- Incognito mode -->
+    <string name="incognito">Инкогнито</string>
+    <string name="incognito_random_profile">Случайный профиль</string>
+    <string name="incognito_random_profile_description">Вашему контакту будет отправлен случайный профиль</string>
+    <string name="incognito_random_profile_from_contact_description">Контакту, от которого вы получили эту ссылку, будет отправлен случайный профиль</string>
+
+    <string name="incognito_info_protects">Режим Инкогнито защищает конфиденциальность имени и изображения вашего основного профиля — для каждого нового контакта создается новый случайный профиль.</string>
+    <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
+    <string name="incognito_info_share">Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
+    <string name="incognito_info_find">Чтобы найти инкогнито профиль, используемый в разговоре, нажмите на имя контакта или группы в верхней части чата.</string>
 
     <!-- Default themes -->
     <string name="theme_system">Системная</string>
