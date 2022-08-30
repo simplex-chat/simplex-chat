@@ -251,22 +251,23 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 @Composable
 private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
   var value by remember { mutableStateOf(initialValue) }
-  DefaultBasicTextField(
-    Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-    initialValue,
-    {
-      Text(
-        generalGetString(R.string.text_field_set_contact_placeholder),
-        Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = HighOrLowlight
-      )
-    },
-    color = HighOrLowlight,
-    textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
-    keyboardActions = KeyboardActions(onDone = { updateValue(value) })
-  ) {
-    value = it
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    DefaultBasicTextField(
+      Modifier.padding(horizontal = 10.dp),
+      initialValue,
+      {
+        Text(
+          generalGetString(R.string.text_field_set_contact_placeholder),
+          textAlign = TextAlign.Center,
+          color = HighOrLowlight
+        )
+      },
+      color = HighOrLowlight,
+      textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
+      keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+    ) {
+      value = it
+    }
   }
   DisposableEffect(Unit) {
     onDispose { updateValue(value) }
