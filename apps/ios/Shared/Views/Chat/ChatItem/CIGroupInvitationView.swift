@@ -20,7 +20,6 @@ struct CIGroupInvitationView: View {
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
-        let unsafeToJoinIncognito = interactiveIncognito && !chatIncognito
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
                 groupInfoView(action)
@@ -34,8 +33,8 @@ struct CIGroupInvitationView: View {
                 if action {
                     groupInvitationText()
                         .overlay(DetermineWidth())
-                    Text(interactiveIncognito ? "Tap to join incognito" : "Tap to join")
-                        .foregroundColor(interactiveIncognito ? .indigo : .accentColor)
+                    Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                        .foregroundColor(chatIncognito ? .indigo : .accentColor)
                         .font(.callout)
                         .padding(.trailing, 60)
                         .overlay(DetermineWidth())
@@ -59,25 +58,17 @@ struct CIGroupInvitationView: View {
 
         if action {
             v.onTapGesture {
-                if unsafeToJoinIncognito {
-                    AlertManager.shared.showAlert(unsafeToJoinIncognitoAlert(groupInvitation.groupId))
-                } else {
-                    joinGroup(groupInvitation.groupId)
-                }
+                joinGroup(groupInvitation.groupId)
             }
         } else {
             v
         }
     }
 
-    private var interactiveIncognito: Bool {
-        (groupInvitation.invitedIncognito ?? false) || chatModel.incognito
-    }
-
     private func groupInfoView(_ action: Bool) -> some View {
         var color: Color
         if action {
-            color = interactiveIncognito ? .indigo : .accentColor
+            color = chatIncognito ? .indigo : .accentColor
         } else {
             color = Color(uiColor: .tertiaryLabel)
         }
@@ -107,7 +98,7 @@ struct CIGroupInvitationView: View {
 
     private func groupInvitationStr() -> LocalizedStringKey {
         if chatItem.chatDir.sent {
-            return (groupInvitation.invitedIncognito ?? false) ? "You sent group invitation incognito" : "You sent group invitation"
+            return "You sent group invitation"
         } else {
             switch groupInvitation.status {
             case .pending: return "You are invited to group"

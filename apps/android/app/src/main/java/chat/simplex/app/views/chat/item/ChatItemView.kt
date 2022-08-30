@@ -35,6 +35,7 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
+  chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -147,8 +148,8 @@ fun ChatItemView(
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
-        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
-        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
         is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
       }
@@ -213,6 +214,7 @@ fun PreviewChatItemView() {
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
+      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
@@ -232,6 +234,7 @@ fun PreviewChatItemViewDeletedContent() {
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
+      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},

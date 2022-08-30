@@ -59,6 +59,16 @@ final class ChatModel: ObservableObject {
         chats.first(where: { $0.id == id })
     }
 
+    func getContactChat(_ contactId: Int64) -> Chat? {
+        chats.first { chat in
+            if case let .direct(contact) = chat.chatInfo {
+                return contact.contactId == contactId
+            } else {
+                return false
+            }
+        }
+    }
+
     private func getChatIndex(_ id: String) -> Int? {
         chats.firstIndex(where: { $0.id == id })
     }

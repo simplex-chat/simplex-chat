@@ -206,8 +206,9 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
 func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         let m = ChatModel.shared
+        m.reversedChatItems = []
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         m.updateChatInfo(chat.chatInfo)
         m.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
@@ -324,9 +325,9 @@ func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?, LocalProfile?) {
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?) {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, connStats_, localMainProfile) = r { return (connStats_, localMainProfile) }
+    if case let .groupMemberInfo(_, _, connStats_) = r { return (connStats_) }
     throw r
 }
 

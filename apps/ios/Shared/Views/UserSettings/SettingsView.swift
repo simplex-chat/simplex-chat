@@ -78,6 +78,7 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
 
                     incognitoRow()
+                        .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         UserAddress()

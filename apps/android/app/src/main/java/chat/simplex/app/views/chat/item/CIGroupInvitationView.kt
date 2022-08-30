@@ -18,7 +18,6 @@ import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -28,6 +27,7 @@ fun CIGroupInvitationView(
   ci: ChatItem,
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
+  chatIncognito: Boolean = false,
   joinGroup: (Long) -> Unit
 ) {
   val sent = ci.chatDir.sent
@@ -37,7 +37,7 @@ fun CIGroupInvitationView(
   fun groupInfoView() {
     val p = groupInvitation.groupProfile
     val iconColor =
-      if (action) MaterialTheme.colors.primary
+      if (action) if (chatIncognito) Indigo else MaterialTheme.colors.primary
       else if (isInDarkTheme()) FileDark else FileLight
 
     Row(
@@ -46,7 +46,7 @@ fun CIGroupInvitationView(
         .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
-      ProfileImage(size = 60.dp, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
+      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 60.dp),
@@ -71,13 +71,10 @@ fun CIGroupInvitationView(
     }
   }
 
-  fun acceptInvitation() {
-    Log.d(TAG, "CIGroupInvitationView acceptInvitation")
-    joinGroup(groupInvitation.groupId)
-  }
-
   Surface(
-    modifier = if (action) Modifier.clickable(onClick = ::acceptInvitation) else Modifier,
+    modifier = if (action) Modifier.clickable(onClick = {
+      joinGroup(groupInvitation.groupId)
+    }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) SentColorLight else ReceivedColorLight,
   ) {
@@ -99,7 +96,9 @@ fun CIGroupInvitationView(
           Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
           if (action) {
             groupInvitationText()
-            Text(stringResource(R.string.group_invitation_tap_to_join), color = MaterialTheme.colors.primary)
+            Text(stringResource(
+              if (chatIncognito) R.string.group_invitation_tap_to_join_incognito else  R.string.group_invitation_tap_to_join),
+              color = if (chatIncognito) Indigo else MaterialTheme.colors.primary)
           } else {
             Box(Modifier.padding(end = 48.dp)) {
               groupInvitationText()

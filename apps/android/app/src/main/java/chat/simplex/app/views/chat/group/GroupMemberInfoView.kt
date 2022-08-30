@@ -27,7 +27,13 @@ import chat.simplex.app.views.chat.SimplexServers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: ConnectionStats?, chatModel: ChatModel, close: () -> Unit) {
+fun GroupMemberInfoView(
+  groupInfo: GroupInfo,
+  member: GroupMember,
+  connStats: ConnectionStats?,
+  chatModel: ChatModel,
+  close: () -> Unit
+) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()

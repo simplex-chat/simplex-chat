@@ -6,8 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.SupervisedUserCircle
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +28,17 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
     if (chatInfo is ChatInfo.Group) Icons.Filled.SupervisedUserCircle
                                     else Icons.Filled.AccountCircle
   ProfileImage(size, chatInfo.image, icon, iconColor)
+}
+
+@Composable
+fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondary) {
+  Box(Modifier.size(size)) {
+    Icon(
+      Icons.Filled.TheaterComedy, stringResource(R.string.incognito),
+      modifier = Modifier.size(size).padding(size / 12),
+      iconColor
+    )
+  }
 }
 
 @Composable

@@ -89,17 +89,13 @@ struct ChatPreviewView: View {
         case .group(groupInfo: let groupInfo):
             switch (groupInfo.membership.memberStatus) {
             case .memInvited:
-                interactiveIncognito ? v.foregroundColor(.indigo) : v.foregroundColor(.accentColor)
+                chat.chatInfo.incognito ? v.foregroundColor(.indigo) : v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
             default: v
             }
         default: v
         }
-    }
-
-    private var interactiveIncognito: Bool {
-        chat.chatInfo.incognito || chatModel.incognito
     }
 
     @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?, _ unread: Int) -> some View {
@@ -131,13 +127,22 @@ struct ChatPreviewView: View {
                 }
             case let .group(groupInfo):
                 switch (groupInfo.membership.memberStatus) {
-                case .memInvited: chatPreviewInfoText(groupInfo.membership.memberIncognito ? "you are invited to group incognito" : "you are invited to group")
+                case .memInvited: groupInvitationPreviewText(groupInfo)
                 case .memAccepted: chatPreviewInfoText("connecting…")
                 default: EmptyView()
                 }
             default: EmptyView()
             }
         }
+    }
+
+    @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
+        groupInfo.membership.memberIncognito
+        ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
+        : (chatModel.incognito
+           ? chatPreviewInfoText("join as \(chatModel.currentUser?.profile.displayName ?? "yourself")")
+           : chatPreviewInfoText("you are invited to group")
+        )
     }
 
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
