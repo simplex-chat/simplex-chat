@@ -32,7 +32,8 @@ fun GroupMemberInfoView(
   member: GroupMember,
   connStats: ConnectionStats?,
   chatModel: ChatModel,
-  close: () -> Unit
+  close: () -> Unit,
+  closeAll: () -> Unit, // Close all open windows up to ChatView
 ) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
@@ -43,6 +44,26 @@ fun GroupMemberInfoView(
       member,
       connStats,
       developerTools,
+      openDirectChat = {
+        chatModel.getContactChat(member.memberContactId ?: return@GroupMemberInfoLayout)?.let {
+          chatModel.chatItems.clear()
+          chatModel.chatItems.addAll(it.chatItems)
+          chatModel.chatId.value = it.id
+
+          closeAll()
+          return@GroupMemberInfoLayout
+        }
+        withApi {
+          var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
+          // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+          newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
+          chatModel.addChat(newChat)
+          chatModel.chatItems.clear()
+          chatModel.chatId.value = newChat.id
+
+          closeAll()
+        }
+      },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
   }
@@ -71,6 +92,7 @@ fun GroupMemberInfoLayout(
   member: GroupMember,
   connStats: ConnectionStats?,
   developerTools: Boolean,
+  openDirectChat: () -> Unit,
   removeMember: () -> Unit,
 ) {
   Column(
@@ -84,6 +106,13 @@ fun GroupMemberInfoLayout(
       horizontalArrangement = Arrangement.Center
     ) {
       GroupMemberInfoHeader(member)
+    }
+    SectionSpacer()
+
+    SectionView {
+      SectionItemView {
+        OpenChatButton(openDirectChat)
+      }
     }
     SectionSpacer()
 
@@ -181,6 +210,25 @@ fun RemoveMemberButton(removeMember: () -> Unit) {
   }
 }
 
+@Composable
+fun OpenChatButton(onClick: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { onClick() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Message,
+      stringResource(R.string.button_send_direct_message),
+      Modifier.padding(top = 5.dp),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_send_direct_message), color = MaterialTheme.colors.primary)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -190,6 +238,7 @@ fun PreviewGroupMemberInfoLayout() {
       member = GroupMember.sampleData,
       connStats = null,
       developerTools = false,
+      openDirectChat = {},
       removeMember = {}
     )
   }
