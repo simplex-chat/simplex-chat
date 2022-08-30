@@ -165,8 +165,8 @@ private fun UseOnionHosts(onionHosts: MutableState<OnionHosts>, enabled: State<B
   val values = remember {
     OnionHosts.values().map {
       when (it) {
-        OnionHosts.PREFER -> OnionHosts.PREFER to generalGetString(R.string.network_use_onion_hosts_prefer)
         OnionHosts.NEVER -> OnionHosts.NEVER to generalGetString(R.string.network_use_onion_hosts_no)
+        OnionHosts.PREFER -> OnionHosts.PREFER to generalGetString(R.string.network_use_onion_hosts_prefer)
         OnionHosts.REQUIRED -> OnionHosts.REQUIRED to generalGetString(R.string.network_use_onion_hosts_required)
       }
     }

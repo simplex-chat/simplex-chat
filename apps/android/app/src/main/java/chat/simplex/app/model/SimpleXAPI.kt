@@ -1382,24 +1382,24 @@ data class NetCfg(
   }
 
   val onionHosts: OnionHosts get() = when {
-    hostMode == HostMode.OnionViaSocks && !requiredHostMode -> OnionHosts.PREFER
     hostMode == HostMode.Public && requiredHostMode -> OnionHosts.NEVER
+    hostMode == HostMode.OnionViaSocks && !requiredHostMode -> OnionHosts.PREFER
     hostMode == HostMode.OnionViaSocks && requiredHostMode -> OnionHosts.REQUIRED
     else -> OnionHosts.PREFER
   }
 
   fun withOnionHosts(mode: OnionHosts): NetCfg = when (mode) {
-    OnionHosts.PREFER ->
-      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = false)
     OnionHosts.NEVER ->
       this.copy(hostMode = HostMode.Public, requiredHostMode = true)
+    OnionHosts.PREFER ->
+      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = false)
     OnionHosts.REQUIRED ->
       this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = true)
   }
 }
 
 enum class OnionHosts {
-  PREFER, NEVER, REQUIRED
+  NEVER, PREFER, REQUIRED
 }
 
 @Serializable
