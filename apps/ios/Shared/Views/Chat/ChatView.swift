@@ -31,6 +31,9 @@ struct ChatView: View {
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    // opening GroupMemberInfoView on member icon
+    @State private var selectedMember: GroupMember? = nil
+    @State private var memberConnectionStats: ConnectionStats?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -69,12 +72,15 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "chevron.backward")
+                    HStack(spacing: 0) {
+                        Image(systemName: "chevron.backward")
+                        Text("Chats")
+                    }
                 }
             }
             ToolbarItem(placement: .principal) {
-                Button {
-                    if case .direct = cInfo {
+                if case let .direct(contact) = cInfo {
+                    Button {
                         Task {
                             do {
                                 let (stats, profile) = try await apiContactInfo(contactId: chat.chatInfo.apiId)
@@ -87,7 +93,17 @@ struct ChatView: View {
                             }
                             await MainActor.run { showChatInfoSheet = true }
                         }
-                    } else if case let .group(groupInfo) = cInfo {
+                    } label: {
+                        ChatInfoToolbar(chat: chat)
+                    }
+                    .sheet(isPresented: $showChatInfoSheet, onDismiss: {
+                        connectionStats = nil
+                        customUserProfile = nil
+                    }) {
+                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
+                    }
+                } else if case let .group(groupInfo) = cInfo {
+                    Button {
                         Task {
                             let groupMembers = await apiListMembers(groupInfo.groupId)
                             await MainActor.run {
@@ -95,18 +111,11 @@ struct ChatView: View {
                                 showChatInfoSheet = true
                             }
                         }
+                    } label: {
+                        ChatInfoToolbar(chat: chat)
                     }
-                } label: {
-                    ChatInfoToolbar(chat: chat)
-                }
-                .sheet(isPresented: $showChatInfoSheet) {
-                    switch cInfo {
-                    case let .direct(contact):
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: connectionStats, customUserProfile: customUserProfile, localAlias: chat.chatInfo.localAlias)
-                    case let .group(groupInfo):
+                    .sheet(isPresented: $showChatInfoSheet) {
                         GroupChatInfoView(chat: chat, groupInfo: groupInfo)
-                    default:
-                        EmptyView()
                     }
                 }
             }
@@ -130,10 +139,16 @@ struct ChatView: View {
                 case let .group(groupInfo):
                     HStack {
                         if groupInfo.canAddMembers {
-                            addMembersButton()
-                                .sheet(isPresented: $showAddMembersSheet) {
-                                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                }
+                            if (chat.chatInfo.incognito) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                                    .onTapGesture { AlertManager.shared.showAlert(cantInviteIncognitoAlert()) }
+                            } else {
+                                addMembersButton()
+                                    .sheet(isPresented: $showAddMembersSheet) {
+                                        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                    }
+                            }
                         }
                         Menu {
                             searchButton()
@@ -222,6 +237,15 @@ struct ChatView: View {
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
+                }
+                .onChange(of: chatModel.chatId) { _ in
+                    if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                        showChatInfoSheet = false
+                        loadChat(chat: chat)
+                        DispatchQueue.main.async {
+                            scrollToBottom(proxy)
+                        }
+                    }
                 }
             }
         }
@@ -342,13 +366,28 @@ struct ChatView: View {
     }
 
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        if case let .groupRcv(member) = ci.chatDir {
+        if case let .groupRcv(member) = ci.chatDir,
+           case let .group(groupInfo) = chat.chatInfo {
             let prevItem = chatModel.getPrevChatItem(ci)
             HStack(alignment: .top, spacing: 0) {
                 let showMember = prevItem == nil || showMemberImage(member, prevItem)
                 if showMember {
                     ProfileImage(imageStr: member.memberProfile.image)
                         .frame(width: memberImageSize, height: memberImageSize)
+                        .onTapGesture {
+                            Task {
+                                do {
+                                    let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
+                                    await MainActor.run { memberConnectionStats = stats }
+                                } catch let error {
+                                    logger.error("apiGroupMemberInfo error: \(responseError(error))")
+                                }
+                                await MainActor.run { selectedMember = member }
+                            }
+                        }
+                        .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats)
+                        }
                 } else {
                     Rectangle().fill(.clear)
                         .frame(width: memberImageSize, height: memberImageSize)

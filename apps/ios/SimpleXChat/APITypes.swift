@@ -232,7 +232,7 @@ public enum ChatResponse: Decodable, Error {
     case userSMPServers(smpServers: [String])
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
-    case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?, localMainProfile: LocalProfile?)
+    case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
     case invitation(connReqInvitation: String)
     case sentConfirmation
     case sentInvitation
@@ -416,7 +416,7 @@ public enum ChatResponse: Decodable, Error {
             case let .userSMPServers(smpServers): return String(describing: smpServers)
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
-            case let .groupMemberInfo(groupInfo, member, connectionStats_, localMainProfile): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))\nlocalMainProfile: \(String(describing: localMainProfile))"
+            case let .groupMemberInfo(groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))"
             case let .invitation(connReqInvitation): return connReqInvitation
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails

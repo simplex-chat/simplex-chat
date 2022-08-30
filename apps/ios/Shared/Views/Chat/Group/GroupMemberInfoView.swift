@@ -15,7 +15,6 @@ struct GroupMemberInfoView: View {
     var groupInfo: GroupInfo
     var member: GroupMember
     var connectionStats: ConnectionStats?
-    var mainProfile: LocalProfile?
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -31,11 +30,14 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
+                if let contactId = member.memberContactId {
+                    Section {
+                        openDirectChatButton(contactId)
+                    }
+                }
+
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
-                    if let mainProfile = mainProfile {
-                        mainProfileRow(mainProfile)
-                    }
                     // TODO change role
                     // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
@@ -76,17 +78,27 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func mainProfileRow(_ mainProfile: LocalProfile) -> some View {
-        HStack {
-            Text("Known main profile")
-            Spacer()
-            if (mainProfile.image != nil) {
-                ProfileImage(imageStr: member.image)
-                    .frame(width: 38, height: 38)
-                    .padding(.trailing, 2)
+    func openDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            var chat = chatModel.getContactChat(contactId)
+            if chat == nil {
+                do {
+                    chat = try apiGetChat(type: .direct, id: contactId)
+                    if let chat = chat {
+                        // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+                        chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
+                        chatModel.addChat(chat)
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                }
             }
-            Text(mainProfile.chatViewName)
-                .foregroundColor(.secondary)
+            if let chat = chat {
+                dismissAllSheets(animated: true)
+                chatModel.chatId = chat.id
+            }
+        } label: {
+            Label("Send direct message", systemImage: "message")
         }
     }
 
