@@ -477,7 +477,7 @@
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
-    <string name="settings_section_title_incognito">РЕЖИМ ИНКОГНИТО</string>
+    <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">Данные чата</string>

@@ -24,7 +24,7 @@ fun IncognitoLayout() {
   ) {
     Text(
       stringResource(R.string.settings_section_title_incognito),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
+      Modifier.padding(start = 8.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
 

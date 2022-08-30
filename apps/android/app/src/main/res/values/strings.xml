@@ -478,7 +478,7 @@
   <string name="settings_section_title_socks">SOCKS PROXY</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
-  <string name="settings_section_title_incognito">INCOGNITO MODE</string>
+  <string name="settings_section_title_incognito">Incognito mode</string>
 
   <!-- DatabaseView.kt -->
   <string name="your_chat_database">Your chat database</string>
