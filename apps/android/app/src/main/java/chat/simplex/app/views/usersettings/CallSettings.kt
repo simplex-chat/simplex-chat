@@ -90,6 +90,7 @@ fun SharedPreferenceToggle(
 fun SharedPreferenceToggleWithIcon(
   text: String,
   icon: ImageVector,
+  stopped: Boolean = false,
   onClickInfo: () -> Unit,
   preference: Preference<Boolean>,
   preferenceState: MutableState<Boolean>? = null
@@ -113,7 +114,8 @@ fun SharedPreferenceToggleWithIcon(
       colors = SwitchDefaults.colors(
         checkedThumbColor = MaterialTheme.colors.primary,
         uncheckedThumbColor = HighOrLowlight
-      )
+      ),
+      enabled = !stopped
     )
   }
 }

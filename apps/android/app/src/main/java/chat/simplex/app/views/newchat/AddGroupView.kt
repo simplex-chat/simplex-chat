@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,17 +94,16 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
           ) {
             Text(
               stringResource(R.string.create_secret_group_title),
-              style = MaterialTheme.typography.h4,
+              style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
               modifier = Modifier.padding(vertical = 5.dp)
             )
-            ReadableText(R.string.group_is_decentralized)
+            Text(stringResource(R.string.group_is_decentralized))
             InfoAboutIncognito(
               chatModelIncognito,
               false,
               generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
               generalGetString(R.string.group_main_profile_sent)
             )
-            Spacer(Modifier.height(10.dp))
             Box(
               Modifier
                 .fillMaxWidth()

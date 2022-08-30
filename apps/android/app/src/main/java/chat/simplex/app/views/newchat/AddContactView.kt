@@ -1,11 +1,9 @@
 package chat.simplex.app.views.newchat
 
-import SectionItemView
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
@@ -43,24 +41,28 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
   BoxWithConstraints {
     val screenHeight = maxHeight
     Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
+      Modifier.padding(bottom = 16.dp),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
         stringResource(R.string.add_contact),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier
+          .padding(vertical = 5.dp)
+          .padding(horizontal = 8.dp)
       )
       Text(
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
-        style = MaterialTheme.typography.h3,
-        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(horizontal = 8.dp)
       )
-      InfoAboutIncognito(
-        chatModelIncognito,
-        true,
-        generalGetString(R.string.incognito_random_profile_description),
-        generalGetString(R.string.your_profile_will_be_sent)
-      )
+      Row(Modifier.padding(horizontal = 8.dp)) {
+        InfoAboutIncognito(
+          chatModelIncognito,
+          true,
+          generalGetString(R.string.incognito_random_profile_description),
+          generalGetString(R.string.your_profile_will_be_sent)
+        )
+      }
       QRCode(
         connReq, Modifier
           .weight(1f, fill = false)
@@ -69,43 +71,54 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
       )
       Text(
         stringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
-        textAlign = TextAlign.Center,
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(horizontal = 16.dp)
+          .padding(horizontal = 8.dp)
           .padding(bottom = if (screenHeight > 600.dp) 16.dp else 8.dp)
       )
-      SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
-      Spacer(Modifier.height(10.dp))
+      Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+      ) {
+        SimpleButton(stringResource(R.string.share_invitation_link), icon = Icons.Outlined.Share, click = share)
+      }
     }
   }
 }
 
 @Composable
-fun ColumnScope.InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean = true, onText: String, offText: String) {
-  Spacer(Modifier.padding(top = 10.dp))
+fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean = true, onText: String, offText: String) {
   if (chatModelIncognito) {
-    SectionItemView {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       Icon(
-        if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Filled.Circle,
+        if (supportedIncognito) Icons.Filled.TheaterComedy else Icons.Outlined.Info,
         stringResource(R.string.incognito),
-        tint = if (supportedIncognito) Indigo else Orange,
-        modifier = Modifier.padding(10.dp).size(26.dp)
+        tint = if (supportedIncognito) Indigo else WarningOrange,
+        modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(onText, textAlign = TextAlign.Center)
+      Text(onText, textAlign = TextAlign.Left, style = MaterialTheme.typography.body2)
     }
   } else {
-    SectionItemView {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
       Icon(
         Icons.Outlined.Info,
         stringResource(R.string.incognito),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp).size(26.dp)
+        tint = HighOrLowlight,
+        modifier = Modifier.padding(end = 10.dp).size(20.dp)
       )
-      Text(offText, textAlign = TextAlign.Center)
+      Text(offText, textAlign = TextAlign.Left, style = MaterialTheme.typography.body2)
     }
   }
-  Spacer(Modifier.padding(top = 10.dp))
 }
 
 @Preview

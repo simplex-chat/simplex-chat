@@ -257,8 +257,8 @@
   <string name="connection_request_sent">Connection request sent!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Show QR code for your contact\nto scan from the app</string>
-  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you cannot meet in person, you can <b>show QR code in the video call</b>, or you can share the invitation link via any other channel.</string>
+  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Show QR code for your contact to scan from the app.</string>
+  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, you can <b>show QR code in the video call</b>, or you can share the invitation link via any other channel.</string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>
   <string name="share_invitation_link">Share invitation link</string>

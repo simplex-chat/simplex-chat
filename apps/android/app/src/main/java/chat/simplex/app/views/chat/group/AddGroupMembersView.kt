@@ -294,7 +294,7 @@ fun ContactCheckRow(
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
     icon = Icons.Filled.TheaterComedy
-    iconColor = Indigo
+    iconColor = MaterialTheme.colors.secondary
   } else if (checked) {
     icon = Icons.Filled.CheckCircle
     iconColor = MaterialTheme.colors.primary

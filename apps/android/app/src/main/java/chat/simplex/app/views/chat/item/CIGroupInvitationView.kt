@@ -46,7 +46,7 @@ fun CIGroupInvitationView(
         .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
-      ProfileImage(size = 60.dp, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
+      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = Icons.Filled.SupervisedUserCircle, color = iconColor)
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 60.dp),

@@ -33,7 +33,10 @@ fun IncognitoLayout() {
         .verticalScroll(rememberScrollState())
         .padding(horizontal = 8.dp)
     ) {
-      Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+      Column(
+        Modifier.padding(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+      ) {
         Text(generalGetString(R.string.incognito_info_protects))
         Text(generalGetString(R.string.incognito_info_allows))
         Text(generalGetString(R.string.incognito_info_share))

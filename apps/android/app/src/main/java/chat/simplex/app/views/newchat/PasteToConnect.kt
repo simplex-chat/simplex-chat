@@ -64,13 +64,13 @@ fun PasteToConnectLayout(
 ) {
   ModalView(close) {
     Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
+      Modifier.padding(bottom = 16.dp),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
         stringResource(R.string.connect_via_link),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        modifier = Modifier.padding(bottom = 16.dp)
+        modifier = Modifier.padding(vertical = 5.dp)
       )
       Text(stringResource(R.string.paste_connection_link_below_to_connect))
 

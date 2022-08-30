@@ -70,12 +70,13 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
 fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable () -> Unit, close: () -> Unit) {
   ModalView(close) {
     Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
+      Modifier.padding(bottom = 16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Text(
         generalGetString(R.string.scan_QR_code),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier.padding(vertical = 5.dp)
       )
       InfoAboutIncognito(
         chatModelIncognito,

@@ -122,7 +122,7 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsIncognitoActionItem(incognitoPref, incognito) { onClickIncognitoInfo(showModal) }
+        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         SectionDivider()
@@ -175,12 +175,14 @@ fun SettingsLayout(
 fun SettingsIncognitoActionItem(
   incognitoPref: Preference<Boolean>,
   incognito: MutableState<Boolean>,
+  stopped: Boolean,
   onClickInfo: () -> Unit,
 ) {
   SettingsPreferenceItemWithInfo(
     if (incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.TheaterComedy,
     if (incognito.value) Indigo else HighOrLowlight,
     stringResource(R.string.incognito),
+    stopped,
     onClickInfo,
     incognitoPref,
     incognito
@@ -374,15 +376,16 @@ fun SettingsPreferenceItemWithInfo(
   icon: ImageVector,
   iconTint: Color,
   text: String,
+  stopped: Boolean,
   onClickInfo: () -> Unit,
   pref: Preference<Boolean>,
   prefState: MutableState<Boolean>? = null
 ) {
   SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClickInfo() }) {
-      Icon(icon, text, tint = iconTint)
+      Icon(icon, text, tint = if (stopped) HighOrLowlight else iconTint)
       Spacer(Modifier.padding(horizontal = 4.dp))
-      SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, onClickInfo, pref, prefState)
+      SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)
     }
   }
 }

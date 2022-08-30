@@ -218,7 +218,7 @@ fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, show
   val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
-    Icons.Outlined.Login,
+    if (chat.chatInfo.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.Login,
     color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       joinGroup()
@@ -243,8 +243,8 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 @Composable
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.accept_contact_button),
-    if (chatModel.incognito.value) Icons.Outlined.Check else Icons.Filled.TheaterComedy,
+    if (chatModel.incognito.value) stringResource(R.string.accept_contact_incognito_button) else stringResource(R.string.accept_contact_button),
+    if (chatModel.incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.Check,
     color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       acceptContactRequest(chatInfo, chatModel)
@@ -391,7 +391,7 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
-    confirmText = generalGetString(R.string.join_group_button),
+    confirmText = if (groupInfo.membership.memberIncognito) generalGetString(R.string.join_group_incognito_button) else generalGetString(R.string.join_group_button),
     onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
     dismissText = generalGetString(R.string.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
