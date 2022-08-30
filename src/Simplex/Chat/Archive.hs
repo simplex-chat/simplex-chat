@@ -3,7 +3,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.Archive where
+module Simplex.Chat.Archive
+  ( exportArchive,
+    importArchive,
+    deleteStorage,
+    encryptStorage,
+  )
+where
 
 import qualified Codec.Archive.Zip as Z
 import Control.Monad.Except
@@ -107,7 +113,7 @@ encryptStorage key = do
     restore f = copyFile (f <> ".bak") f
     encrypt f = do
       withDB (`SQL.exec` encryptSQL) DBEExportFailed
-      copyFile (f <> ".encrypted") f
+      renameFile (f <> ".encrypted") f
       withDB (`SQL.exec` testSQL) DBEOpenFailed
       where
         withDB :: (SQL.Database -> IO ()) -> DatabaseError -> m ()

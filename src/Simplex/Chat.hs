@@ -240,9 +240,9 @@ processChatCommand = \case
     atomically . writeTVar incognito $ onOff
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
-  APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
-  APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
-  APIEncryptStorage _ -> pure $ chatCmdError "not implemented"
+  APIImportArchive cfg -> withStoreChanged $ importArchive cfg
+  APIDeleteStorage -> withStoreChanged $ deleteStorage
+  APIEncryptStorage key -> withStoreChanged $ encryptStorage key
   APIDecryptStorage -> pure $ chatCmdError "not implemented"
   APIRekeyStorage _ -> pure $ chatCmdError "not implemented"
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
@@ -942,6 +942,8 @@ processChatCommand = \case
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: m ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+    withStoreChanged :: m () -> m ChatResponse
+    withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -2539,9 +2541,9 @@ chatCommandP =
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
-      "/_db encrypt " *> (APIEncryptStorage <$> encryptionKeyP),
-      "/_db decrypt" $> APIDecryptStorage,
-      "/_db rekey " *> (APIRekeyStorage <$> encryptionKeyP),
+      "/db encrypt " *> (APIEncryptStorage <$> encryptionKeyP),
+      "/db decrypt" $> APIDecryptStorage,
+      "/db rekey " *> (APIRekeyStorage <$> encryptionKeyP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
