@@ -297,6 +297,10 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если вы подтвердите, серверы смогут видеть ваш IP адрес, а провайдер - с какими серверами вы соединяетесь.</string>
+    <string name="network_use_onion_hosts">Использовать .onion хосты</string>
+    <string name="network_use_onion_hosts_prefer">Когда возможно</string>
+    <string name="network_use_onion_hosts_no">Нет</string>
+    <string name="network_use_onion_hosts_required">Обязательно</string>
     <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->
