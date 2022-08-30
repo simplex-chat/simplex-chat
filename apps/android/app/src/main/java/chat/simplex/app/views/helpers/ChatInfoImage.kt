@@ -35,7 +35,7 @@ fun IncognitoImage(size: Dp, iconColor: Color = MaterialTheme.colors.secondary) 
   Box(Modifier.size(size)) {
     Icon(
       Icons.Filled.TheaterComedy, stringResource(R.string.incognito),
-      modifier = Modifier.size(size).padding(size / 12).clip(CircleShape),
+      modifier = Modifier.size(size).padding(size / 12),
       iconColor
     )
   }
