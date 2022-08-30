@@ -160,7 +160,6 @@ fun ChatInfoLayout(
       ChatInfoHeader(chat.chatInfo, contact)
     }
 
-    SectionSpacer()
     LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
 
     if (customUserProfile != null) {
@@ -235,7 +234,8 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
       contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       maxLines = 1,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(bottom = 8.dp)
     )
     if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
