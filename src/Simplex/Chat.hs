@@ -26,7 +26,7 @@ import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
+import Data.Char (isSpace, ord)
 import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
@@ -242,6 +242,9 @@ processChatCommand = \case
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
   APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
   APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
+  APIEncryptStorage _ -> pure $ chatCmdError "not implemented"
+  APIDecryptStorage -> pure $ chatCmdError "not implemented"
+  APIRekeyStorage _ -> pure $ chatCmdError "not implemented"
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
@@ -2536,6 +2539,9 @@ chatCommandP =
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
+      "/_db encrypt " *> (APIEncryptStorage <$> encryptionKeyP),
+      "/_db decrypt" $> APIDecryptStorage,
+      "/_db rekey " *> (APIRekeyStorage <$> encryptionKeyP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
@@ -2685,6 +2691,7 @@ chatCommandP =
       t_ <- optional $ " timeout=" *> A.decimal
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout
+    encryptionKeyP = B.unpack <$> A.takeWhile (\c -> ord c >= 0x20 && ord c <= 0x7E)
 
 adminContactReq :: ConnReqContact
 adminContactReq =

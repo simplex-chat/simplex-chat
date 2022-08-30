@@ -112,6 +112,9 @@ data ChatCommand
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
+  | APIEncryptStorage String
+  | APIDecryptStorage
+  | APIRekeyStorage String
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
