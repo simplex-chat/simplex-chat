@@ -2691,7 +2691,7 @@ chatCommandP =
       t_ <- optional $ " timeout=" *> A.decimal
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout
-    encryptionKeyP = B.unpack <$> A.takeWhile (\c -> ord c >= 0x20 && ord c <= 0x7E)
+    encryptionKeyP = B.unpack <$> A.takeWhile1 (\c -> ord c >= 0x20 && ord c <= 0x7E)
 
 adminContactReq :: ConnReqContact
 adminContactReq =
