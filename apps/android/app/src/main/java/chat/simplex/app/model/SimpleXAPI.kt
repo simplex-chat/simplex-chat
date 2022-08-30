@@ -88,6 +88,8 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
+  val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
@@ -159,6 +161,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
+    private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_SMP_PING_INTERVAL = "NetworkSMPPingInterval"
@@ -1103,6 +1107,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val socksProxy = if (useSocksProxy) ":9050" else null
+    val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
+    val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
@@ -1117,6 +1123,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
     return NetCfg(
       socksProxy = socksProxy,
+      hostMode = hostMode,
+      requiredHostMode = requiredHostMode,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpKeepAlive = tcpKeepAlive,
@@ -1126,6 +1134,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
+    appPrefs.networkHostMode.set(cfg.hostMode.name)
+    appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
@@ -1370,6 +1380,26 @@ data class NetCfg(
         smpPingInterval = 600_000_000
       )
   }
+
+  val onionHosts: OnionHosts get() = when {
+    hostMode == HostMode.Public && requiredHostMode -> OnionHosts.NEVER
+    hostMode == HostMode.OnionViaSocks && !requiredHostMode -> OnionHosts.PREFER
+    hostMode == HostMode.OnionViaSocks && requiredHostMode -> OnionHosts.REQUIRED
+    else -> OnionHosts.PREFER
+  }
+
+  fun withOnionHosts(mode: OnionHosts): NetCfg = when (mode) {
+    OnionHosts.NEVER ->
+      this.copy(hostMode = HostMode.Public, requiredHostMode = true)
+    OnionHosts.PREFER ->
+      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = false)
+    OnionHosts.REQUIRED ->
+      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = true)
+  }
+}
+
+enum class OnionHosts {
+  NEVER, PREFER, REQUIRED
 }
 
 @Serializable
