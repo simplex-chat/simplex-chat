@@ -294,7 +294,7 @@ fun ContactCheckRow(
   val iconColor: Color
   if (prohibitedToInviteIncognito) {
     icon = Icons.Filled.TheaterComedy
-    iconColor = MaterialTheme.colors.secondary
+    iconColor = HighOrLowlight
   } else if (checked) {
     icon = Icons.Filled.CheckCircle
     iconColor = MaterialTheme.colors.primary
@@ -323,7 +323,7 @@ fun ContactCheckRow(
       ProfileImage(size = 36.dp, contact.image)
       Text(
         contact.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        color = if (prohibitedToInviteIncognito) MaterialTheme.colors.secondary else Color.Unspecified
+        color = if (prohibitedToInviteIncognito) HighOrLowlight else Color.Unspecified
       )
     }
     Icon(
