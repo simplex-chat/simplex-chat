@@ -86,10 +86,10 @@ flags:
 # arch: x86_64
 #
 # Extra directories used by stack for building
-# extra-include-dirs:
-# - /opt/homebrew/opt/openssl@3/include
-# extra-lib-dirs:
-# - /opt/homebrew/opt/openssl@3/lib
+extra-include-dirs:
+- /opt/homebrew/opt/openssl@3/include
+extra-lib-dirs:
+- /opt/homebrew/opt/openssl@3/lib
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
