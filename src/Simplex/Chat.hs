@@ -243,8 +243,8 @@ processChatCommand = \case
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged $ deleteStorage
   APIEncryptStorage key -> withStoreChanged $ encryptStorage key
-  APIDecryptStorage -> pure $ chatCmdError "not implemented"
-  APIRekeyStorage _ -> pure $ chatCmdError "not implemented"
+  APIDecryptStorage -> withStoreChanged decryptStorage
+  APIRekeyStorage key -> withStoreChanged $ rekeyStorage key
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)

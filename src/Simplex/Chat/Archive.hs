@@ -8,12 +8,15 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     encryptStorage,
+    decryptStorage,
+    rekeyStorage,
   )
 where
 
 import qualified Codec.Archive.Zip as Z
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
@@ -100,38 +103,69 @@ storageFiles = do
   pure StorageFiles {chatDb, chatKey, agentDb, agentKey, filesPath}
 
 encryptStorage :: forall m. ChatMonad m => String -> m ()
-encryptStorage key = do
-  fs <- storageFiles
-  unless (null (chatKey fs) && null (agentKey fs)) $ throwDBError DBEAlreadyEncrypted
+encryptStorage key' = updateDatabase encrypt
+  where
+    encrypt f "" = do
+      withDB f (`SQL.exec` exportSQL f "" key') DBEExportFailed
+      renameFile (f <> ".exported") f
+      withDB f (`SQL.exec` testSQL key') DBEOpenFailed
+    encrypt _ _ = throwDBError DBENotPlaintext
+
+decryptStorage :: forall m. ChatMonad m => m ()
+decryptStorage = updateDatabase decrypt
+  where
+    decrypt _ "" = throwDBError DBENotEncrypted
+    decrypt f key = do
+      withDB f (`SQL.exec` exportSQL f key "") DBEExportFailed
+      renameFile (f <> ".exported") f
+      withDB f (`SQL.exec` testSQL "") DBEOpenFailed
+
+rekeyStorage :: ChatMonad m => String -> m ()
+rekeyStorage key' = updateDatabase rekey
+  where
+    rekey f "" = throwDBError DBENotEncrypted
+    rekey f key = do
+      withDB f (`SQL.exec` rekeySQL) DBERekeyFailed
+      withDB f (`SQL.exec` testSQL key') DBEOpenFailed
+      where
+        rekeySQL = T.unlines $ keySQL key <> ["PRAGMA rekey = " <> sqlString key' <> ";"]
+
+updateDatabase :: ChatMonad m => (FilePath -> String -> m ()) -> m ()
+updateDatabase update = do
+  fs@StorageFiles {chatDb, chatKey, agentDb, agentKey} <- storageFiles
   checkFile `with` fs
   backup `with` fs
-  (encrypt `with` fs) `catchError` \e -> (restore `with` fs) >> throwError e
+  (update chatDb chatKey >> update agentDb agentKey)
+    `catchError` \e -> (restore `with` fs) >> throwError e
   where
     action `with` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
-    checkFile f = unlessM (doesFileExist f) $ throwDBError DBENoFile
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
-    encrypt f = do
-      withDB (`SQL.exec` encryptSQL) DBEExportFailed
-      renameFile (f <> ".encrypted") f
-      withDB (`SQL.exec` testSQL) DBEOpenFailed
-      where
-        withDB :: (SQL.Database -> IO ()) -> DatabaseError -> m ()
-        withDB a e = liftIO (bracket (SQL.open $ T.pack f) SQL.close a) `catch` \(_ :: SomeException) -> throwDBError e
-        encryptSQL =
-          T.unlines
-            [ "ATTACH DATABASE " <> sqlString (f <> ".encrypted") <> " AS encrypted KEY " <> sqlString key <> ";",
-              "SELECT sqlcipher_export('encrypted');",
-              "DETACH DATABASE encrypted;"
-            ]
-        testSQL =
-          T.unlines
-            [ "PRAGMA key = " <> sqlString key <> ";",
-              "PRAGMA foreign_keys = ON;",
-              "PRAGMA secure_delete = ON;",
-              "PRAGMA auto_vacuum = FULL;",
-              "SELECT count(*) FROM sqlite_master;"
-            ]
+    checkFile f = unlessM (doesFileExist f) $ throwDBError DBENoFile
 
--- decryptStorage :: ChatMonad m => m Bool
--- decryptStorage = do
+exportSQL :: FilePath -> String -> String -> Text
+exportSQL f key key' =
+  T.unlines $
+    keySQL key
+      <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
+           "SELECT sqlcipher_export('exported');",
+           "DETACH DATABASE exported;"
+         ]
+
+testSQL :: String -> Text
+testSQL key =
+  T.unlines $
+    keySQL key
+      <> [ "PRAGMA foreign_keys = ON;",
+           "PRAGMA secure_delete = ON;",
+           "PRAGMA auto_vacuum = FULL;",
+           "SELECT count(*) FROM sqlite_master;"
+         ]
+
+keySQL :: String -> [Text]
+keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
+
+withDB :: ChatMonad m => FilePath -> (SQL.Database -> IO ()) -> DatabaseError -> m ()
+withDB f a err =
+  liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
+    `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError err

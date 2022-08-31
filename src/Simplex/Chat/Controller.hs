@@ -433,16 +433,17 @@ instance ToJSON ChatErrorType where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 data DatabaseError
-  = DBEAlreadyEncrypted
-  | DBEAlreadyPlaintext
+  = DBENotPlaintext
+  | DBENotEncrypted
   | DBENoFile
   | DBEExportFailed
+  | DBERekeyFailed
   | DBEOpenFailed
   deriving (Show, Exception, Generic)
 
 instance ToJSON DatabaseError where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "DBE"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "DBE"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBE"
 
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
