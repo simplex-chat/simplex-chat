@@ -10,7 +10,7 @@ package direct-sqlcipher
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: 5d7ea763ae9c6865cee8716f4b8f3e0dd5a44d4d
+    tag: 26d149d17c0ceb5cc17d0fd1c1357d95bd47e549
 
 source-repository-package
     type: git
