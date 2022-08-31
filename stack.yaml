@@ -86,6 +86,7 @@ flags:
 # arch: x86_64
 #
 # Extra directories used by stack for building
+# TODO remove, use options instead: stack build --extra-include-dirs=/opt/homebrew/opt/openssl@3/include --extra-lib-dirs=/opt/homebrew/opt/openssl@3/lib
 extra-include-dirs:
 - /opt/homebrew/opt/openssl@3/include
 extra-lib-dirs:
