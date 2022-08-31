@@ -11,6 +11,7 @@ import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -20,8 +21,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
@@ -30,7 +30,7 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (String) -> Unit) {
-  var searchText by remember { mutableStateOf("") }
+  var searchText by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
 
@@ -61,7 +61,7 @@ fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (Str
       ),
     onValueChange = {
       searchText = it
-      onValueChange(it)
+      onValueChange(it.text)
     },
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,
@@ -75,13 +75,13 @@ fun SearchTextField(modifier: Modifier, placeholder: String, onValueChange: (Str
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(
-        value = searchText,
+        value = searchText.text,
         innerTextField = innerTextField,
         placeholder = {
           Text(placeholder)
         },
-        trailingIcon = if (searchText.isNotEmpty()) {{
-          IconButton({ searchText = ""; onValueChange("") }) {
+        trailingIcon = if (searchText.text.isNotEmpty()) {{
+          IconButton({ searchText = TextFieldValue(""); onValueChange("") }) {
             Icon(Icons.Default.Close, stringResource(R.string.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
         }} else null,

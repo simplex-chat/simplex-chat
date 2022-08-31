@@ -47,11 +47,13 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
-  val searchText = remember { mutableStateOf("") }
+  val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
-  val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+  val composeState = rememberSaveable(saver = ComposeState.saver()) {
+    mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews))
+  }
+  val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
@@ -304,8 +306,8 @@ fun ChatInfoToolbar(
   addMembers: (GroupInfo) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
-  var showMenu by remember { mutableStateOf(false) }
-  var showSearch by remember { mutableStateOf(false) }
+  var showMenu by rememberSaveable { mutableStateOf(false) }
+  var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch) {
       back()

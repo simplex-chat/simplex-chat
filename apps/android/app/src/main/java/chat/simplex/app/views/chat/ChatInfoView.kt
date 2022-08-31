@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +35,8 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 
 @Composable
 fun ChatInfoView(
@@ -250,10 +253,10 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 
 @Composable
 private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
-  var value by remember { mutableStateOf(initialValue) }
+  var value by rememberSaveable { mutableStateOf(initialValue) }
   DefaultBasicTextField(
     Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-    initialValue,
+    value,
     {
       Text(
         generalGetString(R.string.text_field_set_contact_placeholder),
@@ -268,8 +271,17 @@ private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit
   ) {
     value = it
   }
+  LaunchedEffect(Unit) {
+    snapshotFlow { value }
+      .onEach { delay(500) } // wait a little after every new character, don't emit until user stops typing
+      .conflate() // get the latest value
+      .filter { it == value } // don't process old ones
+      .collect {
+        updateValue(value)
+      }
+  }
   DisposableEffect(Unit) {
-    onDispose { updateValue(value) }
+    onDispose { updateValue(value) } // just in case snapshotFlow will be canceled when user presses Back too fast
   }
 }
 
