@@ -177,10 +177,14 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Chat database export and import
 - ✅ Chat groups in mobile apps.
 - ✅ Connecting to messaging servers via Tor.
-- 🏗 Dual server addresses to access messaging servers as v3 hidden services (in progress).
-- 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- Chat database encryption.
+- ✅ Dual server addresses to access messaging servers as v3 hidden services.
+- ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
+- ✅ Incognito mode to share a new random name with each contact.
+- 🏗 Chat database encryption.
+- 🏗 Links to join groups and improve groups stability.
 - Disappearing messages, with mutual agreement.
+- Voice messages
+- Video messages
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
   - SMP queue redundancy and rotation.
@@ -191,6 +195,8 @@ If you are considering developing with SimpleX platform please get in touch for 
   - the server doesn't have information about your contacts and groups.
 - Channels server for large groups and broadcast channels.
 - Media server to optimize sending large files to groups.
+- Desktop client.
+- Using the same profile on multiple devices.
 
 ## Help us pay for 3rd party security audit
 
