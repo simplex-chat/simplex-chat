@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -9,14 +10,12 @@ module Simplex.Chat.Archive
     deleteStorage,
     encryptStorage,
     decryptStorage,
-    rekeyStorage,
   )
 where
 
 import qualified Codec.Archive.Zip as Z
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
@@ -103,32 +102,12 @@ storageFiles = do
   pure StorageFiles {chatDb, chatKey, agentDb, agentKey, filesPath}
 
 encryptStorage :: forall m. ChatMonad m => String -> m ()
-encryptStorage key' = updateDatabase encrypt
-  where
-    encrypt f "" = do
-      withDB f (`SQL.exec` exportSQL f "" key') DBEExportFailed
-      renameFile (f <> ".exported") f
-      withDB f (`SQL.exec` testSQL key') DBEOpenFailed
-    encrypt _ _ = throwDBError DBENotPlaintext
+encryptStorage key' = updateDatabase $ \f key -> export f key key'
 
 decryptStorage :: forall m. ChatMonad m => m ()
-decryptStorage = updateDatabase decrypt
-  where
-    decrypt _ "" = throwDBError DBENotEncrypted
-    decrypt f key = do
-      withDB f (`SQL.exec` exportSQL f key "") DBEExportFailed
-      renameFile (f <> ".exported") f
-      withDB f (`SQL.exec` testSQL "") DBEOpenFailed
-
-rekeyStorage :: ChatMonad m => String -> m ()
-rekeyStorage key' = updateDatabase rekey
-  where
-    rekey f "" = throwDBError DBENotEncrypted
-    rekey f key = do
-      withDB f (`SQL.exec` rekeySQL) DBERekeyFailed
-      withDB f (`SQL.exec` testSQL key') DBEOpenFailed
-      where
-        rekeySQL = T.unlines $ keySQL key <> ["PRAGMA rekey = " <> sqlString key' <> ";"]
+decryptStorage = updateDatabase $ \f -> \case
+  "" -> throwDBError DBENotEncrypted
+  key -> export f key ""
 
 updateDatabase :: ChatMonad m => (FilePath -> String -> m ()) -> m ()
 updateDatabase update = do
@@ -143,29 +122,28 @@ updateDatabase update = do
     restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError DBENoFile
 
-exportSQL :: FilePath -> String -> String -> Text
-exportSQL f key key' =
-  T.unlines $
-    keySQL key
-      <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
-           "SELECT sqlcipher_export('exported');",
-           "DETACH DATABASE exported;"
-         ]
-
-testSQL :: String -> Text
-testSQL key =
-  T.unlines $
-    keySQL key
-      <> [ "PRAGMA foreign_keys = ON;",
-           "PRAGMA secure_delete = ON;",
-           "PRAGMA auto_vacuum = FULL;",
-           "SELECT count(*) FROM sqlite_master;"
-         ]
-
-keySQL :: String -> [Text]
-keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
-
-withDB :: ChatMonad m => FilePath -> (SQL.Database -> IO ()) -> DatabaseError -> m ()
-withDB f a err =
-  liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
-    `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError err
+export :: ChatMonad m => FilePath -> String -> String -> m ()
+export f key key' = do
+  withDB (`SQL.exec` exportSQL) DBEExportFailed
+  renameFile (f <> ".exported") f
+  withDB (`SQL.exec` testSQL) DBEOpenFailed
+  where
+    withDB a err =
+      liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
+        `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError err
+    exportSQL =
+      T.unlines $
+        keySQL key
+          <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
+               "SELECT sqlcipher_export('exported');",
+               "DETACH DATABASE exported;"
+             ]
+    testSQL =
+      T.unlines $
+        keySQL key'
+          <> [ "PRAGMA foreign_keys = ON;",
+               "PRAGMA secure_delete = ON;",
+               "PRAGMA auto_vacuum = FULL;",
+               "SELECT count(*) FROM sqlite_master;"
+             ]
+    keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]

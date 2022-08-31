@@ -217,11 +217,7 @@ processChatCommand = \case
   StartChat subConns -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ ->
-        ifM
-          (asks chatStoreChanged >>= readTVarIO)
-          (throwChatError CEChatStoreChanged)
-          (startChatController user subConns $> CRChatStarted)
+      _ -> checkStoreNotChanged $ startChatController user subConns $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -242,9 +238,8 @@ processChatCommand = \case
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged $ deleteStorage
-  APIEncryptStorage key -> withStoreChanged $ encryptStorage key
-  APIDecryptStorage -> withStoreChanged decryptStorage
-  APIRekeyStorage key -> withStoreChanged $ rekeyStorage key
+  APIEncryptStorage key -> checkStoreNotChanged . withStoreChanged $ encryptStorage key
+  APIDecryptStorage -> checkStoreNotChanged $ withStoreChanged decryptStorage
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
@@ -944,6 +939,8 @@ processChatCommand = \case
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
     withStoreChanged :: m () -> m ChatResponse
     withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
+    checkStoreNotChanged :: m ChatResponse -> m ChatResponse
+    checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -2543,7 +2540,6 @@ chatCommandP =
       "/_db delete" $> APIDeleteStorage,
       "/db encrypt " *> (APIEncryptStorage <$> encryptionKeyP),
       "/db decrypt" $> APIDecryptStorage,
-      "/db rekey " *> (APIRekeyStorage <$> encryptionKeyP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),

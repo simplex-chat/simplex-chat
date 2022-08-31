@@ -114,7 +114,6 @@ data ChatCommand
   | APIDeleteStorage
   | APIEncryptStorage String
   | APIDecryptStorage
-  | APIRekeyStorage String
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
@@ -433,11 +432,9 @@ instance ToJSON ChatErrorType where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 data DatabaseError
-  = DBENotPlaintext
-  | DBENotEncrypted
+  = DBENotEncrypted
   | DBENoFile
   | DBEExportFailed
-  | DBERekeyFailed
   | DBEOpenFailed
   deriving (Show, Exception, Generic)
 
