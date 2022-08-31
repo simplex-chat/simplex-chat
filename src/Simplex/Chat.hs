@@ -26,7 +26,7 @@ import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace)
+import Data.Char (isSpace, ord)
 import Data.Either (fromRight)
 import Data.Fixed (div')
 import Data.Functor (($>))
@@ -217,11 +217,7 @@ processChatCommand = \case
   StartChat subConns -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ ->
-        ifM
-          (asks chatStoreChanged >>= readTVarIO)
-          (throwChatError CEChatStoreChanged)
-          (startChatController user subConns $> CRChatStarted)
+      _ -> checkStoreNotChanged $ startChatController user subConns $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -240,8 +236,10 @@ processChatCommand = \case
     atomically . writeTVar incognito $ onOff
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
-  APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
-  APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
+  APIImportArchive cfg -> withStoreChanged $ importArchive cfg
+  APIDeleteStorage -> withStoreChanged $ deleteStorage
+  APIEncryptStorage key -> checkStoreNotChanged . withStoreChanged $ encryptStorage key
+  APIDecryptStorage -> checkStoreNotChanged $ withStoreChanged decryptStorage
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
@@ -939,6 +937,10 @@ processChatCommand = \case
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: m ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+    withStoreChanged :: m () -> m ChatResponse
+    withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
+    checkStoreNotChanged :: m ChatResponse -> m ChatResponse
+    checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -2536,6 +2538,8 @@ chatCommandP =
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
+      "/db encrypt " *> (APIEncryptStorage <$> encryptionKeyP),
+      "/db decrypt" $> APIDecryptStorage,
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
@@ -2685,6 +2689,7 @@ chatCommandP =
       t_ <- optional $ " timeout=" *> A.decimal
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout
+    encryptionKeyP = B.unpack <$> A.takeWhile1 (\c -> ord c >= 0x20 && ord c <= 0x7E)
 
 adminContactReq :: ConnReqContact
 adminContactReq =

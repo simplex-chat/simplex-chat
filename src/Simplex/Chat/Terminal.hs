@@ -5,8 +5,11 @@
 
 module Simplex.Chat.Terminal where
 
+import Control.Exception (handle, throwIO)
 import Control.Monad.Except
 import qualified Data.List.NonEmpty as L
+import Database.SQLite.Simple (SQLError (..))
+import qualified Database.SQLite.Simple as DB
 import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
@@ -18,6 +21,7 @@ import Simplex.Chat.Terminal.Output
 import Simplex.Messaging.Agent.Env.SQLite (InitialAgentServers (..))
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
+import System.Exit (exitFailure)
 
 terminalChatConfig :: ChatConfig
 terminalChatConfig =
@@ -38,10 +42,17 @@ terminalChatConfig =
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChatTerminal cfg opts t = do
   sendToast <- initializeNotifications
-  simplexChatCore cfg opts (Just sendToast) $ \u cc -> do
+  handle checkDBKeyError . simplexChatCore cfg opts (Just sendToast) $ \u cc -> do
     ct <- newChatTerminal t
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
     runChatTerminal ct cc
+
+checkDBKeyError :: SQLError -> IO ()
+checkDBKeyError e = case sqlError e of
+  DB.ErrorNotADatabase -> do
+    putStrLn "Database file is invalid or you passed an incorrect encryption key"
+    exitFailure
+  _ -> throwIO e
 
 runChatTerminal :: ChatTerminal -> ChatController -> IO ()
 runChatTerminal ct cc = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]
