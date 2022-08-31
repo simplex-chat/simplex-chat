@@ -112,6 +112,8 @@ data ChatCommand
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
+  | APIEncryptStorage String
+  | APIDecryptStorage
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
@@ -371,6 +373,7 @@ data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
+  | ChatErrorDatabase {database :: DatabaseError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -427,6 +430,20 @@ data ChatErrorType
 instance ToJSON ChatErrorType where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
+
+data DatabaseError
+  = DBENotEncrypted
+  | DBENoFile
+  | DBEExportFailed
+  | DBEOpenFailed
+  deriving (Show, Exception, Generic)
+
+instance ToJSON DatabaseError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBE"
+
+throwDBError :: ChatMonad m => DatabaseError -> m ()
+throwDBError = throwError . ChatErrorDatabase
 
 type ChatMonad m = (MonadUnliftIO m, MonadReader ChatController m, MonadError ChatError m)
 
