@@ -932,7 +932,9 @@ viewChatError = \case
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
-  ChatErrorDatabase e -> ["chat database error: " <> sShow e]
+  ChatErrorDatabase err -> case err of
+    DBENotEncrypted -> ["error: chat database is not encrypted"]
+    e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH ->
       [ "error: connection authorization failed - this could happen if connection was deleted,\
