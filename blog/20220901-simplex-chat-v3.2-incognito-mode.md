@@ -9,6 +9,7 @@
 - [use .onion server addresses with Tor](#using-onion-server-addresses-with-tor)
 - [endless scrolling and search in chats](#endless-scrolling-and-search-in-chats)
 - [choose accent color and dark mode](#choose-accent-color-and-dark-mode)
+- disable notifications per contact / group
 - on Android:
   - swipe to reply
   - reduced APK size for direct download and in F-Droid repo from 200 to 50Mb!
