@@ -24,9 +24,12 @@ struct AddGroupView: View {
 
     var body: some View {
         if let chat = chat, let groupInfo = groupInfo {
-            AddGroupMembersView(chat: chat,
-                                groupInfo: groupInfo,
-                                showSkip: true) { _ in
+            AddGroupMembersView(
+                chat: chat,
+                groupInfo: groupInfo,
+                showSkip: true,
+                showFooterCounter: false
+            ) { _ in
                 dismiss()
                 DispatchQueue.main.async {
                     m.chatId = groupInfo.id
@@ -46,9 +49,9 @@ struct AddGroupView: View {
                 .padding(.bottom, 4)
             if (m.incognito) {
                 HStack {
-                    Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                    Image(systemName: "info.circle").foregroundColor(.orange).font(.footnote)
                     Spacer().frame(width: 8)
-                    Text("You will use a random profile for this group").font(.footnote)
+                    Text("Incognito mode is not supported here - your main profile will be sent to group members").font(.footnote)
                 }
                 .padding(.bottom)
             } else {

@@ -1,24 +1,32 @@
 # Blog
 
-Aug 8, 2022 [SimpleX Chat v3.1 released](./20220808-simplex-chat-v3.1-chat-groups.md)
+Sep 1, 2022 [v3.2: Incognito mode](./20220901-simplex-chat-v3.2-incognito-mode.md)
 
-- finally, secret chat groups!
+- Incognito mode - use a new random profile name for each contact
+- use .onion server addresses with Tor
+- endless scrolling and search
+- choose accent color and dark mode
+- reduced APK size for direct download and in F-Droid repo from 200 to 46Mb!
+
+Implementation audit is arranged for October!
+
+Aug 8, 2022 [v3.1: chat groups](./20220808-simplex-chat-v3.1-chat-groups.md)
+
+- finally, secret chat groups - nobody but members know they exist!
 - access to messaging servers via Tor on all platforms
 - advanced network settings to optimize traffic usage
 - published chat protocol
 - new app icons
 
-Jul 23, 2022 [SimpleX Chat v3.1-beta released](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
+Jul 23, 2022 [v3.1-beta: access servers via Tor](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md)
 
 - terminal app: access to messaging servers via SOCKS5 proxy (e.g., Tor).
 - mobile apps: join and leave chat groups.
 - optimized battery and traffic usage - up to 90x reduction!
 - two docker configurations for self-hosted SMP servers.
 
-Jul 11, 2022 [SimpleX Chat v3 released](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
+Jul 11, 2022 [v3: instant push notifications for iOS and audio/video calls](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
 
-- instant push notifications for iOS
-- e2e encrypted WebRTC audio/video calls
 - chat database export and import
 - protocol privacy and performance improvements
 

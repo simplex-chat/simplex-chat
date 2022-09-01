@@ -5,6 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,8 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.ui.theme.WarningOrange
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
@@ -38,7 +38,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { directChatAction(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -46,7 +46,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ChatPreviewView(chat, stopped) },
+        chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
@@ -54,7 +54,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
-        chatLinkPreview = { ContactRequestView(chat.chatInfo) },
+        chatLinkPreview = { ContactRequestView(chatModel.incognito.value, chat.chatInfo) },
         click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
         dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
@@ -128,7 +128,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> {
-      JoinGroupAction(groupInfo, chatModel, showMenu)
+      JoinGroupAction(chat, groupInfo, chatModel, showMenu)
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, chatModel, showMenu)
       }
@@ -214,12 +214,14 @@ fun DeleteGroupAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<B
 }
 
 @Composable
-fun JoinGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
   ItemAction(
-    stringResource(R.string.join_group_button),
-    Icons.Outlined.Login,
+    if (chat.chatInfo.incognito) stringResource(R.string.join_group_incognito_button) else stringResource(R.string.join_group_button),
+    if (chat.chatInfo.incognito) Icons.Filled.TheaterComedy else Icons.Outlined.Login,
+    color = if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
-      withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) }
+      joinGroup()
       showMenu.value = false
     }
   )
@@ -241,8 +243,9 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 @Composable
 fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.accept_contact_button),
-    Icons.Outlined.Check,
+    if (chatModel.incognito.value) stringResource(R.string.accept_contact_incognito_button) else stringResource(R.string.accept_contact_button),
+    if (chatModel.incognito.value) Icons.Filled.TheaterComedy else Icons.Outlined.Check,
+    color = if (chatModel.incognito.value) Indigo else MaterialTheme.colors.onBackground,
     onClick = {
       acceptContactRequest(chatInfo, chatModel)
       showMenu.value = false
@@ -291,7 +294,7 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.accept_connection_request__question),
     text = generalGetString(R.string.if_you_choose_to_reject_the_sender_will_not_be_notified),
-    confirmText = generalGetString(R.string.accept_contact_button),
+    confirmText = if (chatModel.incognito.value) generalGetString(R.string.accept_contact_incognito_button) else generalGetString(R.string.accept_contact_button),
     onConfirm = { acceptContactRequest(contactRequest, chatModel) },
     dismissText = generalGetString(R.string.reject_contact_button),
     onDismiss = { rejectContactRequest(contactRequest, chatModel) }
@@ -388,10 +391,18 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel)
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.join_group_question),
     text = generalGetString(R.string.you_are_invited_to_group_join_to_connect_with_group_members),
-    confirmText = generalGetString(R.string.join_group_button),
+    confirmText = if (groupInfo.membership.memberIncognito) generalGetString(R.string.join_group_incognito_button) else generalGetString(R.string.join_group_button),
     onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
     dismissText = generalGetString(R.string.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
+  )
+}
+
+fun cantInviteIncognitoAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.alert_title_cant_invite_contacts),
+    text = generalGetString(R.string.alert_title_cant_invite_contacts_descr),
+    confirmText = generalGetString(R.string.ok),
   )
 }
 
@@ -473,6 +484,8 @@ fun PreviewChatListNavLinkDirect() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          false,
+          null,
           stopped = false
         )
       },
@@ -508,6 +521,8 @@ fun PreviewChatListNavLinkGroup() {
             ),
             chatStats = Chat.ChatStats()
           ),
+          false,
+          null,
           stopped = false
         )
       },
@@ -530,7 +545,7 @@ fun PreviewChatListNavLinkContactRequest() {
   SimpleXTheme {
     ChatListNavLinkLayout(
       chatLinkPreview = {
-        ContactRequestView(ChatInfo.ContactRequest.sampleData)
+        ContactRequestView(false, ChatInfo.ContactRequest.sampleData)
       },
       click = {},
       dropdownMenuItems = null,

@@ -15,6 +15,7 @@ struct AddGroupMembersView: View {
     var chat: Chat
     var groupInfo: GroupInfo
     var showSkip: Bool = false
+    var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
     @State private var selectedRole: GroupMemberRole = .admin
@@ -22,13 +23,11 @@ struct AddGroupMembersView: View {
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
-        case warnUnsafeToInviteIncognito
         case error(title: LocalizedStringKey, error: String = "")
 
         var id: String {
             switch self {
             case .prohibitedToInviteIncognito: return "prohibitedToInviteIncognito"
-            case .warnUnsafeToInviteIncognito: return "warnUnsafeToInviteIncognito"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -37,10 +36,6 @@ struct AddGroupMembersView: View {
     var body: some View {
         NavigationView {
             let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
-            let nonIncognitoConnectionsSelected = membersToAdd
-                .filter{ selectedContacts.contains($0.apiId) }
-                .contains(where: { !$0.contactConnIncognito })
-            let unsafeToInviteIncognito = chat.chatInfo.incognito && nonIncognitoConnectionsSelected
 
             let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
@@ -58,18 +53,20 @@ struct AddGroupMembersView: View {
                     let count = selectedContacts.count
                     Section {
                         rolePicker()
-                        inviteMembersButton(unsafeToInviteIncognito)
+                        inviteMembersButton()
                             .disabled(count < 1)
                     } footer: {
-                        if (count >= 1) {
-                            HStack {
-                                Button { selectedContacts.removeAll() } label: { Text("Clear") }
-                                Spacer()
-                                Text("\(count) contact(s) selected")
+                        if showFooterCounter {
+                            if (count >= 1) {
+                                HStack {
+                                    Button { selectedContacts.removeAll() } label: { Text("Clear") }
+                                    Spacer()
+                                    Text("\(count) contact(s) selected")
+                                }
+                            } else {
+                                Text("No contacts selected")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
                             }
-                        } else {
-                            Text("No contacts selected")
-                                .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
 
@@ -103,27 +100,15 @@ struct AddGroupMembersView: View {
                     title: Text("Can't invite contact!"),
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
-            case .warnUnsafeToInviteIncognito:
-                return Alert(
-                    title: Text("Your main profile may be shared"),
-                    message: Text("Some selected contacts have your main profile. If they use SimpleX app older than v3.2 or some other client, they may share your main profile instead of a random incognito profile with other members."),
-                    primaryButton: .destructive(Text("Invite anyway")) {
-                        inviteMembers()
-                    }, secondaryButton: .cancel()
-                )
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text("\(error)"))
             }
         }
     }
 
-    private func inviteMembersButton(_ unsafeToInviteIncognito: Bool) -> some View {
+    private func inviteMembersButton() -> some View {
         Button {
-            if unsafeToInviteIncognito {
-                alert = .warnUnsafeToInviteIncognito
-            } else {
-                inviteMembers()
-            }
+            inviteMembers()
         } label: {
             HStack {
                 Text("Invite to group")
@@ -161,7 +146,6 @@ struct AddGroupMembersView: View {
     private func contactCheckView(_ contact: Contact) -> some View {
         let checked = selectedContacts.contains(contact.apiId)
         let prohibitedToInviteIncognito = !chat.chatInfo.incognito && contact.contactConnIncognito
-        let safeToInviteIncognito = chat.chatInfo.incognito && contact.contactConnIncognito
         var icon: String
         var iconColor: Color
         if prohibitedToInviteIncognito {
@@ -195,11 +179,6 @@ struct AddGroupMembersView: View {
                     .foregroundColor(prohibitedToInviteIncognito ? .secondary : .primary)
                     .lineLimit(1)
                 Spacer()
-                if safeToInviteIncognito {
-                    Image(systemName: "theatermasks")
-                        .foregroundColor(.indigo)
-                        .font(.footnote)
-                }
                 Image(systemName: icon)
                     .foregroundColor(iconColor)
             }

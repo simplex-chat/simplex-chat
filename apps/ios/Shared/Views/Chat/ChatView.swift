@@ -34,7 +34,6 @@ struct ChatView: View {
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
     @State private var memberConnectionStats: ConnectionStats?
-    @State private var memberMainProfile: LocalProfile?
 
     var body: some View {
         let cInfo = chat.chatInfo
@@ -73,7 +72,10 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    Image(systemName: "chevron.backward")
+                    HStack(spacing: 0) {
+                        Image(systemName: "chevron.backward")
+                        Text("Chats")
+                    }
                 }
             }
             ToolbarItem(placement: .principal) {
@@ -137,10 +139,16 @@ struct ChatView: View {
                 case let .group(groupInfo):
                     HStack {
                         if groupInfo.canAddMembers {
-                            addMembersButton()
-                                .sheet(isPresented: $showAddMembersSheet) {
-                                    AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                }
+                            if (chat.chatInfo.incognito) {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                                    .onTapGesture { AlertManager.shared.showAlert(cantInviteIncognitoAlert()) }
+                            } else {
+                                addMembersButton()
+                                    .sheet(isPresented: $showAddMembersSheet) {
+                                        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                    }
+                            }
                         }
                         Menu {
                             searchButton()
@@ -229,6 +237,15 @@ struct ChatView: View {
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
+                }
+                .onChange(of: chatModel.chatId) { _ in
+                    if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
+                        showChatInfoSheet = false
+                        loadChat(chat: chat)
+                        DispatchQueue.main.async {
+                            scrollToBottom(proxy)
+                        }
+                    }
                 }
             }
         }
@@ -360,22 +377,16 @@ struct ChatView: View {
                         .onTapGesture {
                             Task {
                                 do {
-                                    let (stats, profile) = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
-                                    await MainActor.run {
-                                        memberConnectionStats = stats
-                                        memberMainProfile = profile
-                                    }
+                                    let stats = try await apiGroupMemberInfo(member.groupId, member.groupMemberId)
+                                    await MainActor.run { memberConnectionStats = stats }
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
                                 }
                                 await MainActor.run { selectedMember = member }
                             }
                         }
-                        .sheet(item: $selectedMember, onDismiss: {
-                            memberConnectionStats = nil
-                            memberMainProfile = nil
-                        }) { member in
-                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats, mainProfile: memberMainProfile)
+                        .sheet(item: $selectedMember, onDismiss: { memberConnectionStats = nil }) { member in
+                            GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: memberConnectionStats)
                         }
                 } else {
                     Rectangle().fill(.clear)

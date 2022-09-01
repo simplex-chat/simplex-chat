@@ -20,13 +20,13 @@ struct GroupChatInfoView: View {
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
     @State private var connectionStats: ConnectionStats?
-    @State private var memberMainProfile: LocalProfile?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
         case clearChatAlert
         case leaveGroupAlert
+        case cantInviteIncognitoAlert
 
         var id: GroupChatInfoViewAlert { get { self } }
     }
@@ -43,18 +43,21 @@ struct GroupChatInfoView: View {
 
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
-                        addMembersButton()
+                        if (chat.chatInfo.incognito) {
+                            Label("Invite members", systemImage: "plus")
+                                .foregroundColor(Color(uiColor: .tertiaryLabel))
+                                .onTapGesture { alert = .cantInviteIncognitoAlert }
+                        } else {
+                            addMembersButton()
+                        }
                     }
                     memberView(groupInfo.membership, user: true)
                     ForEach(members) { member in
                         Button {
                             Task {
                                 do {
-                                    let (stats, profile) = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                                    await MainActor.run {
-                                        connectionStats = stats
-                                        memberMainProfile = profile
-                                    }
+                                    let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                                    await MainActor.run { connectionStats = stats }
                                 } catch let error {
                                     logger.error("apiGroupMemberInfo error: \(responseError(error))")
                                 }
@@ -66,11 +69,8 @@ struct GroupChatInfoView: View {
                 .sheet(isPresented: $showAddMembersSheet) {
                     AddGroupMembersView(chat: chat, groupInfo: groupInfo)
                 }
-                .sheet(item: $selectedMember, onDismiss: {
-                    connectionStats = nil
-                    memberMainProfile = nil
-                }) { member in
-                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats, mainProfile: memberMainProfile)
+                .sheet(item: $selectedMember, onDismiss: { connectionStats = nil }) { member in
+                    GroupMemberInfoView(groupInfo: groupInfo, member: member, connectionStats: connectionStats)
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
@@ -104,6 +104,8 @@ struct GroupChatInfoView: View {
             case .deleteGroupAlert: return deleteGroupAlert()
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
+            case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
+
             }
         }
     }
@@ -219,6 +221,7 @@ struct GroupChatInfoView: View {
                         try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
                         await MainActor.run {
                             chatModel.removeChat(chat.chatInfo.id)
+                            chatModel.chatId = nil
                             dismiss()
                         }
                     } catch let error {
@@ -257,6 +260,13 @@ struct GroupChatInfoView: View {
             secondaryButton: .cancel()
         )
     }
+}
+
+func cantInviteIncognitoAlert() -> Alert {
+    Alert(
+        title: Text("Can't invite contacts!"),
+        message: Text("You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed")
+    )
 }
 
 struct GroupChatInfoView_Previews: PreviewProvider {

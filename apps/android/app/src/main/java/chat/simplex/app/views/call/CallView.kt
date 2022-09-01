@@ -1,7 +1,10 @@
 package chat.simplex.app.views.call
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.media.AudioManager
 import android.util.Log
 import android.view.ViewGroup
@@ -41,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
+@SuppressLint("SourceLockedOrientationActivity")
 @Composable
 fun ActiveCallView(chatModel: ChatModel) {
   BackHandler(onBack = {
@@ -121,6 +125,17 @@ fun ActiveCallView(chatModel: ChatModel) {
     }
     val call = chatModel.activeCall.value
     if (call != null)  ActiveCallOverlay(call, chatModel)
+  }
+
+  val context = LocalContext.current
+  DisposableEffect(Unit) {
+    val activity = context as? Activity ?: return@DisposableEffect onDispose {}
+    // Lock orientation to portrait in order to have good experience with calls
+    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    onDispose {
+      // Unlock orientation
+      activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    }
   }
 }
 
@@ -337,6 +352,8 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
       val wv = webView.value
       if (wv != null) processCommand(wv, WCallCommand.End)
       lifecycleOwner.lifecycle.removeObserver(observer)
+      webView.value?.destroy()
+      webView.value = null
     }
   }
   LaunchedEffect(callCommand.value, webView.value) {

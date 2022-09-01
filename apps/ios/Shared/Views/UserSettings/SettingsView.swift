@@ -29,6 +29,7 @@ let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
+let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -42,7 +43,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
-    DEFAULT_ACCENT_COLOR_BLUE: 1.000
+    DEFAULT_ACCENT_COLOR_BLUE: 1.000,
+    DEFAULT_USER_INTERFACE_STYLE: 0
 ]
 
 private var indent: CGFloat = 36
@@ -76,6 +78,7 @@ struct SettingsView: View {
                     .disabled(chatModel.chatRunning != true)
 
                     incognitoRow()
+                        .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         UserAddress()

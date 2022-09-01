@@ -32,8 +32,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.chat.group.AddGroupMembersView
-import chat.simplex.app.views.chat.group.GroupChatInfoView
+import chat.simplex.app.views.chat.group.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.*
@@ -48,11 +47,13 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
-  val searchText = remember { mutableStateOf("") }
+  val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
-  val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+  val composeState = rememberSaveable(saver = ComposeState.saver()) {
+    mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews))
+  }
+  val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
@@ -105,18 +106,21 @@ fun ChatView(chatModel: ChatModel) {
       chatModel.chatItems,
       searchText,
       useLinkPreviews = useLinkPreviews,
+      chatModelIncognito = chatModel.incognito.value,
       back = { chatModel.chatId.value = null },
       info = {
         withApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            val connStats = chatModel.controller.apiContactInfo(cInfo.apiId)
+            val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showCustomModal { close ->
               ModalView(
                 close = close, modifier = Modifier,
                 background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
               ) {
-                ChatInfoView(chatModel, connStats, close)
+                ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
+                  activeChat = it
+                }
               }
             }
           } else if (cInfo is ChatInfo.Group) {
@@ -132,12 +136,17 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      openDirectChat = { contactId ->
-        val c = chatModel.chats.firstOrNull {
-          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
-        }
-        if (c != null) {
-          withApi { openChat(c.chatInfo, chatModel) }
+      showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
+        withApi {
+          val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, close, close)
+            }
+          }
         }
       },
       loadPrevMessages = { cInfo ->
@@ -232,9 +241,10 @@ fun ChatLayout(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
+  chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
-  openDirectChat: (Long) -> Unit,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -277,7 +287,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               user, chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, openDirectChat, loadPrevMessages, deleteMessage,
+              useLinkPreviews, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead, setFloatingButton
             )
           }
@@ -296,8 +306,8 @@ fun ChatInfoToolbar(
   addMembers: (GroupInfo) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
-  var showMenu by remember { mutableStateOf(false) }
-  var showSearch by remember { mutableStateOf(false) }
+  var showMenu by rememberSaveable { mutableStateOf(false) }
+  var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch) {
       back()
@@ -331,7 +341,7 @@ fun ChatInfoToolbar(
         startCall(CallMediaType.Video)
       })
     }
-  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
+  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
     barButtons.add {
       IconButton({
         showMenu = false
@@ -375,6 +385,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     horizontalArrangement = Arrangement.Center,
     verticalAlignment = Alignment.CenterVertically
   ) {
+    if (cInfo.incognito) {
+      IncognitoImage(size = 36.dp, Indigo)
+    }
     ChatInfoImage(cInfo, size = imageSize, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
@@ -384,7 +397,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
         cInfo.displayName, fontWeight = FontWeight.SemiBold,
         maxLines = 1, overflow = TextOverflow.Ellipsis
       )
-      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.localAlias.isEmpty()) {
         Text(
           cInfo.fullName,
           maxLines = 1, overflow = TextOverflow.Ellipsis
@@ -415,7 +428,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
   chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
-  openDirectChat: (Long) -> Unit,
+  chatModelIncognito: Boolean,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -502,9 +516,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Modifier
                       .clip(CircleShape)
                       .clickable {
-                        openDirectChat(contactId)
-                        // Scroll to first unread message when direct chat will be loaded
-                        shouldAutoScroll = true
+                        showMemberInfo(chat.chatInfo.groupInfo, member)
                       }
                   ) {
                     MemberImage(member)
@@ -514,11 +526,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           } else {
             Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           }
         } else { // direct message
@@ -529,7 +541,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
           }
         }
 
@@ -815,9 +827,10 @@ fun PreviewChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      chatModelIncognito = false,
       back = {},
       info = {},
-      openDirectChat = {},
+      showMemberInfo = {_, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
@@ -871,9 +884,10 @@ fun PreviewGroupChatLayout() {
       chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
+      chatModelIncognito = false,
       back = {},
       info = {},
-      openDirectChat = {},
+      showMemberInfo = {_, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
