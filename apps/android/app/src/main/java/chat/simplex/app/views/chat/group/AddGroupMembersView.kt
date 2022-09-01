@@ -31,7 +31,7 @@ import chat.simplex.app.views.chat.ChatInfoToolbarTitle
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, showFooterCounter: Boolean = true, close: () -> Unit) {
+fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) }
 
@@ -41,7 +41,6 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, showFooterCo
     contactsToAdd = getContactsToAdd(chatModel),
     selectedContacts = selectedContacts,
     selectedRole = selectedRole,
-    showFooterCounter = showFooterCounter,
     inviteMembers = {
       withApi {
         selectedContacts.forEach {
@@ -79,7 +78,6 @@ fun AddGroupMembersLayout(
   contactsToAdd: List<Contact>,
   selectedContacts: SnapshotStateList<Long>,
   selectedRole: MutableState<GroupMemberRole>,
-  showFooterCounter: Boolean,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -124,10 +122,8 @@ fun AddGroupMembersLayout(
           InviteMembersButton(inviteMembers, disabled = selectedContacts.isEmpty())
         }
       }
-      if (showFooterCounter) {
-        SectionCustomFooter {
-          InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
-        }
+      SectionCustomFooter {
+        InviteSectionFooter(selectedContactsCount = selectedContacts.count(), clearSelection)
       }
       SectionSpacer()
 
@@ -351,7 +347,6 @@ fun PreviewAddGroupMembersLayout() {
       contactsToAdd = listOf(Contact.sampleData, Contact.sampleData, Contact.sampleData),
       selectedContacts = remember { mutableStateListOf() },
       selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) },
-      showFooterCounter = true,
       inviteMembers = {},
       clearSelection = {},
       addContact = {},
