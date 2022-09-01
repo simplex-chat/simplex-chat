@@ -3,10 +3,10 @@
   "project" : "SimpleX.xcodeproj",
   "targetLocale" : "en",
   "toolInfo" : {
-    "toolBuildNumber" : "13E113",
+    "toolBuildNumber" : "13F100",
     "toolID" : "com.apple.dt.xcode",
     "toolName" : "Xcode",
-    "toolVersion" : "13.3"
+    "toolVersion" : "13.4.1"
   },
   "version" : "1.0"
 }
