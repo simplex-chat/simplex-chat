@@ -8,9 +8,8 @@ import Database.SQLite.Simple.QQ (sql)
 m20220901_agent_commands :: Query
 m20220901_agent_commands =
   [sql|
-CREATE TABLE agent_commands (
+CREATE TABLE agent_command_continuations (
   agent_command_id INTEGER PRIMARY KEY,
-  corr_id BLOB, -- why not use agent_command_id?
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
   continuation BLOB,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
