@@ -253,7 +253,7 @@ private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit
   var value by remember { mutableStateOf(initialValue) }
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     DefaultBasicTextField(
-      Modifier.padding(horizontal = 10.dp),
+      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
       initialValue,
       {
         Text(
@@ -263,7 +263,7 @@ private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit
         )
       },
       color = HighOrLowlight,
-      textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
     ) {
       value = it
