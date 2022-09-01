@@ -183,7 +183,6 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
-  <string name="toast_no_gallery">Gallery is not found. Install it first</string>
   <string name="use_camera_button">Use Camera</string>
   <string name="from_gallery_button">From Gallery</string>
   <string name="choose_file">Choose file</string>

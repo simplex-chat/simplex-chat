@@ -247,7 +247,6 @@ fun ComposeView(
         try {
           galleryLauncher.launch(0)
         } catch (e: ActivityNotFoundException) {
-          Toast.makeText(context, generalGetString(R.string.toast_no_gallery), Toast.LENGTH_LONG).show()
           galleryLauncherFallback.launch("image/*")
         }
         attachmentOption.value = null
