@@ -4,6 +4,20 @@
 
 Similar to direct chat connections, group connections can fail to be established on failing IO, for example on bad network. When this happens agent throws error. For direct connections it is viable to propagate the error to UI to indicate failure, so the user can retry. For group connections this becomes unviable as multiple connections are being established automatically on each new joining member (2 for each existing member except host), and the user can't retry.
 
+## Proposal 2
+
+- Have separate command processing queue in agent
+
+- Chat creates correlation id for command
+
+- Chat has data structure to represent possible continuations
+
+- Chat saves correlation id and continuation to database
+
+- Agent asynchronously responds after command completion with correlation id
+
+- Chat restores continuation by correlation id and processes it
+
 ## Proposal
 
 - Add special versions of commands `createConnection`, `joinConnection` (`allowConnection` as well?), to which agent responds synchronously with connection id and status;
