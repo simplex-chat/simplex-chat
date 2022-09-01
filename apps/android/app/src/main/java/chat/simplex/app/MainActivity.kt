@@ -15,6 +15,7 @@ import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -51,7 +52,11 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     // testJson()
     val m = vm.chatModel
-    processNotificationIntent(intent, m)
+    // When call ended and orientation changes, it re-process old intent, it's unneeded.
+    // Only needed to be processed on first creation of activity
+    if (savedInstanceState == null) {
+      processNotificationIntent(intent, m)
+    }
     setContent {
       SimpleXTheme {
         Surface(
@@ -223,7 +228,7 @@ fun MainPage(
   showLANotice: () -> Unit
 ) {
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by remember { mutableStateOf(false) }
+  var chatsAccessAuthorized by rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(userAuthorized.value) {
     if (chatModel.controller.appPrefs.performLA.get()) {
       delay(500L)
