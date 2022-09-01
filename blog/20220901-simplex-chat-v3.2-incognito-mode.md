@@ -45,7 +45,7 @@ Now you can access the full chat history via the app - it's embarrassing how lon
 
 ### Choose accent color and dark mode
 
-Many or you said that blue is the worst possible color, so you can now make the app buttons and links look like you want! My favourite colours are green and orange.
+Many of you said that blue is the worst possible color, so you can now make the app buttons and links look like you want! My favourite colours are green and orange.
 
 And you can choose dark or light mode independently of the system settings.
 
