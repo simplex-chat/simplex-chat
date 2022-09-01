@@ -297,6 +297,10 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если вы подтвердите, серверы смогут видеть ваш IP адрес, а провайдер - с какими серверами вы соединяетесь.</string>
+    <string name="network_use_onion_hosts">Использовать .onion хосты</string>
+    <string name="network_use_onion_hosts_prefer">Когда возможно</string>
+    <string name="network_use_onion_hosts_no">Нет</string>
+    <string name="network_use_onion_hosts_required">Обязательно</string>
     <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->
@@ -614,6 +618,7 @@
 
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Удалить члена группы</string>
+    <string name="button_send_direct_message">Отправить сообщение</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>

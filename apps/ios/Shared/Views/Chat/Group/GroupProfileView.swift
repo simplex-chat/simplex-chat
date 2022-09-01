@@ -25,7 +25,7 @@ struct GroupProfileView: View {
     var body: some View {
         return VStack(alignment: .leading) {
             Text("Group profile is stored on members' devices, not on the servers.")
-                .padding(.bottom)
+                .padding(.vertical)
 
             ZStack(alignment: .center) {
                 ZStack(alignment: .topTrailing) {
@@ -109,7 +109,7 @@ struct GroupProfileView: View {
         .onTapGesture { hideKeyboard() }
     }
 
-    func profileNameTextEdit(_ label: String, _ name: Binding<String>) -> some View {
+    func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
         TextField(label, text: name)
             .textInputAutocapitalization(.never)
             .disableAutocorrection(true)

@@ -405,6 +405,9 @@
 "Currently maximum supported file size is %@." = "Максимальный размер файла - %@.";
 
 /* No comment provided by engineer. */
+"Dark" = "Тёмная";
+
+/* No comment provided by engineer. */
 "Database export & import" = "Экспорт и импорт архива чата";
 
 /* No comment provided by engineer. */
@@ -825,6 +828,9 @@
 "left" = "покинул(а) группу";
 
 /* No comment provided by engineer. */
+"Light" = "Светлая";
+
+/* No comment provided by engineer. */
 "Limitations" = "Ограничения";
 
 /* No comment provided by engineer. */
@@ -1233,6 +1239,9 @@
 "strike" = "зачеркнуть";
 
 /* No comment provided by engineer. */
+"System" = "Системная";
+
+/* No comment provided by engineer. */
 "Take picture" = "Сделать фото";
 
 /* No comment provided by engineer. */
@@ -1291,6 +1300,9 @@
 
 /* No comment provided by engineer. */
 "The sender will NOT be notified" = "Отправитель не будет уведомлён";
+
+/* No comment provided by engineer. */
+"Theme" = "Тема";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";

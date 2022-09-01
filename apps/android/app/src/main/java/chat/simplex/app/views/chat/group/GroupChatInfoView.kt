@@ -51,7 +51,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, true, close)
+              AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
         }
@@ -59,12 +59,12 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showCustomModal { close ->
+          ModalManager.shared.showCustomModal { closeCurrent ->
             ModalView(
-              close = close, modifier = Modifier,
+              close = closeCurrent, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              GroupMemberInfoView(groupInfo, member, stats, chatModel, close)
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
             }
           }
         }
