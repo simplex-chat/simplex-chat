@@ -13,6 +13,8 @@
   - swipe to reply
   - reduced APK size for direct download and in F-Droid repo from 200 to 50Mb!
 
+[Implementation audit is arranged for October](#we-ask-you-to-help-us-pay-for-3rd-party-security-audit)!
+
 ### Incognito mode
 
 <img src="./images/20220901-incognito1.png" width="330"> <img src="./images/20220901-incognito2.png" width="330"> <img src="./images/20220901-incognito3.png" width="330">

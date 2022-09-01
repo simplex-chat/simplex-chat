@@ -8,6 +8,8 @@ Sep 1, 2022 [v3.2: Incognito mode](./20220901-simplex-chat-v3.2-incognito-mode.m
 - choose accent color and dark mode
 - reduced APK size for direct download and in F-Droid repo from 200 to 46Mb!
 
+Implementation audit is arranged for October!
+
 Aug 8, 2022 [v3.1: chat groups](./20220808-simplex-chat-v3.1-chat-groups.md)
 
 - finally, secret chat groups - nobody but members know they exist!

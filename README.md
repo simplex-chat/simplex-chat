@@ -79,17 +79,13 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## News and updates
 
-Selected updates:
+Recent updates:
 
-[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced netwrok settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
+[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
+
+[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced network settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
 
 [Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
-
-[May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
-
-[Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
-
-[Jan 12, 2022. SimpleX v1 released: the only messaging and application platform without user identities](./20220112-simplex-chat-v1-released.md)
 
 [All updates](./blog)
 
