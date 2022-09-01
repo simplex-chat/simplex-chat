@@ -204,6 +204,18 @@ toView event = do
   q <- asks outputQ
   atomically $ writeTBQueue q (Nothing, event)
 
+createAgentCommand :: ChatMonad m => Maybe ConnId -> ACommand 'Client -> m a -> m ()
+createAgentCommand connId_ command continuation = do
+  -- create corrId
+  -- if connId_ is Nothing request from agent
+  -- create transmission
+  -- save continuation by corrId (agent_commands) -- need serializable type for possible continuations
+  a <- asks smpAgent
+  -- atomically $ writeTBQueue (rcvQ a) transmission
+  pure ()
+
+
+
 processChatCommand :: forall m. ChatMonad m => ChatCommand -> m ChatResponse
 processChatCommand = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
@@ -1187,7 +1199,8 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ do
-    (_, connId, msg) <- atomically $ readTBQueue q
+    (_corrId, connId, msg) <- atomically $ readTBQueue q
+    -- restore and process continuation by corrId
     u <- readTVarIO =<< asks currentUser
     withLock l . void . runExceptT $
       processAgentMessage u connId msg `catchError` (toView . CRChatError)
