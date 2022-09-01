@@ -5,7 +5,7 @@
 ## What's new
 
 - [Incognito mode](#incognito-mode)
-- [assign names to your contacts]
+- [assign names to your contacts](#assign-names-to-your-contacts)
 - [use .onion server addresses with Tor](#using-onion-server-addresses-with-tor)
 - [endless scrolling and search in chats](#endless-scrolling-and-search-in-chats)
 - [choose accent color and dark mode](#choose-accent-color-and-dark-mode)
