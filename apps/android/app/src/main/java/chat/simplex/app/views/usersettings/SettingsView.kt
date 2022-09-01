@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import chat.simplex.app.*
@@ -342,11 +343,15 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
       profileOf.displayName,
       style = MaterialTheme.typography.caption,
       fontWeight = FontWeight.Bold,
-      color = if (stopped) HighOrLowlight else Color.Unspecified
+      color = if (stopped) HighOrLowlight else Color.Unspecified,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
     )
     Text(
       profileOf.fullName,
-      color = if (stopped) HighOrLowlight else Color.Unspecified
+      color = if (stopped) HighOrLowlight else Color.Unspecified,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
     )
   }
 }
