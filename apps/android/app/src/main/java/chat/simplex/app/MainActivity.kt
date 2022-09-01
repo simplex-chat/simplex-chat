@@ -22,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleButton
@@ -38,18 +37,29 @@ import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
 
-class MainActivity: FragmentActivity(), LifecycleEventObserver {
+class MainActivity: FragmentActivity() {
+  companion object {
+    /**
+     * We don't want these values to be bound to Activity lifecycle since activities are changed often, for example, when a user
+     * clicks on new message in notification. In this case savedInstanceState will be null (this prevents restoring the values)
+     * See [SimplexService.onTaskRemoved] for another part of the logic which nullifies the values when app closed by the user
+     * */
+    val userAuthorized = mutableStateOf<Boolean?>(null)
+    val enteredBackground = mutableStateOf<Long?>(null)
+    // Remember result and show it after orientation change
+    private val laFailed = mutableStateOf(false)
+
+    fun clearAuthState() {
+      userAuthorized.value = null
+      enteredBackground.value = null
+    }
+  }
   private val vm by viewModels<SimplexViewModel>()
   private val chatController by lazy { (application as SimplexApp).chatController }
-  private val userAuthorized = mutableStateOf<Boolean?>(null)
-  private val enteredBackground = mutableStateOf<Long?>(null)
-  private val laFailed = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     // testJson()
     val m = vm.chatModel
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
@@ -83,20 +93,25 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     processIntent(intent, vm.chatModel)
   }
 
-  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-    withApi {
-      when (event) {
-        Lifecycle.Event.ON_STOP -> {
-          enteredBackground.value = elapsedRealtime()
-        }
-        Lifecycle.Event.ON_START -> {
-          val enteredBackgroundVal = enteredBackground.value
-          if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
-            runAuthenticate()
-          }
-        }
-        else -> {}
-      }
+  override fun onStart() {
+    super.onStart()
+    val enteredBackgroundVal = enteredBackground.value
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+      runAuthenticate()
+    }
+  }
+
+  override fun onStop() {
+    super.onStop()
+    enteredBackground.value = elapsedRealtime()
+  }
+
+  override fun onBackPressed() {
+    super.onBackPressed()
+    if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
+      // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
+      clearAuthState()
+      laFailed.value = true
     }
   }
 
