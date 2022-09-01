@@ -50,11 +50,14 @@ fun IncomingCallAlertLayout(
     IncomingCallInfo(invitation)
     Spacer(Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
-      ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
-      CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
-      CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+      Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
+        ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
+      }
+      Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
+        CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
+        CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
+        CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+      }
     }
   }
 }
