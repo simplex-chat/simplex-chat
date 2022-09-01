@@ -38,7 +38,7 @@ I don't know any other messenger with this feature, and I always wanted to have 
 
 ### Assign names to your contacts
 
-You can now change the name under which your conntacts appear in the chats. This is particularly useful when somebody connected to your with their random name – you can change to be related to the context of the connection.
+You can now change the name under which your contacts appear in the chats. This is particularly useful when somebody connected to you using a random name – you can change it to be related to the context of the connection.
 
 ### Using .onion server addresses with Tor
 
