@@ -5,14 +5,17 @@
 ## What's new
 
 - [Incognito mode](#incognito-mode)
+- [assign names to your contacts]
 - [use .onion server addresses with Tor](#using-onion-server-addresses-with-tor)
 - [endless scrolling and search in chats](#endless-scrolling-and-search-in-chats)
 - [choose accent color and dark mode](#choose-accent-color-and-dark-mode)
 - on Android:
   - swipe to reply
-  - reduced APK size for direct download and in F-Droid repo from 200 to 46Mb!
+  - reduced APK size for direct download and in F-Droid repo from 200 to 50Mb!
 
 ### Incognito mode
+
+<img src="./images/20220901-incognito1.png" width="330"> <img src="./images/20220901-incognito2.png" width="330"> <img src="./images/20220901-incognito3.png" width="330">
 
 _SimpleX is already private, so why do we need an incognito mode_, you may ask.
 
@@ -27,11 +30,17 @@ You could also use multiple chat profiles - currently you can only switch betwee
 - if you make many anonymous connections, each in its own user profile, you would end up having too many profiles - it is very inconvenient to manage.
 - sometimes, as your relationship with your contact evolves, you may want to share your main profile with them and have them among your friends - multiple profiles don't make it possible.
 
-So, the new Incognito mode allows having a new random profile name shared with each new contact, while having them all in the same profile, and without the hassle of managing it manually. It's like a private mode in the browsers, where you can temporarily enable it when you connect to somebody you don't trust, and then disable it when connecting to the friend who knows you. It can be turned on via the app settings - see the pictures.
+So, the new Incognito mode allows having a new random name shared with each new contact, while having them all in the same user profile, and without the hassle of managing it manually. It's like a private mode in the browsers, where you can temporarily enable it when you connect to somebody you don't trust, and then disable it when connecting to the friend who knows you. It can be turned on via the app settings - see the pictures.
 
 I don't know any other messenger with this feature, and I always wanted to have this mode, so we are really looking forward to your feedback about it!
 
+### Assign names to your contacts
+
+You can now change the name under which your conntacts appear in the chats. This is particularly useful when somebody connected to your with their random name – you can change to be related to the context of the connection.
+
 ### Using .onion server addresses with Tor
+
+<img src="./images/20220901-onion1.png" width="330"> &nbsp; <img src="./images/20220901-onion2.png" width="330">
 
 We have released support for using SOCKS proxy to access messaging servers via Tor, but previously the servers were still available via their public Internet addresses. It means that while your IP address was protected from the server, the whole Tor circuit could have been observed by some actors, and for some communication scenarios it is not desirable.
 
