@@ -4,9 +4,6 @@ packages: .
 
 constraints: zip +disable-bzip2 +disable-zstd
 
-package direct-sqlcipher
-    flags: +openssl
-
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
