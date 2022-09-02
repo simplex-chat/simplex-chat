@@ -105,14 +105,14 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") dbKey False
+  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
   Right user <- withTransaction st $ \db -> runExceptT $ createUser db profile True
   startTestChat_ st cfg opts dbFilePrefix user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat cfg opts@ChatOpts {dbKey} dbPrefix = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") dbKey False
+  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
   Just user <- find activeUser <$> withTransaction st getUsers
   startTestChat_ st cfg opts dbFilePrefix user
 
