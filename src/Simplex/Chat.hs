@@ -1192,7 +1192,7 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ do
-    (_corrId, connId, msg) <- atomically $ readTBQueue q
+    (_, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
     withLock l . void . runExceptT $
       processAgentMessage u connId msg `catchError` (toView . CRChatError)
