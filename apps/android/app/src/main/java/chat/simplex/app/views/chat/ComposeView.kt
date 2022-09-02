@@ -4,8 +4,7 @@ import ComposeFileView
 import ComposeImageView
 import android.Manifest
 import android.app.Activity
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -19,7 +18,8 @@ import androidx.annotation.CallSuper
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
@@ -194,7 +194,16 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { uri: Uri? ->
+    if (uri != null) {
+      val source = ImageDecoder.createSource(context.contentResolver, uri)
+      val bitmap = ImageDecoder.decodeBitmap(source)
+      chosenImage.value = bitmap
+      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+    }
+  }
+  val galleryLauncherFallback = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val bitmap = ImageDecoder.decodeBitmap(source)
@@ -235,7 +244,11 @@ fun ComposeView(
         attachmentOption.value = null
       }
       AttachmentOption.PickImage -> {
-        galleryLauncher.launch("image/*")
+        try {
+          galleryLauncher.launch(0)
+        } catch (e: ActivityNotFoundException) {
+          galleryLauncherFallback.launch("image/*")
+        }
         attachmentOption.value = null
       }
       AttachmentOption.PickFile -> {
@@ -499,4 +512,10 @@ fun ComposeView(
       )
     }
   }
+}
+
+class PickFromGallery: ActivityResultContract<Int, Uri?>() {
+  override fun createIntent(context: Context, input: Int) = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+
+  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
 }
