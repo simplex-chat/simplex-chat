@@ -15,8 +15,15 @@ public func getChatCtrl() -> chat_ctrl {
     let dbPath = getAppDatabasePath().path
     logger.debug("getChatCtrl DB path: \(dbPath)")
     var cstr = dbPath.cString(using: .utf8)!
-    chatController = chat_init(&cstr)
-    logger.debug("getChatCtrl: chat_init")
+    // TODO ckey is hardcoded for testing, set to "" if the database is not encrypted
+    // then DB can be encrypted via chat console with:
+    // /_stop
+    // /db encrypt nextkey
+    var ckey = "nextkey".cString(using: .utf8)!
+    let cjson = chat_migrate_db(&cstr, &ckey)!
+    print(dbMigrationResult(fromCString(cjson)))
+    chatController = chat_init_key(&cstr, &ckey)
+    logger.debug("getChatCtrl: chat_init_key")
     return chatController!
 }
 
@@ -101,5 +108,25 @@ public func responseError(_ err: Error) -> String {
         return String(describing: r)
     } else {
         return err.localizedDescription
+    }
+}
+
+enum DBMigrationResult: Decodable {
+    case ok
+    case errorNotADatabase(dbFile: String)
+    case error(dbFile: String, migrationError: String)
+    case unknown(json: String)
+}
+
+func dbMigrationResult(_ s: String) -> DBMigrationResult {
+    let d = s.data(using: .utf8)!
+// TODO is there a way to do it without copying the data? e.g:
+//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    do {
+        return try jsonDecoder.decode(DBMigrationResult.self, from: d)
+    } catch let error {
+        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+        return .unknown(json: s)
     }
 }
