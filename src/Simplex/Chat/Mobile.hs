@@ -150,7 +150,7 @@ chatInitKey dbFilePrefix dbKey = do
   let f = chatStoreFile dbFilePrefix
   chatStore <- createChatStore f dbKey (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
-  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
+  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc
