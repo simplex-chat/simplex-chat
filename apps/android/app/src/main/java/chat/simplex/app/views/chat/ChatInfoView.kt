@@ -254,22 +254,23 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 @Composable
 private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
-  DefaultBasicTextField(
-    Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-    value,
-    {
-      Text(
-        generalGetString(R.string.text_field_set_contact_placeholder),
-        Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = HighOrLowlight
-      )
-    },
-    color = HighOrLowlight,
-    textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
-    keyboardActions = KeyboardActions(onDone = { updateValue(value) })
-  ) {
-    value = it
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    DefaultBasicTextField(
+      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      value,
+      {
+        Text(
+          generalGetString(R.string.text_field_set_contact_placeholder),
+          textAlign = TextAlign.Center,
+          color = HighOrLowlight
+        )
+      },
+      color = HighOrLowlight,
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+    ) {
+      value = it
+    }
   }
   LaunchedEffect(Unit) {
     snapshotFlow { value }

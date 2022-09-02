@@ -151,6 +151,9 @@ class SimplexService: Service() {
 
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
+    // Just to make sure that after restart of the app the user will need to re-authenticate
+    MainActivity.clearAuthState()
+
     // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
       return

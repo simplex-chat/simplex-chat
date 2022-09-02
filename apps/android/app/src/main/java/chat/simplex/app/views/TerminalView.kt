@@ -82,13 +82,9 @@ fun TerminalLayout(
 @Composable
 fun TerminalLog(terminalItems: List<TerminalItem>) {
   val listState = rememberLazyListState()
-  val keyboardState by getKeyboardState()
-  val ciListState = rememberSaveable(stateSaver = CIListStateSaver) {
-    mutableStateOf(CIListState(false, terminalItems.count(), keyboardState))
-  }
-  val scope = rememberCoroutineScope()
-  LazyColumn(state = listState) {
-    items(terminalItems) { item ->
+  val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
+  LazyColumn(state = listState, reverseLayout = true) {
+    items(reversedTerminalItems) { item ->
       Text("${item.date.toString().subSequence(11, 19)} ${item.label}",
         style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 18.sp, color = MaterialTheme.colors.primary),
         maxLines = 1,
@@ -103,13 +99,6 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
             }
           }
       )
-    }
-    val len = terminalItems.count()
-    if (len > 1 && (keyboardState != ciListState.value.keyboardState || !ciListState.value.scrolled || len != ciListState.value.itemCount)) {
-      scope.launch {
-        ciListState.value = CIListState(true, len, keyboardState)
-        listState.animateScrollToItem(len - 1)
-      }
     }
   }
 }
