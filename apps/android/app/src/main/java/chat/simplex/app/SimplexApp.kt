@@ -6,9 +6,9 @@ import android.util.Log
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.*
-import chat.simplex.app.views.helpers.getFilesDirectory
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -69,9 +69,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     withApi {
       when (event) {
         Lifecycle.Event.ON_STOP ->
-          if (!appPreferences.runServiceInBackground.get()) SimplexService.stop(applicationContext)
+          if (appPreferences.notificationsMode.get() != NotificationsMode.SERVICE.name) SimplexService.stop(applicationContext)
         Lifecycle.Event.ON_START ->
-          if (chatModel.chatRunning.value != false)  SimplexService.start(applicationContext)
+          if (chatModel.chatRunning.value != false) SimplexService.start(applicationContext)
         Lifecycle.Event.ON_RESUME ->
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
@@ -82,7 +82,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
-    appPrefs.runServiceInBackground.get() && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
+    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
+  }
+
+  private fun allowToStartPeriodically() = with(chatModel.controller) {
+    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
   }
 
   /*
@@ -107,6 +111,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
       .build()
     Log.d(TAG, "ServiceStartWorker: Scheduling period work every ${SimplexService.SERVICE_START_WORKER_INTERVAL_MINUTES} minutes")
     WorkManager.getInstance(context)?.enqueueUniquePeriodicWork(SimplexService.SERVICE_START_WORKER_WORK_NAME_PERIODIC, workPolicy, work)
+  }
+
+  fun schedulePeriodicWakeUp() = CoroutineScope(Dispatchers.Default).launch {
+    if (!allowToStartPeriodically()) {
+      return@launch
+    }
+    MessagesFetcherWorker.scheduleWork()
   }
 
   companion object {

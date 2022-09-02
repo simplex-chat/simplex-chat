@@ -58,17 +58,38 @@
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
-  <string name="private_instant_notifications">Private instant notifications!</string>
-  <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
+  <string name="service_notifications">Instant notifications!</string>
+  <string name="service_notifications_disabled">Instant notifications are disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
   <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
-  <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
+  <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
+  <string name="periodic_notifications">Periodic notifications</string>
+  <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
+  <string name="periodic_notifications_desc">To preserve your privacy, instead of push notifications the app can fetch new messages periodically – it uses a few percent of the battery per day.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
   <string name="hide_notification">Hide</string>
+
+  <!-- Notifications -->
+  <string name="settings_notifications_mode_title">Background service</string>
+  <string name="settings_notification_preview_mode_title">Show preview</string>
+  <string name="notifications_mode_off">Starts only in foreground</string>
+  <string name="notifications_mode_periodic">Starts periodically</string>
+  <string name="notifications_mode_service">Always on</string>
+  <string name="notifications_mode_off_desc">App can receive notifications only when it\'s running, no background service will be started</string>
+  <string name="notifications_mode_periodic_desc">Checks new messages every 10 minutes for about 10 seconds, then stops</string>
+  <string name="notifications_mode_service_desc">Background service is always on. Means every new message will be shown as fast as possible</string>
+  <string name="notification_preview_mode_message">Message text</string>
+  <string name="notification_preview_mode_contact">Contact name</string>
+  <string name="notification_preview_mode_hidden">Hidden</string>
+  <string name="notification_preview_mode_message_desc">Show an author and a message</string>
+  <string name="notification_preview_mode_contact_desc">Show only an author without message</string>
+  <string name="notification_display_mode_hidden_desc">Hide an author and a message, show only the presence of the message</string>
+  <string name="notification_preview_somebody">Somebody</string>
+  <string name="notification_preview_new_message">new message</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -280,7 +301,6 @@
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
-  <string name="private_notifications">Private notifications</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>

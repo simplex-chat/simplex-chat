@@ -56,7 +56,7 @@ class SimplexService: Service() {
     Log.d(TAG, "Simplex service destroyed")
     stopService()
 
-    // If private notifications are enabled and battery optimization is disabled, restart the service
+    // If notification service is enabled and battery optimization is disabled, restart the service
     if (SimplexApp.context.allowToStartServiceAfterAppExit())
       sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
@@ -154,7 +154,7 @@ class SimplexService: Service() {
     // Just to make sure that after restart of the app the user will need to re-authenticate
     MainActivity.clearAuthState()
 
-    // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
+    // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
       return
     }
