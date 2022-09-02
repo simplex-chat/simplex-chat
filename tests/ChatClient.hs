@@ -27,7 +27,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types (Profile, User (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
-import Simplex.Messaging.Client (ProtocolClientConfig (..))
+import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
@@ -49,9 +49,9 @@ testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
-      socksProxy = Nothing,
-      tcpTimeout = 5000000,
+      networkConfig = defaultNetworkConfig,
       logConnections = False,
+      logServerHosts = False,
       logAgent = False,
       chatCmd = "",
       chatCmdDelay = 3,
@@ -92,7 +92,7 @@ testCfg =
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
-    { smpAgentVersion = 1,
+    { smpClientVRange = mkVersionRange 1 1,
       smpAgentVRange = mkVersionRange 1 1,
       smpCfg = (smpCfg testAgentCfg) {smpServerVRange = mkVersionRange 1 1}
     }

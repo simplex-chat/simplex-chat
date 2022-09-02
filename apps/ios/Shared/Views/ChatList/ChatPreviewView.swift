@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatPreviewView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
@@ -23,7 +24,6 @@ struct ChatPreviewView: View {
                     .frame(width: 63, height: 63)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
-
             }
             .padding(.leading, 4)
 
@@ -36,7 +36,6 @@ struct ChatPreviewView: View {
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
-
                 }
                 .padding(.top, 4)
                 .padding(.horizontal, 8)
@@ -90,7 +89,7 @@ struct ChatPreviewView: View {
         case .group(groupInfo: let groupInfo):
             switch (groupInfo.membership.memberStatus) {
             case .memInvited:
-                v.foregroundColor(.accentColor)
+                chat.chatInfo.incognito ? v.foregroundColor(.indigo) : v.foregroundColor(.accentColor)
             case .memAccepted:
                 v.foregroundColor(.secondary)
             default: v
@@ -108,30 +107,42 @@ struct ChatPreviewView: View {
                     .padding(.trailing, 36)
                     .padding(.bottom, 4)
                 if unread > 0 {
-                    Text(unread > 999 ? "\(unread / 1000)k" : "\(unread)")
+                    unreadCountText(unread)
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
                         .frame(minWidth: 18, minHeight: 18)
-                        .background(Color.accentColor)
+                        .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
                         .cornerRadius(10)
+                } else if !chat.chatInfo.ntfsEnabled {
+                    Image(systemName: "speaker.slash.fill")
+                        .foregroundColor(.secondary)
                 }
             }
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):
                 if !contact.ready {
-                    chatPreviewInfoText("connecting...")
+                    chatPreviewInfoText("connecting…")
                 }
             case let .group(groupInfo):
                 switch (groupInfo.membership.memberStatus) {
-                case .memInvited: chatPreviewInfoText("you are invited to group")
-                case .memAccepted: chatPreviewInfoText("connecting...")
+                case .memInvited: groupInvitationPreviewText(groupInfo)
+                case .memAccepted: chatPreviewInfoText("connecting…")
                 default: EmptyView()
                 }
             default: EmptyView()
             }
         }
+    }
+
+    @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
+        groupInfo.membership.memberIncognito
+        ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
+        : (chatModel.incognito
+           ? chatPreviewInfoText("join as \(chatModel.currentUser?.profile.displayName ?? "yourself")")
+           : chatPreviewInfoText("you are invited to group")
+        )
     }
 
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
@@ -168,6 +179,10 @@ struct ChatPreviewView: View {
             ProgressView()
         }
     }
+}
+
+func unreadCountText(_ n: Int) -> Text {
+    Text(n > 999 ? "\(n / 1000)k" : "\(n)")
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {

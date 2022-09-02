@@ -2,13 +2,13 @@ package chat.simplex.app.views.chatlist
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,11 +23,10 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
-import chat.simplex.app.views.helpers.ChatInfoImage
-import chat.simplex.app.views.helpers.badgeLayout
+import chat.simplex.app.views.helpers.*
 
 @Composable
-fun ChatPreviewView(chat: Chat, stopped: Boolean) {
+fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean) {
   val cInfo = chat.chatInfo
 
   @Composable
@@ -71,7 +70,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         chatPreviewTitleText(if (cInfo.ready) Color.Unspecified else HighOrLowlight)
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemInvited -> chatPreviewTitleText(MaterialTheme.colors.primary)
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(HighOrLowlight)
           else -> chatPreviewTitleText()
         }
@@ -80,7 +79,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
   }
 
   @Composable
-  fun chatPreviewText() {
+  fun chatPreviewText(chatModelIncognito: Boolean) {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       MarkdownText(
@@ -88,7 +87,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         metaText = ci.timestampText,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.body1.copy(color = if (isSystemInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+        style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
       )
     } else {
       when (cInfo) {
@@ -98,7 +97,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
-            GroupMemberStatus.MemInvited -> Text(stringResource(R.string.group_preview_you_are_invited))
+            GroupMemberStatus.MemInvited -> Text(groupInvitationPreviewText(chatModelIncognito, currentUserProfileDisplayName, cInfo.groupInfo))
             GroupMemberStatus.MemAccepted -> Text(stringResource(R.string.group_connection_pending), color = HighOrLowlight)
             else -> {}
           }
@@ -120,7 +119,7 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         .weight(1F)
     ) {
       chatPreviewTitle()
-      chatPreviewText()
+      chatPreviewText(chatModelIncognito)
     }
     val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.updatedAt)
 
@@ -134,20 +133,36 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
         modifier = Modifier.padding(bottom = 5.dp)
       )
       val n = chat.chatStats.unreadCount
+      val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       if (n > 0) {
         Box(
           Modifier.padding(top = 24.dp),
           contentAlignment = Alignment.Center
         ) {
           Text(
-            if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation),
+            unreadCountStr(n),
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
+              .background(if (stopped || showNtfsIcon) HighOrLowlight else MaterialTheme.colors.primary, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
+          )
+        }
+      } else if (showNtfsIcon) {
+        Box(
+          Modifier.padding(top = 24.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            Icons.Filled.NotificationsOff,
+            contentDescription = generalGetString(R.string.notifications),
+            tint = HighOrLowlight,
+            modifier = Modifier
+              .padding(horizontal = 3.dp)
+              .padding(vertical = 1.dp)
+              .size(17.dp)
           )
         }
       }
@@ -161,6 +176,21 @@ fun ChatPreviewView(chat: Chat, stopped: Boolean) {
       }
     }
   }
+}
+
+@Composable
+private fun groupInvitationPreviewText(chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, groupInfo: GroupInfo): String {
+  return if (groupInfo.membership.memberIncognito)
+    String.format(stringResource(R.string.group_preview_join_as), groupInfo.membership.memberProfile.displayName)
+  else if (chatModelIncognito)
+    String.format(stringResource(R.string.group_preview_join_as), currentUserProfileDisplayName ?: "")
+  else
+    stringResource(R.string.group_preview_you_are_invited)
+}
+
+@Composable
+fun unreadCountStr(n: Int): String {
+  return if (n < 1000) "$n" else "${n / 1000}" + stringResource(R.string.thousand_abbreviation)
 }
 
 @Composable
@@ -195,6 +225,6 @@ fun ChatStatusImage(chat: Chat) {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, stopped = false)
+    ChatPreviewView(Chat.sampleData, false, "", stopped = false)
   }
 }

@@ -8,6 +8,7 @@ module Simplex.Chat.Options
   ( ChatOpts (..),
     getChatOpts,
     smpServersP,
+    fullNetworkConfig,
   )
 where
 
@@ -16,6 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import Options.Applicative
 import Simplex.Chat.Controller (updateStr, versionStr)
 import Simplex.Messaging.Agent.Protocol (SMPServer)
+import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Transport.Client (SocksProxy, defaultSocksProxy)
@@ -24,9 +26,9 @@ import System.FilePath (combine)
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
     smpServers :: [SMPServer],
-    socksProxy :: Maybe SocksProxy,
-    tcpTimeout :: Int,
+    networkConfig :: NetworkConfig,
     logConnections :: Bool,
+    logServerHosts :: Bool,
     logAgent :: Bool,
     chatCmd :: String,
     chatCmdDelay :: Int,
@@ -51,16 +53,16 @@ chatOpts appDir defaultDbFileName = do
       ( long "server"
           <> short 's'
           <> metavar "SERVER"
-          <> help "Comma separated list of SMP server(s) to use"
+          <> help "Semicolon-separated list of SMP server(s) to use (each server can have more than one hostname)"
           <> value []
       )
   socksProxy <-
-    flag' (Just defaultSocksProxy) (short 'x' <> help "use local SOCKS5 proxy at :9050")
+    flag' (Just defaultSocksProxy) (short 'x' <> help "Use local SOCKS5 proxy at :9050")
       <|> option
         parseSocksProxy
         ( long "socks-proxy"
             <> metavar "SOCKS5"
-            <> help "`ipv4:port` or `:port` of SOCKS5 proxy"
+            <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
         )
   t <-
@@ -77,10 +79,15 @@ chatOpts appDir defaultDbFileName = do
           <> short 'c'
           <> help "Log every contact and group connection on start"
       )
+  logServerHosts <-
+    switch
+      ( long "log-hosts"
+          <> short 'l'
+          <> help "Log connections to servers"
+      )
   logAgent <-
     switch
       ( long "log-agent"
-          <> short 'l'
           <> help "Enable logs from SMP agent"
       )
   chatCmd <-
@@ -116,10 +123,27 @@ chatOpts appDir defaultDbFileName = do
           <> short 'm'
           <> help "Run in maintenance mode (/_start to start chat)"
       )
-  pure ChatOpts {dbFilePrefix, smpServers, socksProxy, tcpTimeout = useTcpTimeout socksProxy t, logConnections, logAgent, chatCmd, chatCmdDelay, chatServerPort, maintenance}
+  pure
+    ChatOpts
+      { dbFilePrefix,
+        smpServers,
+        networkConfig = fullNetworkConfig socksProxy $ useTcpTimeout socksProxy t,
+        logConnections,
+        logServerHosts,
+        logAgent,
+        chatCmd,
+        chatCmdDelay,
+        chatServerPort,
+        maintenance
+      }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
     defaultDbFilePath = combine appDir defaultDbFileName
+
+fullNetworkConfig :: Maybe SocksProxy -> Int -> NetworkConfig
+fullNetworkConfig socksProxy tcpTimeout =
+  let tcpConnectTimeout = (tcpTimeout * 3) `div` 2
+   in defaultNetworkConfig {socksProxy, tcpTimeout, tcpConnectTimeout}
 
 parseSMPServers :: ReadM [SMPServer]
 parseSMPServers = eitherReader $ parseAll smpServersP . B.pack
@@ -134,7 +158,7 @@ serverPortP :: A.Parser (Maybe String)
 serverPortP = Just . B.unpack <$> A.takeWhile A.isDigit
 
 smpServersP :: A.Parser [SMPServer]
-smpServersP = strP `A.sepBy1` A.char ','
+smpServersP = strP `A.sepBy1` A.char ';'
 
 getChatOpts :: FilePath -> FilePath -> IO ChatOpts
 getChatOpts appDir defaultDbFileName =

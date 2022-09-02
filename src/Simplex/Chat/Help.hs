@@ -18,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Chat.Types (User (..), LocalProfile (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -55,7 +55,7 @@ chatWelcome user =
       "Type " <> highlight "/help" <> " for usage info, " <> highlight "/welcome" <> " to show this message"
     ]
   where
-    User {profile = Profile {displayName, fullName}} = user
+    User {profile = LocalProfile {displayName, fullName}} = user
     userName = if T.null fullName then displayName else fullName
 
 chatHelpInfo :: [StyledString]

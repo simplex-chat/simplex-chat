@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,26 +25,31 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.*
-import chat.simplex.app.views.chatlist.populateGroupMembers
+import chat.simplex.app.views.chatlist.cantInviteIncognitoAlert
+import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
 fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group) {
     val groupInfo = chat.chatInfo.groupInfo
     GroupChatInfoLayout(
       chat,
       groupInfo,
-      members = chatModel.groupMembers.sortedBy { it.displayName.lowercase() },
+      members = chatModel.groupMembers
+        .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
+        .sortedBy { it.displayName.lowercase() },
+      developerTools,
       addMembers = {
         withApi {
-          populateGroupMembers(groupInfo, chatModel)
+          setGroupMembers(groupInfo, chatModel)
           ModalManager.shared.showCustomModal { close ->
             ModalView(
               close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
               AddGroupMembersView(groupInfo, chatModel, close)
             }
@@ -52,13 +58,13 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       },
       showMemberInfo = { member ->
         withApi {
-          val connStats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showCustomModal { close ->
+          val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          ModalManager.shared.showCustomModal { closeCurrent ->
             ModalView(
-              close = close, modifier = Modifier,
-              background = if (isSystemInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+              close = closeCurrent, modifier = Modifier,
+              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              GroupMemberInfoView(groupInfo, member, connStats, chatModel, close)
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
             }
           }
         }
@@ -68,7 +74,10 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
-      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) }
+      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      changeNtfsState = { enabled ->
+        changeNtfsState(enabled, chat, chatModel)
+      },
     )
   }
 }
@@ -111,12 +120,14 @@ fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
   members: List<GroupMember>,
+  developerTools: Boolean,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
+  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -128,22 +139,37 @@ fun GroupChatInfoLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      ChatInfoHeader(chat.chatInfo)
+      GroupChatInfoHeader(chat.chatInfo)
     }
     SectionSpacer()
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
         SectionItemView {
-          AddMembersButton(addMembers)
+          val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
+          val onClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+          AddMembersButton(tint, onClick)
         }
         SectionDivider()
       }
       SectionItemView(height = 50.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
-      SectionDivider()
+      if (members.isNotEmpty()) {
+        SectionDivider()
+      }
       MembersList(members, showMemberInfo)
+    }
+    SectionSpacer()
+
+    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
+      SectionItemView {
+        NtfsSwitch(ntfsEnabled) {
+          ntfsEnabled = !ntfsEnabled
+          changeNtfsState(ntfsEnabled)
+        }
+      }
     }
     SectionSpacer()
 
@@ -172,17 +198,43 @@ fun GroupChatInfoLayout(
     }
     SectionSpacer()
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), groupInfo.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), groupInfo.apiId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
 @Composable
-fun AddMembersButton(addMembers: () -> Unit) {
+fun GroupChatInfoHeader(cInfo: ChatInfo) {
+  Column(
+    Modifier.padding(horizontal = 8.dp),
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    Text(
+      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.onBackground,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+      Text(
+        cInfo.fullName, style = MaterialTheme.typography.h2,
+        color = MaterialTheme.colors.onBackground,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+      )
+    }
+  }
+}
+
+@Composable
+fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () -> Unit) {
   Row(
     Modifier
       .fillMaxSize()
@@ -192,10 +244,10 @@ fun AddMembersButton(addMembers: () -> Unit) {
     Icon(
       Icons.Outlined.Add,
       stringResource(R.string.button_add_members),
-      tint = MaterialTheme.colors.primary
+      tint = tint
     )
     Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_add_members), color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.button_add_members), color = tint)
   }
 }
 
@@ -227,7 +279,8 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
     ) {
       ProfileImage(size = 46.dp, member.image)
       Column {
-        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        color = if (member.memberIncognito) Indigo else Color.Unspecified)
         val s = member.memberStatus.shortText
         val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(
@@ -312,7 +365,9 @@ fun PreviewGroupChatInfoLayout() {
       ),
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}
+      developerTools = false,
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
+      changeNtfsState = {},
     )
   }
 }

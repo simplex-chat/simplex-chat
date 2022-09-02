@@ -1,8 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
@@ -16,7 +15,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimplexBlue
 import kotlinx.datetime.Clock
 
 @Composable
@@ -56,7 +54,7 @@ fun CIStatusView(status: CIStatus, metaColor: Color = HighOrLowlight) {
       Icon(Icons.Filled.WarningAmber, stringResource(R.string.icon_descr_sent_msg_status_send_failed), Modifier.height(12.dp), tint = Color.Yellow)
     }
     is CIStatus.RcvNew -> {
-      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = SimplexBlue)
+      Icon(Icons.Filled.Circle, stringResource(R.string.icon_descr_received_msg_status_unread), Modifier.height(12.dp), tint = MaterialTheme.colors.primary)
     }
     else -> {}
   }

@@ -76,7 +76,7 @@ fun SimpleXInfoLayout(
 @Composable
 fun SimpleXLogo() {
   Image(
-    painter = painterResource(R.drawable.logo),
+    painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(R.string.image_descr_simplex_logo),
     modifier = Modifier
       .padding(vertical = 20.dp)

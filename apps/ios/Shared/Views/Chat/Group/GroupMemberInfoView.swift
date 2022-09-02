@@ -14,8 +14,9 @@ struct GroupMemberInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
     var member: GroupMember
+    var connectionStats: ConnectionStats?
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var connectionStats: ConnectionStats?
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
@@ -29,13 +30,19 @@ struct GroupMemberInfoView: View {
                 groupMemberInfoHeader()
                     .listRowBackground(Color.clear)
 
+                if let contactId = member.memberContactId {
+                    Section {
+                        openDirectChatButton(contactId)
+                    }
+                }
+
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
                     // TODO change role
                     // localizedInfoRow("Role", member.memberRole.text)
                     // TODO invited by - need to get contact by contact id
                     if let conn = member.activeConn {
-                        let connLevelDesc = conn.connLevel == 0 ? "direct" : "indirect (\(conn.connLevel))"
+                        let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
                         infoRow("Connection", connLevelDesc)
                     }
                 }
@@ -54,9 +61,11 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                Section("For console") {
-                    infoRow("Local name", member.localDisplayName)
-                    infoRow("Database ID", "\(member.groupMemberId)")
+                if developerTools {
+                    Section("For console") {
+                        infoRow("Local name", member.localDisplayName)
+                        infoRow("Database ID", "\(member.groupMemberId)")
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -67,13 +76,29 @@ struct GroupMemberInfoView: View {
             case .removeMemberAlert: return removeMemberAlert()
             }
         }
-        .task {
-            do {
-                let stats = try await apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                await MainActor.run { connectionStats = stats }
-            } catch let error {
-                logger.error("apiGroupMemberInfo error: \(responseError(error))")
+    }
+
+    func openDirectChatButton(_ contactId: Int64) -> some View {
+        Button {
+            var chat = chatModel.getContactChat(contactId)
+            if chat == nil {
+                do {
+                    chat = try apiGetChat(type: .direct, id: contactId)
+                    if let chat = chat {
+                        // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+                        chat.serverInfo = Chat.ServerInfo(networkStatus: .connected)
+                        chatModel.addChat(chat)
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                }
             }
+            if let chat = chat {
+                dismissAllSheets(animated: true)
+                chatModel.chatId = chat.id
+            }
+        } label: {
+            Label("Send direct message", systemImage: "message")
         }
     }
 
@@ -112,10 +137,13 @@ struct GroupMemberInfoView: View {
             primaryButton: .destructive(Text("Remove")) {
                 Task {
                     do {
-                        _ = try await apiRemoveMember(groupId: member.groupId, memberId: member.groupMemberId)
-                        dismiss()
+                        let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
+                        await MainActor.run {
+                            _ = ChatModel.shared.upsertGroupMember(groupInfo, member)
+                            dismiss()
+                        }
                     } catch let error {
-                        logger.error("removeMemberAlert apiRemoveMember error: \(error.localizedDescription)")
+                        logger.error("apiRemoveMember error: \(responseError(error))")
                     }
                 }
             },

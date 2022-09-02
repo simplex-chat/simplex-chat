@@ -1,42 +1,102 @@
 package chat.simplex.app.views.chat
 
 import InfoRow
+import InfoRowEllipsis
 import SectionDivider
 import SectionItemView
 import SectionSpacer
 import SectionView
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 
 @Composable
-fun ChatInfoView(chatModel: ChatModel, connStats: ConnectionStats?, close: () -> Unit) {
+fun ChatInfoView(
+  chatModel: ChatModel,
+  contact: Contact,
+  connStats: ConnectionStats?,
+  customUserProfile: Profile?,
+  localAlias: String,
+  close: () -> Unit,
+  onChatUpdated: (Chat) -> Unit,
+) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     ChatInfoLayout(
       chat,
+      contact,
       connStats,
+      customUserProfile,
+      localAlias,
+      developerTools,
+      onLocalAliasChanged = {
+        setContactAlias(chat.chatInfo.apiId, it, chatModel, onChatUpdated)
+      },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) }
+      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
+      changeNtfsState = { enabled ->
+        changeNtfsState(enabled, chat, chatModel)
+      },
     )
+  }
+}
+
+fun changeNtfsState(enabled: Boolean, chat: Chat, chatModel: ChatModel) {
+  val newChatInfo = when(chat.chatInfo) {
+    is ChatInfo.Direct -> with (chat.chatInfo) {
+      ChatInfo.Direct(contact.copy(chatSettings = contact.chatSettings.copy(enableNtfs = enabled)))
+    }
+    is ChatInfo.Group -> with(chat.chatInfo) {
+      ChatInfo.Group(groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(enableNtfs = enabled)))
+    }
+    else -> null
+  }
+  withApi {
+    val res = when (newChatInfo) {
+      is ChatInfo.Direct -> with(newChatInfo) {
+        chatModel.controller.apiSetSettings(chatType, apiId, contact.chatSettings)
+      }
+      is ChatInfo.Group -> with(newChatInfo) {
+        chatModel.controller.apiSetSettings(chatType, apiId, groupInfo.chatSettings)
+      }
+      else -> false
+    }
+    if (res && newChatInfo != null) {
+      chatModel.updateChatInfo(newChatInfo)
+      if (!enabled) {
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+      }
+    }
   }
 }
 
@@ -80,9 +140,15 @@ fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit
 @Composable
 fun ChatInfoLayout(
   chat: Chat,
+  contact: Contact,
   connStats: ConnectionStats?,
+  customUserProfile: Profile?,
+  localAlias: String,
+  developerTools: Boolean,
+  onLocalAliasChanged: (String) -> Unit,
   deleteContact: () -> Unit,
-  clearChat: () -> Unit
+  clearChat: () -> Unit,
+  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -94,8 +160,18 @@ fun ChatInfoLayout(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center
     ) {
-      ChatInfoHeader(chat.chatInfo)
+      ChatInfoHeader(chat.chatInfo, contact)
     }
+
+    LocalAliasEditor(localAlias, updateValue = onLocalAliasChanged)
+
+    if (customUserProfile != null) {
+      SectionSpacer()
+      SectionView(generalGetString(R.string.incognito).uppercase()) {
+        InfoRow(generalGetString(R.string.incognito_random_profile), customUserProfile.chatViewName)
+      }
+    }
+
     SectionSpacer()
 
     if (connStats != null) {
@@ -117,6 +193,17 @@ fun ChatInfoLayout(
       SectionSpacer()
     }
 
+    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
+      SectionItemView {
+        NtfsSwitch(ntfsEnabled) {
+          ntfsEnabled = !ntfsEnabled
+          changeNtfsState(ntfsEnabled)
+        }
+      }
+    }
+    SectionSpacer()
+
     SectionView {
       SectionItemView {
         ClearChatButton(clearChat)
@@ -128,29 +215,32 @@ fun ChatInfoLayout(
     }
     SectionSpacer()
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), chat.chatInfo.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), chat.chatInfo.apiId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
 @Composable
-fun ChatInfoHeader(cInfo: ChatInfo) {
+fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
   Column(
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    ChatInfoImage(cInfo, size = 192.dp, iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
-      cInfo.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+      contact.profile.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
       maxLines = 1,
-      overflow = TextOverflow.Ellipsis
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(bottom = 8.dp)
     )
-    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName) {
+    if (cInfo.fullName != "" && cInfo.fullName != cInfo.displayName && cInfo.fullName != contact.profile.displayName) {
       Text(
         cInfo.fullName, style = MaterialTheme.typography.h2,
         color = MaterialTheme.colors.onBackground,
@@ -158,6 +248,41 @@ fun ChatInfoHeader(cInfo: ChatInfo) {
         overflow = TextOverflow.Ellipsis
       )
     }
+  }
+}
+
+@Composable
+private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+  var value by rememberSaveable { mutableStateOf(initialValue) }
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    DefaultBasicTextField(
+      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      value,
+      {
+        Text(
+          generalGetString(R.string.text_field_set_contact_placeholder),
+          textAlign = TextAlign.Center,
+          color = HighOrLowlight
+        )
+      },
+      color = HighOrLowlight,
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+    ) {
+      value = it
+    }
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { value }
+      .onEach { delay(500) } // wait a little after every new character, don't emit until user stops typing
+      .conflate() // get the latest value
+      .filter { it == value } // don't process old ones
+      .collect {
+        updateValue(value)
+      }
+  }
+  DisposableEffect(Unit) {
+    onDispose { updateValue(value) } // just in case snapshotFlow will be canceled when user presses Back too fast
   }
 }
 
@@ -218,7 +343,43 @@ fun ServerImage(networkStatus: Chat.NetworkStatus) {
 @Composable
 fun SimplexServers(text: String, servers: List<String>) {
   val info = servers.joinToString(separator = ", ") { it.substringAfter("@") }
-  InfoRow(text, info)
+  val clipboardManager: ClipboardManager = LocalClipboardManager.current
+  InfoRowEllipsis(text, info) {
+    clipboardManager.setText(AnnotatedString(servers.joinToString(separator = ",")))
+    Toast.makeText(SimplexApp.context, generalGetString(R.string.copied), Toast.LENGTH_SHORT).show()
+  }
+}
+
+@Composable
+fun NtfsSwitch(
+  ntfsEnabled: Boolean,
+  toggleNtfs: (Boolean) -> Unit
+) {
+  Row(
+    Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      Icon(
+        Icons.Outlined.Notifications,
+        stringResource(R.string.notifications),
+        tint = HighOrLowlight
+      )
+      Text(stringResource(R.string.notifications))
+    }
+    Switch(
+      checked = ntfsEnabled,
+      onCheckedChange = toggleNtfs,
+      colors = SwitchDefaults.colors(
+        checkedThumbColor = MaterialTheme.colors.primary,
+        uncheckedThumbColor = HighOrLowlight
+      ),
+    )
+  }
 }
 
 @Composable
@@ -257,6 +418,13 @@ fun DeleteContactButton(deleteContact: () -> Unit) {
   }
 }
 
+private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel, onChatUpdated: (Chat) -> Unit) = withApi {
+  chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
+    chatModel.updateContact(it)
+    onChatUpdated(chatModel.getChat(chatModel.chatId.value ?: return@withApi) ?: return@withApi)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewChatInfoLayout() {
@@ -267,7 +435,13 @@ fun PreviewChatInfoLayout() {
         chatItems = arrayListOf(),
         serverInfo = Chat.ServerInfo(Chat.NetworkStatus.Error("agent BROKER TIMEOUT"))
       ),
+      Contact.sampleData,
+      localAlias = "",
+      changeNtfsState = {},
+      developerTools = false,
       connStats = null,
+      onLocalAliasChanged = {},
+      customUserProfile = null,
       deleteContact = {}, clearChat = {}
     )
   }

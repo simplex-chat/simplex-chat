@@ -18,7 +18,6 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
-let DEFAULT_PENDING_CONNECTIONS = "pendingConnections"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
@@ -26,17 +25,26 @@ let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
 let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
+let DEFAULT_DEVELOPER_TOOLS = "developerTools"
+let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
+let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
+let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
+let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
-    DEFAULT_PENDING_CONNECTIONS: true,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
-    DEFAULT_CHAT_V3_DB_MIGRATION: "offer"
+    DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
+    DEFAULT_DEVELOPER_TOOLS: false,
+    DEFAULT_ACCENT_COLOR_RED: 0.000,
+    DEFAULT_ACCENT_COLOR_GREEN: 0.533,
+    DEFAULT_ACCENT_COLOR_BLUE: 1.000,
+    DEFAULT_USER_INTERFACE_STYLE: 0
 ]
 
 private var indent: CGFloat = 36
@@ -51,7 +59,8 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @AppStorage(DEFAULT_PENDING_CONNECTIONS) private var pendingConnections = true
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -67,6 +76,9 @@ struct SettingsView: View {
                         .padding(.leading, -8)
                     }
                     .disabled(chatModel.chatRunning != true)
+
+                    incognitoRow()
+                        .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         UserAddress()
@@ -114,14 +126,19 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
-                    settingsRow("link") {
-                        Toggle("Show pending connections", isOn: $pendingConnections)
+                    if UIApplication.shared.supportsAlternateIcons {
+                        NavigationLink {
+                            AppearanceSettings()
+                                .navigationTitle("Appearance")
+                        } label: {
+                            settingsRow("sun.max") { Text("Appearance") }
+                        }
                     }
                     NavigationLink {
-                        SMPServers()
-                            .navigationTitle("Your SMP servers")
+                        NetworkAndServers()
+                            .navigationTitle("Network & servers")
                     } label: {
-                        settingsRow("server.rack") { Text("SMP servers") }
+                        settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)
@@ -169,6 +186,9 @@ struct SettingsView: View {
                         settingsRow("terminal") { Text("Chat console") }
                     }
                     .disabled(chatModel.chatRunning != true)
+                    settingsRow("gear") {
+                        Toggle("Developer tools", isOn: $developerTools)
+                    }
                     ZStack(alignment: .leading) {
                         Image(colorScheme == .dark ? "github_light" : "github")
                             .resizable()
@@ -188,9 +208,49 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
         }
+        .sheet(item: $settingsSheet) { sheet in
+            switch sheet {
+            case .incognitoInfo: IncognitoHelp()
+            }
+        }
     }
 
-    enum NotificationAlert {
+    @ViewBuilder private func incognitoRow() -> some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: chatModel.incognito ? "theatermasks.fill" : "theatermasks")
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                .foregroundColor(chatModel.incognito ? Color.indigo : .secondary)
+            Toggle(isOn: $chatModel.incognito) {
+                HStack {
+                    Text("Incognito")
+                    Spacer().frame(width: 4)
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    settingsSheet = .incognitoInfo
+                }
+            }
+            .onChange(of: chatModel.incognito) { incognito in
+                incognitoGroupDefault.set(incognito)
+                do {
+                    try apiSetIncognito(incognito: incognito)
+                } catch {
+                    logger.error("apiSetIncognito: cannot set incognito \(responseError(error))")
+                }
+            }
+            .padding(.leading, indent)
+        }
+    }
+
+    private enum SettingsSheet: Identifiable {
+        case incognitoInfo
+
+        var id: SettingsSheet { get { self } }
+    }
+
+    private enum NotificationAlert {
         case enable
         case error(LocalizedStringKey, String)
     }

@@ -30,6 +30,16 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
   var lastAnalyzedTimeStamp = 0L
   var contactLink = ""
 
+  val cameraProviderFuture by produceState<ListenableFuture<ProcessCameraProvider>?>(initialValue = null) {
+    value = ProcessCameraProvider.getInstance(context)
+  }
+
+  DisposableEffect(lifecycleOwner) {
+    onDispose {
+      cameraProviderFuture?.get()?.unbindAll()
+    }
+  }
+
   AndroidView(
     factory = { AndroidViewContext ->
       PreviewView(AndroidViewContext).apply {
@@ -46,14 +56,10 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
       .requireLensFacing(CameraSelector.LENS_FACING_BACK)
       .build()
     val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    val cameraProviderFuture: ListenableFuture<ProcessCameraProvider> =
-      ProcessCameraProvider.getInstance(context)
-
-    cameraProviderFuture.addListener({
+    cameraProviderFuture?.addListener({
       preview = Preview.Builder().build().also {
         it.setSurfaceProvider(previewView.surfaceProvider)
       }
-      val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
       val detector: QrCodeDetector<GrayU8> = FactoryFiducial.qrcode(null, GrayU8::class.java)
       fun getQR(imageProxy: ImageProxy) {
         val currentTimeStamp = System.currentTimeMillis()
@@ -78,8 +84,8 @@ fun QRCodeScanner(onBarcode: (String) -> Unit) {
         .build()
         .also { it.setAnalyzer(cameraExecutor, imageAnalyzer) }
       try {
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
+        cameraProviderFuture?.get()?.unbindAll()
+        cameraProviderFuture?.get()?.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalysis)
       } catch (e: Exception) {
         Log.d(TAG, "CameraPreview: ${e.localizedMessage}")
       }

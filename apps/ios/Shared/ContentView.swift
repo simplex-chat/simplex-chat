@@ -63,13 +63,10 @@ struct ContentView: View {
     private func runAuthenticate() {
         if !prefPerformLA {
             userAuthorized = true
-//        } else if showChatInfo {
-//            showChatInfo = false
-//            DispatchQueue.main.async {
-//                justAuthenticate()
-//            }
         } else {
-            justAuthenticate()
+            dismissAllSheets(animated: false) {
+                justAuthenticate()
+            }
         }
     }
 

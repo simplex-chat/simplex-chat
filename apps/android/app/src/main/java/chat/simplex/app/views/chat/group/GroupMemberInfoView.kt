@@ -24,30 +24,59 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
+import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupMemberInfoView(groupInfo: GroupInfo, member: GroupMember, connStats: ConnectionStats?, chatModel: ChatModel, close: () -> Unit) {
+fun GroupMemberInfoView(
+  groupInfo: GroupInfo,
+  member: GroupMember,
+  connStats: ConnectionStats?,
+  chatModel: ChatModel,
+  close: () -> Unit,
+  closeAll: () -> Unit, // Close all open windows up to ChatView
+) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null) {
     GroupMemberInfoLayout(
       groupInfo,
       member,
       connStats,
-      removeMember = { removeMemberDialog(member, chatModel, close) }
+      developerTools,
+      openDirectChat = {
+        withApi {
+          val oldChat = chatModel.getContactChat(member.memberContactId ?: return@withApi)
+          if (oldChat != null) {
+            openChat(oldChat.chatInfo, chatModel)
+          } else {
+            var newChat = chatModel.controller.apiGetChat(ChatType.Direct, member.memberContactId) ?: return@withApi
+            // TODO it's not correct to blindly set network status to connected - we should manage network status in model / backend
+            newChat = newChat.copy(serverInfo = Chat.ServerInfo(networkStatus = Chat.NetworkStatus.Connected()))
+            chatModel.addChat(newChat)
+            chatModel.chatItems.clear()
+            chatModel.chatId.value = newChat.id
+          }
+          closeAll()
+        }
+      },
+      removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) }
     )
   }
 }
 
-fun removeMemberDialog(member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.button_remove_member),
     text = generalGetString(R.string.member_will_be_removed_from_group_cannot_be_undone),
-    confirmText = generalGetString(R.string.delete_verb),
+    confirmText = generalGetString(R.string.remove_member_confirmation),
     onConfirm = {
       withApi {
-        chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
+        val removedMember = chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
+        if (removedMember != null) {
+          chatModel.upsertGroupMember(groupInfo, removedMember)
+        }
         close?.invoke()
       }
     }
@@ -59,6 +88,8 @@ fun GroupMemberInfoLayout(
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: ConnectionStats?,
+  developerTools: Boolean,
+  openDirectChat: () -> Unit,
   removeMember: () -> Unit,
 ) {
   Column(
@@ -72,6 +103,13 @@ fun GroupMemberInfoLayout(
       horizontalArrangement = Arrangement.Center
     ) {
       GroupMemberInfoHeader(member)
+    }
+    SectionSpacer()
+
+    SectionView {
+      SectionItemView {
+        OpenChatButton(openDirectChat)
+      }
     }
     SectionSpacer()
 
@@ -116,12 +154,14 @@ fun GroupMemberInfoLayout(
       SectionSpacer()
     }
 
-    SectionView(title = stringResource(R.string.section_title_for_console)) {
-      InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
-      SectionDivider()
-      InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
+    if (developerTools) {
+      SectionView(title = stringResource(R.string.section_title_for_console)) {
+        InfoRow(stringResource(R.string.info_row_local_name), member.localDisplayName)
+        SectionDivider()
+        InfoRow(stringResource(R.string.info_row_database_id), member.groupMemberId.toString())
+      }
+      SectionSpacer()
     }
-    SectionSpacer()
   }
 }
 
@@ -131,7 +171,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 8.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ProfileImage(size = 192.dp, member.image, color = if (isSystemInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     Text(
       member.displayName, style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.onBackground,
@@ -167,6 +207,25 @@ fun RemoveMemberButton(removeMember: () -> Unit) {
   }
 }
 
+@Composable
+fun OpenChatButton(onClick: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxSize()
+      .clickable { onClick() },
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Message,
+      stringResource(R.string.button_send_direct_message),
+      Modifier.padding(top = 5.dp),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.button_send_direct_message), color = MaterialTheme.colors.primary)
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -175,6 +234,8 @@ fun PreviewGroupMemberInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = null,
+      developerTools = false,
+      openDirectChat = {},
       removeMember = {}
     )
   }

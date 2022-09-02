@@ -11,3 +11,7 @@ safeDecodeUtf8 = decodeUtf8With onError
 
 uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
 uncurry3 f ~(a, b, c) = f a b c
+
+lastMaybe :: [a] -> Maybe a
+lastMaybe [] = Nothing
+lastMaybe xs = Just $ last xs

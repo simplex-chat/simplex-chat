@@ -22,3 +22,6 @@
 /* rcv group event chat item */
 "member connected" = "connected";
 
+/* No comment provided by engineer. */
+"No group!" = "Group not found!";
+

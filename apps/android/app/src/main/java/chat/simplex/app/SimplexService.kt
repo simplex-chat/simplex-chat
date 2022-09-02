@@ -2,7 +2,9 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.*
+import android.content.pm.PackageManager
 import android.os.*
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -53,7 +55,10 @@ class SimplexService: Service() {
   override fun onDestroy() {
     Log.d(TAG, "Simplex service destroyed")
     stopService()
-    sendBroadcast(Intent(this, AutoRestartReceiver::class.java)) // Restart if necessary!
+
+    // If private notifications are enabled and battery optimization is disabled, restart the service
+    if (SimplexApp.context.allowToStartServiceAfterAppExit())
+      sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
   }
 
@@ -117,7 +122,8 @@ class SimplexService: Service() {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
-    return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+
+    val builder =  NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
       .setSmallIcon(R.drawable.ntf_service_icon)
       .setColor(0x88FFFF)
       .setContentTitle(title)
@@ -125,7 +131,18 @@ class SimplexService: Service() {
       .setContentIntent(pendingIntent)
       .setSilent(true)
       .setShowWhen(false) // no date/time
-      .build()
+
+    // Shows a button which opens notification channel settings
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+      val setupIntent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+      setupIntent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+      setupIntent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFICATION_CHANNEL_ID)
+      val setup = PendingIntent.getActivity(this, 0, setupIntent, flags)
+      builder.addAction(0, getString(R.string.hide_notification), setup)
+    }
+
+    return builder.build()
   }
 
   override fun onBind(intent: Intent): IBinder? {
@@ -134,6 +151,14 @@ class SimplexService: Service() {
 
   // re-schedules the task when "Clear recent apps" is pressed
   override fun onTaskRemoved(rootIntent: Intent) {
+    // Just to make sure that after restart of the app the user will need to re-authenticate
+    MainActivity.clearAuthState()
+
+    // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
+    if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
+      return
+    }
+
     val restartServiceIntent = Intent(applicationContext, SimplexService::class.java).also {
       it.setPackage(packageName)
     };
@@ -148,6 +173,17 @@ class SimplexService: Service() {
     override fun onReceive(context: Context, intent: Intent) {
       Log.d(TAG, "StartReceiver: onReceive called")
       scheduleStart(context)
+    }
+    companion object {
+      fun toggleReceiver(enable: Boolean) {
+        Log.d(TAG, "StartReceiver: toggleReceiver enabled: $enable")
+        val component = ComponentName(BuildConfig.APPLICATION_ID, StartReceiver::class.java.name)
+        SimplexApp.context.packageManager.setComponentEnabledSetting(
+          component,
+          if (enable) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+          PackageManager.DONT_KILL_APP
+        )
+      }
     }
   }
 

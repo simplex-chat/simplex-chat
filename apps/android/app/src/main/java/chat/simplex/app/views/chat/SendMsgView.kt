@@ -12,11 +12,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -26,7 +28,9 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
@@ -35,6 +39,16 @@ fun SendMsgView(
   textStyle: MutableState<TextStyle>
 ) {
   val cs = composeState.value
+  val focusRequester = remember { FocusRequester() }
+  val keyboard = LocalSoftwareKeyboardController.current
+  LaunchedEffect(cs.contextItem) {
+    if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
+    // In replying state
+    focusRequester.requestFocus()
+    delay(50)
+    keyboard?.show()
+  }
+
   BasicTextField(
     value = cs.message,
     onValueChange = onMessageChange,
@@ -44,7 +58,7 @@ fun SendMsgView(
       capitalization = KeyboardCapitalization.Sentences,
       autoCorrect = true
     ),
-    modifier = Modifier.padding(vertical = 8.dp),
+    modifier = Modifier.padding(vertical = 8.dp).focusRequester(focusRequester),
     cursorBrush = SolidColor(HighOrLowlight),
     decorationBox = { innerTextField ->
       Surface(

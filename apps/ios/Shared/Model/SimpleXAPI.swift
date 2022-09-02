@@ -167,6 +167,12 @@ func apiSetFilesFolder(filesFolder: String) throws {
     throw r
 }
 
+func apiSetIncognito(incognito: Bool) throws {
+    let r = chatSendCmdSync(.setIncognito(incognito: incognito))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -185,19 +191,26 @@ func apiGetChats() throws -> [ChatData] {
     throw r
 }
 
-func apiGetChat(type: ChatType, id: Int64) throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id))
+func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50), search: search))
     if case let .apiChat(chat) = r { return Chat.init(chat) }
     throw r
 }
 
-func loadChat(chat: Chat) {
+func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, search: String = "") async throws -> [ChatItem] {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: pagination, search: search))
+    if case let .apiChat(chat) = r { return chat.chatItems }
+    throw r
+}
+
+func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId)
         let m = ChatModel.shared
+        m.reversedChatItems = []
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         m.updateChatInfo(chat.chatInfo)
-        m.chatItems = chat.chatItems
+        m.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
@@ -296,19 +309,25 @@ func getNetworkConfig() async throws -> NetCfg? {
     throw r
 }
 
-func setNetworkConfig(cfg: NetCfg) async throws {
-    try await sendCommandOkResp(.apiSetNetworkConfig(networkConfig: cfg))
-}
-
-func apiContactInfo(contactId: Int64) async throws -> ConnectionStats? {
-    let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
-    if case let .contactInfo(_, connStats) = r { return connStats }
+func setNetworkConfig(_ cfg: NetCfg) throws {
+    let r = chatSendCmdSync(.apiSetNetworkConfig(networkConfig: cfg))
+    if case .cmdOk = r { return }
     throw r
 }
 
-func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> ConnectionStats? {
+func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
+    try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
+}
+
+func apiContactInfo(contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
+    let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
+    if case let .contactInfo(_, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
+    throw r
+}
+
+func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (ConnectionStats?) {
     let r = await chatSendCmd(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
-    if case let .groupMemberInfo(_, _, connStats_) = r { return connStats_ }
+    if case let .groupMemberInfo(_, _, connStats_) = r { return (connStats_) }
     throw r
 }
 
@@ -415,6 +434,12 @@ func apiUpdateProfile(profile: Profile) async throws -> Profile? {
     case let .userProfileUpdated(_, toProfile): return toProfile
     default: throw r
     }
+}
+
+func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Contact? {
+    let r = await chatSendCmd(.apiSetContactAlias(contactId: contactId, localAlias: localAlias))
+    if case let .contactAliasUpdated(toContact) = r { return toContact }
+    throw r
 }
 
 func apiCreateUserAddress() async throws -> String {
@@ -532,13 +557,13 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     }
 }
 
-func markChatRead(_ chat: Chat) async {
+func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
         let minItemId = chat.chatStats.minUnreadItemId
-        let itemRange = (minItemId, chat.chatItems.last?.id ?? minItemId)
+        let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
         let cInfo = chat.chatInfo
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo) }
+        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
     } catch {
         logger.error("markChatRead apiChatRead error: \(responseError(error))")
     }
@@ -546,10 +571,11 @@ func markChatRead(_ chat: Chat) async {
 
 func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
+        logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        DispatchQueue.main.async { ChatModel.shared.markChatItemRead(cInfo, cItem) }
+        await MainActor.run { ChatModel.shared.markChatItemRead(cInfo, cItem) }
     } catch {
-        logger.error("markChatItemRead apiChatRead error: \(responseError(error))")
+        logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
     }
 }
 
@@ -565,17 +591,9 @@ func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
     throw r
 }
 
-func addMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async {
-    do {
-        try await apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole)
-    } catch let error {
-        logger.error("addMember error: \(responseError(error))")
-    }
-}
-
-func apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole) async throws {
+func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
     let r = await chatSendCmd(.apiAddMember(groupId: groupId, contactId: contactId, memberRole: memberRole))
-    if case .sentGroupInvitation = r { return }
+    if case let .sentGroupInvitation(_, _, member) = r { return member }
     throw r
 }
 
@@ -595,7 +613,7 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     }
 }
 
-func apiRemoveMember(groupId: Int64, memberId: Int64) async throws -> GroupMember {
+func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupMember {
     let r = await chatSendCmd(.apiRemoveMember(groupId: groupId, memberId: memberId), bgTask: false)
     if case let .userDeletedMember(_, member) = r { return member }
     throw r
@@ -641,6 +659,7 @@ func initializeChat(start: Bool) throws {
     do {
         let m = ChatModel.shared
         try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+        try apiSetIncognito(incognito: incognitoGroupDefault.get())
         m.currentUser = try apiGetActiveUser()
         if m.currentUser == nil {
             m.onboardingStage = .step1_SimpleXInfo
@@ -657,6 +676,7 @@ func initializeChat(start: Bool) throws {
 func startChat() throws {
     logger.debug("startChat")
     let m = ChatModel.shared
+    try setNetworkConfig(getNetCfg())
     let justStarted = try apiStartChat()
     if justStarted {
         m.userAddress = try apiGetUserAddress()
@@ -817,12 +837,22 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 chatItems: []
             ))
             // NtfManager.shared.notifyContactRequest(contactRequest) // TODO notifyGroupInvitation?
+        case let .joinedGroupMemberConnecting(groupInfo, _, member):
+            _ = m.upsertGroupMember(groupInfo, member)
+        case let .deletedMemberUser(groupInfo, _): // TODO update user member
+            m.updateGroup(groupInfo)
+        case let .deletedMember(groupInfo, _, deletedMember):
+            _ = m.upsertGroupMember(groupInfo, deletedMember)
+        case let .leftMember(groupInfo, member):
+            _ = m.upsertGroupMember(groupInfo, member)
+        case let .groupDeleted(groupInfo, _): // TODO update user member
+            m.updateGroup(groupInfo)
         case let .userJoinedGroup(groupInfo):
             m.updateGroup(groupInfo)
-        case let .groupDeleted(groupInfo, _):
-            m.updateGroup(groupInfo)
-        case let .deletedMemberUser(groupInfo, _):
-            m.updateGroup(groupInfo)
+        case let .joinedGroupMember(groupInfo, member):
+            _ = m.upsertGroupMember(groupInfo, member)
+        case let .connectedToGroupMember(groupInfo, member):
+            _ = m.upsertGroupMember(groupInfo, member)
         case let .groupUpdated(toGroup):
             m.updateGroup(toGroup)
         case let .rcvFileStart(aChatItem):

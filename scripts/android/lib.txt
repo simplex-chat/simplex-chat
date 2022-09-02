@@ -1,0 +1,2 @@
+https://ci.zw3rk.com/build/494539/download/1/pkg-aarch64-android-libsimplex.zip
+https://ci.zw3rk.com/build/482524/download/1/pkg-aarch64-android-libsupport.zip
