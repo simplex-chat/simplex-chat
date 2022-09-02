@@ -219,7 +219,13 @@
             };
             "aarch64-darwin" = {
               # this is the aarch64-darwin iOS build (to be patched with mac2ios)
-              "aarch64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swift = true; }]; } ).simplex-chat.components.library.override {
+              "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.simplexmq.flags.swift = true;
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -273,7 +279,13 @@
             };
             "x86_64-darwin" = {
               # this is the aarch64-darwin iOS build (to be patched with mac2ios)
-              "x86_64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swift = true; }]; } ).simplex-chat.components.library.override {
+              "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.simplexmq.flags.swift = true;
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
