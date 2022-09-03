@@ -158,7 +158,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        ChatConsoleItem(showTerminal, stopped)
+        ChatConsoleItem(showTerminal)
         SectionDivider()
         SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools)
         SectionDivider()
@@ -302,18 +302,15 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun ChatConsoleItem(showTerminal: () -> Unit, stopped: Boolean) {
-  SectionItemView(showTerminal, disabled = stopped) {
+@Composable private fun ChatConsoleItem(showTerminal: () -> Unit) {
+  SectionItemView(showTerminal) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
       tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(
-      stringResource(R.string.chat_console),
-      color = if (stopped) HighOrLowlight else Color.Unspecified
-    )
+    Text(stringResource(R.string.chat_console))
   }
 }
 
