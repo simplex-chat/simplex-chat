@@ -130,7 +130,7 @@ export f key key' = do
   where
     withDB a err =
       liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
-        `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError err
+        `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError (err $ show e)
     exportSQL =
       T.unlines $
         keySQL key
