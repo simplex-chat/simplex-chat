@@ -434,8 +434,8 @@ instance ToJSON ChatErrorType where
 data DatabaseError
   = DBENotEncrypted
   | DBENoFile
-  | DBEExportFailed
-  | DBEOpenFailed
+  | DBEExportFailed {databaseError :: String}
+  | DBEOpenFailed {databaseError :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON DatabaseError where
