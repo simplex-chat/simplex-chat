@@ -13,7 +13,7 @@
     let systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ]; in
     flake-utils.lib.eachSystem systems (system:
       let pkgs = haskellNix.legacyPackages.${system}; in
-      let drv = pkgs': pkgs'.haskell-nix.project {
+      let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc8107";
         index-state = "2022-06-20T00:00:00Z";
         # We need this, to specify we want the cabal project.
@@ -31,6 +31,8 @@
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
         })];
       }; in
+      # by defualt we don't need to pass extra-modules.
+      let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
       # This will package up all *.a in $out into a pkg.zip that can
       # be downloaded from hydra.
       let withHydraLibPkg = pkg: pkg.overrideAttrs (old: {
