@@ -185,7 +185,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    .disabled(chatModel.chatRunning != true)
                     settingsRow("gear") {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
