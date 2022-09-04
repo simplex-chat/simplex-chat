@@ -24,7 +24,7 @@ _SimpleX is already private, so why do we need an incognito mode_, you may ask.
 
 You indeed can choose a pseudonym as your main profile name, but there are several problems:
 
-- many users want to have their real name as their main profile, so that their friends recognise them. SimpleX objective is to provide anonimity from the network operators, but not necessarily from your contacts.
+- many users want to have their real name as their main profile, so that their friends recognise them. SimpleX objective is to provide anonymity from the network operators, but not necessarily from your contacts.
 - even if you choose a pseudonym, it would be used for all your contacts. And if two of them meet, while they cannot prove they are talking to the same person, as they use different addresses in SimpleX network to send you the messages, they could _suspect it_.
 - any pseudonym you manually choose leaks some information about you, as it's not really random.
 
