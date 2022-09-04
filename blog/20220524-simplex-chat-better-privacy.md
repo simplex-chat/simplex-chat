@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v2.1 - better conversation privacy"
 date: 2022-05-24
+permalink: "/blog/20220524-simplex-chat-better-privacy.html"
 ---
 
 # SimpleX Chat v2.1 - better conversation privacy

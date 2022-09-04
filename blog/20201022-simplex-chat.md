@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "Simplex Chat"
 date: 2020-10-22
+permalink: "/blog/20201022-simplex-chat.html"
 ---
 
 # Simplex chat

@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "Announcing SimpleX Chat Prototype!"
 date: 2021-05-12
+permalink: "/blog/20210512-simplex-chat-terminal-ui.html"
 ---
 
 # Announcing SimpleX Chat Prototype!

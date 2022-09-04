@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v3.1 is released"
 date: 2022-08-08
+permalink: "/blog/20220808-simplex-chat-v3.1-chat-groups.html"
 ---
 
 # SimpleX Chat v3.1 is released

@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX Chat v3.1-beta is released"
 date: 2022-07-23
+permalink: "/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"
 ---
 
 # SimpleX Chat v3.1-beta is released

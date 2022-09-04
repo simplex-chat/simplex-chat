@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat mobile apps for iOS and Android"
 date: 2022-03-08
+permalink: "/blog/20220308-simplex-chat-mobile-apps.html"
 ---
 
 # SimpleX announces SimpleX Chat mobile apps for iOS and Android

@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v0.5"
 date: 2021-12-08
+permalink: "/blog/20211208-simplex-chat-v0.5-released.html"
 ---
 
 # SimpleX announces SimpleX Chat v0.5

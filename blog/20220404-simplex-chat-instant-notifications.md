@@ -2,6 +2,7 @@
 layout: layouts/article.html
 title: "Instant notifications for SimpleX Chat mobile apps"
 date: 2022-04-04
+permalink: "/blog/20220404-simplex-chat-instant-notifications.html"
 ---
 
 # Instant notifications for SimpleX Chat mobile apps
