@@ -30,15 +30,15 @@ module.exports = function (eleventyConfig) {
     // replace the default markdown-it instance
     eleventyConfig.setLibrary("md", markdownLib);
 
-    return {
-        dir: {
-            input: 'src',
-            includes: '_includes',
-            output: '_site',
-        },
-        templateFormats: ['md', 'njk', 'html'],
-        markdownTemplateEngine: 'njk',
-        htmlTemplateEngine: 'njk',
-        dataTemplateEngine: 'njk',
-    };
-};
+  return {
+    dir: {
+      input: 'src',
+      includes: '_includes',
+      output: '_site',
+    },
+    templateFormats: ['md', 'njk', 'html'],
+    markdownTemplateEngine: 'njk',
+    htmlTemplateEngine: 'njk',
+    dataTemplateEngine: 'njk',
+  }
+}

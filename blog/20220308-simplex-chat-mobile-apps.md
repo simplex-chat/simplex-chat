@@ -41,6 +41,7 @@ You can always migrate from a public App Store version to a TestFlight version. 
 ## It's not all new - our core code has been used for a long time by a few thousand people in our terminal app.
 
 The apps use the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:
+
 - [double-ratchet](https://www.signal.org/docs/specifications/doubleratchet/) E2E encryption.
 - separate keys for each contact.
 - additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).

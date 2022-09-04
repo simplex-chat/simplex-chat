@@ -3,6 +3,7 @@ layout: layouts/article.html
 title: "SimpleX announces SimpleX Chat v1"
 date: 2022-01-12
 ---
+
 # SimpleX announces SimpleX Chat v1
 
 **Published:** Jan 12, 2022
