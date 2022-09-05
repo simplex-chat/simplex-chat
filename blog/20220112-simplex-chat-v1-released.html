@@ -159,13 +159,13 @@
 <p><strong>Published:</strong> Jan 12, 2022</p>
 <h2 id="the-most-private-and-secure-chat-and-application-platform" tabindex="-1">The most private and secure chat and application platform</h2>
 <p>We are building a new platform for distributed Internet applications where privacy of the messages <em>and</em> the network matter. <a href="https://github.com/simplex-chat/simplex-chat">SimpleX Chat</a> is our first application, a messaging application built on the SimpleX platform.</p>
-<h2 id="what-is-simplex%3F" tabindex="-1">What is SimpleX?</h2>
+<h2 id="what-is-simplex" tabindex="-1">What is SimpleX?</h2>
 <p>There is currently no messaging application which respects user privacy and guarantees metadata privacy - in other words, messages could be private, but a third party can always see who is communicating with whom by examining a central service and the connection graph. SimpleX, at it's core, is designed to be truly distributed with no central server. This allows for enormous scalability at low cost, and also makes it virtually impossible to snoop on the network graph.</p>
 <p>The first application built on the platform is Simplex Chat, which for now is terminal (command line) based with mobile apps in the pipeline. The platform can easily support a private social network feed and a multitude of other services, which can be developed by the Simplex team or third party developers.</p>
-<h2 id="what's-new-in-v1%3F" tabindex="-1">What's new in v1?</h2>
+<h2 id="whats-new-in-v1" tabindex="-1">What's new in v1?</h2>
 <h3 id="stable-protocol-implementation" tabindex="-1">Stable protocol implementation</h3>
 <p>All releases from v1 onwards will be forwards and backwards compatible.</p>
-<h3 id="message-encryption-has-been-completely-re-engineered-to-provide-forward-secrecy-and-recovery-from-break-in." tabindex="-1">Message encryption has been completely re-engineered to provide forward secrecy and recovery from break-in.</h3>
+<h3 id="message-encryption-has-been-completely-re-engineered-to-provide-forward-secrecy-and-recovery-from-break-in" tabindex="-1">Message encryption has been completely re-engineered to provide forward secrecy and recovery from break-in.</h3>
 <p>SimpleX Chat v1 now uses:</p>
 <ul>
 <li><a href="https://www.signal.org/docs/specifications/doubleratchet/">double-ratchet</a> E2E encryption using AES-256-GCM cipher with <a href="https://www.signal.org/docs/specifications/x3dh/">X3DH key agreement</a> using 2 ephemeral Curve448 keys to derive secrets for ratchet initialization. These keys and secrets are separate for each contact, group membership and file transfer.</li>
@@ -183,7 +183,7 @@
 <p>Further details on platform objectives and technical design are available <a href="https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md">here</a>.</p>
 <p>SimpleX Chat client can be used in the terminal on all major desktop platforms (Windows/Mac/Linux) and also on Android devices with <a href="https://github.com/termux">Termux</a>.</p>
 <p>SimpleX also allows people to host their own servers and own their own chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages).</p>
-<h2 id="we-look-forward-to-you-using-it!" tabindex="-1">We look forward to you using it!</h2>
+<h2 id="we-look-forward-to-you-using-it" tabindex="-1">We look forward to you using it!</h2>
 <p>We look forward to your feedback and suggestions - via GitHub issues or via SimpleX Chat - you can connect to the team with <code>/simplex</code> command once you run the chat.</p>
 </div>
   </section>

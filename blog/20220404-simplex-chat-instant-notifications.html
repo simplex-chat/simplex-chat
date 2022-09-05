@@ -157,7 +157,7 @@
   <section class="container">
     <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20"><h1 id="instant-notifications-for-simplex-chat-mobile-apps" tabindex="-1">Instant notifications for SimpleX Chat mobile apps</h1>
 <p><strong>Published:</strong> April 04, 2022</p>
-<h2 id="simplex-chat-is-the-first-chat-platform-that-is-100%25-private-by-design---it-has-no-access-to-your-connections" tabindex="-1">SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections</h2>
+<h2 id="simplex-chat-is-the-first-chat-platform-that-is-100percent-private-by-design-it-has-no-access-to-your-connections" tabindex="-1">SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections</h2>
 <p>Since we released SimpleX Chat mobile apps couple of weeks ago we've had a lot of excitement from our users - nearly 2000 people downloaded the app after <a href="./20220308-simplex-chat-mobile-apps.md">the announcement</a>!</p>
 <p>Huge thanks to everybody who downloaded and connected to us via the chat - there were many great questions and suggestions, and on some days I spent most of the time chatting to our users :)</p>
 <p>Since we released the app, we've added and released:</p>
@@ -168,7 +168,7 @@
 <li>profile images.</li>
 <li>and, most importantly, private instant message notifications on Android devices - more on that below.</li>
 </ul>
-<h2 id="install-the-apps-and-make-a-private-connection!" tabindex="-1">Install the apps and make a private connection!</h2>
+<h2 id="install-the-apps-and-make-a-private-connection" tabindex="-1">Install the apps and make a private connection!</h2>
 <p>Once you install the app, you can connect to anybody:</p>
 <ol>
 <li>Create your local chat profile - it is not shared with SimpleX servers. It is local to your devices, and it will be shared with your contacts only when you connect.</li>
@@ -178,15 +178,15 @@
 <p>See <a href="https://youtu.be/rZeVhsv_JAY">demo video</a> that shows how two users connect and send the first messages.</p>
 <h2 id="why-we-are-doing-it" tabindex="-1">Why we are doing it</h2>
 <p>We are building SimpleX Chat because we believe that privacy is a fundamental human right, and that protecting our personal network of contacts is even more important than the content of the messages - sharing this network can lead to various adverse consequences, from manipulating us into buying goods we don't need, manipulating election processes, and in some cases, prosecuting innocent people. For example, <a href="https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi">Mohamedou Ould Salahi</a> was detained in Guantanamo prison for 15 years after a single &quot;wrong&quot; phone call. His story is told in his memoir and in The Mauritanian movie.</p>
-<h2 id="problem---users-expect-to-be-instantly-notified-when-messages-arrive!" tabindex="-1">Problem - users expect to be instantly notified when messages arrive!</h2>
+<h2 id="problem-users-expect-to-be-instantly-notified-when-messages-arrive" tabindex="-1">Problem - users expect to be instantly notified when messages arrive!</h2>
 <p>Our first users realized that what we take for granted in messaging apps - instant message notifications - is missing in our first release of SimpleX Chat apps. Quite a few people thought that it was a bug, rather than a missing feature. Sorry to disappoint!</p>
-<h2 id="why-can't-we-just-do-what-messenger-x-does%3F" tabindex="-1">Why can't we just do what messenger X does?</h2>
+<h2 id="why-cant-we-just-do-what-messenger-x-does" tabindex="-1">Why can't we just do what messenger X does?</h2>
 <p>SimpleX Chat is the first and the only messenger we know of that operates without user identities of any kind. There are no phone numbers, emails, usernames, public keys, or any other addresses or identifiers to uniquely identify the users to the network or servers. That is why we say it is 100% private by design, and fundamentally different than other chat platforms.</p>
 <p>Instead, SimpleX Chat assigns these identifiers to unidirectional message queues. What looks to SimpleX Chat users like contacts and groups [1], to SimpleX servers looks like an unorganized and unrelated collection of unidirectional message queues. Our servers do not know which queues belong to which users, contacts or groups. Even a single conversation can happen via two different servers (one for sent and another for received messages). This makes our personal network of contacts invisible to the servers.</p>
 <p>But it also creates a problem for instant notifications - all push notification services require having a device token.</p>
 <p>So, how can we operate without identities and still have instant notifications?</p>
 <p>[1] yes, we have groups in our terminal app, and the UI to manage them is coming to mobile apps soon. Some users have already firgured out how to <a href="https://medium.com/@vsevolod.mineev/how-to-collaborate-across-multiple-devices-whilst-protecting-your-metadata-371af87d0ba0">create groups via chat console</a>.</p>
-<h2 id="we've-cracked-it-for-android!" tabindex="-1">We've cracked it for Android!</h2>
+<h2 id="weve-cracked-it-for-android" tabindex="-1">We've cracked it for Android!</h2>
 <p>After some research into how push notifications work on Android, and open-source alternatives to Google push notifications, we discovered how to avoid sharing device tokens with any servers.</p>
 <p>We have implemented message reception as a background service (in Android terminology, a &quot;foreground service&quot; showing a notification icon when the service is running) following the same design as <a href="https://github.com/binwiederhier/ntfy-android">ntfy.sh</a> created by <a href="https://github.com/binwiederhier">Philipp Heckel</a>, who, in turn, credits the design to <a href="https://robertohuertas.com/2019/06/29/android_foreground_services/">the blog post by Roberto Huertas</a>. Big thanks to them!</p>
 <p>How does it work? When the app is first started on an Android device, it starts the background service that keeps the TCP connections to the messaging servers open with almost no traffic (only doing periodic checks that connections still exist). It consumes only a few percents of battery per day, depending on how stable your internet connection is, and delivers message notifications as soon as messages arrive.</p>
