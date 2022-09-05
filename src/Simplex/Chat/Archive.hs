@@ -8,8 +8,7 @@ module Simplex.Chat.Archive
   ( exportArchive,
     importArchive,
     deleteStorage,
-    encryptStorage,
-    decryptStorage,
+    sqlCipherExport,
   )
 where
 
@@ -21,7 +20,7 @@ import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
-import Simplex.Messaging.Util (unlessM, whenM)
+import Simplex.Messaging.Util (ifM, unlessM, whenM)
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.Exception (SomeException, bracket, catch)
@@ -87,63 +86,58 @@ deleteStorage = do
 
 data StorageFiles = StorageFiles
   { chatDb :: FilePath,
-    chatKey :: String,
+    chatEncrypted :: TVar Bool,
     agentDb :: FilePath,
-    agentKey :: String,
+    agentEncrypted :: TVar Bool,
     filesPath :: Maybe FilePath
   }
 
 storageFiles :: ChatMonad m => m StorageFiles
 storageFiles = do
   ChatController {chatStore, filesFolder, smpAgent} <- ask
-  let SQLiteStore {dbFilePath = chatDb, dbKey = chatKey} = chatStore
-      SQLiteStore {dbFilePath = agentDb, dbKey = agentKey} = agentStore smpAgent
+  let SQLiteStore {dbFilePath = chatDb, dbEncrypted = chatEncrypted} = chatStore
+      SQLiteStore {dbFilePath = agentDb, dbEncrypted = agentEncrypted} = agentStore smpAgent
   filesPath <- readTVarIO filesFolder
-  pure StorageFiles {chatDb, chatKey, agentDb, agentKey, filesPath}
+  pure StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted, filesPath}
 
-encryptStorage :: forall m. ChatMonad m => String -> m ()
-encryptStorage key' = updateDatabase $ \f key -> export f key key'
-
-decryptStorage :: forall m. ChatMonad m => m ()
-decryptStorage = updateDatabase $ \f -> \case
-  "" -> throwDBError DBENotEncrypted
-  key -> export f key ""
-
-updateDatabase :: ChatMonad m => (FilePath -> String -> m ()) -> m ()
-updateDatabase update = do
-  fs@StorageFiles {chatDb, chatKey, agentDb, agentKey} <- storageFiles
-  checkFile `with` fs
-  backup `with` fs
-  (update chatDb chatKey >> update agentDb agentKey)
-    `catchError` \e -> (restore `with` fs) >> throwError e
+sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
+sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key'} =
+  when (key /= key') $ do
+    fs@StorageFiles {chatDb, chatEncrypted, agentDb, agentEncrypted} <- storageFiles
+    checkFile `with` fs
+    backup `with` fs
+    (export chatDb chatEncrypted >> export agentDb agentEncrypted)
+      `catchError` \e -> (restore `with` fs) >> throwError e
   where
     action `with` StorageFiles {chatDb, agentDb} = action chatDb >> action agentDb
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
-    checkFile f = unlessM (doesFileExist f) $ throwDBError DBENoFile
-
-export :: ChatMonad m => FilePath -> String -> String -> m ()
-export f key key' = do
-  withDB (`SQL.exec` exportSQL) DBEExportFailed
-  renameFile (f <> ".exported") f
-  withDB (`SQL.exec` testSQL) DBEOpenFailed
-  where
-    withDB a err =
-      liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
-        `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError (err $ show e)
-    exportSQL =
-      T.unlines $
-        keySQL key
-          <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
-               "SELECT sqlcipher_export('exported');",
-               "DETACH DATABASE exported;"
-             ]
-    testSQL =
-      T.unlines $
-        keySQL key'
-          <> [ "PRAGMA foreign_keys = ON;",
-               "PRAGMA secure_delete = ON;",
-               "PRAGMA auto_vacuum = FULL;",
-               "SELECT count(*) FROM sqlite_master;"
-             ]
-    keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
+    checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
+    export f dbEnc = do
+      enc <- readTVarIO dbEnc
+      when (enc && null key) $ throwDBError DBErrorEncrypted
+      when (not enc && not (null key)) $ throwDBError DBErrorPlaintext
+      withDB (`SQL.exec` exportSQL) DBErrorExport
+      renameFile (f <> ".exported") f
+      withDB (`SQL.exec` testSQL) DBErrorOpen
+      atomically $ writeTVar dbEnc $ not (null key')
+      where
+        withDB a err =
+          liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
+            `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError (err $ show e)
+        exportSQL =
+          T.unlines $
+            keySQL key
+              <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
+                   "SELECT sqlcipher_export('exported');",
+                   "DETACH DATABASE exported;"
+                 ]
+        testSQL =
+          T.unlines $
+            keySQL key'
+              <> [ "PRAGMA foreign_keys = ON;",
+                   "PRAGMA secure_delete = ON;",
+                   "PRAGMA auto_vacuum = FULL;",
+                   "SELECT count(*) FROM sqlite_master;"
+                 ]
+        keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]

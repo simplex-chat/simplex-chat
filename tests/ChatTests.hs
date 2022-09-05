@@ -2769,11 +2769,11 @@ testDatabaseEncryption = withTmpFiles $ do
       bob <# "alice> hi"
       alice ##> "/db encrypt mykey"
       alice <## "error: chat not stopped"
-      alice ##> "/db decrypt"
+      alice ##> "/db decrypt mykey"
       alice <## "error: chat not stopped"
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/db decrypt"
+      alice ##> "/db decrypt mykey"
       alice <## "error: chat database is not encrypted"
       alice ##> "/db encrypt mykey"
       alice <## "ok"
@@ -2785,7 +2785,7 @@ testDatabaseEncryption = withTmpFiles $ do
       testChatWorking alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/db encrypt nextkey"
+      alice ##> "/db password mykey nextkey"
       alice <## "ok"
     withTestChatOpts testOpts {maintenance = True, dbKey = "nextkey"} "alice" $ \alice -> do
       alice ##> "/_start"
@@ -2793,7 +2793,7 @@ testDatabaseEncryption = withTmpFiles $ do
       testChatWorking alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/db decrypt"
+      alice ##> "/db decrypt nextkey"
       alice <## "ok"
     withTestChat "alice" $ \alice -> testChatWorking alice bob
 
