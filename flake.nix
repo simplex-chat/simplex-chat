@@ -117,7 +117,8 @@
                   # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   echo ${androidPkgs.openssl}
-                  find ${androidPkgs.openssl}/lib -name "*.so" -exec cp {} $out/_pkg \;
+                  ls -l ${androidPkgs.openssl}
+                  find ${androidPkgs.openssl} -name "*.so" -exec cp {} $out/_pkg \;
 
                   ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
 
