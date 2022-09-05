@@ -94,7 +94,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("internaldrive") {
                             HStack {
-                                Text("Database export & import")
+                                Text("Database password & export")
                                 Spacer()
                                 if chatModel.chatRunning == false {
                                     Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)

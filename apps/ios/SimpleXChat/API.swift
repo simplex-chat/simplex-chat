@@ -13,18 +13,25 @@ private var chatController: chat_ctrl?
 public func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
     let dbPath = getAppDatabasePath().path
+    let dbKey = getDatabaseKey() ?? ""
     logger.debug("getChatCtrl DB path: \(dbPath)")
-    var cstr = dbPath.cString(using: .utf8)!
-    // TODO ckey is hardcoded for testing, set to "" if the database is not encrypted
-    // then DB can be encrypted via chat console with:
-    // /_stop
-    // /db encrypt nextkey
-    var ckey = "nextkey".cString(using: .utf8)!
-    let cjson = chat_migrate_db(&cstr, &ckey)!
-    print(dbMigrationResult(fromCString(cjson)))
-    chatController = chat_init_key(&cstr, &ckey)
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    chatController = chat_init_key(&cPath, &cKey)
     logger.debug("getChatCtrl: chat_init_key")
     return chatController!
+}
+
+public func migrateChatDatabase() -> (String, DBMigrationResult) {
+    let dbPath = getAppDatabasePath().path
+    let dbKey = getDatabaseKey() ?? (hasDatabase() ? "" : randomDatabasePassword())
+    if !setDatabaseKey(dbKey) { return (dbKey, .errorKeychain) }
+    logger.debug("migrateChatDatabase DB path: \(dbPath)")
+    logger.debug("migrateChatDatabase DB key: \(dbKey)") // TODO remove
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    let cjson = chat_migrate_db(&cPath, &cKey)!
+    return (dbKey, dbMigrationResult(fromCString(cjson)))
 }
 
 public func resetChatCtrl() {
@@ -111,10 +118,11 @@ public func responseError(_ err: Error) -> String {
     }
 }
 
-enum DBMigrationResult: Decodable {
+public enum DBMigrationResult: Decodable, Equatable {
     case ok
     case errorNotADatabase(dbFile: String)
     case error(dbFile: String, migrationError: String)
+    case errorKeychain
     case unknown(json: String)
 }
 

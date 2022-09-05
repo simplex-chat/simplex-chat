@@ -82,18 +82,22 @@ struct DatabaseView: View {
             }
 
             Section {
-                settingsRow("square.and.arrow.up") {
-                    Button {
-                        exportArchive()
+                settingsRow("lock") {
+                    NavigationLink {
+                        DatabaseEncryptionView()
+                            .navigationTitle("Database encryption")
                     } label: {
-                        Text("Export database")
+                        Text("Database encryption")
+                    }
+                }
+                settingsRow("square.and.arrow.up") {
+                    Button("Export database") {
+                        exportArchive()
                     }
                 }
                 settingsRow("square.and.arrow.down") {
-                    Button(role: .destructive) {
+                    Button("Import database", role: .destructive) {
                         showFileImporter = true
-                    } label: {
-                        Text("Import database")
                     }
                 }
                 if let archiveName = chatArchiveName {
@@ -110,10 +114,8 @@ struct DatabaseView: View {
                     }
                 }
                 settingsRow("trash.slash") {
-                    Button(role: .destructive) {
+                    Button("Delete database", role: .destructive) {
                         alert = .deleteChat
-                    } label: {
-                        Text("Delete database")
                     }
                 }
             } header: {
@@ -130,10 +132,8 @@ struct DatabaseView: View {
             if case .group = dbContainer, legacyDatabase {
                 Section("Old database") {
                     settingsRow("trash") {
-                        Button {
+                        Button("Delete old database") {
                             alert = .deleteLegacyDatabase
-                        } label: {
-                            Text("Delete old database")
                         }
                     }
                 }

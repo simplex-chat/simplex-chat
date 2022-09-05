@@ -185,6 +185,14 @@ func apiDeleteStorage() async throws {
     try await sendCommandOkResp(.apiDeleteStorage)
 }
 
+func apiEncryptStorage(_ dbKey: String) async throws {
+    try await sendCommandOkResp(.apiEncryptStorage(dbKey: dbKey))
+}
+
+func apiDecryptStorage() async throws {
+    try await sendCommandOkResp(.apiDecryptStorage)
+}
+
 func apiGetChats() throws -> [ChatData] {
     let r = chatSendCmdSync(.apiGetChats)
     if case let .apiChats(chats) = r { return chats }
@@ -656,20 +664,18 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
-    do {
-        let m = ChatModel.shared
-        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-        try apiSetIncognito(incognito: incognitoGroupDefault.get())
-        m.currentUser = try apiGetActiveUser()
-        if m.currentUser == nil {
-            m.onboardingStage = .step1_SimpleXInfo
-        } else if start {
-            try startChat()
-        } else {
-            m.chatRunning = false
-        }
-    } catch {
-        fatalError("Failed to initialize chat controller or database: \(responseError(error))")
+    let m = ChatModel.shared
+    (m.chatDbKey, m.chatDbStatus) = migrateChatDatabase()
+    if  m.chatDbStatus != .ok { return }
+    try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try apiSetIncognito(incognito: incognitoGroupDefault.get())
+    m.currentUser = try apiGetActiveUser()
+    if m.currentUser == nil {
+        m.onboardingStage = .step1_SimpleXInfo
+    } else if start {
+        try startChat()
+    } else {
+        m.chatRunning = false
     }
 }
 
