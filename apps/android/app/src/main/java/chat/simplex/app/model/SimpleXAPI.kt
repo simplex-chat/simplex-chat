@@ -949,7 +949,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
       appPrefs.backgroundServiceNoticeShown.set(true)
       appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && mode != NotificationsMode.OFF) {
+    } else if (!isIgnoringBatteryOptimizations(appContext) && mode == NotificationsMode.SERVICE) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
