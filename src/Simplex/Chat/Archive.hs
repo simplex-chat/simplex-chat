@@ -20,7 +20,7 @@ import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString)
-import Simplex.Messaging.Util (ifM, unlessM, whenM)
+import Simplex.Messaging.Util (unlessM, whenM)
 import System.FilePath
 import UnliftIO.Directory
 import UnliftIO.Exception (SomeException, bracket, catch)
