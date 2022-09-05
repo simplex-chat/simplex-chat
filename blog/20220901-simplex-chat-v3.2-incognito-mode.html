@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimpleX Chat v3.2 is released</title>
+  <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+  <link href="/css/tailwind.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/blogs.css" />
+  <link rel="stylesheet" href="/css/blog.css" />
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+<body class="sm:bg-gray-100">
+  <header>
+    <nav class="container">
+        <div class="flex items-center gap-[16px] h-full">
+            <a href="/">
+                <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+            </a>
+
+            <div class="hidden lg:flex gap-[16px]">
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium white-paper-nav-btn"
+                    href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                    target="_blank">Whitepaper</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium comparison-nav-btn"
+                    href="/#comparison">Comparison</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium blog-nav-btn" href="/blog">Blog</a>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <div class="nav__buttons">
+                <div class="github">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="donate d-none-576">
+                    <a href="https://opencollective.com/simplex-chat" target="_blank">
+                        <span class="button">Donate</span></a>
+                </div>
+            </div>
+
+            <div class="toggle self-stretch">
+                <label class="toggle-btn"><span></span></i></label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="w-full fixed top-[60px] z-[99] bg-[#fbd561] mobile-nav">
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 white-paper-nav-btn"
+            href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 comparison-nav-btn"
+            href="/#comparison">Comparison</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 blog-nav-btn"
+            href="/blog">Blog</a>
+    </div>
+</header>
+
+<script>
+    const toggleBtn = document.querySelector(".toggle-btn")
+
+    toggleBtn.addEventListener("click", () => {
+        if (toggleBtn.classList.contains("active-toggle-btn")) {
+            console.log("unchecked")
+            document.querySelector(".mobile-nav").classList.remove("mobile-nav-active")
+            toggleBtn.classList.remove("active-toggle-btn")
+        } else {
+            console.log("checked")
+            document.querySelector(".mobile-nav").classList.add("mobile-nav-active")
+            toggleBtn.classList.add("active-toggle-btn")
+        }
+    })
+</script>
+
+<style>
+    header {
+        overflow: hidden;
+    }
+
+    /* ====== NAV TOGGLE BUTTON ====== */
+    .toggle {
+        display: none;
+    }
+
+    .toggle-btn {
+        height: 100%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toggle-btn span {
+        width: 20px;
+        height: 2px;
+        background-color: #062d56;
+        position: relative;
+    }
+
+    .toggle-btn span::after,
+    .toggle-btn span::before {
+        content: "";
+        width: 100%;
+        height: 100%;
+        background-color: #062d56;
+        position: absolute;
+        left: 0;
+    }
+
+    span::before {
+        top: -8px;
+    }
+
+    span::after {
+        top: 8px;
+    }
+
+    /* ====== Styles Applied AFTER the CLICK of TOGGLE BUTTON ====== */
+    .active-toggle-btn span {
+        background-color: transparent;
+    }
+
+    .active-toggle-btn span::before {
+        top: 0;
+        transform: rotate(45deg);
+        background-color: #062d56;
+    }
+
+    .active-toggle-btn span::after {
+        top: 0;
+        transform: rotate(-45deg);
+        background-color: #062d56;
+    }
+
+    .mobile-nav {
+        display: none;
+        transform: translateX(-100%);
+        transition: transform 0.5s ease-out;
+    }
+
+    .mobile-nav-active {
+        display: block;
+        transform: translateX(0%);
+        transition: transform 0.5s cubic-bezier(0.02, 0.48, 0.59, 1.48);
+    }
+
+    @media (max-width: 1024px) {
+        .toggle {
+            display: inline-block;
+        }
+    }
+</style>
+
+  <section class="container">
+    <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20"><h1 id="simplex-chat-v32-is-released" tabindex="-1">SimpleX Chat v3.2 is released</h1>
+<p><strong>Published:</strong> Sep 1, 2022</p>
+<h2 id="whats-new" tabindex="-1">What's new</h2>
+<ul>
+<li><a href="#incognito-mode">Incognito mode</a></li>
+<li><a href="#assign-names-to-your-contacts">assign names to your contacts</a></li>
+<li><a href="#using-onion-server-addresses-with-tor">use .onion server addresses with Tor</a></li>
+<li><a href="#endless-scrolling-and-search-in-chats">endless scrolling and search in chats</a></li>
+<li><a href="#choose-accent-color-and-dark-mode">choose accent color and dark mode</a></li>
+<li>disable notifications per contact / group</li>
+<li>on Android:
+<ul>
+<li>swipe to reply</li>
+<li>reduced APK size for direct download and in F-Droid repo from 200 to 50Mb!</li>
+</ul>
+</li>
+</ul>
+<p><a href="#we-ask-you-to-help-us-pay-for-3rd-party-security-audit">Implementation audit is arranged for October</a>!</p>
+<h3 id="incognito-mode" tabindex="-1">Incognito mode</h3>
+<p><img src="./images/20220901-incognito1.png" width="330"> <img src="./images/20220901-incognito2.png" width="330"> <img src="./images/20220901-incognito3.png" width="330"></p>
+<p><em>SimpleX is already private, so why do we need an incognito mode</em>, you may ask.</p>
+<p>You indeed can choose a pseudonym as your main profile name, but there are several problems:</p>
+<ul>
+<li>many users want to have their real name as their main profile, so that their friends recognise them. SimpleX objective is to provide anonymity from the network operators, but not necessarily from your contacts.</li>
+<li>even if you choose a pseudonym, it would be used for all your contacts. And if two of them meet, while they cannot prove they are talking to the same person, as they use different addresses in SimpleX network to send you the messages, they could <em>suspect it</em>.</li>
+<li>any pseudonym you manually choose leaks some information about you, as it's not really random.</li>
+</ul>
+<p>You could also use multiple chat profiles - currently you can only switch between them via export/import, we will make it easier very soon! But there are problems with multiple profiles too:</p>
+<ul>
+<li>if you make many anonymous connections, each in its own user profile, you would end up having too many profiles - it is very inconvenient to manage.</li>
+<li>sometimes, as your relationship with your contact evolves, you may want to share your main profile with them and have them among your friends - multiple profiles don't make it possible.</li>
+</ul>
+<p>So, the new Incognito mode allows having a new random name shared with each new contact, while having them all in the same user profile, and without the hassle of managing it manually. It's like a private mode in the browsers, where you can temporarily enable it when you connect to somebody you don't trust, and then disable it when connecting to the friend who knows you. It can be turned on via the app settings - see the pictures.</p>
+<p>I don't know any other messenger with this feature, and I always wanted to have this mode, so we are really looking forward to your feedback about it!</p>
+<h3 id="assign-names-to-your-contacts" tabindex="-1">Assign names to your contacts</h3>
+<p>You can now change the name under which your contacts appear in the chats. This is particularly useful when somebody connected to you using a random name – you can change it to be related to the context of the connection.</p>
+<h3 id="using-onion-server-addresses-with-tor" tabindex="-1">Using .onion server addresses with Tor</h3>
+<p><img src="./images/20220901-onion1.png" width="330">   <img src="./images/20220901-onion2.png" width="330"></p>
+<p>We have released support for using SOCKS proxy to access messaging servers via Tor, but previously the servers were still available via their public Internet addresses. It means that while your IP address was protected from the server, the whole Tor circuit could have been observed by some actors, and for some communication scenarios it is not desirable.</p>
+<p>This release adds support for servers with multiple hostnames - all servers provided by SimpleX Chat now have dual addresses (one public and one .onion), and you can have your own servers available via two addresses as well - all you have to do is to install Tor client on your server and register its address with Tor. If you server has both public and .onion address, it is not really hidden, so you should enable HiddenServiceSingleHopMode to reduce the latency of connection - it protects anonymity of the people who connect to the server, but not of the server itself. The server address would include both its public and onion address, as you can see in the server addresses in the app (in the contacts pages) - you should use the same format for the addresses of your servers.</p>
+<p>Both android and iOS app allow managing whether .onion addresses are used, and you can also enforce using .onion addresses - in this case the app will not connect to the server unless one of its hostname is .onion address. On Android, .onion addresses are used by default when SOCKS proxy is enabled.</p>
+<h3 id="endless-scrolling-and-search-in-chats" tabindex="-1">Endless scrolling and search in chats</h3>
+<p>Now you can access the full chat history via the app - it's embarrassing how long it took us to add it! And you can search the messages as well.</p>
+<h3 id="choose-accent-color-and-dark-mode" tabindex="-1">Choose accent color and dark mode</h3>
+<p>Many of you said that blue is the worst possible color, so you can now make the app buttons and links look like you want! My favourite colours are green and orange.</p>
+<p>And you can choose dark or light mode independently of the system settings.</p>
+<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="./20220511-simplex-chat-v2-images-files.md#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="../README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<h2 id="we-ask-you-to-help-us-pay-for-3rd-party-security-audit" tabindex="-1">We ask you to help us pay for 3rd party security audit</h2>
+<p>Our great news is that we have already signed the agreement and paid for the security audit!</p>
+<p>It is planned in October, and if there are no major issues we will publish this report straight away, otherwise - once we fix them.</p>
+<p>This is a major expense for use - over $20,000 - I would really appreciate if you could help us cover some part of this cost with the donations.</p>
+<p>Our promise to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We will be establishing a legal framework this year to ensure that it doesn't change if the ownership of SimpleX Chat Ltd changes at any future point.</p>
+<p>Please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.</p>
+<p>It is possible to donate via:</p>
+<ul>
+<li><a href="https://github.com/sponsors/simplex-chat">GitHub</a>: it is commission-free for us.</li>
+<li><a href="https://opencollective.com/simplex-chat">OpenCollective</a>: it also accepts donations in crypto-currencies, but charges a commission.</li>
+<li>Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt</li>
+</ul>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
+</div>
+  </section>
+  <footer>
+    <div class="container">
+        <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+        <p class="copyright">
+            &#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                    src="/img/icons/github.svg" /></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                    src="/img/icons/reddit.svg" /></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                    src="/img/icons/twitter.svg" /></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                    src="/img/icons/linkedin.svg" /></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg" /></a>
+        </p>
+        <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+                data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+        </div>
+    </div>
+</footer>
+
+  <script src="/js/article.js"></script>
+</body>
+
+</html>
