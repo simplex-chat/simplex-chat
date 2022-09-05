@@ -2,7 +2,9 @@ package chat.simplex.app.views.usersettings
 
 import SectionDivider
 import SectionItemView
+import SectionItemWithValue
 import SectionView
+import SectionViewSelectable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -71,6 +73,7 @@ fun NetworkAndServersView(
       }
     },
     useOnion = {
+      if (onionHosts.value == it) return@NetworkAndServersLayout
       val prevValue = onionHosts.value
       onionHosts.value = it
       updateNetworkSettingsDialog(onDismiss = {
@@ -117,9 +120,7 @@ fun NetworkAndServersView(
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
       }
       SectionDivider()
-      SectionItemView {
-        UseOnionHosts(onionHosts, networkUseSocksProxy, useOnion)
-      }
+      UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
@@ -161,103 +162,43 @@ fun UseSocksProxySwitch(
 }
 
 @Composable
-private fun UseOnionHosts(onionHosts: MutableState<OnionHosts>, enabled: State<Boolean>, useOnion: (OnionHosts) -> Unit) {
+private fun UseOnionHosts(
+  onionHosts: MutableState<OnionHosts>,
+  enabled: State<Boolean>,
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  useOnion: (OnionHosts) -> Unit,
+) {
   val values = remember {
     OnionHosts.values().map {
       when (it) {
-        OnionHosts.NEVER -> OnionHosts.NEVER to generalGetString(R.string.network_use_onion_hosts_no)
-        OnionHosts.PREFER -> OnionHosts.PREFER to generalGetString(R.string.network_use_onion_hosts_prefer)
-        OnionHosts.REQUIRED -> OnionHosts.REQUIRED to generalGetString(R.string.network_use_onion_hosts_required)
+        OnionHosts.NEVER -> ValueTitleDesc(OnionHosts.NEVER, generalGetString(R.string.network_use_onion_hosts_no), generalGetString(R.string.network_use_onion_hosts_no_desc))
+        OnionHosts.PREFER -> ValueTitleDesc(OnionHosts.PREFER, generalGetString(R.string.network_use_onion_hosts_prefer), generalGetString(R.string.network_use_onion_hosts_prefer_desc))
+        OnionHosts.REQUIRED -> ValueTitleDesc(OnionHosts.REQUIRED, generalGetString(R.string.network_use_onion_hosts_required), generalGetString(R.string.network_use_onion_hosts_required_desc))
       }
     }
   }
-  ExposedDropDownSettingRow(
+  val onSelected = showSettingsModal {
+    Column(
+      Modifier.fillMaxWidth(),
+      horizontalAlignment = Alignment.Start,
+    ) {
+      Text(
+        stringResource(R.string.network_use_onion_hosts),
+        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
+        style = MaterialTheme.typography.h1
+      )
+      SectionViewSelectable(null, onionHosts, values, useOnion)
+    }
+  }
+
+  SectionItemWithValue(
     generalGetString(R.string.network_use_onion_hosts),
-    values,
     onionHosts,
+    values,
     icon = Icons.Outlined.Security,
     enabled = enabled,
-    onSelected = useOnion
+    onSelected = onSelected
   )
-}
-
-@Composable
-fun <T> ExposedDropDownSettingRow(
-  title: String,
-  values: List<Pair<T, String>>,
-  selection: State<T>,
-  label: String? = null,
-  icon: ImageVector? = null,
-  iconTint: Color = HighOrLowlight,
-  enabled: State<Boolean> = mutableStateOf(true),
-  onSelected: (T) -> Unit
-) {
-  Row(
-    Modifier.fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    if (icon != null) {
-      Icon(
-        icon,
-        "",
-        Modifier.padding(end = 8.dp),
-        tint = iconTint
-      )
-    }
-    Text(title, color = if (enabled.value) Color.Unspecified else HighOrLowlight)
-
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-
-    ExposedDropdownMenuBox(
-      expanded = expanded,
-      onExpandedChange = {
-        expanded = !expanded && enabled.value
-      }
-    ) {
-      Row(
-        Modifier.padding(start = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.End
-      ) {
-        Text(
-          values.first { it.first == selection.value }.second + (if (label != null) " $label" else ""),
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          color = HighOrLowlight
-        )
-        Spacer(Modifier.size(12.dp))
-        Icon(
-          if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
-          generalGetString(R.string.icon_descr_more_button),
-          tint = HighOrLowlight
-        )
-      }
-      ExposedDropdownMenu(
-        modifier = Modifier.widthIn(min = 200.dp),
-        expanded = expanded,
-        onDismissRequest = {
-          expanded = false
-        }
-      ) {
-        values.forEach { selectionOption ->
-          DropdownMenuItem(
-            onClick = {
-              onSelected(selectionOption.first)
-              expanded = false
-            }
-          ) {
-            Text(
-              selectionOption.second + (if (label != null) " $label" else ""),
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
-            )
-          }
-        }
-      }
-    }
-  }
 }
 
 private fun updateNetworkSettingsDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
@@ -267,6 +208,7 @@ private fun updateNetworkSettingsDialog(onDismiss: () -> Unit, onConfirm: () -> 
     confirmText = generalGetString(R.string.update_network_settings_confirmation),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
+    onDismissRequest = onDismiss
   )
 }
 

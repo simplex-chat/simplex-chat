@@ -301,6 +301,9 @@
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
     <string name="network_use_onion_hosts_required">Обязательно</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion хосты используются, если возможно.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
+    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.</string>
     <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->

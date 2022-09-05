@@ -305,6 +305,9 @@
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
   <string name="network_use_onion_hosts_required">Required</string>
+  <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
+  <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
+  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.</string>
   <string name="appearance_settings">Appearance</string>
 
   <!-- Address Items - UserAddressView.kt -->

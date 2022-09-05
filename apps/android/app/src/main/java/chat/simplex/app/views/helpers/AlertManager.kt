@@ -47,12 +47,13 @@ class AlertManager {
     onConfirm: (() -> Unit)? = null,
     dismissText: String = generalGetString(R.string.cancel_verb),
     onDismiss: (() -> Unit)? = null,
+    onDismissRequest: (() -> Unit)? = null,
     destructive: Boolean = false
   ) {
     val alertText: (@Composable () -> Unit)? = if (text == null) null else { -> Text(text) }
     showAlert {
       AlertDialog(
-        onDismissRequest = this::hideAlert,
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = { Text(title) },
         text = alertText,
         confirmButton = {
