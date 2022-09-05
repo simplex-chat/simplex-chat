@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX Chat v3.2 is released"
+date: 2022-09-01
+permalink: "/blog/20220901-simplex-chat-v3.2-incognito-mode.html"
+---
+
 # SimpleX Chat v3.2 is released
 
 **Published:** Sep 1, 2022
