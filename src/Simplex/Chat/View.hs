@@ -933,7 +933,8 @@ viewChatError = \case
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
-    DBENotEncrypted -> ["error: chat database is not encrypted"]
+    DBErrorEncrypted -> ["error: chat database is already encrypted"]
+    DBErrorPlaintext -> ["error: chat database is not encrypted"]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH ->
