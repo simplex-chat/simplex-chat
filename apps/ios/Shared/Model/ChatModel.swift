@@ -18,7 +18,7 @@ final class ChatModel: ObservableObject {
     @Published var currentUser: User?
     @Published var chatRunning: Bool?
     @Published var chatDbChanged = false
-    @Published var chatDbKey: String = ""
+    @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
     // list of chat "previews"
     @Published var chats: [Chat] = []

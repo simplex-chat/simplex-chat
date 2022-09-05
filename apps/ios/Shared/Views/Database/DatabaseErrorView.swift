@@ -13,23 +13,34 @@ struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
     var status: DBMigrationResult
     @State private var dbKey = ""
+    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             switch status {
             case let .errorNotADatabase(dbFile):
-                Text("Wrong database password")
-                    .font(.title)
-                Text("Database password is different from saved in the keychain, or database file is invalid")
-                TextField("Enter database password", text: $dbKey)
-                    .disableAutocorrection(true)
-                    .autocapitalization(.none)
-                Button("Save password") {
-                    _ = setDatabaseKey(dbKey)
-                    do {
-                        try initializeChat(start: m.v3DBMigration.startChat)
-                    } catch let error {
-                        logger.error("initializeChat \(responseError(error))")
+                if useKeychain {
+                    Text("Wrong database passphrase").font(.title)
+                    Text("Database passphrase is different from saved in the keychain.")
+                    DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
+                    Button("Save passphrase and open chat") {
+                        _ = setDatabaseKey(dbKey)
+                        do {
+                            try initializeChat(start: m.v3DBMigration.startChat)
+                        } catch let error {
+                            logger.error("initializeChat \(responseError(error))")
+                        }
+                    }
+                } else {
+                    Text("Encrypted database").font(.title)
+                    Text("Database passphrase is required to open chat.")
+                    DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
+                    Button("Open chat") {
+                        do {
+                            try initializeChat(start: m.v3DBMigration.startChat)
+                        } catch let error {
+                            logger.error("initializeChat \(responseError(error))")
+                        }
                     }
                 }
                 Spacer()

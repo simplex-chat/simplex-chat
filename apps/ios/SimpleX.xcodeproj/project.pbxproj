@@ -63,7 +63,6 @@
 		5C9C2DA7289957AE00CC63B1 /* AdvancedNetworkSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */; };
 		5C9C2DA92899DA6F00CC63B1 /* NetworkAndServers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */; };
 		5C9CC7A928C532AB00BEF955 /* DatabaseErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */; };
-		5C9CC7AB28C5440800BEF955 /* ChangeDBPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9CC7AA28C5440800BEF955 /* ChangeDBPasswordView.swift */; };
 		5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */; };
 		5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9D13A2282187BB00AB8B43 /* WebRTC.swift */; };
 		5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */; };
@@ -253,7 +252,6 @@
 		5C9C2DA6289957AE00CC63B1 /* AdvancedNetworkSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedNetworkSettings.swift; sourceTree = "<group>"; };
 		5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkAndServers.swift; sourceTree = "<group>"; };
 		5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseErrorView.swift; sourceTree = "<group>"; };
-		5C9CC7AA28C5440800BEF955 /* ChangeDBPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeDBPasswordView.swift; sourceTree = "<group>"; };
 		5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseEncryptionView.swift; sourceTree = "<group>"; };
 		5C9D13A2282187BB00AB8B43 /* WebRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTC.swift; sourceTree = "<group>"; };
 		5C9FD96A27A56D4D0075386C /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
@@ -652,7 +650,6 @@
 				5CFA59CF286477B400863A68 /* ChatArchiveView.swift */,
 				5CFA59C32860BC6200863A68 /* MigrateToAppGroupView.swift */,
 				5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */,
-				5C9CC7AA28C5440800BEF955 /* ChangeDBPasswordView.swift */,
 				5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */,
 			);
 			path = Database;
@@ -913,7 +910,6 @@
 				646BB38E283FDB6D001CE359 /* LocalAuthenticationUtils.swift in Sources */,
 				5C7505A227B65FDB00BE3227 /* CIMetaView.swift in Sources */,
 				5C35CFC827B2782E00FB6C6D /* BGManager.swift in Sources */,
-				5C9CC7AB28C5440800BEF955 /* ChangeDBPasswordView.swift in Sources */,
 				5C2E260F27A30FDC00F70299 /* ChatView.swift in Sources */,
 				5C2E260B27A30CFA00F70299 /* ChatListView.swift in Sources */,
 				6442E0BA287F169300CEC0F9 /* AddGroupView.swift in Sources */,

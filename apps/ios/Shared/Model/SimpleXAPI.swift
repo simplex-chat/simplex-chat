@@ -94,7 +94,7 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
     DispatchQueue.main.async {
-        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
     }
     return resp
@@ -185,12 +185,8 @@ func apiDeleteStorage() async throws {
     try await sendCommandOkResp(.apiDeleteStorage)
 }
 
-func apiEncryptStorage(_ dbKey: String) async throws {
-    try await sendCommandOkResp(.apiEncryptStorage(dbKey: dbKey))
-}
-
-func apiDecryptStorage() async throws {
-    try await sendCommandOkResp(.apiDecryptStorage)
+func apiStorageEncryption(currentKey: String = "", newKey: String = "") async throws {
+    try await sendCommandOkResp(.apiStorageEncryption(config: DBEncryptionConfig(currentKey: currentKey, newKey: newKey)))
 }
 
 func apiGetChats() throws -> [ChatData] {
@@ -665,7 +661,7 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 func initializeChat(start: Bool) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbKey, m.chatDbStatus) = migrateChatDatabase()
+    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase()
     if  m.chatDbStatus != .ok { return }
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())

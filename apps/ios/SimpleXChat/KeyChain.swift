@@ -13,12 +13,16 @@ private let ACCESS_POLICY: CFString = kSecAttrAccessibleAfterFirstUnlockThisDevi
 private let ACCESS_GROUP: String = "5NN7GUYB6T.chat.simplex.app"
 private let DATABASE_PASSWORD_ITEM: String = "databasePassword"
 
-func getDatabaseKey() -> String? {
+public func getDatabaseKey() -> String? {
     getItemString(forKey: DATABASE_PASSWORD_ITEM)
 }
 
 public func setDatabaseKey(_ key: String) -> Bool {
     setItemString(key, forKey: DATABASE_PASSWORD_ITEM)
+}
+
+public func removeDatabaseKey() -> Bool {
+    true
 }
 
 func randomDatabasePassword() -> String {
