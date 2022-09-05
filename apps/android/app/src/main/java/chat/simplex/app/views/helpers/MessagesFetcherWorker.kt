@@ -13,7 +13,7 @@ object MessagesFetcherWorker {
 
   fun scheduleWork(intervalSec: Int = 600, durationSec: Int = 10) {
     val initialDelaySec = intervalSec.toLong()
-    Log.d(TAG, "Scheduling work to run at ${Date(System.currentTimeMillis() + initialDelaySec * 1000)} for $durationSec sec")
+    Log.d(TAG, "Worker: scheduling work to run at ${Date(System.currentTimeMillis() + initialDelaySec * 1000)} for $durationSec sec")
     val periodicWorkRequest = OneTimeWorkRequest.Builder(MessagesFetcherWork::class.java)
       .setInitialDelay(initialDelaySec, TimeUnit.SECONDS)
       .setInputData(
@@ -25,7 +25,6 @@ object MessagesFetcherWorker {
       .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
       .build()
 
-    cancelAll()
     WorkManager.getInstance(SimplexApp.context).enqueueUniqueWork(UNIQUE_WORK_TAG, ExistingWorkPolicy.REPLACE, periodicWorkRequest)
   }
 
@@ -52,21 +51,20 @@ class MessagesFetcherWork(
     val durationSeconds = inputData.getInt(INPUT_DATA_DURATION, 10)
     try {
       withTimeout(durationSeconds * 1000L) {
-        try {
-          val chatController = (applicationContext as SimplexApp).chatController
-          val user = chatController.apiGetActiveUser() ?: return@withTimeout
-          Log.w(TAG, "Starting work")
-          chatController.startChat(user)
-          while (!isStopped) {
-            delay(100)
-          }
-        } catch (e: TimeoutCancellationException) {
-          Log.d(TAG, "Work is done")
-        } catch (e: Exception) {
-          Log.e(TAG, e.stackTraceToString())
+        val chatController = (applicationContext as SimplexApp).chatController
+        val user = chatController.apiGetActiveUser() ?: return@withTimeout
+        Log.w(TAG, "Worker: starting work")
+        chatController.startChat(user)
+        while (!isStopped) {
+          delay(500)
         }
       }
-    } catch (_: TimeoutCancellationException) {
+    } catch (_: TimeoutCancellationException) { // When timeout happens
+      Log.d(TAG, "Worker: work is done")
+    } catch (_: CancellationException) { // When user opens the app while the worker is still working
+      Log.d(TAG, "Worker: interrupted")
+    } catch (e: Exception) {
+      Log.d(TAG, "Worker: unexpected exception: ${e.stackTraceToString()}")
     }
 
     reschedule()
