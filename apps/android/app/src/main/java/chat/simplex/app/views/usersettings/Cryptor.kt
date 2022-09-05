@@ -31,6 +31,8 @@ internal class Cryptor {
   }
 
   private fun createSecretKey(alias: String): SecretKey {
+    if (keyStore.containsAlias(alias))
+      return (keyStore.getEntry(alias, null) as KeyStore.SecretKeyEntry).secretKey
     val keyGenerator: KeyGenerator = KeyGenerator.getInstance(KEY_ALGORITHM, "AndroidKeyStore")
     keyGenerator.init(
       KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
