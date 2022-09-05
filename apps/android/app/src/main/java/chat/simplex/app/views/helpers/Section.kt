@@ -127,7 +127,6 @@ fun <T> SectionItemWithValue(
         overflow = TextOverflow.Ellipsis,
         color = HighOrLowlight
       )
-      Spacer(Modifier.size(12.dp))
     }
   }
 }
