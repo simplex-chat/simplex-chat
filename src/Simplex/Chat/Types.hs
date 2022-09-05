@@ -9,6 +9,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -213,6 +214,9 @@ instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOpt
 
 defaultChatSettings :: ChatSettings
 defaultChatSettings = ChatSettings {enableNtfs = True}
+
+pattern DisableNtfs :: ChatSettings
+pattern DisableNtfs = ChatSettings {enableNtfs = False}
 
 data Profile = Profile
   { displayName :: ContactName,
