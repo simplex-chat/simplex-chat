@@ -26,6 +26,10 @@ let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
+let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
+let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
+let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
+let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -36,7 +40,11 @@ let appDefaults: [String: Any] = [
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
-    DEFAULT_DEVELOPER_TOOLS: false
+    DEFAULT_DEVELOPER_TOOLS: false,
+    DEFAULT_ACCENT_COLOR_RED: 0.000,
+    DEFAULT_ACCENT_COLOR_GREEN: 0.533,
+    DEFAULT_ACCENT_COLOR_BLUE: 1.000,
+    DEFAULT_USER_INTERFACE_STYLE: 0
 ]
 
 private var indent: CGFloat = 36
@@ -52,6 +60,7 @@ struct SettingsView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @State private var settingsSheet: SettingsSheet?
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -67,6 +76,9 @@ struct SettingsView: View {
                         .padding(.leading, -8)
                     }
                     .disabled(chatModel.chatRunning != true)
+
+                    incognitoRow()
+                        .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
                         UserAddress()
@@ -173,7 +185,6 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    .disabled(chatModel.chatRunning != true)
                     settingsRow("gear") {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
@@ -196,9 +207,49 @@ struct SettingsView: View {
             }
             .navigationTitle("Your settings")
         }
+        .sheet(item: $settingsSheet) { sheet in
+            switch sheet {
+            case .incognitoInfo: IncognitoHelp()
+            }
+        }
     }
 
-    enum NotificationAlert {
+    @ViewBuilder private func incognitoRow() -> some View {
+        ZStack(alignment: .leading) {
+            Image(systemName: chatModel.incognito ? "theatermasks.fill" : "theatermasks")
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+                .foregroundColor(chatModel.incognito ? Color.indigo : .secondary)
+            Toggle(isOn: $chatModel.incognito) {
+                HStack {
+                    Text("Incognito")
+                    Spacer().frame(width: 4)
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.accentColor)
+                        .font(.system(size: 14))
+                }
+                .onTapGesture {
+                    settingsSheet = .incognitoInfo
+                }
+            }
+            .onChange(of: chatModel.incognito) { incognito in
+                incognitoGroupDefault.set(incognito)
+                do {
+                    try apiSetIncognito(incognito: incognito)
+                } catch {
+                    logger.error("apiSetIncognito: cannot set incognito \(responseError(error))")
+                }
+            }
+            .padding(.leading, indent)
+        }
+    }
+
+    private enum SettingsSheet: Identifiable {
+        case incognitoInfo
+
+        var id: SettingsSheet { get { self } }
+    }
+
+    private enum NotificationAlert {
         case enable
         case error(LocalizedStringKey, String)
     }

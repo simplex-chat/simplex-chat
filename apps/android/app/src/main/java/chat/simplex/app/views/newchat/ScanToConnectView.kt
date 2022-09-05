@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,6 +21,7 @@ import chat.simplex.app.views.helpers.*
 fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   ConnectContactLayout(
+    chatModelIncognito = chatModel.incognito.value,
     qrCodeScanner = {
       QRCodeScanner { connReqUri ->
         try {
@@ -67,21 +67,22 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
 }
 
 @Composable
-fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Unit) {
+fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable () -> Unit, close: () -> Unit) {
   ModalView(close) {
     Column(
-      horizontalAlignment = Alignment.CenterHorizontally,
+      Modifier.padding(bottom = 16.dp),
       verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       Text(
         generalGetString(R.string.scan_QR_code),
         style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier.padding(vertical = 5.dp)
       )
-      Text(
-        generalGetString(R.string.your_chat_profile_will_be_sent_to_your_contact),
-        style = MaterialTheme.typography.h3,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(bottom = 4.dp)
+      InfoAboutIncognito(
+        chatModelIncognito,
+        true,
+        generalGetString(R.string.incognito_random_profile_description),
+        generalGetString(R.string.your_profile_will_be_sent)
       )
       Box(
         Modifier
@@ -106,6 +107,7 @@ fun ConnectContactLayout(qrCodeScanner: @Composable () -> Unit, close: () -> Uni
 fun PreviewConnectContactLayout() {
   SimpleXTheme {
     ConnectContactLayout(
+      chatModelIncognito = false,
       qrCodeScanner = { Surface {} },
       close = {},
     )

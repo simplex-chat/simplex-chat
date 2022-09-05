@@ -64,6 +64,8 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   }
 
   fun notifyMessageReceived(cInfo: ChatInfo, cItem: ChatItem) {
+    if (!cInfo.ntfsEnabled) return
+
     notifyMessageReceived(chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 

@@ -14,6 +14,7 @@ struct ChatListView: View {
     // not really used in this view
     @State private var showSettings = false
     @State private var searchText = ""
+    @State private var selectedChat: ChatId?
 
     var body: some View {
         let v = NavigationView {
@@ -25,6 +26,7 @@ struct ChatListView: View {
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
+                selectedChat = chatModel.chatId
                 if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
                     chatModel.chatToTop = nil
                     chatModel.popChat(chatId)
@@ -44,6 +46,17 @@ struct ChatListView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     SettingsButton()
                 }
+                ToolbarItem(placement: .principal) {
+                    if (chatModel.incognito) {
+                        HStack {
+                            if (chatModel.chats.count > 8) {
+                                Text("Your chats").font(.headline)
+                                Spacer().frame(width: 16)
+                            }
+                            Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     switch chatModel.chatRunning {
                     case .some(true): NewChatButton()
@@ -52,6 +65,15 @@ struct ChatListView: View {
                     }
                 }
             }
+            .background(
+                NavigationLink(
+                    destination: chatView(selectedChat),
+                    isActive: Binding(
+                        get: { selectedChat != nil },
+                        set: { _, _ in selectedChat = nil }
+                    )
+                ) { EmptyView() }
+            )
         }
         .navigationViewStyle(.stack)
 
@@ -62,13 +84,28 @@ struct ChatListView: View {
         }
     }
 
+    @ViewBuilder private func chatView(_ chatId: ChatId?) -> some View {
+        if let chatId = chatId, let chat = chatModel.getChat(chatId) {
+            ChatView(chat: chat).onAppear {
+                loadChat(chat: chat)
+            }
+        }
+    }
+
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
         return s == ""
             ? chatModel.chats
-            : chatModel.chats.filter {
-                $0.chatInfo.chatType != .contactConnection &&
-                $0.chatInfo.chatViewName.localizedLowercase.contains(s)
+            : chatModel.chats.filter { chat in
+                let contains = chat.chatInfo.chatViewName.localizedLowercase.contains(s)
+                switch chat.chatInfo {
+                case let .direct(contact):
+                    return contains
+                    || contact.profile.displayName.localizedLowercase.contains(s)
+                    || contact.fullName.localizedLowercase.contains(s)
+                case .contactConnection: return false
+                default: return contains
+                }
             }
     }
 }

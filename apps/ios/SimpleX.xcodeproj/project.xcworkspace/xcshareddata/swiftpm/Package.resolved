@@ -8,6 +8,15 @@
         "revision" : "c27a66149b7483fe42e2ec6aad61d5c3fffe522d",
         "version" : "2.1.1"
       }
+    },
+    {
+      "identity" : "swiftui-introspect",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/siteline/SwiftUI-Introspect",
+      "state" : {
+        "revision" : "f2616860a41f9d9932da412a8978fec79c06fe24",
+        "version" : "0.1.4"
+      }
     }
   ],
   "version" : 2

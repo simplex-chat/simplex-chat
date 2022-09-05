@@ -10,10 +10,12 @@ import SwiftUI
 import SimpleXChat
 
 struct CIGroupInvitationView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
+    var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
 
     var body: some View {
@@ -29,10 +31,13 @@ struct CIGroupInvitationView: View {
                 Divider().frame(width: frameWidth)
 
                 if action {
-                    groupInvitationText().overlay(DetermineWidth())
-                    Text("Tap to join")
-                        .foregroundColor(.accentColor)
+                    groupInvitationText()
+                        .overlay(DetermineWidth())
+                    Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                        .foregroundColor(chatIncognito ? .indigo : .accentColor)
                         .font(.callout)
+                        .padding(.trailing, 60)
+                        .overlay(DetermineWidth())
                 } else {
                     groupInvitationText()
                         .padding(.trailing, 60)
@@ -52,17 +57,26 @@ struct CIGroupInvitationView: View {
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
 
         if action {
-            v.onTapGesture { acceptInvitation() }
+            v.onTapGesture {
+                joinGroup(groupInvitation.groupId)
+            }
         } else {
             v
         }
     }
 
     private func groupInfoView(_ action: Bool) -> some View {
-        HStack(alignment: .top) {
+        var color: Color
+        if action {
+            color = chatIncognito ? .indigo : .accentColor
+        } else {
+            color = Color(uiColor: .tertiaryLabel)
+        }
+        return HStack(alignment: .top) {
             ProfileImage(
+                imageStr: groupInvitation.groupProfile.image,
                 iconName: "person.2.circle.fill",
-                color: action ? .accentColor : Color(uiColor: .tertiaryLabel)
+                color: color
             )
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
@@ -92,13 +106,6 @@ struct CIGroupInvitationView: View {
             case .rejected: return "You rejected group invitation"
             case .expired: return "Group invitation expired"
             }
-        }
-    }
-
-    private func acceptInvitation() {
-        Task {
-            logger.debug("acceptInvitation")
-            await joinGroup(groupInvitation.groupId)
         }
     }
 }

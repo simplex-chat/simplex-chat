@@ -1,5 +1,6 @@
 package chat.simplex.app.views.chatlist
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,21 +8,22 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.ToolbarDark
-import chat.simplex.app.ui.theme.ToolbarLight
-import chat.simplex.app.views.helpers.AlertManager
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.Indigo
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.onboarding.MakeConnection
 import chat.simplex.app.views.usersettings.SettingsView
@@ -71,7 +73,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && scaffoldCtrl.expanded.value) scaffoldCtrl.collapse()
   }
+  var searchInList by rememberSaveable { mutableStateOf("") }
   BottomSheetScaffold(
+    topBar = { ChatListToolbar(chatModel, scaffoldCtrl, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldCtrl.state,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
@@ -84,10 +88,8 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           .fillMaxSize()
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListToolbar(scaffoldCtrl, stopped)
-        Divider()
         if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel)
+          ChatList(chatModel, search = searchInList)
         } else {
           MakeConnection(chatModel)
         }
@@ -105,58 +107,80 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 }
 
 @Composable
-fun ChatListToolbar(scaffoldCtrl: ScaffoldController, stopped: Boolean) {
-  Row(
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(52.dp)
-      .background(if (isSystemInDarkTheme()) ToolbarDark else ToolbarLight)
-      .padding(horizontal = 8.dp)
-  ) {
-    IconButton(onClick = { scaffoldCtrl.toggleDrawer() }) {
-      Icon(
-        Icons.Outlined.Menu,
-        stringResource(R.string.icon_descr_settings),
-        tint = MaterialTheme.colors.primary,
-        modifier = Modifier.padding(10.dp)
-      )
+fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+  var showSearch by rememberSaveable { mutableStateOf(false) }
+  val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
+  if (showSearch) {
+    BackHandler(onBack = hideSearchOnBack)
+  }
+  val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+  if (chatModel.chats.size >= 8) {
+    barButtons.add {
+      IconButton({ showSearch = true }) {
+        Icon(Icons.Outlined.Search, stringResource(android.R.string.search_go).capitalize(Locale.current), tint = MaterialTheme.colors.primary)
+      }
     }
-    Text(
-      stringResource(R.string.your_chats),
-      color = MaterialTheme.colors.onBackground,
-      fontWeight = FontWeight.SemiBold,
-      modifier = Modifier.padding(5.dp)
-    )
-    if (!stopped) {
+  }
+  if (!stopped) {
+    barButtons.add {
       IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
         Icon(
           Icons.Outlined.AddCircle,
           stringResource(R.string.add_contact),
           tint = MaterialTheme.colors.primary,
-          modifier = Modifier.padding(10.dp).size(26.dp)
         )
       }
-    } else {
-      IconButton(onClick = { AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_is_stopped_indication), generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)) }) {
+    }
+  } else {
+    barButtons.add {
+      IconButton(onClick = { AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_is_stopped_indication),
+        generalGetString(R.string.you_can_start_chat_via_setting_or_by_restarting_the_app)) }) {
         Icon(
           Icons.Filled.Report,
           generalGetString(R.string.chat_is_stopped_indication),
           tint = Color.Red,
-          modifier = Modifier.padding(10.dp)
         )
       }
     }
   }
+
+  DefaultTopAppBar(
+    navigationButton = { if (showSearch) NavigationButtonBack(hideSearchOnBack) else NavigationButtonMenu { scaffoldCtrl.toggleDrawer() } },
+    title = {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+          stringResource(R.string.your_chats),
+          color = MaterialTheme.colors.onBackground,
+          fontWeight = FontWeight.SemiBold,
+        )
+        if (chatModel.incognito.value) {
+          Icon(
+            Icons.Filled.TheaterComedy,
+            stringResource(R.string.incognito),
+            tint = Indigo,
+            modifier = Modifier.padding(10.dp).size(26.dp)
+          )
+        }
+      }
+    },
+    onTitleClick = null,
+    showSearch = showSearch,
+    onSearchValueChanged = onSearchValueChanged,
+    buttons = barButtons
+  )
+  Divider()
 }
 
 @Composable
-fun ChatList(chatModel: ChatModel) {
+fun ChatList(chatModel: ChatModel, search: String) {
+  val filter: (Chat) -> Boolean = { chat: Chat ->
+    chat.chatInfo.chatViewName.lowercase().contains(search.lowercase())
+  }
+  val chats by remember(search) { derivedStateOf { if (search.isEmpty()) chatModel.chats else chatModel.chats.filter(filter) } }
   LazyColumn(
     modifier = Modifier.fillMaxWidth()
   ) {
-    items(chatModel.chats) { chat ->
+    items(chats) { chat ->
       ChatListNavLinkView(chat, chatModel)
     }
   }

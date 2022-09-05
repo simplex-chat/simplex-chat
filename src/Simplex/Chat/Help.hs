@@ -18,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Simplex.Chat.Markdown
 import Simplex.Chat.Styled
-import Simplex.Chat.Types (Profile (..), User (..))
+import Simplex.Chat.Types (LocalProfile (..), User (..))
 import System.Console.ANSI.Types
 
 highlight :: Text -> Markdown
@@ -55,7 +55,7 @@ chatWelcome user =
       "Type " <> highlight "/help" <> " for usage info, " <> highlight "/welcome" <> " to show this message"
     ]
   where
-    User {profile = Profile {displayName, fullName}} = user
+    User {profile = LocalProfile {displayName, fullName}} = user
     userName = if T.null fullName then displayName else fullName
 
 chatHelpInfo :: [StyledString]
@@ -195,5 +195,7 @@ settingsInfo =
       indent <> highlight "/network                 " <> " - show / set network access options",
       indent <> highlight "/smp_servers             " <> " - show / set custom SMP servers",
       indent <> highlight "/info <contact>          " <> " - information about contact connection",
-      indent <> highlight "/info #<group> <member>  " <> " - information about member connection"
+      indent <> highlight "/info #<group> <member>  " <> " - information about member connection",
+      indent <> highlight "/(un)mute <contact>      " <> " - (un)mute contact, the last messages can be printed with /tail command",
+      indent <> highlight "/(un)mute #<group>       " <> " - (un)mute group"
     ]

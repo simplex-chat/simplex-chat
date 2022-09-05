@@ -1,5 +1,4 @@
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -31,7 +30,7 @@ fun ComposeFileView(fileName: String, cancelFile: () -> Unit, cancelEnabled: Boo
       Modifier
         .padding(start = 4.dp, end = 2.dp)
         .size(36.dp),
-      tint = if (isSystemInDarkTheme()) FileDark else FileLight
+      tint = if (isInDarkTheme()) FileDark else FileLight
     )
     Text(fileName)
     Spacer(Modifier.weight(1f))

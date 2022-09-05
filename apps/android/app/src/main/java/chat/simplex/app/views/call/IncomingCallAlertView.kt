@@ -45,16 +45,19 @@ fun IncomingCallAlertLayout(
   ignoreCall: () -> Unit,
   acceptCall: () -> Unit
 ) {
-  val color = if (isSystemInDarkTheme()) IncomingCallDark else IncomingCallLight
-  Column(Modifier.background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
+  val color = if (isInDarkTheme()) IncomingCallDark else IncomingCallLight
+  Column(Modifier.fillMaxWidth().background(color).padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 8.dp)) {
     IncomingCallInfo(invitation)
     Spacer(Modifier.height(8.dp))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
-      Spacer(Modifier.fillMaxWidth().weight(1f))
-      CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
-      CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
-      CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+      Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
+        ProfilePreview(profileOf = invitation.contact, size = 64.dp, color = Color.White)
+      }
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        CallButton(stringResource(R.string.reject), Icons.Filled.CallEnd, Color.Red, rejectCall)
+        CallButton(stringResource(R.string.ignore), Icons.Filled.Close, MaterialTheme.colors.primary, ignoreCall)
+        CallButton(stringResource(R.string.accept), Icons.Filled.Check, SimplexGreen, acceptCall)
+      }
     }
   }
 }

@@ -40,8 +40,9 @@ import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Protocol (CorrId, MsgFlags)
+import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import System.IO (Handle)
 import UnliftIO.STM
 
@@ -62,6 +63,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
+    hostEvents :: Bool,
     testView :: Bool
   }
 
@@ -86,7 +88,8 @@ data ChatController = ChatController
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
-    filesFolder :: TVar (Maybe FilePath) -- path to files folder for mobile apps
+    filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
+    incognitoMode :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -105,11 +108,12 @@ data ChatCommand
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetFilesFolder FilePath
+  | SetIncognito Bool
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIGetChats {pendingConnections :: Bool}
-  | APIGetChat ChatRef ChatPagination
+  | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
   | APISendMessage ChatRef ComposedMessage
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
@@ -129,6 +133,7 @@ data ChatCommand
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
+  | APISetContactAlias ContactId LocalAlias
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -146,8 +151,10 @@ data ChatCommand
   | SetUserSMPServers [SMPServer]
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | ChatHelp HelpSection
@@ -208,7 +215,7 @@ data ChatResponse
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats}
+  | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRNewChatItem {chatItem :: AChatItem}
   | CRChatItemStatusUpdated {chatItem :: AChatItem}
@@ -230,14 +237,14 @@ data ChatResponse
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
-  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact}
+  | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
   | CRVersionInfo {version :: String}
   | CRInvitation {connReqInvitation :: ConnReqInvitation}
   | CRSentConfirmation
-  | CRSentInvitation
+  | CRSentInvitation {customUserProfile :: Maybe Profile}
   | CRContactUpdated {fromContact :: Contact, toContact :: Contact}
   | CRContactsMerged {intoContact :: Contact, mergedContact :: Contact}
   | CRContactDeleted {contact :: Contact}
@@ -262,13 +269,16 @@ data ChatResponse
   | CRSndFileRcvCancelled {chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
+  | CRContactAliasUpdated {toContact :: Contact}
   | CRContactConnecting {contact :: Contact}
-  | CRContactConnected {contact :: Contact}
+  | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
+  | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
+  | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
   | CRReceivedGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, memberRole :: GroupMemberRole}
   | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
@@ -379,6 +389,8 @@ data ChatErrorType
   | CEContactNotReady {contact :: Contact}
   | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
+  | CEContactIncognitoCantInvite
+  | CEGroupIncognitoCantInvite
   | CEGroupContactRole {contactName :: ContactName}
   | CEGroupDuplicateMember {contactName :: ContactName}
   | CEGroupDuplicateMemberId

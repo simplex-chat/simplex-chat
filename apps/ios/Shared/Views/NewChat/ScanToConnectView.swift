@@ -10,6 +10,7 @@ import SwiftUI
 import CodeScanner
 
 struct ScanToConnectView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
 
     var body: some View {
@@ -17,8 +18,21 @@ struct ScanToConnectView: View {
             Text("Scan QR code")
                 .font(.title)
                 .padding(.vertical)
-            Text("Your chat profile will be sent to your contact")
+            if (chatModel.incognito) {
+                HStack {
+                    Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("A random profile will be sent to your contact").font(.footnote)
+                }
                 .padding(.bottom)
+            } else {
+                HStack {
+                    Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
+                    Spacer().frame(width: 8)
+                    Text("Your chat profile will be sent to your contact").font(.footnote)
+                }
+                .padding(.bottom)
+            }
             ZStack {
                 CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)

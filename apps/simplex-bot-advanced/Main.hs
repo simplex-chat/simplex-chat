@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -40,7 +39,7 @@ mySquaringBot _user cc = do
   race_ (forever $ void getLine) . forever $ do
     (_, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
-      CRContactConnected contact -> do
+      CRContactConnected contact _ -> do
         contactConnected contact
         void . sendMsg contact $ "Hello! I am a simple squaring bot - if you send me a number, I will calculate its square"
       CRNewChatItem (AChatItem _ SMDRcv (DirectChat contact) ChatItem {content}) -> do

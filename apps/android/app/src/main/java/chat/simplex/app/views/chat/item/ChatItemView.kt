@@ -35,6 +35,7 @@ fun ChatItemView(
   cxt: Context,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
+  chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -147,8 +148,8 @@ fun ChatItemView(
         is CIContent.SndCall -> CallItem(c.status, c.duration)
         is CIContent.RcvCall -> CallItem(c.status, c.duration)
         is CIContent.RcvIntegrityError -> IntegrityErrorItemView(cItem, showMember = showMember)
-        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
-        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup)
+        is CIContent.RcvGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
+        is CIContent.SndGroupInvitation -> CIGroupInvitationView(cItem, c.groupInvitation, c.memberRole, joinGroup = joinGroup, chatIncognito = cInfo.incognito)
         is CIContent.RcvGroupEventContent -> CIGroupEventView(cItem)
         is CIContent.SndGroupEventContent -> CIGroupEventView(cItem)
       }
@@ -164,7 +165,8 @@ fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Colo
         text,
         modifier = Modifier
           .fillMaxWidth()
-          .weight(1F),
+          .weight(1F)
+          .padding(end = 15.dp),
         color = color
       )
       Icon(icon, text, tint = color)
@@ -183,13 +185,13 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, deleteMessage: (Long, CIDeleteM
           .padding(horizontal = 8.dp, vertical = 2.dp),
         horizontalArrangement = Arrangement.End,
       ) {
-        Button(onClick = {
+        TextButton(onClick = {
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(stringResource(R.string.for_me_only)) }
         if (chatItem.meta.editable) {
           Spacer(Modifier.padding(horizontal = 4.dp))
-          Button(onClick = {
+          TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)
             AlertManager.shared.hideAlert()
           }) { Text(stringResource(R.string.for_everybody)) }
@@ -212,6 +214,7 @@ fun PreviewChatItemView() {
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
+      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
@@ -231,6 +234,7 @@ fun PreviewChatItemViewDeletedContent() {
       useLinkPreviews = true,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       cxt = LocalContext.current,
+      chatModelIncognito = false,
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},

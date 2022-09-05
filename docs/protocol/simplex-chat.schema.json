@@ -82,7 +82,7 @@
         "memberId": {"ref": "base64url"},
         "metadata": {
           "comment": "memberId must be present in all group message references, both for sent and received"
-        } 
+        }
       }
     },
     "fileInvitation": {
@@ -156,7 +156,7 @@
         "rtcExtraInfo": {
           "properties": {
             "rtcIceCandidates": {"type": "string"}
-          }          
+          }
         }
       }
     },
@@ -210,7 +210,7 @@
             "profile": {"ref": "profile"}
           }
         }
-      }   
+      }
     },
     "x.info.probe": {
       "properties": {
