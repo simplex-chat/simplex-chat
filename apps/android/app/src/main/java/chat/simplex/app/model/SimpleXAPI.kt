@@ -190,6 +190,8 @@ private const val MESSAGE_TIMEOUT: Int = 15_000_000
 open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
   private var receiverStarted = false
+  var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
+    private set
 
   init {
     chatModel.notificationsMode.value =
@@ -725,6 +727,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun processReceivedMsg(r: CR) {
+    lastMsgReceivedTimestamp = System.currentTimeMillis()
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {

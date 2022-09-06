@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 object MessagesFetcherWorker {
   private const val UNIQUE_WORK_TAG = BuildConfig.APPLICATION_ID + ".UNIQUE_MESSAGES_FETCHER"
 
-  fun scheduleWork(intervalSec: Int = 600, durationSec: Int = 10) {
+  fun scheduleWork(intervalSec: Int = 600, durationSec: Int = 60) {
     val initialDelaySec = intervalSec.toLong()
     Log.d(TAG, "Worker: scheduling work to run at ${Date(System.currentTimeMillis() + initialDelaySec * 1000)} for $durationSec sec")
     val periodicWorkRequest = OneTimeWorkRequest.Builder(MessagesFetcherWork::class.java)
@@ -41,6 +41,7 @@ class MessagesFetcherWork(
   companion object {
     const val INPUT_DATA_INTERVAL = "interval"
     const val INPUT_DATA_DURATION = "duration"
+    private const val WAIT_AFTER_LAST_MESSAGE: Long = 10_000
   }
 
   override suspend fun doWork(): Result {
@@ -49,19 +50,25 @@ class MessagesFetcherWork(
       reschedule()
       return Result.success()
     }
-    val durationSeconds = inputData.getInt(INPUT_DATA_DURATION, 10)
+    val durationSeconds = inputData.getInt(INPUT_DATA_DURATION, 60)
     try {
       withTimeout(durationSeconds * 1000L) {
         val chatController = (applicationContext as SimplexApp).chatController
         val user = chatController.apiGetActiveUser() ?: return@withTimeout
         Log.w(TAG, "Worker: starting work")
         chatController.startChat(user)
+        // Give some time to start receiving messages
+        delay(10_000)
         while (!isStopped) {
+          if (chatController.lastMsgReceivedTimestamp + WAIT_AFTER_LAST_MESSAGE < System.currentTimeMillis()) {
+            Log.d(TAG, "Worker: work is done")
+            break
+          }
           delay(500)
         }
       }
     } catch (_: TimeoutCancellationException) { // When timeout happens
-      Log.d(TAG, "Worker: work is done")
+      Log.d(TAG, "Worker: work is done (took $durationSeconds sec)")
     } catch (_: CancellationException) { // When user opens the app while the worker is still working
       Log.d(TAG, "Worker: interrupted")
     } catch (e: Exception) {
