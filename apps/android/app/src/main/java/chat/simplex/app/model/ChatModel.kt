@@ -163,6 +163,10 @@ class ChatModel(val controller: ChatController) {
       val pItem = chat.chatItems.lastOrNull()
       if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+        if (pItem.isRcvNew && !cItem.isRcvNew) {
+          // status changed from New to Read, update counter
+          decreaseCounterInChat(cInfo.id)
+        }
       }
       res = false
     } else {
@@ -249,6 +253,18 @@ class ChatModel(val controller: ChatController) {
       }
     }
     return markedRead
+  }
+
+  private fun decreaseCounterInChat(chatId: ChatId) {
+    val chatIndex = getChatIndex(chatId)
+    if (chatIndex == -1) return
+
+    val chat = chats[chatIndex]
+    chats[chatIndex] = chat.copy(
+      chatStats = chat.chatStats.copy(
+        unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0),
+      )
+    )
   }
 
 //  func popChat(_ id: String) {
