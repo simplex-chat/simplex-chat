@@ -80,15 +80,15 @@
   <string name="notifications_mode_periodic">Starts periodically</string>
   <string name="notifications_mode_service">Always on</string>
   <string name="notifications_mode_off_desc">App can receive notifications only when it\'s running, no background service will be started</string>
-  <string name="notifications_mode_periodic_desc">Checks new messages every 10 minutes for about 10 seconds, then stops</string>
-  <string name="notifications_mode_service_desc">Background service is always on. Means every new message will be shown as fast as possible</string>
+  <string name="notifications_mode_periodic_desc">Checks new messages every 10 minutes for up to 1 minute</string>
+  <string name="notifications_mode_service_desc">Background service is always running – notifications will be shown as soon as the messages are available.</string>
   <string name="notification_preview_mode_message">Message text</string>
   <string name="notification_preview_mode_contact">Contact name</string>
   <string name="notification_preview_mode_hidden">Hidden</string>
-  <string name="notification_preview_mode_message_desc">Show an author and a message</string>
-  <string name="notification_preview_mode_contact_desc">Show only an author without message</string>
-  <string name="notification_display_mode_hidden_desc">Hide an author and a message, show only the presence of the message</string>
-  <string name="notification_preview_somebody">Somebody</string>
+  <string name="notification_preview_mode_message_desc">Show contact and message</string>
+  <string name="notification_preview_mode_contact_desc">Show only contact</string>
+  <string name="notification_display_mode_hidden_desc">Hide contact and message</string>
+  <string name="notification_preview_somebody">Contact hidden:</string>
   <string name="notification_preview_new_message">new message</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->

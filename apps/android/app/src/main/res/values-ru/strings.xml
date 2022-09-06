@@ -63,7 +63,7 @@
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
     <string name="turn_off_battery_optimization">Для использования этой функции, пожалуйста, отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в следующем диалоге. Иначе уведомления будут выключены.</string>
-    <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений и периодические запросы новых сообщений выключены. Вы можете снова включить их через Настройки.</string>
+    <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
     <string name="periodic_notifications_desc">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение может периодически запускаться и получать новые сообщения. Это потребляет несколько процентов батареи в день.</string>
@@ -76,19 +76,19 @@
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Сервис уведомлений</string>
     <string name="settings_notification_preview_mode_title">Показывать уведомления</string>
-    <string name="notifications_mode_off">Включен только на переднем плане</string>
+    <string name="notifications_mode_off">Включен только когда приложение открыто</string>
     <string name="notifications_mode_periodic">Запускается периодически</string>
     <string name="notifications_mode_service">Всегда включен</string>
     <string name="notifications_mode_off_desc">Приложение может получить сообщение только тогда, когда запущено, в фоне сервис запускаться не будет</string>
-    <string name="notifications_mode_periodic_desc">Проверять новые сообщения раз в 10 минут на протяжении ~10 секунд, потом останавливаться</string>
-    <string name="notifications_mode_service_desc">Фоновый сервис всегда включен. Новые сообщения будут загружаться настолько быстро, насколько это возможно</string>
+    <string name="notifications_mode_periodic_desc">Проверять новые сообщения раз в 10 минут на протяжении до 1 минуты</string>
+    <string name="notifications_mode_service_desc">Фоновый сервис всегда включен. Уведомления будут показаны без задержки при наличии сообщений</string>
     <string name="notification_preview_mode_message">Текст сообщения</string>
     <string name="notification_preview_mode_contact">Имена контактов</string>
     <string name="notification_preview_mode_hidden">Скрытое</string>
-    <string name="notification_preview_mode_message_desc">Показать и автора, и сообщение</string>
-    <string name="notification_preview_mode_contact_desc">Показать только автора, без текста сообщения</string>
-    <string name="notification_display_mode_hidden_desc">Автора и сообщение скрыть, показать только наличие нового сообщения</string>
-    <string name="notification_preview_somebody">Контакт</string>
+    <string name="notification_preview_mode_message_desc">Показывать контакт и сообщение</string>
+    <string name="notification_preview_mode_contact_desc">Показывать только контакт</string>
+    <string name="notification_display_mode_hidden_desc">Скрывать контакт и сообщение</string>
+    <string name="notification_preview_somebody">Контакт скрыт:</string>
     <string name="notification_preview_new_message">новое сообщение</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
