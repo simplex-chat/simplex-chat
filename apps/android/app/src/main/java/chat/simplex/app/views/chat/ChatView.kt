@@ -216,7 +216,7 @@ fun ChatView(chatModel: ChatModel) {
           )
         }
       },
-      changeNtfsPerChat = { enabled, currentValue -> changeNtfsState(enabled, currentValue, chat, chatModel) },
+      changeNtfsState = { enabled, currentValue -> changeNtfsStatePerChat(enabled, currentValue, chat, chatModel) },
       onSearchValueChanged = { value ->
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
@@ -254,7 +254,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
-  changeNtfsPerChat: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
   Surface(
@@ -281,7 +281,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsPerChat, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -306,7 +306,7 @@ fun ChatInfoToolbar(
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
   addMembers: (GroupInfo) -> Unit,
-  changeNtfsPerChat: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
   val scope = rememberCoroutineScope()
@@ -366,7 +366,7 @@ fun ChatInfoToolbar(
         // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
         scope.launch {
           delay(200)
-          changeNtfsPerChat(!ntfsEnabled.value, ntfsEnabled)
+          changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
         }
       }
     )
@@ -860,7 +860,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
-      changeNtfsPerChat = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }
@@ -918,7 +918,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
-      changeNtfsPerChat = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }

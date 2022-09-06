@@ -168,7 +168,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
     if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
     if (ntfsEnabled) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
     onClick = {
-      changeNtfsState(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
+      changeNtfsStatePerChat(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
       showMenu.value = false
     }
   )
@@ -424,7 +424,7 @@ fun groupInvitationAcceptedAlert() {
   )
 }
 
-fun changeNtfsState(enabled: Boolean, currentState: MutableState<Boolean>, chat: Chat, chatModel: ChatModel) {
+fun changeNtfsStatePerChat(enabled: Boolean, currentState: MutableState<Boolean>, chat: Chat, chatModel: ChatModel) {
   val newChatInfo = when(chat.chatInfo) {
     is ChatInfo.Direct -> with (chat.chatInfo) {
       ChatInfo.Direct(contact.copy(chatSettings = contact.chatSettings.copy(enableNtfs = enabled)))
