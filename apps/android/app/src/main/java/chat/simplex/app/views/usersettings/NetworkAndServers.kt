@@ -76,7 +76,12 @@ fun NetworkAndServersView(
       if (onionHosts.value == it) return@NetworkAndServersLayout
       val prevValue = onionHosts.value
       onionHosts.value = it
-      updateNetworkSettingsDialog(onDismiss = {
+      val startsWith = when (it) {
+        OnionHosts.NEVER -> generalGetString(R.string.network_use_onion_hosts_no_desc)
+        OnionHosts.PREFER -> generalGetString(R.string.network_use_onion_hosts_prefer_desc)
+        OnionHosts.REQUIRED -> generalGetString(R.string.network_use_onion_hosts_required_desc)
+      }
+      updateNetworkSettingsDialog(startsWith, onDismiss = {
         onionHosts.value = prevValue
       }) {
         withApi {
@@ -201,10 +206,10 @@ private fun UseOnionHosts(
   )
 }
 
-private fun updateNetworkSettingsDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+private fun updateNetworkSettingsDialog(startsWith: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.update_network_settings_question),
-    text = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    text = startsWith + "\n" + generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
     confirmText = generalGetString(R.string.update_network_settings_confirmation),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
