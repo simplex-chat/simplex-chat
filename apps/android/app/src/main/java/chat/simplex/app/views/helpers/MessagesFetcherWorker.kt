@@ -64,7 +64,7 @@ class MessagesFetcherWork(
             Log.d(TAG, "Worker: work is done")
             break
           }
-          delay(500)
+          delay(5000)
         }
       }
     } catch (_: TimeoutCancellationException) { // When timeout happens
