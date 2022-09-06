@@ -58,17 +58,39 @@
 
     <!-- background service notice - SimpleXAPI.kt -->
     <string name="icon_descr_instant_notifications">Мгновенные уведомления</string>
-    <string name="private_instant_notifications">Приватные мгновенные уведомления!</string>
-    <string name="private_instant_notifications_disabled">Приватные уведомления выключены!</string>
+    <string name="service_notifications">Мгновенные уведомления!</string>
+    <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение запускает <b>фоновый сервис <xliff:g id="appName">SimpleX</xliff:g></b>, который потребляет несколько процентов батареи в день.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Он может быть выключен через Настройки</b> – вы продолжите получать уведомления о сообщениях пока приложение запущено.</string>
-    <string name="turn_off_battery_optimization">Для использования приватных уведомлений, пожалуйста отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в слеующем диалоге. Иначе уведомления будут выключены.</string>
-    <string name="turning_off_background_service">Оптимизация батареи включена, поэтому приватные уведомления выключены. Вы можете снова включить их через Настройки.</string>
+    <string name="turn_off_battery_optimization">Для использования этой функции, пожалуйста, отключите оптимизацию батареи для <xliff:g id="appName">SimpleX</xliff:g> в следующем диалоге. Иначе уведомления будут выключены.</string>
+    <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
+    <string name="periodic_notifications">Периодические уведомления</string>
+    <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
+    <string name="periodic_notifications_desc">Приложение периодически получает новые сообщения — это потребляет несколько процентов батареи в день. Приложение не использует push уведомления — данные не отправляются с вашего устройства на сервер.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
     <string name="hide_notification">Скрыть</string>
+
+    <!-- Notifications -->
+    <string name="settings_notifications_mode_title">Сервис уведомлений</string>
+    <string name="settings_notification_preview_mode_title">Показывать уведомления</string>
+    <string name="settings_notification_preview_title">Показывать уведомления</string>
+    <string name="notifications_mode_off">Включен, когда приложение открыто</string>
+    <string name="notifications_mode_periodic">Запускается периодически</string>
+    <string name="notifications_mode_service">Всегда включен</string>
+    <string name="notifications_mode_off_desc">Приложение может получить сообщение только тогда, когда запущено, в фоне сервис запускаться не будет</string>
+    <string name="notifications_mode_periodic_desc">Проверять новые сообщения раз в 10 минут на протяжении до 1 минуты</string>
+    <string name="notifications_mode_service_desc">Фоновый сервис всегда включен. Уведомления будут показаны без задержки при наличии сообщений</string>
+    <string name="notification_preview_mode_message">Текст сообщения</string>
+    <string name="notification_preview_mode_contact">Имена контактов</string>
+    <string name="notification_preview_mode_hidden">Скрытое</string>
+    <string name="notification_preview_mode_message_desc">Показывать контакт и сообщение</string>
+    <string name="notification_preview_mode_contact_desc">Показывать только контакт</string>
+    <string name="notification_display_mode_hidden_desc">Скрывать контакт и сообщение</string>
+    <string name="notification_preview_somebody">Контакт скрыт:</string>
+    <string name="notification_preview_new_message">новое сообщение</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>
@@ -276,7 +298,6 @@
     <string name="markdown_in_messages">Форматирование сообщений</string>
     <string name="chat_with_the_founder">Соединиться с разработчиками</string>
     <string name="send_us_an_email">Отправить email</string>
-    <string name="private_notifications">Приватные уведомления</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
     <string name="smp_servers">SMP серверы</string>
@@ -297,10 +318,17 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт 9050? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если вы подтвердите, серверы смогут видеть ваш IP адрес, а провайдер - с какими серверами вы соединяетесь.</string>
+    <string name="update_onion_hosts_settings_question">Обновить настройки .onion хостов?</string>
     <string name="network_use_onion_hosts">Использовать .onion хосты</string>
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
     <string name="network_use_onion_hosts_required">Обязательно</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion хосты используются, если возможно.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
+    <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хосты используются, если возможно.</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Onion хосты не используются.</string>
+    <string name="network_use_onion_hosts_required_desc_in_alert">Подключаться только к onion хостам.</string>
     <string name="appearance_settings">Интерфейс</string>
 
     <!-- Address Items - UserAddressView.kt -->
