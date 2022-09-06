@@ -18,19 +18,47 @@ module.exports = function (eleventyConfig) {
 
   const markdownIt = require("markdown-it");
   const markdownItAnchor = require("markdown-it-anchor");
+  const markdownItReplaceLink = require('markdown-it-replace-link');
   const slugify = require("slugify");
 
   const markdownLib = markdownIt({
     html: true,
     breaks: true,
-    linkify: true
+    linkify: true,
+    replaceLink: function (link, env) {
+      const dotSepList = link.split(".");
+      if (dotSepList[0] == "") {
+        const hashSepList = dotSepList[dotSepList.length - 1].split("#")
+        if (hashSepList[0] == "md") {
+          let str = `.${dotSepList[1]}`;
+          for (let i = 2; i < dotSepList.length; i++) {
+            if (dotSepList[i].substring(0, 2) != "md") {
+              str += "." + dotSepList[i];
+            } else {
+              str += ".html";
+              break;
+            };
+          }
+          if (hashSepList[1]) {
+            str += "#" + hashSepList[1];
+          }
+          return str;
+        }
+        else {
+          return link;
+        }
+      }
+      else {
+        return link;
+      }
+    }
   }).use(markdownItAnchor, {
     slugify: (str) =>
       slugify(str, {
         lower: true,
         strict: true,
       })
-  });
+  }).use(markdownItReplaceLink);
 
   // replace the default markdown-it instance
   eleventyConfig.setLibrary("md", markdownLib);
