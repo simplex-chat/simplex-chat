@@ -2790,13 +2790,15 @@ testDatabaseEncryption = withTmpFiles $ do
       alice <## "chat stopped"
       alice ##> "/db password mykey nextkey"
       alice <## "ok"
-    withTestChatOpts testOpts {maintenance = True, dbKey = "nextkey"} "alice" $ \alice -> do
+      alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
+      alice <## "ok"
+    withTestChatOpts testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       testChatWorking alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
-      alice ##> "/db decrypt nextkey"
+      alice ##> "/db decrypt anotherkey"
       alice <## "ok"
     withTestChat "alice" $ \alice -> testChatWorking alice bob
 

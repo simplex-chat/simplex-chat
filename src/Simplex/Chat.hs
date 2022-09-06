@@ -2544,7 +2544,7 @@ chatCommandP =
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
-      "/_db encryption" *> (APIStorageEncryption <$> jsonP),
+      "/_db encryption " *> (APIStorageEncryption <$> jsonP),
       "/db encrypt " *> (APIStorageEncryption . DBEncryptionConfig "" <$> dbKeyP),
       "/db password " *> (APIStorageEncryption <$> (DBEncryptionConfig <$> dbKeyP <* A.space <*> dbKeyP)),
       "/db decrypt " *> (APIStorageEncryption . (`DBEncryptionConfig` "") <$> dbKeyP),
