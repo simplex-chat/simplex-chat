@@ -25,26 +25,28 @@ struct DatabaseErrorView: View {
                     DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
                     Button("Save passphrase and open chat") {
                         _ = setDatabaseKey(dbKey)
+                        storeDBPassphraseGroupDefault.set(true)
                         do {
                             try initializeChat(start: m.v3DBMigration.startChat)
                         } catch let error {
                             logger.error("initializeChat \(responseError(error))")
                         }
                     }
+                    Spacer()
+                    Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
                     Text("Database passphrase is required to open chat.")
                     DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
                     Button("Open chat") {
                         do {
-                            try initializeChat(start: m.v3DBMigration.startChat)
+                            try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
                         } catch let error {
                             logger.error("initializeChat \(responseError(error))")
                         }
                     }
+                    Spacer()
                 }
-                Spacer()
-                Text("File: \(dbFile)")
             case let .error(dbFile, migrationError):
                 Text("Database error")
                     .font(.title)

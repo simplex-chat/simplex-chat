@@ -11,6 +11,7 @@ import SimpleXChat
 
 enum DatabaseAlert: Identifiable {
     case stopChat
+    case exportProhibited
     case importArchive
     case archiveImported
     case deleteChat
@@ -21,6 +22,7 @@ enum DatabaseAlert: Identifiable {
     var id: String {
         switch self {
         case .stopChat: return "stopChat"
+        case .exportProhibited: return "exportProhibited"
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
         case .deleteChat: return "deleteChat"
@@ -86,14 +88,18 @@ struct DatabaseView: View {
                 settingsRow(unencrypted ? "lock.open" : "lock", color: unencrypted ? .orange : .secondary) {
                     NavigationLink {
                         DatabaseEncryptionView()
-                            .navigationTitle("Database encryption")
+                            .navigationTitle("Database passphrase")
                     } label: {
-                        Text("Database encryption")
+                        Text("Database passphrase")
                     }
                 }
                 settingsRow("square.and.arrow.up") {
                     Button("Export database") {
-                        exportArchive()
+                        if initialRandomDBPassphraseGroupDefault.get() {
+                            alert = .exportProhibited
+                        } else {
+                            exportArchive()
+                        }
                     }
                 }
                 settingsRow("square.and.arrow.down") {
@@ -166,6 +172,11 @@ struct DatabaseView: View {
                 secondaryButton: .cancel {
                     withAnimation { runChat = true }
                 }
+            )
+        case .exportProhibited:
+            return Alert(
+                title: Text("Set passphrase to export"),
+                message: Text("Database is encrypted using a random passphrase. Please change it before exporting.")
             )
         case .importArchive:
             if let fileURL = importedArchivePath {
@@ -274,6 +285,8 @@ struct DatabaseView: View {
         Task {
             do {
                 try await apiDeleteStorage()
+                _ = removeDatabaseKey()
+                storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
             } catch let error {
                 await operationEnded(.error(title: "Error deleting database", error: responseError(error)))

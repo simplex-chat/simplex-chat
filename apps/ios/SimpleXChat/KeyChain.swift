@@ -22,7 +22,7 @@ public func setDatabaseKey(_ key: String) -> Bool {
 }
 
 public func removeDatabaseKey() -> Bool {
-    true
+    deleteItem(forKey: DATABASE_PASSWORD_ITEM)
 }
 
 func randomDatabasePassword() -> String {
@@ -82,6 +82,18 @@ private func setItemString(_ s: String, forKey key: String) -> Bool {
         return setItemData(data, forKey: key)
     }
     return false
+}
+
+private func deleteItem(forKey key: String) -> Bool {
+    let query = baseItemQuery(forKey: key)
+    if getItemData(forKey: key) != nil {
+        let status = SecItemDelete(query as CFDictionary)
+        if status != errSecSuccess {
+            logger.error("deleteItem: error deleting data for key '\(key)', error: \(status)")
+            return false
+        }
+    }
+    return true
 }
 
 private func baseItemQuery(forKey key: String) -> [NSString : AnyObject] {

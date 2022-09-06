@@ -30,7 +30,6 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
-let DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -46,7 +45,6 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
-    DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false
 ]
 
 private var indent: CGFloat = 36

@@ -735,6 +735,7 @@ public enum ChatError: Decodable {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
+    case errorDatabase(databaseError: DatabaseError)
 }
 
 public enum ChatErrorType: Decodable {
@@ -802,6 +803,19 @@ public enum StoreError: Decodable {
     case quotedChatItemNotFound
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
     case chatItemNotFoundByFileId(fileId: Int64)
+}
+
+public enum DatabaseError: Decodable {
+    case errorEncrypted
+    case errorPlaintext
+    case errorNoFile(dbFile: String)
+    case errorExport(sqliteError: SQLiteError)
+    case errorOpen(sqliteError: SQLiteError)
+}
+
+public enum SQLiteError: Decodable {
+    case errorNotADatabase
+    case error(String)
 }
 
 public enum AgentErrorType: Decodable {

@@ -22,9 +22,19 @@ public func getChatCtrl() -> chat_ctrl {
     return chatController!
 }
 
-public func migrateChatDatabase() -> (Bool, DBMigrationResult) {
+public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
     let dbPath = getAppDatabasePath().path
-    let dbKey = getDatabaseKey() ?? (hasDatabase() ? "" : randomDatabasePassword())
+    var dbKey = ""
+    if let key = useKey {
+        dbKey = key
+    } else if storeDBPassphraseGroupDefault.get() {
+        if let key = getDatabaseKey() {
+            dbKey = key
+        } else if !hasDatabase() {
+            dbKey = randomDatabasePassword()
+            initialRandomDBPassphraseGroupDefault.set(true)
+        }
+    }
     if !setDatabaseKey(dbKey) { return (dbKey != "", .errorKeychain) }
     logger.debug("migrateChatDatabase DB path: \(dbPath)")
     logger.debug("migrateChatDatabase DB key: \(dbKey)") // TODO remove

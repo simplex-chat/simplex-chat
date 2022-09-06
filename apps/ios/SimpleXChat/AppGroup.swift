@@ -25,6 +25,7 @@ let GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL = "networkTCPKeepIntvl"
 let GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT = "networkTCPKeepCnt"
 let GROUP_DEFAULT_INCOGNITO = "incognito"
 let GROUP_DEFAULT_STORE_DB_PASSPHRASE = "storeDBPassphrase"
+let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphrase"
 
 let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -41,7 +42,8 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NETWORK_TCP_KEEP_INTVL: KeepAliveOpts.defaults.keepIntvl,
         GROUP_DEFAULT_NETWORK_TCP_KEEP_CNT: KeepAliveOpts.defaults.keepCnt,
         GROUP_DEFAULT_INCOGNITO: false,
-        GROUP_DEFAULT_STORE_DB_PASSPHRASE: true
+        GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
+        GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false
     ])
 }
 
@@ -99,6 +101,8 @@ public let networkUseOnionHostsGroupDefault = EnumDefault<OnionHosts>(
 )
 
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
+
+public let initialRandomDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE)
 
 public class DateDefault {
     var defaults: UserDefaults

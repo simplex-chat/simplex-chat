@@ -34,7 +34,7 @@ struct DatabaseEncryptionView: View {
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
-    @AppStorage(DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE) private var initialRandomKey = false
+    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
     @State private var currentKey = ""
     @State private var newKey = ""
     @State private var confirmNewKey = ""
@@ -61,10 +61,10 @@ struct DatabaseEncryptionView: View {
                             alert = .keychainRemoveKey
                         }
                     }
-                    .disabled(initialRandomKey)
+                    .disabled(initialRandomDBPassphrase)
                 }
 
-                if !initialRandomKey && m.chatDbEncrypted == true {
+                if !initialRandomDBPassphrase && m.chatDbEncrypted == true {
                     DatabaseKeyField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
                 }
 
@@ -91,7 +91,7 @@ struct DatabaseEncryptionView: View {
                         Text("Your chat database is not encrypted - set passphrase to encrypt it.")
                     } else if useKeychain {
                         Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
-                        if initialRandomKey {
+                        if initialRandomDBPassphrase {
                             Text("Database is encrypted using a random passphrase, you can change it.")
                         } else {
                             Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
@@ -109,7 +109,7 @@ struct DatabaseEncryptionView: View {
             }
         }
         .onAppear {
-            if initialRandomKey { currentKey = getDatabaseKey() ?? "" }
+            if initialRandomDBPassphrase { currentKey = getDatabaseKey() ?? "" }
         }
         .disabled(m.chatRunning != false)
         .alert(item: $alert) { item in databaseEncryptionAlert(item) }
@@ -120,18 +120,20 @@ struct DatabaseEncryptionView: View {
         Task {
             do {
                 try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
-                await MainActor.run {
-                    m.chatDbEncrypted = true
-                    currentKey = ""
-                    newKey = ""
-                    confirmNewKey = ""
-                }
+                initialRandomDBPassphraseGroupDefault.set(false)
                 if useKeychain {
                     if setDatabaseKey(newKey) {
                         await operationEnded(.databaseEncrypted)
                     } else {
                         await operationEnded(.error(title: "Keychain error", error: "Error saving passphrase to keychain"))
                     }
+                }
+                await MainActor.run {
+                    m.chatDbEncrypted = true
+                    initialRandomDBPassphrase = false
+                    currentKey = ""
+                    newKey = ""
+                    confirmNewKey = ""
                 }
             } catch let error {
                 await operationEnded(.error(title: "Error encrypting database", error: responseError(error)))

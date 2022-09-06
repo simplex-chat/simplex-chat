@@ -658,10 +658,10 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
-func initializeChat(start: Bool) throws {
+func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase()
+    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
     if  m.chatDbStatus != .ok { return }
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
