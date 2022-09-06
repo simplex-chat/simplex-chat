@@ -29,6 +29,7 @@ object MessagesFetcherWorker {
   }
 
   fun cancelAll() {
+    Log.d(TAG, "Worker: canceled all tasks")
     WorkManager.getInstance(SimplexApp.context).cancelUniqueWork(UNIQUE_WORK_TAG)
   }
 }

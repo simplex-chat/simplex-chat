@@ -68,10 +68,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     Log.d(TAG, "onStateChanged: $event")
     withApi {
       when (event) {
-        Lifecycle.Event.ON_STOP ->
-          if (appPreferences.notificationsMode.get() != NotificationsMode.SERVICE.name) SimplexService.stop(applicationContext)
         Lifecycle.Event.ON_START ->
-          if (chatModel.chatRunning.value != false) SimplexService.start(applicationContext)
+          if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+            SimplexService.start(applicationContext)
         Lifecycle.Event.ON_RESUME ->
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
@@ -85,9 +84,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
   }
 
-  private fun allowToStartPeriodically() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
-  }
+  private fun allowToStartPeriodically() = chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name
 
   /*
   * It takes 1-10 milliseconds to process this function. Better to do it in a background thread

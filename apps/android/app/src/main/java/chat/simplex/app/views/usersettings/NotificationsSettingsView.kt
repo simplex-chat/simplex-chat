@@ -16,15 +16,16 @@ import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.*
 import kotlin.collections.ArrayList
 
-enum class NotificationsMode {
-  OFF, PERIODIC, SERVICE, /*INSTANT - for Firebase notifications */;
+enum class NotificationsMode(val requiresIgnoringBattery: Boolean) {
+  OFF(false), PERIODIC(false), SERVICE(true), /*INSTANT(false) - for Firebase notifications */;
 
   companion object {
     val default: NotificationsMode = SERVICE
@@ -46,17 +47,22 @@ fun NotificationsSettingsView(
 ) {
   val onNotificationsModeSelected = { mode: NotificationsMode ->
     chatModel.controller.appPrefs.notificationsMode.set(mode.name)
-    if ((mode == NotificationsMode.SERVICE || mode == NotificationsMode.PERIODIC) &&
-      !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)
-    ) {
+    if (mode.requiresIgnoringBattery && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
       chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
     }
-    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
     chatModel.notificationsMode.value = mode
-    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE || mode == NotificationsMode.PERIODIC)
+    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+    CoroutineScope(Dispatchers.Default).launch {
+      if (mode == NotificationsMode.SERVICE)
+        SimplexService.start(SimplexApp.context)
+      else
+        SimplexService.stop(SimplexApp.context)
+    }
+
     if (mode != NotificationsMode.PERIODIC) {
       MessagesFetcherWorker.cancelAll()
     }
+    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
   }
   val onNotificationPreviewModeSelected = { mode: NotificationPreviewMode ->
     chatModel.controller.appPrefs.notificationPreviewMode.set(mode.name)

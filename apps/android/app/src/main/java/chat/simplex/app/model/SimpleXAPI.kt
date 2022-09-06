@@ -192,8 +192,10 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   private var receiverStarted = false
 
   init {
-    chatModel.notificationsMode.value = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
-    chatModel.notificationPreviewMode.value = NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!)
+    chatModel.notificationsMode.value =
+      NotificationsMode.valueOf(appPrefs.notificationsMode.get() ?: NotificationsMode.default.name)
+    chatModel.notificationPreviewMode.value =
+      NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get() ?: NotificationPreviewMode.default.name)
     chatModel.performLA.value = appPrefs.performLA.get()
     chatModel.incognito.value = appPrefs.incognito.get()
   }
@@ -941,7 +943,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who have never seen service notice
-      if (isIgnoringBatteryOptimizations(appContext)) {
+      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations(appContext)) {
         showBGServiceNotice(mode)
       } else {
         showBGServiceNoticeIgnoreOptimization(mode)
@@ -949,7 +951,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
       appPrefs.backgroundServiceNoticeShown.set(true)
       appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && mode == NotificationsMode.SERVICE) {
+    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations(appContext)) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
@@ -959,6 +961,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
         MessagesFetcherWorker.cancelAll()
+        CoroutineScope(Dispatchers.Main).launch { SimplexService.stop(SimplexApp.context) }
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization(mode)
