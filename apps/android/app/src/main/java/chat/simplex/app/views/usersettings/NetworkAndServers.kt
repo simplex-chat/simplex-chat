@@ -12,10 +12,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
@@ -77,9 +74,9 @@ fun NetworkAndServersView(
       val prevValue = onionHosts.value
       onionHosts.value = it
       val startsWith = when (it) {
-        OnionHosts.NEVER -> generalGetString(R.string.network_use_onion_hosts_no_desc)
-        OnionHosts.PREFER -> generalGetString(R.string.network_use_onion_hosts_prefer_desc)
-        OnionHosts.REQUIRED -> generalGetString(R.string.network_use_onion_hosts_required_desc)
+        OnionHosts.NEVER -> generalGetString(R.string.network_use_onion_hosts_no_desc_in_alert)
+        OnionHosts.PREFER -> generalGetString(R.string.network_use_onion_hosts_prefer_desc_in_alert)
+        OnionHosts.REQUIRED -> generalGetString(R.string.network_use_onion_hosts_required_desc_in_alert)
       }
       updateNetworkSettingsDialog(startsWith, onDismiss = {
         onionHosts.value = prevValue
@@ -206,10 +203,15 @@ private fun UseOnionHosts(
   )
 }
 
-private fun updateNetworkSettingsDialog(startsWith: String, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+private fun updateNetworkSettingsDialog(
+  startsWith: String = "",
+  message: String = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+  onDismiss: () -> Unit,
+  onConfirm: () -> Unit
+) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.update_network_settings_question),
-    text = startsWith + "\n" + generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
+    text = startsWith + "\n\n" + message,
     confirmText = generalGetString(R.string.update_network_settings_confirmation),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
