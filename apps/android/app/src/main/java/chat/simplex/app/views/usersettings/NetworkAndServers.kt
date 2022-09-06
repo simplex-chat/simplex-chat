@@ -78,7 +78,7 @@ fun NetworkAndServersView(
         OnionHosts.PREFER -> generalGetString(R.string.network_use_onion_hosts_prefer_desc_in_alert)
         OnionHosts.REQUIRED -> generalGetString(R.string.network_use_onion_hosts_required_desc_in_alert)
       }
-      updateNetworkSettingsDialog(startsWith, onDismiss = {
+      updateOnionHostsDialog(startsWith, onDismiss = {
         onionHosts.value = prevValue
       }) {
         withApi {
@@ -203,14 +203,14 @@ private fun UseOnionHosts(
   )
 }
 
-private fun updateNetworkSettingsDialog(
+private fun updateOnionHostsDialog(
   startsWith: String = "",
   message: String = generalGetString(R.string.updating_settings_will_reconnect_client_to_all_servers),
   onDismiss: () -> Unit,
   onConfirm: () -> Unit
 ) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(R.string.update_network_settings_question),
+    title = generalGetString(R.string.update_onion_hosts_settings_question),
     text = startsWith + "\n\n" + message,
     confirmText = generalGetString(R.string.update_network_settings_confirmation),
     onDismiss = onDismiss,
