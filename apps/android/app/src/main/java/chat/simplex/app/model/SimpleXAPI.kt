@@ -195,9 +195,9 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   init {
     chatModel.notificationsMode.value =
-      NotificationsMode.valueOf(appPrefs.notificationsMode.get() ?: NotificationsMode.default.name)
+      kotlin.runCatching { NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!) }.getOrDefault(NotificationsMode.default)
     chatModel.notificationPreviewMode.value =
-      NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get() ?: NotificationPreviewMode.default.name)
+      kotlin.runCatching { NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!) }.getOrDefault(NotificationPreviewMode.default)
     chatModel.performLA.value = appPrefs.performLA.get()
     chatModel.incognito.value = appPrefs.incognito.get()
   }
