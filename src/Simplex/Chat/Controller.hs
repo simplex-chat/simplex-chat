@@ -393,7 +393,7 @@ data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
-  | ChatErrorDatabase {database :: DatabaseError}
+  | ChatErrorDatabase {databaseError :: DatabaseError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -455,13 +455,20 @@ data DatabaseError
   = DBErrorEncrypted
   | DBErrorPlaintext
   | DBErrorNoFile {dbFile :: String}
-  | DBErrorExport {databaseError :: String}
-  | DBErrorOpen {databaseError :: String}
+  | DBErrorExport {sqliteError :: SQLiteError}
+  | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON DatabaseError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBE"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DB"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DB"
+
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+  deriving (Show, Exception, Generic)
+
+instance ToJSON SQLiteError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SQLite"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SQLite"
 
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
