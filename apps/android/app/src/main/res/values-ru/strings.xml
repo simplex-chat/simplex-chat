@@ -66,7 +66,7 @@
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
-    <string name="periodic_notifications_desc">Чтобы защитить ваши личные данные, вместо уведомлений от сервера приложение может периодически запускаться и получать новые сообщения. Это потребляет несколько процентов батареи в день.</string>
+    <string name="periodic_notifications_desc">Приложение периодически получает новые сообщения — это потребляет несколько процентов батареи в день. Приложение не использует push уведомления — данные не отправляются с вашего устройства на сервер.</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
