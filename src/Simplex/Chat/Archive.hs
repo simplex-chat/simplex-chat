@@ -124,7 +124,15 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
       where
         withDB a err =
           liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
-            `catch` \(e :: SomeException) -> liftIO (putStrLn $ "Database error: " <> show e) >> throwDBError (err $ show e)
+            `catch` (\(e :: SQL.SQLError) -> log' e >> checkSQLError e)
+            `catch` (\(e :: SomeException) -> log' e >> throwSQLError e)
+          where
+            log' e = liftIO . putStrLn $ "Database error: " <> show e
+            checkSQLError e = case SQL.sqlError e of
+              SQL.ErrorNotADatabase -> throwDBError $ err SQLiteErrorNotADatabase
+              _ -> throwSQLError e
+            throwSQLError :: Show e => e -> m ()
+            throwSQLError = throwDBError . err . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
