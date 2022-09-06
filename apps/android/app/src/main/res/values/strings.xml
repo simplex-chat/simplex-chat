@@ -58,17 +58,39 @@
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
-  <string name="private_instant_notifications">Private instant notifications!</string>
-  <string name="private_instant_notifications_disabled">Private notifications disabled!</string>
+  <string name="service_notifications">Instant notifications!</string>
+  <string name="service_notifications_disabled">Instant notifications are disabled!</string>
   <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
   <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
   <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
-  <string name="turning_off_background_service">Battery optimization is active, turning off Private notifications. You can re-enable them via settings.</string>
+  <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
+  <string name="periodic_notifications">Periodic notifications</string>
+  <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
+  <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
   <string name="hide_notification">Hide</string>
+
+  <!-- Notifications -->
+  <string name="settings_notifications_mode_title">Notification service</string>
+  <string name="settings_notification_preview_mode_title">Show preview</string>
+  <string name="settings_notification_preview_title">Notification preview</string>
+  <string name="notifications_mode_off">Runs when app is open</string>
+  <string name="notifications_mode_periodic">Starts periodically</string>
+  <string name="notifications_mode_service">Always on</string>
+  <string name="notifications_mode_off_desc">App can receive notifications only when it\'s running, no background service will be started</string>
+  <string name="notifications_mode_periodic_desc">Checks new messages every 10 minutes for up to 1 minute</string>
+  <string name="notifications_mode_service_desc">Background service is always running – notifications will be shown as soon as the messages are available.</string>
+  <string name="notification_preview_mode_message">Message text</string>
+  <string name="notification_preview_mode_contact">Contact name</string>
+  <string name="notification_preview_mode_hidden">Hidden</string>
+  <string name="notification_preview_mode_message_desc">Show contact and message</string>
+  <string name="notification_preview_mode_contact_desc">Show only contact</string>
+  <string name="notification_display_mode_hidden_desc">Hide contact and message</string>
+  <string name="notification_preview_somebody">Contact hidden:</string>
+  <string name="notification_preview_new_message">new message</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
@@ -280,7 +302,6 @@
   <string name="markdown_in_messages">Markdown in messages</string>
   <string name="chat_with_the_founder">Connect to the developers</string>
   <string name="send_us_an_email">Send us email</string>
-  <string name="private_notifications">Private notifications</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
   <string name="smp_servers">SMP servers</string>
@@ -301,10 +322,17 @@
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
+  <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
   <string name="network_use_onion_hosts">Use .onion hosts</string>
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
   <string name="network_use_onion_hosts_required">Required</string>
+  <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
+  <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
+  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.</string>
+  <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
+  <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
+  <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
   <string name="appearance_settings">Appearance</string>
 
   <!-- Address Items - UserAddressView.kt -->
