@@ -322,10 +322,17 @@
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port 9050? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
+  <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
   <string name="network_use_onion_hosts">Use .onion hosts</string>
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
   <string name="network_use_onion_hosts_required">Required</string>
+  <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
+  <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
+  <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.</string>
+  <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
+  <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
+  <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
   <string name="appearance_settings">Appearance</string>
 
   <!-- Address Items - UserAddressView.kt -->
