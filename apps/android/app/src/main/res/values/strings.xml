@@ -66,7 +66,7 @@
   <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
-  <string name="periodic_notifications_desc">To preserve your privacy, instead of push notifications the app can fetch new messages periodically – it uses a few percent of the battery per day.</string>
+  <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn't use push notifications — data from your device is not sent to the servers.</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
