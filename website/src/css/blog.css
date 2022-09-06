@@ -35,6 +35,7 @@ ol li {
   line-height: 30px;
   letter-spacing: 0.6px;
   margin: 0.5rem 0;
+  -webkit-margin-start: 1rem;
 }
 ul,
 ol {
