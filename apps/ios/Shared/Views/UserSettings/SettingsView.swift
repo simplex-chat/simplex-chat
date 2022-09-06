@@ -94,7 +94,7 @@ struct SettingsView: View {
                         DatabaseView(showSettings: $showSettings)
                             .navigationTitle("Your chat database")
                     } label: {
-                        settingsRow("internaldrive", color: m.chatDbEncrypted ? .secondary : .orange) {
+                        settingsRow("internaldrive", color: chatModel.chatDbEncrypted == false ? .orange : .secondary) {
                             HStack {
                                 Text("Database passphrase & export")
                                 Spacer()

@@ -73,7 +73,7 @@ struct DatabaseEncryptionView: View {
 
                 settingsRow("lock.rotation") {
                     Button("Update database passphrase") {
-
+                        encryptDatabase()
                     }
                 }
                 .disabled(
