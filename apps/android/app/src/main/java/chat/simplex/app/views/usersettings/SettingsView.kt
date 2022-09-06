@@ -40,25 +40,13 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
 
   MaintainIncognitoState(chatModel)
 
-  fun setRunServiceInBackground(on: Boolean) {
-    chatModel.controller.appPrefs.runServiceInBackground.set(on)
-    if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
-      chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
-    }
-    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
-    chatModel.runServiceInBackground.value = on
-    SimplexService.StartReceiver.toggleReceiver(on)
-  }
-
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
       stopped,
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
-      runServiceInBackground = chatModel.runServiceInBackground,
       developerTools = chatModel.controller.appPrefs.developerTools,
-      setRunServiceInBackground = ::setRunServiceInBackground,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
@@ -93,9 +81,7 @@ fun SettingsLayout(
   stopped: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
-  runServiceInBackground: MutableState<Boolean>,
   developerTools: Preference<Boolean>,
-  setRunServiceInBackground: (Boolean) -> Unit,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -132,7 +118,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
         SectionDivider()
@@ -236,41 +222,6 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
           modifier = Modifier.padding(end = 6.dp)
         )
       }
-    }
-  }
-}
-
-@Composable private fun PrivateNotificationsItem(
-  runServiceInBackground: MutableState<Boolean>,
-  setRunServiceInBackground: (Boolean) -> Unit,
-  stopped: Boolean
-) {
-  SectionItemView(disabled = stopped) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        Icons.Outlined.Bolt,
-        contentDescription = stringResource(R.string.private_notifications),
-        tint = HighOrLowlight,
-      )
-      Spacer(Modifier.padding(horizontal = 4.dp))
-      Text(
-        stringResource(R.string.private_notifications),
-        Modifier
-          .padding(end = 24.dp)
-          .fillMaxWidth()
-          .weight(1f),
-        color = if (stopped) HighOrLowlight else Color.Unspecified
-      )
-      Switch(
-        checked = runServiceInBackground.value,
-        onCheckedChange = { setRunServiceInBackground(it) },
-        colors = SwitchDefaults.colors(
-          checkedThumbColor = MaterialTheme.colors.primary,
-          uncheckedThumbColor = HighOrLowlight
-        ),
-        modifier = Modifier.padding(end = 6.dp),
-        enabled = !stopped
-      )
     }
   }
 }
@@ -406,9 +357,7 @@ fun PreviewSettingsLayout() {
       stopped = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = Preference({ false}, {}),
-      runServiceInBackground = remember { mutableStateOf(true) },
       developerTools = Preference({ false }, {}),
-      setRunServiceInBackground = {},
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },

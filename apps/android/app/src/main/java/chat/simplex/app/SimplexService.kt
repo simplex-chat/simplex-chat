@@ -33,7 +33,6 @@ class SimplexService: Service() {
       Log.d(TAG, "intent action $action")
       when (action) {
         Action.START.name -> startService()
-        Action.STOP.name -> stopService()
         else -> Log.e(TAG, "No action in the intent")
       }
     } else {
@@ -56,7 +55,7 @@ class SimplexService: Service() {
     Log.d(TAG, "Simplex service destroyed")
     stopService()
 
-    // If private notifications are enabled and battery optimization is disabled, restart the service
+    // If notification service is enabled and battery optimization is disabled, restart the service
     if (SimplexApp.context.allowToStartServiceAfterAppExit())
       sendBroadcast(Intent(this, AutoRestartReceiver::class.java))
     super.onDestroy()
@@ -154,7 +153,7 @@ class SimplexService: Service() {
     // Just to make sure that after restart of the app the user will need to re-authenticate
     MainActivity.clearAuthState()
 
-    // If private notifications aren't enabled or battery optimization isn't disabled, we shouldn't restart the service
+    // If notification service isn't enabled or battery optimization isn't disabled, we shouldn't restart the service
     if (!SimplexApp.context.allowToStartServiceAfterAppExit()) {
       return
     }
@@ -212,7 +211,6 @@ class SimplexService: Service() {
 
   enum class Action {
     START,
-    STOP
   }
 
   enum class ServiceState {
@@ -243,7 +241,7 @@ class SimplexService: Service() {
 
     suspend fun start(context: Context) = serviceAction(context, Action.START)
 
-    suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
+    fun stop(context: Context) = context.stopService(Intent(context, SimplexService::class.java))
 
     private suspend fun serviceAction(context: Context, action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")

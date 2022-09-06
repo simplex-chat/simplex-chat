@@ -26,6 +26,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.views.usersettings.NotificationPreviewMode
+import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -61,7 +63,12 @@ enum class CallOnLockScreen {
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-  val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  // deprecated, remove in 2024
+  private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  val notificationsMode = mkStrPreference(SHARED_PREFS_NOTIFICATIONS_MODE,
+    if (!runServiceInBackground.get()) NotificationsMode.OFF.name else NotificationsMode.default.name
+  )
+  val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -147,6 +154,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
+    private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
+    private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
@@ -181,9 +190,14 @@ private const val MESSAGE_TIMEOUT: Int = 15_000_000
 open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
   private var receiverStarted = false
+  var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
+    private set
 
   init {
-    chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
+    chatModel.notificationsMode.value =
+      kotlin.runCatching { NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!) }.getOrDefault(NotificationsMode.default)
+    chatModel.notificationPreviewMode.value =
+      kotlin.runCatching { NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!) }.getOrDefault(NotificationPreviewMode.default)
     chatModel.performLA.value = appPrefs.performLA.get()
     chatModel.incognito.value = appPrefs.incognito.get()
   }
@@ -713,6 +727,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun processReceivedMsg(r: CR) {
+    lastMsgReceivedTimestamp = System.currentTimeMillis()
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
@@ -927,56 +942,66 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun showBackgroundServiceNoticeIfNeeded() {
+    val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who have never seen service notice
-      if (isIgnoringBatteryOptimizations(appContext)) {
-        showBGServiceNotice()
+      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations(appContext)) {
+        showBGServiceNotice(mode)
       } else {
-        showBGServiceNoticeIgnoreOptimization()
+        showBGServiceNoticeIgnoreOptimization(mode)
       }
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
       appPrefs.backgroundServiceNoticeShown.set(true)
       appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && appPrefs.runServiceInBackground.get()) {
+    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations(appContext)) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
         // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
-        showDisablingServiceNotice()
-        appPrefs.runServiceInBackground.set(false)
-        chatModel.runServiceInBackground.value = false
+        showDisablingServiceNotice(mode)
+        appPrefs.notificationsMode.set(NotificationsMode.OFF.name)
+        chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
+        MessagesFetcherWorker.cancelAll()
+        SimplexService.stop(SimplexApp.context)
       } else {
         // show battery optimization notice
-        showBGServiceNoticeIgnoreOptimization()
+        showBGServiceNoticeIgnoreOptimization(mode)
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
       }
     } else {
-      // service is allowed and battery optimization is disabled
+      // service or periodic mode was chosen and battery optimization is disabled
       SimplexApp.context.schedulePeriodicServiceRestartWorker()
+      SimplexApp.context.schedulePeriodicWakeUp()
     }
   }
 
-  private fun showBGServiceNotice() = AlertManager.shared.showAlert {
+  private fun showBGServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
-          Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
+          Text(
+            annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown)
+          )
         }
       },
       confirmButton = {
@@ -985,7 +1010,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
-  private fun showBGServiceNoticeIgnoreOptimization() = AlertManager.shared.showAlert {
+  private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
     val ignoreOptimization = {
       AlertManager.shared.hideAlert()
       askAboutIgnoringBatteryOptimization(appContext)
@@ -996,15 +1021,19 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications) else stringResource(R.string.periodic_notifications),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
           Text(annotatedStringResource(R.string.turn_off_battery_optimization))
@@ -1016,22 +1045,26 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
-  private fun showDisablingServiceNotice() = AlertManager.shared.showAlert {
+  private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications_disabled), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications_disabled) else stringResource(R.string.periodic_notifications_disabled),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.turning_off_background_service),
+            annotatedStringResource(R.string.turning_off_service_and_periodic),
             Modifier.padding(bottom = 8.dp)
           )
         }

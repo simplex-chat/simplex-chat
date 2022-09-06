@@ -86,6 +86,7 @@ class MainActivity: FragmentActivity() {
       }
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
+    SimplexApp.context.schedulePeriodicWakeUp()
   }
 
   override fun onNewIntent(intent: Intent?) {

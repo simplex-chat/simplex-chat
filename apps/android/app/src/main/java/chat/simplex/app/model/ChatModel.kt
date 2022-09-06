@@ -12,6 +12,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.views.usersettings.NotificationPreviewMode
+import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -44,7 +46,8 @@ class ChatModel(val controller: ChatController) {
   val appOpenUrl = mutableStateOf<Uri?>(null)
 
   // preferences
-  val runServiceInBackground = mutableStateOf(true)
+  val notificationsMode = mutableStateOf(NotificationsMode.default)
+  var notificationPreviewMode = mutableStateOf(NotificationPreviewMode.default)
   val performLA = mutableStateOf(false)
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
   var incognito = mutableStateOf(false)
