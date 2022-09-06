@@ -33,7 +33,6 @@ class SimplexService: Service() {
       Log.d(TAG, "intent action $action")
       when (action) {
         Action.START.name -> startService()
-        Action.STOP.name -> stopService()
         else -> Log.e(TAG, "No action in the intent")
       }
     } else {
@@ -212,7 +211,6 @@ class SimplexService: Service() {
 
   enum class Action {
     START,
-    STOP
   }
 
   enum class ServiceState {
@@ -243,7 +241,7 @@ class SimplexService: Service() {
 
     suspend fun start(context: Context) = serviceAction(context, Action.START)
 
-    suspend fun stop(context: Context) = serviceAction(context, Action.STOP)
+    fun stop(context: Context) = context.stopService(Intent(context, SimplexService::class.java))
 
     private suspend fun serviceAction(context: Context, action: Action) {
       Log.d(TAG, "SimplexService serviceAction: ${action.name}")

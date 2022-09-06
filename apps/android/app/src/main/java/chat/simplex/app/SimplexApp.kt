@@ -68,13 +68,18 @@ class SimplexApp: Application(), LifecycleEventObserver {
     Log.d(TAG, "onStateChanged: $event")
     withApi {
       when (event) {
-        Lifecycle.Event.ON_START ->
-          if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
-            SimplexService.start(applicationContext)
-        Lifecycle.Event.ON_RESUME ->
+        Lifecycle.Event.ON_RESUME -> {
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
           }
+          /**
+           * We're starting service here instead of in [Lifecycle.Event.ON_START] because
+           * after calling [ChatController.showBackgroundServiceNoticeIfNeeded] notification mode in prefs can be changed.
+           * It can happen when app was started and a user enables battery optimization while app in background
+           * */
+          if (chatModel.chatRunning.value != false && appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+            SimplexService.start(applicationContext)
+        }
         else -> {}
       }
     }

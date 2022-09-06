@@ -964,7 +964,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
         MessagesFetcherWorker.cancelAll()
-        CoroutineScope(Dispatchers.Main).launch { SimplexService.stop(SimplexApp.context) }
+        SimplexService.stop(SimplexApp.context)
       } else {
         // show battery optimization notice
         showBGServiceNoticeIgnoreOptimization(mode)
