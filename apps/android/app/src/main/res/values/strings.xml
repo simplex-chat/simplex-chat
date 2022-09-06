@@ -76,6 +76,7 @@
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
   <string name="settings_notification_preview_mode_title">Show preview</string>
+  <string name="settings_notification_preview_title">Notification preview</string>
   <string name="notifications_mode_off">Runs when app is open</string>
   <string name="notifications_mode_periodic">Starts periodically</string>
   <string name="notifications_mode_service">Always on</string>

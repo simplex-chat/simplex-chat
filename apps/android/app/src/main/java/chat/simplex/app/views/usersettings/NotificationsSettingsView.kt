@@ -191,7 +191,7 @@ fun NotificationPreviewView(
     horizontalAlignment = Alignment.Start,
   ) {
     Text(
-      stringResource(R.string.settings_notification_preview_mode_title).lowercase().capitalize(Locale.current),
+      stringResource(R.string.settings_notification_preview_title),
       Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
