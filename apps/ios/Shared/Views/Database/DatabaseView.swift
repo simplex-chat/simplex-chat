@@ -82,7 +82,7 @@ struct DatabaseView: View {
             }
 
             Section {
-                settingsRow("lock") {
+                settingsRow(m.chatDbEncrypted ? "lock" : "lock.open", color: m.chatDbEncrypted ? .secondary : .orange) {
                     NavigationLink {
                         DatabaseEncryptionView()
                             .navigationTitle("Database encryption")
