@@ -76,7 +76,7 @@
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Сервис уведомлений</string>
     <string name="settings_notification_preview_mode_title">Показывать уведомления</string>
-    <string name="notifications_mode_off">Включен только когда приложение открыто</string>
+    <string name="notifications_mode_off">Включен когда приложение открыто</string>
     <string name="notifications_mode_periodic">Запускается периодически</string>
     <string name="notifications_mode_service">Всегда включен</string>
     <string name="notifications_mode_off_desc">Приложение может получить сообщение только тогда, когда запущено, в фоне сервис запускаться не будет</string>
