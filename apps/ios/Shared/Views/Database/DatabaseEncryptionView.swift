@@ -264,7 +264,7 @@ struct DatabaseKeyField: View {
             Image(systemName: valid ? (showKey ? "eye.slash" : "eye") : "exclamationmark.circle")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 20, height: 20)
+                .frame(width: 20, height: 22, alignment: .center)
                 .foregroundColor(iconColor)
                 .onTapGesture { showKey = !showKey }
             textField()
