@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
-    var status: DBMigrationResult
+    @State var status: DBMigrationResult
     @State private var dbKey = ""
     @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
@@ -23,14 +23,14 @@ struct DatabaseErrorView: View {
                 if useKeychain && storedDBKey != nil && storedDBKey != "" {
                     Text("Wrong database passphrase").font(.title)
                     Text("Database passphrase is different from saved in the keychain.")
-                    DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
+                    databaseKeyField()
                     saveAndOpenButton()
                     Spacer()
                     Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
                     Text("Database passphrase is required to open chat.")
-                    DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
+                    databaseKeyField()
                     if useKeychain {
                         saveAndOpenButton()
                     } else {
@@ -59,7 +59,12 @@ struct DatabaseErrorView: View {
             }
         }
         .padding()
-        .frame(maxHeight: .infinity)    }
+        .frame(maxHeight: .infinity)
+    }
+
+    private func databaseKeyField() -> some View {
+        DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: runChat)
+    }
 
     private func saveAndOpenButton() -> some View {
         Button("Save passphrase and open chat") {
@@ -67,21 +72,45 @@ struct DatabaseErrorView: View {
                 storeDBPassphraseGroupDefault.set(true)
                 initialRandomDBPassphraseGroupDefault.set(false)
             }
-            do {
-                try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
-            } catch let error {
-                logger.error("initializeChat \(responseError(error))")
-            }
+            runChat()
         }
     }
 
     private func openChatButton() -> some View {
         Button("Open chat") {
-            do {
-                try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
-            } catch let error {
-                logger.error("initializeChat \(responseError(error))")
+            runChat()
+        }
+    }
+
+    private func runChat() {
+        do {
+            try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
+            if let s = m.chatDbStatus {
+                status = s
+                let am = AlertManager.shared
+                switch s {
+                case .errorNotADatabase:
+                    am.showAlertMsg(
+                        title: "Wrong passsphrase!",
+                        message: "Enter correct passphrase."
+                    )
+                case .errorKeychain:
+                    am.showAlertMsg(title: "Keychain error")
+                case let .error(_, error):
+                    am.showAlert(Alert(
+                        title: Text("Database error"),
+                        message: Text(error)
+                    ))
+                case let .unknown(error):
+                    am.showAlert(Alert(
+                        title: Text("Unknown error"),
+                        message: Text(error)
+                    ))
+                case .ok: ()
+                }
             }
+        } catch let error {
+            logger.error("initializeChat \(responseError(error))")
         }
     }
 }
