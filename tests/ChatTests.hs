@@ -2788,6 +2788,8 @@ testDatabaseEncryption = withTmpFiles $ do
       testChatWorking alice bob
       alice ##> "/_stop"
       alice <## "chat stopped"
+      alice ##> "/db password wrongkey nextkey"
+      alice <## "error encrypting database: wrong passphrase or invalid database file"
       alice ##> "/db password mykey nextkey"
       alice <## "ok"
       alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"

@@ -15,6 +15,7 @@ where
 import qualified Codec.Archive.Zip as Z
 import Control.Monad.Except
 import Control.Monad.Reader
+import Data.Functor (($>))
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
@@ -123,16 +124,16 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
       atomically $ writeTVar dbEnc $ not (null key')
       where
         withDB a err =
-          liftIO (bracket (SQL.open $ T.pack f) SQL.close a)
-            `catch` (\(e :: SQL.SQLError) -> log' e >> checkSQLError e)
-            `catch` (\(e :: SomeException) -> log' e >> throwSQLError e)
+          liftIO (bracket (SQL.open $ T.pack f) SQL.close a $> Nothing)
+            `catch` checkSQLError
+            `catch` (\(e :: SomeException) -> sqliteError' e)
+            >>= mapM_ (throwDBError . err)
           where
-            log' e = liftIO . putStrLn $ "Database error: " <> show e
             checkSQLError e = case SQL.sqlError e of
-              SQL.ErrorNotADatabase -> throwDBError $ err SQLiteErrorNotADatabase
-              _ -> throwSQLError e
-            throwSQLError :: Show e => e -> m ()
-            throwSQLError = throwDBError . err . SQLiteError . show
+              SQL.ErrorNotADatabase -> pure $ Just SQLiteErrorNotADatabase
+              _ -> sqliteError' e
+            sqliteError' :: Show e => e -> m (Maybe SQLiteError)
+            sqliteError' = pure . Just . SQLiteError . show
         exportSQL =
           T.unlines $
             keySQL key
