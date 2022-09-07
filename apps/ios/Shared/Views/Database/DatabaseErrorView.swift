@@ -13,37 +13,28 @@ struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
     var status: DBMigrationResult
     @State private var dbKey = ""
+    @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             switch status {
             case let .errorNotADatabase(dbFile):
-                if useKeychain {
+                if useKeychain && storedDBKey != nil && storedDBKey != "" {
                     Text("Wrong database passphrase").font(.title)
                     Text("Database passphrase is different from saved in the keychain.")
                     DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
-                    Button("Save passphrase and open chat") {
-                        _ = setDatabaseKey(dbKey)
-                        storeDBPassphraseGroupDefault.set(true)
-                        do {
-                            try initializeChat(start: m.v3DBMigration.startChat)
-                        } catch let error {
-                            logger.error("initializeChat \(responseError(error))")
-                        }
-                    }
+                    saveAndOpenButton()
                     Spacer()
                     Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
                     Text("Database passphrase is required to open chat.")
                     DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey))
-                    Button("Open chat") {
-                        do {
-                            try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
-                        } catch let error {
-                            logger.error("initializeChat \(responseError(error))")
-                        }
+                    if useKeychain {
+                        saveAndOpenButton()
+                    } else {
+                        openChatButton()
                     }
                     Spacer()
                 }
@@ -69,6 +60,30 @@ struct DatabaseErrorView: View {
         }
         .padding()
         .frame(maxHeight: .infinity)    }
+
+    private func saveAndOpenButton() -> some View {
+        Button("Save passphrase and open chat") {
+            if setDatabaseKey(dbKey) {
+                storeDBPassphraseGroupDefault.set(true)
+                initialRandomDBPassphraseGroupDefault.set(false)
+            }
+            do {
+                try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
+            } catch let error {
+                logger.error("initializeChat \(responseError(error))")
+            }
+        }
+    }
+
+    private func openChatButton() -> some View {
+        Button("Open chat") {
+            do {
+                try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
+            } catch let error {
+                logger.error("initializeChat \(responseError(error))")
+            }
+        }
+    }
 }
 
 struct DatabaseErrorView_Previews: PreviewProvider {

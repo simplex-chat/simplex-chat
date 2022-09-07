@@ -663,6 +663,7 @@ func initializeChat(start: Bool, dbKey: String? = nil) throws {
     let m = ChatModel.shared
     (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
     if  m.chatDbStatus != .ok { return }
+    let _ = getChatCtrl(dbKey)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.currentUser = try apiGetActiveUser()

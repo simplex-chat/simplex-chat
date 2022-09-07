@@ -11,19 +11,23 @@ import SimpleXChat
 
 enum DatabaseEncryptionAlert: Identifiable {
     case keychainRemoveKey
-    case keychainKeySaved
+    case encryptDatabaseSaved
     case encryptDatabase
+    case changeDatabaseKeySaved
     case changeDatabaseKey
     case databaseEncrypted
+    case currentPassphraseError
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
         switch self {
         case .keychainRemoveKey: return "keychainRemoveKey"
-        case .keychainKeySaved: return "keychainKeySaved"
+        case .encryptDatabaseSaved: return "encryptDatabaseSaved"
         case .encryptDatabase: return "encryptDatabase"
+        case .changeDatabaseKeySaved: return "changeDatabaseKeySaved"
         case .changeDatabaseKey: return "changeDatabaseKey"
         case .databaseEncrypted: return "databaseEncrypted"
+        case .currentPassphraseError: return "currentPassphraseError"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -35,6 +39,7 @@ struct DatabaseEncryptionView: View {
     @State private var progressIndicator = false
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
+    @State private var storedKey = getDatabaseKey() != nil
     @State private var currentKey = ""
     @State private var newKey = ""
     @State private var confirmNewKey = ""
@@ -55,10 +60,12 @@ struct DatabaseEncryptionView: View {
                 settingsRow("key") {
                     Toggle("Save passphrase in Keychain", isOn: $useKeychain)
                     .onChange(of: useKeychain) { _ in
-                        if (useKeychain) {
+                        if useKeychain {
                             storeDBPassphraseGroupDefault.set(true)
-                        } else {
+                        } else if storedKey {
                             alert = .keychainRemoveKey
+                        } else {
+                            storeDBPassphraseGroupDefault.set(false)
                         }
                     }
                     .disabled(initialRandomDBPassphrase)
@@ -73,7 +80,9 @@ struct DatabaseEncryptionView: View {
 
                 settingsRow("lock.rotation") {
                     Button("Update database passphrase") {
-                        encryptDatabase()
+                        alert = currentKey == ""
+                        ? (useKeychain ? .encryptDatabaseSaved : .encryptDatabase)
+                        : (useKeychain ? .changeDatabaseKeySaved : .changeDatabaseKey)
                     }
                 }
                 .disabled(
@@ -90,11 +99,15 @@ struct DatabaseEncryptionView: View {
                     if m.chatDbEncrypted == false {
                         Text("Your chat database is not encrypted - set passphrase to encrypt it.")
                     } else if useKeychain {
-                        Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
-                        if initialRandomDBPassphrase {
-                            Text("Database is encrypted using a random passphrase, you can change it.")
+                        if storedKey {
+                            Text("iOS Keychain is used to securely store passphrase - it allows receiving push notifications.")
+                            if initialRandomDBPassphrase {
+                                Text("Database is encrypted using a random passphrase, you can change it.")
+                            } else {
+                                Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                            }
                         } else {
-                            Text("**Please note**: you will NOT be able to recover or change passphrase if you lose it.")
+                            Text("iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.")
                         }
                     } else {
                         Text("You have to enter passphrase every time the app starts - it is not stored on the device.")
@@ -123,21 +136,34 @@ struct DatabaseEncryptionView: View {
                 initialRandomDBPassphraseGroupDefault.set(false)
                 if useKeychain {
                     if setDatabaseKey(newKey) {
+                        await resetFormAfterEncryption(true)
                         await operationEnded(.databaseEncrypted)
                     } else {
+                        await resetFormAfterEncryption()
                         await operationEnded(.error(title: "Keychain error", error: "Error saving passphrase to keychain"))
                     }
-                }
-                await MainActor.run {
-                    m.chatDbEncrypted = true
-                    initialRandomDBPassphrase = false
-                    currentKey = ""
-                    newKey = ""
-                    confirmNewKey = ""
+                } else {
+                    await resetFormAfterEncryption()
+                    await operationEnded(.databaseEncrypted)
                 }
             } catch let error {
-                await operationEnded(.error(title: "Error encrypting database", error: responseError(error)))
+                if case .chatCmdError(.errorDatabase(.errorExport(.errorNotADatabase))) = error as? ChatResponse {
+                    await operationEnded(.currentPassphraseError)
+                } else {
+                    await operationEnded(.error(title: "Error encrypting database", error: responseError(error)))
+                }
             }
+        }
+    }
+
+    private func resetFormAfterEncryption(_ stored: Bool = false) async {
+        await MainActor.run {
+            m.chatDbEncrypted = true
+            initialRandomDBPassphrase = false
+            currentKey = ""
+            newKey = ""
+            confirmNewKey = ""
+            storedKey = stored
         }
     }
 
@@ -146,10 +172,11 @@ struct DatabaseEncryptionView: View {
         case .keychainRemoveKey:
             return Alert(
                 title: Text("Remove passphrase from keychain?"),
-                message: Text("Instant push notifications will be hidden!\nPlease store passphrase securely, you will NOT be able to access chat if you lose it."),
+                message: Text("Instant push notifications will be hidden!\n") + storeSecurelyDanger(),
                 primaryButton: .destructive(Text("Remove")) {
                     if removeDatabaseKey() {
                         storeDBPassphraseGroupDefault.set(false)
+                        storedKey = false
                     } else {
                         alert = .error(title: "Keychain error", error: "Failed to remove passphrase")
                     }
@@ -158,37 +185,52 @@ struct DatabaseEncryptionView: View {
                     useKeychain = true
                 }
             )
-        case .keychainKeySaved:
+        case .encryptDatabaseSaved:
             return Alert(
-                title: Text("Passphrase will be saved"),
-                message: Text("After you update the database passphrase it will be saved in the keychain - this is required for push notifications to show messages.")
+                title: Text("Encrypt database?"),
+                message: Text("Database will be encrypted and the passphrase stored in the keychain.\n") + storeSecurelySaved(),
+                primaryButton: .default(Text("Encrypt"))  { encryptDatabase() },
+                secondaryButton: .cancel()
             )
         case .encryptDatabase:
             return Alert(
                 title: Text("Encrypt database?"),
-                message: Text("Database will be encrypted and the passphrase stored in the keychain. Please store password safely."),
-                primaryButton: .default(Text("Encrypt")) {
-                    encryptDatabase()
-                },
+                message: Text("Database will be encrypted.\n") + storeSecurelyDanger(),
+                primaryButton: .destructive(Text("Encrypt")) { encryptDatabase() },
+                secondaryButton: .cancel()
+            )
+        case .changeDatabaseKeySaved:
+            return Alert(
+                title: Text("Change database passphrase?"),
+                message: Text("Database encryption passphrase will be updated and stored in the keychain.\n") + storeSecurelySaved(),
+                primaryButton: .default(Text("Update")) { encryptDatabase() },
                 secondaryButton: .cancel()
             )
         case .changeDatabaseKey:
             return Alert(
                 title: Text("Change database passphrase?"),
-                message:
-                    useKeychain
-                    ? Text("Database encryption passphrase will be updated and stored in the keychain. Please store password safely, if you lose it, you will not be able to change passphrase")
-                    : Text(""),
-                primaryButton: .default(Text("Update")) {
-                    encryptDatabase()
-                },
+                message: Text("Database encryption passphrase will be updated.\n") + storeSecurelyDanger(),
+                primaryButton: .destructive(Text("Update")) { encryptDatabase() },
                 secondaryButton: .cancel()
             )
         case .databaseEncrypted:
             return Alert(title: Text("Database encrypted!"))
+        case .currentPassphraseError:
+            return Alert(
+                title: Text("Wrong passsphrase!"),
+                message: Text("Please enter correct current passphrase")
+            )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
         }
+    }
+
+    private func storeSecurelySaved() -> Text {
+        Text("Please store passphrase securely, you will NOT be able to change it if you lose it.")
+    }
+
+    private func storeSecurelyDanger() -> Text {
+        Text("Please store passphrase securely, you will NOT be able to access chat if you lose it.")
     }
 
     private func operationEnded(_ dbAlert: DatabaseEncryptionAlert) async {

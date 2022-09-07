@@ -45,6 +45,7 @@ struct DatabaseView: View {
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
+    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
 
     var body: some View {
         ZStack {
@@ -85,7 +86,8 @@ struct DatabaseView: View {
 
             Section {
                 let unencrypted = m.chatDbEncrypted == false
-                settingsRow(unencrypted ? "lock.open" : "lock", color: unencrypted ? .orange : .secondary) {
+                let color: Color = unencrypted || initialRandomDBPassphrase ? .orange : .secondary
+                settingsRow(unencrypted ? "lock.open" : "lock", color: color) {
                     NavigationLink {
                         DatabaseEncryptionView()
                             .navigationTitle("Database passphrase")

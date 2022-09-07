@@ -61,6 +61,7 @@ struct SettingsView: View {
     @Binding var showSettings: Bool
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var settingsSheet: SettingsSheet?
+    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
 
     var body: some View {
         let user: User = chatModel.currentUser!
@@ -92,7 +93,8 @@ struct SettingsView: View {
                         DatabaseView(showSettings: $showSettings)
                             .navigationTitle("Your chat database")
                     } label: {
-                        settingsRow("internaldrive", color: chatModel.chatDbEncrypted == false ? .orange : .secondary) {
+                        let color: Color = chatModel.chatDbEncrypted == false || initialRandomDBPassphrase ? .orange : .secondary
+                        settingsRow("internaldrive", color: color) {
                             HStack {
                                 Text("Database passphrase & export")
                                 Spacer()

@@ -10,10 +10,10 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
-public func getChatCtrl() -> chat_ctrl {
+public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
     let dbPath = getAppDatabasePath().path
-    let dbKey = getDatabaseKey() ?? ""
+    let dbKey = useKey ?? getDatabaseKey() ?? ""
     logger.debug("getChatCtrl DB path: \(dbPath)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
@@ -23,25 +23,30 @@ public func getChatCtrl() -> chat_ctrl {
 }
 
 public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+    logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
+    let useKeychain = storeDBPassphraseGroupDefault.get()
     if let key = useKey {
         dbKey = key
-    } else if storeDBPassphraseGroupDefault.get() {
-        if let key = getDatabaseKey() {
-            dbKey = key
-        } else if !hasDatabase() {
+    } else if useKeychain {
+        if !hasDatabase() {
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
+        } else if let key = getDatabaseKey() {
+            dbKey = key
         }
     }
-    if !setDatabaseKey(dbKey) { return (dbKey != "", .errorKeychain) }
     logger.debug("migrateChatDatabase DB path: \(dbPath)")
-    logger.debug("migrateChatDatabase DB key: \(dbKey)") // TODO remove
+//    logger.debug("migrateChatDatabase DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     let cjson = chat_migrate_db(&cPath, &cKey)!
-    return (dbKey != "", dbMigrationResult(fromCString(cjson)))
+    let res = dbMigrationResult(fromCString(cjson))
+    if case .ok = res, useKeychain && !setDatabaseKey(dbKey) {
+        return (dbKey != "", .errorKeychain)
+    }
+    return (dbKey != "", res)
 }
 
 public func resetChatCtrl() {
