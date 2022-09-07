@@ -119,6 +119,26 @@ public func createConnectionEventNtf(_ connEntity: ConnectionEntity) -> UNMutabl
     )
 }
 
+public func createErrorNtf(_ dbStatus: DBMigrationResult) -> UNMutableNotificationContent {
+    var title: String
+    switch dbStatus {
+    case .errorNotADatabase:
+        title = NSLocalizedString("Encrypted message: no passphrase", comment: "notification")
+    case .error:
+        title = NSLocalizedString("Encrypted message: database error", comment: "notification")
+    case .errorKeychain:
+        title = NSLocalizedString("Encrypted message: keychain error", comment: "notification")
+    case .unknown:
+        title = NSLocalizedString("Encrypted message: unexpexted error", comment: "notification")
+    case .ok:
+        title = NSLocalizedString("Encrypted message or another event", comment: "notification")
+    }
+    return createNotification(
+        categoryIdentifier: ntfCategoryConnectionEvent,
+        title: title
+    )
+}
+
 private func groupMsgNtfTitle(_ groupInfo: GroupInfo, _ groupMember: GroupMember, hideContent: Bool) -> String {
     hideContent
     ? NSLocalizedString("Group message:", comment: "notification")

@@ -53,6 +53,8 @@ final class ChatModel: ObservableObject {
 
     static let shared = ChatModel()
 
+    static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
+
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil
     }
