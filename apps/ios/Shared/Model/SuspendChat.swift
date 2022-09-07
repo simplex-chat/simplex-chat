@@ -71,9 +71,9 @@ private func _chatSuspended() {
     }
 }
 
-func activateChat(appState: AppState = .active) {
+func activateChat(appState: AppState = .active, databaseReady: Bool = true) {
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
-        apiActivateChat()
+        if databaseReady { apiActivateChat() }
     }
 }

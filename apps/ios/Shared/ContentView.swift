@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ContentView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -21,6 +22,8 @@ struct ContentView: View {
         ZStack {
             if prefPerformLA && userAuthorized != true {
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+            } else if let status = chatModel.chatDbStatus, status != .ok {
+                DatabaseErrorView(status: status)
             } else if !chatModel.v3DBMigration.startChat {
                 MigrateToAppGroupView()
             } else if let step = chatModel.onboardingStage  {

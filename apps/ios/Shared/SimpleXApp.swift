@@ -64,7 +64,7 @@ struct SimpleXApp: App {
                             ChatReceiver.shared.start()
                         }
                         let appState = appStateGroupDefault.get()
-                        activateChat()
+                        activateChat(databaseReady: chatModel.chatDbStatus == .ok)
                         if appState.inactive && chatModel.chatRunning == true {
                             updateChats()
                             updateCallInvitations()

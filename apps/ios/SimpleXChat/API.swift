@@ -10,14 +10,44 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
-public func getChatCtrl() -> chat_ctrl {
+public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
     let dbPath = getAppDatabasePath().path
+    let dbKey = useKey ?? getDatabaseKey() ?? ""
     logger.debug("getChatCtrl DB path: \(dbPath)")
-    var cstr = dbPath.cString(using: .utf8)!
-    chatController = chat_init(&cstr)
-    logger.debug("getChatCtrl: chat_init")
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    chatController = chat_init_key(&cPath, &cKey)
+    logger.debug("getChatCtrl: chat_init_key")
     return chatController!
+}
+
+public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+    logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
+    let dbPath = getAppDatabasePath().path
+    var dbKey = ""
+    let useKeychain = storeDBPassphraseGroupDefault.get()
+    if let key = useKey {
+        dbKey = key
+    } else if useKeychain {
+        if !hasDatabase() {
+            dbKey = randomDatabasePassword()
+            initialRandomDBPassphraseGroupDefault.set(true)
+        } else if let key = getDatabaseKey() {
+            dbKey = key
+        }
+    }
+    logger.debug("migrateChatDatabase DB path: \(dbPath)")
+//    logger.debug("migrateChatDatabase DB key: \(dbKey)")
+    var cPath = dbPath.cString(using: .utf8)!
+    var cKey = dbKey.cString(using: .utf8)!
+    let cjson = chat_migrate_db(&cPath, &cKey)!
+    let res = dbMigrationResult(fromCString(cjson))
+    let encrypted = dbKey != ""
+    if case .ok = res, useKeychain && encrypted && !setDatabaseKey(dbKey) {
+        return (encrypted, .errorKeychain)
+    }
+    return (encrypted, res)
 }
 
 public func resetChatCtrl() {
@@ -101,5 +131,26 @@ public func responseError(_ err: Error) -> String {
         return String(describing: r)
     } else {
         return err.localizedDescription
+    }
+}
+
+public enum DBMigrationResult: Decodable, Equatable {
+    case ok
+    case errorNotADatabase(dbFile: String)
+    case error(dbFile: String, migrationError: String)
+    case errorKeychain
+    case unknown(json: String)
+}
+
+func dbMigrationResult(_ s: String) -> DBMigrationResult {
+    let d = s.data(using: .utf8)!
+// TODO is there a way to do it without copying the data? e.g:
+//    let p = UnsafeMutableRawPointer.init(mutating: UnsafeRawPointer(cjson))
+//    let d = Data.init(bytesNoCopy: p, count: strlen(cjson), deallocator: .free)
+    do {
+        return try jsonDecoder.decode(DBMigrationResult.self, from: d)
+    } catch let error {
+        logger.error("chatResponse jsonDecoder.decode error: \(error.localizedDescription)")
+        return .unknown(json: s)
     }
 }

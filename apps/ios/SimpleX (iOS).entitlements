@@ -14,5 +14,9 @@
 	<array>
 		<string>group.chat.simplex.app</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)chat.simplex.app</string>
+	</array>
 </dict>
 </plist>
