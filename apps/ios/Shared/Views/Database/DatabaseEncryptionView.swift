@@ -182,7 +182,7 @@ struct DatabaseEncryptionView: View {
                     }
                 },
                 secondaryButton: .cancel() {
-                    useKeychain = true
+                    withAnimation { useKeychain = true }
                 }
             )
         case .encryptDatabaseSaved:
