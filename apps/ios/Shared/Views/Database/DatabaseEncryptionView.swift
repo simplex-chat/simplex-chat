@@ -38,6 +38,7 @@ struct DatabaseEncryptionView: View {
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
     @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
     @State private var storedKey = getDatabaseKey() != nil
     @State private var currentKey = ""
@@ -58,14 +59,14 @@ struct DatabaseEncryptionView: View {
         List {
             Section {
                 settingsRow("key") {
-                    Toggle("Save passphrase in Keychain", isOn: $useKeychain)
-                    .onChange(of: useKeychain) { _ in
-                        if useKeychain {
-                            storeDBPassphraseGroupDefault.set(true)
+                    Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
+                    .onChange(of: useKeychainToggle) { _ in
+                        if useKeychainToggle {
+                            setUseKeychain(true)
                         } else if storedKey {
                             alert = .keychainRemoveKey
                         } else {
-                            storeDBPassphraseGroupDefault.set(false)
+                            setUseKeychain(false)
                         }
                     }
                     .disabled(initialRandomDBPassphrase)
@@ -75,7 +76,7 @@ struct DatabaseEncryptionView: View {
                     DatabaseKeyField(key: $currentKey, placeholder: "Current passphrase…", valid: validKey(currentKey))
                 }
 
-                DatabaseKeyField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey))
+                DatabaseKeyField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
                 DatabaseKeyField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
 
                 settingsRow("lock.rotation") {
@@ -167,6 +168,11 @@ struct DatabaseEncryptionView: View {
         }
     }
 
+    private func setUseKeychain(_ value: Bool) {
+        useKeychain = value
+        storeDBPassphraseGroupDefault.set(value)
+    }
+
     private func databaseEncryptionAlert(_ alertItem: DatabaseEncryptionAlert) -> Alert {
         switch alertItem {
         case .keychainRemoveKey:
@@ -175,14 +181,14 @@ struct DatabaseEncryptionView: View {
                 message: Text("Instant push notifications will be hidden!\n") + storeSecurelyDanger(),
                 primaryButton: .destructive(Text("Remove")) {
                     if removeDatabaseKey() {
-                        storeDBPassphraseGroupDefault.set(false)
+                        setUseKeychain(false)
                         storedKey = false
                     } else {
                         alert = .error(title: "Keychain error", error: "Failed to remove passphrase")
                     }
                 },
                 secondaryButton: .cancel() {
-                    withAnimation { useKeychain = true }
+                    withAnimation { useKeychainToggle = true }
                 }
             )
         case .encryptDatabaseSaved:
@@ -247,15 +253,19 @@ struct DatabaseKeyField: View {
     @Binding var key: String
     var placeholder: LocalizedStringKey
     var valid: Bool
+    var showStrength = false
     @State private var showKey = false
 
     var body: some View {
         ZStack(alignment: .leading) {
+            let iconColor = valid
+                            ? (showStrength && key != "" ? PassphraseStrength(passphrase: key).color : .secondary)
+                            : .red
             Image(systemName: valid ? (showKey ? "eye.slash" : "eye") : "exclamationmark.circle")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundColor(valid ? .secondary : .red)
+                .frame(width: 20, height: 20)
+                .foregroundColor(iconColor)
                 .onTapGesture { showKey = !showKey }
             textField()
                 .disableAutocorrection(true)
@@ -270,6 +280,53 @@ struct DatabaseKeyField: View {
             TextField(placeholder, text: $key)
         } else {
             SecureField(placeholder, text: $key)
+        }
+    }
+}
+
+// based on https://generatepasswords.org/how-to-calculate-entropy/
+private func passphraseEnthropy(_ s: String) -> Double {
+    var hasDigits = false
+    var hasUppercase = false
+    var hasLowercase = false
+    var hasSymbols = false
+    for c in s {
+        if c.isNumber {
+            hasDigits = true
+        } else if c.isLetter {
+            if c.isUppercase { hasUppercase = true }
+            else { hasLowercase = true }
+        } else if c.isASCII {
+            hasSymbols = true
+        }
+    }
+    let poolSize: Double = (hasDigits ? 10 : 0) + (hasUppercase ? 26 : 0) + (hasLowercase ? 26 : 0) + (hasSymbols ? 32 : 0)
+    return Double(s.count) * log2(poolSize)
+}
+
+enum PassphraseStrength {
+    case veryWeak
+    case weak
+    case reasonable
+    case strong
+
+    init(passphrase s: String) {
+        let enthropy = passphraseEnthropy(s)
+        self = enthropy > 60
+                ? .strong
+                : enthropy > 45
+                ? .reasonable
+                : enthropy > 30
+                ? .weak
+                : .veryWeak
+    }
+
+    var color: Color {
+        switch self {
+        case .veryWeak: return .red
+        case .weak: return .orange
+        case .reasonable: return .yellow
+        case .strong: return .green
         }
     }
 }

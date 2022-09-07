@@ -43,10 +43,11 @@ public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationRe
     var cKey = dbKey.cString(using: .utf8)!
     let cjson = chat_migrate_db(&cPath, &cKey)!
     let res = dbMigrationResult(fromCString(cjson))
-    if case .ok = res, useKeychain && !setDatabaseKey(dbKey) {
-        return (dbKey != "", .errorKeychain)
+    let encrypted = dbKey != ""
+    if case .ok = res, useKeychain && encrypted && !setDatabaseKey(dbKey) {
+        return (encrypted, .errorKeychain)
     }
-    return (dbKey != "", res)
+    return (encrypted, res)
 }
 
 public func resetChatCtrl() {

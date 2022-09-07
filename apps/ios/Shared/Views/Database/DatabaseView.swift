@@ -45,7 +45,6 @@ struct DatabaseView: View {
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
-    @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
 
     var body: some View {
         ZStack {
@@ -86,7 +85,7 @@ struct DatabaseView: View {
 
             Section {
                 let unencrypted = m.chatDbEncrypted == false
-                let color: Color = unencrypted || initialRandomDBPassphrase ? .orange : .secondary
+                let color: Color = unencrypted ? .orange : .secondary
                 settingsRow(unencrypted ? "lock.open" : "lock", color: color) {
                     NavigationLink {
                         DatabaseEncryptionView()
@@ -268,6 +267,7 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         try await apiImportArchive(config: config)
+                        _ = removeDatabaseKey()
                         await operationEnded(.archiveImported)
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
