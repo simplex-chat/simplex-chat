@@ -53,6 +53,9 @@ add_library( support SHARED IMPORTED )
 set_target_properties( support PROPERTIES IMPORTED_LOCATION
     ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libsupport.so)
 
+add_library( crypto SHARED IMPORTED )
+set_target_properties( crypto PROPERTIES IMPORTED_LOCATION
+    ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libcrypto.so)
 
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
@@ -61,7 +64,7 @@ set_target_properties( support PROPERTIES IMPORTED_LOCATION
 target_link_libraries( # Specifies the target library.
     app-lib
 
-    simplex support
+    simplex support crypto
 
     # Links the target library to the log library
     # included in the NDK.
