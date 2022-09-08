@@ -23,17 +23,18 @@ struct DatabaseErrorView: View {
                 if useKeychain && storedDBKey != nil && storedDBKey != "" {
                     Text("Wrong database passphrase").font(.title)
                     Text("Database passphrase is different from saved in the keychain.")
-                    databaseKeyField()
+                    databaseKeyField(onSubmit: saveAndRunChat)
                     saveAndOpenButton()
                     Spacer()
                     Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
                     Text("Database passphrase is required to open chat.")
-                    databaseKeyField()
                     if useKeychain {
+                        databaseKeyField(onSubmit: saveAndRunChat)
                         saveAndOpenButton()
                     } else {
+                        databaseKeyField(onSubmit: runChat)
                         openChatButton()
                     }
                     Spacer()
@@ -62,17 +63,13 @@ struct DatabaseErrorView: View {
         .frame(maxHeight: .infinity)
     }
 
-    private func databaseKeyField() -> some View {
-        DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: runChat)
+    private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
+        DatabaseKeyField(key: $dbKey, placeholder: "Enter passphrase…", valid: validKey(dbKey), onSubmit: onSubmit)
     }
 
     private func saveAndOpenButton() -> some View {
         Button("Save passphrase and open chat") {
-            if setDatabaseKey(dbKey) {
-                storeDBPassphraseGroupDefault.set(true)
-                initialRandomDBPassphraseGroupDefault.set(false)
-            }
-            runChat()
+            saveAndRunChat()
         }
     }
 
@@ -80,6 +77,14 @@ struct DatabaseErrorView: View {
         Button("Open chat") {
             runChat()
         }
+    }
+
+    private func saveAndRunChat() {
+        if setDatabaseKey(dbKey) {
+            storeDBPassphraseGroupDefault.set(true)
+            initialRandomDBPassphraseGroupDefault.set(false)
+        }
+        runChat()
     }
 
     private func runChat() {

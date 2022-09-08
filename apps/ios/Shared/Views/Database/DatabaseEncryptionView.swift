@@ -35,9 +35,9 @@ enum DatabaseEncryptionAlert: Identifiable {
 
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
+    @Binding var useKeychain: Bool
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
-    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
     @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
     @State private var storedKey = getDatabaseKey() != nil
@@ -340,6 +340,6 @@ func validKey(_ s: String) -> Bool {
 
 struct DatabaseEncryptionView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseEncryptionView()
+        DatabaseEncryptionView(useKeychain: Binding.constant(true))
     }
 }

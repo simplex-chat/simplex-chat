@@ -89,7 +89,7 @@ struct DatabaseView: View {
                 let color: Color = unencrypted ? .orange : .secondary
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
-                        DatabaseEncryptionView()
+                        DatabaseEncryptionView(useKeychain: $useKeychain)
                             .navigationTitle("Database passphrase")
                     } label: {
                         Text("Database passphrase")
