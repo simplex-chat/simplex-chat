@@ -45,6 +45,7 @@ struct DatabaseView: View {
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
+    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
 
     var body: some View {
         ZStack {
@@ -86,9 +87,9 @@ struct DatabaseView: View {
             Section {
                 let unencrypted = m.chatDbEncrypted == false
                 let color: Color = unencrypted ? .orange : .secondary
-                settingsRow(unencrypted ? "lock.open" : "lock", color: color) {
+                settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
-                        DatabaseEncryptionView()
+                        DatabaseEncryptionView(useKeychain: $useKeychain)
                             .navigationTitle("Database passphrase")
                     } label: {
                         Text("Database passphrase")
@@ -168,7 +169,7 @@ struct DatabaseView: View {
                 title: Text("Stop chat?"),
                 message: Text("Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped."),
                 primaryButton: .destructive(Text("Stop")) {
-                    stopChat()
+                    authStopChat()
                 },
                 secondaryButton: .cancel {
                     withAnimation { runChat = true }
@@ -223,6 +224,20 @@ struct DatabaseView: View {
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
+        }
+    }
+
+    private func authStopChat() {
+        if UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) {
+            authenticate(reason: NSLocalizedString("Stop SimpleX", comment: "authentication reason")) { laResult in
+                switch laResult {
+                case .success: stopChat()
+                case .unavailable: stopChat()
+                case .failed: withAnimation { runChat = true }
+                }
+            }
+        } else {
+            stopChat()
         }
     }
 
