@@ -78,7 +78,7 @@ Some links to answer the most common questions:
 
 [Technical details and limitations](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations).
 
-[How SimpleX is different from Session, Matrix, Signal, etc.](../README.md#frequently-asked-questions).
+[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
 
 ## We ask you to help us pay for 3rd party security audit
 
