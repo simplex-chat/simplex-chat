@@ -116,11 +116,26 @@
                   # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  echo "androidPkgs"
-                  ls -lha ${androidPkgs}
+                  echo ${androidPkgs.openssl}
                   find ${androidPkgs.openssl.out}/lib -name "*.so" -exec cp {} $out/_pkg \;
 
-                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
+                  # remove the .1 and other version suffixes from .so's. Androids linker
+                  # doesn't play nice with them.
+                  for lib in $out/_pkg/*.so; do
+                    for dep in $(${pkgs.patchelf}/bin/patchelf --print-needed "$lib"); do
+                      if [[ "''${dep##*.so}" ]]; then
+                        echo "$lib : $dep -> ''${dep%%.so*}.so"
+                        chmod +w "$lib"
+                        ${pkgs.patchelf}/bin/patchelf --replace-needed "$dep" "''${dep%%.so*}.so" "$lib"
+                      fi
+                    done
+                  done
+
+                  for lib in $out/_pkg/*.so; do
+                    chmod +w "$lib"
+                    ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
+                    ${pkgs.patchelf}/bin/patchelf --set-soname $lib $lib
+                  done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
