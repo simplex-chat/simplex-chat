@@ -91,7 +91,7 @@ struct DatabaseErrorView: View {
                 switch s {
                 case .errorNotADatabase:
                     am.showAlertMsg(
-                        title: "Wrong passsphrase!",
+                        title: "Wrong passphrase!",
                         message: "Enter correct passphrase."
                     )
                 case .errorKeychain:
