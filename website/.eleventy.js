@@ -14,6 +14,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/app-demo")
   eleventyConfig.addPassthroughCopy("src/blog/images")
   eleventyConfig.addPassthroughCopy("src/images")
+  eleventyConfig.addPassthroughCopy("src/CNAME")
 
   eleventyConfig.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
