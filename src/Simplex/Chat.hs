@@ -1376,7 +1376,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           let profileToSend = fromLocalProfile $ fromMaybe profile incognitoProfile
           saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-          allowAgentConnection conn confId $ XInfo profileToSend
+          allowAgentConnectionAsync conn confId $ XInfo profileToSend
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
@@ -1421,7 +1421,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               -- TODO check member ID
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-              allowAgentConnection conn confId XOk
+              allowAgentConnectionAsync conn confId XOk
             _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1495,7 +1495,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 | sameMemberId memId m -> do
                   withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                   -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                  allowAgentConnection conn confId XOk
+                  allowAgentConnectionAsync conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           _ ->
@@ -1504,7 +1504,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 | sameMemberId memId m -> do
                   -- TODO update member profile
                   -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                  allowAgentConnection conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
+                  allowAgentConnectionAsync conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -1595,7 +1595,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               | name == fileName -> do
                 withStore' $ \db -> updateSndFileStatus db ft FSAccepted
                 -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                allowAgentConnection conn confId XOk
+                allowAgentConnectionAsync conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
             _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
@@ -1629,7 +1629,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId _ connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
-            XOk -> allowAgentConnection conn confId XOk -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
+            XOk -> allowAgentConnectionAsync conn confId XOk -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
             _ -> pure ()
         CON -> do
           ci <- withStore $ \db -> do
@@ -1704,7 +1704,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
     withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
     withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-      action `E.finally` withAgent (\a -> ackMessage a cId msgId `catchError` \_ -> pure ())
+      action `E.finally` withAgent (\a -> ackMessageAsync a cId msgId `catchError` \_ -> pure ())
 
     ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
@@ -1914,8 +1914,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       unless cancelled $
         if fName == fileName
           then -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-
-            tryError (withAgent $ \a -> joinConnection a True fileConnReq . directMessage $ XOk) >>= \case
+            tryError (withAgent $ \a -> joinConnectionAsync a True fileConnReq . directMessage $ XOk) >>= \case
               Right acId ->
                 withStore' $ \db -> createSndGroupFileTransferConnection db userId fileId acId m
               Left e -> throwError e
@@ -2111,7 +2110,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
     xGrpMemIntro :: Connection -> GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro conn gInfo@GroupInfo {groupId, membership} m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro _conn gInfo@GroupInfo {groupId = _groupId, membership} m memInfo@(MemberInfo memId _ _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -2120,14 +2119,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             else do
               -- [async agent commands] make commands async, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               -- TODO save group id, member id, host connection id + direct and group connection ids from immediate responses to intros_for_group_members
-              (groupConnId, groupConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-              (directConnId, directConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+              groupConnId <- withAgent $ \a -> createConnectionAsync a True SCMInvitation
+              directConnId <- withAgent $ \a -> createConnectionAsync a True SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
-              newMember <- withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId customUserProfileId
-              let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-              void $ sendDirectMessage conn msg (GroupId groupId)
-              withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
+              void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId customUserProfileId
+              -- let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
+              -- void $ sendDirectMessage conn msg (GroupId groupId)
+              -- withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
@@ -2156,8 +2155,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be made asynchronous for persistence
-      groupConnId <- withAgent $ \a -> joinConnection a True groupConnReq $ directMessage msg
-      directConnId <- withAgent $ \a -> joinConnection a True directConnReq $ directMessage msg
+      groupConnId <- withAgent $ \a -> joinConnectionAsync a True groupConnReq $ directMessage msg
+      directConnId <- withAgent $ \a -> joinConnectionAsync a True directConnReq $ directMessage msg
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
       withStore' $ \db -> createIntroToMemberContact db userId m toMember groupConnId directConnId customUserProfileId
 
@@ -2448,6 +2447,11 @@ mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs = do
 allowAgentConnection :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 allowAgentConnection conn confId msg = do
   withAgent $ \a -> allowConnection a (aConnId conn) confId $ directMessage msg
+  withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
+
+allowAgentConnectionAsync :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
+allowAgentConnectionAsync conn confId msg = do
+  withAgent $ \a -> allowConnectionAsync a (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
