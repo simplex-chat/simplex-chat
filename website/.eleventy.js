@@ -4,25 +4,25 @@ const markdownItReplaceLink = require('markdown-it-replace-link')
 const slugify = require("slugify")
 const uri = require('fast-uri')
 
-module.exports = function (eleventyConfig) {
+module.exports = function (ty) {
   // Keeps the same directory structure.
-  eleventyConfig.addPassthroughCopy("src/assets/")
-  eleventyConfig.addPassthroughCopy("src/img")
-  eleventyConfig.addPassthroughCopy("src/css")
-  eleventyConfig.addPassthroughCopy("src/js")
-  eleventyConfig.addPassthroughCopy("src/contact")
-  eleventyConfig.addPassthroughCopy("src/app-demo")
-  eleventyConfig.addPassthroughCopy("src/blog/images")
-  eleventyConfig.addPassthroughCopy("src/images")
-  eleventyConfig.addPassthroughCopy("src/CNAME")
+  ty.addPassthroughCopy("src/assets/")
+  ty.addPassthroughCopy("src/img")
+  ty.addPassthroughCopy("src/css")
+  ty.addPassthroughCopy("src/js")
+  ty.addPassthroughCopy("src/contact")
+  ty.addPassthroughCopy("src/app-demo")
+  ty.addPassthroughCopy("src/blog/images")
+  ty.addPassthroughCopy("src/images")
+  ty.addPassthroughCopy("src/CNAME")
 
-  eleventyConfig.addCollection('blogs', function (collection) {
+  ty.addCollection('blogs', function (collection) {
     return collection.getFilteredByGlob('src/blog/*.md').reverse()
   })
 
-  eleventyConfig.addWatchTarget("src/css")
-  eleventyConfig.addWatchTarget("markdown/")
-  eleventyConfig.addWatchTarget("components/Card.js")
+  ty.addWatchTarget("src/css")
+  ty.addWatchTarget("markdown/")
+  ty.addWatchTarget("components/Card.js")
 
   const markdownLib = markdownIt({
     html: true,
@@ -45,7 +45,7 @@ module.exports = function (eleventyConfig) {
   }).use(markdownItReplaceLink)
 
   // replace the default markdown-it instance
-  eleventyConfig.setLibrary("md", markdownLib)
+  ty.setLibrary("md", markdownLib)
 
   return {
     dir: {
