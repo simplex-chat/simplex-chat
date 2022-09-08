@@ -134,6 +134,7 @@
                   for lib in $out/_pkg/*.so; do
                     chmod +w "$lib"
                     ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
+                    ${pkgs.patchelf}/bin/patchelf --set-soname $lib $lib
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
