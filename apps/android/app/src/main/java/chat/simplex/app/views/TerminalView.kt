@@ -1,5 +1,6 @@
 package chat.simplex.app.views
 
+import android.content.Context
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
@@ -7,39 +8,79 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
+import chat.simplex.app.R
 import chat.simplex.app.model.*
+import chat.simplex.app.ui.theme.SimpleButton
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.*
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
-import kotlinx.coroutines.launch
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
   BackHandler(onBack = close)
-  TerminalLayout(
-    chatModel.terminalItems,
-    composeState,
-    sendCommand = {
-      withApi {
-        // show "in progress"
-        chatModel.controller.sendCmd(CC.Console(composeState.value.message))
-        composeState.value = ComposeState(useLinkPreviews = false)
-        // hide "in progress"
+  val authorized = remember { mutableStateOf(!chatModel.controller.appPrefs.performLA.get()) }
+  if (authorized.value) {
+    TerminalLayout(
+      chatModel.terminalItems,
+      composeState,
+      sendCommand = {
+        withApi {
+          // show "in progress"
+          chatModel.controller.sendCmd(CC.Console(composeState.value.message))
+          composeState.value = ComposeState(useLinkPreviews = false)
+          // hide "in progress"
+        }
+      },
+      close
+    )
+  } else {
+    Box(
+      Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colors.background)
+        .clickable(enabled = false) { /* just to prevent clicking through this view */ },
+      contentAlignment = Alignment.Center
+    ) {
+      val context = LocalContext.current
+      SimpleButton(
+        stringResource(R.string.auth_unlock),
+        icon = Icons.Outlined.Lock,
+        click = {
+          runAuth(authorized = authorized, context)
+        }
+      )
+    }
+  }
+}
+
+private fun runAuth(authorized: MutableState<Boolean>, context: Context) {
+  authenticate(
+    generalGetString(R.string.auth_open_chat_console),
+    generalGetString(R.string.auth_log_in_using_credential),
+    context as FragmentActivity,
+    completed = { laResult ->
+      when (laResult) {
+        LAResult.Success, LAResult.Unavailable -> authorized.value = true
+        is LAResult.Error, LAResult.Failed -> authorized.value = false
       }
-    },
-    close
+    }
   )
 }
 

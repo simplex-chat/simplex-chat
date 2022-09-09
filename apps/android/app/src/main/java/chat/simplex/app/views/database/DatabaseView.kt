@@ -17,8 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,11 +27,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
 import kotlinx.datetime.*
@@ -49,6 +48,7 @@ fun DatabaseView(
   val progressIndicator = remember { mutableStateOf(false) }
   val runChat = remember { mutableStateOf(m.chatRunning.value ?: true) }
   val prefs = m.controller.appPrefs
+  val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val chatArchiveName = remember { mutableStateOf(prefs.chatArchiveName.get()) }
   val chatArchiveTime = remember { mutableStateOf(prefs.chatArchiveTime.get()) }
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
@@ -68,7 +68,10 @@ fun DatabaseView(
     DatabaseLayout(
       progressIndicator.value,
       runChat.value,
+      useKeychain.value,
       m.chatDbChanged.value,
+      m.chatDbEncrypted.value,
+      m.controller.appPrefs.initialRandomDBPassphrase,
       importArchiveLauncher,
       chatArchiveName,
       chatArchiveTime,
@@ -100,7 +103,10 @@ fun DatabaseView(
 fun DatabaseLayout(
   progressIndicator: Boolean,
   runChat: Boolean,
+  useKeyChain: Boolean,
   chatDbChanged: Boolean,
+  chatDbEncrypted: Boolean?,
+  initialRandomDBPassphrase: Preference<Boolean>,
   importArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
@@ -130,10 +136,26 @@ fun DatabaseLayout(
     SectionSpacer()
 
     SectionView(stringResource(R.string.chat_database_section)) {
+      val unencrypted = chatDbEncrypted == false
+      val color: Color = if (unencrypted) WarningOrange else Color.Unspecified
+      SettingsActionItem(
+        if (unencrypted) Icons.Outlined.LockOpen else if(useKeyChain) Icons.Filled.Key else Icons.Outlined.Lock,
+        stringResource(R.string.database_passphrase),
+        click = showSettingsModal { DatabaseEncryptionView(it) },
+        textColor = color,
+        disabled = operationsDisabled
+      )
+      SectionDivider()
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.export_database),
-        exportArchive,
+        click = {
+          if (initialRandomDBPassphrase.get()) {
+            exportProhibitedAlert()
+          } else {
+            exportArchive()
+          }
+        },
         textColor = MaterialTheme.colors.primary,
         disabled = operationsDisabled
       )
@@ -250,9 +272,40 @@ private fun stopChatAlert(m: ChatModel, runChat: MutableState<Boolean>, context:
     title = generalGetString(R.string.stop_chat_question),
     text = generalGetString(R.string.stop_chat_to_export_import_or_delete_chat_database),
     confirmText = generalGetString(R.string.stop_chat_confirmation),
-    onConfirm = { stopChat(m, runChat, context) },
+    onConfirm = { authStopChat(m, runChat, context) },
     onDismiss = { runChat.value = true }
   )
+}
+
+private fun exportProhibitedAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(R.string.set_password_to_export),
+    text = generalGetString(R.string.set_password_to_export_desc),
+  )
+}
+
+private fun authStopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
+  if (m.controller.appPrefs.performLA.get()) {
+    authenticate(
+      generalGetString(R.string.auth_stop_chat),
+      generalGetString(R.string.auth_log_in_using_credential),
+      context as FragmentActivity,
+      completed = { laResult ->
+        when (laResult) {
+          LAResult.Success, LAResult.Unavailable -> {
+            stopChat(m, runChat, context)
+          }
+          is LAResult.Error -> {
+          }
+          LAResult.Failed -> {
+            runChat.value = true
+          }
+        }
+      }
+    )
+  } else {
+    stopChat(m, runChat, context)
+  }
 }
 
 private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Context) {
@@ -377,6 +430,7 @@ private fun importArchive(m: ChatModel, context: Context, importedArchiveUri: Ur
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
           m.controller.apiImportArchive(config)
+          DatabaseUtils.removeDatabaseKey()
           operationEnded(m, progressIndicator) {
             AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
           }
@@ -429,6 +483,8 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   withApi {
     try {
       m.controller.apiDeleteStorage()
+      DatabaseUtils.removeDatabaseKey()
+      m.controller.appPrefs.storeDBPassphrase.set(true)
       operationEnded(m, progressIndicator) {
         AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_deleted), generalGetString(R.string.restart_the_app_to_create_a_new_chat_profile))
       }
@@ -458,7 +514,10 @@ fun PreviewDatabaseLayout() {
     DatabaseLayout(
       progressIndicator = false,
       runChat = true,
+      useKeyChain = false,
       chatDbChanged = false,
+      chatDbEncrypted = false,
+      initialRandomDBPassphrase = Preference({ true }, {}),
       importArchiveLauncher = rememberGetContentLauncher {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },

@@ -10,6 +10,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
+import kotlinx.serialization.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -35,9 +36,18 @@ external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
-  val chatController: ChatController by lazy {
-    val ctrl = chatInit(getFilesDirectory(applicationContext))
-    ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+  lateinit var chatController: ChatController
+
+  fun initChatController(useKey: String? = null) {
+    val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
+    val res = DatabaseUtils.migrateChatDatabase(dbKey)
+    val ctrl = chatInitKey(getFilesDirectory(applicationContext), dbKey)
+    chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+    chatModel.chatDbEncrypted.value = res.first
+    chatModel.chatDbStatus.value = res.second
+    if (res.second != DBMigrationResult.OK) {
+      Log.d(TAG, "Unable to migrate successfully: ${res.second}")
+    }
   }
 
   val chatModel: ChatModel by lazy {
@@ -55,6 +65,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
   override fun onCreate() {
     super.onCreate()
     context = this
+    initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     withApi {
       val user = chatController.apiGetActiveUser()

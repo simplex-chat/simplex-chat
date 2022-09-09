@@ -60,7 +60,14 @@ object DatabaseUtils {
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated)
     }.getOrElse { DBMigrationResult.Unknown(migrated) }*/
-    val res = DBMigrationResult.OK
+    val random = SecureRandom().nextInt(5)
+    val res = listOf(
+      DBMigrationResult.OK,
+      DBMigrationResult.ErrorNotADatabase("dbFile"),
+      DBMigrationResult.Error("dbFile", "migrationError"),
+      DBMigrationResult.ErrorKeychain,
+      DBMigrationResult.Unknown("{}")
+    )[0/*random*/]
     val encrypted = dbKey != ""
     setDatabaseKey(dbKey)
     return encrypted to res
