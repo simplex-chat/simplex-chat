@@ -831,7 +831,7 @@ figure.party.bob {
   position: relative;
 }
 #comparison .table-holder {
-  align-self: start;
+  /* align-self: start; */
   overflow: auto;
 }
 #comparison div.container {
