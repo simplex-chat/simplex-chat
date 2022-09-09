@@ -18,6 +18,8 @@ final class ChatModel: ObservableObject {
     @Published var currentUser: User?
     @Published var chatRunning: Bool?
     @Published var chatDbChanged = false
+    @Published var chatDbEncrypted: Bool?
+    @Published var chatDbStatus: DBMigrationResult?
     // list of chat "previews"
     @Published var chats: [Chat] = []
     // current chat
@@ -50,6 +52,8 @@ final class ChatModel: ObservableObject {
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     static let shared = ChatModel()
+
+    static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
     func hasChat(_ id: String) -> Bool {
         chats.first(where: { $0.id == id }) != nil

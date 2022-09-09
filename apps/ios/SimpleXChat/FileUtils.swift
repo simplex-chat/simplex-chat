@@ -42,11 +42,17 @@ public func getAppDatabasePath() -> URL {
     dbContainerGroupDefault.get() == .group
     ? getGroupContainerDirectory().appendingPathComponent(DB_FILE_PREFIX, isDirectory: false)
     : getLegacyDatabasePath()
-//    getLegacyDatabasePath()
 }
 
 public func hasLegacyDatabase() -> Bool {
-    let dbPath = getLegacyDatabasePath()
+    hasDatabaseAtPath(getLegacyDatabasePath())
+}
+
+public func hasDatabase() -> Bool {
+    hasDatabaseAtPath(getAppDatabasePath())
+}
+
+func hasDatabaseAtPath(_ dbPath: URL) -> Bool {
     let fm = FileManager.default
     return fm.isReadableFile(atPath: dbPath.path + "_agent.db") &&
            fm.isReadableFile(atPath: dbPath.path + "_chat.db")

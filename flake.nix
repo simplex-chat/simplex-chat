@@ -25,7 +25,7 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [{
-          packages.direct-sqlite.patches = [ ./scripts/nix/direct-sqlite-2.3.26.patch ];
+          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
           packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
@@ -91,7 +91,12 @@
                         > $out/nix-support/hydra-build-products
                 '';
               };
-              "aarch64-android:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+              "aarch64-android:lib:simplex-chat" = (drv' {
+                pkgs' = androidPkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
@@ -111,8 +116,25 @@
                   # find ${androidPkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidIconv}/lib -name "*.a" -exec cp {} $out/_pkg \;
                   # find ${androidPkgs.stdenv.cc.libc}/lib -name "*.a" -exec cp {} $out/_pkg \;
+                  echo ${androidPkgs.openssl}
+                  find ${androidPkgs.openssl.out}/lib -name "*.so" -exec cp {} $out/_pkg \;
 
-                  ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so.1 $out/_pkg/libsimplex.so
+                  # remove the .1 and other version suffixes from .so's. Androids linker
+                  # doesn't play nice with them.
+                  for lib in $out/_pkg/*.so; do
+                    for dep in $(${pkgs.patchelf}/bin/patchelf --print-needed "$lib"); do
+                      if [[ "''${dep##*.so}" ]]; then
+                        echo "$lib : $dep -> ''${dep%%.so*}.so"
+                        chmod +w "$lib"
+                        ${pkgs.patchelf}/bin/patchelf --replace-needed "$dep" "''${dep%%.so*}.so" "$lib"
+                      fi
+                    done
+                  done
+
+                  for lib in $out/_pkg/*.so; do
+                    chmod +w "$lib"
+                    ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
+                  done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
@@ -138,7 +160,12 @@
                         > $out/nix-support/hydra-build-products
                 '';
               };
-              "x86_64-android:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+              "x86_64-android:lib:simplex-chat" = (drv' {
+                pkgs' = androidPkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
@@ -185,7 +212,12 @@
                         > $out/nix-support/hydra-build-products
                 '';
               };
-              "x86_64-linux:lib:simplex-chat" = (drv androidPkgs).simplex-chat.components.library.override {
+              "x86_64-linux:lib:simplex-chat" = (drv' {
+                pkgs' = androidPkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.openssl = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
@@ -219,7 +251,13 @@
             };
             "aarch64-darwin" = {
               # this is the aarch64-darwin iOS build (to be patched with mac2ios)
-              "aarch64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swift = true; }]; } ).simplex-chat.components.library.override {
+              "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.simplexmq.flags.swift = true;
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -273,7 +311,13 @@
             };
             "x86_64-darwin" = {
               # this is the aarch64-darwin iOS build (to be patched with mac2ios)
-              "x86_64-darwin-ios:lib:simplex-chat" = (drv' { pkgs' = pkgs; extra-modules = [{ packages.simplexmq.flags.swift = true; }]; } ).simplex-chat.components.library.override {
+              "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.simplexmq.flags.swift = true;
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              } ).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.

@@ -15,7 +15,8 @@ extern void hs_init(int argc, char **argv[]);
 
 typedef void* chat_ctrl;
 
-extern chat_ctrl chat_init(char *path);
+extern char *chat_migrate_db(char *path, char *key);
+extern chat_ctrl chat_init_key(char *path, char *key);
 extern char *chat_send_cmd(chat_ctrl ctl, char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctl);
 extern char *chat_recv_msg_wait(chat_ctrl ctl, int wait);

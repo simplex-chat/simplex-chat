@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - stable
+      - sqlcipher
     tags:
       - "v*"
   pull_request:
@@ -67,9 +68,9 @@ jobs:
       - name: Setup Stack
         uses: haskell/actions/setup@v1
         with:
-          ghc-version: '8.10.7'
+          ghc-version: "8.10.7"
           enable-stack: true
-          stack-version: 'latest'
+          stack-version: "latest"
 
       - name: Cache dependencies
         uses: actions/cache@v2

@@ -25,6 +25,7 @@ import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { dbFilePrefix :: String,
+    dbKey :: String,
     smpServers :: [SMPServer],
     networkConfig :: NetworkConfig,
     logConnections :: Bool,
@@ -46,6 +47,14 @@ chatOpts appDir defaultDbFileName = do
           <> help "Path prefix to chat and agent database files"
           <> value defaultDbFilePath
           <> showDefault
+      )
+  dbKey <-
+    strOption
+      ( long "key"
+          <> short 'k'
+          <> metavar "KEY"
+          <> help "Database encryption key/pass-phrase"
+          <> value ""
       )
   smpServers <-
     option
@@ -126,6 +135,7 @@ chatOpts appDir defaultDbFileName = do
   pure
     ChatOpts
       { dbFilePrefix,
+        dbKey,
         smpServers,
         networkConfig = fullNetworkConfig socksProxy $ useTcpTimeout socksProxy t,
         logConnections,

@@ -24,6 +24,7 @@ public enum ChatCommand {
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig) 
     case apiDeleteStorage
+    case apiStorageEncryption(config: DBEncryptionConfig)
     case apiGetChats
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent)
@@ -88,6 +89,7 @@ public enum ChatCommand {
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
+            case let .apiStorageEncryption(cfg): return "/_db encryption \(encodeJSON(cfg))"
             case .apiGetChats: return "/_get chats pcc=on"
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
@@ -156,6 +158,7 @@ public enum ChatCommand {
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
+            case .apiStorageEncryption: return "apiStorageEncryption"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiSendMessage: return "apiSendMessage"
@@ -213,6 +216,18 @@ public enum ChatCommand {
 
     func smpServersStr(smpServers: [String]) -> String {
         smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
+    }
+
+    public var obfuscated: ChatCommand {
+        switch self {
+        case let .apiStorageEncryption(cfg):
+            return .apiStorageEncryption(config: DBEncryptionConfig(currentKey: obfuscate(cfg.currentKey), newKey: obfuscate(cfg.newKey)))
+        default: return self
+        }
+    }
+
+    private func obfuscate(_ s: String) -> String {
+        s == "" ? "" : "***"
     }
 }
 
@@ -527,6 +542,16 @@ public struct ArchiveConfig: Encodable {
     }
 }
 
+public struct DBEncryptionConfig: Encodable {
+    public init(currentKey: String, newKey: String) {
+        self.currentKey = currentKey
+        self.newKey = newKey
+    }
+
+    public var currentKey: String
+    public var newKey: String
+}
+
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
     public var hostMode: HostMode = .publicHost
@@ -710,6 +735,7 @@ public enum ChatError: Decodable {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
+    case errorDatabase(databaseError: DatabaseError)
 }
 
 public enum ChatErrorType: Decodable {
@@ -777,6 +803,19 @@ public enum StoreError: Decodable {
     case quotedChatItemNotFound
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
     case chatItemNotFoundByFileId(fileId: Int64)
+}
+
+public enum DatabaseError: Decodable {
+    case errorEncrypted
+    case errorPlaintext
+    case errorNoFile(dbFile: String)
+    case errorExport(sqliteError: SQLiteError)
+    case errorOpen(sqliteError: SQLiteError)
+}
+
+public enum SQLiteError: Decodable {
+    case errorNotADatabase
+    case error(String)
 }
 
 public enum AgentErrorType: Decodable {
