@@ -914,7 +914,7 @@ data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId,
     agentMsgMeta :: MsgMeta,
-    agentAckCmdId :: AsyncCommandId
+    agentAckCmdId :: CommandId
   }
 
 data MsgMetaJSON = MsgMetaJSON

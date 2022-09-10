@@ -916,22 +916,46 @@ type JSONString = String
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
 
-type AsyncCommandId = Int64
+type CommandId = Int64
 
-data AsyncCommandStatus
-  = ACSCreated
-  | ACSCompleted
+data CommandStatus
+  = CSCreated
+  | CSCompleted
   deriving (Show, Generic)
 
-instance FromField AsyncCommandStatus where fromField = fromTextField_ textDecode
+instance FromField CommandStatus where fromField = fromTextField_ textDecode
 
-instance ToField AsyncCommandStatus where toField = toField . textEncode
+instance ToField CommandStatus where toField = toField . textEncode
 
-instance TextEncoding AsyncCommandStatus where
+instance TextEncoding CommandStatus where
   textDecode = \case
-    "created" -> Just ACSCreated
-    "completed" -> Just ACSCompleted
+    "created" -> Just CSCreated
+    "completed" -> Just CSCompleted
     _ -> Nothing
   textEncode = \case
-    ACSCreated -> "created"
-    ACSCompleted -> "completed"
+    CSCreated -> "created"
+    CSCompleted -> "completed"
+
+data CommandFunction
+  = CFCreateConn
+  | CFJoinConn
+  | CFAllowConn
+  | CFAckMessage
+  deriving (Show, Generic)
+
+instance FromField CommandFunction where fromField = fromTextField_ textDecode
+
+instance ToField CommandFunction where toField = toField . textEncode
+
+instance TextEncoding CommandFunction where
+  textDecode = \case
+    "create_conn" -> Just CFCreateConn
+    "join_conn" -> Just CFJoinConn
+    "allow_conn" -> Just CFAllowConn
+    "ack_message" -> Just CFAckMessage
+    _ -> Nothing
+  textEncode = \case
+    CFCreateConn -> "create_conn"
+    CFJoinConn -> "join_conn"
+    CFAllowConn -> "allow_conn"
+    CFAckMessage -> "ack_message"

@@ -1,17 +1,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20220909_async_commands where
+module Simplex.Chat.Migrations.M20220909_commands where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20220909_async_commands :: Query
-m20220909_async_commands =
+m20220909_commands :: Query
+m20220909_commands =
   [sql|
-CREATE TABLE async_commands (
-  async_command_id INTEGER PRIMARY KEY, -- used as ACorrId
+CREATE TABLE commands (
+  command_id INTEGER PRIMARY KEY, -- used as ACorrId
   connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
-  command_tag TEXT NOT NULL,
+  command_function TEXT NOT NULL,
   command_status TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

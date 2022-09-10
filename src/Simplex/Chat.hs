@@ -1380,7 +1380,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
-          cmdId <- createAsyncAckCmd conn
+          cmdId <- createAckCmd conn
           _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
           withAckMessage agentConnId cmdId meta $ pure ()
           -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
@@ -1394,7 +1394,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
         MSG msgMeta _msgFlags msgBody -> do
-          cmdId <- createAsyncAckCmd conn
+          cmdId <- createAckCmd conn
           msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
           withAckMessage agentConnId cmdId msgMeta $
             case chatMsgEvent of
@@ -1559,7 +1559,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
-        cmdId <- createAsyncAckCmd conn
+        cmdId <- createAckCmd conn
         msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
         withAckMessage agentConnId cmdId msgMeta $
           case chatMsgEvent of
@@ -1621,7 +1621,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               toView $ CRSndFileRcvCancelled ci ft
             _ -> throwChatError $ CEFileSend fileId err
         MSG meta _ _ -> do
-          cmdId <- createAsyncAckCmd conn
+          cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId meta $ pure ()
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
@@ -1645,7 +1645,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             getChatItemByFileId db user fileId
           toView $ CRRcvFileStart ci
         MSG meta@MsgMeta {recipient = (msgId, _), integrity} _ msgBody -> do
-          cmdId <- createAsyncAckCmd conn
+          cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId meta $ do
             parseFileChunk msgBody >>= \case
               FileChunkCancel ->
@@ -1710,11 +1710,11 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   toView $ CRReceivedContactRequest cReq
                   showToast (localDisplayName <> "> ") "wants to connect to you"
 
-    createAsyncAckCmd :: Connection -> m AsyncCommandId
-    createAsyncAckCmd Connection {connId} = do
-      withStore' $ \db -> createAsyncCommand db user (Just connId) "ACK"
+    createAckCmd :: Connection -> m CommandId
+    createAckCmd Connection {connId} = do
+      withStore' $ \db -> createCommand db user (Just connId) "ACK"
 
-    withAckMessage :: ConnId -> AsyncCommandId -> MsgMeta -> m () -> m ()
+    withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
     withAckMessage cId _cmdId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
       -- TODO [async agent commands] pass cmdId as ACorrId
@@ -2429,7 +2429,7 @@ sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
       Nothing -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
       Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
 
-saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> AsyncCommandId -> m RcvMessage
+saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m RcvMessage
 saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
   ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- liftEither $ parseChatMessage msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
@@ -2466,23 +2466,23 @@ allowAgentConnection conn confId msg = do
   withAgent $ \a -> allowConnection a (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (AsyncCommandId, ConnId)
+createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user enableNtfs cMode = do
-  cmdId <- withStore' $ \db -> createAsyncCommand db user Nothing "NEW"
+  cmdId <- withStore' $ \db -> createCommand db user Nothing "NEW"
   -- TODO [async agent commands] pass cmdId as ACorrId
   connId <- withAgent $ \a -> createConnectionAsync a enableNtfs cMode
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (AsyncCommandId, ConnId)
+joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo = do
-  cmdId <- withStore' $ \db -> createAsyncCommand db user Nothing "JOIN"
+  cmdId <- withStore' $ \db -> createCommand db user Nothing "JOIN"
   -- TODO [async agent commands] pass cmdId as ACorrId
   connId <- withAgent $ \a -> joinConnectionAsync a enableNtfs cReqUri cInfo
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: ChatMonad m => User -> Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
-  _cmdId <- withStore' $ \db -> createAsyncCommand db user (Just connId) "LET"
+  _cmdId <- withStore' $ \db -> createCommand db user (Just connId) "LET"
   -- TODO [async agent commands] pass cmdId as ACorrId
   withAgent $ \a -> allowConnectionAsync a (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted

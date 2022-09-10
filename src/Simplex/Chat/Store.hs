@@ -174,9 +174,9 @@ module Simplex.Chat.Store
     createCall,
     deleteCalls,
     getCalls,
-    createAsyncCommand,
-    setAsyncCommandConnId,
-    updateAsyncCommandStatus,
+    createCommand,
+    setCommandConnId,
+    updateCommandStatus,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -236,7 +236,7 @@ import Simplex.Chat.Migrations.M20220818_chat_notifications
 import Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
 import Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
 import Simplex.Chat.Migrations.M20220824_profiles_local_alias
-import Simplex.Chat.Migrations.M20220909_async_commands
+import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -272,7 +272,7 @@ schemaMigrations =
     ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id),
     ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items),
     ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
-    ("20220909_async_commands", m20220909_async_commands)
+    ("20220909_commands", m20220909_commands)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1825,12 +1825,12 @@ getIntroduction_ db reMember toMember = ExceptT $ do
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
-createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (AsyncCommandId, ConnId) -> (AsyncCommandId, ConnId) -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
-createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) (groupAsyncCmdId, groupAgentConnId) (directAsyncCmdId, directAgentConnId) customUserProfileId = do
+createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
+createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
   Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId memberContactId Nothing customUserProfileId cLevel currentTs
-  liftIO $ setAsyncCommandConnId db user directAsyncCmdId directConnId
+  liftIO $ setCommandConnId db user directCmdId directConnId
   (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile (Just groupId) currentTs
   liftIO $ do
     let newMember =
@@ -1845,17 +1845,17 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
             }
     member <- createNewMember_ db user gInfo newMember currentTs
     conn@Connection {connId = groupConnId} <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
-    liftIO $ setAsyncCommandConnId db user groupAsyncCmdId groupConnId
+    liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> (AsyncCommandId, ConnId) -> (AsyncCommandId, ConnId) -> Maybe ProfileId -> IO ()
-createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupAsyncCmdId, groupAgentConnId) (directAsyncCmdId, directAgentConnId) customUserProfileId = do
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> IO ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
   Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId viaContactId cLevel currentTs
-  setAsyncCommandConnId db user groupAsyncCmdId groupConnId
+  setCommandConnId db user groupCmdId groupConnId
   Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId viaContactId Nothing customUserProfileId cLevel currentTs
-  setAsyncCommandConnId db user directAsyncCmdId directConnId
+  setCommandConnId db user directCmdId directConnId
   contactId <- createMemberContact_ directConnId currentTs
   updateMember_ contactId currentTs
   where
@@ -1983,11 +1983,11 @@ createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation
     (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
   insertedRowId db
 
-createSndGroupFileTransferConnection :: DB.Connection -> User -> Int64 -> (AsyncCommandId, ConnId) -> GroupMember -> IO ()
-createSndGroupFileTransferConnection db user@User {userId} fileId (asyncCmdId, acId) GroupMember {groupMemberId} = do
+createSndGroupFileTransferConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> IO ()
+createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   Connection {connId} <- createSndFileConnection_ db userId fileId acId
-  setAsyncCommandConnId db user asyncCmdId connId
+  setCommandConnId db user cmdId connId
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -3856,41 +3856,41 @@ getCalls db User {userId} = do
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
 
-createAsyncCommand :: DB.Connection -> User -> Maybe Int64 -> String -> IO AsyncCommandId
-createAsyncCommand db User {userId} connId commandTag = do
+createCommand :: DB.Connection -> User -> Maybe Int64 -> String -> IO CommandId
+createCommand db User {userId} connId commandTag = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      INSERT INTO async_commands (connection_id, command_tag, command_status, user_id, created_at, updated_at)
+      INSERT INTO commands (connection_id, command_function, command_status, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?)
     |]
-    (connId, commandTag, ACSCreated, userId, currentTs, currentTs)
+    (connId, commandTag, CSCreated, userId, currentTs, currentTs)
   insertedRowId db
 
-setAsyncCommandConnId :: DB.Connection -> User -> AsyncCommandId -> Int64 -> IO ()
-setAsyncCommandConnId db User {userId} asyncCmdId connId = do
+setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
+setCommandConnId db User {userId} cmdId connId = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     [sql|
-      UPDATE async_commands
+      UPDATE commands
       SET connection_id = ?, updated_at = ?
-      WHERE user_id = ? AND async_command_id = ?
+      WHERE user_id = ? AND command_id = ?
     |]
-    (connId, updatedAt, userId, asyncCmdId)
+    (connId, updatedAt, userId, cmdId)
 
-updateAsyncCommandStatus :: DB.Connection -> User -> AsyncCommandId -> AsyncCommandStatus -> IO ()
-updateAsyncCommandStatus db User {userId} asyncCmdId status = do
+updateCommandStatus :: DB.Connection -> User -> CommandId -> CommandStatus -> IO ()
+updateCommandStatus db User {userId} cmdId status = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     [sql|
-      UPDATE async_commands
+      UPDATE commands
       SET command_status = ?, updated_at = ?
-      WHERE user_id = ? AND async_command_id = ?
+      WHERE user_id = ? AND command_id = ?
     |]
-    (status, updatedAt, userId, asyncCmdId)
+    (status, updatedAt, userId, cmdId)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
