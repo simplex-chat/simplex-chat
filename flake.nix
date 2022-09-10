@@ -277,7 +277,7 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              } ).simplex-chat.components.library.override {
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -286,7 +286,12 @@
                 postInstall = iosPostInstall "pkg-ios-aarch64-swift-json";
               };
 	            # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
-              "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+              "aarch64-darwin:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -303,7 +308,7 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              } ).simplex-chat.components.library.override {
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
@@ -312,7 +317,12 @@
                 postInstall = iosPostInstall "pkg-ios-x86_64-swift-json";
               };
               # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
-              "x86_64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+              "x86_64-darwin:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
