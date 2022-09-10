@@ -1712,7 +1712,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
 
     createAckCmd :: Connection -> m CommandId
     createAckCmd Connection {connId} = do
-      withStore' $ \db -> createCommand db user (Just connId) "ACK"
+      withStore' $ \db -> createCommand db user (Just connId) CFAckMessage
 
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
     withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
@@ -2467,19 +2467,19 @@ allowAgentConnection conn confId msg = do
 
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user enableNtfs cMode = do
-  cmdId <- withStore' $ \db -> createCommand db user Nothing "NEW"
+  cmdId <- withStore' $ \db -> createCommand db user Nothing CFCreateConn
   connId <- withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) enableNtfs cMode
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo = do
-  cmdId <- withStore' $ \db -> createCommand db user Nothing "JOIN"
+  cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
   connId <- withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) enableNtfs cReqUri cInfo
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: ChatMonad m => User -> Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
-  cmdId <- withStore' $ \db -> createCommand db user (Just connId) "LET"
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 

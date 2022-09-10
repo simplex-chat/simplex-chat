@@ -3856,8 +3856,8 @@ getCalls db User {userId} = do
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
 
-createCommand :: DB.Connection -> User -> Maybe Int64 -> String -> IO CommandId
-createCommand db User {userId} connId commandTag = do
+createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
+createCommand db User {userId} connId commandFunction = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -3865,7 +3865,7 @@ createCommand db User {userId} connId commandTag = do
       INSERT INTO commands (connection_id, command_function, command_status, user_id, created_at, updated_at)
       VALUES (?,?,?,?,?,?)
     |]
-    (connId, commandTag, CSCreated, userId, currentTs, currentTs)
+    (connId, commandFunction, CSCreated, userId, currentTs, currentTs)
   insertedRowId db
 
 setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
