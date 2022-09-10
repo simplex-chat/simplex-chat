@@ -177,6 +177,7 @@ module Simplex.Chat.Store
     createCommand,
     setCommandConnId,
     updateCommandStatus,
+    getCommandDataByCorrId,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -239,7 +240,7 @@ import Simplex.Chat.Migrations.M20220824_profiles_local_alias
 import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -3891,6 +3892,21 @@ updateCommandStatus db User {userId} cmdId status = do
       WHERE user_id = ? AND command_id = ?
     |]
     (status, updatedAt, userId, cmdId)
+
+getCommandDataByCorrId :: DB.Connection -> User -> ACorrId -> IO (Maybe CommandData)
+getCommandDataByCorrId db User {userId} corrId =
+  maybeFirstRow toCommandData $
+    DB.query
+      db
+      [sql|
+        SELECT command_id, connection_id, command_function, command_status
+        FROM commands
+        WHERE user_id = ? AND command_id = ?
+      |]
+      (userId, commandId corrId)
+  where
+    toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
+    toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

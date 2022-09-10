@@ -1192,10 +1192,10 @@ agentSubscriber = do
   q <- asks $ subQ . smpAgent
   l <- asks chatLock
   forever $ do
-    (_, connId, msg) <- atomically $ readTBQueue q
+    (corrId, connId, msg) <- atomically $ readTBQueue q
     u <- readTVarIO =<< asks currentUser
     withLock l . void . runExceptT $
-      processAgentMessage u connId msg `catchError` (toView . CRChatError)
+      processAgentMessage u corrId connId msg `catchError` (toView . CRChatError)
 
 type AgentBatchSubscribe m = AgentClient -> [ConnId] -> ExceptT AgentErrorType m (Map ConnId (Either AgentErrorType ()))
 
@@ -1312,9 +1312,9 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACommand 'Agent -> m ()
-processAgentMessage Nothing _ _ = throwChatError CENoActiveUser
-processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
+processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
+processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
+processAgentMessage (Just User {userId}) _ "" agentMessage = case agentMessage of
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
   DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
@@ -1327,7 +1327,7 @@ processAgentMessage (Just User {userId}) "" agentMessage = case agentMessage of
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
-processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage =
+processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage conn contact_
@@ -1388,6 +1388,20 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
+        OK -> do
+          cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
+          forM_ cmdData_ $ \CommandData {cmdId, cmdConnId, cmdFunction} -> do
+            case cmdConnId of
+              Just cmdConnId' ->
+                if connId == cmdConnId'
+                  then
+                    if aCommandTag agentMsg == commandExpectedResponse cmdFunction
+                      then do
+                        -- TODO ackMsgDeliveryEvent for ACK
+                        withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
+                      else throwChatError $ CECommandError "unexpected response for correlated command"
+                  else throwChatError $ CECommandError "correlated command's connection id doesn't match"
+              Nothing -> throwChatError $ CECommandError "correlated command doesn't have connection id"
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
