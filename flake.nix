@@ -153,7 +153,7 @@
                   for lib in $out/_pkg/*.so; do
                     chmod +w "$lib"
                     ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
-                    [[ "$lib" != *libsimplex.so ]] && ${pkgs.patchelf}/bin/patchelf --set-soname $lib $lib
+                    [[ "$lib" != *libsimplex.so ]] && ${pkgs.patchelf}/bin/patchelf --set-soname "$(basename -a $lib)" "$lib"
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
