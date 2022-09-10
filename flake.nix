@@ -25,7 +25,10 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [{
-          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
+          packages.direct-sqlcipher.patches = [
+            "./scripts/nix/direct-sqlcipher-2.3.27.patch",
+            "./scripts/nix/direct-sqlcipher-android.patch"
+          ];
           packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
