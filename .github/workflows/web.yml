@@ -3,7 +3,7 @@ name: Build Eleventy
 on:
   push:
     branches:
-      - website
+      - master
       - stable
     paths:
       - blog/**
