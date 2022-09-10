@@ -103,6 +103,7 @@
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
                 setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
                 postInstall = ''
+                  set -x
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
                   # copy over includes, we might want those, but maybe not.
