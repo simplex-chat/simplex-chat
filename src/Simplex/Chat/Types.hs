@@ -915,3 +915,23 @@ type JSONString = String
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
+
+type AsyncCommandId = Int64
+
+data AsyncCommandStatus
+  = ACSCreated
+  | ACSCompleted
+  deriving (Show, Generic)
+
+instance FromField AsyncCommandStatus where fromField = fromTextField_ textDecode
+
+instance ToField AsyncCommandStatus where toField = toField . textEncode
+
+instance TextEncoding AsyncCommandStatus where
+  textDecode = \case
+    "created" -> Just ACSCreated
+    "completed" -> Just ACSCompleted
+    _ -> Nothing
+  textEncode = \case
+    ACSCreated -> "created"
+    ACSCompleted -> "completed"

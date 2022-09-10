@@ -1376,13 +1376,15 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           let profileToSend = fromLocalProfile $ fromMaybe profile incognitoProfile
           saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-          allowAgentConnectionAsync conn confId $ XInfo profileToSend
+          allowAgentConnectionAsync user conn confId $ XInfo profileToSend
         INFO connInfo ->
           saveConnInfo conn connInfo
         MSG meta _msgFlags msgBody -> do
-          _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody
-          withAckMessage agentConnId meta $ pure ()
-          ackMsgDeliveryEvent conn meta
+          cmdId <- createAsyncAckCmd conn
+          _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
+          withAckMessage agentConnId cmdId meta $ pure ()
+          -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+          -- ackMsgDeliveryEvent conn meta
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
@@ -1392,8 +1394,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
         MSG msgMeta _msgFlags msgBody -> do
-          msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody
-          withAckMessage agentConnId msgMeta $
+          cmdId <- createAsyncAckCmd conn
+          msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
+          withAckMessage agentConnId cmdId msgMeta $
             case chatMsgEvent of
               XMsgNew mc -> newContentMessage ct mc msg msgMeta
               XMsgUpdate sharedMsgId mContent -> messageUpdate ct sharedMsgId mContent msg msgMeta
@@ -1412,7 +1415,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XCallExtra callId extraInfo -> xCallExtra ct callId extraInfo msg msgMeta
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               _ -> pure ()
-          ackMsgDeliveryEvent conn msgMeta
+          -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+          -- ackMsgDeliveryEvent conn msgMeta
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1421,7 +1425,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               -- TODO check member ID
               -- TODO update member profile
               -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-              allowAgentConnectionAsync conn confId XOk
+              allowAgentConnectionAsync user conn confId XOk
             _ -> messageError "CONF from member must have x.grp.mem.info"
         INFO connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1495,7 +1499,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 | sameMemberId memId m -> do
                   withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
                   -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                  allowAgentConnectionAsync conn confId XOk
+                  allowAgentConnectionAsync user conn confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           _ ->
@@ -1504,7 +1508,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                 | sameMemberId memId m -> do
                   -- TODO update member profile
                   -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                  allowAgentConnectionAsync conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
+                  allowAgentConnectionAsync user conn confId $ XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -1555,8 +1559,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   let connectedIncognito = contactConnIncognito ct || memberIncognito membership
                   when (memberCategory m == GCPreMember) $ probeMatchingContacts ct connectedIncognito
       MSG msgMeta _msgFlags msgBody -> do
-        msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody
-        withAckMessage agentConnId msgMeta $
+        cmdId <- createAsyncAckCmd conn
+        msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
+        withAckMessage agentConnId cmdId msgMeta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
             XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
@@ -1574,7 +1579,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XGrpDel -> xGrpDel gInfo m msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
-        ackMsgDeliveryEvent conn msgMeta
+        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+        -- ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
@@ -1595,7 +1601,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               | name == fileName -> do
                 withStore' $ \db -> updateSndFileStatus db ft FSAccepted
                 -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-                allowAgentConnectionAsync conn confId XOk
+                allowAgentConnectionAsync user conn confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
             _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
@@ -1614,8 +1620,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               ci <- withStore $ \db -> getChatItemByFileId db user fileId
               toView $ CRSndFileRcvCancelled ci ft
             _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ _ ->
-          withAckMessage agentConnId meta $ pure ()
+        MSG meta _ _ -> do
+          cmdId <- createAsyncAckCmd conn
+          withAckMessage agentConnId cmdId meta $ pure ()
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
@@ -1629,7 +1636,7 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
         CONF confId _ connInfo -> do
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
           case chatMsgEvent of
-            XOk -> allowAgentConnectionAsync conn confId XOk -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
+            XOk -> allowAgentConnectionAsync user conn confId XOk -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
             _ -> pure ()
         CON -> do
           ci <- withStore $ \db -> do
@@ -1637,39 +1644,41 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             liftIO $ updateCIFileStatus db user fileId CIFSRcvTransfer
             getChatItemByFileId db user fileId
           toView $ CRRcvFileStart ci
-        MSG meta@MsgMeta {recipient = (msgId, _), integrity} _ msgBody -> withAckMessage agentConnId meta $ do
-          parseFileChunk msgBody >>= \case
-            FileChunkCancel ->
-              unless cancelled $ do
-                cancelRcvFileTransfer user ft
-                toView (CRRcvFileSndCancelled ft)
-            FileChunk {chunkNo, chunkBytes = chunk} -> do
-              case integrity of
-                MsgOk -> pure ()
-                MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
-                MsgError e ->
-                  badRcvFileChunk ft $ "invalid file chunk number " <> show chunkNo <> ": " <> show e
-              withStore' (\db -> createRcvFileChunk db ft chunkNo msgId) >>= \case
-                RcvChunkOk ->
-                  if B.length chunk /= fromInteger chunkSize
-                    then badRcvFileChunk ft "incorrect chunk size"
-                    else appendFileChunk ft chunkNo chunk
-                RcvChunkFinal ->
-                  if B.length chunk > fromInteger chunkSize
-                    then badRcvFileChunk ft "incorrect chunk size"
-                    else do
-                      appendFileChunk ft chunkNo chunk
-                      ci <- withStore $ \db -> do
-                        liftIO $ do
-                          updateRcvFileStatus db ft FSComplete
-                          updateCIFileStatus db user fileId CIFSRcvComplete
-                          deleteRcvFileChunks db ft
-                        getChatItemByFileId db user fileId
-                      toView $ CRRcvFileComplete ci
-                      closeFileHandle fileId rcvFiles
-                      withAgent (`deleteConnection` agentConnId)
-                RcvChunkDuplicate -> pure ()
-                RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
+        MSG meta@MsgMeta {recipient = (msgId, _), integrity} _ msgBody -> do
+          cmdId <- createAsyncAckCmd conn
+          withAckMessage agentConnId cmdId meta $ do
+            parseFileChunk msgBody >>= \case
+              FileChunkCancel ->
+                unless cancelled $ do
+                  cancelRcvFileTransfer user ft
+                  toView (CRRcvFileSndCancelled ft)
+              FileChunk {chunkNo, chunkBytes = chunk} -> do
+                case integrity of
+                  MsgOk -> pure ()
+                  MsgError MsgDuplicate -> pure () -- TODO remove once agent removes duplicates
+                  MsgError e ->
+                    badRcvFileChunk ft $ "invalid file chunk number " <> show chunkNo <> ": " <> show e
+                withStore' (\db -> createRcvFileChunk db ft chunkNo msgId) >>= \case
+                  RcvChunkOk ->
+                    if B.length chunk /= fromInteger chunkSize
+                      then badRcvFileChunk ft "incorrect chunk size"
+                      else appendFileChunk ft chunkNo chunk
+                  RcvChunkFinal ->
+                    if B.length chunk > fromInteger chunkSize
+                      then badRcvFileChunk ft "incorrect chunk size"
+                      else do
+                        appendFileChunk ft chunkNo chunk
+                        ci <- withStore $ \db -> do
+                          liftIO $ do
+                            updateRcvFileStatus db ft FSComplete
+                            updateCIFileStatus db user fileId CIFSRcvComplete
+                            deleteRcvFileChunks db ft
+                          getChatItemByFileId db user fileId
+                        toView $ CRRcvFileComplete ci
+                        closeFileHandle fileId rcvFiles
+                        withAgent (`deleteConnection` agentConnId)
+                  RcvChunkDuplicate -> pure ()
+                  RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
@@ -1701,9 +1710,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
                   toView $ CRReceivedContactRequest cReq
                   showToast (localDisplayName <> "> ") "wants to connect to you"
 
-    withAckMessage :: ConnId -> MsgMeta -> m () -> m ()
-    withAckMessage cId MsgMeta {recipient = (msgId, _)} action =
+    createAsyncAckCmd :: Connection -> m AsyncCommandId
+    createAsyncAckCmd Connection {connId} = do
+      withStore' $ \db -> createAsyncCommand db user (Just connId) "ACK"
+
+    withAckMessage :: ConnId -> AsyncCommandId -> MsgMeta -> m () -> m ()
+    withAckMessage cId _cmdId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
+      -- TODO [async agent commands] pass cmdId as ACorrId
       action `E.finally` withAgent (\a -> ackMessageAsync a cId msgId `catchError` \_ -> pure ())
 
     ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
@@ -1913,11 +1927,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       (FileTransferMeta {fileName, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
       unless cancelled $
         if fName == fileName
-          then -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-            tryError (withAgent $ \a -> joinConnectionAsync a True fileConnReq . directMessage $ XOk) >>= \case
-              Right acId ->
-                withStore' $ \db -> createSndGroupFileTransferConnection db userId fileId acId m
-              Left e -> throwError e
+          then
+            tryError
+              -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
+              (joinAgentConnectionAsync user True fileConnReq . directMessage $ XOk)
+              >>= \case
+                Right cmdAndConnIds ->
+                  withStore' $ \db -> createSndGroupFileTransferConnection db user fileId cmdAndConnIds m
+                Left e -> throwError e
           else messageError "x.file.acpt.inv: fileName is different from expected"
 
     groupMsgToView :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
@@ -2119,14 +2136,14 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             else do
               -- [async agent commands] make commands async, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               -- TODO save group id, member id, host connection id + direct and group connection ids from immediate responses to intros_for_group_members
-              groupConnId <- withAgent $ \a -> createConnectionAsync a True SCMInvitation
-              directConnId <- withAgent $ \a -> createConnectionAsync a True SCMInvitation
+              groupCmdAndConnIds <- createAgentConnectionAsync user True SCMInvitation
+              directCmdAndConnIds <- createAgentConnectionAsync user True SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
-              void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnId directConnId customUserProfileId
-              -- let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-              -- void $ sendDirectMessage conn msg (GroupId groupId)
-              -- withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
+              void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupCmdAndConnIds directCmdAndConnIds customUserProfileId
+        -- let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
+        -- void $ sendDirectMessage conn msg (GroupId groupId)
+        -- withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
@@ -2155,10 +2172,10 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be made asynchronous for persistence
-      groupConnId <- withAgent $ \a -> joinConnectionAsync a True groupConnReq $ directMessage msg
-      directConnId <- withAgent $ \a -> joinConnectionAsync a True directConnReq $ directMessage msg
+      groupCmdAndConnIds <- joinAgentConnectionAsync user True groupConnReq $ directMessage msg
+      directCmdAndConnIds <- joinAgentConnectionAsync user True directConnReq $ directMessage msg
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
-      withStore' $ \db -> createIntroToMemberContact db userId m toMember groupConnId directConnId customUserProfileId
+      withStore' $ \db -> createIntroToMemberContact db user m toMember groupCmdAndConnIds directCmdAndConnIds customUserProfileId
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m memId msg msgMeta = do
@@ -2412,12 +2429,12 @@ sendPendingGroupMessages GroupMember {groupMemberId, localDisplayName} conn = do
       Nothing -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
       Just introId -> withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
 
-saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> m RcvMessage
-saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody = do
+saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> AsyncCommandId -> m RcvMessage
+saveRcvMSG Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
   ChatMessage {msgId = sharedMsgId_, chatMsgEvent} <- liftEither $ parseChatMessage msgBody
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
-      rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
+      rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
   withStore' $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> m (ChatItem c 'MDSnd)
@@ -2449,8 +2466,24 @@ allowAgentConnection conn confId msg = do
   withAgent $ \a -> allowConnection a (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
-allowAgentConnectionAsync :: ChatMonad m => Connection -> ConfirmationId -> ChatMsgEvent -> m ()
-allowAgentConnectionAsync conn confId msg = do
+createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (AsyncCommandId, ConnId)
+createAgentConnectionAsync user enableNtfs cMode = do
+  cmdId <- withStore' $ \db -> createAsyncCommand db user Nothing "NEW"
+  -- TODO [async agent commands] pass cmdId as ACorrId
+  connId <- withAgent $ \a -> createConnectionAsync a enableNtfs cMode
+  pure (cmdId, connId)
+
+joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (AsyncCommandId, ConnId)
+joinAgentConnectionAsync user enableNtfs cReqUri cInfo = do
+  cmdId <- withStore' $ \db -> createAsyncCommand db user Nothing "JOIN"
+  -- TODO [async agent commands] pass cmdId as ACorrId
+  connId <- withAgent $ \a -> joinConnectionAsync a enableNtfs cReqUri cInfo
+  pure (cmdId, connId)
+
+allowAgentConnectionAsync :: ChatMonad m => User -> Connection -> ConfirmationId -> ChatMsgEvent -> m ()
+allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
+  _cmdId <- withStore' $ \db -> createAsyncCommand db user (Just connId) "LET"
+  -- TODO [async agent commands] pass cmdId as ACorrId
   withAgent $ \a -> allowConnectionAsync a (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
