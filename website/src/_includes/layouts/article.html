@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+  <link href="/css/tailwind.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/blogs.css" />
+  <link rel="stylesheet" href="/css/blog.css" />
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+<body class="sm:bg-gray-100">
+  {% include "nav.html" %}
+  <section class="container">
+    <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20">{{ content | safe }}</div>
+  </section>
+  {% include "footer.html" %}
+</body>
+
+</html>
