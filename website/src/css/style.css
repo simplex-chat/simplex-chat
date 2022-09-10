@@ -1,0 +1,17 @@
+html {
+  scroll-behavior: smooth;
+}
+
+#comparison::before {
+  display: block;
+  content: " ";
+  margin-top: -80px;
+  height: 120px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* .nav-button-active{
+    background-color: #00C8FB;
+    color: #fff;
+} */
