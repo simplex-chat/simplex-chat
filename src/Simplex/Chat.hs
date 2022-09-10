@@ -1383,8 +1383,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
           cmdId <- createAckCmd conn
           _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
           withAckMessage agentConnId cmdId meta $ pure ()
-          -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-          -- ackMsgDeliveryEvent conn meta
+        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+        -- ackMsgDeliveryEvent conn meta
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
@@ -1415,8 +1415,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
               XCallExtra callId extraInfo -> xCallExtra ct callId extraInfo msg msgMeta
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               _ -> pure ()
-          -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-          -- ackMsgDeliveryEvent conn msgMeta
+        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+        -- ackMsgDeliveryEvent conn msgMeta
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1579,8 +1579,8 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
             XGrpDel -> xGrpDel gInfo m msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
-        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-        -- ackMsgDeliveryEvent conn msgMeta
+      -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
+      -- ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
@@ -1715,10 +1715,9 @@ processAgentMessage (Just user@User {userId, profile}) agentConnId agentMessage 
       withStore' $ \db -> createCommand db user (Just connId) "ACK"
 
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m () -> m ()
-    withAckMessage cId _cmdId MsgMeta {recipient = (msgId, _)} action =
+    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action =
       -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
-      -- TODO [async agent commands] pass cmdId as ACorrId
-      action `E.finally` withAgent (\a -> ackMessageAsync a cId msgId `catchError` \_ -> pure ())
+      action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId `catchError` \_ -> pure ())
 
     ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
     ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
@@ -2469,22 +2468,19 @@ allowAgentConnection conn confId msg = do
 createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
 createAgentConnectionAsync user enableNtfs cMode = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing "NEW"
-  -- TODO [async agent commands] pass cmdId as ACorrId
-  connId <- withAgent $ \a -> createConnectionAsync a enableNtfs cMode
+  connId <- withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) enableNtfs cMode
   pure (cmdId, connId)
 
 joinAgentConnectionAsync :: ChatMonad m => User -> Bool -> ConnectionRequestUri c -> ConnInfo -> m (CommandId, ConnId)
 joinAgentConnectionAsync user enableNtfs cReqUri cInfo = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing "JOIN"
-  -- TODO [async agent commands] pass cmdId as ACorrId
-  connId <- withAgent $ \a -> joinConnectionAsync a enableNtfs cReqUri cInfo
+  connId <- withAgent $ \a -> joinConnectionAsync a (aCorrId cmdId) enableNtfs cReqUri cInfo
   pure (cmdId, connId)
 
 allowAgentConnectionAsync :: ChatMonad m => User -> Connection -> ConfirmationId -> ChatMsgEvent -> m ()
 allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
-  _cmdId <- withStore' $ \db -> createCommand db user (Just connId) "LET"
-  -- TODO [async agent commands] pass cmdId as ACorrId
-  withAgent $ \a -> allowConnectionAsync a (aConnId conn) confId $ directMessage msg
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) "LET"
+  withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
 
 getCreateActiveUser :: SQLiteStore -> IO User
