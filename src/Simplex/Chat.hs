@@ -1388,20 +1388,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
-        OK -> do
-          cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
-          forM_ cmdData_ $ \CommandData {cmdId, cmdConnId, cmdFunction} -> do
-            case cmdConnId of
-              Just cmdConnId' ->
-                if connId == cmdConnId'
-                  then
-                    if aCommandTag agentMsg == commandExpectedResponse cmdFunction
-                      then do
-                        -- TODO ackMsgDeliveryEvent for ACK
-                        withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
-                      else throwChatError $ CECommandError "unexpected response for correlated command"
-                  else throwChatError $ CECommandError "correlated command's connection id doesn't match"
-              Nothing -> throwChatError $ CECommandError "correlated command doesn't have connection id"
+        OK -> withCompletedCommand conn agentMsg $ \cmdData ->
+          -- TODO ackMsgDeliveryEvent for ACK
+          pure ()
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
@@ -1723,6 +1712,22 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                 else do
                   toView $ CRReceivedContactRequest cReq
                   showToast (localDisplayName <> "> ") "wants to connect to you"
+
+    withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
+    withCompletedCommand Connection {connId} agentMsg action = do
+      cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
+      forM_ cmdData_ $ \cmdData@CommandData {cmdId, cmdConnId, cmdFunction} -> do
+        case cmdConnId of
+          Just cmdConnId' ->
+            if connId == cmdConnId'
+              then
+                if aCommandTag agentMsg == commandExpectedResponse cmdFunction
+                  then do
+                    withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
+                    action cmdData
+                  else throwChatError $ CECommandError "unexpected response for correlated command"
+              else throwChatError $ CECommandError "correlated command's connection id doesn't match"
+          Nothing -> throwChatError $ CECommandError "correlated command doesn't have connection id"
 
     createAckCmd :: Connection -> m CommandId
     createAckCmd Connection {connId} = do
