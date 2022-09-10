@@ -6,8 +6,10 @@ on:
       - master
       - stable
     paths:
-      - blog/**
       - website/**
+      - images/**
+      - blog/**
+      - simplex-chat/.github/workflows/web.yml
 
 jobs:
   build:
