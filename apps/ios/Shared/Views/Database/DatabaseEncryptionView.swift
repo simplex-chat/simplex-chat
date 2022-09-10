@@ -35,9 +35,9 @@ enum DatabaseEncryptionAlert: Identifiable {
 
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
+    @Binding var useKeychain: Bool
     @State private var alert: DatabaseEncryptionAlert? = nil
     @State private var progressIndicator = false
-    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var useKeychainToggle = storeDBPassphraseGroupDefault.get()
     @State private var initialRandomDBPassphrase = initialRandomDBPassphraseGroupDefault.get()
     @State private var storedKey = getDatabaseKey() != nil
@@ -58,7 +58,7 @@ struct DatabaseEncryptionView: View {
     private func databaseEncryptionView() -> some View {
         List {
             Section {
-                settingsRow("key") {
+                settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : .secondary) {
                     Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
                     .onChange(of: useKeychainToggle) { _ in
                         if useKeychainToggle {
@@ -224,7 +224,7 @@ struct DatabaseEncryptionView: View {
         case .currentPassphraseError:
             return Alert(
                 title: Text("Wrong passsphrase!"),
-                message: Text("Please enter correct current passphrase")
+                message: Text("Please enter correct current passphrase.")
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
@@ -254,6 +254,7 @@ struct DatabaseKeyField: View {
     var placeholder: LocalizedStringKey
     var valid: Bool
     var showStrength = false
+    var onSubmit: () -> Void = {}
     @State private var showKey = false
 
     var body: some View {
@@ -272,6 +273,7 @@ struct DatabaseKeyField: View {
                 .autocapitalization(.none)
                 .submitLabel(.done)
                 .padding(.leading, 36)
+                .onSubmit(onSubmit)
         }
     }
 
@@ -338,6 +340,6 @@ func validKey(_ s: String) -> Bool {
 
 struct DatabaseEncryptionView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseEncryptionView()
+        DatabaseEncryptionView(useKeychain: Binding.constant(true))
     }
 }

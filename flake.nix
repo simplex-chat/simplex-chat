@@ -47,6 +47,24 @@
               > $out/nix-support/hydra-build-products
         '';
       }); in
+      let iosPostInstall = bundleName: ''
+        ${pkgs.tree}/bin/tree $out
+        mkdir -p $out/_pkg
+        # copy over includes, we might want those, but maybe not.
+        # cp -r $out/lib/*/*/include $out/_pkg/
+        # find the libHS...ghc-X.Y.Z.a static library; this is the
+        # rolled up one with all dependencies included.
+        find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
+        find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
+        # There is no static libc
+        ${pkgs.tree}/bin/tree $out/_pkg
+        (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
+        rm -fR $out/_pkg
+        mkdir -p $out/nix-support
+        echo "file binary-dist \"$(echo $out/*.zip)\"" \
+            > $out/nix-support/hydra-build-products
+      ''; in
       rec {
         packages = {
             "lib:simplex-chat" = (drv pkgs).simplex-chat.components.library;
@@ -103,6 +121,7 @@
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
                 setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
                 postInstall = ''
+                  set -x
                   ${pkgs.tree}/bin/tree $out
                   mkdir -p $out/_pkg
                   # copy over includes, we might want those, but maybe not.
@@ -134,6 +153,7 @@
                   for lib in $out/_pkg/*.so; do
                     chmod +w "$lib"
                     ${pkgs.patchelf}/bin/patchelf --remove-needed libunwind.so "$lib"
+                    [[ "$lib" != *libsimplex.so ]] && ${pkgs.patchelf}/bin/patchelf --set-soname "$(basename -a $lib)" "$lib"
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
@@ -257,56 +277,27 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              } ).simplex-chat.components.library.override {
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
                 ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = ''
-                  ${pkgs.tree}/bin/tree $out
-                  mkdir -p $out/_pkg
-                  # copy over includes, we might want those, but maybe not.
-                  # cp -r $out/lib/*/*/include $out/_pkg/
-                  # find the libHS...ghc-X.Y.Z.a static library; this is the
-                  # rolled up one with all dependencies included.
-                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # There is no static libc
-                  ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-swift-json.zip *)
-                  rm -fR $out/_pkg
-                  mkdir -p $out/nix-support
-                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                      > $out/nix-support/hydra-build-products
-                '';
+                postInstall = iosPostInstall "pkg-ios-aarch64-swift-json";
               };
 	            # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
-              "aarch64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+              "aarch64-darwin:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
                 ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = ''
-                  ${pkgs.tree}/bin/tree $out
-                  mkdir -p $out/_pkg
-                  # copy over includes, we might want those, but maybe not.
-                  # cp -r $out/lib/*/*/include $out/_pkg/
-                  # find the libHS...ghc-X.Y.Z.a static library; this is the
-                  # rolled up one with all dependencies included.
-                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # There is no static libc
-                  ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-aarch64-tagged-json.zip *)
-                  rm -fR $out/_pkg
-                  mkdir -p $out/nix-support
-                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                      > $out/nix-support/hydra-build-products
-                '';
+                postInstall = iosPostInstall "pkg-ios-aarch64-tagged-json";
               };
             };
             "x86_64-darwin" = {
@@ -317,56 +308,27 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              } ).simplex-chat.components.library.override {
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
                 ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = ''
-                  ${pkgs.tree}/bin/tree $out
-                  mkdir -p $out/_pkg
-                  # copy over includes, we might want those, but maybe not.
-                  # cp -r $out/lib/*/*/include $out/_pkg/
-                  # find the libHS...ghc-X.Y.Z.a static library; this is the
-                  # rolled up one with all dependencies included.
-                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # There is no static libc
-                  ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-x86_64-swift-json.zip *)
-                  rm -fR $out/_pkg
-                  mkdir -p $out/nix-support
-                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                      > $out/nix-support/hydra-build-products
-                '';
+                postInstall = iosPostInstall "pkg-ios-x86_64-swift-json";
               };
               # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
-              "x86_64-darwin:lib:simplex-chat" = (drv pkgs).simplex-chat.components.library.override {
+              "x86_64-darwin:lib:simplex-chat" = (drv' {
+                pkgs' = pkgs;
+                extra-modules = [{
+                  packages.direct-sqlcipher.flags.commoncrypto = true;
+                }];
+              }).simplex-chat.components.library.override {
                 smallAddressSpace = true; enableShared = false;
                 # we need threaded here, otherwise all the queing logic doesn't work properly.
                 # for iOS we also use -staticlib, to get one rolled up library.
                 # still needs mac2ios patching of the archives.
                 ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = ''
-                  ${pkgs.tree}/bin/tree $out
-                  mkdir -p $out/_pkg
-                  # copy over includes, we might want those, but maybe not.
-                  # cp -r $out/lib/*/*/include $out/_pkg/
-                  # find the libHS...ghc-X.Y.Z.a static library; this is the
-                  # rolled up one with all dependencies included.
-                  find ./dist -name "libHS*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  find ${pkgs.gmp6.override { withStatic = true; }}/lib -name "*.a" -exec cp {} $out/_pkg \;
-                  # There is no static libc
-                  ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-ios-x86_64-tagged-json.zip *)
-                  rm -fR $out/_pkg
-                  mkdir -p $out/nix-support
-                  echo "file binary-dist \"$(echo $out/*.zip)\"" \
-                      > $out/nix-support/hydra-build-products
-                '';
+                postInstall = iosPostInstall "pkg-ios-x86_64-tagged-json";
               };
             };
         }.${system} or {});
