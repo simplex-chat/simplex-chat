@@ -28,7 +28,6 @@
           packages.direct-sqlcipher.patches = [
             ./scripts/nix/direct-sqlcipher-2.3.27.patch
             ./scripts/nix/direct-sqlcipher-android.patch
-            ./scripts/nix/direct-sqlcipher-err-string.patch
           ];
           packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
         }
