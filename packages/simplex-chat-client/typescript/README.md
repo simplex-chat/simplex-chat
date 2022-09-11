@@ -8,16 +8,16 @@ simplex-chat -p 5225
 
 Client API provides types and functions to:
 
-- create and change user profile
-- create and accept invitations ot connect with the contacts
-- create and manage long-term user address
-- create, join and manage group
-- send and receive files
+- create and change user profile (although, in most cases you can do it manually, via SimpleX Chat terminal app).
+- create and accept invitations or connect with the contacts.
+- create and manage long-term user address, accepting connection requests automatically.
+- create, join and manage group.
+- send and receive files.
 
 ## Use cases
 
-- chatbots: you can implement any logic of connecting with and communicating with SimpleX Chat users. Using chat groups chatbot can be used to connect SimleX Chat users
-- control of the equipment: e.g. servers or home automation. As SimpleX Chat provides secure and authorised connections, this is more secure than using rest APIs.
+- chat bots: you can implement any logic of connecting with and communicating with SimpleX Chat users. Using chat groups a chat bot can be used to connect SimleX Chat users.
+- control of the equipment: e.g. servers or home automation. SimpleX Chat provides secure and authorised connections, so this is more secure than using rest APIs.
 
 Please share your use cases and implementations.
 
