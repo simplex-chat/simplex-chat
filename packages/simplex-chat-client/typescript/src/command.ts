@@ -5,7 +5,7 @@ export type ChatCommand =
   | APIStopChat
   | SetFilesFolder
   | SetIncognito
-  | APIExportArchive 
+  | APIExportArchive
   | APIImportArchive
   | APIDeleteStorage
   | APIGetChats
@@ -339,7 +339,7 @@ export interface ShowMyAddress extends IChatCommand {
 
 export interface AddressAutoAccept extends IChatCommand {
   type: "addressAutoAccept"
-  enable: boolean
+  autoAccept: boolean
   autoReply?: MsgContent
 }
 
@@ -384,6 +384,7 @@ export type MsgContent = MCText | MCLink | MCImage | MCFile | MCUnknown
 
 interface MC {
   type: MsgContentTag
+  text: string
 }
 
 interface MCText extends MC {
@@ -409,7 +410,7 @@ interface MCFile extends MC {
 
 interface MCUnknown {
   type: string
-  text?: string
+  text: string
 }
 
 interface LinkPreview {
@@ -430,10 +431,10 @@ interface ArchiveConfig {
   parentTempDirectory?: string
 }
 
-enum GroupMemberRole {
+export enum GroupMemberRole {
   GRMember = "member",
   GRAdmin = "admin",
-  GROwner = "owner"
+  GROwner = "owner",
 }
 
 interface GroupProfile {
@@ -525,7 +526,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "showMyAddress":
       return "/show_address"
     case "addressAutoAccept":
-      return `/auto_accept ${cmd.enable ? "on" : "off"}${cmd.autoReply ? " " + JSON.stringify(cmd.autoReply) : ""}`
+      return `/auto_accept ${cmd.autoAccept ? "on" : "off"}${cmd.autoReply ? " " + JSON.stringify(cmd.autoReply) : ""}`
     case "receiveFile":
       return `/freceive ${cmd.fileId}${cmd.filePath ? " " + cmd.filePath : ""}`
     case "cancelFile":
