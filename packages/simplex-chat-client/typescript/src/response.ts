@@ -991,7 +991,7 @@ interface ContactSubStatus {}
 
 interface PendingSubStatus {}
 
-interface ConnectionStats {
+export interface ConnectionStats {
   rcvServers?: string[]
   sndServers?: string[]
 }

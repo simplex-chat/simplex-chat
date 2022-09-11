@@ -145,7 +145,7 @@ export interface SetFilesFolder extends IChatCommand {
 
 export interface SetIncognito extends IChatCommand {
   type: "setIncognito"
-  enable: boolean
+  incognito: boolean
 }
 
 export interface APIExportArchive extends IChatCommand {
@@ -172,6 +172,7 @@ export interface APIGetChat extends IChatCommand {
   chatType: ChatType
   chatId: number
   pagination: ChatPagination
+  search?: string
 }
 
 export interface APISendMessage extends IChatCommand {
@@ -456,7 +457,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "setFilesFolder":
       return `/_files_folder ${cmd.filePath}`
     case "setIncognito":
-      return `/incognito ${cmd.enable ? "on" : "off"}`
+      return `/incognito ${cmd.incognito ? "on" : "off"}`
     case "apiExportArchive":
       return `/_db export ${JSON.stringify(cmd.config)}`
     case "apiImportArchive":
