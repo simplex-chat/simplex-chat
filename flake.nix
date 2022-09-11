@@ -68,6 +68,15 @@
         echo "file binary-dist \"$(echo $out/*.zip)\"" \
             > $out/nix-support/hydra-build-products
       ''; in
+      let iosOverrides = bundleName: {
+        smallAddressSpace = true;
+        enableShared = false;
+        # we need threaded here, otherwise all the queing logic doesn't work properly.
+        # for iOS we also use -staticlib, to get one rolled up library.
+        # still needs mac2ios patching of the archives.
+        ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
+        postInstall = iosPostInstall bundleName;
+      }; in
       rec {
         packages = {
             "lib:simplex-chat" = (drv pkgs).simplex-chat.components.library;
@@ -272,67 +281,49 @@
                 '';
               };
             };
+
+            # builds for iOS and iOS simulator
             "aarch64-darwin" = {
-              # this is the aarch64-darwin iOS build (to be patched with mac2ios)
+              # aarch64-darwin iOS build (to be patched with mac2ios)
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              }).simplex-chat.components.library.override {
-                smallAddressSpace = true; enableShared = false;
-                # we need threaded here, otherwise all the queing logic doesn't work properly.
-                # for iOS we also use -staticlib, to get one rolled up library.
-                # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = iosPostInstall "pkg-ios-aarch64-swift-json";
-              };
-	            # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
+              }).simplex-chat.components.library.override (
+                iosOverrides "pkg-ios-aarch64-swift-json"
+              );
+	            # aarch64-darwin build with tagged JSON format (for Mac & Flutter)
               "aarch64-darwin:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              }).simplex-chat.components.library.override {
-                smallAddressSpace = true; enableShared = false;
-                # we need threaded here, otherwise all the queing logic doesn't work properly.
-                # for iOS we also use -staticlib, to get one rolled up library.
-                # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = iosPostInstall "pkg-ios-aarch64-tagged-json";
-              };
+              }).simplex-chat.components.library.override (
+                iosOverrides "pkg-ios-aarch64-tagged-json"
+              );
             };
             "x86_64-darwin" = {
-              # this is the aarch64-darwin iOS build (to be patched with mac2ios)
+              # x86_64-darwin iOS simulator build (to be patched with mac2ios)
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              }).simplex-chat.components.library.override {
-                smallAddressSpace = true; enableShared = false;
-                # we need threaded here, otherwise all the queing logic doesn't work properly.
-                # for iOS we also use -staticlib, to get one rolled up library.
-                # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = iosPostInstall "pkg-ios-x86_64-swift-json";
-              };
-              # This is the aarch64-darwin build with tagged JSON format (for Mac & Flutter)
+              }).simplex-chat.components.library.override (
+                iosOverrides "pkg-ios-x86_64-swift-json"
+              );
+              # x86_64-darwin build with tagged JSON format (for Mac & Flutter iOS simulator)
               "x86_64-darwin:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                 }];
-              }).simplex-chat.components.library.override {
-                smallAddressSpace = true; enableShared = false;
-                # we need threaded here, otherwise all the queing logic doesn't work properly.
-                # for iOS we also use -staticlib, to get one rolled up library.
-                # still needs mac2ios patching of the archives.
-                ghcOptions = [ "-staticlib" "-threaded" "-DIOS" ];
-                postInstall = iosPostInstall "pkg-ios-x86_64-tagged-json";
-              };
+              }).simplex-chat.components.library.override (
+                iosOverrides "pkg-ios-x86_64-tagged-json"
+              );
             };
         }.${system} or {});
         # build all packages in hydra.
