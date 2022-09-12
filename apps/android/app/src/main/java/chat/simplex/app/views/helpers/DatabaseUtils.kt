@@ -68,7 +68,6 @@ object DatabaseUtils {
       DBMigrationResult.Unknown("{}")
     )[0]
     val encrypted = dbKey != ""
-    setDatabaseKey(dbKey)
     return encrypted to res
   }
 
