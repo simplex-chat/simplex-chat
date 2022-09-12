@@ -3948,7 +3948,7 @@ setConnConnReqInv db User {userId} connId connReq = do
   DB.execute
     db
     [sql|
-      UPDATE commands
+      UPDATE connections
       SET conn_req_inv = ?, updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     |]
@@ -3996,7 +3996,7 @@ getXGrpMemIntroContDataGroup db User {userId, userContactId} GroupMember {groupM
     DB.query
       db
       [sql|
-        SELECT g.group_id, m.member_id, c.conn_req_inv, hc.connection_id
+        SELECT g.group_id, m.group_member_id, m.member_id, c.conn_req_inv, hc.connection_id
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         LEFT JOIN connections c ON c.connection_id = (
