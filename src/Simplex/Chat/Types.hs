@@ -989,3 +989,4 @@ data XGrpMemIntroContData = XGrpMemIntroContData
     connReq :: Maybe ConnReqInvitation, -- group connection request when receiving INV in direct connection, direct in group connection
     hostConnId :: Int64
   }
+  deriving (Show)
