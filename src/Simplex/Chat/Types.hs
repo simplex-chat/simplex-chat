@@ -947,7 +947,7 @@ data CommandFunction
   | CFJoinConn
   | CFAllowConn
   | CFAckMessage
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
 

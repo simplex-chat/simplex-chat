@@ -2464,12 +2464,12 @@ createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
     currentTs <- getCurrentTime
     createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
 
-createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> ExceptT StoreError IO ()
-createRcvMsgDeliveryEvent db connId agentMsgId rcvMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryId_ db connId agentMsgId
-  liftIO $ do
+createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
+createRcvMsgDeliveryEvent db connId cmdId rcvMsgDeliveryStatus = do
+  msgDeliveryId <- getMsgDeliveryIdByCmdId_ db connId cmdId
+  forM_ msgDeliveryId $ \mdId -> do
     currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
+    createMsgDeliveryEvent_ db mdId rcvMsgDeliveryStatus currentTs
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
@@ -2506,6 +2506,19 @@ getMsgDeliveryId_ db connId agentMsgId =
         LIMIT 1
       |]
       (connId, agentMsgId)
+
+getMsgDeliveryIdByCmdId_ :: DB.Connection -> Int64 -> CommandId -> IO (Maybe AgentMsgId)
+getMsgDeliveryIdByCmdId_ db connId cmdId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT msg_delivery_id
+        FROM msg_deliveries
+        WHERE connection_id = ? AND agent_ack_cmd_id = ?
+        LIMIT 1
+      |]
+      (connId, cmdId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
 createPendingGroupMessage db groupMemberId messageId introId_ = do

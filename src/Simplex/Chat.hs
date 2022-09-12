@@ -1383,14 +1383,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           cmdId <- createAckCmd conn
           _ <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
           withAckMessage agentConnId cmdId meta $ pure ()
-        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-        -- ackMsgDeliveryEvent conn meta
         SENT msgId ->
           -- ? updateDirectChatItemStatus
           sentMsgDeliveryEvent conn msgId
-        OK -> withCompletedCommand conn agentMsg $ \cmdData ->
-          -- TODO ackMsgDeliveryEvent for ACK
-          pure ()
+        OK ->
+          -- [async agent commands] continuation on receiving OK
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
+            when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
@@ -1418,8 +1417,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               XCallExtra callId extraInfo -> xCallExtra ct callId extraInfo msg msgMeta
               XCallEnd callId -> xCallEnd ct callId msg msgMeta
               _ -> pure ()
-        -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-        -- ackMsgDeliveryEvent conn msgMeta
         CONF confId _ connInfo -> do
           -- confirming direct connection with a member
           ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1469,6 +1466,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId (chatItemId' ci) CISSndSent
               toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
             _ -> pure ()
+        OK ->
+          -- [async agent commands] continuation on receiving OK
+          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
+            when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
         END -> do
           toView $ CRContactAnotherClient ct
           showToast (c <> "> ") "connected to another client"
@@ -1582,10 +1583,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             XGrpDel -> xGrpDel gInfo m msg msgMeta
             XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
             _ -> messageError $ "unsupported message: " <> T.pack (show chatMsgEvent)
-      -- TODO [async agent commands] continuation on receiving OK (check command was ACK)
-      -- ackMsgDeliveryEvent conn msgMeta
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
+      OK ->
+        -- [async agent commands] continuation on receiving OK
+        withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
+          when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
       ERR err -> toView . CRChatError $ ChatErrorAgent err
       -- TODO add debugging output
@@ -1626,6 +1629,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         MSG meta _ _ -> do
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId meta $ pure ()
+        OK ->
+          -- [async agent commands] continuation on receiving OK
+          withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
         _ -> pure ()
@@ -1682,6 +1688,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                         withAgent (`deleteConnection` agentConnId)
                   RcvChunkDuplicate -> pure ()
                   RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
+        OK ->
+          -- [async agent commands] continuation on receiving OK
+          withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err
         ERR err -> toView . CRChatError $ ChatErrorAgent err
         -- TODO add debugging output
@@ -1738,9 +1747,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       -- [async agent commands] no continuation needed, but command should be made asynchronous for persistence
       action `E.finally` withAgent (\a -> ackMessageAsync a (aCorrId cmdId) cId msgId `catchError` \_ -> pure ())
 
-    ackMsgDeliveryEvent :: Connection -> MsgMeta -> m ()
-    ackMsgDeliveryEvent Connection {connId} MsgMeta {recipient = (msgId, _)} =
-      withStore $ \db -> createRcvMsgDeliveryEvent db connId msgId MDSRcvAcknowledged
+    ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
+    ackMsgDeliveryEvent Connection {connId} ackCmdId =
+      withStore' $ \db -> createRcvMsgDeliveryEvent db connId ackCmdId MDSRcvAcknowledged
 
     sentMsgDeliveryEvent :: Connection -> AgentMsgId -> m ()
     sentMsgDeliveryEvent Connection {connId} msgId =
