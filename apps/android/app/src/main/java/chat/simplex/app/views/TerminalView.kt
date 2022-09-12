@@ -36,6 +36,12 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
   BackHandler(onBack = close)
   val authorized = remember { mutableStateOf(!chatModel.controller.appPrefs.performLA.get()) }
+  val context = LocalContext.current
+  LaunchedEffect(authorized.value) {
+    if (!authorized.value) {
+      runAuth(authorized = authorized, context)
+    }
+  }
   if (authorized.value) {
     TerminalLayout(
       chatModel.terminalItems,
@@ -51,21 +57,22 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
       close
     )
   } else {
-    Box(
-      Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colors.background)
-        .clickable(enabled = false) { /* just to prevent clicking through this view */ },
-      contentAlignment = Alignment.Center
-    ) {
-      val context = LocalContext.current
-      SimpleButton(
-        stringResource(R.string.auth_unlock),
-        icon = Icons.Outlined.Lock,
-        click = {
-          runAuth(authorized = authorized, context)
+    Surface(Modifier.fillMaxSize()) {
+      Column(Modifier.background(MaterialTheme.colors.background)) {
+        CloseSheetBar(close)
+        Box(
+          Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          SimpleButton(
+            stringResource(R.string.auth_unlock),
+            icon = Icons.Outlined.Lock,
+            click = {
+              runAuth(authorized = authorized, context)
+            }
+          )
         }
-      )
+      }
     }
   }
 }
