@@ -38,7 +38,7 @@ external fun chatParseMarkdown(str: String): String
 class SimplexApp: Application(), LifecycleEventObserver {
   lateinit var chatController: ChatController
 
-  fun initChatController(useKey: String? = null) {
+  fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
     val res = DatabaseUtils.migrateChatDatabase(dbKey)
     val ctrl = chatInitKey(getFilesDirectory(applicationContext), dbKey)
@@ -47,6 +47,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
     chatModel.chatDbStatus.value = res.second
     if (res.second != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: ${res.second}")
+    } else if (startChat) {
+      withApi {
+        val user = chatController.apiGetActiveUser()
+        if (user == null) {
+          chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+        } else {
+          chatController.startChat(user)
+        }
+      }
     }
   }
 
@@ -67,14 +76,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    withApi {
-      val user = chatController.apiGetActiveUser()
-      if (user == null) {
-        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-      } else {
-        chatController.startChat(user)
-      }
-    }
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

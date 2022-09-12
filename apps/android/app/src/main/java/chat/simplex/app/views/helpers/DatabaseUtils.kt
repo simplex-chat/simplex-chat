@@ -60,25 +60,19 @@ object DatabaseUtils {
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated)
     }.getOrElse { DBMigrationResult.Unknown(migrated) }*/
-    val random = SecureRandom().nextInt(5)
     val res = listOf(
       DBMigrationResult.OK,
       DBMigrationResult.ErrorNotADatabase("dbFile"),
       DBMigrationResult.Error("dbFile", "migrationError"),
       DBMigrationResult.ErrorKeychain,
       DBMigrationResult.Unknown("{}")
-    )[0/*random*/]
+    )[0]
     val encrypted = dbKey != ""
     setDatabaseKey(dbKey)
     return encrypted to res
   }
 
-  private fun randomDatabasePassword(): String {
-    val rd = SecureRandom()
-    val arr = ByteArray(32)
-    rd.nextBytes(arr)
-    return arr.toBase64String()
-  }
+  private fun randomDatabasePassword(): String = ByteArray(32).apply { SecureRandom().nextBytes(this) }.toBase64String()
 }
 
 @Serializable

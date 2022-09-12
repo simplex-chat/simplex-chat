@@ -69,14 +69,13 @@ fun DatabaseView(
       progressIndicator.value,
       runChat.value,
       useKeychain.value,
-      m.chatDbChanged.value,
       m.chatDbEncrypted.value,
       m.controller.appPrefs.initialRandomDBPassphrase,
       importArchiveLauncher,
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
-      startChat = { startChat(m, runChat, chatLastStart, context) },
+      startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m, runChat, context) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
@@ -104,7 +103,6 @@ fun DatabaseLayout(
   progressIndicator: Boolean,
   runChat: Boolean,
   useKeyChain: Boolean,
-  chatDbChanged: Boolean,
   chatDbEncrypted: Boolean?,
   initialRandomDBPassphrase: Preference<Boolean>,
   importArchiveLauncher: ManagedActivityResultLauncher<String, Uri?>,
@@ -118,7 +116,7 @@ fun DatabaseLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
-  val operationsDisabled = !stopped || progressIndicator || chatDbChanged
+  val operationsDisabled = !stopped || progressIndicator
 
   Column(
     Modifier.fillMaxWidth(),
@@ -131,7 +129,7 @@ fun DatabaseLayout(
     )
 
     SectionView(stringResource(R.string.run_chat_section)) {
-      RunChatSetting(runChat, stopped, chatDbChanged, startChat, stopChatAlert)
+      RunChatSetting(runChat, stopped, startChat, stopChatAlert)
     }
     SectionSpacer()
 
@@ -190,14 +188,10 @@ fun DatabaseLayout(
       )
     }
     SectionTextFooter(
-      if (chatDbChanged) {
-        stringResource(R.string.restart_the_app_to_use_new_chat_database)
+      if (stopped) {
+        stringResource(R.string.you_must_use_the_most_recent_version_of_database)
       } else {
-        if (stopped) {
-          stringResource(R.string.you_must_use_the_most_recent_version_of_database)
-        } else {
-          stringResource(R.string.stop_chat_to_enable_database_actions)
-        }
+        stringResource(R.string.stop_chat_to_enable_database_actions)
       }
     )
   }
@@ -207,7 +201,6 @@ fun DatabaseLayout(
 fun RunChatSetting(
   runChat: Boolean,
   stopped: Boolean,
-  chatDbChanged: Boolean,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
@@ -217,13 +210,12 @@ fun RunChatSetting(
       Icon(
         if (stopped) Icons.Filled.Report else Icons.Filled.PlayArrow,
         chatRunningText,
-        tint = if (chatDbChanged) HighOrLowlight else if (stopped) Color.Red else MaterialTheme.colors.primary
+        tint = if (stopped) Color.Red else MaterialTheme.colors.primary
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
         chatRunningText,
-        Modifier.padding(end = 24.dp),
-        color = if (chatDbChanged) HighOrLowlight else Color.Unspecified
+        Modifier.padding(end = 24.dp)
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
       Switch(
@@ -239,7 +231,6 @@ fun RunChatSetting(
           checkedThumbColor = MaterialTheme.colors.primary,
           uncheckedThumbColor = HighOrLowlight
         ),
-        enabled = !chatDbChanged
       )
     }
   }
@@ -250,16 +241,22 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) R.string.old_database_archive else R.string.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, context: Context) {
+private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
-      m.controller.apiStartChat()
-      runChat.value = true
-      m.chatRunning.value = true
-      val ts = Clock.System.now()
-      m.controller.appPrefs.chatLastStart.set(ts)
-      chatLastStart.value = ts
-      SimplexService.start(context)
+      if (chatDbChanged.value) {
+        SimplexApp.context.initChatController()
+        chatDbChanged.value = false
+      } else {
+        m.controller.apiStartChat()
+        runChat.value = true
+        m.chatRunning.value = true
+        val ts = Clock.System.now()
+        m.controller.appPrefs.chatLastStart.set(ts)
+        chatLastStart.value = ts
+      }
+      SimplexApp.context.schedulePeriodicServiceRestartWorker()
+      SimplexApp.context.schedulePeriodicWakeUp()
     } catch (e: Error) {
       runChat.value = false
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
@@ -315,6 +312,7 @@ private fun stopChat(m: ChatModel, runChat: MutableState<Boolean>, context: Cont
       runChat.value = false
       m.chatRunning.value = false
       SimplexService.stop(context)
+      MessagesFetcherWorker.cancelAll()
     } catch (e: Error) {
       runChat.value = true
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())
@@ -515,7 +513,6 @@ fun PreviewDatabaseLayout() {
       progressIndicator = false,
       runChat = true,
       useKeyChain = false,
-      chatDbChanged = false,
       chatDbEncrypted = false,
       initialRandomDBPassphrase = Preference({ true }, {}),
       importArchiveLauncher = rememberGetContentLauncher {},

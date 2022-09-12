@@ -11,9 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.SimplexApp
-import chat.simplex.app.TAG
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
@@ -110,7 +109,9 @@ private fun runChat(dbKey: String, chatDbStatus: State<DBMigrationResult?>) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
   when (val status = chatDbStatus.value) {
-    is DBMigrationResult.OK -> {}
+    is DBMigrationResult.OK -> {
+      SimplexService.cancelPassphraseNotification()
+    }
     is DBMigrationResult.ErrorNotADatabase -> {
       AlertManager.shared.showAlertMsg( generalGetString(R.string.wrong_passphrase_title),  generalGetString(R.string.enter_correct_passphrase))
     }

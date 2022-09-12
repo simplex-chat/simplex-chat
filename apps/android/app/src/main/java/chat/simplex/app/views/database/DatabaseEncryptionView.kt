@@ -186,7 +186,6 @@ fun DatabaseEncryptionLayout(
 
       SectionItemViewSpaceBetween(onClickUpdate, padding = PaddingValues(start = 8.dp, end = 12.dp), disabled = disabled) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
-        Icon(Icons.Filled.Done, generalGetString(R.string.update_database_passphrase), tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }
 

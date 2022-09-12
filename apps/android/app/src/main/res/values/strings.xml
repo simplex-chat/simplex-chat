@@ -67,11 +67,20 @@
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
   <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
+  <string name="enter_passphrase_notification_title">Passphrase is needed</string>
+  <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
+  <string name="database_initialization_error_title">Can\'t initialize the database</string>
+  <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
   <string name="hide_notification">Hide</string>
+
+  <!-- Notification channels -->
+  <string name="ntf_channel_messages">SimpleX Chat messages</string>
+  <string name="ntf_channel_calls">SimpleX Chat calls</string>
+  <string name="ntf_channel_calls_lockscreen">SimpleX Chat calls (lock screen)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
@@ -547,7 +556,6 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
-  <string name="restart_the_app_to_use_new_chat_database">Restart the app to use new chat database.</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keychain</string>
