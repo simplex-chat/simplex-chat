@@ -59,9 +59,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
     }
   }
 
-  val chatModel: ChatModel by lazy {
-    chatController.chatModel
-  }
+  val chatModel: ChatModel
+    get() = chatController.chatModel
 
   private val ntfManager: NtfManager by lazy {
     NtfManager(applicationContext, appPreferences)

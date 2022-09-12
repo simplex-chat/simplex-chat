@@ -57,7 +57,6 @@ class MainActivity: FragmentActivity() {
     }
   }
   private val vm by viewModels<SimplexViewModel>()
-  private val chatController by lazy { (application as SimplexApp).chatController }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)

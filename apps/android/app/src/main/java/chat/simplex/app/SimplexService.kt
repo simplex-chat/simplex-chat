@@ -24,7 +24,6 @@ class SimplexService: Service() {
   private var isStartingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
-  private val chatController by lazy { (application as SimplexApp).chatController }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
@@ -67,6 +66,7 @@ class SimplexService: Service() {
     val self = this
     isStartingService = true
     withApi {
+      val chatController = (application as SimplexApp).chatController
       try {
         val user = chatController.apiGetActiveUser()
         if (user == null) {
