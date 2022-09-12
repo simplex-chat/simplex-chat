@@ -58,6 +58,7 @@ module Simplex.Chat.Store
     getPendingContactConnections,
     getContactConnections,
     getConnectionEntity,
+    getConnectionById,
     getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
@@ -82,6 +83,7 @@ module Simplex.Chat.Store
     getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
+    updateGroupMemberStatusById,
     createNewGroupMember,
     deleteGroupMember,
     deleteGroupMemberConnection,
@@ -178,6 +180,9 @@ module Simplex.Chat.Store
     setCommandConnId,
     updateCommandStatus,
     getCommandDataByCorrId,
+    setConnConnReqInv,
+    getXGrpMemIntroContDataDirect,
+    getXGrpMemIntroContDataGroup,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -1270,6 +1275,19 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
         userContact_ _ = Left SEUserContactLinkNotFound
 
+getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection
+getConnectionById db User {userId} connId = ExceptT $ do
+  firstRow toConnection (SEConnectionNotFoundById connId) $
+    DB.query
+      db
+      [sql|
+        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, custom_user_profile_id,
+          conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+        FROM connections
+        WHERE user_id = ? AND connection_id = ?
+      |]
+      (userId, connId)
+
 getConnectionsContacts :: DB.Connection -> UserId -> [ConnId] -> IO [ContactRef]
 getConnectionsContacts db userId agentConnIds = do
   DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
@@ -1660,7 +1678,10 @@ createMemberConnection db userId GroupMember {groupMemberId} agentConnId = do
   void $ createMemberConnection_ db userId groupMemberId agentConnId Nothing 0 currentTs
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
-updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
+updateGroupMemberStatus db userId GroupMember {groupMemberId} = updateGroupMemberStatusById db userId groupMemberId
+
+updateGroupMemberStatusById :: DB.Connection -> UserId -> GroupMemberId -> GroupMemberStatus -> IO ()
+updateGroupMemberStatusById db userId groupMemberId memStatus = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -3921,6 +3942,90 @@ getCommandDataByCorrId db User {userId} corrId =
     toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
     toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
 
+setConnConnReqInv :: DB.Connection -> User -> Int64 -> ConnReqInvitation -> IO ()
+setConnConnReqInv db User {userId} connId connReq = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE commands
+      SET conn_req_inv = ?, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (connReq, updatedAt, userId, connId)
+
+getXGrpMemIntroContDataDirect :: DB.Connection -> User -> Contact -> IO (Maybe XGrpMemIntroContData)
+getXGrpMemIntroContDataDirect db User {userId, userContactId} Contact {contactId} = do
+  maybeFirstRow toContData $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, m.group_member_id, m.member_id, c.conn_req_inv, hc.connection_id
+        FROM contacts ct
+        JOIN group_members m ON m.contact_id = ct.contact_id
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT MAX(cc.connection_id)
+          FROM connections cc
+          WHERE cc.group_member_id = m.group_member_id
+        )
+        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contacts hct ON hct.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = hct.contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ?
+          AND hc.connection_id = (
+            SELECT cc_connection_id FROM (
+              SELECT
+                cc.connection_id AS cc_connection_id,
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+              FROM connections cc
+              WHERE cc.user_id = hct.user_id AND cc.contact_id = hct.contact_id
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              LIMIT 1
+            )
+          )
+      |]
+      (userId, contactId, userContactId, ConnReady, ConnSndReady)
+  where
+    toContData :: (GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation, Int64) -> XGrpMemIntroContData
+    toContData (groupId, groupMemberId, memberId, connReq, hostConnId) = XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq, hostConnId}
+
+getXGrpMemIntroContDataGroup :: DB.Connection -> User -> GroupMember -> IO (Maybe XGrpMemIntroContData)
+getXGrpMemIntroContDataGroup db User {userId, userContactId} GroupMember {groupMemberId} = do
+  maybeFirstRow toContData $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, m.member_id, c.conn_req_inv, hc.connection_id
+        FROM group_members m
+        JOIN contacts ct ON ct.contact_id = m.contact_id
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT MAX(cc.connection_id)
+          FROM connections cc
+          WHERE cc.contact_id = ct.contact_id
+        )
+        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contacts hct ON hct.contact_id = mu.invited_by
+        LEFT JOIN connections hc ON hc.contact_id = hct.contact_id
+        WHERE m.user_id = ? AND m.group_member_id = ? AND mu.contact_id = ?
+          AND hc.connection_id = (
+            SELECT cc_connection_id FROM (
+              SELECT
+                cc.connection_id AS cc_connection_id,
+                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+              FROM connections cc
+              WHERE cc.user_id = hct.user_id AND cc.contact_id = hct.contact_id
+              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              LIMIT 1
+            )
+          )
+      |]
+      (userId, groupMemberId, userContactId, ConnReady, ConnSndReady)
+  where
+    toContData :: (GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation, Int64) -> XGrpMemIntroContData
+    toContData (groupId, grpMemberId, memberId, connReq, hostConnId) = XGrpMemIntroContData {groupId, groupMemberId = grpMemberId, memberId, connReq, hostConnId}
+
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)
@@ -4007,6 +4112,7 @@ data StoreError
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
+  | SEConnectionNotFoundById {connId :: Int64}
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID

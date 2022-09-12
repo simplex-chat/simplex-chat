@@ -20,6 +20,8 @@ CREATE TABLE commands (
 
 ALTER TABLE msg_deliveries ADD COLUMN agent_ack_cmd_id INTEGER; -- correlation id
 
+ALTER TABLE connections ADD COLUMN conn_req_inv BLOB;
+
 CREATE TABLE intros_for_group_members (
   intro_for_group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE, -- required for saving group_id of snd message when sending XGrpMemInv

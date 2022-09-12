@@ -1362,14 +1362,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     processDirectMessage :: ACommand 'Agent -> Connection -> Maybe Contact -> m ()
     processDirectMessage agentMsg conn@Connection {connId, viaUserContactLink, customUserProfileId} = \case
       Nothing -> case agentMsg of
-        INV _connReq -> do
-          -- [async agent commands] XGrpMemIntro continuation
-          -- - save connReq as direct_conn_req by direct_connection_id, return IntroForGroupMember
-          -- - if both directConnReq are not null perform XGrpMemIntro continuation:
-          --   let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-          --   void $ sendDirectMessage conn msg (GroupId groupId)
-          --   withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
-          pure ()
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
@@ -1395,6 +1387,21 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
+        INV (ACR _ cReq) ->
+          -- [async agent commands] XGrpMemIntro continuation on receiving INV
+          withCompletedCommand conn agentMsg $ \_ ->
+            case cReq of
+              directConnReq@(CRInvitationUri _ _) -> do
+                contData <- withStore' $ \db -> do
+                  setConnConnReqInv db user connId cReq
+                  getXGrpMemIntroContDataDirect db user ct
+                forM_ contData $ \XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq, hostConnId} ->
+                  forM_ connReq $ \groupConnReq -> do
+                    hostConn <- withStore $ \db -> getConnectionById db user hostConnId
+                    let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
+                    void $ sendDirectMessage hostConn msg (GroupId groupId)
+                    withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
+              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
           msg@RcvMessage {chatMsgEvent} <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
@@ -1485,15 +1492,22 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m = case agentMsg of
-      INV _connReq -> do
-        -- [async agent commands] XGrpMemIntro continuation
-        -- - save connReq as direct_conn_req by direct_connection_id, return IntroForGroupMember
-        -- - if both directConnReq are not null perform XGrpMemIntro continuation:
-        --   let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-        --   void $ sendDirectMessage conn msg (GroupId groupId)
-        --   withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
-        pure ()
+    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m = case agentMsg of
+      INV (ACR _ cReq) ->
+        -- [async agent commands] XGrpMemIntro continuation on receiving INV
+        withCompletedCommand conn agentMsg $ \_ ->
+          case cReq of
+            groupConnReq@(CRInvitationUri _ _) -> do
+              contData <- withStore' $ \db -> do
+                setConnConnReqInv db user connId cReq
+                getXGrpMemIntroContDataGroup db user m
+              forM_ contData $ \XGrpMemIntroContData {groupMemberId, memberId, connReq, hostConnId} ->
+                forM_ connReq $ \directConnReq -> do
+                  hostConn <- withStore $ \db -> getConnectionById db user hostConnId
+                  let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
+                  void $ sendDirectMessage hostConn msg (GroupId groupId)
+                  withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
+            CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case memberCategory m of
@@ -1575,7 +1589,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo msg msgMeta
-            XGrpMemIntro memInfo -> xGrpMemIntro conn gInfo m memInfo
+            XGrpMemIntro memInfo -> xGrpMemIntro gInfo m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
             XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m memInfo introInv
             XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
@@ -2153,8 +2167,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             groupMsgToView gInfo m ci msgMeta
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
-    xGrpMemIntro :: Connection -> GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro _conn gInfo@GroupInfo {groupId = _groupId, membership} m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
+    xGrpMemIntro gInfo@GroupInfo {membership} m memInfo@(MemberInfo memId _ _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -2162,15 +2176,11 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
               -- [async agent commands] make commands async, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              -- TODO save group id, member id, host connection id + direct and group connection ids from immediate responses to intros_for_group_members
               groupConnIds <- createAgentConnectionAsync user True SCMInvitation
               directConnIds <- createAgentConnectionAsync user True SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
-        -- let msg = XGrpMemInv memId IntroInvitation {groupConnReq, directConnReq}
-        -- void $ sendDirectMessage conn msg (GroupId groupId)
-        -- withStore' $ \db -> updateGroupMemberStatus db userId newMember GSMemIntroInvited
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
