@@ -30,7 +30,7 @@ npm run build
 
 See the example of a simple chat bot in [squaring-bot.js](./examples/squaring-bot.js):
 
-- start `simplex-chat` as a server onport 5225: `simplex-chat -p 5225 -d test_db`
+- start `simplex-chat` as a server on port 5225: `simplex-chat -p 5225 -d test_db`
 - run chatbot: `node examples/squaring-bot`
 - connect to chatbot via SimpleX Chat client using the address of the chat bot
 
@@ -38,6 +38,6 @@ See the example of a simple chat bot in [squaring-bot.js](./examples/squaring-bo
 
 Please refer to the available client API in [client.ts](./src/client.ts).
 
-## Lisense
+## License
 
 [AGPL v3](./LICENSE)
