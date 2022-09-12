@@ -320,6 +320,32 @@ fun saveImage(context: Context, image: Bitmap): String? {
   }
 }
 
+fun saveAnimImage(context: Context, uri: Uri): String? {
+  return try {
+    val filename = getFileName(context, uri)?.lowercase()
+    var ext = when {
+      // remove everything but extension
+      filename?.contains(".") == true -> filename.replaceBeforeLast('.', "").replace(".", "")
+      else -> "gif"
+    }
+    // Just in case the image has a strange extension
+    if (ext.length < 3 || ext.length > 4) ext = "gif"
+    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
+    val file = File(getAppFilePath(context, fileToSave))
+    val output = FileOutputStream(file)
+    context.contentResolver.openInputStream(uri)!!.use { input ->
+      output.use { output ->
+        input.copyTo(output)
+      }
+    }
+    fileToSave
+  } catch (e: Exception) {
+    Log.e(chat.simplex.app.TAG, "Util.kt saveAnimImage error: ${e.message}")
+    null
+  }
+}
+
 fun saveFileFromUri(context: Context, uri: Uri): String? {
   return try {
     val inputStream = context.contentResolver.openInputStream(uri)
