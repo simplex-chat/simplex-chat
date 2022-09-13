@@ -354,9 +354,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Error("failed to delete storage: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = "") {
+  suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {
     val r = sendCmd(CC.ApiStorageEncryption(DBEncryptionConfig(currentKey, newKey)))
-    if (r is CR.CmdOk) return
+    if (r is CR.CmdOk) return null
+    else if (r is CR.ChatCmdError) return r
     throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 

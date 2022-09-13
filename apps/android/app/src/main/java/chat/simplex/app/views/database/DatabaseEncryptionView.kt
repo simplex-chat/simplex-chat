@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -39,9 +40,10 @@ fun DatabaseEncryptionView(m: ChatModel) {
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
   val storedKey = remember { mutableStateOf(DatabaseUtils.getDatabaseKey() != null) }
+  // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.getDatabaseKey() ?: "" else "") }
-  val newKey = remember { mutableStateOf("") }
-  val confirmNewKey = remember { mutableStateOf("") }
+  val newKey = rememberSaveable { mutableStateOf("") }
+  val confirmNewKey = rememberSaveable { mutableStateOf("") }
 
   Box(
     Modifier.fillMaxSize(),
@@ -59,19 +61,40 @@ fun DatabaseEncryptionView(m: ChatModel) {
         progressIndicator.value = true
         withApi {
           try {
-            m.controller.apiStorageEncryption(currentKey.value, newKey.value)
-            prefs.initialRandomDBPassphrase.set(false)
-            initialRandomDBPassphrase.value = false
-            if (useKeychain.value) {
-              DatabaseUtils.setDatabaseKey(newKey.value)
-            }
-            resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
-            operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(R.string.database_encrypted))
+            val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
+            val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
+            when {
+              sqliteError is SQLiteError.ErrorNotADatabase -> {
+                operationEnded(m, progressIndicator) {
+                  AlertManager.shared.showAlertMsg(
+                    generalGetString(R.string.wrong_passphrase_title),
+                    generalGetString(R.string.enter_correct_current_passphrase)
+                  )
+                }
+              }
+              error != null -> {
+                operationEnded(m, progressIndicator) {
+                  AlertManager.shared.showAlertMsg(generalGetString(R.string.error_encrypting_database),
+                    "failed to set storage encryption: ${error.responseType} ${error.details}"
+                  )
+                }
+              }
+              else -> {
+                prefs.initialRandomDBPassphrase.set(false)
+                initialRandomDBPassphrase.value = false
+                if (useKeychain.value) {
+                  DatabaseUtils.setDatabaseKey(newKey.value)
+                }
+                resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
+                operationEnded(m, progressIndicator) {
+                  AlertManager.shared.showAlertMsg(generalGetString(R.string.database_encrypted))
+                }
+              }
             }
           } catch (e: Exception) {
-            progressIndicator.value = false
-            AlertManager.shared.showAlertMsg(generalGetString(R.string.error_encrypting_database), e.stackTraceToString())
+            operationEnded(m, progressIndicator) {
+              AlertManager.shared.showAlertMsg(generalGetString(R.string.error_encrypting_database), e.stackTraceToString())
+            }
           }
         }
       }
@@ -355,7 +378,7 @@ fun DatabaseKeyField(
     keyboardType = KeyboardType.Password
   )
   val state = remember {
-    mutableStateOf(TextFieldValue(""))
+    mutableStateOf(TextFieldValue(key.value))
   }
   val enabled = true
   val colors = TextFieldDefaults.textFieldColors(
