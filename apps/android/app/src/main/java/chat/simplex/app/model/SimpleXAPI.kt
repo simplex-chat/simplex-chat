@@ -1368,10 +1368,11 @@ sealed class CC {
 
   class ItemRange(val from: Long, val to: Long)
 
-  val obfuscated: CC = when (this) {
-    is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
-    else -> this
-  }
+  val obfuscated: CC
+    get() = when (this) {
+      is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
+      else -> this
+    }
 
   private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
 
