@@ -3,6 +3,7 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import chat.simplex.app.*
 import chat.simplex.app.model.AppPreferences
+import chat.simplex.app.model.json
 import chat.simplex.app.views.usersettings.Cryptor
 import kotlinx.serialization.*
 import java.io.File
@@ -55,18 +56,10 @@ object DatabaseUtils {
       }
     }
     Log.d(TAG, "migrateChatDatabase DB path: $dbPath")
-    //    Log.d(TAG, "migrateChatDatabase DB key: $dbKey")
-    /*val migrated = chatMigrateDB(dbPath, dbKey) // TODO: AVENTLY
+    val migrated = chatMigrateDB(dbPath, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated)
-    }.getOrElse { DBMigrationResult.Unknown(migrated) }*/
-    val res = listOf(
-      DBMigrationResult.OK,
-      DBMigrationResult.ErrorNotADatabase("dbFile"),
-      DBMigrationResult.Error("dbFile", "migrationError"),
-      DBMigrationResult.ErrorKeychain,
-      DBMigrationResult.Unknown("{}")
-    )[0]
+    }.getOrElse { DBMigrationResult.Unknown(migrated) }
     val encrypted = dbKey != ""
     return encrypted to res
   }
