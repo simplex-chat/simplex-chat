@@ -137,7 +137,7 @@ fun DatabaseLayout(
       val unencrypted = chatDbEncrypted == false
       val color: Color = if (unencrypted) WarningOrange else Color.Unspecified
       SettingsActionItem(
-        if (unencrypted) Icons.Outlined.LockOpen else if(useKeyChain) Icons.Filled.Key else Icons.Outlined.Lock,
+        if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
         stringResource(R.string.database_passphrase),
         click = showSettingsModal { DatabaseEncryptionView(it) },
         textColor = color,

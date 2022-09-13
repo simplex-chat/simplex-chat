@@ -273,9 +273,9 @@ fun SavePassphraseSetting(
   SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
-        if (storedKey) Icons.Filled.Key else Icons.Filled.KeyOff,
+        if (storedKey) Icons.Filled.VpnKey else Icons.Filled.VpnKeyOff,
         stringResource(R.string.save_passphrase_in_keychain),
-        tint = if (storedKey) Color.Green else HighOrLowlight
+        tint = if (storedKey) SimplexGreen else HighOrLowlight
       )
       Spacer(Modifier.padding(horizontal = 4.dp))
       Text(
