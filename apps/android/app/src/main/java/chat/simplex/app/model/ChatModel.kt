@@ -1185,11 +1185,11 @@ class CIQuote (
 ): ItemContent {
   override val text: String get() = content.text
 
-  fun sender(user: User): String? = when (chatDir) {
+  fun sender(membership: GroupMember?): String? = when (chatDir) {
     is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
     is CIDirection.DirectRcv -> null
-    is CIDirection.GroupSnd -> user.displayName
-    is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
+    is CIDirection.GroupSnd -> membership?.displayName
+    is CIDirection.GroupRcv -> chatDir.groupMember.displayName
     null -> null
   }
 
