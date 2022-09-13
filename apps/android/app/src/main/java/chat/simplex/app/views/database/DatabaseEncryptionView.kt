@@ -3,7 +3,7 @@ package chat.simplex.app.views.database
 import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionView
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.ZeroCornerSize
@@ -129,7 +129,7 @@ fun DatabaseEncryptionLayout(
   onConfirmEncrypt: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
     Text(

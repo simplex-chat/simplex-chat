@@ -15,6 +15,8 @@ import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -34,6 +36,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.*
+import kotlinx.coroutines.*
 import kotlinx.datetime.*
 import java.io.*
 import java.text.SimpleDateFormat
@@ -119,7 +122,7 @@ fun DatabaseLayout(
   val operationsDisabled = !stopped || progressIndicator
 
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
     Text(
@@ -259,8 +262,10 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
       chatLastStart.value = ts
-      SimplexApp.context.schedulePeriodicServiceRestartWorker()
-      SimplexApp.context.schedulePeriodicWakeUp()
+      when (m.controller.appPrefs.notificationsMode.get()) {
+        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start(SimplexApp.context) }
+        NotificationsMode.PERIODIC.name -> SimplexApp.context.schedulePeriodicWakeUp()
+      }
     } catch (e: Error) {
       runChat.value = false
       AlertManager.shared.showAlertMsg(generalGetString(R.string.error_starting_chat), e.toString())

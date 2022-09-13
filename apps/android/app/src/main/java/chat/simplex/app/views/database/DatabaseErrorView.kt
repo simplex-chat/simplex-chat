@@ -4,7 +4,9 @@ import SectionSpacer
 import SectionView
 import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +18,8 @@ import chat.simplex.app.R
 import chat.simplex.app.model.AppPreferences
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.NotificationsMode
+import kotlinx.coroutines.*
 
 @Composable
 fun DatabaseErrorView(
@@ -31,7 +35,7 @@ fun DatabaseErrorView(
     appPreferences.storeDBPassphrase.set(true)
     useKeychain = true
     appPreferences.initialRandomDBPassphrase.set(false)
-    runChat(dbKey.value, chatDbStatus)
+    runChat(dbKey.value, chatDbStatus, appPreferences)
   }
   val title = when (chatDbStatus.value) {
     is DBMigrationResult.OK -> ""
@@ -46,7 +50,7 @@ fun DatabaseErrorView(
   }
 
   Column(
-    Modifier.fillMaxWidth().fillMaxHeight(),
+    Modifier.fillMaxWidth().fillMaxHeight().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Center,
   ) {
@@ -73,12 +77,12 @@ fun DatabaseErrorView(
             } else {
               Text(generalGetString(R.string.database_passphrase_is_required))
               DatabaseKeyField(dbKey, buttonEnabled) {
-                if (useKeychain) saveAndRunChatOnClick() else runChat(dbKey.value, chatDbStatus)
+                if (useKeychain) saveAndRunChatOnClick() else runChat(dbKey.value, chatDbStatus, appPreferences)
               }
               if (useKeychain) {
                 SaveAndOpenButton(buttonEnabled, saveAndRunChatOnClick)
               } else {
-                OpenChatButton(buttonEnabled) { runChat(dbKey.value, chatDbStatus) }
+                OpenChatButton(buttonEnabled) { runChat(dbKey.value, chatDbStatus, appPreferences) }
               }
             }
           }
@@ -102,7 +106,7 @@ fun DatabaseErrorView(
   }
 }
 
-private fun runChat(dbKey: String, chatDbStatus: State<DBMigrationResult?>) {
+private fun runChat(dbKey: String, chatDbStatus: State<DBMigrationResult?>, prefs: AppPreferences) {
   try {
     SimplexApp.context.initChatController(dbKey)
   } catch (e: Exception) {
@@ -111,6 +115,10 @@ private fun runChat(dbKey: String, chatDbStatus: State<DBMigrationResult?>) {
   when (val status = chatDbStatus.value) {
     is DBMigrationResult.OK -> {
       SimplexService.cancelPassphraseNotification()
+      when (prefs.notificationsMode.get()) {
+        NotificationsMode.SERVICE.name -> CoroutineScope(Dispatchers.Default).launch { SimplexService.start(SimplexApp.context) }
+        NotificationsMode.PERIODIC.name -> SimplexApp.context.schedulePeriodicWakeUp()
+      }
     }
     is DBMigrationResult.ErrorNotADatabase -> {
       AlertManager.shared.showAlertMsg( generalGetString(R.string.wrong_passphrase_title),  generalGetString(R.string.enter_correct_passphrase))
