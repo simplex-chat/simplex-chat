@@ -216,6 +216,7 @@ fun ChatView(chatModel: ChatModel) {
           )
         }
       },
+      changeNtfsState = { enabled, currentValue -> changeNtfsStatePerChat(enabled, currentValue, chat, chatModel) },
       onSearchValueChanged = { value ->
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
@@ -253,6 +254,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
   Surface(
@@ -279,7 +281,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -304,8 +306,10 @@ fun ChatInfoToolbar(
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
+  val scope = rememberCoroutineScope()
   var showMenu by rememberSaveable { mutableStateOf(false) }
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
@@ -351,6 +355,23 @@ fun ChatInfoToolbar(
       }
     }
   }
+
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  menuItems.add {
+    ItemAction(
+      if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+      if (ntfsEnabled.value) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+      onClick = {
+        showMenu = false
+        // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
+        scope.launch {
+          delay(200)
+          changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+        }
+      }
+    )
+  }
+
   barButtons.add {
     IconButton({ showMenu = true }) {
       Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
@@ -839,6 +860,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }
@@ -896,6 +918,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }

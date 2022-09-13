@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX Chat v3.1-beta is released"
+date: 2022-07-23
+permalink: "/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"
+---
+
 # SimpleX Chat v3.1-beta is released
 
 **Published:** Jul 23, 2022
@@ -17,7 +24,7 @@ While SMP protocol is focussed on protecting application-level meta-data by usin
 
 This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who self-host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without necessarily requiring that the other party uses Tor as well.
 
-To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with `-x` option. See [terminal app docs](../docs/CLI.md#access-messaging-servers-via-tor-beta) for more information.
+To access SimpleX servers via Tor you need to install Tor proxy and run simplex-chat with `-x` option. See [terminal app docs](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md#access-messaging-servers-via-tor-beta) for more information.
 
 As this is a beta release, to install it you need to use this command:
 
@@ -41,7 +48,7 @@ To manage groups via terminal app or via chat console in the mobile apps you hav
 
 Accepting group invitations, leaving and deleting groups no longer requires using console commands.
 
-### Optimized battery and traffic usage - up to 90x reduction!
+### Optimized battery and traffic usage - up to 90x reduction
 
 To reduce battery and traffic usage this release updated SMP protocol to allow batching multiple server commands (up to 90!) into one traffic block – provided both the server and the client are upgraded. It means that if you have 90 contacts (or group members) on one server, to subscribe to all messaging queues you now need to send only one 16kb block instead of ~1.5Mb of traffic (90 blocks). It also hides how many contacts you have from any attackers who observe your network.
 
@@ -89,7 +96,7 @@ What we plan to add soon to further improve privacy and security:
 - using Tor v3 hidden service addresses for messaging servers.
 - passphrase-based local database encryption.
 
-SimpleX Chat [README page](../README.md#privacy-technical-details-and-limitations) has more details about it.
+SimpleX Chat [README page](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#privacy-technical-details-and-limitations) has more details about it.
 
 ## We ask you to help us pay for 3rd party security audit
 

@@ -1,8 +1,15 @@
+---
+layout: layouts/article.html
+title: "SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!"
+date: 2022-06-04
+permalink: "/blog/20220604-simplex-chat-new-privacy-security-settings.html"
+---
+
 # SimpleX Chat v2.2 - the first messaging platform without user identities - 100% private by design!
 
 **Published:** June 4, 2022
 
-See [v2 announcement](./20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platfom, has no identity keys or any numbers that identify its users.
+See [v2 announcement](./20220511-simplex-chat-v2-images-files.md) for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platform, has no identity keys or any numbers that identify its users.
 
 ## New Privacy and Security settings in version 2.2
 

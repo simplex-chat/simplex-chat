@@ -64,39 +64,7 @@ fun ChatInfoView(
       },
       deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
-      changeNtfsState = { enabled ->
-        changeNtfsState(enabled, chat, chatModel)
-      },
     )
-  }
-}
-
-fun changeNtfsState(enabled: Boolean, chat: Chat, chatModel: ChatModel) {
-  val newChatInfo = when(chat.chatInfo) {
-    is ChatInfo.Direct -> with (chat.chatInfo) {
-      ChatInfo.Direct(contact.copy(chatSettings = contact.chatSettings.copy(enableNtfs = enabled)))
-    }
-    is ChatInfo.Group -> with(chat.chatInfo) {
-      ChatInfo.Group(groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(enableNtfs = enabled)))
-    }
-    else -> null
-  }
-  withApi {
-    val res = when (newChatInfo) {
-      is ChatInfo.Direct -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chatType, apiId, contact.chatSettings)
-      }
-      is ChatInfo.Group -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chatType, apiId, groupInfo.chatSettings)
-      }
-      else -> false
-    }
-    if (res && newChatInfo != null) {
-      chatModel.updateChatInfo(newChatInfo)
-      if (!enabled) {
-        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
-      }
-    }
   }
 }
 
@@ -148,7 +116,6 @@ fun ChatInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   deleteContact: () -> Unit,
   clearChat: () -> Unit,
-  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -192,18 +159,6 @@ fun ChatInfoLayout(
       }
       SectionSpacer()
     }
-
-    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
-    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
-      SectionItemView {
-        NtfsSwitch(ntfsEnabled) {
-          ntfsEnabled = !ntfsEnabled
-          changeNtfsState(ntfsEnabled)
-        }
-      }
-    }
-    SectionSpacer()
-
     SectionView {
       SectionItemView {
         ClearChatButton(clearChat)
@@ -254,22 +209,23 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 @Composable
 private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
-  DefaultBasicTextField(
-    Modifier.fillMaxWidth().padding(horizontal = 10.dp),
-    value,
-    {
-      Text(
-        generalGetString(R.string.text_field_set_contact_placeholder),
-        Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        color = HighOrLowlight
-      )
-    },
-    color = HighOrLowlight,
-    textStyle = TextStyle.Default.copy(textAlign = TextAlign.Center),
-    keyboardActions = KeyboardActions(onDone = { updateValue(value) })
-  ) {
-    value = it
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+    DefaultBasicTextField(
+      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      value,
+      {
+        Text(
+          generalGetString(R.string.text_field_set_contact_placeholder),
+          textAlign = TextAlign.Center,
+          color = HighOrLowlight
+        )
+      },
+      color = HighOrLowlight,
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      keyboardActions = KeyboardActions(onDone = { updateValue(value) })
+    ) {
+      value = it
+    }
   }
   LaunchedEffect(Unit) {
     snapshotFlow { value }
@@ -350,38 +306,6 @@ fun SimplexServers(text: String, servers: List<String>) {
 }
 
 @Composable
-fun NtfsSwitch(
-  ntfsEnabled: Boolean,
-  toggleNtfs: (Boolean) -> Unit
-) {
-  Row(
-    Modifier.fillMaxWidth(),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.SpaceBetween
-  ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      Icon(
-        Icons.Outlined.Notifications,
-        stringResource(R.string.notifications),
-        tint = HighOrLowlight
-      )
-      Text(stringResource(R.string.notifications))
-    }
-    Switch(
-      checked = ntfsEnabled,
-      onCheckedChange = toggleNtfs,
-      colors = SwitchDefaults.colors(
-        checkedThumbColor = MaterialTheme.colors.primary,
-        uncheckedThumbColor = HighOrLowlight
-      ),
-    )
-  }
-}
-
-@Composable
 fun ClearChatButton(clearChat: () -> Unit) {
   Row(
     Modifier
@@ -436,7 +360,6 @@ fun PreviewChatInfoLayout() {
       ),
       Contact.sampleData,
       localAlias = "",
-      changeNtfsState = {},
       developerTools = false,
       connStats = null,
       onLocalAliasChanged = {},
