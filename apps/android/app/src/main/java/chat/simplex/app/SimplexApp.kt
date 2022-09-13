@@ -10,7 +10,6 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
-import kotlinx.serialization.*
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.*
@@ -42,7 +41,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
     val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
     val res = DatabaseUtils.migrateChatDatabase(dbKey)
     val ctrl = chatInitKey(getFilesDirectory(applicationContext), dbKey)
-    chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+    if (::chatController.isInitialized) {
+      chatController.ctrl = ctrl
+    } else {
+      chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+    }
     chatModel.chatDbEncrypted.value = res.first
     chatModel.chatDbStatus.value = res.second
     if (res.second != DBMigrationResult.OK) {

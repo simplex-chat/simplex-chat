@@ -247,14 +247,13 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
       if (chatDbChanged.value) {
         SimplexApp.context.initChatController()
         chatDbChanged.value = false
-      } else {
-        m.controller.apiStartChat()
-        runChat.value = true
-        m.chatRunning.value = true
-        val ts = Clock.System.now()
-        m.controller.appPrefs.chatLastStart.set(ts)
-        chatLastStart.value = ts
       }
+      m.controller.apiStartChat()
+      runChat.value = true
+      m.chatRunning.value = true
+      val ts = Clock.System.now()
+      m.controller.appPrefs.chatLastStart.set(ts)
+      chatLastStart.value = ts
       SimplexApp.context.schedulePeriodicServiceRestartWorker()
       SimplexApp.context.schedulePeriodicWakeUp()
     } catch (e: Error) {
