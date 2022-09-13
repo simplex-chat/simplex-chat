@@ -1103,7 +1103,7 @@ public struct CIQuote: Decodable, ItemContent {
         case .directSnd: return "you"
         case .directRcv: return nil
         case .groupSnd: return currentUser?.displayName
-        case let .groupRcv(member): return member.memberProfile.displayName
+        case let .groupRcv(member): return member.displayName
         case nil: return nil
         }
     }
