@@ -8,6 +8,7 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
+import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
@@ -146,6 +147,7 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
+  val chosenAnimImage = remember { mutableStateOf<Uri?>(null) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
   val photoUri = remember { mutableStateOf<Uri?>(null) }
   val photoTmpFile = remember { mutableStateOf<File?>(null) }
@@ -194,24 +196,23 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { uri: Uri? ->
+  val processPickedImage = { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
+      val drawable = ImageDecoder.decodeDrawable(source)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      chosenImage.value = bitmap
+      if (drawable is AnimatedImageDrawable) {
+        // It's a gif or webp
+        chosenAnimImage.value = uri
+      } else {
+        chosenImage.value = bitmap
+      }
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
     }
   }
-  val galleryLauncherFallback = rememberGetContentLauncher { uri: Uri? ->
-    if (uri != null) {
-      val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val bitmap = ImageDecoder.decodeBitmap(source)
-      chosenImage.value = bitmap
-      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
-    }
-  }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
+  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
   val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
@@ -334,6 +335,7 @@ fun ComposeView(
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
     chosenImage.value = null
+    chosenAnimImage.value = null
     chosenFile.value = null
     linkUrl.value = null
     prevLinkUrl.value = null
@@ -372,6 +374,13 @@ fun ComposeView(
             val chosenImageVal = chosenImage.value
             if (chosenImageVal != null) {
               file = saveImage(context, chosenImageVal)
+              if (file != null) {
+                mc = MsgContent.MCImage(cs.message, preview.image)
+              }
+            }
+            val chosenGifImageVal = chosenAnimImage.value
+            if (chosenGifImageVal != null) {
+              file = saveAnimImage(context, chosenGifImageVal)
               if (file != null) {
                 mc = MsgContent.MCImage(cs.message, preview.image)
               }
@@ -436,6 +445,7 @@ fun ComposeView(
   fun cancelImage() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
     chosenImage.value = null
+    chosenAnimImage.value = null
   }
 
   fun cancelFile() {
