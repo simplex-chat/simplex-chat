@@ -248,6 +248,11 @@ private fun startChat(m: ChatModel, runChat: MutableState<Boolean>, chatLastStar
         SimplexApp.context.initChatController()
         chatDbChanged.value = false
       }
+      if (m.chatDbStatus.value !is DBMigrationResult.OK) {
+        /** Hide current view and show [DatabaseErrorView] */
+        ModalManager.shared.closeModals()
+        return@withApi
+      }
       m.controller.apiStartChat()
       runChat.value = true
       m.chatRunning.value = true

@@ -272,8 +272,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  private suspend fun recvMsg(): CR? {
-    val ctrl = ctrl ?: return null
+  private suspend fun recvMsg(ctrl: ChatCtrl): CR? {
     return withContext(Dispatchers.IO) {
       val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
       if (json == "") {
@@ -288,7 +287,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private suspend fun recvMspLoop() {
-    val msg = recvMsg()
+    val msg = recvMsg(ctrl ?: return)
     if (msg != null) processReceivedMsg(msg)
     recvMspLoop()
   }
