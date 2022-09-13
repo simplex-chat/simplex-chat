@@ -34,7 +34,7 @@ val ReceivedQuoteColorLight = Color(0x25B1B0B5)
 
 @Composable
 fun FramedItemView(
-  user: User,
+  chatInfo: ChatInfo,
   ci: ChatItem,
   uriHandler: UriHandler? = null,
   showMember: Boolean = false,
@@ -44,6 +44,10 @@ fun FramedItemView(
 ) {
   val sent = ci.chatDir.sent
 
+  fun membership(): GroupMember? {
+    return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
+  }
+
   @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
     Box(
@@ -51,7 +55,7 @@ fun FramedItemView(
       contentAlignment = Alignment.TopStart
     ) {
       MarkdownText(
-        qi.text, qi.formattedText, sender = qi.sender(user), senderBold = true, maxLines = 3,
+        qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
         style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
       )
     }
@@ -177,7 +181,7 @@ fun PreviewTextItemViewSnd(@PreviewParameter(EditedProvider::class) edited: Bool
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(), Clock.System.now(), "hello", itemEdited = edited,
       ),
@@ -193,7 +197,7 @@ fun PreviewTextItemViewRcv(@PreviewParameter(EditedProvider::class) edited: Bool
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectRcv(), Clock.System.now(), "hello", itemEdited = edited
       ),
@@ -209,7 +213,7 @@ fun PreviewTextItemViewLong(@PreviewParameter(EditedProvider::class) edited: Boo
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1,
         CIDirection.DirectSnd(),
@@ -229,7 +233,7 @@ fun PreviewTextItemViewQuote(@PreviewParameter(EditedProvider::class) edited: Bo
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(),
         Clock.System.now(),
@@ -250,7 +254,7 @@ fun PreviewTextItemViewEmoji(@PreviewParameter(EditedProvider::class) edited: Bo
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(),
         Clock.System.now(),
@@ -278,7 +282,7 @@ fun PreviewQuoteWithTextAndImage(@PreviewParameter(EditedProvider::class) edited
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(),
         Clock.System.now(),
@@ -306,7 +310,7 @@ fun PreviewQuoteWithLongTextAndImage(@PreviewParameter(EditedProvider::class) ed
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(),
         Clock.System.now(),
@@ -333,7 +337,7 @@ fun PreviewQuoteWithLongTextAndFile(@PreviewParameter(EditedProvider::class) edi
   val showMenu = remember { mutableStateOf(false) }
   SimpleXTheme {
     FramedItemView(
-      User.sampleData,
+      ChatInfo.Direct.sampleData,
       ChatItem.getSampleData(
         1, CIDirection.DirectSnd(),
         Clock.System.now(),
