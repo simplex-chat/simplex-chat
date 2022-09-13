@@ -40,7 +40,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
   fun initChatController(useKey: String? = null, startChat: Boolean = true) {
     val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
     val res = DatabaseUtils.migrateChatDatabase(dbKey)
-    val ctrl = chatInitKey(getFilesDirectory(applicationContext), dbKey)
+    val ctrl = if (res.second is DBMigrationResult.OK) {
+      chatInitKey(getFilesDirectory(applicationContext), dbKey)
+    } else null
     if (::chatController.isInitialized) {
       chatController.ctrl = ctrl
     } else {

@@ -68,25 +68,19 @@ class SimplexService: Service() {
     withApi {
       val chatController = (application as SimplexApp).chatController
       try {
-        val user = chatController.apiGetActiveUser()
-        if (user == null) {
-          chatController.chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-        } else {
-          Log.w(TAG, "Starting foreground service")
-          val chatDbStatus = chatController.chatModel.chatDbStatus.value
-          if (chatDbStatus != DBMigrationResult.OK) {
-            Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
-            showPassphraseNotification(chatDbStatus)
-            stopService()
-            return@withApi
-          }
-          chatController.startChat(user)
-          isServiceStarted = true
-          saveServiceState(self, ServiceState.STARTED)
-          wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-              acquire()
-            }
+        Log.w(TAG, "Starting foreground service")
+        val chatDbStatus = chatController.chatModel.chatDbStatus.value
+        if (chatDbStatus != DBMigrationResult.OK) {
+          Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
+          showPassphraseNotification(chatDbStatus)
+          stopService()
+          return@withApi
+        }
+        isServiceStarted = true
+        saveServiceState(self, ServiceState.STARTED)
+        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+            acquire()
           }
         }
       } finally {

@@ -56,7 +56,6 @@ class MessagesFetcherWork(
     try {
       withTimeout(durationSeconds * 1000L) {
         val chatController = (applicationContext as SimplexApp).chatController
-        val user = chatController.apiGetActiveUser() ?: return@withTimeout
         val chatDbStatus = chatController.chatModel.chatDbStatus.value
         if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(TAG, "Worker: problem with the database: $chatDbStatus")
@@ -65,7 +64,6 @@ class MessagesFetcherWork(
           return@withTimeout
         }
         Log.w(TAG, "Worker: starting work")
-        chatController.startChat(user)
         // Give some time to start receiving messages
         delay(10_000)
         while (!isStopped) {

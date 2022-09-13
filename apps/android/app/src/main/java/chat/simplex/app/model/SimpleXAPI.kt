@@ -196,7 +196,7 @@ class AppPreferences(val context: Context) {
 
 private const val MESSAGE_TIMEOUT: Int = 15_000_000
 
-open class ChatController(var ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
+open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
@@ -251,6 +251,8 @@ open class ChatController(var ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   suspend fun sendCmd(cmd: CC): CR {
+    val ctrl = ctrl ?: throw Exception("Controller is not initialized")
+
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (cmd !is CC.ApiParseMarkdown) {
@@ -271,6 +273,7 @@ open class ChatController(var ctrl: ChatCtrl, val ntfManager: NtfManager, val ap
   }
 
   private suspend fun recvMsg(): CR? {
+    val ctrl = ctrl ?: return null
     return withContext(Dispatchers.IO) {
       val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
       if (json == "") {
