@@ -63,7 +63,7 @@ fun ChatItemView(
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(user, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
+          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
         }
         DropdownMenu(
           expanded = showMenu.value,
