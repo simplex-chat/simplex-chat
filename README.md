@@ -148,12 +148,12 @@ We plan to add soon:
 
 ## For developers
 
-We plan that the SimpleX platform will grow into the platform supporting any distributed Internet application. This will allow you to build any service that people can access via chat, with custom web-based UI widgets that anybody with basic HTML/CSS/JavaScript knowledge can create in a few hours.
+You can:
 
-You already can:
-
-- use SimpleX Chat library to integrate chat functionality into your apps.
-- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon).
+- use SimpleX Chat library to integrate chat functionality into your mobile apps.
+- create chat bots and services in Haskell - see [simple](./apps/simplex-bot/) and more [advanced chat bot example](./apps/simplex-bot-advanced/).
+- create chat bots and services in any language running SimpleX Chat terminal CLI as a local WebSocket server. See [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScipt chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 
 If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
