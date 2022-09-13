@@ -57,8 +57,17 @@ fun saveImage(cxt: Context, ciFile: CIFile?) {
   val fileName = ciFile?.fileName
   if (filePath != null && fileName != null) {
     val values = ContentValues()
+    val lowercaseName = fileName.lowercase()
+    val mimeType = when {
+      lowercaseName.endsWith(".png") -> "image/png"
+      lowercaseName.endsWith(".gif") -> "image/gif"
+      lowercaseName.endsWith(".webp") -> "image/webp"
+      lowercaseName.endsWith(".avif") -> "image/avif"
+      lowercaseName.endsWith(".svg") -> "image/svg+xml"
+      else -> "image/jpeg"
+    }
     values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
-    values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+    values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
     values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
     values.put(MediaStore.MediaColumns.TITLE, fileName)
     val uri = cxt.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)

@@ -1,7 +1,7 @@
 import {ABQueue} from "./queue"
 import {ChatTransport, ChatServer, ChatSrvRequest, ChatSrvResponse, ChatResponseError, localServer, noop} from "./transport"
-import {ChatCommand, ChatType} from "./command"
-import {ChatResponse} from "./response"
+import {ChatCommand, ChatType, Profile} from "./command"
+import {ChatResponse, ChatInfo} from "./response"
 import * as CC from "./command"
 import * as CR from "./response"
 
@@ -118,14 +118,37 @@ export class ChatClient {
     }
   }
 
+  async apiStopChat(): Promise<void> {
+    const r = await this.sendChatCommand({type: "apiStopChat"})
+    if (r.type !== "chatStopped") {
+      throw new ChatCommandError("error stopping chat", r)
+    }
+  }
+
+  apiSetIncognito(incognito: boolean): Promise<void> {
+    return this.okChatCommand({type: "setIncognito", incognito})
+  }
+
+  async addressAutoAccept(autoAccept: boolean, autoReply: CC.MsgContent): Promise<void> {
+    const r = await this.sendChatCommand({type: "addressAutoAccept", autoAccept, autoReply})
+    if (r.type !== "userContactLinkUpdated") {
+      throw new ChatCommandError("error changing user contact address mode", r)
+    }
+  }
+
   async apiGetChats(): Promise<CR.Chat[]> {
     const r = await this.sendChatCommand({type: "apiGetChats"})
     if (r.type === "apiChats") return r.chats
     throw new ChatCommandError("error loading chats", r)
   }
 
-  async apiGetChat(chatType: ChatType, chatId: number, pagination: CC.ChatPagination = {count: 100}): Promise<CR.Chat> {
-    const r = await this.sendChatCommand({type: "apiGetChat", chatType, chatId, pagination})
+  async apiGetChat(
+    chatType: ChatType,
+    chatId: number,
+    pagination: CC.ChatPagination = {count: 100},
+    search: string | undefined = undefined
+  ): Promise<CR.Chat> {
+    const r = await this.sendChatCommand({type: "apiGetChat", chatType, chatId, pagination, search})
     if (r.type === "apiChat") return r.chat
     throw new ChatCommandError("error loading chat", r)
   }
@@ -152,18 +175,6 @@ export class ChatClient {
     throw new ChatCommandError("error deleting chat item", r)
   }
 
-  // func getUserSMPServers() throws -> [String] {
-  //     let r = chatSendCmdSync(.getUserSMPServers)
-  //     if case let .userSMPServers(smpServers) = r { return smpServers }
-  //     throw r
-  // }
-
-  // func setUserSMPServers(smpServers: [String]) async throws {
-  //     let r = await chatSendCmd(.setUserSMPServers(smpServers: smpServers))
-  //     if case .cmdOk = r { return }
-  //     throw r
-  // }
-
   async apiCreateLink(): Promise<string> {
     const r = await this.sendChatCommand({type: "addContact"})
     if (r.type === "invitation") return r.connReqInvitation
@@ -184,7 +195,24 @@ export class ChatClient {
 
   async apiDeleteChat(chatType: ChatType, chatId: number): Promise<void> {
     const r = await this.sendChatCommand({type: "apiDeleteChat", chatType, chatId})
-    if (r.type !== "contactDeleted") throw new ChatCommandError("error deleting chat", r)
+    switch (chatType) {
+      case ChatType.Direct:
+        if (r.type === "contactDeleted") return
+        break
+      case ChatType.Group:
+        if (r.type === "groupDeletedUser") return
+        break
+      case ChatType.ContactRequest:
+        if (r.type === "contactConnectionDeleted") return
+        break
+    }
+    throw new ChatCommandError("error deleting chat", r)
+  }
+
+  async apiClearChat(chatType: ChatType, chatId: number): Promise<ChatInfo> {
+    const r = await this.sendChatCommand({type: "apiClearChat", chatType, chatId})
+    if (r.type === "chatCleared") return r.chatInfo
+    throw new ChatCommandError("error clearing chat", r)
   }
 
   async apiUpdateProfile(profile: CC.Profile): Promise<CC.Profile | undefined> {
@@ -199,11 +227,11 @@ export class ChatClient {
     }
   }
 
-  // func apiParseMarkdown(text: String) throws -> [FormattedText]? {
-  //     let r = chatSendCmdSync(.apiParseMarkdown(text: text))
-  //     if case let .apiParsedMarkdown(formattedText) = r { return formattedText }
-  //     throw r
-  // }
+  async apiSetContactAlias(contactId: number, localAlias: string): Promise<CR.Contact> {
+    const r = await this.sendChatCommand({type: "apiSetContactAlias", contactId, localAlias})
+    if (r.type === "contactAliasUpdated") return r.toContact
+    throw new ChatCommandError("error updating contact alias", r)
+  }
 
   async apiCreateUserAddress(): Promise<string> {
     const r = await this.sendChatCommand({type: "createMyAddress"})
@@ -244,6 +272,66 @@ export class ChatClient {
 
   apiChatRead(chatType: ChatType, chatId: number, itemRange?: CC.ItemRange): Promise<void> {
     return this.okChatCommand({type: "apiChatRead", chatType, chatId, itemRange})
+  }
+
+  async apiContactInfo(contactId: number): Promise<[CR.ConnectionStats?, Profile?]> {
+    const r = await this.sendChatCommand({type: "apiContactInfo", contactId})
+    if (r.type === "contactInfo") return [r.connectionStats, r.customUserProfile]
+    throw new ChatCommandError("error getting contact info", r)
+  }
+
+  async apiGroupMemberInfo(groupId: number, memberId: number): Promise<CR.ConnectionStats | undefined> {
+    const r = await this.sendChatCommand({type: "apiGroupMemberInfo", groupId, memberId})
+    if (r.type === "groupMemberInfo") return r.connectionStats_
+    throw new ChatCommandError("error getting group info", r)
+  }
+
+  async apiReceiveFile(fileId: number): Promise<CR.AChatItem> {
+    const r = await this.sendChatCommand({type: "receiveFile", fileId})
+    if (r.type === "rcvFileAccepted") return r.chatItem
+    throw new ChatCommandError("error receiving file", r)
+  }
+
+  async apiNewGroup(groupProfile: CR.GroupProfile): Promise<CR.GroupInfo> {
+    const r = await this.sendChatCommand({type: "newGroup", groupProfile})
+    if (r.type === "groupCreated") return r.groupInfo
+    throw new ChatCommandError("error creating group", r)
+  }
+
+  async apiAddMember(groupId: number, contactId: number, memberRole: CC.GroupMemberRole): Promise<CR.GroupMember> {
+    const r = await this.sendChatCommand({type: "apiAddMember", groupId, contactId, memberRole})
+    if (r.type === "sentGroupInvitation") return r.member
+    throw new ChatCommandError("error adding member", r)
+  }
+
+  async apiJoinGroup(groupId: number): Promise<CR.GroupInfo> {
+    const r = await this.sendChatCommand({type: "apiJoinGroup", groupId})
+    if (r.type === "userAcceptedGroupSent") return r.groupInfo
+    throw new ChatCommandError("error joining group", r)
+  }
+
+  async apiRemoveMember(groupId: number, memberId: number): Promise<CR.GroupMember> {
+    const r = await this.sendChatCommand({type: "apiRemoveMember", groupId, memberId})
+    if (r.type === "userDeletedMember") return r.member
+    throw new ChatCommandError("error removing member", r)
+  }
+
+  async apiLeaveGroup(groupId: number): Promise<CR.GroupInfo> {
+    const r = await this.sendChatCommand({type: "apiLeaveGroup", groupId})
+    if (r.type === "leftMemberUser") return r.groupInfo
+    throw new ChatCommandError("error leaving group", r)
+  }
+
+  async apiListMembers(groupId: number): Promise<CR.GroupMember[]> {
+    const r = await this.sendChatCommand({type: "apiListMembers", groupId})
+    if (r.type === "groupMembers") return r.group.members
+    throw new ChatCommandError("error getting group members", r)
+  }
+
+  async apiUpdateGroup(groupId: number, groupProfile: CR.GroupProfile): Promise<CR.GroupInfo> {
+    const r = await this.sendChatCommand({type: "apiUpdateGroupProfile", groupId, groupProfile})
+    if (r.type === "groupUpdated") return r.toGroup
+    throw new ChatCommandError("error updating group", r)
   }
 
   private async okChatCommand(command: ChatCommand): Promise<void> {

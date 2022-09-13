@@ -794,7 +794,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE && appPrefs.privacyAcceptImages.get()) {
+        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {

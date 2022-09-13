@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX announces SimpleX Chat public beta for iOS"
+date: 2022-02-14
+permalink: "/blog/20220214-simplex-chat-ios-public-beta.html"
+---
+
 # SimpleX announces SimpleX Chat public beta for iOS
 
 **Published:** Feb 14, 2022
@@ -7,12 +14,13 @@
 Our new iPhone app is very basic - right now it only supports text messages and emojis.
 
 Even though the app is new, it uses the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 a month ago:
+
 - [double-ratchet](https://www.signal.org/docs/specifications/doubleratchet/) E2E encryption.
 - separate keys for each contact.
 - additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).
 - additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).
 
-You can read more details in our recent [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md).
+You can read more details in our recent [v1 announcement](./20220112-simplex-chat-v1-released.md).
 
 ## Join our public beta!
 
@@ -21,6 +29,7 @@ Install the app [via TestFlight](https://testflight.apple.com/join/DWuT2LQu), co
 We would really appreciate any feedback to improve the app and to decide which additional features should be included in our public release in March.
 
 Should it be:
+
 - images,
 - link previews,
 - or maybe something else we couldn't think of.
