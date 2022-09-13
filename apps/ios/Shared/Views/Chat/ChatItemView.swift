@@ -35,7 +35,7 @@ struct ChatItemView: View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
         } else {
-            FramedItemView(chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
+            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
         }
     }
 

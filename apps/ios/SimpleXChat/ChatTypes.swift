@@ -1098,12 +1098,12 @@ public struct CIQuote: Decodable, ItemContent {
 
     public var text: String { get { content.text } }
 
-    public func getSender(_ currentUser: User?) -> String? {
+    public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
-        case .groupSnd: return currentUser?.displayName
-        case let .groupRcv(member): return member.memberProfile.displayName
+        case .groupSnd: return membership?.displayName
+        case let .groupRcv(member): return member.displayName
         case nil: return nil
         }
     }
