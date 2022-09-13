@@ -36,7 +36,7 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_app_SimplexAppKt_chatMigrateDB(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey) {
     const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
     const char *_dbKey = (*env)->GetStringUTFChars(env, dbKey, JNI_FALSE);
-    jstring res = (jlong)chat_migrate_db(_dbPath, _dbKey);
+    jstring res = (*env)->NewStringUTF(env, chat_migrate_db(_dbPath, _dbKey));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
     return res;
