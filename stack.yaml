@@ -87,10 +87,7 @@ flags:
 #
 # Extra directories used by stack for building
 # TODO remove, use options instead: stack build --extra-include-dirs=/opt/homebrew/opt/openssl@3/include --extra-lib-dirs=/opt/homebrew/opt/openssl@3/lib
-extra-include-dirs:
-- /opt/homebrew/opt/openssl@3/include
-extra-lib-dirs:
-- /opt/homebrew/opt/openssl@3/lib
+# extra-lib-dirs: [/path/to/dir]
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
