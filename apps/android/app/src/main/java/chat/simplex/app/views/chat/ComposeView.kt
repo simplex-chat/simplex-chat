@@ -4,11 +4,11 @@ import ComposeFileView
 import ComposeImageView
 import android.Manifest
 import android.app.Activity
-import android.content.*
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import android.graphics.drawable.AnimatedImageDrawable
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
@@ -19,8 +19,7 @@ import androidx.annotation.CallSuper
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Edit
@@ -147,7 +146,6 @@ fun ComposeView(
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
   val chosenImage = remember { mutableStateOf<Bitmap?>(null) }
-  val chosenAnimImage = remember { mutableStateOf<Uri?>(null) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
   val photoUri = remember { mutableStateOf<Uri?>(null) }
   val photoTmpFile = remember { mutableStateOf<File?>(null) }
@@ -196,23 +194,15 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val processPickedImage = { uri: Uri? ->
+  val galleryLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val source = ImageDecoder.createSource(context.contentResolver, uri)
-      val drawable = ImageDecoder.decodeDrawable(source)
       val bitmap = ImageDecoder.decodeBitmap(source)
-      if (drawable is AnimatedImageDrawable) {
-        // It's a gif or webp
-        chosenAnimImage.value = uri
-      } else {
-        chosenImage.value = bitmap
-      }
+      chosenImage.value = bitmap
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
-  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
   val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
@@ -245,11 +235,7 @@ fun ComposeView(
         attachmentOption.value = null
       }
       AttachmentOption.PickImage -> {
-        try {
-          galleryLauncher.launch(0)
-        } catch (e: ActivityNotFoundException) {
-          galleryLauncherFallback.launch("image/*")
-        }
+        galleryLauncher.launch("image/*")
         attachmentOption.value = null
       }
       AttachmentOption.PickFile -> {
@@ -335,7 +321,6 @@ fun ComposeView(
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
     chosenImage.value = null
-    chosenAnimImage.value = null
     chosenFile.value = null
     linkUrl.value = null
     prevLinkUrl.value = null
@@ -374,13 +359,6 @@ fun ComposeView(
             val chosenImageVal = chosenImage.value
             if (chosenImageVal != null) {
               file = saveImage(context, chosenImageVal)
-              if (file != null) {
-                mc = MsgContent.MCImage(cs.message, preview.image)
-              }
-            }
-            val chosenGifImageVal = chosenAnimImage.value
-            if (chosenGifImageVal != null) {
-              file = saveAnimImage(context, chosenGifImageVal)
               if (file != null) {
                 mc = MsgContent.MCImage(cs.message, preview.image)
               }
@@ -445,7 +423,6 @@ fun ComposeView(
   fun cancelImage() {
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
     chosenImage.value = null
-    chosenAnimImage.value = null
   }
 
   fun cancelFile() {
@@ -522,10 +499,4 @@ fun ComposeView(
       )
     }
   }
-}
-
-class PickFromGallery: ActivityResultContract<Int, Uri?>() {
-  override fun createIntent(context: Context, input: Int) = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-
-  override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data
 }

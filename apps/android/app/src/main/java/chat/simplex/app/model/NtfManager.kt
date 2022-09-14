@@ -12,7 +12,6 @@ import chat.simplex.app.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.base64ToBitmap
 import chat.simplex.app.views.helpers.generalGetString
-import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context, private val appPreferences: AppPreferences) {
@@ -76,12 +75,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
     prevNtfTime[chatId] = now
 
-    val previewMode = appPreferences.notificationPreviewMode.get()
-    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(R.string.notification_preview_somebody) else displayName
-    val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(R.string.notification_preview_new_message) else msgText
     val notification = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(title)
-      .setContentText(content)
+      .setContentTitle(displayName)
+      .setContentText(msgText)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -136,14 +132,8 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
         if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
       }
     )
-    val previewMode = appPreferences.notificationPreviewMode.get()
-    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name)
-      generalGetString(R.string.notification_preview_somebody)
-    else
-      invitation.contact.displayName
-
     ntfBuilder = ntfBuilder
-      .setContentTitle(title)
+      .setContentTitle(invitation.contact.displayName)
       .setContentText(text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_CALL)

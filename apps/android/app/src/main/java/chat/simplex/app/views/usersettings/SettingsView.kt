@@ -40,13 +40,25 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
 
   MaintainIncognitoState(chatModel)
 
+  fun setRunServiceInBackground(on: Boolean) {
+    chatModel.controller.appPrefs.runServiceInBackground.set(on)
+    if (on && !chatModel.controller.isIgnoringBatteryOptimizations(chatModel.controller.appContext)) {
+      chatModel.controller.appPrefs.backgroundServiceNoticeShown.set(false)
+    }
+    chatModel.controller.showBackgroundServiceNoticeIfNeeded()
+    chatModel.runServiceInBackground.value = on
+    SimplexService.StartReceiver.toggleReceiver(on)
+  }
+
   if (user != null) {
     SettingsLayout(
       profile = user.profile,
       stopped,
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
+      runServiceInBackground = chatModel.runServiceInBackground,
       developerTools = chatModel.controller.appPrefs.developerTools,
+      setRunServiceInBackground = ::setRunServiceInBackground,
       setPerformLA = setPerformLA,
       showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
       showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
@@ -81,7 +93,9 @@ fun SettingsLayout(
   stopped: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
+  runServiceInBackground: MutableState<Boolean>,
   developerTools: Preference<Boolean>,
+  setRunServiceInBackground: (Boolean) -> Unit,
   setPerformLA: (Boolean) -> Unit,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
@@ -118,7 +132,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) })
+        PrivateNotificationsItem(runServiceInBackground, setRunServiceInBackground, stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
         SectionDivider()
@@ -144,7 +158,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_develop)) {
-        ChatConsoleItem(showTerminal)
+        ChatConsoleItem(showTerminal, stopped)
         SectionDivider()
         SettingsPreferenceItem(Icons.Outlined.Construction, stringResource(R.string.settings_developer_tools), developerTools)
         SectionDivider()
@@ -226,6 +240,41 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
+@Composable private fun PrivateNotificationsItem(
+  runServiceInBackground: MutableState<Boolean>,
+  setRunServiceInBackground: (Boolean) -> Unit,
+  stopped: Boolean
+) {
+  SectionItemView(disabled = stopped) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Icon(
+        Icons.Outlined.Bolt,
+        contentDescription = stringResource(R.string.private_notifications),
+        tint = HighOrLowlight,
+      )
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      Text(
+        stringResource(R.string.private_notifications),
+        Modifier
+          .padding(end = 24.dp)
+          .fillMaxWidth()
+          .weight(1f),
+        color = if (stopped) HighOrLowlight else Color.Unspecified
+      )
+      Switch(
+        checked = runServiceInBackground.value,
+        onCheckedChange = { setRunServiceInBackground(it) },
+        colors = SwitchDefaults.colors(
+          checkedThumbColor = MaterialTheme.colors.primary,
+          uncheckedThumbColor = HighOrLowlight
+        ),
+        modifier = Modifier.padding(end = 6.dp),
+        enabled = !stopped
+      )
+    }
+  }
+}
+
 @Composable fun ChatLockItem(performLA: MutableState<Boolean>, setPerformLA: (Boolean) -> Unit) {
   SectionItemView() {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -253,15 +302,18 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun ChatConsoleItem(showTerminal: () -> Unit) {
-  SectionItemView(showTerminal) {
+@Composable private fun ChatConsoleItem(showTerminal: () -> Unit, stopped: Boolean) {
+  SectionItemView(showTerminal, disabled = stopped) {
     Icon(
       painter = painterResource(id = R.drawable.ic_outline_terminal),
       contentDescription = stringResource(R.string.chat_console),
       tint = HighOrLowlight,
     )
     Spacer(Modifier.padding(horizontal = 4.dp))
-    Text(stringResource(R.string.chat_console))
+    Text(
+      stringResource(R.string.chat_console),
+      color = if (stopped) HighOrLowlight else Color.Unspecified
+    )
   }
 }
 
@@ -357,7 +409,9 @@ fun PreviewSettingsLayout() {
       stopped = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = Preference({ false}, {}),
+      runServiceInBackground = remember { mutableStateOf(true) },
       developerTools = Preference({ false }, {}),
+      setRunServiceInBackground = {},
       setPerformLA = {},
       showModal = { {} },
       showSettingsModal = { {} },

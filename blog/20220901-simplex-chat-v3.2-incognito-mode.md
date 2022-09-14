@@ -1,10 +1,3 @@
----
-layout: layouts/article.html
-title: "SimpleX Chat v3.2 is released"
-date: 2022-09-01
-permalink: "/blog/20220901-simplex-chat-v3.2-incognito-mode.html"
----
-
 # SimpleX Chat v3.2 is released
 
 **Published:** Sep 1, 2022
@@ -31,7 +24,7 @@ _SimpleX is already private, so why do we need an incognito mode_, you may ask.
 
 You indeed can choose a pseudonym as your main profile name, but there are several problems:
 
-- many users want to have their real name as their main profile, so that their friends recognise them. SimpleX objective is to provide anonymity from the network operators, but not necessarily from your contacts.
+- many users want to have their real name as their main profile, so that their friends recognise them. SimpleX objective is to provide anonimity from the network operators, but not necessarily from your contacts.
 - even if you choose a pseudonym, it would be used for all your contacts. And if two of them meet, while they cannot prove they are talking to the same person, as they use different addresses in SimpleX network to send you the messages, they could _suspect it_.
 - any pseudonym you manually choose leaks some information about you, as it's not really random.
 
@@ -78,7 +71,7 @@ Some links to answer the most common questions:
 
 [Technical details and limitations](./20220723-simplex-chat-v3.1-tor-groups-efficiency.md#privacy-technical-details-and-limitations).
 
-[How SimpleX is different from Session, Matrix, Signal, etc.](https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions).
+[How SimpleX is different from Session, Matrix, Signal, etc.](../README.md#frequently-asked-questions).
 
 ## We ask you to help us pay for 3rd party security audit
 

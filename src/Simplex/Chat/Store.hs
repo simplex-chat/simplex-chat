@@ -609,9 +609,9 @@ toContactOrError ((contactId, profileId, localDisplayName, viaGroup, displayName
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db user@User {userId} localDisplayName = do
-  cId <- getContactIdByName db user localDisplayName
+getContactByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Contact
+getContactByName db userId localDisplayName = do
+  cId <- getContactIdByName db userId localDisplayName
   getContact db userId cId
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
@@ -3012,8 +3012,8 @@ getDirectChatStats_ db userId contactId =
     toChatStats' [statsRow] = toChatStats statsRow
     toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
 
-getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
-getContactIdByName db User {userId} cName =
+getContactIdByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Int64
+getContactIdByName db userId cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 

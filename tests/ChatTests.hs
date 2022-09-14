@@ -115,9 +115,6 @@ chatTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-  describe "mute/unmute messages" $ do
-    it "mute/unmute contact" testMuteContact
-    it "mute/unmute group" testMuteGroup
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -2759,53 +2756,6 @@ testMaintenanceModeWithFiles = withTmpFiles $ do
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
     -- works after full restart
     withTestChat "alice" $ \alice -> testChatWorking alice bob
-
-testMuteContact :: IO ()
-testMuteContact =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "@bob hello"
-      bob <# "alice> hello"
-      bob ##> "/mute alice"
-      bob <## "ok"
-      alice #> "@bob hi"
-      (bob </)
-      bob ##> "/cs"
-      bob <## "alice (Alice) (muted, you can /unmute @alice)"
-      bob ##> "/unmute alice"
-      bob <## "ok"
-      bob ##> "/cs"
-      bob <## "alice (Alice)"
-      alice #> "@bob hi again"
-      bob <# "alice> hi again"
-
-testMuteGroup :: IO ()
-testMuteGroup =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      threadDelay 1000000
-      alice #> "#team hello!"
-      concurrently_
-        (bob <# "#team alice> hello!")
-        (cath <# "#team alice> hello!")
-      bob ##> "/mute #team"
-      bob <## "ok"
-      alice #> "#team hi"
-      concurrently_
-        (bob </)
-        (cath <# "#team alice> hi")
-      bob ##> "/gs"
-      bob <## "#team (muted, you can /unmute #team)"
-      bob ##> "/unmute #team"
-      bob <## "ok"
-      alice #> "#team hi again"
-      concurrently_
-        (bob <# "#team alice> hi again")
-        (cath <# "#team alice> hi again")
-      bob ##> "/gs"
-      bob <## "#team"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

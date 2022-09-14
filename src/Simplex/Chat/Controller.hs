@@ -154,7 +154,6 @@ data ChatCommand
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
-  | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | ChatHelp HelpSection

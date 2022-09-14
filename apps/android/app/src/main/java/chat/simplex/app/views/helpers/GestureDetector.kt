@@ -86,7 +86,11 @@ suspend fun PointerInputScope.detectGesture(
         } else {
           if (shouldConsume)
             upOrCancel.consumeDownChange()
-          pressScope.release()
+          // If onLongPress event is needed, cancel short press event
+          if (onLongPress != null)
+            pressScope.cancel()
+          else
+            pressScope.release()
         }
       } catch (_: PointerEventTimeoutCancellationException) {
         onLongPress?.invoke(down.position)
@@ -172,7 +176,7 @@ private class PressGestureScopeImpl(
     if (!isReleased && !isCanceled) {
       mutex.lock()
     }
-    return isReleased && !isCanceled
+    return isCanceled
   }
 }
 
