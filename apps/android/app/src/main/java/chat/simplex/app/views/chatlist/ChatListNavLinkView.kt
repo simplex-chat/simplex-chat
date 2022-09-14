@@ -130,7 +130,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     GroupMemberStatus.MemInvited -> {
       JoinGroupAction(chat, groupInfo, chatModel, showMenu)
       if (groupInfo.canDelete) {
-        DeleteGroupAction(chat, chatModel, showMenu)
+        DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
     }
     else -> {
@@ -143,7 +143,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
         LeaveGroupAction(groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
-        DeleteGroupAction(chat, chatModel, showMenu)
+        DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
     }
   }
@@ -201,12 +201,12 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 }
 
 @Composable
-fun DeleteGroupAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteGroupDialog(chat.chatInfo, chatModel)
+      deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
