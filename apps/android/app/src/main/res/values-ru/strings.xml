@@ -575,7 +575,7 @@
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
     <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
-    <string name="you_have_to_enter_passphrase_every_time">Вы должны вводить пароль каждый раз при запуске чата - пароль не сохранен на устройстве.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
     <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
     <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
