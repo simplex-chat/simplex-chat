@@ -590,9 +590,9 @@
     <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль базы данных отличается от пароля сохрененного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от пароля, сохраненного в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
-    <string name="database_passphrase_is_required">Введите пароль базы данных чтобы открыть чат.</string>
+    <string name="database_passphrase_is_required">Введите пароль базы данных, чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
     <string name="cannot_access_keychain">Невозможно сохранить пароль в Keystore</string>
     <string name="unknown_database_error_with_info">Неизвестная ошибка базы данных: %s</string>

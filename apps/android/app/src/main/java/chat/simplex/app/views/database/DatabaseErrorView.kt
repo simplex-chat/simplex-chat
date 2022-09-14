@@ -26,6 +26,7 @@ fun DatabaseErrorView(
   chatDbStatus: State<DBMigrationResult?>,
   appPreferences: AppPreferences,
 ) {
+  val progressIndicator = remember { mutableStateOf(false) }
   val dbKey = remember { mutableStateOf("") }
   var storedDBKey by remember { mutableStateOf(DatabaseUtils.getDatabaseKey()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
@@ -35,7 +36,7 @@ fun DatabaseErrorView(
     appPreferences.storeDBPassphrase.set(true)
     useKeychain = true
     appPreferences.initialRandomDBPassphrase.set(false)
-    runChat(dbKey.value, chatDbStatus, appPreferences)
+    runChat(dbKey.value, chatDbStatus, progressIndicator, appPreferences)
   }
   val title = when (chatDbStatus.value) {
     is DBMigrationResult.OK -> ""
@@ -63,7 +64,7 @@ fun DatabaseErrorView(
       Column(
         Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
       ) {
-        val buttonEnabled = validKey(dbKey.value)
+        val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
         when (val status = chatDbStatus.value) {
           is DBMigrationResult.ErrorNotADatabase -> {
             if (useKeychain && !storedDBKey.isNullOrEmpty()) {
@@ -77,12 +78,12 @@ fun DatabaseErrorView(
             } else {
               Text(generalGetString(R.string.database_passphrase_is_required))
               DatabaseKeyField(dbKey, buttonEnabled) {
-                if (useKeychain) saveAndRunChatOnClick() else runChat(dbKey.value, chatDbStatus, appPreferences)
+                if (useKeychain) saveAndRunChatOnClick() else runChat(dbKey.value, chatDbStatus, progressIndicator, appPreferences)
               }
               if (useKeychain) {
                 SaveAndOpenButton(buttonEnabled, saveAndRunChatOnClick)
               } else {
-                OpenChatButton(buttonEnabled) { runChat(dbKey.value, chatDbStatus, appPreferences) }
+                OpenChatButton(buttonEnabled) { runChat(dbKey.value, chatDbStatus, progressIndicator, appPreferences) }
               }
             }
           }
@@ -104,14 +105,37 @@ fun DatabaseErrorView(
       }
     }
   }
+  if (progressIndicator.value) {
+    Box(
+      Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      CircularProgressIndicator(
+        Modifier
+          .padding(horizontal = 2.dp)
+          .size(30.dp),
+        color = HighOrLowlight,
+        strokeWidth = 2.5.dp
+      )
+    }
+  }
 }
 
-private fun runChat(dbKey: String, chatDbStatus: State<DBMigrationResult?>, prefs: AppPreferences) {
+private fun runChat(
+  dbKey: String,
+  chatDbStatus: State<DBMigrationResult?>,
+  progressIndicator: MutableState<Boolean>,
+  prefs: AppPreferences
+) = CoroutineScope(Dispatchers.Default).launch {
+  // Don't do things concurrently. Shouldn't be here concurrently, just in case
+  if (progressIndicator.value) return@launch
+  progressIndicator.value = true
   try {
     SimplexApp.context.initChatController(dbKey)
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
+  progressIndicator.value = false
   when (val status = chatDbStatus.value) {
     is DBMigrationResult.OK -> {
       SimplexService.cancelPassphraseNotification()
