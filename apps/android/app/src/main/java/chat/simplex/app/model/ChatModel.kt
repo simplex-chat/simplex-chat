@@ -10,8 +10,11 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
+import chat.simplex.app.views.helpers.DBMigrationResult
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.views.usersettings.NotificationPreviewMode
+import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.datetime.*
 import kotlinx.serialization.*
 import kotlinx.serialization.descriptors.*
@@ -25,6 +28,8 @@ class ChatModel(val controller: ChatController) {
   val userCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
+  val chatDbEncrypted = mutableStateOf<Boolean?>(false)
+  val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val chats = mutableStateListOf<Chat>()
 
   // current chat
@@ -44,7 +49,8 @@ class ChatModel(val controller: ChatController) {
   val appOpenUrl = mutableStateOf<Uri?>(null)
 
   // preferences
-  val runServiceInBackground = mutableStateOf(true)
+  val notificationsMode = mutableStateOf(NotificationsMode.default)
+  var notificationPreviewMode = mutableStateOf(NotificationPreviewMode.default)
   val performLA = mutableStateOf(false)
   val showAdvertiseLAUnavailableAlert = mutableStateOf(false)
   var incognito = mutableStateOf(false)
@@ -67,6 +73,7 @@ class ChatModel(val controller: ChatController) {
 
   fun hasChat(id: String): Boolean = chats.firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.firstOrNull { it.id == id }
+  fun getContactChat(contactId: Long): Chat? = chats.firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   private fun getChatIndex(id: String): Int = chats.indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -159,6 +166,10 @@ class ChatModel(val controller: ChatController) {
       val pItem = chat.chatItems.lastOrNull()
       if (pItem?.id == cItem.id) {
         chats[i] = chat.copy(chatItems = arrayListOf(cItem))
+        if (pItem.isRcvNew && !cItem.isRcvNew) {
+          // status changed from New to Read, update counter
+          decreaseCounterInChat(cInfo.id)
+        }
       }
       res = false
     } else {
@@ -245,6 +256,18 @@ class ChatModel(val controller: ChatController) {
       }
     }
     return markedRead
+  }
+
+  private fun decreaseCounterInChat(chatId: ChatId) {
+    val chatIndex = getChatIndex(chatId)
+    if (chatIndex == -1) return
+
+    val chat = chats[chatIndex]
+    chats[chatIndex] = chat.copy(
+      chatStats = chat.chatStats.copy(
+        unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0),
+      )
+    )
   }
 
 //  func popChat(_ id: String) {
@@ -1165,11 +1188,11 @@ class CIQuote (
 ): ItemContent {
   override val text: String get() = content.text
 
-  fun sender(user: User): String? = when (chatDir) {
+  fun sender(membership: GroupMember?): String? = when (chatDir) {
     is CIDirection.DirectSnd -> generalGetString(R.string.sender_you_pronoun)
     is CIDirection.DirectRcv -> null
-    is CIDirection.GroupSnd -> user.displayName
-    is CIDirection.GroupRcv -> chatDir.groupMember.memberProfile.displayName
+    is CIDirection.GroupSnd -> membership?.displayName
+    is CIDirection.GroupRcv -> chatDir.groupMember.displayName
     null -> null
   }
 

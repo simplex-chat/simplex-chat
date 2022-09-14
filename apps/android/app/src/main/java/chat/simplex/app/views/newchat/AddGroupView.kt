@@ -50,7 +50,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, false, close)
+              AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
         }

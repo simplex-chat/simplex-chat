@@ -1098,12 +1098,12 @@ public struct CIQuote: Decodable, ItemContent {
 
     public var text: String { get { content.text } }
 
-    public func getSender(_ currentUser: User?) -> String? {
+    public func getSender(_ membership: GroupMember?) -> String? {
         switch (chatDir) {
         case .directSnd: return "you"
         case .directRcv: return nil
-        case .groupSnd: return currentUser?.displayName
-        case let .groupRcv(member): return member.memberProfile.displayName
+        case .groupSnd: return membership?.displayName
+        case let .groupRcv(member): return member.displayName
         case nil: return nil
         }
     }
@@ -1355,7 +1355,7 @@ public enum CICallStatus: String, Decodable {
         case .missed: return NSLocalizedString("missed call", comment: "call status")
         case .rejected: return NSLocalizedString("rejected call", comment: "call status")
         case .accepted: return NSLocalizedString("accepted call", comment: "call status")
-        case .negotiated: return NSLocalizedString("connecting call…", comment: "call status")
+        case .negotiated: return NSLocalizedString("connecting call", comment: "call status")
         case .progress: return NSLocalizedString("call in progress", comment: "call status")
         case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
         case .error: return NSLocalizedString("call error", comment: "call status")

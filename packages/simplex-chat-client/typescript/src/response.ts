@@ -1,13 +1,16 @@
-import {ChatItemId, MsgContent, DeleteMode, Profile} from "./command"
+import {ChatItemId, MsgContent, DeleteMode, Profile, GroupMemberRole} from "./command"
 
 export type ChatResponse =
   | CRActiveUser
   | CRChatStarted
   | CRChatRunning
+  | CRChatStopped
   | CRApiChats
   | CRApiChat
   | CRApiParsedMarkdown
   | CRUserSMPServers
+  | CRContactInfo
+  | CRGroupMemberInfo
   | CRNewChatItem
   | CRChatItemStatusUpdated
   | CRChatItemUpdated
@@ -20,11 +23,14 @@ export type ChatResponse =
   | CRUserProfile
   | CRUserProfileNoChange
   | CRUserProfileUpdated
+  | CRContactAliasUpdated
   | CRInvitation
   | CRSentConfirmation
   | CRSentInvitation
   | CRContactUpdated
+  | CRContactsMerged
   | CRContactDeleted
+  | CRChatCleared
   | CRUserContactLinkCreated
   | CRUserContactLinkDeleted
   | CRReceivedContactRequest
@@ -38,22 +44,72 @@ export type ChatResponse =
   | CRContactSubscribed
   | CRContactSubError
   | CRContactSubSummary
+  | CRContactsDisconnected
+  | CRContactsSubscribed
+  | CRHostConnected
+  | CRHostDisconnected
   | CRGroupEmpty
+  | CRMemberSubError
+  | CRMemberSubSummary
+  | CRGroupSubscribed
+  | CRRcvFileAccepted
+  | CRRcvFileAcceptedSndCancelled
+  | CRRcvFileStart
+  | CRRcvFileComplete
+  | CRRcvFileCancelled
+  | CRRcvFileSndCancelled
+  | CRSndFileStart
+  | CRSndFileComplete
+  | CRSndFileCancelled
+  | CRSndFileRcvCancelled
+  | CRSndGroupFileCancelled
+  | CRSndFileSubError
+  | CRRcvFileSubError
   | CRPendingSubSummary
+  | CRGroupCreated
+  | CRGroupMembers
+  | CRUserAcceptedGroupSent
+  | CRUserDeletedMember
+  | CRSentGroupInvitation
+  | CRLeftMemberUser
+  | CRGroupDeletedUser
+  | CRGroupInvitation
+  | CRReceivedGroupInvitation
+  | CRUserJoinedGroup
+  | CRJoinedGroupMember
+  | CRJoinedGroupMemberConnecting
+  | CRConnectedToGroupMember
+  | CRDeletedMember
+  | CRDeletedMemberUser
+  | CRLeftMember
+  | CRGroupRemoved
+  | CRGroupDeleted
+  | CRGroupUpdated
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError
+  | CRNewContactConnection
+  | CRContactConnectionDeleted
   | CRMessageError
   | CRChatCmdError
   | CRChatError
+
+// not included
+// CRChatItemDeletedNotFound
+// CRBroadcastSent
+// CRGroupsList
+// CRFileTransferStatus
 
 type ChatResponseTag =
   | "activeUser"
   | "chatStarted"
   | "chatRunning"
+  | "chatStopped"
   | "apiChats"
   | "apiChat"
   | "apiParsedMarkdown"
   | "userSMPServers"
+  | "contactInfo"
+  | "groupMemberInfo"
   | "newChatItem"
   | "chatItemStatusUpdated"
   | "chatItemUpdated"
@@ -68,11 +124,14 @@ type ChatResponseTag =
   | "userProfile"
   | "userProfileNoChange"
   | "userProfileUpdated"
+  | "contactAliasUpdated"
   | "invitation"
   | "sentConfirmation"
   | "sentInvitation"
   | "contactUpdated"
+  | "contactsMerged"
   | "contactDeleted"
+  | "chatCleared"
   | "receivedContactRequest"
   | "acceptingContactRequest"
   | "contactAlreadyExists"
@@ -84,10 +143,52 @@ type ChatResponseTag =
   | "contactSubscribed"
   | "contactSubError"
   | "contactSubSummary"
+  | "contactsDisconnected"
+  | "contactsSubscribed"
+  | "hostConnected"
+  | "hostDisconnected"
   | "groupEmpty"
+  | "memberSubError"
+  | "memberSubSummary"
+  | "groupSubscribed"
+  | "rcvFileAccepted"
+  | "rcvFileAcceptedSndCancelled"
+  | "rcvFileStart"
+  | "rcvFileComplete"
+  | "rcvFileCancelled"
+  | "rcvFileSndCancelled"
+  | "sndFileStart"
+  | "sndFileComplete"
+  | "sndFileCancelled"
+  | "sndFileRcvCancelled"
+  | "sndGroupFileCancelled"
+  | "fileTransferStatus"
+  | "sndFileSubError"
+  | "rcvFileSubError"
   | "pendingSubSummary"
+  | "groupCreated"
+  | "groupMembers"
+  | "userAcceptedGroupSent"
+  | "userDeletedMember"
+  | "sentGroupInvitation"
+  | "leftMemberUser"
+  | "groupDeletedUser"
+  | "groupInvitation"
+  | "receivedGroupInvitation"
+  | "userJoinedGroup"
+  | "joinedGroupMember"
+  | "joinedGroupMemberConnecting"
+  | "connectedToGroupMember"
+  | "deletedMember"
+  | "deletedMemberUser"
+  | "leftMember"
+  | "groupRemoved"
+  | "groupDeleted"
+  | "groupUpdated"
   | "userContactLinkSubscribed"
   | "userContactLinkSubError"
+  | "newContactConnection"
+  | "contactConnectionDeleted"
   | "messageError"
   | "chatCmdError"
   | "chatError"
@@ -109,6 +210,10 @@ export interface CRChatRunning extends CR {
   type: "chatRunning"
 }
 
+export interface CRChatStopped extends CR {
+  type: "chatStopped"
+}
+
 export interface CRApiChats extends CR {
   type: "apiChats"
   chats: Chat[]
@@ -127,6 +232,20 @@ export interface CRApiParsedMarkdown extends CR {
 export interface CRUserSMPServers extends CR {
   type: "userSMPServers"
   smpServers: string[]
+}
+
+export interface CRContactInfo extends CR {
+  type: "contactInfo"
+  contact: Contact
+  connectionStats: ConnectionStats
+  customUserProfile?: Profile
+}
+
+export interface CRGroupMemberInfo extends CR {
+  type: "groupMemberInfo"
+  groupInfo: GroupInfo
+  member: GroupMember
+  connectionStats_?: ConnectionStats
 }
 
 export interface CRNewChatItem extends CR {
@@ -169,6 +288,7 @@ export interface CRUserContactLinkUpdated extends CR {
   type: "userContactLinkUpdated"
   connReqContact: string
   autoAccept: boolean
+  autoReply?: MsgContent
 }
 
 export interface CRContactRequestRejected extends CR {
@@ -191,6 +311,11 @@ export interface CRUserProfileUpdated extends CR {
   toProfile: Profile
 }
 
+export interface CRContactAliasUpdated extends CR {
+  type: "contactAliasUpdated"
+  toContact: Contact
+}
+
 export interface CRInvitation extends CR {
   type: "invitation"
   connReqInvitation: string
@@ -210,9 +335,20 @@ export interface CRContactUpdated extends CR {
   toContact: Contact
 }
 
+export interface CRContactsMerged extends CR {
+  type: "contactsMerged"
+  intoContact: Contact
+  mergedContact: Contact
+}
+
 export interface CRContactDeleted extends CR {
   type: "contactDeleted"
   contact: Contact
+}
+
+export interface CRChatCleared extends CR {
+  type: "chatCleared"
+  chatInfo: ChatInfo
 }
 
 export interface CRUserContactLinkCreated extends CR {
@@ -280,14 +416,240 @@ export interface CRContactSubSummary extends CR {
   contactSubscriptions: ContactSubStatus[]
 }
 
+export interface CRContactsDisconnected extends CR {
+  type: "contactsDisconnected"
+  server: string
+  contactRefs: ContactRef[]
+}
+
+export interface CRContactsSubscribed extends CR {
+  type: "contactsSubscribed"
+  server: string
+  contactRefs: ContactRef[]
+}
+
+export interface CRHostConnected extends CR {
+  type: "hostConnected"
+  protocol: string
+  transportHost: string
+}
+
+export interface CRHostDisconnected extends CR {
+  type: "hostDisconnected"
+  protocol: string
+  transportHost: string
+}
+
 export interface CRGroupEmpty extends CR {
   type: "groupEmpty"
   groupInfo: GroupInfo
 }
 
+export interface CRMemberSubError extends CR {
+  type: "memberSubError"
+  groupInfo: GroupInfo
+  member: GroupMember
+  chatError: ChatError
+}
+
+export interface CRMemberSubSummary extends CR {
+  type: "memberSubSummary"
+  memberSubscriptions: MemberSubStatus[]
+}
+
+export interface CRGroupSubscribed extends CR {
+  type: "groupSubscribed"
+  groupInfo: GroupInfo
+}
+
+export interface CRRcvFileAccepted extends CR {
+  type: "rcvFileAccepted"
+  chatItem: AChatItem
+}
+
+export interface CRRcvFileAcceptedSndCancelled extends CR {
+  type: "rcvFileAcceptedSndCancelled"
+  rcvFileTransfer: RcvFileTransfer
+}
+
+export interface CRRcvFileStart extends CR {
+  type: "rcvFileStart"
+  chatItem: AChatItem
+}
+
+export interface CRRcvFileComplete extends CR {
+  type: "rcvFileComplete"
+  chatItem: AChatItem
+}
+
+export interface CRRcvFileCancelled extends CR {
+  type: "rcvFileCancelled"
+  rcvFileTransfer: RcvFileTransfer
+}
+
+export interface CRRcvFileSndCancelled extends CR {
+  type: "rcvFileSndCancelled"
+  rcvFileTransfer: RcvFileTransfer
+}
+
+export interface CRSndFileStart extends CR {
+  type: "sndFileStart"
+  chatItem: AChatItem
+  sndFileTransfer: SndFileTransfer
+}
+
+export interface CRSndFileComplete extends CR {
+  type: "sndFileComplete"
+  chatItem: AChatItem
+  sndFileTransfer: SndFileTransfer
+}
+
+export interface CRSndFileCancelled extends CR {
+  type: "sndFileCancelled"
+  chatItem: AChatItem
+  sndFileTransfer: SndFileTransfer
+}
+
+export interface CRSndFileRcvCancelled extends CR {
+  type: "sndFileRcvCancelled"
+  chatItem: AChatItem
+  sndFileTransfer: SndFileTransfer
+}
+
+export interface CRSndGroupFileCancelled extends CR {
+  type: "sndGroupFileCancelled"
+  chatItem: AChatItem
+  fileTransferMeta: FileTransferMeta
+  sndFileTransfers: SndFileTransfer[]
+}
+
+export interface CRSndFileSubError extends CR {
+  type: "sndFileSubError"
+  sndFileTransfer: SndFileTransfer
+  chatError: ChatError
+}
+
+export interface CRRcvFileSubError extends CR {
+  type: "rcvFileSubError"
+  rcvFileTransfer: RcvFileTransfer
+  chatError: ChatError
+}
+
 export interface CRPendingSubSummary extends CR {
   type: "pendingSubSummary"
   pendingSubStatus: PendingSubStatus[]
+}
+
+export interface CRGroupCreated extends CR {
+  type: "groupCreated"
+  groupInfo: GroupInfo
+}
+
+export interface CRGroupMembers extends CR {
+  type: "groupMembers"
+  group: Group
+}
+
+export interface CRUserAcceptedGroupSent extends CR {
+  type: "userAcceptedGroupSent"
+  groupInfo: GroupInfo
+}
+
+export interface CRUserDeletedMember extends CR {
+  type: "userDeletedMember"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRSentGroupInvitation extends CR {
+  type: "sentGroupInvitation"
+  groupInfo: GroupInfo
+  contact: Contact
+  member: GroupMember
+}
+
+export interface CRLeftMemberUser extends CR {
+  type: "leftMemberUser"
+  groupInfo: GroupInfo
+}
+
+export interface CRGroupDeletedUser extends CR {
+  type: "groupDeletedUser"
+  groupInfo: GroupInfo
+}
+
+export interface CRGroupInvitation extends CR {
+  type: "groupInvitation"
+  groupInfo: GroupInfo
+}
+
+export interface CRReceivedGroupInvitation extends CR {
+  type: "receivedGroupInvitation"
+  groupInfo: GroupInfo
+  contact: Contact
+  memberRole: GroupMemberRole
+}
+
+export interface CRUserJoinedGroup extends CR {
+  type: "userJoinedGroup"
+  groupInfo: GroupInfo
+  hostMember: GroupMember
+}
+
+export interface CRJoinedGroupMember extends CR {
+  type: "joinedGroupMember"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRJoinedGroupMemberConnecting extends CR {
+  type: "joinedGroupMemberConnecting"
+  groupInfo: GroupInfo
+  hostMember: GroupMember
+  member: GroupMember
+}
+
+export interface CRConnectedToGroupMember extends CR {
+  type: "connectedToGroupMember"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRDeletedMember extends CR {
+  type: "deletedMember"
+  groupInfo: GroupInfo
+  byMember: GroupMember
+  deletedMember: GroupMember
+}
+
+export interface CRDeletedMemberUser extends CR {
+  type: "deletedMemberUser"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRLeftMember extends CR {
+  type: "leftMember"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRGroupRemoved extends CR {
+  type: "groupRemoved"
+  groupInfo: GroupInfo
+}
+
+export interface CRGroupDeleted extends CR {
+  type: "groupDeleted"
+  groupInfo: GroupInfo
+  member: GroupMember
+}
+
+export interface CRGroupUpdated extends CR {
+  type: "groupUpdated"
+  fromGroup: GroupInfo
+  toGroup: GroupInfo
+  member_?: GroupMember
 }
 
 export interface CRUserContactLinkSubscribed extends CR {
@@ -297,6 +659,16 @@ export interface CRUserContactLinkSubscribed extends CR {
 export interface CRUserContactLinkSubError extends CR {
   type: "userContactLinkSubError"
   chatError: ChatError
+}
+
+export interface CRNewContactConnection extends CR {
+  type: "newContactConnection"
+  connection: PendingContactConnection
+}
+
+export interface CRContactConnectionDeleted extends CR {
+  type: "contactConnectionDeleted"
+  connection: PendingContactConnection
 }
 
 export interface CRMessageError extends CR {
@@ -365,6 +737,16 @@ export interface Contact {
   createdAt: Date
 }
 
+export interface ContactRef {
+  contactId: number
+  localDisplayName: string
+}
+
+export interface Group {
+  groupInfo: GroupInfo
+  members: GroupMember[]
+}
+
 export interface GroupInfo {
   groupId: number
   localDisplayName: string
@@ -382,7 +764,7 @@ export interface GroupProfile {
 export interface GroupMember {
   groupMemberId: number
   memberId: string
-  // memberRole: GroupMemberRole
+  memberRole: GroupMemberRole
   // memberCategory: GroupMemberCategory
   // memberStatus: GroupMemberStatus
   // invitedBy: InvitedBy
@@ -498,7 +880,36 @@ export function ciContentText(content: CIContent): string | undefined {
   }
 }
 
-interface RcvFileTransfer {}
+interface RcvFileTransfer {
+  fileId: number
+  // fileInvitation: FileInvitation
+  // fileStatus: RcvFileStatus
+  senderDisplayName: string
+  chunkSize: number
+  cancelled: boolean
+  grpMemberId?: number
+}
+
+interface SndFileTransfer {
+  fileId: number
+  fileName: string
+  filePath: string
+  fileSize: number
+  chunkSize: number
+  recipientDisplayName: string
+  connId: number
+  // agentConnId: string
+  // fileStatus: FileStatus
+}
+
+interface FileTransferMeta {
+  fileId: number
+  fileName: string
+  filePath: string
+  fileSize: number
+  chunkSize: number
+  cancelled: boolean
+}
 
 export interface ChatStats {
   unreadCount: number
@@ -579,6 +990,18 @@ interface CEActiveUserExists {
 interface ContactSubStatus {}
 
 interface PendingSubStatus {}
+
+export interface ConnectionStats {
+  rcvServers?: string[]
+  sndServers?: string[]
+}
+
+interface PendingContactConnection {}
+
+interface MemberSubStatus {
+  member: GroupMember
+  memberError?: ChatError
+}
 
 interface AgentErrorType {
   type: string

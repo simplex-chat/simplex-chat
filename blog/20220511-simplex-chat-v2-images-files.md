@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX Chat v2.0 - sending images and files in mobile apps"
+date: 2022-05-11
+permalink: "/blog/20220511-simplex-chat-v2-images-files.html"
+---
+
 # SimpleX Chat v2.0 - sending images and files in mobile apps
 
 **Published:** May 11, 2022
@@ -12,7 +19,7 @@ To make file and images work for mobile apps we made a breaking change in Simple
 
 In the mobile app, to send and receive files both devices must have version 2.0 installed - so please check it with your contacts. Receiving images works in the previous version, so even if your contacts did not yet upgrade the app, they should be able to receive the images.
 
-## The first messaging platform without user identifiers.
+## The first messaging platform without user identifiers
 
 To protect identities of users and their connections, SimpleX Chat has no user identifiers visible to the network – unlike any other messaging platform.
 
@@ -34,4 +41,4 @@ Once you install the app, you can connect to anybody:
 2. To make a private connection, you need to create a one-time connection link or a QR code via the app. You can show the QR code to your contact in person or via a video call - this is the most secure way to create a connection - or you can share the link via any other channel. Only one user can connect via this link.
 3. Once another user scans the QR code or opens the app via the link the connection will be created and you can send end-to-end encrypted messages privately, without anybody knowing you are connected.
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/conversation.png" alt="Make a private connection" width="594" height="360">
+<img src="../images/conversation.png" alt="Make a private connection" width="594" height="360">

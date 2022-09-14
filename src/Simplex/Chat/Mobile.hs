@@ -1,18 +1,23 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
+import Control.Exception (catch)
 import Control.Monad.Reader
 import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Functor (($>))
 import Data.List (find)
 import Data.Maybe (fromMaybe)
+import Database.SQLite.Simple (SQLError (..))
+import qualified Database.SQLite.Simple as DB
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
 import Foreign.StablePtr
@@ -24,11 +29,17 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations))
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (yesToMigrations), createAgentStore)
+import Simplex.Messaging.Agent.Store.SQLite (closeSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
+import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (CorrId (..))
+import Simplex.Messaging.Util (catchAll)
 import System.Timeout (timeout)
 
+foreign export ccall "chat_migrate_db" cChatMigrateDB :: CString -> CString -> IO CJSONString
+
+-- chat_init is deprecated
 foreign export ccall "chat_init" cChatInit :: CString -> IO (StablePtr ChatController)
 
 foreign export ccall "chat_init_key" cChatInitKey :: CString -> CString -> IO (StablePtr ChatController)
@@ -41,7 +52,13 @@ foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatCont
 
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
 
--- | initialize chat controller
+-- | check and migrate the database
+-- This function validates that the encryption is correct and runs migrations - it should be called before cChatInitKey
+cChatMigrateDB :: CString -> CString -> IO CJSONString
+cChatMigrateDB fp key =
+  ((,) <$> peekCAString fp <*> peekCAString key) >>= uncurry chatMigrateDB >>= newCAString . LB.unpack . J.encode
+
+-- | initialize chat controller (deprecated)
 -- The active user has to be created and the chat has to be started before most commands can be used.
 cChatInit :: CString -> IO (StablePtr ChatController)
 cChatInit fp = peekCAString fp >>= chatInit >>= newStablePtr
@@ -99,15 +116,41 @@ type CJSONString = CString
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
+data DBMigrationResult
+  = DBMOk
+  | DBMErrorNotADatabase {dbFile :: String}
+  | DBMError {dbFile :: String, migrationError :: String}
+  deriving (Show, Generic)
+
+instance ToJSON DBMigrationResult where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBM"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBM"
+
+chatMigrateDB :: String -> String -> IO DBMigrationResult
+chatMigrateDB dbFilePrefix dbKey =
+  migrate createChatStore (chatStoreFile dbFilePrefix) >>= \case
+    DBMOk -> migrate createAgentStore (agentStoreFile dbFilePrefix)
+    e -> pure e
+  where
+    migrate createStore dbFile =
+      ((createStore dbFile dbKey True >>= closeSQLiteStore) $> DBMOk)
+        `catch` (pure . checkDBError)
+          `catchAll` (pure . dbError)
+      where
+        checkDBError e = case sqlError e of
+          DB.ErrorNotADatabase -> DBMErrorNotADatabase dbFile
+          _ -> dbError e
+        dbError e = DBMError dbFile $ show e
+
 chatInit :: String -> IO ChatController
 chatInit = (`chatInitKey` "")
 
 chatInitKey :: String -> String -> IO ChatController
 chatInitKey dbFilePrefix dbKey = do
   let f = chatStoreFile dbFilePrefix
-  chatStore <- createStore f dbKey (yesToMigrations (defaultMobileConfig :: ChatConfig))
+  chatStore <- createChatStore f dbKey (yesToMigrations (defaultMobileConfig :: ChatConfig))
   user_ <- getActiveUser_ chatStore
-  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix} Nothing
+  newChatController chatStore user_ defaultMobileConfig mobileChatOpts {dbFilePrefix, dbKey} Nothing
 
 chatSendCmd :: ChatController -> String -> IO JSONString
 chatSendCmd cc s = LB.unpack . J.encode . APIResponse Nothing <$> runReaderT (execChatCommand $ B.pack s) cc

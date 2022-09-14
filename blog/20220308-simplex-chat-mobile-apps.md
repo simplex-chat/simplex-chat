@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX announces SimpleX Chat mobile apps for iOS and Android"
+date: 2022-03-08
+permalink: "/blog/20220308-simplex-chat-mobile-apps.html"
+---
+
 # SimpleX announces SimpleX Chat mobile apps for iOS and Android
 
 **Published:** March 8, 2022
@@ -35,12 +42,13 @@ You can always migrate from a public App Store version to a TestFlight version. 
 ## It's not all new - our core code has been used for a long time by a few thousand people in our terminal app.
 
 The apps use the same core code as our terminal app, that was used and stabilized over a long time, and it provides the same level of privacy and security that has been available since the release of v1 earlier this year:
+
 - [double-ratchet](https://www.signal.org/docs/specifications/doubleratchet/) E2E encryption.
 - separate keys for each contact.
 - additional layer of E2E encryption in each message queue (to prevent traffic correlation when multiple queues are used in a conversation - something we plan later this year).
 - additional encryption of messages delivered from servers to recipients (also to prevent traffic correlation).
 
-You can read more technical details in our recent [v1 announcement](https://github.com/simplex-chat/simplex-chat/blob/stable/blog/20220112-simplex-chat-v1-released.md).
+You can read more technical details in our recent [v1 announcement](./20220112-simplex-chat-v1-released.md).
 
 A big thank you to [@angerman](https://github.com/angerman) for making it possible to compile our Haskell code to mobile platforms and getting it approved on app stores - it has been a non-trivial project, and it is still ongoing.
 

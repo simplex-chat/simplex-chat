@@ -13,6 +13,9 @@
 /* No comment provided by engineer. */
 "~strike~" = "\\~strike~";
 
+/* call status */
+"connecting call" = "connecting call…";
+
 /* No comment provided by engineer. */
 "Connecting server…" = "Connecting to server…";
 

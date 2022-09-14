@@ -15,13 +15,13 @@ import androidx.compose.material.Surface
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
-import androidx.work.*
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.ui.theme.SimpleButton
@@ -32,26 +32,41 @@ import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
 import kotlinx.coroutines.delay
-import java.util.concurrent.TimeUnit
 
-class MainActivity: FragmentActivity(), LifecycleEventObserver {
+class MainActivity: FragmentActivity() {
+  companion object {
+    /**
+     * We don't want these values to be bound to Activity lifecycle since activities are changed often, for example, when a user
+     * clicks on new message in notification. In this case savedInstanceState will be null (this prevents restoring the values)
+     * See [SimplexService.onTaskRemoved] for another part of the logic which nullifies the values when app closed by the user
+     * */
+    val userAuthorized = mutableStateOf<Boolean?>(null)
+    val enteredBackground = mutableStateOf<Long?>(null)
+    // Remember result and show it after orientation change
+    private val laFailed = mutableStateOf(false)
+
+    fun clearAuthState() {
+      userAuthorized.value = null
+      enteredBackground.value = null
+    }
+  }
   private val vm by viewModels<SimplexViewModel>()
-  private val chatController by lazy { (application as SimplexApp).chatController }
-  private val userAuthorized = mutableStateOf<Boolean?>(null)
-  private val enteredBackground = mutableStateOf<Long?>(null)
-  private val laFailed = mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     // testJson()
     val m = vm.chatModel
-    processNotificationIntent(intent, m)
+    // When call ended and orientation changes, it re-process old intent, it's unneeded.
+    // Only needed to be processed on first creation of activity
+    if (savedInstanceState == null) {
+      processNotificationIntent(intent, m)
+    }
     setContent {
       SimpleXTheme {
         Surface(
@@ -71,6 +86,7 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
       }
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
+    SimplexApp.context.schedulePeriodicWakeUp()
   }
 
   override fun onNewIntent(intent: Intent?) {
@@ -78,20 +94,25 @@ class MainActivity: FragmentActivity(), LifecycleEventObserver {
     processIntent(intent, vm.chatModel)
   }
 
-  override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-    withApi {
-      when (event) {
-        Lifecycle.Event.ON_STOP -> {
-          enteredBackground.value = elapsedRealtime()
-        }
-        Lifecycle.Event.ON_START -> {
-          val enteredBackgroundVal = enteredBackground.value
-          if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
-            runAuthenticate()
-          }
-        }
-        else -> {}
-      }
+  override fun onStart() {
+    super.onStart()
+    val enteredBackgroundVal = enteredBackground.value
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+      runAuthenticate()
+    }
+  }
+
+  override fun onStop() {
+    super.onStop()
+    enteredBackground.value = elapsedRealtime()
+  }
+
+  override fun onBackPressed() {
+    super.onBackPressed()
+    if (!onBackPressedDispatcher.hasEnabledCallbacks() && vm.chatModel.controller.appPrefs.performLA.get()) {
+      // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
+      clearAuthState()
+      laFailed.value = true
     }
   }
 
@@ -223,13 +244,20 @@ fun MainPage(
   showLANotice: () -> Unit
 ) {
   // this with LaunchedEffect(userAuthorized.value) fixes bottom sheet visibly collapsing after authentication
-  var chatsAccessAuthorized by remember { mutableStateOf(false) }
+  var chatsAccessAuthorized by rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(userAuthorized.value) {
     if (chatModel.controller.appPrefs.performLA.get()) {
       delay(500L)
     }
     chatsAccessAuthorized = userAuthorized.value == true
   }
+  var showChatDatabaseError by rememberSaveable {
+    mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
+  }
+  LaunchedEffect(chatModel.chatDbStatus.value) {
+    showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
+  }
+
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
@@ -275,6 +303,11 @@ fun MainPage(
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
     when {
+      showChatDatabaseError -> {
+        chatModel.chatDbStatus.value?.let {
+          DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
+        }
+      }
       onboarding == null || userCreated == null -> SplashView()
       !chatsAccessAuthorized -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {

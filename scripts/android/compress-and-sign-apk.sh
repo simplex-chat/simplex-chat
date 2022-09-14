@@ -26,6 +26,7 @@ rm $ORIG_NAME
 (cd apk && zip -r -q -$level ../$ORIG_NAME .)
 # Shouldn't be compressed because of Android requirement
 (cd apk && zip -r -q -0 ../$ORIG_NAME resources.arsc)
+(cd apk && zip -r -q -0 ../$ORIG_NAME res)
 #(cd apk && 7z a -r -mx=$level -tzip -x!resources.arsc ../$ORIG_NAME .)
 #(cd apk && 7z a -r -mx=0 -tzip ../$ORIG_NAME resources.arsc)
 

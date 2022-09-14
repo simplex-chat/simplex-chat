@@ -20,8 +20,9 @@
 module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
-    createStore,
+    createChatStore,
     chatStoreFile,
+    agentStoreFile,
     createUser,
     getUsers,
     setActiveUser,
@@ -276,11 +277,14 @@ migrations = sortBy (compare `on` name) $ map migration schemaMigrations
   where
     migration (name, query) = Migration {name = name, up = fromQuery query}
 
-createStore :: FilePath -> String -> Bool -> IO SQLiteStore
-createStore dbFilePath dbKey = createSQLiteStore dbFilePath dbKey migrations
+createChatStore :: FilePath -> String -> Bool -> IO SQLiteStore
+createChatStore dbFilePath dbKey = createSQLiteStore dbFilePath dbKey migrations
 
 chatStoreFile :: FilePath -> FilePath
 chatStoreFile = (<> "_chat.db")
+
+agentStoreFile :: FilePath -> FilePath
+agentStoreFile = (<> "_agent.db")
 
 checkConstraint :: StoreError -> ExceptT StoreError IO a -> ExceptT StoreError IO a
 checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left . handleSQLError err)
@@ -609,9 +613,9 @@ toContactOrError ((contactId, profileId, localDisplayName, viaGroup, displayName
 
 -- TODO return the last connection that is ready, not any last connection
 -- requires updating connection status
-getContactByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Contact
-getContactByName db userId localDisplayName = do
-  cId <- getContactIdByName db userId localDisplayName
+getContactByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Contact
+getContactByName db user@User {userId} localDisplayName = do
+  cId <- getContactIdByName db user localDisplayName
   getContact db userId cId
 
 getUserContacts :: DB.Connection -> User -> IO [Contact]
@@ -3012,8 +3016,8 @@ getDirectChatStats_ db userId contactId =
     toChatStats' [statsRow] = toChatStats statsRow
     toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
 
-getContactIdByName :: DB.Connection -> UserId -> ContactName -> ExceptT StoreError IO Int64
-getContactIdByName db userId cName =
+getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
+getContactIdByName db User {userId} cName =
   ExceptT . firstRow fromOnly (SEContactNotFoundByName cName) $
     DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND local_display_name = ?" (userId, cName)
 

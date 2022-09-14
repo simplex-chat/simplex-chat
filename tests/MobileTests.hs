@@ -73,7 +73,9 @@ parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\
 
 testChatApiNoUser :: IO ()
 testChatApiNoUser = withTmpFiles $ do
+  DBMOk <- chatMigrateDB testDBPrefix ""
   cc <- chatInit testDBPrefix
+  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix "myKey"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
   chatSendCmd cc "/_start" `shouldReturn` noActiveUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUser
@@ -81,10 +83,14 @@ testChatApiNoUser = withTmpFiles $ do
 
 testChatApi :: IO ()
 testChatApi = withTmpFiles $ do
-  let f = chatStoreFile $ testDBPrefix <> "1"
-  st <- createStore f "" True
+  let dbPrefix = testDBPrefix <> "1"
+      f = chatStoreFile dbPrefix
+  st <- createChatStore f "myKey" True
   Right _ <- withTransaction st $ \db -> runExceptT $ createUser db aliceProfile True
-  cc <- chatInit $ testDBPrefix <> "1"
+  DBMOk <- chatMigrateDB testDBPrefix "myKey"
+  cc <- chatInitKey dbPrefix "myKey"
+  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix ""
+  DBMErrorNotADatabase _ <- chatMigrateDB testDBPrefix "anotherKey"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted

@@ -11,8 +11,8 @@ android {
         applicationId "chat.simplex.app"
         minSdk 29
         targetSdk 32
-        versionCode 49
-        versionName "3.2"
+        versionCode 52
+        versionName "3.2.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
@@ -118,6 +118,10 @@ dependencies {
 
     // Biometric authentication
     implementation 'androidx.biometric:biometric:1.2.0-alpha04'
+
+    // GIFs support
+    implementation "io.coil-kt:coil-compose:2.1.0"
+    implementation "io.coil-kt:coil-gif:2.1.0"
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

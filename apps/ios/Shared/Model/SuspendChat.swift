@@ -19,10 +19,14 @@ let bgSuspendTimeout: Int = 5 // seconds
 let terminationTimeout: Int = 3 // seconds
 
 private func _suspendChat(timeout: Int) {
-    appStateGroupDefault.set(.suspending)
-    apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
-    let endTask = beginBGTask(chatSuspended)
-    DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: endTask)
+    if ChatModel.ok {
+        appStateGroupDefault.set(.suspending)
+        apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
+        let endTask = beginBGTask(chatSuspended)
+        DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: endTask)
+    } else {
+        appStateGroupDefault.set(.suspended)
+    }
 }
 
 func suspendChat() {
@@ -47,7 +51,7 @@ func terminateChat() {
         case .suspending:
             // suspend instantly if already suspending
             _chatSuspended()
-            apiSuspendChat(timeoutMicroseconds: 0)
+            if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
         case .stopped: ()
         default:
             _suspendChat(timeout: terminationTimeout)
@@ -74,6 +78,6 @@ private func _chatSuspended() {
 func activateChat(appState: AppState = .active) {
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
-        apiActivateChat()
+        if ChatModel.ok { apiActivateChat() }
     }
 }

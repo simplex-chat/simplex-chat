@@ -17,9 +17,13 @@ import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
+import Data.Char (ord)
 import Data.Int (Int64)
 import Data.Map.Strict (Map)
+import Data.String
 import Data.Text (Text)
 import Data.Time (ZonedTime)
 import Data.Time.Clock (UTCTime)
@@ -38,8 +42,9 @@ import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, Net
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType, CorrId, MsgFlags)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -112,8 +117,7 @@ data ChatCommand
   | APIExportArchive ArchiveConfig
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
-  | APIEncryptStorage String
-  | APIDecryptStorage
+  | APIStorageEncryption DBEncryptionConfig
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
@@ -156,6 +160,7 @@ data ChatCommand
   | APISetChatSettings ChatRef ChatSettings
   | APIContactInfo ContactId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | ShowMessages ChatName Bool
   | ContactInfo ContactName
   | GroupMemberInfo GroupName ContactName
   | ChatHelp HelpSection
@@ -324,6 +329,21 @@ instance ToJSON ChatResponse where
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show, Generic, FromJSON)
 
+data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey}
+  deriving (Show, Generic, FromJSON)
+
+newtype DBEncryptionKey = DBEncryptionKey String
+  deriving (Show)
+
+instance IsString DBEncryptionKey where fromString = parseString $ parseAll strP
+
+instance StrEncoding DBEncryptionKey where
+  strEncode (DBEncryptionKey s) = B.pack s
+  strP = DBEncryptionKey . B.unpack <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
+
+instance FromJSON DBEncryptionKey where
+  parseJSON = strParseJSON "DBEncryptionKey"
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -373,7 +393,7 @@ data ChatError
   = ChatError {errorType :: ChatErrorType}
   | ChatErrorAgent {agentError :: AgentErrorType}
   | ChatErrorStore {storeError :: StoreError}
-  | ChatErrorDatabase {database :: DatabaseError}
+  | ChatErrorDatabase {databaseError :: DatabaseError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatError where
@@ -432,15 +452,23 @@ instance ToJSON ChatErrorType where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
 
 data DatabaseError
-  = DBENotEncrypted
-  | DBENoFile
-  | DBEExportFailed
-  | DBEOpenFailed
+  = DBErrorEncrypted
+  | DBErrorPlaintext
+  | DBErrorNoFile {dbFile :: String}
+  | DBErrorExport {sqliteError :: SQLiteError}
+  | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception, Generic)
 
 instance ToJSON DatabaseError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBE"
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DB"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DB"
+
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+  deriving (Show, Exception, Generic)
+
+instance ToJSON SQLiteError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SQLite"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SQLite"
 
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase

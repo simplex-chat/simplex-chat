@@ -66,11 +66,11 @@ responseToView testView = \case
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
-  CRNewChatItem (AChatItem _ _ chat item) -> viewChatItem chat item False
+  CRNewChatItem (AChatItem _ _ chat item) -> unmuted chat item $ viewChatItem chat item False
   CRLastMessages chatItems -> concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True) chatItems
   CRChatItemStatusUpdated _ -> []
-  CRChatItemUpdated (AChatItem _ _ chat item) -> viewItemUpdate chat item
-  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> viewItemDelete chat deletedItem toItem
+  CRChatItemUpdated (AChatItem _ _ chat item) -> unmuted chat item $ viewItemUpdate chat item
+  CRChatItemDeleted (AChatItem _ _ chat deletedItem) (AChatItem _ _ _ toItem) -> unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem
   CRChatItemDeletedNotFound Contact {localDisplayName = c} _ -> [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent mc n ts -> viewSentBroadcast mc n ts
   CRMsgIntegrityError mErr -> viewMsgIntegrityError mErr
@@ -207,6 +207,11 @@ responseToView testView = \case
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
+    unmuted :: ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
+    unmuted chat ChatItem {chatDir} s = case (chat, chatDir) of
+      (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> []
+      (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> []
+      _ -> s
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g@GroupInfo {membership} =
@@ -383,7 +388,11 @@ viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
       incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
-   in map (\ct -> incognito ct <> ttyFullContact ct) . sortOn ldn
+   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct) . sortOn ldn
+  where
+    muted Contact {chatSettings, localDisplayName = ldn}
+      | enableNtfs chatSettings = ""
+      | otherwise = " (muted, you can " <> highlight ("/unmute @" <> ldn) <> ")"
 
 viewUserContactLinkDeleted :: [StyledString]
 viewUserContactLinkDeleted =
@@ -504,7 +513,7 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
     ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
-    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership} =
+    groupSS g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}, membership, chatSettings} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> incognito <> ttyGroup ldn <> optFullName ldn fullName <> viewMemberStatus s
@@ -514,7 +523,9 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
-          _ -> ""
+          _
+            | enableNtfs chatSettings -> ""
+            | otherwise -> " (muted, you can " <> highlight ("/unmute #" <> ldn) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> ldn) <> ")"
 
 groupInvitation' :: GroupInfo -> StyledString
@@ -933,7 +944,10 @@ viewChatError = \case
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
-    DBENotEncrypted -> ["error: chat database is not encrypted"]
+    DBErrorEncrypted -> ["error: chat database is already encrypted"]
+    DBErrorPlaintext -> ["error: chat database is not encrypted"]
+    DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
+    DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH ->
@@ -946,6 +960,9 @@ viewChatError = \case
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
+    sqliteError' = \case
+      SQLiteErrorNotADatabase -> "wrong passphrase or invalid database file"
+      SQLiteError e -> sShow e
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled $ colored Green

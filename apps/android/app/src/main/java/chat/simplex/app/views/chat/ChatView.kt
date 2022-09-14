@@ -32,8 +32,7 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.chat.group.AddGroupMembersView
-import chat.simplex.app.views.chat.group.GroupChatInfoView
+import chat.simplex.app.views.chat.group.*
 import chat.simplex.app.views.chat.item.ChatItemView
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.chatlist.*
@@ -48,11 +47,13 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatView(chatModel: ChatModel) {
   var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
-  val searchText = remember { mutableStateOf("") }
+  val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
-  val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews)) }
-  val attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) }
+  val composeState = rememberSaveable(saver = ComposeState.saver()) {
+    mutableStateOf(ComposeState(useLinkPreviews = useLinkPreviews))
+  }
+  val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
@@ -135,12 +136,17 @@ fun ChatView(chatModel: ChatModel) {
           }
         }
       },
-      openDirectChat = { contactId ->
-        val c = chatModel.chats.firstOrNull {
-          it.chatInfo is ChatInfo.Direct && it.chatInfo.contact.contactId == contactId
-        }
-        if (c != null) {
-          withApi { openChat(c.chatInfo, chatModel) }
+      showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
+        withApi {
+          val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          ModalManager.shared.showCustomModal { close ->
+            ModalView(
+              close = close, modifier = Modifier,
+              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
+            ) {
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, close, close)
+            }
+          }
         }
       },
       loadPrevMessages = { cInfo ->
@@ -194,7 +200,7 @@ fun ChatView(chatModel: ChatModel) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, true, close)
+              AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
         }
@@ -210,6 +216,7 @@ fun ChatView(chatModel: ChatModel) {
           )
         }
       },
+      changeNtfsState = { enabled, currentValue -> changeNtfsStatePerChat(enabled, currentValue, chat, chatModel) },
       onSearchValueChanged = { value ->
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
@@ -238,7 +245,7 @@ fun ChatLayout(
   chatModelIncognito: Boolean,
   back: () -> Unit,
   info: () -> Unit,
-  openDirectChat: (Long) -> Unit,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -247,6 +254,7 @@ fun ChatLayout(
   acceptCall: (Contact) -> Unit,
   addMembers: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
   Surface(
@@ -273,7 +281,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -281,7 +289,7 @@ fun ChatLayout(
           BoxWithConstraints(Modifier.fillMaxHeight().padding(contentPadding)) {
             ChatItemsList(
               user, chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, chatModelIncognito, openDirectChat, loadPrevMessages, deleteMessage,
+              useLinkPreviews, chatModelIncognito, showMemberInfo, loadPrevMessages, deleteMessage,
               receiveFile, joinGroup, acceptCall, markRead, setFloatingButton
             )
           }
@@ -298,10 +306,12 @@ fun ChatInfoToolbar(
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
-  var showMenu by remember { mutableStateOf(false) }
-  var showSearch by remember { mutableStateOf(false) }
+  val scope = rememberCoroutineScope()
+  var showMenu by rememberSaveable { mutableStateOf(false) }
+  var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch) {
       back()
@@ -345,6 +355,23 @@ fun ChatInfoToolbar(
       }
     }
   }
+
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  menuItems.add {
+    ItemAction(
+      if (ntfsEnabled.value) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
+      if (ntfsEnabled.value) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
+      onClick = {
+        showMenu = false
+        // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
+        scope.launch {
+          delay(200)
+          changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+        }
+      }
+    )
+  }
+
   barButtons.add {
     IconButton({ showMenu = true }) {
       Icon(Icons.Default.MoreVert, stringResource(R.string.icon_descr_more_button), tint = MaterialTheme.colors.primary)
@@ -423,7 +450,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   chatModelIncognito: Boolean,
-  openDirectChat: (Long) -> Unit,
+  showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -510,9 +537,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     Modifier
                       .clip(CircleShape)
                       .clickable {
-                        openDirectChat(contactId)
-                        // Scroll to first unread message when direct chat will be loaded
-                        shouldAutoScroll = true
+                        showMemberInfo(chat.chatInfo.groupInfo, member)
                       }
                   ) {
                     MemberImage(member)
@@ -826,7 +851,7 @@ fun PreviewChatLayout() {
       chatModelIncognito = false,
       back = {},
       info = {},
-      openDirectChat = {},
+      showMemberInfo = {_, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
@@ -835,6 +860,7 @@ fun PreviewChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }
@@ -883,7 +909,7 @@ fun PreviewGroupChatLayout() {
       chatModelIncognito = false,
       back = {},
       info = {},
-      openDirectChat = {},
+      showMemberInfo = {_, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
       receiveFile = {},
@@ -892,6 +918,7 @@ fun PreviewGroupChatLayout() {
       acceptCall = { _ -> },
       addMembers = { _ -> },
       markRead = { _, _ -> },
+      changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
     )
   }

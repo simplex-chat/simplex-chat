@@ -12,6 +12,7 @@ import chat.simplex.app.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.base64ToBitmap
 import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import kotlinx.datetime.Clock
 
 class NtfManager(val context: Context, private val appPreferences: AppPreferences) {
@@ -33,13 +34,13 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    manager.createNotificationChannel(NotificationChannel(MessageChannel, "SimpleX Chat messages", NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, "SimpleX Chat calls (lock screen)", NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen), NotificationManager.IMPORTANCE_HIGH))
     manager.createNotificationChannel(callNotificationChannel())
   }
 
   private fun callNotificationChannel(): NotificationChannel {
-    val callChannel = NotificationChannel(CallChannel, "SimpleX Chat calls", NotificationManager.IMPORTANCE_HIGH)
+    val callChannel = NotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls), NotificationManager.IMPORTANCE_HIGH)
     val attrs = AudioAttributes.Builder()
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)
@@ -75,9 +76,12 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
     prevNtfTime[chatId] = now
 
+    val previewMode = appPreferences.notificationPreviewMode.get()
+    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(R.string.notification_preview_somebody) else displayName
+    val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(R.string.notification_preview_new_message) else msgText
     val notification = NotificationCompat.Builder(context, MessageChannel)
-      .setContentTitle(displayName)
-      .setContentText(msgText)
+      .setContentTitle(title)
+      .setContentText(content)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
@@ -132,8 +136,14 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
         if (invitation.sharedKey == null) R.string.audio_call_no_encryption else R.string.encrypted_audio_call
       }
     )
+    val previewMode = appPreferences.notificationPreviewMode.get()
+    val title = if (previewMode == NotificationPreviewMode.HIDDEN.name)
+      generalGetString(R.string.notification_preview_somebody)
+    else
+      invitation.contact.displayName
+
     ntfBuilder = ntfBuilder
-      .setContentTitle(invitation.contact.displayName)
+      .setContentTitle(title)
       .setContentText(text)
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_CALL)

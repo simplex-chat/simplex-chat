@@ -1,0 +1,27 @@
+{
+  "name": "11ty-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "eleventy",
+    "start": "npx eleventy --serve",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch-tailwind": "npx tailwindcss -i ./tailwind.css -o ./_site/css/tailwind.css --watch",
+    "build-tailwind": "npx tailwindcss -i ./tailwind.css -o ./_site/css/tailwind.css"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@11ty/eleventy": "^1.0.1",
+    "common-tags": "^1.8.2",
+    "fast-uri": "^2.1.0",
+    "markdown-it-anchor": "^8.6.4",
+    "slugify": "^1.6.5",
+    "tailwindcss": "^3.0.24"
+  },
+  "dependencies": {
+    "markdown-it-replace-link": "^1.1.0"
+  }
+}

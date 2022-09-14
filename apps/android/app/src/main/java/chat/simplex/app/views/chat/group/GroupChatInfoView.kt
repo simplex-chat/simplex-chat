@@ -51,7 +51,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
               close = close, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              AddGroupMembersView(groupInfo, chatModel, true, close)
+              AddGroupMembersView(groupInfo, chatModel, close)
             }
           }
         }
@@ -59,12 +59,12 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showCustomModal { close ->
+          ModalManager.shared.showCustomModal { closeCurrent ->
             ModalView(
-              close = close, modifier = Modifier,
+              close = closeCurrent, modifier = Modifier,
               background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
             ) {
-              GroupMemberInfoView(groupInfo, member, stats, chatModel, close)
+              GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
             }
           }
         }
@@ -75,9 +75,6 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
-      changeNtfsState = { enabled ->
-        changeNtfsState(enabled, chat, chatModel)
-      },
     )
   }
 }
@@ -127,7 +124,6 @@ fun GroupChatInfoLayout(
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
-  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -159,17 +155,6 @@ fun GroupChatInfoLayout(
         SectionDivider()
       }
       MembersList(members, showMemberInfo)
-    }
-    SectionSpacer()
-
-    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
-    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
-      SectionItemView {
-        NtfsSwitch(ntfsEnabled) {
-          ntfsEnabled = !ntfsEnabled
-          changeNtfsState(ntfsEnabled)
-        }
-      }
     }
     SectionSpacer()
 
@@ -367,7 +352,6 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
-      changeNtfsState = {},
     )
   }
 }

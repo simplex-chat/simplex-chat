@@ -26,6 +26,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
+import chat.simplex.app.views.usersettings.NotificationPreviewMode
+import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -61,7 +63,12 @@ enum class CallOnLockScreen {
 class AppPreferences(val context: Context) {
   private val sharedPreferences: SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-  val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  // deprecated, remove in 2024
+  private val runServiceInBackground = mkBoolPreference(SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND, true)
+  val notificationsMode = mkStrPreference(SHARED_PREFS_NOTIFICATIONS_MODE,
+    if (!runServiceInBackground.get()) NotificationsMode.OFF.name else NotificationsMode.default.name
+  )
+  val notificationPreviewMode = mkStrPreference(SHARED_PREFS_NOTIFICATION_PREVIEW_MODE, NotificationPreviewMode.default.name)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
@@ -88,6 +95,8 @@ class AppPreferences(val context: Context) {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
+  val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
   val networkTCPTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_TIMEOUT, NetCfg.defaults.tcpTimeout, NetCfg.proxyDefaults.tcpTimeout)
   val networkSMPPingInterval = mkLongPreference(SHARED_PREFS_NETWORK_SMP_PING_INTERVAL, NetCfg.defaults.smpPingInterval)
@@ -96,6 +105,11 @@ class AppPreferences(val context: Context) {
   val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults.keepIntvl)
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
+
+  val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
+  val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
+  val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
+  val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
@@ -145,6 +159,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_APP_PREFS"
     private const val SHARED_PREFS_AUTO_RESTART_WORKER_VERSION = "AutoRestartWorkerVersion"
     private const val SHARED_PREFS_RUN_SERVICE_IN_BACKGROUND = "RunServiceInBackground"
+    private const val SHARED_PREFS_NOTIFICATIONS_MODE = "NotificationsMode"
+    private const val SHARED_PREFS_NOTIFICATION_PREVIEW_MODE = "NotificationPreviewMode"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
@@ -159,6 +175,8 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_HOST_MODE = "NetworkHostMode"
+    private const val SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE = "NetworkRequiredHostMode"
     private const val SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT = "NetworkTCPConnectTimeout"
     private const val SHARED_PREFS_NETWORK_TCP_TIMEOUT = "NetworkTCPTimeout"
     private const val SHARED_PREFS_NETWORK_SMP_PING_INTERVAL = "NetworkSMPPingInterval"
@@ -167,6 +185,10 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_INTVL = "NetworkTCPKeepIntvl"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
+    private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
+    private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
   }
@@ -174,12 +196,17 @@ class AppPreferences(val context: Context) {
 
 private const val MESSAGE_TIMEOUT: Int = 15_000_000
 
-open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
+open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
   private var receiverStarted = false
+  var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
+    private set
 
   init {
-    chatModel.runServiceInBackground.value = appPrefs.runServiceInBackground.get()
+    chatModel.notificationsMode.value =
+      kotlin.runCatching { NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!) }.getOrDefault(NotificationsMode.default)
+    chatModel.notificationPreviewMode.value =
+      kotlin.runCatching { NotificationPreviewMode.valueOf(appPrefs.notificationPreviewMode.get()!!) }.getOrDefault(NotificationPreviewMode.default)
     chatModel.performLA.value = appPrefs.performLA.get()
     chatModel.incognito.value = appPrefs.incognito.get()
   }
@@ -224,10 +251,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   suspend fun sendCmd(cmd: CC): CR {
+    val ctrl = ctrl ?: throw Exception("Controller is not initialized")
+
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+        chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
       val json = chatSendCmd(ctrl, c)
@@ -243,7 +272,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  private suspend fun recvMsg(): CR? {
+  private suspend fun recvMsg(ctrl: ChatCtrl): CR? {
     return withContext(Dispatchers.IO) {
       val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
       if (json == "") {
@@ -258,7 +287,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   private suspend fun recvMspLoop() {
-    val msg = recvMsg()
+    val msg = recvMsg(ctrl ?: return)
     if (msg != null) processReceivedMsg(msg)
     recvMspLoop()
   }
@@ -323,6 +352,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.ApiDeleteStorage())
     if (r is CR.CmdOk) return
     throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {
+    val r = sendCmd(CC.ApiStorageEncryption(DBEncryptionConfig(currentKey, newKey)))
+    if (r is CR.CmdOk) return null
+    else if (r is CR.ChatCmdError) return r
+    throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 
   private suspend fun apiGetChats(): List<Chat> {
@@ -709,6 +745,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun processReceivedMsg(r: CR) {
+    lastMsgReceivedTimestamp = System.currentTimeMillis()
     chatModel.terminalItems.add(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
@@ -758,7 +795,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         val cItem = r.chatItem.chatItem
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
-        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE && appPrefs.privacyAcceptImages.get()) {
+        if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
           withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {
@@ -923,56 +960,66 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   fun showBackgroundServiceNoticeIfNeeded() {
+    val mode = NotificationsMode.valueOf(appPrefs.notificationsMode.get()!!)
     Log.d(TAG, "showBackgroundServiceNoticeIfNeeded")
     if (!appPrefs.backgroundServiceNoticeShown.get()) {
       // the branch for the new users who have never seen service notice
-      if (isIgnoringBatteryOptimizations(appContext)) {
-        showBGServiceNotice()
+      if (!mode.requiresIgnoringBattery || isIgnoringBatteryOptimizations(appContext)) {
+        showBGServiceNotice(mode)
       } else {
-        showBGServiceNoticeIgnoreOptimization()
+        showBGServiceNoticeIgnoreOptimization(mode)
       }
       // set both flags, so that if the user doesn't allow ignoring optimizations, the service will be disabled without additional notice
       appPrefs.backgroundServiceNoticeShown.set(true)
       appPrefs.backgroundServiceBatteryNoticeShown.set(true)
-    } else if (!isIgnoringBatteryOptimizations(appContext) && appPrefs.runServiceInBackground.get()) {
+    } else if (mode.requiresIgnoringBattery && !isIgnoringBatteryOptimizations(appContext)) {
       // the branch for users who have app installed, and have seen the service notice,
       // but the battery optimization for the app is on (Android 12) AND the service is running
       if (appPrefs.backgroundServiceBatteryNoticeShown.get()) {
         // users have been presented with battery notice before - they did not allow ignoring optimizations -> disable service
-        showDisablingServiceNotice()
-        appPrefs.runServiceInBackground.set(false)
-        chatModel.runServiceInBackground.value = false
+        showDisablingServiceNotice(mode)
+        appPrefs.notificationsMode.set(NotificationsMode.OFF.name)
+        chatModel.notificationsMode.value = NotificationsMode.OFF
         SimplexService.StartReceiver.toggleReceiver(false)
+        MessagesFetcherWorker.cancelAll()
+        SimplexService.stop(SimplexApp.context)
       } else {
         // show battery optimization notice
-        showBGServiceNoticeIgnoreOptimization()
+        showBGServiceNoticeIgnoreOptimization(mode)
         appPrefs.backgroundServiceBatteryNoticeShown.set(true)
       }
     } else {
-      // service is allowed and battery optimization is disabled
+      // service or periodic mode was chosen and battery optimization is disabled
       SimplexApp.context.schedulePeriodicServiceRestartWorker()
+      SimplexApp.context.schedulePeriodicWakeUp()
     }
   }
 
-  private fun showBGServiceNotice() = AlertManager.shared.showAlert {
+  private fun showBGServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
-          Text(annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown))
+          Text(
+            annotatedStringResource(R.string.it_can_disabled_via_settings_notifications_still_shown)
+          )
         }
       },
       confirmButton = {
@@ -981,7 +1028,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
-  private fun showBGServiceNoticeIgnoreOptimization() = AlertManager.shared.showAlert {
+  private fun showBGServiceNoticeIgnoreOptimization(mode: NotificationsMode) = AlertManager.shared.showAlert {
     val ignoreOptimization = {
       AlertManager.shared.hideAlert()
       askAboutIgnoringBatteryOptimization(appContext)
@@ -992,15 +1039,19 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications) else stringResource(R.string.periodic_notifications),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery),
+            if (mode == NotificationsMode.SERVICE) annotatedStringResource(R.string.to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery) else annotatedStringResource(R.string.periodic_notifications_desc),
             Modifier.padding(bottom = 8.dp)
           )
           Text(annotatedStringResource(R.string.turn_off_battery_optimization))
@@ -1012,22 +1063,26 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     )
   }
 
-  private fun showDisablingServiceNotice() = AlertManager.shared.showAlert {
+  private fun showDisablingServiceNotice(mode: NotificationsMode) = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
         Row {
           Icon(
             Icons.Outlined.Bolt,
-            contentDescription = stringResource(R.string.icon_descr_instant_notifications),
+            contentDescription =
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.icon_descr_instant_notifications) else stringResource(R.string.periodic_notifications),
           )
-          Text(stringResource(R.string.private_instant_notifications_disabled), fontWeight = FontWeight.Bold)
+          Text(
+            if (mode == NotificationsMode.SERVICE) stringResource(R.string.service_notifications_disabled) else stringResource(R.string.periodic_notifications_disabled),
+            fontWeight = FontWeight.Bold
+          )
         }
       },
       text = {
         Column {
           Text(
-            annotatedStringResource(R.string.turning_off_background_service),
+            annotatedStringResource(R.string.turning_off_service_and_periodic),
             Modifier.padding(bottom = 8.dp)
           )
         }
@@ -1103,6 +1158,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   fun getNetCfg(): NetCfg {
     val useSocksProxy = appPrefs.networkUseSocksProxy.get()
     val socksProxy = if (useSocksProxy) ":9050" else null
+    val hostMode = HostMode.valueOf(appPrefs.networkHostMode.get()!!)
+    val requiredHostMode = appPrefs.networkRequiredHostMode.get()
     val tcpConnectTimeout = appPrefs.networkTCPConnectTimeout.get()
     val tcpTimeout = appPrefs.networkTCPTimeout.get()
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
@@ -1117,6 +1174,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
     return NetCfg(
       socksProxy = socksProxy,
+      hostMode = hostMode,
+      requiredHostMode = requiredHostMode,
       tcpConnectTimeout = tcpConnectTimeout,
       tcpTimeout = tcpTimeout,
       tcpKeepAlive = tcpKeepAlive,
@@ -1126,6 +1185,8 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
 
   fun setNetCfg(cfg: NetCfg) {
     appPrefs.networkUseSocksProxy.set(cfg.useSocksProxy)
+    appPrefs.networkHostMode.set(cfg.hostMode.name)
+    appPrefs.networkRequiredHostMode.set(cfg.requiredHostMode)
     appPrefs.networkTCPConnectTimeout.set(cfg.tcpConnectTimeout)
     appPrefs.networkTCPTimeout.set(cfg.tcpTimeout)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
@@ -1154,6 +1215,7 @@ sealed class CC {
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
+  class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
@@ -1208,6 +1270,7 @@ sealed class CC {
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
+    is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
     is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
@@ -1262,6 +1325,7 @@ sealed class CC {
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
+    is ApiStorageEncryption -> "apiStorageEncryption"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
@@ -1307,6 +1371,14 @@ sealed class CC {
 
   class ItemRange(val from: Long, val to: Long)
 
+  val obfuscated: CC
+    get() = when (this) {
+      is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
+      else -> this
+    }
+
+  private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
+
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
@@ -1337,6 +1409,9 @@ class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgCon
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
+
+@Serializable
+class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
 data class NetCfg(
@@ -1370,6 +1445,26 @@ data class NetCfg(
         smpPingInterval = 600_000_000
       )
   }
+
+  val onionHosts: OnionHosts get() = when {
+    hostMode == HostMode.Public && requiredHostMode -> OnionHosts.NEVER
+    hostMode == HostMode.OnionViaSocks && !requiredHostMode -> OnionHosts.PREFER
+    hostMode == HostMode.OnionViaSocks && requiredHostMode -> OnionHosts.REQUIRED
+    else -> OnionHosts.PREFER
+  }
+
+  fun withOnionHosts(mode: OnionHosts): NetCfg = when (mode) {
+    OnionHosts.NEVER ->
+      this.copy(hostMode = HostMode.Public, requiredHostMode = true)
+    OnionHosts.PREFER ->
+      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = false)
+    OnionHosts.REQUIRED ->
+      this.copy(hostMode = HostMode.OnionViaSocks, requiredHostMode = true)
+  }
+}
+
+enum class OnionHosts {
+  NEVER, PREFER, REQUIRED
 }
 
 @Serializable
@@ -1722,10 +1817,12 @@ sealed class ChatError {
     is ChatErrorChat -> "chat ${errorType.string}"
     is ChatErrorAgent -> "agent ${agentError.string}"
     is ChatErrorStore -> "store ${storeError.string}"
+    is ChatErrorDatabase -> "database ${databaseError.string}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
   @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
+  @Serializable @SerialName("errorDatabase") class ChatErrorDatabase(val databaseError: DatabaseError): ChatError()
 }
 
 @Serializable
@@ -1748,6 +1845,28 @@ sealed class StoreError {
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
   @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
+}
+
+@Serializable
+sealed class DatabaseError {
+  val string: String get() = when (this) {
+    is ErrorEncrypted -> "errorEncrypted"
+    is ErrorPlaintext -> "errorPlaintext"
+    is ErrorNoFile -> "errorPlaintext"
+    is ErrorExport -> "errorNoFile"
+    is ErrorOpen -> "errorExport"
+  }
+  @Serializable @SerialName("errorEncrypted") object ErrorEncrypted: DatabaseError()
+  @Serializable @SerialName("errorPlaintext") object ErrorPlaintext: DatabaseError()
+  @Serializable @SerialName("errorNoFile") class ErrorNoFile(val dbFile: String): DatabaseError()
+  @Serializable @SerialName("errorExport") class ErrorExport(val sqliteError: SQLiteError): DatabaseError()
+  @Serializable @SerialName("errorOpen") class ErrorOpen(val sqliteError: SQLiteError): DatabaseError()
+}
+
+@Serializable
+sealed class SQLiteError {
+  @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
+  @Serializable @SerialName("error") class Error(val error: String): SQLiteError()
 }
 
 @Serializable

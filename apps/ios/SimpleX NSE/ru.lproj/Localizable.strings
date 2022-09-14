@@ -38,7 +38,7 @@
 "calling…" = "входящий звонок…";
 
 /* call status */
-"connecting call…" = "звонок соединяется…";
+"connecting call" = "звонок соединяется…";
 
 /* chat list item title */
 "connecting…" = "соединяется…";

@@ -79,17 +79,13 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 ## News and updates
 
-Selected updates:
+Recent updates:
 
-[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced netwrok settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
+[Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
+
+[Aug 8, 2022. v3.1: secret chat groups, access via Tor, reduced battery and traffic usage, advanced network settings, etc.](./blog/20220808-simplex-chat-v3.1-chat-groups.md)
 
 [Jul 11, 2022. v3.0: instant push notifications for iOS, e2e encrypted WebRTC audio/video calls, chat database export/import, privacy and performance improvements](./blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md)
-
-[May 11, 2022. v2.0 released - sending images and files in mobile apps](./blog/20220511-simplex-chat-v2-images-files.md)
-
-[Mar 08, 2022 Mobile apps for iOS and Android released](./blog/20220308-simplex-chat-mobile-apps.md)
-
-[Jan 12, 2022. SimpleX v1 released: the only messaging and application platform without user identities](./20220112-simplex-chat-v1-released.md)
 
 [All updates](./blog)
 
@@ -152,12 +148,12 @@ We plan to add soon:
 
 ## For developers
 
-We plan that the SimpleX platform will grow into the platform supporting any distributed Internet application. This will allow you to build any service that people can access via chat, with custom web-based UI widgets that anybody with basic HTML/CSS/JavaScript knowledge can create in a few hours.
+You can:
 
-You already can:
-
-- use SimpleX Chat library to integrate chat functionality into your apps.
-- use SimpleX Chat bot templates in Haskell to build your own chat bot services (TypeScript SDK is coming soon).
+- use SimpleX Chat library to integrate chat functionality into your mobile apps.
+- create chat bots and services in Haskell - see [simple](./apps/simplex-bot/) and more [advanced chat bot example](./apps/simplex-bot-advanced/).
+- create chat bots and services in any language running SimpleX Chat terminal CLI as a local WebSocket server. See [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScipt chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
+- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 
 If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
@@ -177,10 +173,14 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Chat database export and import
 - ✅ Chat groups in mobile apps.
 - ✅ Connecting to messaging servers via Tor.
-- 🏗 Dual server addresses to access messaging servers as v3 hidden services (in progress).
-- 🏗 Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (in progress).
-- Chat database encryption.
+- ✅ Dual server addresses to access messaging servers as v3 hidden services.
+- ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
+- ✅ Incognito mode to share a new random name with each contact.
+- 🏗 Chat database encryption.
+- 🏗 Links to join groups and improve groups stability.
 - Disappearing messages, with mutual agreement.
+- Voice messages
+- Video messages
 - Web widgets for custom interactivity in the chats.
 - SMP protocol improvements:
   - SMP queue redundancy and rotation.
@@ -191,6 +191,8 @@ If you are considering developing with SimpleX platform please get in touch for 
   - the server doesn't have information about your contacts and groups.
 - Channels server for large groups and broadcast channels.
 - Media server to optimize sending large files to groups.
+- Desktop client.
+- Using the same profile on multiple devices.
 
 ## Help us pay for 3rd party security audit
 
@@ -209,6 +211,7 @@ It is possible to donate via:
 - [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
 - [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
 - Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
 
 Thank you,
 
