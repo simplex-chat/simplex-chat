@@ -523,12 +523,12 @@
     <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
-    <string name="your_chat_database">Данные чата</string>
+    <string name="your_chat_database">База данных</string>
     <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
     <string name="chat_is_running">Чат запущен</string>
     <string name="chat_is_stopped">Чат остановлен</string>
-    <string name="chat_database_section">ДАННЫЕ ЧАТА</string>
-    <string name="database_passphrase">Пароль данных чата</string>
+    <string name="chat_database_section">БАЗА ДАННЫХ</string>
+    <string name="database_passphrase">Пароль базы данных</string>
     <string name="export_database">Экспорт архива чата</string>
     <string name="import_database">Импорт архива чата</string>
     <string name="new_database_archive">Новый архив чата</string>
@@ -536,10 +536,10 @@
     <string name="delete_database">Удалить данные чата</string>
     <string name="error_starting_chat">Ошибка при запуске чата</string>
     <string name="stop_chat_question">Остановить чат?</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить базу данных. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
     <string name="stop_chat_confirmation">Остановить</string>
     <string name="set_password_to_export">Установите пароль</string>
-    <string name="set_password_to_export_desc">Данные чата зашифрованы случайным паролем. Пожалуйста, поменяйте его перед экспортом.</string>
+    <string name="set_password_to_export_desc">База данных зашифрована случайным паролем. Пожалуйста, поменяйте его перед экспортом.</string>
     <string name="error_stopping_chat">Ошибка при остановке чата</string>
     <string name="error_exporting_chat_database">Ошибка при экспорте архива чата</string>
     <string name="import_database_question">Импортировать архив чата?</string>
@@ -558,8 +558,8 @@
 
     <!-- DatabaseEncryptionView.kt -->
     <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
-    <string name="database_encrypted">Данные чата зашифрованы!</string>
-    <string name="error_encrypting_database">Ошибка при шифровании данных</string>
+    <string name="database_encrypted">База данных зашифрована!</string>
+    <string name="error_encrypting_database">Ошибка при шифровании</string>
     <string name="remove_passphrase_from_keychain">Удалить пароль из Keystore?</string>
     <string name="notifications_will_be_hidden">Уведомления будут работать только до остановки приложения!</string>
     <string name="remove_passphrase">Удалить</string>
@@ -570,32 +570,32 @@
     <string name="confirm_new_passphrase">Подтвердите новый пароль…</string>
     <string name="update_database_passphrase">Поменять пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
-    <string name="database_is_not_encrypted">Данные чата не зашифрованы. Установите пароль, чтобы защитить ваши данные.</string>
+    <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.</string>
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления из фонового сервиса.</string>
-    <string name="encrypted_with_random_passphrase">Данные чата зашифрованы случайным паролем, вы можете его поменять.</string>
+    <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
-    <string name="keychain_allows_to_receive_ntfs">Пароль данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
     <string name="you_have_to_enter_passphrase_every_time">Вы должны вводить пароль каждый раз при запуске чата - пароль не сохранен на устройстве.</string>
-    <string name="encrypt_database_question">Зашифровать данные чата?</string>
-    <string name="change_database_passphrase_question">Поменять пароль данных?</string>
-    <string name="database_will_be_encrypted">Данные чата будут зашифрованы.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">Данные чата будут зашифрованы и пароль сохранен в Keystore.</string>
-    <string name="database_encryption_will_be_updated">Пароль данных чата будет изменен и сохранен в Keystore.</string>
-    <string name="database_passphrase_will_be_updated">Пароль данных чата будет изменен.</string>
+    <string name="encrypt_database_question">Зашифровать базу данных?</string>
+    <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
+    <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будут зашифрована и пароль сохранен в Keystore.</string>
+    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
+    <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
     <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</string>
     <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.</string>
 
     <!-- DatabaseErrorView.kt -->
-    <string name="wrong_passphrase">Неправильный пароль данных</string>
-    <string name="encrypted_database">Зашифрованные данные чата</string>
-    <string name="database_error">Ошибка данных</string>
+    <string name="wrong_passphrase">Неправильный пароль базы данных</string>
+    <string name="encrypted_database">Зашифрованная база данных</string>
+    <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль данных отличается от пароля сохрененного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от пароля сохрененного в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
-    <string name="database_passphrase_is_required">Введите пароль данных чтобы открыть чат.</string>
+    <string name="database_passphrase_is_required">Введите пароль базы данных чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
     <string name="cannot_access_keychain">Невозможно сохранить пароль в Keystore</string>
-    <string name="unknown_database_error_with_info">Неизвестная ошибка данных чата: %s</string>
+    <string name="unknown_database_error_with_info">Неизвестная ошибка базы данных: %s</string>
     <string name="wrong_passphrase_title">Неправильный пароль!</string>
     <string name="enter_correct_passphrase">Введите правильный пароль.</string>
     <string name="unknown_error">Неизвестная ошибка</string>
