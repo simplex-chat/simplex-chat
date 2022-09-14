@@ -223,7 +223,7 @@ struct DatabaseEncryptionView: View {
             return Alert(title: Text("Database encrypted!"))
         case .currentPassphraseError:
             return Alert(
-                title: Text("Wrong passsphrase!"),
+                title: Text("Wrong passphrase!"),
                 message: Text("Please enter correct current passphrase.")
             )
         case let .error(title, error):
