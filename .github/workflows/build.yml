@@ -106,6 +106,9 @@ jobs:
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
+          set -x
+          which openssl
+          openssl version
           stack build --test
           echo "::set-output name=local_install_root::$(stack path --local-install-root)"
 
