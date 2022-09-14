@@ -44,7 +44,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
-    DEFAULT_USER_INTERFACE_STYLE: 0
+    DEFAULT_USER_INTERFACE_STYLE: 0,
 ]
 
 private var indent: CGFloat = 36
@@ -92,9 +92,10 @@ struct SettingsView: View {
                         DatabaseView(showSettings: $showSettings)
                             .navigationTitle("Your chat database")
                     } label: {
-                        settingsRow("internaldrive") {
+                        let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
+                        settingsRow("internaldrive", color: color) {
                             HStack {
-                                Text("Database export & import")
+                                Text("Database passphrase & export")
                                 Spacer()
                                 if chatModel.chatRunning == false {
                                     Image(systemName: "exclamationmark.octagon.fill").foregroundColor(.red)

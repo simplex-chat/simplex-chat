@@ -1,0 +1,68 @@
+diff --git a/cbits/sqlite3.c b/cbits/sqlite3.c
+index 66bb609..00c33c1 100644
+--- a/cbits/sqlite3.c
++++ b/cbits/sqlite3.c
+@@ -101739,9 +101739,9 @@ sqlite3_mutex* sqlcipher_mutex(int);
+ /* #include "pager.h" */
+ /* #include "vdbeInt.h" */
+ 
+-#ifdef __ANDROID__
+-#include <android/log.h>
+-#endif
++// #ifdef __ANDROID__
++// #include <android/log.h>
++// #endif
+ 
+ /* #include <time.h> */
+ 
+@@ -104934,11 +104934,11 @@ static int sqlcipher_profile_callback(unsigned int trace, void *file, void *stmt
+   FILE *f = (FILE*) file;
+   char *fmt = "Elapsed time:%.3f ms - %s\n";
+   double elapsed = (*((sqlite3_uint64*)run_time))/1000000.0;
+-#ifdef __ANDROID__
+-  if(f == NULL) {
+-    __android_log_print(ANDROID_LOG_DEBUG, "sqlcipher", fmt, elapsed, sqlite3_sql((sqlite3_stmt*)stmt));
+-  }
+-#endif
++// #ifdef __ANDROID__
++//   if(f == NULL) {
++//     __android_log_print(ANDROID_LOG_DEBUG, "sqlcipher", fmt, elapsed, sqlite3_sql((sqlite3_stmt*)stmt));
++//   }
++// #endif
+   if(f) fprintf(f, fmt, elapsed, sqlite3_sql((sqlite3_stmt*)stmt));
+   return SQLITE_OK;
+ }
+@@ -104988,12 +104988,12 @@ void sqlcipher_log(unsigned int level, const char *message, ...) {
+   va_start(params, message);
+ 
+ #ifdef CODEC_DEBUG
+-#ifdef __ANDROID__
+-    __android_log_vprint(ANDROID_LOG_DEBUG, "sqlcipher", message, params);
+-#else
++// #ifdef __ANDROID__
++//     __android_log_vprint(ANDROID_LOG_DEBUG, "sqlcipher", message, params);
++// #else
+     vfprintf(stderr, message, params);
+     fprintf(stderr, "\n");
+-#endif
++// #endif
+ #endif
+ 
+   if(level > sqlcipher_log_level || (sqlcipher_log_logcat == 0 && sqlcipher_log_file == NULL)) {
+@@ -105026,11 +105026,11 @@ void sqlcipher_log(unsigned int level, const char *message, ...) {
+       fprintf((FILE*)sqlcipher_log_file, "\n");
+     }
+   }
+-#ifdef __ANDROID__
+-  if(sqlcipher_log_logcat) {
+-    __android_log_vprint(ANDROID_LOG_DEBUG, "sqlcipher", message, params);
+-  }
+-#endif
++// #ifdef __ANDROID__
++//   if(sqlcipher_log_logcat) {
++//     __android_log_vprint(ANDROID_LOG_DEBUG, "sqlcipher", message, params);
++//   }
++// #endif
+ end:
+   va_end(params);
+ }

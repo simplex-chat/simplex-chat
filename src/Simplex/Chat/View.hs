@@ -886,7 +886,7 @@ viewChatError = \case
     CEActiveUserExists -> ["error: active user already exists"]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
-    CEChatStoreChanged -> ["error: chat store changed"]
+    CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage e -> ["chat message error: " <> sShow e]
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
@@ -944,6 +944,12 @@ viewChatError = \case
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
     e -> ["chat db error: " <> sShow e]
+  ChatErrorDatabase err -> case err of
+    DBErrorEncrypted -> ["error: chat database is already encrypted"]
+    DBErrorPlaintext -> ["error: chat database is not encrypted"]
+    DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
+    DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
+    e -> ["chat database error: " <> sShow e]
   ChatErrorAgent err -> case err of
     SMP SMP.AUTH ->
       [ "error: connection authorization failed - this could happen if connection was deleted,\
@@ -955,6 +961,9 @@ viewChatError = \case
     e -> ["smp agent error: " <> sShow e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
+    sqliteError' = \case
+      SQLiteErrorNotADatabase -> "wrong passphrase or invalid database file"
+      SQLiteError e -> sShow e
 
 ttyContact :: ContactName -> StyledString
 ttyContact = styled $ colored Green

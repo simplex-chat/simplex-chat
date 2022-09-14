@@ -44,6 +44,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     SettingsLayout(
       profile = user.profile,
       stopped,
+      chatModel.chatDbEncrypted.value == true,
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
       developerTools = chatModel.controller.appPrefs.developerTools,
@@ -79,6 +80,7 @@ val simplexTeamUri =
 fun SettingsLayout(
   profile: LocalProfile,
   stopped: Boolean,
+  encrypted: Boolean,
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
   developerTools: Preference<Boolean>,
@@ -113,7 +115,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
@@ -199,7 +201,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
   }
 }
 
-@Composable private fun DatabaseItem(openDatabaseView: () -> Unit, stopped: Boolean) {
+@Composable private fun DatabaseItem(encrypted: Boolean, openDatabaseView: () -> Unit, stopped: Boolean) {
   SectionItemView(openDatabaseView) {
     Row(
       Modifier.fillMaxWidth(),
@@ -207,12 +209,12 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     ) {
       Row {
         Icon(
-          Icons.Outlined.Archive,
-          contentDescription = stringResource(R.string.database_export_and_import),
-          tint = HighOrLowlight,
+          Icons.Outlined.FolderOpen,
+          contentDescription = stringResource(R.string.database_passphrase_and_export),
+          tint = if (encrypted) HighOrLowlight else WarningOrange,
         )
         Spacer(Modifier.padding(horizontal = 4.dp))
-        Text(stringResource(R.string.database_export_and_import))
+        Text(stringResource(R.string.database_passphrase_and_export))
       }
       if (stopped) {
         Icon(
@@ -305,9 +307,9 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable
-fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, disabled: Boolean = false) {
+fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = HighOrLowlight)
+    Icon(icon, text, tint = iconColor)
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(text, color = if (disabled) HighOrLowlight else textColor)
   }
@@ -355,6 +357,7 @@ fun PreviewSettingsLayout() {
     SettingsLayout(
       profile = LocalProfile.sampleData,
       stopped = false,
+      encrypted = false,
       incognito = remember { mutableStateOf(false) },
       incognitoPref = Preference({ false}, {}),
       developerTools = Preference({ false }, {}),

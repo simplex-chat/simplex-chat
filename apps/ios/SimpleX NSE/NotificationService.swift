@@ -105,9 +105,9 @@ class NotificationService: UNNotificationServiceExtension {
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            let nonce = ntfData["nonce"] as? String,
            let encNtfInfo = ntfData["message"] as? String,
-           let _ = startChat() {
-            logger.debug("NotificationService: receiveNtfMessages: chat is started")
-            if let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
+           let dbStatus = startChat() {
+            if case .ok = dbStatus,
+               let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
                 if let connEntity = ntfMsgInfo.connEntity {
                     setBestAttemptNtf(createConnectionEventNtf(connEntity))
@@ -118,9 +118,11 @@ class NotificationService: UNNotificationServiceExtension {
                             await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count)
                             deliverBestAttemptNtf()
                         }
+                        return
                     }
                 }
-                return
+            } else {
+                setBestAttemptNtf(createErrorNtf(dbStatus))
             }
         }
         deliverBestAttemptNtf()
@@ -151,20 +153,26 @@ class NotificationService: UNNotificationServiceExtension {
     }
 }
 
-func startChat() -> User? {
+var chatStarted = false
+
+func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
+    if chatStarted { return .ok }
+    let (_, dbStatus) = migrateChatDatabase()
+    if dbStatus != .ok { return dbStatus }
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {
             try setNetworkConfig(getNetCfg())
             let justStarted = try apiStartChat()
+            chatStarted = true
             if justStarted {
                 try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
                 try apiSetIncognito(incognito: incognitoGroupDefault.get())
                 chatLastStartGroupDefault.set(Date.now)
                 Task { await receiveMessages() }
             }
-            return user
+            return .ok
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
         }

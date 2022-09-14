@@ -67,11 +67,20 @@
   <string name="periodic_notifications">Periodic notifications</string>
   <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
   <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
+  <string name="enter_passphrase_notification_title">Passphrase is needed</string>
+  <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
+  <string name="database_initialization_error_title">Can\'t initialize the database</string>
+  <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
   <string name="simplex_service_notification_text">Receiving messages…</string>
   <string name="hide_notification">Hide</string>
+
+  <!-- Notification channels -->
+  <string name="ntf_channel_messages">SimpleX Chat messages</string>
+  <string name="ntf_channel_calls">SimpleX Chat calls</string>
+  <string name="ntf_channel_calls_lockscreen">SimpleX Chat calls (lock screen)</string>
 
   <!-- Notifications -->
   <string name="settings_notifications_mode_title">Notification service</string>
@@ -112,6 +121,8 @@
   <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</string>
   <string name="auth_device_authentication_is_disabled_turning_off">Device authentication is disabled. Turning off SimpleX Lock.</string>
   <string name="auth_retry">Retry</string>
+  <string name="auth_stop_chat">Stop chat</string>
+  <string name="auth_open_chat_console">Open chat console</string>
 
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
@@ -295,7 +306,7 @@
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your <xliff:g id="appName">SimpleX</xliff:g> contact address</string>
-  <string name="database_export_and_import">Database export &amp; import</string>
+  <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
   <string name="how_to_use_simplex_chat">How to use it</string>
   <string name="markdown_help">Markdown help</string>
@@ -518,6 +529,7 @@
   <string name="chat_is_running">Chat is running</string>
   <string name="chat_is_stopped">Chat is stopped</string>
   <string name="chat_database_section">CHAT DATABASE</string>
+  <string name="database_passphrase">Database passphrase</string>
   <string name="export_database">Export database</string>
   <string name="import_database">Import database</string>
   <string name="new_database_archive">New database archive</string>
@@ -527,6 +539,8 @@
   <string name="stop_chat_question">Stop chat?</string>
   <string name="stop_chat_to_export_import_or_delete_chat_database">Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</string>
   <string name="stop_chat_confirmation">Stop</string>
+  <string name="set_password_to_export">Set passphrase to export</string>
+  <string name="set_password_to_export_desc">Database is encrypted using a random passphrase. Please change it before exporting.</string>
   <string name="error_stopping_chat">Error stopping chat</string>
   <string name="error_exporting_chat_database">Error exporting chat database</string>
   <string name="import_database_question">Import chat database?</string>
@@ -542,7 +556,53 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
-  <string name="restart_the_app_to_use_new_chat_database">Restart the app to use new chat database.</string>
+
+  <!-- DatabaseEncryptionView.kt -->
+  <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
+  <string name="database_encrypted">Database encrypted!</string>
+  <string name="error_encrypting_database">Error encrypting database</string>
+  <string name="remove_passphrase_from_keychain">Remove passphrase from Keystore?</string>
+  <string name="notifications_will_be_hidden">Notifications will be delivered only until the app stops!</string>
+  <string name="remove_passphrase">Remove</string>
+  <string name="encrypt_database">Encrypt</string>
+  <string name="update_database">Update</string>
+  <string name="current_passphrase">Current passphrase…</string>
+  <string name="new_passphrase">New passphrase…</string>
+  <string name="confirm_new_passphrase">Confirm new passphrase…</string>
+  <string name="update_database_passphrase">Update database passphrase</string>
+  <string name="enter_correct_current_passphrase">Please enter correct current passphrase.</string>
+  <string name="database_is_not_encrypted">Your chat database is not encrypted - set passphrase to protect it.</string>
+  <string name="keychain_is_storing_securely">Android Keystore is used to securely store passphrase - it allows notification service to work.</string>
+  <string name="encrypted_with_random_passphrase">Database is encrypted using a random passphrase, you can change it.</string>
+  <string name="impossible_to_recover_passphrase"><b>Please note</b>: you will NOT be able to recover or change passphrase if you lose it.</string>
+  <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>
+  <string name="you_have_to_enter_passphrase_every_time">You have to enter passphrase every time the app starts - it is not stored on the device.</string>
+  <string name="encrypt_database_question">Encrypt database?</string>
+  <string name="change_database_passphrase_question">Change database passphrase?</string>
+  <string name="database_will_be_encrypted">Database will be encrypted.</string>
+  <string name="database_will_be_encrypted_and_passphrase_stored">Database will be encrypted and the passphrase stored in the Keystore.</string>
+  <string name="database_encryption_will_be_updated">Database encryption passphrase will be updated and stored in the Keystore.</string>
+  <string name="database_passphrase_will_be_updated">Database encryption passphrase will be updated.</string>
+  <string name="store_passphrase_securely">Please store passphrase securely, you will NOT be able to change it if you lose it.</string>
+  <string name="store_passphrase_securely_without_recover">Please store passphrase securely, you will NOT be able to access chat if you lose it.</string>
+
+  <!-- DatabaseErrorView.kt -->
+  <string name="wrong_passphrase">Wrong database passphrase</string>
+  <string name="encrypted_database">Encrypted database</string>
+  <string name="database_error">Database error</string>
+  <string name="keychain_error">Keychain error</string>
+  <string name="passphrase_is_different">Database passphrase is different from saved in the Keystore.</string>
+  <string name="file_with_path">File: %s</string>
+  <string name="database_passphrase_is_required">Database passphrase is required to open chat.</string>
+  <string name="error_with_info">Error: %s</string>
+  <string name="cannot_access_keychain">Cannot access Keystore to save database password</string>
+  <string name="unknown_database_error_with_info">Unknown database error: %s</string>
+  <string name="wrong_passphrase_title">Wrong passphrase!</string>
+  <string name="enter_correct_passphrase">Enter correct passphrase.</string>
+  <string name="unknown_error">Unknown error</string>
+  <string name="enter_passphrase">Enter passphrase…</string>
+  <string name="save_passphrase_and_open_chat">Save passphrase and open chat</string>
+  <string name="open_chat">Open chat</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>

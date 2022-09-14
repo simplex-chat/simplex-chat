@@ -1355,7 +1355,7 @@ public enum CICallStatus: String, Decodable {
         case .missed: return NSLocalizedString("missed call", comment: "call status")
         case .rejected: return NSLocalizedString("rejected call", comment: "call status")
         case .accepted: return NSLocalizedString("accepted call", comment: "call status")
-        case .negotiated: return NSLocalizedString("connecting call…", comment: "call status")
+        case .negotiated: return NSLocalizedString("connecting call", comment: "call status")
         case .progress: return NSLocalizedString("call in progress", comment: "call status")
         case .ended: return String.localizedStringWithFormat(NSLocalizedString("ended call %@", comment: "call status"), CICallStatus.durationText(sec))
         case .error: return NSLocalizedString("call error", comment: "call status")

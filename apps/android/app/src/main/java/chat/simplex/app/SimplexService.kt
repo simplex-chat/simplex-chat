@@ -9,7 +9,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
-import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,7 +24,6 @@ class SimplexService: Service() {
   private var isStartingService = false
   private var notificationManager: NotificationManager? = null
   private var serviceNotification: Notification? = null
-  private val chatController by lazy { (application as SimplexApp).chatController }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     Log.d(TAG, "onStartCommand startId: $startId")
@@ -67,19 +66,21 @@ class SimplexService: Service() {
     val self = this
     isStartingService = true
     withApi {
+      val chatController = (application as SimplexApp).chatController
       try {
-        val user = chatController.apiGetActiveUser()
-        if (user == null) {
-          chatController.chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-        } else {
-          Log.w(TAG, "Starting foreground service")
-          chatController.startChat(user)
-          isServiceStarted = true
-          saveServiceState(self, ServiceState.STARTED)
-          wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-              acquire()
-            }
+        Log.w(TAG, "Starting foreground service")
+        val chatDbStatus = chatController.chatModel.chatDbStatus.value
+        if (chatDbStatus != DBMigrationResult.OK) {
+          Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
+          showPassphraseNotification(chatDbStatus)
+          stopService()
+          return@withApi
+        }
+        isServiceStarted = true
+        saveServiceState(self, ServiceState.STARTED)
+        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+            acquire()
           }
         }
       } finally {
@@ -227,6 +228,8 @@ class SimplexService: Service() {
     const val SERVICE_START_WORKER_INTERVAL_MINUTES = 3 * 60L
     const val SERVICE_START_WORKER_WORK_NAME_PERIODIC = "SimplexAutoRestartWorkerPeriodic" // Do not change!
 
+    private const val PASSPHRASE_NOTIFICATION_ID = 1535
+
     private const val WAKE_LOCK_TAG = "SimplexService::lock"
     private const val SHARED_PREFS_ID = "chat.simplex.app.SIMPLEX_SERVICE_PREFS"
     private const val SHARED_PREFS_SERVICE_STATE = "SIMPLEX_SERVICE_STATE"
@@ -269,6 +272,41 @@ class SimplexService: Service() {
       val value = getPreferences(context)
         .getString(SHARED_PREFS_SERVICE_STATE, ServiceState.STOPPED.name)
       return ServiceState.valueOf(value!!)
+    }
+
+    fun showPassphraseNotification(chatDbStatus: DBMigrationResult?) {
+      val pendingIntent: PendingIntent = Intent(SimplexApp.context, MainActivity::class.java).let { notificationIntent ->
+        PendingIntent.getActivity(SimplexApp.context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+      }
+
+      val title = when(chatDbStatus) {
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_title)
+        is DBMigrationResult.OK -> return
+        else -> generalGetString(R.string.database_initialization_error_title)
+      }
+
+      val description = when(chatDbStatus) {
+        is DBMigrationResult.ErrorNotADatabase -> generalGetString(R.string.enter_passphrase_notification_desc)
+        is DBMigrationResult.OK -> return
+        else -> generalGetString(R.string.database_initialization_error_desc)
+      }
+
+      val builder =  NotificationCompat.Builder(SimplexApp.context, NOTIFICATION_CHANNEL_ID)
+        .setSmallIcon(R.drawable.ntf_service_icon)
+        .setColor(0x88FFFF)
+        .setContentTitle(title)
+        .setContentText(description)
+        .setContentIntent(pendingIntent)
+        .setSilent(true)
+        .setShowWhen(false)
+
+      val notificationManager = SimplexApp.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      notificationManager.notify(PASSPHRASE_NOTIFICATION_ID, builder.build())
+    }
+
+    fun cancelPassphraseNotification() {
+      val notificationManager = SimplexApp.context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+      notificationManager.cancel(PASSPHRASE_NOTIFICATION_ID)
     }
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)

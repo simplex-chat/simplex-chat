@@ -135,9 +135,10 @@ fun <T> SectionItemWithValue(
 fun SectionTextFooter(text: String) {
   Text(
     text,
-    Modifier.padding(horizontal = 16.dp).padding(top = 5.dp).fillMaxWidth(0.9F),
+    Modifier.padding(horizontal = 16.dp).padding(top = 8.dp).fillMaxWidth(0.9F),
     color = HighOrLowlight,
-    fontSize = 12.sp
+    lineHeight = 18.sp,
+    fontSize = 14.sp
   )
 }
 
