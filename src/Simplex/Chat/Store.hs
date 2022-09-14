@@ -181,8 +181,8 @@ module Simplex.Chat.Store
     updateCommandStatus,
     getCommandDataByCorrId,
     setConnConnReqInv,
-    getXGrpMemIntroContDataDirect,
-    getXGrpMemIntroContDataGroup,
+    getXGrpMemIntroContDirect,
+    getXGrpMemIntroContGroup,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -1802,7 +1802,7 @@ saveIntroInvitation db reMember toMember introInv = do
         WHERE group_member_intro_id = :intro_id
       |]
       [ ":intro_status" := GMIntroInvReceived,
-        ":group_queue_info" := groupConnReq introInv,
+        ":group_queue_info" := groupConnReq (introInv :: IntroInvitation),
         ":direct_queue_info" := directConnReq introInv,
         ":updated_at" := currentTs,
         ":intro_id" := introId intro
@@ -3954,13 +3954,13 @@ setConnConnReqInv db User {userId} connId connReq = do
     |]
     (connReq, updatedAt, userId, connId)
 
-getXGrpMemIntroContDataDirect :: DB.Connection -> User -> Contact -> IO (Maybe XGrpMemIntroContData)
-getXGrpMemIntroContDataDirect db User {userId} Contact {contactId} = do
-  maybeFirstRow toContData $
+getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
+getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
+  fmap join . maybeFirstRow toCont $
     DB.query
       db
       [sql|
-        SELECT g.group_id, m.group_member_id, m.member_id, c.conn_req_inv, ch.connection_id
+        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
         FROM contacts ct
         JOIN group_members m ON m.contact_id = ct.contact_id
         LEFT JOIN connections c ON c.connection_id = (
@@ -3979,16 +3979,18 @@ getXGrpMemIntroContDataDirect db User {userId} Contact {contactId} = do
       |]
       (userId, contactId, GCHostMember)
   where
-    toContData :: (GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation, Int64) -> XGrpMemIntroContData
-    toContData (groupId, groupMemberId, memberId, connReq, hostConnId) = XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq, hostConnId}
+    toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
+    toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
+      Just groupConnReq -> Just (hostConnId, XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq})
+      _ -> Nothing
 
-getXGrpMemIntroContDataGroup :: DB.Connection -> User -> GroupMember -> IO (Maybe XGrpMemIntroContData)
-getXGrpMemIntroContDataGroup db User {userId} GroupMember {groupMemberId} = do
-  maybeFirstRow toContData $
+getXGrpMemIntroContGroup :: DB.Connection -> User -> GroupMember -> IO (Maybe (Int64, ConnReqInvitation))
+getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
+  fmap join . maybeFirstRow toCont $
     DB.query
       db
       [sql|
-        SELECT g.group_id, m.group_member_id, m.member_id, c.conn_req_inv, ch.connection_id
+        SELECT ch.connection_id, c.conn_req_inv
         FROM group_members m
         JOIN contacts ct ON ct.contact_id = m.contact_id
         LEFT JOIN connections c ON c.connection_id = (
@@ -4007,8 +4009,10 @@ getXGrpMemIntroContDataGroup db User {userId} GroupMember {groupMemberId} = do
       |]
       (userId, groupMemberId, GCHostMember)
   where
-    toContData :: (GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation, Int64) -> XGrpMemIntroContData
-    toContData (groupId, grpMemberId, memberId, connReq, hostConnId) = XGrpMemIntroContData {groupId, groupMemberId = grpMemberId, memberId, connReq, hostConnId}
+    toCont :: (Int64, Maybe ConnReqInvitation) -> Maybe (Int64, ConnReqInvitation)
+    toCont (hostConnId, connReq_) = case connReq_ of
+      Just connReq -> Just (hostConnId, connReq)
+      _ -> Nothing
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

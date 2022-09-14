@@ -982,11 +982,10 @@ data CommandData = CommandData
   deriving (Show)
 
 -- ad-hoc type for data required for XGrpMemIntro continuation
-data XGrpMemIntroContData = XGrpMemIntroContData
+data XGrpMemIntroCont = XGrpMemIntroCont
   { groupId :: GroupId,
     groupMemberId :: GroupMemberId,
     memberId :: MemberId,
-    connReq :: Maybe ConnReqInvitation, -- group connection request when receiving INV in direct connection, direct in group connection
-    hostConnId :: Int64
+    groupConnReq :: ConnReqInvitation
   }
   deriving (Show)

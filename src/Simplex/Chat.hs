@@ -1394,14 +1394,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               directConnReq@(CRInvitationUri _ _) -> do
                 contData <- withStore' $ \db -> do
                   setConnConnReqInv db user connId cReq
-                  getXGrpMemIntroContDataDirect db user ct
-                case contData of
-                  Just XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq = Just groupConnReq, hostConnId} -> do
-                    hostConn <- withStore $ \db -> getConnectionById db user hostConnId
-                    let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
-                    void $ sendDirectMessage hostConn msg (GroupId groupId)
-                    withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
-                  _ -> pure ()
+                  getXGrpMemIntroContDirect db user ct
+                forM_ contData $ \(hostConnId, xGrpMemIntroCont) ->
+                  sendXGrpMemIntro hostConnId directConnReq xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
@@ -1501,14 +1496,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             groupConnReq@(CRInvitationUri _ _) -> do
               contData <- withStore' $ \db -> do
                 setConnConnReqInv db user connId cReq
-                getXGrpMemIntroContDataGroup db user m
-              case contData of
-                Just XGrpMemIntroContData {groupMemberId, memberId, connReq = Just directConnReq, hostConnId} -> do
-                  hostConn <- withStore $ \db -> getConnectionById db user hostConnId
-                  let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
-                  void $ sendDirectMessage hostConn msg (GroupId groupId)
-                  withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
-                _ -> pure ()
+                getXGrpMemIntroContGroup db user m
+              forM_ contData $ \(hostConnId, directConnReq) -> do
+                let GroupMember {groupMemberId, memberId} = m
+                sendXGrpMemIntro hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -1740,19 +1731,15 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
 
     withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do
+      let agentMsgTag = aCommandTag agentMsg
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
-      forM_ cmdData_ $ \cmdData@CommandData {cmdId, cmdConnId, cmdFunction} -> do
-        case cmdConnId of
-          Just cmdConnId' ->
-            if connId == cmdConnId'
-              then
-                if aCommandTag agentMsg == commandExpectedResponse cmdFunction
-                  then do
-                    withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
-                    action cmdData
-                  else throwChatError $ CECommandError "unexpected response for correlated command"
-              else throwChatError $ CECommandError "correlated command's connection id doesn't match"
-          Nothing -> throwChatError $ CECommandError "correlated command doesn't have connection id"
+      case cmdData_ of
+        Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
+          | connId == cmdConnId' && agentMsgTag == commandExpectedResponse cmdFunction -> do
+            withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
+            action cmdData
+          | otherwise -> throwChatError . CEAgentCommandError $ "not matching connection id or unexpected response, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", cmdData " <> show cmdData
+        _ -> throwChatError . CEAgentCommandError $ "no connection or connection id, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", corrId = " <> commandId corrId
 
     createAckCmd :: Connection -> m CommandId
     createAckCmd Connection {connId} = do
@@ -2184,6 +2171,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
+
+    sendXGrpMemIntro :: Int64 -> ConnReqInvitation -> XGrpMemIntroCont -> m ()
+    sendXGrpMemIntro hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq} = do
+      hostConn <- withStore $ \db -> getConnectionById db user hostConnId
+      let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
+      void $ sendDirectMessage hostConn msg (GroupId groupId)
+      withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
     xGrpMemInv gInfo m memId introInv = do
