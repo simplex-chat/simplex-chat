@@ -527,7 +527,7 @@
     <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
     <string name="chat_is_running">Чат запущен</string>
     <string name="chat_is_stopped">Чат остановлен</string>
-    <string name="chat_database_section">АРХИВ ЧАТА</string>
+    <string name="chat_database_section">ДАННЫЕ ЧАТА</string>
     <string name="database_passphrase">Пароль данных чата</string>
     <string name="export_database">Экспорт архива чата</string>
     <string name="import_database">Импорт архива чата</string>
