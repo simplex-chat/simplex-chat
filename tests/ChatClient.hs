@@ -8,7 +8,7 @@
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
+import Control.Concurrent (ThreadId, forkIO, forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -129,9 +129,10 @@ startTestChat_ st cfg opts dbFilePrefix user = do
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
-  stopChatController cc
+  void . forkIO $ stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
+  threadDelay 100000
 
 withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
 withNewTestChat = withNewTestChatCfgOpts testCfg testOpts
