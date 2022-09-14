@@ -453,13 +453,13 @@
 "Database passphrase & export" = "Пароль и экспорт базы";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от пароля сохрененного в Keychain.";
+"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохраненного в Keychain.";
 
 /* No comment provided by engineer. */
 "Database passphrase is required to open chat." = "Введите пароль базы данных чтобы открыть чат.";
 
 /* No comment provided by engineer. */
-"Database will be encrypted and the passphrase stored in the keychain.\n" = "База данных будут зашифрована и пароль сохранен в Keychain.\n";
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "База данных будет зашифрована и пароль сохранен в Keychain.\n";
 
 /* No comment provided by engineer. */
 "Database will be encrypted.\n" = "База данных будет зашифрована.\n";
