@@ -582,8 +582,8 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">Данные чата будут зашифрованы и пароль сохранен в Keystore.</string>
     <string name="database_encryption_will_be_updated">Пароль данных чата будет изменен и сохранен в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль данных чата будет изменен.</string>
-    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете поменять его, если вы его потеряете.</string>
-    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы его потеряете.</string>
+    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.</string>
 
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль данных</string>
