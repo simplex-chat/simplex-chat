@@ -112,8 +112,8 @@ jobs:
           set -x
           which openssl
           openssl version
-          ls -lha /usr/local/bin/openssl
-          stack build --test --extra-include-dirs=/usr/local/bin/openssl/include --extra-lib-dirs=/usr/local/bin/openssl/lib
+          ls -lha /usr/local/opt/openssl@1.1
+          stack build --test --extra-include-dirs=/usr/local/opt/openssl@1.1/include --extra-lib-dirs=/usr/local/opt/openssl@1.1/lib
           echo "::set-output name=local_install_root::$(stack path --local-install-root)"
 
       - name: Unix upload binary to release
