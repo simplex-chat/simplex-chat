@@ -557,7 +557,7 @@
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
 
     <!-- DatabaseEncryptionView.kt -->
-    <string name="save_passphrase_in_keychain">Сохраните пароль в Keystore</string>
+    <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
     <string name="database_encrypted">Данные чата зашифрованы!</string>
     <string name="error_encrypting_database">Ошибка при шифровании данных</string>
     <string name="remove_passphrase_from_keychain">Удалить пароль из Keystore?</string>
@@ -567,10 +567,10 @@
     <string name="update_database">Поменять</string>
     <string name="current_passphrase">Текущий пароль…</string>
     <string name="new_passphrase">Новый пароль…</string>
-    <string name="confirm_new_passphrase">Подтвердить новый пароль…</string>
-    <string name="update_database_passphrase">Поменять пароль данных</string>
+    <string name="confirm_new_passphrase">Подтвердите новый пароль…</string>
+    <string name="update_database_passphrase">Поменять пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
-    <string name="database_is_not_encrypted">Данные чата не зашифрованы - установите пароль чтобы защитить данные.</string>
+    <string name="database_is_not_encrypted">Данные чата не зашифрованы. Установите пароль, чтобы защитить ваши данные.</string>
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления из фонового сервиса.</string>
     <string name="encrypted_with_random_passphrase">Данные чата зашифрованы случайным паролем, вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
