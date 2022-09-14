@@ -571,10 +571,10 @@
     <string name="update_database_passphrase">Поменять пароль данных</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
     <string name="database_is_not_encrypted">Данные чата не зашифрованы - установите пароль чтобы защитить данные.</string>
-    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет получать нотификации из фонового сервиса.</string>
+    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления из фонового сервиса.</string>
     <string name="encrypted_with_random_passphrase">Данные чата зашифрованы случайным паролем, вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
-    <string name="keychain_allows_to_receive_ntfs">Android Keystore will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving notifications.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
     <string name="you_have_to_enter_passphrase_every_time">Вы должны вводить пароль каждый раз при запуске чата - пароль не сохранен на устройстве.</string>
     <string name="encrypt_database_question">Зашифровать данные чата?</string>
     <string name="change_database_passphrase_question">Поменять пароль данных?</string>
