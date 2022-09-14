@@ -48,6 +48,7 @@ library
       Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
       Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
       Simplex.Chat.Migrations.M20220824_profiles_local_alias
+      Simplex.Chat.Migrations.M20220909_commands
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

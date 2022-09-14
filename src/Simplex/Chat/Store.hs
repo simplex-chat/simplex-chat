@@ -59,6 +59,7 @@ module Simplex.Chat.Store
     getPendingContactConnections,
     getContactConnections,
     getConnectionEntity,
+    getConnectionById,
     getConnectionsContacts,
     getGroupAndMember,
     updateConnectionStatus,
@@ -83,6 +84,7 @@ module Simplex.Chat.Store
     getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
+    updateGroupMemberStatusById,
     createNewGroupMember,
     deleteGroupMember,
     deleteGroupMemberConnection,
@@ -175,6 +177,13 @@ module Simplex.Chat.Store
     createCall,
     deleteCalls,
     getCalls,
+    createCommand,
+    setCommandConnId,
+    updateCommandStatus,
+    getCommandDataByCorrId,
+    setConnConnReqInv,
+    getXGrpMemIntroContDirect,
+    getXGrpMemIntroContGroup,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -234,9 +243,10 @@ import Simplex.Chat.Migrations.M20220818_chat_notifications
 import Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
 import Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
 import Simplex.Chat.Migrations.M20220824_profiles_local_alias
+import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, InvitationId, MsgMeta (..))
+import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -268,7 +278,8 @@ schemaMigrations =
     ("20220818_chat_notifications", m20220818_chat_notifications),
     ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id),
     ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items),
-    ("20220824_profiles_local_alias", m20220824_profiles_local_alias)
+    ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
+    ("20220909_commands", m20220909_commands)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1268,6 +1279,19 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
         userContact_ _ = Left SEUserContactLinkNotFound
 
+getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection
+getConnectionById db User {userId} connId = ExceptT $ do
+  firstRow toConnection (SEConnectionNotFoundById connId) $
+    DB.query
+      db
+      [sql|
+        SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, custom_user_profile_id,
+          conn_status, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at
+        FROM connections
+        WHERE user_id = ? AND connection_id = ?
+      |]
+      (userId, connId)
+
 getConnectionsContacts :: DB.Connection -> UserId -> [ConnId] -> IO [ContactRef]
 getConnectionsContacts db userId agentConnIds = do
   DB.execute_ db "DROP TABLE IF EXISTS temp.conn_ids"
@@ -1658,7 +1682,10 @@ createMemberConnection db userId GroupMember {groupMemberId} agentConnId = do
   void $ createMemberConnection_ db userId groupMemberId agentConnId Nothing 0 currentTs
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
-updateGroupMemberStatus db userId GroupMember {groupMemberId} memStatus = do
+updateGroupMemberStatus db userId GroupMember {groupMemberId} = updateGroupMemberStatusById db userId groupMemberId
+
+updateGroupMemberStatusById :: DB.Connection -> UserId -> GroupMemberId -> GroupMemberStatus -> IO ()
+updateGroupMemberStatusById db userId groupMemberId memStatus = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1779,7 +1806,7 @@ saveIntroInvitation db reMember toMember introInv = do
         WHERE group_member_intro_id = :intro_id
       |]
       [ ":intro_status" := GMIntroInvReceived,
-        ":group_queue_info" := groupConnReq introInv,
+        ":group_queue_info" := groupConnReq (introInv :: IntroInvitation),
         ":direct_queue_info" := directConnReq introInv,
         ":updated_at" := currentTs,
         ":intro_id" := introId intro
@@ -1824,11 +1851,12 @@ getIntroduction_ db reMember toMember = ExceptT $ do
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
-createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> ConnId -> ConnId -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
-createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) groupAgentConnId directAgentConnId customUserProfileId = do
+createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> ExceptT StoreError IO GroupMember
+createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberProfile) (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- liftIO getCurrentTime
   Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId memberContactId Nothing customUserProfileId cLevel currentTs
+  liftIO $ setCommandConnId db user directCmdId directConnId
   (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile (Just groupId) currentTs
   liftIO $ do
     let newMember =
@@ -1842,15 +1870,18 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
               memProfileId
             }
     member <- createNewMember_ db user gInfo newMember currentTs
-    conn <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
+    conn@Connection {connId = groupConnId} <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId memberContactId cLevel currentTs
+    liftIO $ setCommandConnId db user groupCmdId groupConnId
     pure (member :: GroupMember) {activeConn = Just conn}
 
-createIntroToMemberContact :: DB.Connection -> UserId -> GroupMember -> GroupMember -> ConnId -> ConnId -> Maybe ProfileId -> IO ()
-createIntroToMemberContact db userId GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} groupAgentConnId directAgentConnId customUserProfileId = do
+createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> (CommandId, ConnId) -> (CommandId, ConnId) -> Maybe ProfileId -> IO ()
+createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} (groupCmdId, groupAgentConnId) (directCmdId, directAgentConnId) customUserProfileId = do
   let cLevel = 1 + maybe 0 (connLevel :: Connection -> Int) activeConn
   currentTs <- getCurrentTime
-  void $ createMemberConnection_ db userId groupMemberId groupAgentConnId viaContactId cLevel currentTs
+  Connection {connId = groupConnId} <- createMemberConnection_ db userId groupMemberId groupAgentConnId viaContactId cLevel currentTs
+  setCommandConnId db user groupCmdId groupConnId
   Connection {connId = directConnId} <- createConnection_ db userId ConnContact Nothing directAgentConnId viaContactId Nothing customUserProfileId cLevel currentTs
+  setCommandConnId db user directCmdId directConnId
   contactId <- createMemberContact_ directConnId currentTs
   updateMember_ contactId currentTs
   where
@@ -1978,10 +2009,11 @@ createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation
     (userId, groupId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
   insertedRowId db
 
-createSndGroupFileTransferConnection :: DB.Connection -> UserId -> Int64 -> ConnId -> GroupMember -> IO ()
-createSndGroupFileTransferConnection db userId fileId acId GroupMember {groupMemberId} = do
+createSndGroupFileTransferConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> GroupMember -> IO ()
+createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   Connection {connId} <- createSndFileConnection_ db userId fileId acId
+  setCommandConnId db user cmdId connId
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -2431,7 +2463,7 @@ createSndMsgDelivery db sndMsgDelivery messageId = do
   createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
 createNewMessageAndRcvMsgDelivery :: DB.Connection -> ConnOrGroupId -> NewMessage -> Maybe SharedMsgId -> RcvMsgDelivery -> IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta} = do
+createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -2440,8 +2472,8 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msg
   msgId <- insertedRowId db
   DB.execute
     db
-    "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-    (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs)
+    "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+    (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs)
   msgDeliveryId <- insertedRowId db
   createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
   pure RcvMessage {msgId, chatMsgEvent, sharedMsgId_, msgBody}
@@ -2457,12 +2489,12 @@ createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
     currentTs <- getCurrentTime
     createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
 
-createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDRcv -> ExceptT StoreError IO ()
-createRcvMsgDeliveryEvent db connId agentMsgId rcvMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryId_ db connId agentMsgId
-  liftIO $ do
+createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
+createRcvMsgDeliveryEvent db connId cmdId rcvMsgDeliveryStatus = do
+  msgDeliveryId <- getMsgDeliveryIdByCmdId_ db connId cmdId
+  forM_ msgDeliveryId $ \mdId -> do
     currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db msgDeliveryId rcvMsgDeliveryStatus currentTs
+    createMsgDeliveryEvent_ db mdId rcvMsgDeliveryStatus currentTs
 
 createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
 createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
@@ -2499,6 +2531,19 @@ getMsgDeliveryId_ db connId agentMsgId =
         LIMIT 1
       |]
       (connId, agentMsgId)
+
+getMsgDeliveryIdByCmdId_ :: DB.Connection -> Int64 -> CommandId -> IO (Maybe AgentMsgId)
+getMsgDeliveryIdByCmdId_ db connId cmdId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT msg_delivery_id
+        FROM msg_deliveries
+        WHERE connection_id = ? AND agent_ack_cmd_id = ?
+        LIMIT 1
+      |]
+      (connId, cmdId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
 createPendingGroupMessage db groupMemberId messageId introId_ = do
@@ -3850,6 +3895,129 @@ getCalls db User {userId} = do
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
     toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
 
+createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
+createCommand db User {userId} connId commandFunction = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO commands (connection_id, command_function, command_status, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?)
+    |]
+    (connId, commandFunction, CSCreated, userId, currentTs, currentTs)
+  insertedRowId db
+
+setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
+setCommandConnId db User {userId} cmdId connId = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE commands
+      SET connection_id = ?, updated_at = ?
+      WHERE user_id = ? AND command_id = ?
+    |]
+    (connId, updatedAt, userId, cmdId)
+
+updateCommandStatus :: DB.Connection -> User -> CommandId -> CommandStatus -> IO ()
+updateCommandStatus db User {userId} cmdId status = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE commands
+      SET command_status = ?, updated_at = ?
+      WHERE user_id = ? AND command_id = ?
+    |]
+    (status, updatedAt, userId, cmdId)
+
+getCommandDataByCorrId :: DB.Connection -> User -> ACorrId -> IO (Maybe CommandData)
+getCommandDataByCorrId db User {userId} corrId =
+  maybeFirstRow toCommandData $
+    DB.query
+      db
+      [sql|
+        SELECT command_id, connection_id, command_function, command_status
+        FROM commands
+        WHERE user_id = ? AND command_id = ?
+      |]
+      (userId, commandId corrId)
+  where
+    toCommandData :: (CommandId, Maybe Int64, CommandFunction, CommandStatus) -> CommandData
+    toCommandData (cmdId, cmdConnId, cmdFunction, cmdStatus) = CommandData {cmdId, cmdConnId, cmdFunction, cmdStatus}
+
+setConnConnReqInv :: DB.Connection -> User -> Int64 -> ConnReqInvitation -> IO ()
+setConnConnReqInv db User {userId} connId connReq = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET conn_req_inv = ?, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (connReq, updatedAt, userId, connId)
+
+getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
+getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
+  fmap join . maybeFirstRow toCont $
+    DB.query
+      db
+      [sql|
+        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
+        FROM contacts ct
+        JOIN group_members m ON m.contact_id = ct.contact_id
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT MAX(cc.connection_id)
+          FROM connections cc
+          WHERE cc.group_member_id = m.group_member_id
+        )
+        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+        JOIN group_members mh ON mh.group_id = g.group_id
+        LEFT JOIN connections ch ON ch.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.group_member_id = mh.group_member_id
+        )
+        WHERE ct.user_id = ? AND ct.contact_id = ? AND mh.member_category = ?
+      |]
+      (userId, contactId, GCHostMember)
+  where
+    toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
+    toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
+      Just groupConnReq -> Just (hostConnId, XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq})
+      _ -> Nothing
+
+getXGrpMemIntroContGroup :: DB.Connection -> User -> GroupMember -> IO (Maybe (Int64, ConnReqInvitation))
+getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
+  fmap join . maybeFirstRow toCont $
+    DB.query
+      db
+      [sql|
+        SELECT ch.connection_id, c.conn_req_inv
+        FROM group_members m
+        JOIN contacts ct ON ct.contact_id = m.contact_id
+        LEFT JOIN connections c ON c.connection_id = (
+          SELECT MAX(cc.connection_id)
+          FROM connections cc
+          WHERE cc.contact_id = ct.contact_id
+        )
+        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
+        JOIN group_members mh ON mh.group_id = g.group_id
+        LEFT JOIN connections ch ON ch.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.group_member_id = mh.group_member_id
+        )
+        WHERE m.user_id = ? AND m.group_member_id = ? AND mh.member_category = ?
+      |]
+      (userId, groupMemberId, GCHostMember)
+  where
+    toCont :: (Int64, Maybe ConnReqInvitation) -> Maybe (Int64, ConnReqInvitation)
+    toCont (hostConnId, connReq_) = case connReq_ of
+      Just connReq -> Just (hostConnId, connReq)
+      _ -> Nothing
+
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
 withLocalDisplayName :: forall a. DB.Connection -> UserId -> Text -> (Text -> IO (Either StoreError a)) -> IO (Either StoreError a)
@@ -3936,6 +4104,7 @@ data StoreError
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SEConnectionNotFound {agentConnId :: AgentConnId}
+  | SEConnectionNotFoundById {connId :: Int64}
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
