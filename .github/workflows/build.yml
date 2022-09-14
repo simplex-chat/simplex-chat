@@ -142,6 +142,7 @@ jobs:
           set -x
           which openssl
           openssl version
+          ls -lha /bin/openssl
           stack build
           stack path --local-install-root > tmp_file
           set /p local_install_root= < tmp_file
