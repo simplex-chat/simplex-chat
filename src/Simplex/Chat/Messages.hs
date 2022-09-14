@@ -913,7 +913,8 @@ data SndMsgDelivery = SndMsgDelivery
 data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId,
-    agentMsgMeta :: MsgMeta
+    agentMsgMeta :: MsgMeta,
+    agentAckCmdId :: CommandId
   }
 
 data MsgMetaJSON = MsgMetaJSON

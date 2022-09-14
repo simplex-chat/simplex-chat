@@ -423,6 +423,7 @@ data ChatErrorType
   | CEAgentVersion
   | CEAgentNoSubResult {agentConnId :: AgentConnId}
   | CECommandError {message :: String}
+  | CEAgentCommandError {message :: String}
   deriving (Show, Exception, Generic)
 
 instance ToJSON ChatErrorType where

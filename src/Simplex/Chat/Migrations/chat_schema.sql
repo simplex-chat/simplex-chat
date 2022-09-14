@@ -243,6 +243,7 @@ CREATE TABLE connections(
   via_user_contact_link INTEGER DEFAULT NULL
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  conn_req_inv BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -299,7 +300,8 @@ CREATE TABLE msg_deliveries(
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- broker_ts for received, created_at for sent
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   UNIQUE(connection_id, agent_msg_id)
 );
 CREATE TABLE msg_delivery_events(
@@ -399,4 +401,13 @@ CREATE INDEX idx_chat_items_contacts ON chat_items(
   user_id,
   contact_id,
   chat_item_id
+);
+CREATE TABLE commands(
+  command_id INTEGER PRIMARY KEY, -- used as ACorrId
+  connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
+  command_function TEXT NOT NULL,
+  command_status TEXT NOT NULL,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );

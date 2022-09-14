@@ -20,7 +20,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.ByteString.Char8 (ByteString)
+import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.Maybe (isJust)
@@ -34,7 +34,7 @@ import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
-import Simplex.Messaging.Agent.Protocol (ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
+import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
@@ -915,3 +915,77 @@ type JSONString = String
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
+
+type CommandId = Int64
+
+aCorrId :: CommandId -> ACorrId
+aCorrId = pack . show
+
+commandId :: ACorrId -> String
+commandId = unpack
+
+data CommandStatus
+  = CSCreated
+  | CSCompleted
+  deriving (Show, Generic)
+
+instance FromField CommandStatus where fromField = fromTextField_ textDecode
+
+instance ToField CommandStatus where toField = toField . textEncode
+
+instance TextEncoding CommandStatus where
+  textDecode = \case
+    "created" -> Just CSCreated
+    "completed" -> Just CSCompleted
+    _ -> Nothing
+  textEncode = \case
+    CSCreated -> "created"
+    CSCompleted -> "completed"
+
+data CommandFunction
+  = CFCreateConn
+  | CFJoinConn
+  | CFAllowConn
+  | CFAckMessage
+  deriving (Eq, Show, Generic)
+
+instance FromField CommandFunction where fromField = fromTextField_ textDecode
+
+instance ToField CommandFunction where toField = toField . textEncode
+
+instance TextEncoding CommandFunction where
+  textDecode = \case
+    "create_conn" -> Just CFCreateConn
+    "join_conn" -> Just CFJoinConn
+    "allow_conn" -> Just CFAllowConn
+    "ack_message" -> Just CFAckMessage
+    _ -> Nothing
+  textEncode = \case
+    CFCreateConn -> "create_conn"
+    CFJoinConn -> "join_conn"
+    CFAllowConn -> "allow_conn"
+    CFAckMessage -> "ack_message"
+
+commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
+commandExpectedResponse = \case
+  CFCreateConn -> INV_
+  CFJoinConn -> OK_
+  CFAllowConn -> OK_
+  CFAckMessage -> OK_
+
+data CommandData = CommandData
+  { cmdId :: CommandId,
+    cmdConnId :: Maybe Int64,
+    cmdFunction :: CommandFunction,
+    cmdStatus :: CommandStatus
+  }
+  deriving (Show)
+
+-- ad-hoc type for data required for XGrpMemIntro continuation
+data XGrpMemIntroCont = XGrpMemIntroCont
+  { groupId :: GroupId,
+    groupMemberId :: GroupMemberId,
+    memberId :: MemberId,
+    groupConnReq :: ConnReqInvitation
+  }
+  deriving (Show)
