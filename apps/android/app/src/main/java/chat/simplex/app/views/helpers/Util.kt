@@ -10,6 +10,7 @@ import android.provider.OpenableColumns
 import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
+import android.util.Base64
 import android.util.Log
 import android.view.ViewTreeObserver
 import androidx.annotation.StringRes
@@ -403,3 +404,7 @@ fun removeFile(context: Context, fileName: String): Boolean {
   }
   return fileDeleted
 }
+
+fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
+
+fun String.toByteArrayFromBase64() = Base64.decode(this, Base64.DEFAULT)

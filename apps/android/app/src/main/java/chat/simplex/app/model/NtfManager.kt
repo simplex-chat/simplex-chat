@@ -34,13 +34,13 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    manager.createNotificationChannel(NotificationChannel(MessageChannel, "SimpleX Chat messages", NotificationManager.IMPORTANCE_HIGH))
-    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, "SimpleX Chat calls (lock screen)", NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(MessageChannel, generalGetString(R.string.ntf_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+    manager.createNotificationChannel(NotificationChannel(LockScreenCallChannel, generalGetString(R.string.ntf_channel_calls_lockscreen), NotificationManager.IMPORTANCE_HIGH))
     manager.createNotificationChannel(callNotificationChannel())
   }
 
   private fun callNotificationChannel(): NotificationChannel {
-    val callChannel = NotificationChannel(CallChannel, "SimpleX Chat calls", NotificationManager.IMPORTANCE_HIGH)
+    val callChannel = NotificationChannel(CallChannel, generalGetString(R.string.ntf_channel_calls), NotificationManager.IMPORTANCE_HIGH)
     val attrs = AudioAttributes.Builder()
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
       .setUsage(AudioAttributes.USAGE_NOTIFICATION)

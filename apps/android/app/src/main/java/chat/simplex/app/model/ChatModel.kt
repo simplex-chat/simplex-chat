@@ -10,6 +10,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
+import chat.simplex.app.views.helpers.DBMigrationResult
 import chat.simplex.app.views.helpers.generalGetString
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
@@ -27,6 +28,8 @@ class ChatModel(val controller: ChatController) {
   val userCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
+  val chatDbEncrypted = mutableStateOf<Boolean?>(false)
+  val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val chats = mutableStateListOf<Chat>()
 
   // current chat

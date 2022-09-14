@@ -67,11 +67,20 @@
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
     <string name="periodic_notifications_desc">Приложение периодически получает новые сообщения — это потребляет несколько процентов батареи в день. Приложение не использует push уведомления — данные не отправляются с вашего устройства на сервер.</string>
+    <string name="enter_passphrase_notification_title">Введите пароль</string>
+    <string name="enter_passphrase_notification_desc">Для получения уведомлений, пожалуйста, введите пароль от базы данных</string>
+    <string name="database_initialization_error_title">Ошибка данных</string>
+    <string name="database_initialization_error_desc">Ошибка при инициализации данных. Нажмите чтобы узнать больше</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
     <string name="simplex_service_notification_text">Приём сообщений…</string>
     <string name="hide_notification">Скрыть</string>
+
+    <!-- Notification channels -->
+    <string name="ntf_channel_messages">SimpleX Chat сообщения</string>
+    <string name="ntf_channel_calls">SimpleX Chat звонки</string>
+    <string name="ntf_channel_calls_lockscreen">SimpleX Chat звонки (экран блокировки)</string>
 
     <!-- Notifications -->
     <string name="settings_notifications_mode_title">Сервис уведомлений</string>
@@ -112,6 +121,8 @@
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Аутентификация устройства не включена. Вы можете включить блокировку SimpleX в Настройках после включения аутентификации.</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Аутентификация устройства выключена. Отключение блокировки SimpleX Chat.</string>
     <string name="auth_retry">Повторить</string>
+    <string name="auth_stop_chat">Остановить чат</string>
+    <string name="auth_open_chat_console">Открыть консоль</string>
 
     <!-- Chat Actions - ChatItemView.kt (and general) -->
     <string name="reply_verb">Ответить</string>
@@ -291,7 +302,7 @@
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
-    <string name="database_export_and_import">Экспорт и импорт архива чата</string>
+    <string name="database_passphrase_and_export">Пароль и экспорт базы</string>
     <string name="about_simplex_chat">Информация о <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
     <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
@@ -512,11 +523,12 @@
     <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
-    <string name="your_chat_database">Данные чата</string>
+    <string name="your_chat_database">База данных</string>
     <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
     <string name="chat_is_running">Чат запущен</string>
     <string name="chat_is_stopped">Чат остановлен</string>
-    <string name="chat_database_section">АРХИВ ЧАТА</string>
+    <string name="chat_database_section">БАЗА ДАННЫХ</string>
+    <string name="database_passphrase">Пароль базы данных</string>
     <string name="export_database">Экспорт архива чата</string>
     <string name="import_database">Импорт архива чата</string>
     <string name="new_database_archive">Новый архив чата</string>
@@ -524,8 +536,10 @@
     <string name="delete_database">Удалить данные чата</string>
     <string name="error_starting_chat">Ошибка при запуске чата</string>
     <string name="stop_chat_question">Остановить чат?</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить данные чата. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Остановите чат, чтобы экспортировать или импортировать архив чата или удалить базу данных. Вы не сможете получать и отправлять сообщения, пока чат остановлен.</string>
     <string name="stop_chat_confirmation">Остановить</string>
+    <string name="set_password_to_export">Установите пароль</string>
+    <string name="set_password_to_export_desc">База данных зашифрована случайным паролем. Пожалуйста, поменяйте его перед экспортом.</string>
     <string name="error_stopping_chat">Ошибка при остановке чата</string>
     <string name="error_exporting_chat_database">Ошибка при экспорте архива чата</string>
     <string name="import_database_question">Импортировать архив чата?</string>
@@ -541,7 +555,53 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
-    <string name="restart_the_app_to_use_new_chat_database">Перезапустите приложение, чтобы использовать новый архив чата.</string>
+
+    <!-- DatabaseEncryptionView.kt -->
+    <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
+    <string name="database_encrypted">База данных зашифрована!</string>
+    <string name="error_encrypting_database">Ошибка при шифровании</string>
+    <string name="remove_passphrase_from_keychain">Удалить пароль из Keystore?</string>
+    <string name="notifications_will_be_hidden">Уведомления будут работать только до остановки приложения!</string>
+    <string name="remove_passphrase">Удалить</string>
+    <string name="encrypt_database">Зашифровать</string>
+    <string name="update_database">Поменять</string>
+    <string name="current_passphrase">Текущий пароль…</string>
+    <string name="new_passphrase">Новый пароль…</string>
+    <string name="confirm_new_passphrase">Подтвердите новый пароль…</string>
+    <string name="update_database_passphrase">Поменять пароль</string>
+    <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
+    <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.</string>
+    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
+    <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, вы можете его поменять.</string>
+    <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — вы будете должны ввести его при каждом запуске чата.</string>
+    <string name="encrypt_database_question">Зашифровать базу данных?</string>
+    <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
+    <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будут зашифрована и пароль сохранен в Keystore.</string>
+    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
+    <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
+    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.</string>
+
+    <!-- DatabaseErrorView.kt -->
+    <string name="wrong_passphrase">Неправильный пароль базы данных</string>
+    <string name="encrypted_database">База данных зашифрована</string>
+    <string name="database_error">Ошибка базы данных</string>
+    <string name="keychain_error">Ошибка Keystore</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от пароля сохрененного в Keystore.</string>
+    <string name="file_with_path">Файл: %s</string>
+    <string name="database_passphrase_is_required">Введите пароль базы данных чтобы открыть чат.</string>
+    <string name="error_with_info">Ошибка: %s</string>
+    <string name="cannot_access_keychain">Невозможно сохранить пароль в Keystore</string>
+    <string name="unknown_database_error_with_info">Неизвестная ошибка базы данных: %s</string>
+    <string name="wrong_passphrase_title">Неправильный пароль!</string>
+    <string name="enter_correct_passphrase">Введите правильный пароль.</string>
+    <string name="unknown_error">Неизвестная ошибка</string>
+    <string name="enter_passphrase">Введите пароль…</string>
+    <string name="save_passphrase_and_open_chat">Сохранить пароль и открыть чат</string>
+    <string name="open_chat">Открыть чат</string>
 
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Чат остановлен</string>
