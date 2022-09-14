@@ -63,7 +63,7 @@ fun DatabaseErrorView(
       Column(
         Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
       ) {
-        val buttonEnabled = validKey(dbKey.value) && dbKey.value.isNotEmpty()
+        val buttonEnabled = validKey(dbKey.value)
         when (val status = chatDbStatus.value) {
           is DBMigrationResult.ErrorNotADatabase -> {
             if (useKeychain && !storedDBKey.isNullOrEmpty()) {

@@ -307,9 +307,9 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 }
 
 @Composable
-fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, disabled: Boolean = false) {
+fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = HighOrLowlight)
+    Icon(icon, text, tint = iconColor)
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(text, color = if (disabled) HighOrLowlight else textColor)
   }

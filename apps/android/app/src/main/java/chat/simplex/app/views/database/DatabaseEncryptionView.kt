@@ -39,7 +39,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
-  val storedKey = remember { mutableStateOf(DatabaseUtils.getDatabaseKey() != null) }
+  val storedKey = remember { val key = DatabaseUtils.getDatabaseKey(); mutableStateOf(key != null && key != "") }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.getDatabaseKey() ?: "" else "") }
   val newKey = rememberSaveable { mutableStateOf("") }
@@ -468,7 +468,7 @@ private fun passphraseEntropy(s: String): Double {
 }
 
 private enum class PassphraseStrength(val color: Color) {
-  VERY_WEAK(Color.Red), WEAK(WarningOrange), REASONABLE(Color.Yellow), STRONG(Color.Green);
+  VERY_WEAK(Color.Red), WEAK(WarningOrange), REASONABLE(WarningYellow), STRONG(SimplexGreen);
 
   companion object {
     fun check(s: String) = with(passphraseEntropy(s)) {
