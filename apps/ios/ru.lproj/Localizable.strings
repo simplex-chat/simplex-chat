@@ -843,7 +843,7 @@
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
-"Instant push notifications will be hidden!\n" = "Мгновенные уведомления будут спрятаны!\n";
+"Instant push notifications will be hidden!\n" = "Мгновенные уведомления будут скрыты!\n";
 
 /* No comment provided by engineer. */
 "Instantly" = "Мгновенно";
@@ -1134,7 +1134,7 @@
 "Please restart the app and migrate the database to enable push notifications." = "Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.";
 
 /* No comment provided by engineer. */
-"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.";
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если потеряете его.";
 
 /* No comment provided by engineer. */
 "Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.";
