@@ -209,7 +209,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
     ) {
       Row {
         Icon(
-          Icons.Outlined.Archive,
+          Icons.Outlined.FolderOpen,
           contentDescription = stringResource(R.string.database_passphrase_and_export),
           tint = if (encrypted) HighOrLowlight else WarningOrange,
         )
