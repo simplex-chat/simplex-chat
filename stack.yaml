@@ -69,6 +69,8 @@ flags:
   zip:
     disable-bzip2: true
     disable-zstd: true
+  direct-sqlcipher:
+    openssl: true
 # Extra package databases containing global packages
 # extra-package-dbs: []
 
@@ -84,7 +86,6 @@ flags:
 # arch: x86_64
 #
 # Extra directories used by stack for building
-# extra-include-dirs: [/path/to/dir]
 # extra-lib-dirs: [/path/to/dir]
 #
 # Allow a newer minor version of GHC than the snapshot specifies

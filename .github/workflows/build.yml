@@ -82,7 +82,7 @@ jobs:
 
       - name: Unix build
         id: unix_build
-        if: matrix.os != 'windows-latest'
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
         shell: bash
         run: |
           stack build --test
@@ -98,6 +98,27 @@ jobs:
           tag: ${{ github.ref }}
 
       # Unix /
+
+      # / Mac
+
+      - name: Mac build
+        id: mac_build
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          stack build --test --extra-include-dirs=/usr/local/opt/openssl@1.1/include --extra-lib-dirs=/usr/local/opt/openssl@1.1/lib
+          echo "::set-output name=local_install_root::$(stack path --local-install-root)"
+
+      - name: Unix upload binary to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.unix_build.outputs.local_install_root }}/bin/simplex-chat
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
+
+      # Mac /
 
       # / Windows
 
