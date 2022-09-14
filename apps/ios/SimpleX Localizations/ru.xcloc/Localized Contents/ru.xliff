@@ -1209,7 +1209,7 @@
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
         <source>Instant push notifications will be hidden!
 </source>
-        <target>Мгновенные уведомления будут спрятаны!
+        <target>Мгновенные уведомления будут скрыты!
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1615,7 +1615,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
         <source>Please store passphrase securely, you will NOT be able to access chat if you lose it.</source>
-        <target>Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.</target>
+        <target>Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если потеряете его.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to change it if you lose it." xml:space="preserve">

@@ -69,8 +69,8 @@
     <string name="periodic_notifications_desc">Приложение периодически получает новые сообщения — это потребляет несколько процентов батареи в день. Приложение не использует push уведомления — данные не отправляются с вашего устройства на сервер.</string>
     <string name="enter_passphrase_notification_title">Введите пароль</string>
     <string name="enter_passphrase_notification_desc">Для получения уведомлений, пожалуйста, введите пароль от базы данных</string>
-    <string name="database_initialization_error_title">Ошибка данных</string>
-    <string name="database_initialization_error_desc">Ошибка при инициализации данных. Нажмите чтобы узнать больше</string>
+    <string name="database_initialization_error_title">Ошибка базы данных</string>
+    <string name="database_initialization_error_desc">Ошибка при инициализации базы данных. Нажмите чтобы узнать больше</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
@@ -573,7 +573,7 @@
     <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.</string>
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, вы можете его поменять.</string>
-    <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
+    <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если потеряете его.</string>
     <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
     <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
@@ -583,16 +583,16 @@
     <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
     <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</string>
-    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если вы потеряете пароль.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если потеряете его.</string>
 
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль базы данных</string>
     <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль базы данных отличается от пароля сохрененного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от сохраненного в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
-    <string name="database_passphrase_is_required">Введите пароль базы данных чтобы открыть чат.</string>
+    <string name="database_passphrase_is_required">Введите пароль базы данных, чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
     <string name="cannot_access_keychain">Невозможно сохранить пароль в Keystore</string>
     <string name="unknown_database_error_with_info">Неизвестная ошибка базы данных: %s</string>
