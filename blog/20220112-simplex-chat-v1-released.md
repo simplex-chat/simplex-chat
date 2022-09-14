@@ -1,3 +1,10 @@
+---
+layout: layouts/article.html
+title: "SimpleX announces SimpleX Chat v1"
+date: 2022-01-12
+permalink: "/blog/20220112-simplex-chat-v1-released.html"
+---
+
 # SimpleX announces SimpleX Chat v1
 
 **Published:** Jan 12, 2022

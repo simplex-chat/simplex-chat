@@ -26,21 +26,46 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatInit(path: String): ChatCtrl
+external fun chatMigrateDB(dbPath: String, dbKey: String): String
+external fun chatInitKey(dbPath: String, dbKey: String): ChatCtrl
+external fun chatInit(dbPath: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 
 class SimplexApp: Application(), LifecycleEventObserver {
-  val chatController: ChatController by lazy {
-    val ctrl = chatInit(getFilesDirectory(applicationContext))
-    ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+  lateinit var chatController: ChatController
+
+  fun initChatController(useKey: String? = null, startChat: Boolean = true) {
+    val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
+    val res = DatabaseUtils.migrateChatDatabase(dbKey)
+    val ctrl = if (res.second is DBMigrationResult.OK) {
+      chatInitKey(getFilesDirectory(applicationContext), dbKey)
+    } else null
+    if (::chatController.isInitialized) {
+      chatController.ctrl = ctrl
+    } else {
+      chatController = ChatController(ctrl, ntfManager, applicationContext, appPreferences)
+    }
+    chatModel.chatDbEncrypted.value = res.first
+    chatModel.chatDbStatus.value = res.second
+    if (res.second != DBMigrationResult.OK) {
+      Log.d(TAG, "Unable to migrate successfully: ${res.second}")
+    } else if (startChat) {
+      withApi {
+        val user = chatController.apiGetActiveUser()
+        if (user == null) {
+          chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+        } else {
+          chatController.startChat(user)
+        }
+      }
+    }
   }
 
-  val chatModel: ChatModel by lazy {
-    chatController.chatModel
-  }
+  val chatModel: ChatModel
+    get() = chatController.chatModel
 
   private val ntfManager: NtfManager by lazy {
     NtfManager(applicationContext, appPreferences)
@@ -53,15 +78,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
   override fun onCreate() {
     super.onCreate()
     context = this
+    initChatController()
     ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-    withApi {
-      val user = chatController.apiGetActiveUser()
-      if (user == null) {
-        chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
-      } else {
-        chatController.startChat(user)
-      }
-    }
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

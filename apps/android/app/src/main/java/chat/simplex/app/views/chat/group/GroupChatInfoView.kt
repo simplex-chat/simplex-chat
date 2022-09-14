@@ -72,20 +72,20 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       editGroupProfile = {
         ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
-      deleteGroup = { deleteGroupDialog(chat.chatInfo, chatModel, close) },
+      deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
-      changeNtfsState = { enabled ->
-        changeNtfsState(enabled, chat, chatModel)
-      },
     )
   }
 }
 
-fun deleteGroupDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val alertTextKey =
+    if (groupInfo.membership.memberCurrent) R.string.delete_group_for_all_members_cannot_undo_warning
+    else R.string.delete_group_for_self_cannot_undo_warning
   AlertManager.shared.showAlertMsg(
     title = generalGetString(R.string.delete_group_question),
-    text = generalGetString(R.string.delete_group_for_all_members_cannot_undo_warning),
+    text = generalGetString(alertTextKey),
     confirmText = generalGetString(R.string.delete_verb),
     onConfirm = {
       withApi {
@@ -127,7 +127,6 @@ fun GroupChatInfoLayout(
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
-  changeNtfsState: (Boolean) -> Unit,
 ) {
   Column(
     Modifier
@@ -159,17 +158,6 @@ fun GroupChatInfoLayout(
         SectionDivider()
       }
       MembersList(members, showMemberInfo)
-    }
-    SectionSpacer()
-
-    var ntfsEnabled by remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
-    SectionView(title = stringResource(R.string.settings_section_title_settings)) {
-      SectionItemView {
-        NtfsSwitch(ntfsEnabled) {
-          ntfsEnabled = !ntfsEnabled
-          changeNtfsState(ntfsEnabled)
-        }
-      }
     }
     SectionSpacer()
 
@@ -279,8 +267,10 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
     ) {
       ProfileImage(size = 46.dp, member.image)
       Column {
-        Text(member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        color = if (member.memberIncognito) Indigo else Color.Unspecified)
+        Text(
+          member.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
+          color = if (member.memberIncognito) Indigo else Color.Unspecified
+        )
         val s = member.memberStatus.shortText
         val statusDescr = if (user) String.format(generalGetString(R.string.group_info_member_you), s) else s
         Text(
@@ -367,7 +357,6 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
-      changeNtfsState = {},
     )
   }
 }

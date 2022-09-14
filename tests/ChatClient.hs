@@ -8,7 +8,7 @@
 
 module ChatClient where
 
-import Control.Concurrent (ThreadId, forkIOWithUnmask, killThread)
+import Control.Concurrent (ThreadId, forkIO, forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
@@ -48,6 +48,8 @@ testOpts :: ChatOpts
 testOpts =
   ChatOpts
     { dbFilePrefix = undefined,
+      dbKey = "",
+      -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:5001"],
       networkConfig = defaultNetworkConfig,
       logConnections = False,
@@ -101,16 +103,16 @@ testCfgV1 :: ChatConfig
 testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat cfg opts dbPrefix profile = do
+createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") False
+  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
   Right user <- withTransaction st $ \db -> runExceptT $ createUser db profile True
   startTestChat_ st cfg opts dbFilePrefix user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
-startTestChat cfg opts dbPrefix = do
+startTestChat cfg opts@ChatOpts {dbKey} dbPrefix = do
   let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createStore (dbFilePrefix <> "_chat.db") False
+  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
   Just user <- find activeUser <$> withTransaction st getUsers
   startTestChat_ st cfg opts dbFilePrefix user
 
@@ -127,9 +129,10 @@ startTestChat_ st cfg opts dbFilePrefix user = do
 
 stopTestChat :: TestCC -> IO ()
 stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
-  stopChatController cc
+  void . forkIO $ stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
+  threadDelay 100000
 
 withNewTestChat :: String -> Profile -> (TestCC -> IO a) -> IO a
 withNewTestChat = withNewTestChatCfgOpts testCfg testOpts

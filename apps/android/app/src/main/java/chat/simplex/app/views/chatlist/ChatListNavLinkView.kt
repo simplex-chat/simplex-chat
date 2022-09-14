@@ -130,7 +130,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     GroupMemberStatus.MemInvited -> {
       JoinGroupAction(chat, groupInfo, chatModel, showMenu)
       if (groupInfo.canDelete) {
-        DeleteGroupAction(chat, chatModel, showMenu)
+        DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
     }
     else -> {
@@ -143,7 +143,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
         LeaveGroupAction(groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
-        DeleteGroupAction(chat, chatModel, showMenu)
+        DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
     }
   }
@@ -168,7 +168,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
     if (ntfsEnabled) stringResource(R.string.mute_chat) else stringResource(R.string.unmute_chat),
     if (ntfsEnabled) Icons.Outlined.NotificationsOff else Icons.Outlined.Notifications,
     onClick = {
-      changeNtfsState(!ntfsEnabled, chat, chatModel)
+      changeNtfsStatePerChat(!ntfsEnabled, mutableStateOf(ntfsEnabled), chat, chatModel)
       showMenu.value = false
     }
   )
@@ -201,12 +201,12 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 }
 
 @Composable
-fun DeleteGroupAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteGroupDialog(chat.chatInfo, chatModel)
+      deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -422,6 +422,36 @@ fun groupInvitationAcceptedAlert() {
     generalGetString(R.string.joining_group),
     generalGetString(R.string.youve_accepted_group_invitation_connecting_to_inviting_group_member)
   )
+}
+
+fun changeNtfsStatePerChat(enabled: Boolean, currentState: MutableState<Boolean>, chat: Chat, chatModel: ChatModel) {
+  val newChatInfo = when(chat.chatInfo) {
+    is ChatInfo.Direct -> with (chat.chatInfo) {
+      ChatInfo.Direct(contact.copy(chatSettings = contact.chatSettings.copy(enableNtfs = enabled)))
+    }
+    is ChatInfo.Group -> with(chat.chatInfo) {
+      ChatInfo.Group(groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(enableNtfs = enabled)))
+    }
+    else -> null
+  }
+  withApi {
+    val res = when (newChatInfo) {
+      is ChatInfo.Direct -> with(newChatInfo) {
+        chatModel.controller.apiSetSettings(chatType, apiId, contact.chatSettings)
+      }
+      is ChatInfo.Group -> with(newChatInfo) {
+        chatModel.controller.apiSetSettings(chatType, apiId, groupInfo.chatSettings)
+      }
+      else -> false
+    }
+    if (res && newChatInfo != null) {
+      chatModel.updateChatInfo(newChatInfo)
+      if (!enabled) {
+        chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+      }
+      currentState.value = enabled
+    }
+  }
 }
 
 @Composable

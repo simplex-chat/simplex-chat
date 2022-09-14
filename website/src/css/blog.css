@@ -1,0 +1,81 @@
+h1 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+}
+
+section.container > div > p:nth-child(2) {
+  margin: 0;
+  margin-bottom: 2rem;
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
+h2 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  margin-bottom: 1rem;
+  margin-top: 2.2rem;
+}
+
+h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  margin-bottom: 1rem;
+  margin-top: 1.8rem;
+}
+
+ul li,
+ol li {
+  text-decoration: none;
+  /* list-style: none; */
+  font-size: 1.1rem;
+  line-height: 30px;
+  letter-spacing: 0.6px;
+  margin: 0.5rem 0;
+  -webkit-margin-start: 1rem;
+}
+ul,
+ol {
+  list-style-position: inside;
+  /* list-style-type: decimal; */
+  overflow: auto;
+}
+ul li::marker,
+ol li::marker {
+  /* content: "->   "; */
+  font-weight: 600;
+  /* color: #fbd561; */
+}
+pre {
+  overflow: auto;
+}
+/* code{
+    width: 100%;
+    height: auto;
+} */
+
+p {
+  margin: 1rem 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+h1::before,
+h2::before,
+h3::before {
+  display: block;
+  content: " ";
+  margin-top: -80px;
+  height: 80px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:focus {
+  outline: none;
+}

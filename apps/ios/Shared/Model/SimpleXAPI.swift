@@ -94,7 +94,7 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
         logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
     DispatchQueue.main.async {
-        ChatModel.shared.terminalItems.append(.cmd(.now, cmd))
+        ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
     }
     return resp
@@ -183,6 +183,10 @@ func apiImportArchive(config: ArchiveConfig) async throws {
 
 func apiDeleteStorage() async throws {
     try await sendCommandOkResp(.apiDeleteStorage)
+}
+
+func apiStorageEncryption(currentKey: String = "", newKey: String = "") async throws {
+    try await sendCommandOkResp(.apiStorageEncryption(config: DBEncryptionConfig(currentKey: currentKey, newKey: newKey)))
 }
 
 func apiGetChats() throws -> [ChatData] {
@@ -654,22 +658,21 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
-func initializeChat(start: Bool) throws {
+func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
-    do {
-        let m = ChatModel.shared
-        try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
-        try apiSetIncognito(incognito: incognitoGroupDefault.get())
-        m.currentUser = try apiGetActiveUser()
-        if m.currentUser == nil {
-            m.onboardingStage = .step1_SimpleXInfo
-        } else if start {
-            try startChat()
-        } else {
-            m.chatRunning = false
-        }
-    } catch {
-        fatalError("Failed to initialize chat controller or database: \(responseError(error))")
+    let m = ChatModel.shared
+    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
+    if  m.chatDbStatus != .ok { return }
+    let _ = getChatCtrl(dbKey)
+    try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try apiSetIncognito(incognito: incognitoGroupDefault.get())
+    m.currentUser = try apiGetActiveUser()
+    if m.currentUser == nil {
+        m.onboardingStage = .step1_SimpleXInfo
+    } else if start {
+        try startChat()
+    } else {
+        m.chatRunning = false
     }
 }
 

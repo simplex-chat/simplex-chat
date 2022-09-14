@@ -1,5 +1,5 @@
 //
-//  FramedItemView.swift
+//  DeletedItemView.swift
 //  SimpleX
 //
 //  Created by JRoberts on 04/02/2022.

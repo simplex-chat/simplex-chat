@@ -1,11 +1,23 @@
 packages: .
+-- packages: . ../simplexmq
+-- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
 constraints: zip +disable-bzip2 +disable-zstd
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: f2c1455a2755e1275983dc154321fc0a5c0d7b17
+    tag: f08d81252deb68eb4a1ce4502712b99264b6749d
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/direct-sqlcipher.git
+    tag: 34309410eb2069b029b8fc1872deb1e0db123294
+
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/sqlcipher-simple.git
+    tag: 5e154a2aeccc33ead6c243ec07195ab673137221
 
 source-repository-package
     type: git

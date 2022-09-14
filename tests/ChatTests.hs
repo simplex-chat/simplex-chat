@@ -115,6 +115,7 @@ chatTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
+    it "encrypt/decrypt database" testDatabaseEncryption
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
@@ -2717,7 +2718,7 @@ testMaintenanceMode = withTmpFiles $ do
       alice <## "ok"
       -- cannot start chat after import
       alice ##> "/_start"
-      alice <## "error: chat store changed"
+      alice <## "error: chat store changed, please restart chat"
     -- works after full restart
     withTestChat "alice" $ \alice -> testChatWorking alice bob
 
@@ -2752,12 +2753,55 @@ testMaintenanceModeWithFiles = withTmpFiles $ do
       alice <## "ok"
       -- cannot start chat after delete
       alice ##> "/_start"
-      alice <## "error: chat store changed"
+      alice <## "error: chat store changed, please restart chat"
       doesDirectoryExist "./tests/tmp/alice_files" `shouldReturn` False
       alice ##> "/_db import {\"archivePath\": \"./tests/tmp/alice-chat.zip\"}"
       alice <## "ok"
       B.readFile "./tests/tmp/alice_files/test.jpg" `shouldReturn` src
     -- works after full restart
+    withTestChat "alice" $ \alice -> testChatWorking alice bob
+
+testDatabaseEncryption :: IO ()
+testDatabaseEncryption = withTmpFiles $ do
+  withNewTestChat "bob" bobProfile $ \bob -> do
+    withNewTestChatOpts testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      connectUsers alice bob
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      alice ##> "/db encrypt mykey"
+      alice <## "error: chat not stopped"
+      alice ##> "/db decrypt mykey"
+      alice <## "error: chat not stopped"
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/db decrypt mykey"
+      alice <## "error: chat database is not encrypted"
+      alice ##> "/db encrypt mykey"
+      alice <## "ok"
+      alice ##> "/_start"
+      alice <## "error: chat store changed, please restart chat"
+    withTestChatOpts testOpts {maintenance = True, dbKey = "mykey"} "alice" $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      testChatWorking alice bob
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/db key wrongkey nextkey"
+      alice <## "error encrypting database: wrong passphrase or invalid database file"
+      alice ##> "/db key mykey nextkey"
+      alice <## "ok"
+      alice ##> "/_db encryption {\"currentKey\":\"nextkey\",\"newKey\":\"anotherkey\"}"
+      alice <## "ok"
+    withTestChatOpts testOpts {maintenance = True, dbKey = "anotherkey"} "alice" $ \alice -> do
+      alice ##> "/_start"
+      alice <## "chat started"
+      testChatWorking alice bob
+      alice ##> "/_stop"
+      alice <## "chat stopped"
+      alice ##> "/db decrypt anotherkey"
+      alice <## "ok"
     withTestChat "alice" $ \alice -> testChatWorking alice bob
 
 testMuteContact :: IO ()
