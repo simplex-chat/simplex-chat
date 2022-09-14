@@ -330,7 +330,7 @@
 "connecting (introduction invitation)" = "соединяется (приглашение по представлению)";
 
 /* call status */
-"connecting call…" = "звонок соединяется…";
+"connecting call" = "звонок соединяется…";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";

@@ -253,6 +253,7 @@
 		5C9C2DA82899DA6F00CC63B1 /* NetworkAndServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkAndServers.swift; sourceTree = "<group>"; };
 		5C9CC7A828C532AB00BEF955 /* DatabaseErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseErrorView.swift; sourceTree = "<group>"; };
 		5C9CC7AC28C55D7800BEF955 /* DatabaseEncryptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseEncryptionView.swift; sourceTree = "<group>"; };
+		5C9CC7B128D1F8F400BEF955 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5C9D13A2282187BB00AB8B43 /* WebRTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebRTC.swift; sourceTree = "<group>"; };
 		5C9FD96A27A56D4D0075386C /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		5C9FD96D27A5D6ED0075386C /* SendMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendMessageView.swift; sourceTree = "<group>"; };
@@ -1026,6 +1027,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				5CB0BA8A2826CB3A00B3292C /* ru */,
+				5C9CC7B128D1F8F400BEF955 /* en */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";

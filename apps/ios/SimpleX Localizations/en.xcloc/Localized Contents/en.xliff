@@ -2626,7 +2626,7 @@ SimpleX servers cannot see your profile.</target>
         <target>connecting (introduction invitation)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting call…" xml:space="preserve">
+      <trans-unit id="connecting call" xml:space="preserve">
         <source>connecting call…</source>
         <target>connecting call…</target>
         <note>call status</note>

@@ -2626,7 +2626,7 @@ SimpleX серверы не могут получить доступ к ваше
         <target>соединяется (приглашение по представлению)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting call…" xml:space="preserve">
+      <trans-unit id="connecting call" xml:space="preserve">
         <source>connecting call…</source>
         <target>звонок соединяется…</target>
         <note>call status</note>
