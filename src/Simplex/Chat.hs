@@ -1395,12 +1395,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                 contData <- withStore' $ \db -> do
                   setConnConnReqInv db user connId cReq
                   getXGrpMemIntroContDataDirect db user ct
-                forM_ contData $ \XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq, hostConnId} ->
-                  forM_ connReq $ \groupConnReq -> do
+                case contData of
+                  Just XGrpMemIntroContData {groupId, groupMemberId, memberId, connReq = Just groupConnReq, hostConnId} -> do
                     hostConn <- withStore $ \db -> getConnectionById db user hostConnId
                     let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
                     void $ sendDirectMessage hostConn msg (GroupId groupId)
                     withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
+                  _ -> pure ()
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
@@ -1501,12 +1502,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               contData <- withStore' $ \db -> do
                 setConnConnReqInv db user connId cReq
                 getXGrpMemIntroContDataGroup db user m
-              forM_ contData $ \XGrpMemIntroContData {groupMemberId, memberId, connReq, hostConnId} ->
-                forM_ connReq $ \directConnReq -> do
+              case contData of
+                Just XGrpMemIntroContData {groupMemberId, memberId, connReq = Just directConnReq, hostConnId} -> do
                   hostConn <- withStore $ \db -> getConnectionById db user hostConnId
                   let msg = XGrpMemInv memberId IntroInvitation {groupConnReq, directConnReq}
                   void $ sendDirectMessage hostConn msg (GroupId groupId)
                   withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
+                _ -> pure ()
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
