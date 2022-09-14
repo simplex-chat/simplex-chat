@@ -2,6 +2,7 @@ package chat.simplex.app.views.database
 
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -212,38 +213,26 @@ fun DatabaseEncryptionLayout(
       }
     }
 
-    Column(
-      Modifier.padding(start = 16.dp, end = 16.dp, top = 5.dp)
-    ) {
+    Column {
       if (chatDbEncrypted == false) {
-        FooterText(generalGetString(R.string.database_is_not_encrypted))
+        SectionTextFooter(generalGetString(R.string.database_is_not_encrypted))
       } else if (useKeychain.value) {
         if (storedKey.value) {
-          FooterText(generalGetString(R.string.keychain_is_storing_securely))
+          SectionTextFooter(generalGetString(R.string.keychain_is_storing_securely))
           if (initialRandomDBPassphrase.value) {
-            FooterText(generalGetString(R.string.encrypted_with_random_passphrase))
+            SectionTextFooter(generalGetString(R.string.encrypted_with_random_passphrase))
           } else {
-            FooterText(generalGetString(R.string.impossible_to_recover_passphrase))
+            SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
           }
         } else {
-          FooterText(generalGetString(R.string.keychain_allows_to_receive_ntfs))
+          SectionTextFooter(generalGetString(R.string.keychain_allows_to_receive_ntfs))
         }
       } else {
-        FooterText(generalGetString(R.string.you_have_to_enter_passphrase_every_time))
-        FooterText(generalGetString(R.string.impossible_to_recover_passphrase))
+        SectionTextFooter(generalGetString(R.string.you_have_to_enter_passphrase_every_time))
+        SectionTextFooter(generalGetString(R.string.impossible_to_recover_passphrase))
       }
     }
   }
-}
-
-@Composable
-private fun FooterText(text: String) {
-  Text(
-    text,
-    Modifier.padding(horizontal = 16.dp).padding(top = 5.dp).fillMaxWidth(0.9F),
-    color = HighOrLowlight,
-    fontSize = 12.sp
-  )
 }
 
 fun encryptDatabaseSavedAlert(onConfirm: () -> Unit) {
@@ -473,9 +462,9 @@ private enum class PassphraseStrength(val color: Color) {
   companion object {
     fun check(s: String) = with(passphraseEntropy(s)) {
       when {
-        this > 60 -> STRONG
-        this > 45 -> REASONABLE
-        this > 30 -> WEAK
+        this > 100 -> STRONG
+        this > 70 -> REASONABLE
+        this > 40 -> WEAK
         else -> VERY_WEAK
       }
     }
