@@ -571,7 +571,7 @@
     <string name="update_database_passphrase">Поменять пароль</string>
     <string name="enter_correct_current_passphrase">Пожалуйста, введите правильный пароль.</string>
     <string name="database_is_not_encrypted">База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.</string>
-    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления из фонового сервиса.</string>
+    <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><b>Внимание</b>: вы не сможете восстановить или поменять пароль, если вы его потеряете.</string>
     <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
@@ -587,7 +587,7 @@
 
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль базы данных</string>
-    <string name="encrypted_database">Зашифрованная база данных</string>
+    <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
     <string name="passphrase_is_different">Пароль базы данных отличается от пароля сохрененного в Keystore.</string>
