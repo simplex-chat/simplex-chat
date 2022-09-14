@@ -104,10 +104,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
   }
 
   fun allowToStartServiceAfterAppExit() = with(chatModel.controller) {
-    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name && isIgnoringBatteryOptimizations(chatModel.controller.appContext)
+    appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name &&
+        (!NotificationsMode.SERVICE.requiresIgnoringBattery || isIgnoringBatteryOptimizations(chatModel.controller.appContext))
   }
 
-  private fun allowToStartPeriodically() = chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name
+  private fun allowToStartPeriodically() = with(chatModel.controller) {
+    appPrefs.notificationsMode.get() == NotificationsMode.PERIODIC.name &&
+        (!NotificationsMode.PERIODIC.requiresIgnoringBattery || isIgnoringBatteryOptimizations(chatModel.controller.appContext))
+  }
 
   /*
   * It takes 1-10 milliseconds to process this function. Better to do it in a background thread
