@@ -69,8 +69,8 @@
     <string name="periodic_notifications_desc">Приложение периодически получает новые сообщения — это потребляет несколько процентов батареи в день. Приложение не использует push уведомления — данные не отправляются с вашего устройства на сервер.</string>
     <string name="enter_passphrase_notification_title">Введите пароль</string>
     <string name="enter_passphrase_notification_desc">Для получения уведомлений, пожалуйста, введите пароль от базы данных</string>
-    <string name="database_initialization_error_title">Can\'t initialize the database</string>
-    <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+    <string name="database_initialization_error_title">Ошибка данных</string>
+    <string name="database_initialization_error_desc">Ошибка при инициализации данных. Нажмите чтобы узнать больше</string>
 
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> сервис</string>
