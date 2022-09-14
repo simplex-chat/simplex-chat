@@ -85,9 +85,6 @@ jobs:
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
         shell: bash
         run: |
-          set -x
-          which openssl
-          openssl version
           stack build --test
           echo "::set-output name=local_install_root::$(stack path --local-install-root)"
 
@@ -109,10 +106,6 @@ jobs:
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
-          set -x
-          which openssl
-          openssl version
-          ls -lha /usr/local/opt/openssl@1.1
           stack build --test --extra-include-dirs=/usr/local/opt/openssl@1.1/include --extra-lib-dirs=/usr/local/opt/openssl@1.1/lib
           echo "::set-output name=local_install_root::$(stack path --local-install-root)"
 
@@ -139,10 +132,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: cmd
         run: |
-          set -x
-          which openssl
-          openssl version
-          ls -lha /bin/openssl
           stack build
           stack path --local-install-root > tmp_file
           set /p local_install_root= < tmp_file
