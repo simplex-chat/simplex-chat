@@ -106,6 +106,11 @@ class AppPreferences(val context: Context) {
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
 
+  val storeDBPassphrase = mkBoolPreference(SHARED_PREFS_STORE_DB_PASSPHRASE, true)
+  val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
+  val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
+  val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
+
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
 
@@ -180,6 +185,10 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_INTVL = "NetworkTCPKeepIntvl"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
+    private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
+    private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
+    private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
+    private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
   }
@@ -187,7 +196,7 @@ class AppPreferences(val context: Context) {
 
 private const val MESSAGE_TIMEOUT: Int = 15_000_000
 
-open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
+open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val appContext: Context, val appPrefs: AppPreferences) {
   val chatModel = ChatModel(this)
   private var receiverStarted = false
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
@@ -242,10 +251,12 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   suspend fun sendCmd(cmd: CC): CR {
+    val ctrl = ctrl ?: throw Exception("Controller is not initialized")
+
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       if (cmd !is CC.ApiParseMarkdown) {
-        chatModel.terminalItems.add(TerminalItem.cmd(cmd))
+        chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
         Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       }
       val json = chatSendCmd(ctrl, c)
@@ -261,7 +272,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     }
   }
 
-  private suspend fun recvMsg(): CR? {
+  private suspend fun recvMsg(ctrl: ChatCtrl): CR? {
     return withContext(Dispatchers.IO) {
       val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
       if (json == "") {
@@ -276,7 +287,7 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
   }
 
   private suspend fun recvMspLoop() {
-    val msg = recvMsg()
+    val msg = recvMsg(ctrl ?: return)
     if (msg != null) processReceivedMsg(msg)
     recvMspLoop()
   }
@@ -341,6 +352,13 @@ open class ChatController(private val ctrl: ChatCtrl, val ntfManager: NtfManager
     val r = sendCmd(CC.ApiDeleteStorage())
     if (r is CR.CmdOk) return
     throw Error("failed to delete storage: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun apiStorageEncryption(currentKey: String = "", newKey: String = ""): CR.ChatCmdError? {
+    val r = sendCmd(CC.ApiStorageEncryption(DBEncryptionConfig(currentKey, newKey)))
+    if (r is CR.CmdOk) return null
+    else if (r is CR.ChatCmdError) return r
+    throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 
   private suspend fun apiGetChats(): List<Chat> {
@@ -1197,6 +1215,7 @@ sealed class CC {
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
+  class ApiStorageEncryption(val config: DBEncryptionConfig): CC()
   class ApiGetChats: CC()
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: String?, val quotedItemId: Long?, val mc: MsgContent): CC()
@@ -1251,6 +1270,7 @@ sealed class CC {
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
+    is ApiStorageEncryption -> "/_db encryption ${json.encodeToString(config)}"
     is ApiGetChats -> "/_get chats pcc=on"
     is ApiGetChat -> "/_get chat ${chatRef(type, id)} ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     is ApiSendMessage -> "/_send ${chatRef(type, id)} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
@@ -1305,6 +1325,7 @@ sealed class CC {
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
+    is ApiStorageEncryption -> "apiStorageEncryption"
     is ApiGetChats -> "apiGetChats"
     is ApiGetChat -> "apiGetChat"
     is ApiSendMessage -> "apiSendMessage"
@@ -1350,6 +1371,14 @@ sealed class CC {
 
   class ItemRange(val from: Long, val to: Long)
 
+  val obfuscated: CC
+    get() = when (this) {
+      is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
+      else -> this
+    }
+
+  private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
+
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
@@ -1380,6 +1409,9 @@ class ComposedMessage(val filePath: String?, val quotedItemId: Long?, val msgCon
 
 @Serializable
 class ArchiveConfig(val archivePath: String, val disableCompression: Boolean? = null, val parentTempDirectory: String? = null)
+
+@Serializable
+class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
 data class NetCfg(
@@ -1785,10 +1817,12 @@ sealed class ChatError {
     is ChatErrorChat -> "chat ${errorType.string}"
     is ChatErrorAgent -> "agent ${agentError.string}"
     is ChatErrorStore -> "store ${storeError.string}"
+    is ChatErrorDatabase -> "database ${databaseError.string}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
   @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
+  @Serializable @SerialName("errorDatabase") class ChatErrorDatabase(val databaseError: DatabaseError): ChatError()
 }
 
 @Serializable
@@ -1811,6 +1845,28 @@ sealed class StoreError {
   }
   @Serializable @SerialName("userContactLinkNotFound") class UserContactLinkNotFound: StoreError()
   @Serializable @SerialName("groupNotFound") class GroupNotFound: StoreError()
+}
+
+@Serializable
+sealed class DatabaseError {
+  val string: String get() = when (this) {
+    is ErrorEncrypted -> "errorEncrypted"
+    is ErrorPlaintext -> "errorPlaintext"
+    is ErrorNoFile -> "errorPlaintext"
+    is ErrorExport -> "errorNoFile"
+    is ErrorOpen -> "errorExport"
+  }
+  @Serializable @SerialName("errorEncrypted") object ErrorEncrypted: DatabaseError()
+  @Serializable @SerialName("errorPlaintext") object ErrorPlaintext: DatabaseError()
+  @Serializable @SerialName("errorNoFile") class ErrorNoFile(val dbFile: String): DatabaseError()
+  @Serializable @SerialName("errorExport") class ErrorExport(val sqliteError: SQLiteError): DatabaseError()
+  @Serializable @SerialName("errorOpen") class ErrorOpen(val sqliteError: SQLiteError): DatabaseError()
+}
+
+@Serializable
+sealed class SQLiteError {
+  @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
+  @Serializable @SerialName("error") class Error(val error: String): SQLiteError()
 }
 
 @Serializable
