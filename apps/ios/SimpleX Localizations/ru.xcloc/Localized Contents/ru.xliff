@@ -619,7 +619,7 @@
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target>Пароль базы данных отличается от пароля сохрененного в Keychain.</target>
+        <target>Пароль базы данных отличается от сохраненного в Keychain.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
@@ -630,7 +630,7 @@
       <trans-unit id="Database will be encrypted and the passphrase stored in the keychain.&#10;" xml:space="preserve">
         <source>Database will be encrypted and the passphrase stored in the keychain.
 </source>
-        <target>База данных будут зашифрована и пароль сохранен в Keychain.
+        <target>База данных будет зашифрована и пароль сохранен в Keychain.
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
