@@ -637,6 +637,7 @@
   <string name="button_delete_group">Delete group</string>
   <string name="delete_group_question">Delete group?</string>
   <string name="delete_group_for_all_members_cannot_undo_warning">Group will be deleted for all members - this cannot be undone!</string>
+  <string name="delete_group_for_self_cannot_undo_warning">Group will be deleted for you - this cannot be undone!</string>
   <string name="button_leave_group">Leave group</string>
   <string name="button_edit_group_profile">Edit group profile</string>
 

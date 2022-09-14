@@ -636,6 +636,7 @@
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
 
