@@ -579,7 +579,7 @@
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
     <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
     <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будут зашифрована и пароль сохранен в Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранен в Keystore.</string>
     <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
     <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.</string>
