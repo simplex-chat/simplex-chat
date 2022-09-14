@@ -58,6 +58,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
       confirmNewKey,
       storedKey,
       initialRandomDBPassphrase,
+      progressIndicator,
       onConfirmEncrypt = {
         progressIndicator.value = true
         withApi {
@@ -127,6 +128,7 @@ fun DatabaseEncryptionLayout(
   confirmNewKey: MutableState<String>,
   storedKey: MutableState<Boolean>,
   initialRandomDBPassphrase: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>,
   onConfirmEncrypt: () -> Unit,
 ) {
   Column(
@@ -140,7 +142,7 @@ fun DatabaseEncryptionLayout(
     )
 
     SectionView(null) {
-      SavePassphraseSetting(useKeychain.value, initialRandomDBPassphrase.value, storedKey.value) { checked ->
+      SavePassphraseSetting(useKeychain.value, initialRandomDBPassphrase.value, storedKey.value, progressIndicator.value) { checked ->
         if (checked) {
           setUseKeychain(true, useKeychain, prefs)
         } else if (storedKey.value) {
@@ -179,23 +181,27 @@ fun DatabaseEncryptionLayout(
         keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
       )
       val onClickUpdate = {
-        if (currentKey.value == "") {
-          if (useKeychain.value)
-            encryptDatabaseSavedAlert(onConfirmEncrypt)
-          else
-            encryptDatabaseAlert(onConfirmEncrypt)
-        } else {
-          if (useKeychain.value)
-            changeDatabaseKeySavedAlert(onConfirmEncrypt)
-          else
-            changeDatabaseKeyAlert(onConfirmEncrypt)
+        // Don't do things concurrently. Shouldn't be here concurrently, just in case
+        if (!progressIndicator.value) {
+          if (currentKey.value == "") {
+            if (useKeychain.value)
+              encryptDatabaseSavedAlert(onConfirmEncrypt)
+            else
+              encryptDatabaseAlert(onConfirmEncrypt)
+          } else {
+            if (useKeychain.value)
+              changeDatabaseKeySavedAlert(onConfirmEncrypt)
+            else
+              changeDatabaseKeyAlert(onConfirmEncrypt)
+          }
         }
       }
       val disabled = currentKey.value == newKey.value ||
           newKey.value != confirmNewKey.value ||
           newKey.value.isEmpty() ||
           !validKey(currentKey.value) ||
-          !validKey(newKey.value)
+          !validKey(newKey.value) ||
+          progressIndicator.value
 
       DatabaseKeyField(
         confirmNewKey,
@@ -280,6 +286,7 @@ fun SavePassphraseSetting(
   useKeychain: Boolean,
   initialRandomDBPassphrase: Boolean,
   storedKey: Boolean,
+  progressIndicator: Boolean,
   onCheckedChange: (Boolean) -> Unit,
 ) {
   SectionItemView() {
@@ -303,7 +310,7 @@ fun SavePassphraseSetting(
           checkedThumbColor = MaterialTheme.colors.primary,
           uncheckedThumbColor = HighOrLowlight
         ),
-        enabled = !initialRandomDBPassphrase
+        enabled = !initialRandomDBPassphrase && !progressIndicator
       )
     }
   }
@@ -495,6 +502,7 @@ fun PreviewDatabaseEncryptionLayout() {
       confirmNewKey = remember { mutableStateOf("") },
       storedKey = remember { mutableStateOf(true) },
       initialRandomDBPassphrase = remember { mutableStateOf(true) },
+      progressIndicator = remember { mutableStateOf(false) },
       onConfirmEncrypt = {},
     )
   }
