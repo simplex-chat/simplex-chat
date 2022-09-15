@@ -113,7 +113,7 @@ fun DatabaseErrorView(
         if (restoreDbFromBackup.value) {
           SectionSpacer()
           Text(generalGetString(R.string.database_backup_can_be_restored))
-          RestoreDbButton(true) { restoreDb(restoreDbFromBackup, appPreferences, context) }
+          RestoreDbButton { restoreDb(restoreDbFromBackup, appPreferences, context) }
         }
       }
     }
@@ -224,8 +224,8 @@ private fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ColumnScope.RestoreDbButton(enabled: Boolean, onClick: () -> Unit) {
-  TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
+private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
+  TextButton(onClick, Modifier.align(Alignment.CenterHorizontally)) {
     Text(generalGetString(R.string.restore_database), color = MaterialTheme.colors.error)
   }
 }
