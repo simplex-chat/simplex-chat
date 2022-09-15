@@ -110,6 +110,7 @@ class AppPreferences(val context: Context) {
   val initialRandomDBPassphrase = mkBoolPreference(SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE, false)
   val encryptedDBPassphrase = mkStrPreference(SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE, null)
   val initializationVectorDBPassphrase = mkStrPreference(SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE, null)
+  val encryptionStartedAt = mkDatePreference(SHARED_PREFS_ENCRYPTION_STARTED_AT, null, true)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM.name)
   val primaryColor = mkIntPreference(SHARED_PREFS_PRIMARY_COLOR, LightColorPalette.primary.toArgb())
@@ -146,13 +147,19 @@ class AppPreferences(val context: Context) {
       set = fun(value) = sharedPreferences.edit().putString(prefName, value).apply()
     )
 
-  private fun mkDatePreference(prefName: String, default: Instant?): Preference<Instant?> =
+  /**
+  * Provide `[commit] = true` to save preferences right now, not after some unknown period of time.
+  * So in case of a crash this value will be saved 100%
+  * */
+  private fun mkDatePreference(prefName: String, default: Instant?, commit: Boolean = false): Preference<Instant?> =
     Preference(
       get = {
         val pref = sharedPreferences.getString(prefName, default?.toEpochMilliseconds()?.toString())
         pref?.let { Instant.fromEpochMilliseconds(pref.toLong()) }
       },
-      set = fun(value) = sharedPreferences.edit().putString(prefName, value?.toEpochMilliseconds()?.toString()).apply()
+      set = fun(value) = sharedPreferences.edit().putString(prefName, value?.toEpochMilliseconds()?.toString()).let {
+        if (commit) it.commit() else it.apply()
+      }
     )
 
   companion object {
@@ -189,6 +196,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
     private const val SHARED_PREFS_ENCRYPTED_DB_PASSPHRASE = "EncryptedDBPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_DB_PASSPHRASE = "InitializationVectorDBPassphrase"
+    private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_CURRENT_THEME = "CurrentTheme"
     private const val SHARED_PREFS_PRIMARY_COLOR = "PrimaryColor"
   }

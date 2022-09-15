@@ -32,6 +32,7 @@ import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.datetime.Clock
 import kotlin.math.log2
 
 @Composable
@@ -63,7 +64,9 @@ fun DatabaseEncryptionView(m: ChatModel) {
         progressIndicator.value = true
         withApi {
           try {
+            prefs.encryptionStartedAt.set(Clock.System.now())
             val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
+            prefs.encryptionStartedAt.set(null)
             val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
             when {
               sqliteError is SQLiteError.ErrorNotADatabase -> {

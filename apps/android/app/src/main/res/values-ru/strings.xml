@@ -603,6 +603,12 @@
     <string name="enter_passphrase">Введите пароль…</string>
     <string name="save_passphrase_and_open_chat">Сохранить пароль и открыть чат</string>
     <string name="open_chat">Открыть чат</string>
+    <string name="database_backup_can_be_restored">Попытка поменять пароль базы данных не была завершена.</string>
+    <string name="restore_database">Восстановить резервную копию</string>
+    <string name="restore_database_alert_title">Восстановить резервную копию?</string>
+    <string name="restore_database_alert_desc">Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</string>
+    <string name="restore_database_alert_confirm">Восстановить</string>
+    <string name="database_restore_error">Ошибка при восстановлении базы данных</string>
 
     <!-- ChatModel.chatRunning interactions -->
     <string name="chat_is_stopped_indication">Чат остановлен</string>

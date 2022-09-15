@@ -18,7 +18,8 @@ object DatabaseUtils {
 
   private const val DATABASE_PASSWORD_ALIAS: String = "databasePassword"
 
-  fun hasDatabase(filesDirectory: String): Boolean = File(filesDirectory + File.separator + "files_chat.db").exists()
+  private fun hasDatabase(rootDir: String): Boolean =
+    File(rootDir + File.separator + "files_chat.db").exists() && File(rootDir + File.separator + "files_agent.db").exists()
 
   fun getDatabaseKey(): String? {
     return cryptor.decryptData(
@@ -42,21 +43,21 @@ object DatabaseUtils {
 
   fun migrateChatDatabase(useKey: String? = null): Pair<Boolean, DBMigrationResult> {
     Log.d(TAG, "migrateChatDatabase ${appPreferences.storeDBPassphrase.get()}")
-    val dbPath = getFilesDirectory(SimplexApp.context)
+    val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
     var dbKey = ""
     val useKeychain = appPreferences.storeDBPassphrase.get()
     if (useKey != null) {
       dbKey = useKey
     } else if (useKeychain) {
-      if (!hasDatabase(dbPath)) {
+      if (!hasDatabase(SimplexApp.context.dataDir.absolutePath)) {
         dbKey = randomDatabasePassword()
         appPreferences.initialRandomDBPassphrase.set(true)
       } else {
         dbKey = getDatabaseKey() ?: ""
       }
     }
-    Log.d(TAG, "migrateChatDatabase DB path: $dbPath")
-    val migrated = chatMigrateDB(dbPath, dbKey)
+    Log.d(TAG, "migrateChatDatabase DB path: $dbAbsolutePathPrefix")
+    val migrated = chatMigrateDB(dbAbsolutePathPrefix, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated)
     }.getOrElse { DBMigrationResult.Unknown(migrated) }
