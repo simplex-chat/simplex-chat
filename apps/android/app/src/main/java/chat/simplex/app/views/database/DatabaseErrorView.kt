@@ -23,6 +23,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -114,6 +115,7 @@ fun DatabaseErrorView(
         if (restoreDbFromBackup.value) {
           SectionSpacer()
           Text(generalGetString(R.string.database_backup_can_be_restored))
+          Spacer(Modifier.size(16.dp))
           RestoreDbButton { restoreDb(restoreDbFromBackup, appPreferences, context) }
         }
       }

@@ -603,8 +603,8 @@
     <string name="enter_passphrase">Введите пароль…</string>
     <string name="save_passphrase_and_open_chat">Сохранить пароль и открыть чат</string>
     <string name="open_chat">Открыть чат</string>
-    <string name="database_backup_can_be_restored">Предыдущая попытка поменять пароль базы данных закончилась неудачей. Можно восстановить базу из бэкапа.</string>
-    <string name="restore_database">Восстановить</string>
+    <string name="database_backup_can_be_restored">Попытка поменять пароль базы данных не была завершена.</string>
+    <string name="restore_database">Восстановить резервную копию</string>
     <string name="database_restore_error">Ошибка при восстановлении базы данных</string>
 
     <!-- ChatModel.chatRunning interactions -->
