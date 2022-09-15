@@ -17,8 +17,28 @@ struct TerminalView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var composeState: ComposeState = ComposeState()
     @FocusState private var keyboardVisible: Bool
+    @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
 
     var body: some View {
+        if authorized {
+            terminalView()
+        } else {
+            Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
+            .onAppear(perform: runAuth)
+        }
+    }
+
+    private func runAuth() {
+        authenticate(reason: NSLocalizedString("Open chat console", comment: "authentication reason")) { laResult in
+            switch laResult {
+            case .success: authorized = true
+            case .unavailable: authorized = true
+            case .failed: authorized = false
+            }
+        }
+    }
+
+    private func terminalView() -> some View {
         VStack {
             ScrollViewReader { proxy in
                 ScrollView {

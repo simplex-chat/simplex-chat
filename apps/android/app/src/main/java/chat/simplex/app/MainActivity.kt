@@ -32,6 +32,7 @@ import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
@@ -56,7 +57,6 @@ class MainActivity: FragmentActivity() {
     }
   }
   private val vm by viewModels<SimplexViewModel>()
-  private val chatController by lazy { (application as SimplexApp).chatController }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -251,6 +251,13 @@ fun MainPage(
     }
     chatsAccessAuthorized = userAuthorized.value == true
   }
+  var showChatDatabaseError by rememberSaveable {
+    mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
+  }
+  LaunchedEffect(chatModel.chatDbStatus.value) {
+    showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
+  }
+
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {
     if (
@@ -296,6 +303,11 @@ fun MainPage(
     val onboarding = chatModel.onboardingStage.value
     val userCreated = chatModel.userCreated.value
     when {
+      showChatDatabaseError -> {
+        chatModel.chatDbStatus.value?.let {
+          DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
+        }
+      }
       onboarding == null || userCreated == null -> SplashView()
       !chatsAccessAuthorized -> {
         if (chatModel.controller.appPrefs.performLA.get() && laFailed.value) {

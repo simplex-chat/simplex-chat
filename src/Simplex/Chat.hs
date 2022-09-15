@@ -86,6 +86,7 @@ defaultChatConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
             dbFile = "simplex_v1",
+            dbKey = "",
             yesToMigrations = False
           },
       yesToMigrations = False,
@@ -124,7 +125,7 @@ logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
+newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, dbKey, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
   let f = chatStoreFile dbFilePrefix
       config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
       sendNotification = fromMaybe (const $ pure ()) sendToast
@@ -132,7 +133,7 @@ newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, de
   firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = dbFilePrefix <> "_agent.db"} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {dbFile = agentStoreFile dbFilePrefix, dbKey} servers {netCfg = networkConfig}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -216,11 +217,7 @@ processChatCommand = \case
   StartChat subConns -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ ->
-        ifM
-          (asks chatStoreChanged >>= readTVarIO)
-          (throwChatError CEChatStoreChanged)
-          (startChatController user subConns $> CRChatStarted)
+      _ -> checkStoreNotChanged $ startChatController user subConns $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -239,8 +236,9 @@ processChatCommand = \case
     atomically . writeTVar incognito $ onOff
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
-  APIImportArchive cfg -> checkChatStopped $ importArchive cfg >> setStoreChanged $> CRCmdOk
-  APIDeleteStorage -> checkChatStopped $ deleteStorage >> setStoreChanged $> CRCmdOk
+  APIImportArchive cfg -> withStoreChanged $ importArchive cfg
+  APIDeleteStorage -> withStoreChanged $ deleteStorage
+  APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
@@ -947,6 +945,10 @@ processChatCommand = \case
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
     setStoreChanged :: m ()
     setStoreChanged = asks chatStoreChanged >>= atomically . (`writeTVar` True)
+    withStoreChanged :: m () -> m ChatResponse
+    withStoreChanged a = checkChatStopped $ a >> setStoreChanged $> CRCmdOk
+    checkStoreNotChanged :: m ChatResponse -> m ChatResponse
+    checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     getSentChatItemIdByText :: User -> ChatRef -> ByteString -> m Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
       CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd (safeDecodeUtf8 msg)
@@ -2635,6 +2637,10 @@ chatCommandP =
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/_db import " *> (APIImportArchive <$> jsonP),
       "/_db delete" $> APIDeleteStorage,
+      "/_db encryption " *> (APIStorageEncryption <$> jsonP),
+      "/db encrypt " *> (APIStorageEncryption . DBEncryptionConfig "" <$> dbKeyP),
+      "/db key " *> (APIStorageEncryption <$> (DBEncryptionConfig <$> dbKeyP <* A.space <*> dbKeyP)),
+      "/db decrypt " *> (APIStorageEncryption . (`DBEncryptionConfig` "") <$> dbKeyP),
       "/_get chats" *> (APIGetChats <$> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional searchP),
       "/_get items count=" *> (APIGetChatItems <$> A.decimal),
@@ -2784,6 +2790,8 @@ chatCommandP =
       t_ <- optional $ " timeout=" *> A.decimal
       let tcpTimeout = 1000000 * fromMaybe (maybe 5 (const 10) socksProxy) t_
       pure $ fullNetworkConfig socksProxy tcpTimeout
+    dbKeyP = nonEmptyKey <$?> strP
+    nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
 
 adminContactReq :: ConnReqContact
 adminContactReq =

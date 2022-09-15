@@ -11,6 +11,7 @@ import SimpleXChat
 
 enum DatabaseAlert: Identifiable {
     case stopChat
+    case exportProhibited
     case importArchive
     case archiveImported
     case deleteChat
@@ -21,6 +22,7 @@ enum DatabaseAlert: Identifiable {
     var id: String {
         switch self {
         case .stopChat: return "stopChat"
+        case .exportProhibited: return "exportProhibited"
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
         case .deleteChat: return "deleteChat"
@@ -43,6 +45,7 @@ struct DatabaseView: View {
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
+    @State private var useKeychain = storeDBPassphraseGroupDefault.get()
 
     var body: some View {
         ZStack {
@@ -82,18 +85,28 @@ struct DatabaseView: View {
             }
 
             Section {
-                settingsRow("square.and.arrow.up") {
-                    Button {
-                        exportArchive()
+                let unencrypted = m.chatDbEncrypted == false
+                let color: Color = unencrypted ? .orange : .secondary
+                settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
+                    NavigationLink {
+                        DatabaseEncryptionView(useKeychain: $useKeychain)
+                            .navigationTitle("Database passphrase")
                     } label: {
-                        Text("Export database")
+                        Text("Database passphrase")
+                    }
+                }
+                settingsRow("square.and.arrow.up") {
+                    Button("Export database") {
+                        if initialRandomDBPassphraseGroupDefault.get() {
+                            alert = .exportProhibited
+                        } else {
+                            exportArchive()
+                        }
                     }
                 }
                 settingsRow("square.and.arrow.down") {
-                    Button(role: .destructive) {
+                    Button("Import database", role: .destructive) {
                         showFileImporter = true
-                    } label: {
-                        Text("Import database")
                     }
                 }
                 if let archiveName = chatArchiveName {
@@ -110,10 +123,8 @@ struct DatabaseView: View {
                     }
                 }
                 settingsRow("trash.slash") {
-                    Button(role: .destructive) {
+                    Button("Delete database", role: .destructive) {
                         alert = .deleteChat
-                    } label: {
-                        Text("Delete database")
                     }
                 }
             } header: {
@@ -130,10 +141,8 @@ struct DatabaseView: View {
             if case .group = dbContainer, legacyDatabase {
                 Section("Old database") {
                     settingsRow("trash") {
-                        Button {
+                        Button("Delete old database") {
                             alert = .deleteLegacyDatabase
-                        } label: {
-                            Text("Delete old database")
                         }
                     }
                 }
@@ -160,11 +169,16 @@ struct DatabaseView: View {
                 title: Text("Stop chat?"),
                 message: Text("Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped."),
                 primaryButton: .destructive(Text("Stop")) {
-                    stopChat()
+                    authStopChat()
                 },
                 secondaryButton: .cancel {
                     withAnimation { runChat = true }
                 }
+            )
+        case .exportProhibited:
+            return Alert(
+                title: Text("Set passphrase to export"),
+                message: Text("Database is encrypted using a random passphrase. Please change it before exporting.")
             )
         case .importArchive:
             if let fileURL = importedArchivePath {
@@ -213,6 +227,20 @@ struct DatabaseView: View {
         }
     }
 
+    private func authStopChat() {
+        if UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) {
+            authenticate(reason: NSLocalizedString("Stop SimpleX", comment: "authentication reason")) { laResult in
+                switch laResult {
+                case .success: stopChat()
+                case .unavailable: stopChat()
+                case .failed: withAnimation { runChat = true }
+                }
+            }
+        } else {
+            stopChat()
+        }
+    }
+
     private func stopChat() {
         Task {
             do {
@@ -254,6 +282,7 @@ struct DatabaseView: View {
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         try await apiImportArchive(config: config)
+                        _ = removeDatabaseKey()
                         await operationEnded(.archiveImported)
                     } catch let error {
                         await operationEnded(.error(title: "Error importing chat database", error: responseError(error)))
@@ -273,6 +302,8 @@ struct DatabaseView: View {
         Task {
             do {
                 try await apiDeleteStorage()
+                _ = removeDatabaseKey()
+                storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
             } catch let error {
                 await operationEnded(.error(title: "Error deleting database", error: responseError(error)))

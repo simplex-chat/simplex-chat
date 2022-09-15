@@ -212,9 +212,9 @@ struct GroupChatInfoView: View {
 
     // TODO reuse this and clearChatAlert with ChatInfoView
     private func deleteGroupAlert() -> Alert {
-        Alert(
+        return Alert(
             title: Text("Delete group?"),
-            message: Text("Group will be deleted for all members - this cannot be undone!"),
+            message: deleteGroupAlertMessage(),
             primaryButton: .destructive(Text("Delete")) {
                 Task {
                     do {
@@ -231,6 +231,10 @@ struct GroupChatInfoView: View {
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func deleteGroupAlertMessage() -> Text {
+        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
     }
 
     private func clearChatAlert() -> Alert {

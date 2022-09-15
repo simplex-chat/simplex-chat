@@ -53,10 +53,16 @@
 "**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Вставить полученную ссылку**, или откройте её в браузере и нажмите **Open in mobile app**.";
 
 /* No comment provided by engineer. */
+"**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Внимание**: вы не сможете восстановить или поменять пароль, если вы его потеряете.";
+
+/* No comment provided by engineer. */
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Рекомендовано**: токен устройства и уведомления отправляются на сервер SimpleX Chat, но сервер не получает сами сообщения, их размер или от кого они.";
 
 /* No comment provided by engineer. */
 "**Scan QR code**: to connect to your contact in person or via video call." = "**Сканировать QR код**: соединиться с вашим контактом при встрече или во время видеозвонка.";
+
+/* No comment provided by engineer. */
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Внимание**: для работы мгновенных уведомлений пароль должен быть сохранен в Keychain.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*жирный*";
@@ -219,6 +225,12 @@
 "Cancel" = "Отменить";
 
 /* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Ошибка доступа к Keychain при сохранении пароля";
+
+/* No comment provided by engineer. */
+"Change database passphrase?" = "Поменять пароль базы данных?";
+
+/* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
 
 /* No comment provided by engineer. */
@@ -276,6 +288,9 @@
 "Confirm" = "Подтвердить";
 
 /* No comment provided by engineer. */
+"Confirm new passphrase…" = "Подтвердите новый пароль…";
+
+/* No comment provided by engineer. */
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
@@ -315,7 +330,7 @@
 "connecting (introduction invitation)" = "соединяется (приглашение по представлению)";
 
 /* call status */
-"connecting call…" = "звонок соединяется…";
+"connecting call" = "звонок соединяется…";
 
 /* No comment provided by engineer. */
 "Connecting server…" = "Устанавливается соединение с сервером…";
@@ -402,16 +417,52 @@
 "creator" = "создатель";
 
 /* No comment provided by engineer. */
+"Current passphrase…" = "Текущий пароль…";
+
+/* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "Максимальный размер файла - %@.";
 
 /* No comment provided by engineer. */
 "Dark" = "Тёмная";
 
 /* No comment provided by engineer. */
-"Database export & import" = "Экспорт и импорт архива чата";
+"Database encrypted!" = "База данных зашифрована!";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "Пароль базы данных будет изменен и сохранен в Keychain.\n";
+
+/* No comment provided by engineer. */
+"Database encryption passphrase will be updated.\n" = "Пароль базы данных будет изменен.\n";
+
+/* No comment provided by engineer. */
+"Database error" = "Ошибка базы данных";
 
 /* No comment provided by engineer. */
 "Database ID" = "ID базы данных";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase, you can change it." = "База данных зашифрована случайным паролем, вы можете его поменять.";
+
+/* No comment provided by engineer. */
+"Database is encrypted using a random passphrase. Please change it before exporting." = "База данных зашифрована случайным паролем. Пожалуйста, поменяйте его перед экспортом.";
+
+/* No comment provided by engineer. */
+"Database passphrase" = "Пароль базы данных";
+
+/* No comment provided by engineer. */
+"Database passphrase & export" = "Пароль и экспорт базы";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохраненного в Keychain.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Введите пароль базы данных чтобы открыть чат.";
+
+/* No comment provided by engineer. */
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "База данных будет зашифрована и пароль сохранен в Keychain.\n";
+
+/* No comment provided by engineer. */
+"Database will be encrypted.\n" = "База данных будет зашифрована.\n";
 
 /* No comment provided by engineer. */
 "Database will be migrated when the app restarts" = "Данные чата будут мигрированы при перезапуске";
@@ -546,10 +597,40 @@
 "Enable TCP keep-alive" = "Включить TCP keep-alive";
 
 /* No comment provided by engineer. */
+"Encrypt" = "Зашифровать";
+
+/* No comment provided by engineer. */
+"Encrypt database?" = "Зашифровать базу данных?";
+
+/* No comment provided by engineer. */
+"Encrypted database" = "База данных зашифрована";
+
+/* notification */
+"Encrypted message or another event" = "Зашифрованное сообщение или событие чата";
+
+/* notification */
+"Encrypted message: database error" = "Зашифрованное сообщение: ошибка базы данных";
+
+/* notification */
+"Encrypted message: keychain error" = "Зашифрованное сообщение: ошибка Keychain";
+
+/* notification */
+"Encrypted message: no passphrase" = "Зашифрованное сообщение: пароль не сохранен";
+
+/* notification */
+"Encrypted message: unexpeсted error" = "Зашифрованное сообщение: неожиданная ошибка";
+
+/* No comment provided by engineer. */
 "ended" = "завершён";
 
 /* call status */
 "ended call %@" = "завершённый звонок %@";
+
+/* No comment provided by engineer. */
+"Enter correct passphrase." = "Введите правильный пароль.";
+
+/* No comment provided by engineer. */
+"Enter passphrase…" = "Введите пароль…";
 
 /* No comment provided by engineer. */
 "error" = "ошибка";
@@ -577,6 +658,9 @@
 
 /* No comment provided by engineer. */
 "Error enabling notifications" = "Ошибка при включении уведомлений";
+
+/* No comment provided by engineer. */
+"Error encrypting database" = "Ошибка при шифровании";
 
 /* No comment provided by engineer. */
 "Error exporting chat database" = "Ошибка при экспорте архива чата";
@@ -625,6 +709,9 @@
 
 /* No comment provided by engineer. */
 "File will be received when your contact is online, please wait or check later!" = "Файл будет принят, когда ваш контакт будет в сети, подождите или проверьте позже!";
+
+/* No comment provided by engineer. */
+"File: %@" = "Файл: %@";
 
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
@@ -756,6 +843,9 @@
 "Install [SimpleX Chat for terminal](https://github.com/simplex-chat/simplex-chat)" = "[SimpleX Chat для терминала](https://github.com/simplex-chat/simplex-chat)";
 
 /* No comment provided by engineer. */
+"Instant push notifications will be hidden!\n" = "Мгновенные уведомления будут скрыты!\n";
+
+/* No comment provided by engineer. */
 "Instantly" = "Мгновенно";
 
 /* No comment provided by engineer. */
@@ -781,6 +871,12 @@
 
 /* chat list item title */
 "invited to connect" = "приглашение";
+
+/* No comment provided by engineer. */
+"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "iOS Keychain используется для безопасного хранения пароля - это позволяет получать мгновенные уведомления.";
+
+/* No comment provided by engineer. */
+"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Пароль базы данных будет безопасно сохранен в iOS Keychain после запуска чата или изменения пароля - это позволит получать мгновенные уведомления.";
 
 /* No comment provided by engineer. */
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.";
@@ -811,6 +907,9 @@
 
 /* No comment provided by engineer. */
 "Joining group" = "Вступление в группу";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Ошибка Keychain";
 
 /* No comment provided by engineer. */
 "Large file!" = "Большой файл!";
@@ -921,6 +1020,9 @@
 "New message" = "Новое сообщение";
 
 /* No comment provided by engineer. */
+"New passphrase…" = "Новый пароль…";
+
+/* No comment provided by engineer. */
 "No" = "Нет";
 
 /* No comment provided by engineer. */
@@ -972,6 +1074,12 @@
 "Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются **с двухуровневым end-to-end шифрованием**";
 
 /* No comment provided by engineer. */
+"Open chat" = "Открыть чат";
+
+/* authentication reason */
+"Open chat console" = "Открыть консоль";
+
+/* No comment provided by engineer. */
 "Open Settings" = "Открыть Настройки";
 
 /* No comment provided by engineer. */
@@ -1020,7 +1128,16 @@
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
+"Please enter correct current passphrase." = "Пожалуйста, введите правильный пароль.";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to access chat if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете открыть чат, если потеряете его.";
+
+/* No comment provided by engineer. */
+"Please store passphrase securely, you will NOT be able to change it if you lose it." = "Пожалуйста, надежно сохраните пароль, вы НЕ сможете его поменять, если потеряете.";
 
 /* No comment provided by engineer. */
 "Privacy & security" = "Конфиденциальность";
@@ -1086,6 +1203,9 @@
 "Remove member?" = "Удалить члена группы?";
 
 /* No comment provided by engineer. */
+"Remove passphrase from keychain?" = "Удалить пароль из Keychain?";
+
+/* No comment provided by engineer. */
 "removed" = "удален(а)";
 
 /* rcv group event chat item */
@@ -1131,6 +1251,12 @@
 "Save group profile" = "Сохранить профиль группы";
 
 /* No comment provided by engineer. */
+"Save passphrase and open chat" = "Сохранить пароль и открыть чат";
+
+/* No comment provided by engineer. */
+"Save passphrase in Keychain" = "Сохранить пароль в Keychain";
+
+/* No comment provided by engineer. */
 "Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
 
 /* No comment provided by engineer. */
@@ -1171,6 +1297,9 @@
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Имя контакта…";
+
+/* No comment provided by engineer. */
+"Set passphrase to export" = "Установите пароль";
 
 /* No comment provided by engineer. */
 "Set timeouts for proxy/VPN" = "Установить таймауты для прокси/VPN";
@@ -1234,6 +1363,9 @@
 
 /* No comment provided by engineer. */
 "Stop chat?" = "Остановить чат?";
+
+/* authentication reason */
+"Stop SimpleX" = "Остановить SimpleX";
 
 /* No comment provided by engineer. */
 "strike" = "зачеркнуть";
@@ -1365,6 +1497,12 @@
 "unknown" = "неизвестно";
 
 /* No comment provided by engineer. */
+"Unknown database error: %@" = "Неизвестная ошибка базы данных: %@";
+
+/* No comment provided by engineer. */
+"Unknown error" = "Неизвестная ошибка";
+
+/* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.";
 
 /* authentication reason */
@@ -1374,7 +1512,13 @@
 "Unmute" = "Уведомлять";
 
 /* No comment provided by engineer. */
+"Update" = "Обновить";
+
+/* No comment provided by engineer. */
 "Update .onion hosts setting?" = "Обновить настройки .onion хостов?";
+
+/* No comment provided by engineer. */
+"Update database passphrase" = "Поменять пароль";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Обновить настройки сети?";
@@ -1446,6 +1590,12 @@
 "When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Когда вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.";
 
 /* No comment provided by engineer. */
+"Wrong database passphrase" = "Неправильный пароль базы данных";
+
+/* No comment provided by engineer. */
+"Wrong passphrase!" = "Неправильный пароль!";
+
+/* No comment provided by engineer. */
 "You" = "Вы";
 
 /* No comment provided by engineer. */
@@ -1486,6 +1636,9 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Верификация не удалась; пожалуйста, попробуйте ещё раз.";
+
+/* No comment provided by engineer. */
+"You have to enter passphrase every time the app starts - it is not stored on the device." = "Пароль не сохранен на устройстве — вы будете должны ввести его при каждом запуске чата.";
 
 /* No comment provided by engineer. */
 "You invited your contact" = "Вы пригласили ваш контакт";
@@ -1545,7 +1698,10 @@
 "Your chat address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
-"Your chat database" = "Данные чата";
+"Your chat database" = "База данных";
+
+/* No comment provided by engineer. */
+"Your chat database is not encrypted - set passphrase to encrypt it." = "База данных НЕ зашифрована. Установите пароль, чтобы защитить ваши данные.";
 
 /* No comment provided by engineer. */
 "Your chat profile" = "Ваш профиль";

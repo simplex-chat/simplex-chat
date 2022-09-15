@@ -148,7 +148,7 @@ struct ChatListNavLink: View {
 
     @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
         Button(role: .destructive) {
-            AlertManager.shared.showAlert(deleteGroupAlert(.group(groupInfo: groupInfo)))
+            AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
         } label: {
             Label("Delete", systemImage: "trash")
         }
@@ -211,15 +211,19 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func deleteGroupAlert(_ chatInfo: ChatInfo) -> Alert {
+    private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
         Alert(
             title: Text("Delete group?"),
-            message: Text("Group will be deleted for all members - this cannot be undone!"),
+            message: deleteGroupAlertMessage(groupInfo),
             primaryButton: .destructive(Text("Delete")) {
                 Task { await deleteChat(chat) }
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func deleteGroupAlertMessage(_ groupInfo: GroupInfo) -> Text {
+        groupInfo.membership.memberCurrent ? Text("Group will be deleted for all members - this cannot be undone!") : Text("Group will be deleted for you - this cannot be undone!")
     }
 
     private func clearChatAlert() -> Alert {

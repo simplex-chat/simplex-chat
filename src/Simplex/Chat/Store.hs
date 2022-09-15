@@ -20,8 +20,9 @@
 module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
-    createStore,
+    createChatStore,
     chatStoreFile,
+    agentStoreFile,
     createUser,
     getUsers,
     setActiveUser,
@@ -287,11 +288,14 @@ migrations = sortBy (compare `on` name) $ map migration schemaMigrations
   where
     migration (name, query) = Migration {name = name, up = fromQuery query}
 
-createStore :: FilePath -> Bool -> IO SQLiteStore
-createStore dbFilePath = createSQLiteStore dbFilePath migrations
+createChatStore :: FilePath -> String -> Bool -> IO SQLiteStore
+createChatStore dbFilePath dbKey = createSQLiteStore dbFilePath dbKey migrations
 
 chatStoreFile :: FilePath -> FilePath
 chatStoreFile = (<> "_chat.db")
+
+agentStoreFile :: FilePath -> FilePath
+agentStoreFile = (<> "_agent.db")
 
 checkConstraint :: StoreError -> ExceptT StoreError IO a -> ExceptT StoreError IO a
 checkConstraint err action = ExceptT $ runExceptT action `E.catch` (pure . Left . handleSQLError err)

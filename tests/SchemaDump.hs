@@ -5,7 +5,7 @@ module SchemaDump where
 import ChatClient (withTmpFiles)
 import Control.DeepSeq
 import Control.Monad (void)
-import Simplex.Chat.Store (createStore)
+import Simplex.Chat.Store (createChatStore)
 import System.Process (readCreateProcess, shell)
 import Test.Hspec
 
@@ -22,7 +22,7 @@ schemaDumpTest =
 testVerifySchemaDump :: IO ()
 testVerifySchemaDump =
   withTmpFiles $ do
-    void $ createStore testDB False
+    void $ createChatStore testDB "" False
     void $ readCreateProcess (shell $ "touch " <> schema) ""
     savedSchema <- readFile schema
     savedSchema `deepseq` pure ()
