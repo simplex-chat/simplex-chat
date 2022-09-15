@@ -1,9 +1,12 @@
 package chat.simplex.app.ui.theme
 
+import android.app.UiModeManager
+import android.content.Context
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import chat.simplex.app.SimplexApp
 import kotlinx.coroutines.flow.MutableStateFlow
 
 enum class DefaultTheme {
@@ -35,7 +38,11 @@ val LightColorPalette = lightColors(
 //  onSurface = Color.Black,
 )
 
-val CurrentColors: MutableStateFlow<Pair<Colors, DefaultTheme>> = MutableStateFlow(ThemeManager.currentColors(true))
+val CurrentColors: MutableStateFlow<Pair<Colors, DefaultTheme>> = MutableStateFlow(ThemeManager.currentColors(isInNightMode()))
+
+// Non-@Composable implementation
+private fun isInNightMode() =
+  (SimplexApp.context.getSystemService(Context.UI_MODE_SERVICE) as UiModeManager).nightMode == UiModeManager.MODE_NIGHT_YES
 
 @Composable
 fun isInDarkTheme(): Boolean = !CurrentColors.collectAsState().value.first.isLight
