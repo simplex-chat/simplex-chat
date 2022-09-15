@@ -605,8 +605,8 @@
     <string name="open_chat">Открыть чат</string>
     <string name="database_backup_can_be_restored">Попытка поменять пароль базы данных не была завершена.</string>
     <string name="restore_database">Восстановить резервную копию</string>
-    <string name="restore_database_alert_title">Восстановить базу?</string>
-    <string name="restore_database_alert_desc">Это действие нельзя отменить. Вам нужно будет ввести пароль, который использовался для шифрования базы данных из этого бэкапа.</string>
+    <string name="restore_database_alert_title">Восстановить резервную копию?</string>
+    <string name="restore_database_alert_desc">Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</string>
     <string name="restore_database_alert_confirm">Восстановить</string>
     <string name="database_restore_error">Ошибка при восстановлении базы данных</string>
 
