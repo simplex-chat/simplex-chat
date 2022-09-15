@@ -22,6 +22,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -174,13 +175,15 @@ private fun runChat(
 }
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+  /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
+  val safeDiffInTime = 1500L
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
   val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
   val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
   return filesChat.exists() &&
       filesAgent.exists() &&
-      startedAt.toEpochMilliseconds() <= filesChat.lastModified() &&
-      startedAt.toEpochMilliseconds() <= filesAgent.lastModified()
+      startedAt.toEpochMilliseconds() - safeDiffInTime <= filesChat.lastModified() &&
+      startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
 }
 
 private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences, context: Context) {
