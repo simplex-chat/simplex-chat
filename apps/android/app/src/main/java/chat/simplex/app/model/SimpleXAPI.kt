@@ -1137,14 +1137,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   fun isIgnoringBatteryOptimizations(context: Context): Boolean {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
     val powerManager = context.getSystemService(Application.POWER_SERVICE) as PowerManager
     return powerManager.isIgnoringBatteryOptimizations(context.packageName)
   }
 
   private fun askAboutIgnoringBatteryOptimization(context: Context) {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-
     Intent().apply {
       @SuppressLint("BatteryLife")
       action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS

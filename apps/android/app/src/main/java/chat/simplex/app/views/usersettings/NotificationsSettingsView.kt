@@ -3,6 +3,7 @@ package chat.simplex.app.views.usersettings
 import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
+import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
@@ -24,8 +25,11 @@ import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
 import kotlin.collections.ArrayList
 
-enum class NotificationsMode(val requiresIgnoringBattery: Boolean) {
-  OFF(false), PERIODIC(false), SERVICE(true), /*INSTANT(false) - for Firebase notifications */;
+enum class NotificationsMode(private val requiresIgnoringBatterySinceSdk: Int) {
+  OFF(Int.MAX_VALUE), PERIODIC(Build.VERSION_CODES.M), SERVICE(Build.VERSION_CODES.S), /*INSTANT(Int.MAX_VALUE) - for Firebase notifications */;
+
+  val requiresIgnoringBattery
+    get() = requiresIgnoringBatterySinceSdk <= Build.VERSION.SDK_INT
 
   companion object {
     val default: NotificationsMode = SERVICE
