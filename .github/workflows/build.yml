@@ -50,17 +50,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
-            cache_path: ~/.stack
+            cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
           - os: ubuntu-18.04
-            cache_path: ~/.stack
+            cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-18_04-x86-64
           - os: macos-latest
-            cache_path: ~/.stack
+            cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
-          - os: windows-latest
-            cache_path: C:/sr
-            asset_name: simplex-chat-windows-x86-64
+          # - os: windows-latest
+          #   cache_path: C:/sr
+          #   asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -69,56 +69,48 @@ jobs:
         uses: haskell/actions/setup@v1
         with:
           ghc-version: "8.10.7"
-          enable-stack: true
-          stack-version: "latest"
+          cabal-version: "latest"
 
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
-          path: ${{ matrix.cache_path }}
-          key: ${{ matrix.os }}-${{ hashFiles('stack.yaml') }}
+          path: |
+            ${{ matrix.cache_path }}
+            dist-newstyle
+          key: ${{ matrix.os }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       # / Unix
 
-      - name: Unix build
-        id: unix_build
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
+      - name: Prepare cabal.project.local for Mac
+        if: matrix.os == 'macos-latest'
         shell: bash
         run: |
-          stack build --test
-          echo "::set-output name=local_install_root::$(stack path --local-install-root)"
+          echo "ignore-project: False" >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/openssl@3/include" >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/openssl@3/lib" >> cabal.project.local
+          echo "    flags: +openssl" >> cabal.project.local
+
+      - name: Unix build
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: cabal build --enable-tests
+
+      - name: Unix test
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: cabal test --test-show-details=streaming
 
       - name: Unix upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.unix_build.outputs.local_install_root }}/bin/simplex-chat
+          file: ~/.cabal/bin/simplex-chat
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 
       # Unix /
-
-      # / Mac
-
-      - name: Mac build
-        id: mac_build
-        if: matrix.os == 'macos-latest'
-        shell: bash
-        run: |
-          stack build --test --extra-include-dirs=/usr/local/opt/openssl@1.1/include --extra-lib-dirs=/usr/local/opt/openssl@1.1/lib
-          echo "::set-output name=local_install_root::$(stack path --local-install-root)"
-
-      - name: Unix upload binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.unix_build.outputs.local_install_root }}/bin/simplex-chat
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
-
-      # Mac /
 
       # / Windows
 
@@ -127,23 +119,23 @@ jobs:
       # * So we're running a separate set of actions for Windows build
 
       # TODO run tests on Windows
-      - name: Windows build
-        id: windows_build
-        if: matrix.os == 'windows-latest'
-        shell: cmd
-        run: |
-          stack build
-          stack path --local-install-root > tmp_file
-          set /p local_install_root= < tmp_file
-          echo ::set-output name=local_install_root::%local_install_root%
+      # - name: Windows build
+      #   id: windows_build
+      #   if: matrix.os == 'windows-latest'
+      #   shell: cmd
+      #   run: |
+      #     stack build
+      #     stack path --local-install-root > tmp_file
+      #     set /p local_install_root= < tmp_file
+      #     echo ::set-output name=local_install_root::%local_install_root%
 
-      - name: Windows upload binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ steps.windows_build.outputs.local_install_root }}\bin\simplex-chat.exe
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
+      # - name: Windows upload binary to release
+      #   if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: ${{ steps.windows_build.outputs.local_install_root }}\bin\simplex-chat.exe
+      #     asset_name: ${{ matrix.asset_name }}
+      #     tag: ${{ github.ref }}
 
       # Windows /
