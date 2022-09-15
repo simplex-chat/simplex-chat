@@ -175,9 +175,9 @@ private fun runChat(
 }
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+  val startedAt = prefs.encryptionStartedAt.get() ?: return false
   /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
   val safeDiffInTime = 1500L
-  val startedAt = prefs.encryptionStartedAt.get() ?: return false
   val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
   val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
   return filesChat.exists() &&
