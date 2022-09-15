@@ -53,6 +53,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
     if (res.second != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: ${res.second}")
     } else if (startChat) {
+      // If we migrated successfully means previous re-encryption process on database level finished successfully too
+      if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
       withApi {
         val user = chatController.apiGetActiveUser()
         if (user == null) {

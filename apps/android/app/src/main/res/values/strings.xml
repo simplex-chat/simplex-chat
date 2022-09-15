@@ -604,6 +604,9 @@
   <string name="enter_passphrase">Enter passphrase…</string>
   <string name="save_passphrase_and_open_chat">Save passphrase and open chat</string>
   <string name="open_chat">Open chat</string>
+  <string name="database_backup_can_be_restored">Previous attempt to change passphrase didn\'t end successfully. You can restore the database from a backup.</string>
+  <string name="restore_database">Restore database</string>
+  <string name="database_restore_error">Restore database error</string>
 
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>

@@ -2,6 +2,7 @@ package chat.simplex.app.views.database
 
 import SectionSpacer
 import SectionView
+import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
@@ -20,6 +22,10 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import kotlin.io.path.Path
 
 @Composable
 fun DatabaseErrorView(
@@ -30,6 +36,8 @@ fun DatabaseErrorView(
   val dbKey = remember { mutableStateOf("") }
   var storedDBKey by remember { mutableStateOf(DatabaseUtils.getDatabaseKey()) }
   var useKeychain by remember { mutableStateOf(appPreferences.storeDBPassphrase.get()) }
+  val context = LocalContext.current
+  val restoreDbFromBackup = remember { mutableStateOf(shouldShowRestoreDbButton(appPreferences, context)) }
   val saveAndRunChatOnClick: () -> Unit = {
     DatabaseUtils.setDatabaseKey(dbKey.value)
     storedDBKey = dbKey.value
@@ -102,6 +110,11 @@ fun DatabaseErrorView(
           null -> {
           }
         }
+        if (restoreDbFromBackup.value) {
+          SectionSpacer()
+          Text(generalGetString(R.string.database_backup_can_be_restored))
+          RestoreDbButton(true) { restoreDb(restoreDbFromBackup, appPreferences, context) }
+        }
       }
     }
   }
@@ -160,6 +173,29 @@ private fun runChat(
   }
 }
 
+private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+  val startedAt = prefs.encryptionStartedAt.get() ?: return false
+  val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
+  val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
+  return filesChat.exists() &&
+      filesAgent.exists() &&
+      startedAt.toEpochMilliseconds() <= filesChat.lastModified() &&
+      startedAt.toEpochMilliseconds() <= filesAgent.lastModified()
+}
+
+private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPreferences, context: Context) {
+  val filesChatBase = context.dataDir.absolutePath + File.separator + "files_chat.db"
+  val filesAgentBase = context.dataDir.absolutePath + File.separator + "files_agent.db"
+  try {
+    Files.move(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
+    Files.move(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)
+    restoreDbFromBackup.value = false
+    prefs.encryptionStartedAt.set(null)
+  } catch (e: Exception) {
+    AlertManager.shared.showAlertMsg(generalGetString(R.string.database_restore_error), e.stackTraceToString())
+  }
+}
+
 @Composable
 private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onClick: (() -> Unit)? = null) {
   DatabaseKeyField(
@@ -184,6 +220,13 @@ private fun ColumnScope.SaveAndOpenButton(enabled: Boolean, onClick: () -> Unit)
 private fun ColumnScope.OpenChatButton(enabled: Boolean, onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
     Text(generalGetString(R.string.open_chat))
+  }
+}
+
+@Composable
+private fun ColumnScope.RestoreDbButton(enabled: Boolean, onClick: () -> Unit) {
+  TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
+    Text(generalGetString(R.string.restore_database), color = MaterialTheme.colors.error)
   }
 }
 
