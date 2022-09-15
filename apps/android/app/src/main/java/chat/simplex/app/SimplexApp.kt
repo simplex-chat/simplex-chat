@@ -59,6 +59,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
           chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
         } else {
           chatController.startChat(user)
+          chatController.showBackgroundServiceNoticeIfNeeded()
+          if (appPreferences.notificationsMode.get() == NotificationsMode.SERVICE.name)
+            SimplexService.start(applicationContext)
         }
       }
     }
@@ -86,16 +89,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     Log.d(TAG, "onStateChanged: $event")
     withApi {
       when (event) {
-        Lifecycle.Event.ON_RESUME -> CoroutineScope(Dispatchers.Default).launch {
-          /**
-           * When the app starts [chatModel.onboardingStage] is null, because [Lifecycle.Event.ON_RESUME] called sooner than chat is
-           * able to start. This is why [withTimeoutOrNull] waits for the moment when the value is not null and runs required steps afterward
-           * */
-          withTimeoutOrNull(10_000) {
-            while (isActive && chatModel.onboardingStage.value == null) {
-              delay(1000)
-            }
-          }
+        Lifecycle.Event.ON_RESUME -> {
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()
           }
