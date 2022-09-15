@@ -8,6 +8,7 @@ import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -79,7 +80,7 @@ fun CIImageView(
             )
           CIFileStatus.RcvInvitation ->
             Icon(
-              Icons.Filled.Download,
+              Icons.Outlined.ArrowDownward,
               stringResource(R.string.icon_descr_asked_to_receive),
               Modifier.fillMaxSize(),
               tint = Color.White
