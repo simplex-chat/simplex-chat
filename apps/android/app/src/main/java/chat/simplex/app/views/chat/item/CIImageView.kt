@@ -7,6 +7,8 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -76,6 +78,13 @@ fun CIImageView(
               color = Color.White,
               strokeWidth = 2.dp
             )
+          CIFileStatus.RcvInvitation ->
+            Icon(
+              Icons.Outlined.ArrowDownward,
+              stringResource(R.string.icon_descr_asked_to_receive),
+              Modifier.fillMaxSize(),
+              tint = Color.White
+            )
           else -> {}
         }
       }
@@ -116,6 +125,13 @@ fun CIImageView(
     )
   }
 
+  fun fileSizeValid(): Boolean {
+    if (file != null) {
+      return file.fileSize <= MAX_FILE_SIZE
+    }
+    return false
+  }
+
   Box(contentAlignment = Alignment.TopEnd) {
     val context = LocalContext.current
     val imageBitmap: Bitmap? = getLoadedImage(context, file)
@@ -146,7 +162,14 @@ fun CIImageView(
         if (file != null) {
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
-              receiveFile(file.fileId)
+              if (fileSizeValid()) {
+                receiveFile(file.fileId)
+              } else {
+                AlertManager.shared.showAlertMsg(
+                  generalGetString(R.string.large_file),
+                  String.format(generalGetString(R.string.contact_sent_large_file), formatBytes(MAX_FILE_SIZE))
+                )
+              }
             CIFileStatus.RcvAccepted ->
               AlertManager.shared.showAlertMsg(
                 generalGetString(R.string.waiting_for_image),
