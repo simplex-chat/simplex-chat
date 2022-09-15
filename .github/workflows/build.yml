@@ -93,7 +93,7 @@ jobs:
       - name: Unix build
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: cabal build --enable-tests
+        run: cabal build --enable-tests --flags="direct-sqlcipher openssl"
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
