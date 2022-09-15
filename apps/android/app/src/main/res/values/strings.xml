@@ -606,6 +606,9 @@
   <string name="open_chat">Open chat</string>
   <string name="database_backup_can_be_restored">The attempt to change database passphrase was not completed.</string>
   <string name="restore_database">Restore database backup</string>
+  <string name="restore_database_alert_title">Restore the database?</string>
+  <string name="restore_database_alert_desc">This action can not be undone. You will need to specify your old passphrase that was used to encrypt a database from this backup.</string>
+  <string name="restore_database_alert_confirm">Restore</string>
   <string name="database_restore_error">Restore database error</string>
 
   <!-- ChatModel.chatRunning interactions -->
