@@ -99,18 +99,15 @@ jobs:
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
 
-      - run: cat cabal.project.local
-
       - name: Unix build
         if: matrix.os != 'windows-latest'
         shell: bash
         run: cabal build --enable-tests
-        # run: cabal build --enable-tests --flags="direct-sqlcipher openssl"
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: cabal test --test-show-details=streaming
+        run: cabal test --test-show-details=direct
 
       - name: Unix upload binary to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
