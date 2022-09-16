@@ -113,7 +113,7 @@ chatTests = do
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
-    it "start/stop/export/import chat" testMaintenanceMode
+    xit "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
   describe "mute/unmute messages" $ do
