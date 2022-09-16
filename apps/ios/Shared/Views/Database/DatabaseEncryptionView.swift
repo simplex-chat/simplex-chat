@@ -133,7 +133,10 @@ struct DatabaseEncryptionView: View {
         progressIndicator = true
         Task {
             do {
+                encryptionStartedDefault.set(true)
+                encryptionStartedAtDefault.set(Date.now)
                 try await apiStorageEncryption(currentKey: currentKey, newKey: newKey)
+                encryptionStartedDefault.set(false)
                 initialRandomDBPassphraseGroupDefault.set(false)
                 if useKeychain {
                     if setDatabaseKey(newKey) {

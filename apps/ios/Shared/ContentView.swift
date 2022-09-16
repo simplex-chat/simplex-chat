@@ -23,7 +23,7 @@ struct ContentView: View {
             if prefPerformLA && userAuthorized != true {
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
-                DatabaseErrorView(status: status)
+                DatabaseErrorView(status: status, restoreDbFromBackup: shouldShowRestoreDbButton())
             } else if !chatModel.v3DBMigration.startChat {
                 MigrateToAppGroupView()
             } else if let step = chatModel.onboardingStage  {
@@ -41,6 +41,22 @@ struct ContentView: View {
         .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
     }
+
+    private func shouldShowRestoreDbButton() -> Bool {
+        return true
+    }
+
+//    private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
+//      val startedAt = prefs.encryptionStartedAt.get() ?: return false
+//      // Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file
+//      val safeDiffInTime = 10_000L
+//      val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
+//      val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
+//      return filesChat.exists() &&
+//          filesAgent.exists() &&
+//          startedAt.toEpochMilliseconds() - safeDiffInTime <= filesChat.lastModified() &&
+//          startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
+//    }
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
