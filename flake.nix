@@ -26,11 +26,10 @@
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [{
           packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-          packages.entropy.patches = [ ./scripts/nix/entropy.patch ];
         }
         ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
           packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })];
+        })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
