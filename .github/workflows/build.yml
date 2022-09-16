@@ -89,11 +89,23 @@ jobs:
           echo "package direct-sqlcipher"                                   >> cabal.project.local
           echo "    extra-include-dirs: /usr/local/opt/openssl@1.1/include" >> cabal.project.local
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
+          echo "    flags: +openssl"                                        >> cabal.project.local
+
+      - name: Prepare cabal.project.local for Mac
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-20.04'
+        shell: bash
+        run: |
+          echo "ignore-project: False"    >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl"      >> cabal.project.local
+
+      - run: cat cabal.project.local
 
       - name: Unix build
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: cabal build --enable-tests --flags="direct-sqlcipher openssl"
+        run: cabal build --enable-tests
+        # run: cabal build --enable-tests --flags="direct-sqlcipher openssl"
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
