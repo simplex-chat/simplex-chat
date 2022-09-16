@@ -9,7 +9,7 @@ m20220909_commands :: Query
 m20220909_commands =
   [sql|
 CREATE TABLE commands (
-  command_id INTEGER PRIMARY KEY, -- used as ACorrId
+  command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
   connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
   command_function TEXT NOT NULL,
   command_status TEXT NOT NULL,
