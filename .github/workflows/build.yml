@@ -100,9 +100,12 @@ jobs:
           echo "    flags: +openssl"      >> cabal.project.local
 
       - name: Unix build
+        id: unix_build
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: cabal build --enable-tests
+        run: |
+          cabal build --enable-tests
+          echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
@@ -114,7 +117,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: /usr/local/bin/simplex-chat
+          file: ${{ steps.unix_build.outputs.bin_path }}
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 
