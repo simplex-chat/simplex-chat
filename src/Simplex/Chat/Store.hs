@@ -179,6 +179,7 @@ module Simplex.Chat.Store
     getCalls,
     createCommand,
     setCommandConnId,
+    deleteCommand,
     updateCommandStatus,
     getCommandDataByCorrId,
     setConnConnReqInv,
@@ -3918,6 +3919,10 @@ setCommandConnId db User {userId} cmdId connId = do
       WHERE user_id = ? AND command_id = ?
     |]
     (connId, updatedAt, userId, cmdId)
+
+deleteCommand :: DB.Connection -> User -> CommandId -> IO ()
+deleteCommand db User {userId} cmdId =
+  DB.execute db "DELETE FROM commands WHERE user_id = ? AND command_id = ?" (userId, cmdId)
 
 updateCommandStatus :: DB.Connection -> User -> CommandId -> CommandStatus -> IO ()
 updateCommandStatus db User {userId} cmdId status = do

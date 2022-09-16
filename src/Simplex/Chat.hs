@@ -1385,7 +1385,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
-        ERR err -> toView . CRChatError $ ChatErrorAgent err
+        ERR err -> do
+          toView . CRChatError $ ChatErrorAgent err
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
@@ -1485,7 +1487,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           forM_ chatItemId_ $ \chatItemId -> do
             chatItem <- withStore $ \db -> updateDirectChatItemStatus db userId contactId chatItemId (agentErrToItemStatus err)
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
-        ERR err -> toView . CRChatError $ ChatErrorAgent err
+        ERR err -> do
+          toView . CRChatError $ ChatErrorAgent err
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1599,7 +1603,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
-      ERR err -> toView . CRChatError $ ChatErrorAgent err
+      ERR err -> do
+        toView . CRChatError $ ChatErrorAgent err
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
 
@@ -1641,7 +1647,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         OK ->
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        ERR err -> toView . CRChatError $ ChatErrorAgent err
+        ERR err -> do
+          toView . CRChatError $ ChatErrorAgent err
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1701,12 +1709,14 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err
-        ERR err -> toView . CRChatError $ ChatErrorAgent err
+        ERR err -> do
+          toView . CRChatError $ ChatErrorAgent err
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
     processUserContactRequest :: ACommand 'Agent -> Connection -> UserContact -> m ()
-    processUserContactRequest agentMsg _conn UserContact {userContactLinkId} = case agentMsg of
+    processUserContactRequest agentMsg conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
         case chatMsgEvent of
@@ -1715,7 +1725,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
-      ERR err -> toView . CRChatError $ ChatErrorAgent err
+      ERR err -> do
+        toView . CRChatError $ ChatErrorAgent err
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
       where
@@ -1738,10 +1750,15 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
           | connId == cmdConnId' && agentMsgTag == commandExpectedResponse cmdFunction -> do
-            withStore' $ \db -> updateCommandStatus db user cmdId CSCompleted
+            withStore' $ \db -> deleteCommand db user cmdId
             action cmdData
-          | otherwise -> throwChatError . CEAgentCommandError $ "not matching connection id or unexpected response, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", cmdData " <> show cmdData
-        _ -> throwChatError . CEAgentCommandError $ "no connection or connection id, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", corrId = " <> commandId corrId
+          | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
+        Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
+        Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
+      where
+        err cmdId msg = do
+          withStore' $ \db -> updateCommandStatus db user cmdId CSError
+          throwChatError . CEAgentCommandError $ msg
 
     createAckCmd :: Connection -> m CommandId
     createAckCmd Connection {connId} = do
