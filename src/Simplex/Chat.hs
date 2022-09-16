@@ -1752,11 +1752,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           | connId == cmdConnId' && agentMsgTag == commandExpectedResponse cmdFunction -> do
             withStore' $ \db -> deleteCommand db user cmdId
             action cmdData
-          | otherwise ->
-            err cmdId $ "not matching connection id or unexpected response, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", cmdData = " <> show cmdData
-        Just cmdData@CommandData {cmdId, cmdConnId = Nothing} ->
-          err cmdId $ "no command connection id, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", cmdData = " <> show cmdData
-        Nothing -> throwChatError . CEAgentCommandError $ "command not found, details - connId = " <> show connId <> ", agentMsgTag = " <> show agentMsgTag <> ", corrId = " <> commandId corrId
+          | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
+        Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
+        Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
       where
         err cmdId msg = do
           withStore' $ \db -> updateCommandStatus db user cmdId CSError
