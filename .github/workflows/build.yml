@@ -114,7 +114,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ~/.cabal/bin/simplex-chat
+          file: /usr/local/bin/simplex-chat
           asset_name: ${{ matrix.asset_name }}
           tag: ${{ github.ref }}
 

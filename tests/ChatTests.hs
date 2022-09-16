@@ -112,8 +112,8 @@ chatTests = do
     xit "send and receive file to group, fully asynchronous" testAsyncGroupFileTransfer
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
-  describe "maintenance mode" $ do
-    xit "start/stop/export/import chat" testMaintenanceMode
+  xdescribe "maintenance mode" $ do
+    it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
   describe "mute/unmute messages" $ do
