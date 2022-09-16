@@ -203,12 +203,23 @@ fun ComposeView(
       val bitmap = ImageDecoder.decodeBitmap(source)
       if (drawable is AnimatedImageDrawable) {
         // It's a gif or webp
-        chosenAnimImage.value = uri
+        val fileSize = getFileSize(context, uri)
+        if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
+          chosenAnimImage.value = uri
+        } else {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(R.string.large_file),
+            String.format(generalGetString(R.string.maximum_supported_file_size), formatBytes(MAX_FILE_SIZE))
+          )
+        }
       } else {
         chosenImage.value = bitmap
       }
-      val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+
+      if (chosenImage.value != null || chosenAnimImage.value != null) {
+        val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+        composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagePreview))
+      }
     }
   }
   val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
