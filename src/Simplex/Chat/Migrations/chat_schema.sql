@@ -403,7 +403,7 @@ CREATE INDEX idx_chat_items_contacts ON chat_items(
   chat_item_id
 );
 CREATE TABLE commands(
-  command_id INTEGER PRIMARY KEY, -- used as ACorrId
+  command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
   connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
   command_function TEXT NOT NULL,
   command_status TEXT NOT NULL,
@@ -411,3 +411,4 @@ CREATE TABLE commands(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE sqlite_sequence(name,seq);
