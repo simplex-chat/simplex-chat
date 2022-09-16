@@ -1387,7 +1387,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err -- ? updateDirectChatItemStatus
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err
-          -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
@@ -1489,7 +1489,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             toView $ CRChatItemStatusUpdated (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err
-          -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1605,7 +1605,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
       ERR err -> do
         toView . CRChatError $ ChatErrorAgent err
-        -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
 
@@ -1649,7 +1649,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err
-          -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1711,7 +1711,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         MERR _ err -> toView . CRChatError $ ChatErrorAgent err
         ERR err -> do
           toView . CRChatError $ ChatErrorAgent err
-          -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
 
@@ -1727,7 +1727,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       MERR _ err -> toView . CRChatError $ ChatErrorAgent err
       ERR err -> do
         toView . CRChatError $ ChatErrorAgent err
-        -- when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
       where
