@@ -91,7 +91,7 @@ jobs:
           echo "    extra-lib-dirs: /usr/local/opt/openssl@1.1/lib"         >> cabal.project.local
           echo "    flags: +openssl"                                        >> cabal.project.local
 
-      - name: Prepare cabal.project.local for Mac
+      - name: Prepare cabal.project.local for Ubuntu
         if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
         shell: bash
         run: |
