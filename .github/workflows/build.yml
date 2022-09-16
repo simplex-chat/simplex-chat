@@ -92,7 +92,7 @@ jobs:
           echo "    flags: +openssl"                                        >> cabal.project.local
 
       - name: Prepare cabal.project.local for Mac
-        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-18.04'
         shell: bash
         run: |
           echo "ignore-project: False"    >> cabal.project.local
