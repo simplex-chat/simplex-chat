@@ -926,7 +926,8 @@ commandId = unpack
 
 data CommandStatus
   = CSCreated
-  | CSCompleted
+  | CSCompleted -- unused - was replaced with deleteCommand
+  | CSError -- internal command error, e.g. not matching connection id or unexpected response, not related to agent message ERR
   deriving (Show, Generic)
 
 instance FromField CommandStatus where fromField = fromTextField_ textDecode
@@ -937,10 +938,12 @@ instance TextEncoding CommandStatus where
   textDecode = \case
     "created" -> Just CSCreated
     "completed" -> Just CSCompleted
+    "error" -> Just CSError
     _ -> Nothing
   textEncode = \case
     CSCreated -> "created"
     CSCompleted -> "completed"
+    CSError -> "error"
 
 data CommandFunction
   = CFCreateConn
