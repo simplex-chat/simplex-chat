@@ -1749,7 +1749,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-          | connId == cmdConnId' && agentMsgTag == commandExpectedResponse cmdFunction -> do
+          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == ERR_) -> do
             withStore' $ \db -> deleteCommand db user cmdId
             action cmdData
           | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
