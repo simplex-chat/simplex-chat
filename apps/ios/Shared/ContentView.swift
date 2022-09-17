@@ -23,7 +23,7 @@ struct ContentView: View {
             if prefPerformLA && userAuthorized != true {
                 Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
             } else if let status = chatModel.chatDbStatus, status != .ok {
-                DatabaseErrorView(status: status, restoreDbFromBackup: shouldShowRestoreDbButton())
+                DatabaseErrorView(status: status)
             } else if !chatModel.v3DBMigration.startChat {
                 MigrateToAppGroupView()
             } else if let step = chatModel.onboardingStage  {
@@ -40,20 +40,6 @@ struct ContentView: View {
         }
         .onChange(of: doAuthenticate) { _ in if doAuthenticate { runAuthenticate() } }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
-    }
-
-    private func shouldShowRestoreDbButton() -> Bool {
-        if !encryptionStartedDefault.get() { return false }
-        let startedAt = encryptionStartedAtDefault.get()
-        let dbChatBak: URL = getAppDatabasePath().appendingPathComponent("_chat.db.bak")
-        let dbAgentBak: URL = getAppDatabasePath().appendingPathComponent("_agent.db.bak")
-        let fm = FileManager.default
-        return (
-            fm.fileExists(atPath: dbChatBak.path)
-            && fm.fileExists(atPath: dbAgentBak.path)
-            && startedAt <= fileModificationDate(dbChatBak) ?? Date.distantPast
-            && startedAt <= fileModificationDate(dbAgentBak) ?? Date.distantPast
-        )
     }
 
     private func mainView() -> some View {

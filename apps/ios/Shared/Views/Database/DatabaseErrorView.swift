@@ -12,10 +12,10 @@ import SimpleXChat
 struct DatabaseErrorView: View {
     @EnvironmentObject var m: ChatModel
     @State var status: DBMigrationResult
-    @State var restoreDbFromBackup: Bool
     @State private var dbKey = ""
     @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var restoreDbFromBackup = shouldShowRestoreDbButton()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -155,8 +155,24 @@ struct DatabaseErrorView: View {
     }
 }
 
+private func shouldShowRestoreDbButton() -> Bool {
+    if !encryptionStartedDefault.get() { return false }
+    let startedAt = encryptionStartedAtDefault.get()
+    // In case there is a small difference between saved encryptionStartedAt time and modified timestamp on a file
+    let safeDiffInTime = TimeInterval(10)
+    let dbChatBak = getAppDatabasePath().path + "_chat.db.bak"
+    let dbAgentBak = getAppDatabasePath().path + "_agent.db.bak"
+    let fm = FileManager.default
+    return (
+        fm.fileExists(atPath: dbChatBak)
+        && fm.fileExists(atPath: dbAgentBak)
+        && startedAt - safeDiffInTime <= fileModificationDate(dbChatBak) ?? Date.distantPast
+        && startedAt - safeDiffInTime <= fileModificationDate(dbAgentBak) ?? Date.distantPast
+    )
+}
+
 struct DatabaseErrorView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseErrorView(status: .errorNotADatabase(dbFile: "simplex_v1_chat.db"), restoreDbFromBackup: true)
+        DatabaseErrorView(status: .errorNotADatabase(dbFile: "simplex_v1_chat.db"))
     }
 }
