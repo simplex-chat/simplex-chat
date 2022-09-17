@@ -15,6 +15,7 @@ struct DatabaseErrorView: View {
     @State private var dbKey = ""
     @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var showRestoreDbButton = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -25,7 +26,6 @@ struct DatabaseErrorView: View {
                     Text("Database passphrase is different from saved in the keychain.")
                     databaseKeyField(onSubmit: saveAndRunChat)
                     saveAndOpenButton()
-                    Spacer()
                     Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
@@ -37,30 +37,32 @@ struct DatabaseErrorView: View {
                         databaseKeyField(onSubmit: runChat)
                         openChatButton()
                     }
-                    Spacer()
                 }
             case let .error(dbFile, migrationError):
                 Text("Database error")
                     .font(.title)
                 Text("File: \(dbFile)")
                 Text("Error: \(migrationError)")
-                Spacer()
             case .errorKeychain:
                 Text("Keychain error")
                     .font(.title)
                 Text("Cannot access keychain to save database password")
-                Spacer()
             case let .unknown(json):
                 Text("Database error")
                     .font(.title)
                 Text("Unknown database error: \(json)")
-                Spacer()
             case .ok:
                 EmptyView()
             }
+            if showRestoreDbButton {
+                Spacer().frame(height: 10)
+                Text("The attempt to change database passphrase was not completed.")
+                restoreDbButton()
+            }
         }
         .padding()
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .onAppear() { showRestoreDbButton = shouldShowRestoreDbButton() }
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
@@ -116,6 +118,42 @@ struct DatabaseErrorView: View {
             }
         } catch let error {
             logger.error("initializeChat \(responseError(error))")
+        }
+    }
+
+    private func shouldShowRestoreDbButton() -> Bool {
+        if !encryptionStartedDefault.get() { return false }
+        let startedAt = encryptionStartedAtDefault.get()
+        // In case there is a small difference between saved encryptionStartedAt time and last modified timestamp on a file
+        let safeDiffInTime = TimeInterval(10)
+        return hasBackup(newerThan: startedAt - safeDiffInTime)
+    }
+
+    private func restoreDbButton() -> some View {
+        Button() {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Restore database backup?"),
+                message: Text("Please enter the previous password after restoring database backup. This action can not be undone."),
+                primaryButton: .destructive(Text("Restore")) {
+                    restoreDb()
+                },
+                secondaryButton: .cancel()
+            ))
+        } label: {
+            Text("Restore database backup").foregroundColor(.red)
+        }
+    }
+
+    private func restoreDb() {
+        do {
+            try restoreBackup()
+            showRestoreDbButton = false
+            encryptionStartedDefault.set(false)
+        } catch {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Restore database error"),
+                message: Text(error.localizedDescription)
+            ))
         }
     }
 }

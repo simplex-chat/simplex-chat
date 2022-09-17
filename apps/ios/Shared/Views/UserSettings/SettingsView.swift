@@ -26,6 +26,8 @@ let DEFAULT_CHAT_ARCHIVE_NAME = "chatArchiveName"
 let DEFAULT_CHAT_ARCHIVE_TIME = "chatArchiveTime"
 let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
+let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
+let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
@@ -41,6 +43,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_EXPERIMENTAL_CALLS: false,
     DEFAULT_CHAT_V3_DB_MIGRATION: "offer",
     DEFAULT_DEVELOPER_TOOLS: false,
+    DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
@@ -50,6 +53,10 @@ let appDefaults: [String: Any] = [
 private var indent: CGFloat = 36
 
 let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
+
+let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
+
+let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
