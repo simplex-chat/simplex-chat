@@ -148,7 +148,7 @@ struct DatabaseErrorView: View {
                 secondaryButton: .cancel()
             ))
         } label: {
-            Text("Restore database backup").foregroundColor(Color.red)
+            Text("Restore database backup").foregroundColor(.red)
         }
     }
 
