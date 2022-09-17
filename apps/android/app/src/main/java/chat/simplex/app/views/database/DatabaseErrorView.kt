@@ -23,6 +23,7 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.NotificationsMode
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -199,8 +200,8 @@ private fun restoreDb(restoreDbFromBackup: MutableState<Boolean>, prefs: AppPref
   val filesChatBase = context.dataDir.absolutePath + File.separator + "files_chat.db"
   val filesAgentBase = context.dataDir.absolutePath + File.separator + "files_agent.db"
   try {
-    Files.move(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
-    Files.move(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)
+    Files.copy(Path("$filesChatBase.bak"), Path(filesChatBase), StandardCopyOption.REPLACE_EXISTING)
+    Files.copy(Path("$filesAgentBase.bak"), Path(filesAgentBase), StandardCopyOption.REPLACE_EXISTING)
     restoreDbFromBackup.value = false
     prefs.encryptionStartedAt.set(null)
   } catch (e: Exception) {
