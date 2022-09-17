@@ -118,6 +118,8 @@ data ChatCommand
   | APIImportArchive ArchiveConfig
   | APIDeleteStorage
   | APIStorageEncryption DBEncryptionConfig
+  | ExecChatStoreSQL Text
+  | ExecAgentStoreSQL Text
   | APIGetChats {pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems Int
@@ -317,6 +319,7 @@ data ChatResponse
   | CRNtfMessages {connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {connection :: PendingContactConnection}
   | CRContactConnectionDeleted {connection :: PendingContactConnection}
+  | CRSQLResult {rows :: [Text]}
   | CRMessageError {severity :: Text, errorMessage :: Text}
   | CRChatCmdError {chatError :: ChatError}
   | CRChatError {chatError :: ChatError}
