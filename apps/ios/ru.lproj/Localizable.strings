@@ -756,6 +756,9 @@
 "Group will be deleted for all members - this cannot be undone!" = "Группа будет удалена для всех членов - это действие нельзя отменить!";
 
 /* No comment provided by engineer. */
+"Group will be deleted for you - this cannot be undone!" = "Группа будет удалена для вас - это действие нельзя отменить!";
+
+/* No comment provided by engineer. */
 "Help" = "Помощь";
 
 /* No comment provided by engineer. */
@@ -1131,6 +1134,9 @@
 "Please enter correct current passphrase." = "Пожалуйста, введите правильный пароль.";
 
 /* No comment provided by engineer. */
+"Please enter the previous password after restoring database backup. This action can not be undone." = "Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.";
+
+/* No comment provided by engineer. */
 "Please restart the app and migrate the database to enable push notifications." = "Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.";
 
 /* No comment provided by engineer. */
@@ -1231,6 +1237,18 @@
 
 /* No comment provided by engineer. */
 "Restart the app to use imported chat database" = "Перезапустите приложение, чтобы использовать импортированные данные чата.";
+
+/* No comment provided by engineer. */
+"Restore" = "Восстановить";
+
+/* No comment provided by engineer. */
+"Restore database backup" = "Восстановить резервную копию";
+
+/* No comment provided by engineer. */
+"Restore database backup?" = "Восстановить резервную копию?";
+
+/* No comment provided by engineer. */
+"Restore database error" = "Ошибка при восстановлении базы данных";
 
 /* No comment provided by engineer. */
 "Revert" = "Отменить изменения";
@@ -1405,6 +1423,9 @@
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
+
+/* No comment provided by engineer. */
+"The attempt to change database passphrase was not completed." = "Попытка поменять пароль базы данных не была завершена.";
 
 /* No comment provided by engineer. */
 "The connection you accepted will be cancelled!" = "Подтвержденное соединение будет отменено!";
