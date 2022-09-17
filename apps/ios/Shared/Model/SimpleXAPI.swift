@@ -664,7 +664,7 @@ func initializeChat(start: Bool, dbKey: String? = nil) throws {
     (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
-    if encryptionStartedDefault.get() != false {
+    if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
     let _ = getChatCtrl(dbKey)
