@@ -126,15 +126,7 @@ struct DatabaseErrorView: View {
         let startedAt = encryptionStartedAtDefault.get()
         // In case there is a small difference between saved encryptionStartedAt time and last modified timestamp on a file
         let safeDiffInTime = TimeInterval(10)
-        let dbChatBak = getAppDatabasePath().path + "_chat.db.bak"
-        let dbAgentBak = getAppDatabasePath().path + "_agent.db.bak"
-        let fm = FileManager.default
-        return (
-            fm.fileExists(atPath: dbChatBak)
-            && fm.fileExists(atPath: dbAgentBak)
-            && startedAt - safeDiffInTime <= fileModificationDate(dbChatBak) ?? Date.distantPast
-            && startedAt - safeDiffInTime <= fileModificationDate(dbAgentBak) ?? Date.distantPast
-        )
+        return hasBackup(newerThan: startedAt - safeDiffInTime)
     }
 
     private func restoreDbButton() -> some View {
@@ -153,14 +145,8 @@ struct DatabaseErrorView: View {
     }
 
     private func restoreDb() {
-        let dbChatBase = getAppDatabasePath().path + "_chat.db"
-        let dbAgentBase = getAppDatabasePath().path + "_agent.db"
         do {
-            let fm = FileManager.default
-            try fm.removeItem(atPath: dbChatBase)
-            try fm.copyItem(atPath: "\(dbChatBase).bak", toPath: dbChatBase)
-            try fm.removeItem(atPath: dbAgentBase)
-            try fm.copyItem(atPath: "\(dbAgentBase).bak", toPath: dbAgentBase)
+            try restoreBackup()
             showRestoreDbButton = false
             encryptionStartedDefault.set(false)
         } catch {

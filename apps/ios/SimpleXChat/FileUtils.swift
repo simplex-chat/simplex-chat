@@ -17,6 +17,14 @@ public let maxImageSize: Int64 = 236700
 
 public let maxFileSize: Int64 = 8000000
 
+private let chatDbSuffix: String = "_chat.db"
+
+private let agentDbSuffix: String = "_agent.db"
+
+private let chatDbBakSuffix: String = "_chat.db.bak"
+
+private let agentDbBakSuffix: String = "_agent.db.bak"
+
 public func getDocumentsDirectory() -> URL {
     FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
 }
@@ -44,13 +52,35 @@ public func getAppDatabasePath() -> URL {
     : getLegacyDatabasePath()
 }
 
-public func fileModificationDate(_ path: String) -> Date? {
+func fileModificationDate(_ path: String) -> Date? {
     do {
         let attr = try FileManager.default.attributesOfItem(atPath: path)
         return attr[FileAttributeKey.modificationDate] as? Date
     } catch {
         return nil
     }
+}
+
+public func hasBackup(newerThan: Date) -> Bool {
+    let dbChatBak = getAppDatabasePath().path + chatDbBakSuffix
+    let dbAgentBak = getAppDatabasePath().path + agentDbBakSuffix
+    let fm = FileManager.default
+    return (
+        fm.fileExists(atPath: dbChatBak)
+        && fm.fileExists(atPath: dbAgentBak)
+        && newerThan <= fileModificationDate(dbChatBak) ?? Date.distantPast
+        && newerThan <= fileModificationDate(dbAgentBak) ?? Date.distantPast
+    )
+}
+
+public func restoreBackup() throws {
+    let dbChat = getAppDatabasePath().path
+    let dbAgent = getAppDatabasePath().path
+    let fm = FileManager.default
+    try fm.removeItem(atPath: dbChat + chatDbSuffix)
+    try fm.copyItem(atPath: dbChat + chatDbBakSuffix, toPath: dbChat + chatDbSuffix)
+    try fm.removeItem(atPath: dbAgent + agentDbSuffix)
+    try fm.copyItem(atPath: dbAgent + agentDbBakSuffix, toPath: dbAgent + agentDbSuffix)
 }
 
 public func hasLegacyDatabase() -> Bool {
@@ -63,18 +93,18 @@ public func hasDatabase() -> Bool {
 
 func hasDatabaseAtPath(_ dbPath: URL) -> Bool {
     let fm = FileManager.default
-    return fm.isReadableFile(atPath: dbPath.path + "_agent.db") &&
-           fm.isReadableFile(atPath: dbPath.path + "_chat.db")
+    return fm.isReadableFile(atPath: dbPath.path + agentDbSuffix) &&
+           fm.isReadableFile(atPath: dbPath.path + chatDbSuffix)
 }
 
 public func removeLegacyDatabaseAndFiles() -> Bool {
     let dbPath = getLegacyDatabasePath()
     let appFiles = getDocumentsDirectory().appendingPathComponent("app_files", isDirectory: true)
     let fm = FileManager.default
-    let r1 = nil != (try? fm.removeItem(atPath: dbPath.path + "_agent.db"))
-    let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + "_chat.db"))
-    try? fm.removeItem(atPath: dbPath.path + "_agent.db.bak")
-    try? fm.removeItem(atPath: dbPath.path + "_chat.db.bak")
+    let r1 = nil != (try? fm.removeItem(atPath: dbPath.path + agentDbSuffix))
+    let r2 = nil != (try? fm.removeItem(atPath: dbPath.path + chatDbSuffix))
+    try? fm.removeItem(atPath: dbPath.path + agentDbBakSuffix)
+    try? fm.removeItem(atPath: dbPath.path + chatDbBakSuffix)
     try? fm.removeItem(at: appFiles)
     return r1 && r2
 }
