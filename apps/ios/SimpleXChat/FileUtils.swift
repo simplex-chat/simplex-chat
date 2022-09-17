@@ -44,6 +44,15 @@ public func getAppDatabasePath() -> URL {
     : getLegacyDatabasePath()
 }
 
+public func fileModificationDate(_ url: URL) -> Date? {
+    do {
+        let attr = try FileManager.default.attributesOfItem(atPath: url.path)
+        return attr[FileAttributeKey.modificationDate] as? Date
+    } catch {
+        return nil
+    }
+}
+
 public func hasLegacyDatabase() -> Bool {
     hasDatabaseAtPath(getLegacyDatabasePath())
 }

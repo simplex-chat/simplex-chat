@@ -184,7 +184,6 @@ private fun runChat(
 }
 
 private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
-  return true
   val startedAt = prefs.encryptionStartedAt.get() ?: return false
   /** Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file */
   val safeDiffInTime = 10_000L

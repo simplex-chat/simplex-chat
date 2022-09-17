@@ -26,7 +26,6 @@ struct DatabaseErrorView: View {
                     Text("Database passphrase is different from saved in the keychain.")
                     databaseKeyField(onSubmit: saveAndRunChat)
                     saveAndOpenButton()
-                    Spacer()
                     Text("File: \(dbFile)")
                 } else {
                     Text("Encrypted database").font(.title)
@@ -38,35 +37,31 @@ struct DatabaseErrorView: View {
                         databaseKeyField(onSubmit: runChat)
                         openChatButton()
                     }
-                    Spacer()
                 }
             case let .error(dbFile, migrationError):
                 Text("Database error")
                     .font(.title)
                 Text("File: \(dbFile)")
                 Text("Error: \(migrationError)")
-                Spacer()
             case .errorKeychain:
                 Text("Keychain error")
                     .font(.title)
                 Text("Cannot access keychain to save database password")
-                Spacer()
             case let .unknown(json):
                 Text("Database error")
                     .font(.title)
                 Text("Unknown database error: \(json)")
-                Spacer()
             case .ok:
                 EmptyView()
             }
             if restoreDbFromBackup {
+                Spacer().frame(height: 10)
                 Text("The attempt to change database passphrase was not completed.")
-                Spacer()
                 restoreDbButton()
             }
         }
         .padding()
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .topLeading)
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
@@ -141,14 +136,14 @@ struct DatabaseErrorView: View {
     }
 
     private func restoreDb() {
-        let filesChatBase = getAppDatabasePath().path + "_chat.db"
-        let filesAgentBase = getAppDatabasePath().path + "_agent.db"
+        let dbChatBase = getAppDatabasePath().path + "_chat.db"
+        let dbAgentBase = getAppDatabasePath().path + "_agent.db"
         do {
             let fm = FileManager.default
-            try fm.removeItem(atPath: filesChatBase)
-            try fm.copyItem(atPath: "\(filesChatBase).bak", toPath: filesChatBase)
-            try fm.removeItem(atPath: filesAgentBase)
-            try fm.copyItem(atPath: "\(filesAgentBase).bak", toPath: filesAgentBase)
+            try fm.removeItem(atPath: dbChatBase)
+            try fm.copyItem(atPath: "\(dbChatBase).bak", toPath: dbChatBase)
+            try fm.removeItem(atPath: dbAgentBase)
+            try fm.copyItem(atPath: "\(dbAgentBase).bak", toPath: dbAgentBase)
             restoreDbFromBackup = false
             encryptionStartedDefault.set(false)
         } catch {

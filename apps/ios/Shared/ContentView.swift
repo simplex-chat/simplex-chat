@@ -43,20 +43,18 @@ struct ContentView: View {
     }
 
     private func shouldShowRestoreDbButton() -> Bool {
-        return true
+        if !encryptionStartedDefault.get() { return false }
+        let startedAt = encryptionStartedAtDefault.get()
+        let dbChatBak: URL = getAppDatabasePath().appendingPathComponent("_chat.db.bak")
+        let dbAgentBak: URL = getAppDatabasePath().appendingPathComponent("_agent.db.bak")
+        let fm = FileManager.default
+        return (
+            fm.fileExists(atPath: dbChatBak.path)
+            && fm.fileExists(atPath: dbAgentBak.path)
+            && startedAt <= fileModificationDate(dbChatBak) ?? Date.distantPast
+            && startedAt <= fileModificationDate(dbAgentBak) ?? Date.distantPast
+        )
     }
-
-//    private fun shouldShowRestoreDbButton(prefs: AppPreferences, context: Context): Boolean {
-//      val startedAt = prefs.encryptionStartedAt.get() ?: return false
-//      // Just in case there is any small difference between reported Java's [Clock.System.now] and Linux's time on a file
-//      val safeDiffInTime = 10_000L
-//      val filesChat = File(context.dataDir.absolutePath + File.separator + "files_chat.db.bak")
-//      val filesAgent = File(context.dataDir.absolutePath + File.separator + "files_agent.db.bak")
-//      return filesChat.exists() &&
-//          filesAgent.exists() &&
-//          startedAt.toEpochMilliseconds() - safeDiffInTime <= filesChat.lastModified() &&
-//          startedAt.toEpochMilliseconds() - safeDiffInTime <= filesAgent.lastModified()
-//    }
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
