@@ -61,26 +61,30 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
-public func hasBackup(newerThan: Date) -> Bool {
-    let chatDbBak = getAppDatabasePath().path + CHAT_DB_BAK
-    let agentDbBak = getAppDatabasePath().path + AGENT_DB_BAK
+public func hasBackup(newerThan date: Date) -> Bool {
+    let dbPath = getAppDatabasePath().path
+    return hasBackupFile(dbPath + AGENT_DB_BAK, newerThan: date)
+        && hasBackupFile(dbPath + CHAT_DB_BAK, newerThan: date)
+}
+
+private func hasBackupFile(_ path: String, newerThan date: Date) -> Bool {
     let fm = FileManager.default
-    return (
-        fm.fileExists(atPath: chatDbBak)
-        && fm.fileExists(atPath: agentDbBak)
-        && newerThan <= fileModificationDate(chatDbBak) ?? Date.distantPast
-        && newerThan <= fileModificationDate(agentDbBak) ?? Date.distantPast
-    )
+    return fm.fileExists(atPath: path)
+            && date <= (fileModificationDate(path) ?? Date.distantPast)
 }
 
 public func restoreBackup() throws {
-    let chatDbPrefix = getAppDatabasePath().path
-    let agentDbPrefix = getAppDatabasePath().path
+    let dbPath = getAppDatabasePath().path
+    try restoreBackupFile(fromPath: dbPath + AGENT_DB_BAK, toPath: dbPath + AGENT_DB)
+    try restoreBackupFile(fromPath: dbPath + CHAT_DB_BAK, toPath: dbPath + CHAT_DB)
+}
+
+private func restoreBackupFile(fromPath: String, toPath: String) throws {
     let fm = FileManager.default
-    try fm.removeItem(atPath: chatDbPrefix + CHAT_DB)
-    try fm.copyItem(atPath: chatDbPrefix + CHAT_DB_BAK, toPath: chatDbPrefix + CHAT_DB)
-    try fm.removeItem(atPath: agentDbPrefix + AGENT_DB)
-    try fm.copyItem(atPath: agentDbPrefix + AGENT_DB_BAK, toPath: agentDbPrefix + AGENT_DB)
+    if fm.fileExists(atPath: toPath) {
+        try fm.removeItem(atPath: toPath)
+    }
+    try fm.copyItem(atPath: fromPath, toPath: toPath)
 }
 
 public func hasLegacyDatabase() -> Bool {
