@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -1076,6 +1076,11 @@
         <target>Группа будет удалена для всех членов - это действие нельзя отменить!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
+        <source>Group will be deleted for you - this cannot be undone!</source>
+        <target>Группа будет удалена для вас - это действие нельзя отменить!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
         <source>Help</source>
         <target>Помощь</target>
@@ -1608,6 +1613,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Пожалуйста, введите правильный пароль.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please enter the previous password after restoring database backup. This action can not be undone." xml:space="preserve">
+        <source>Please enter the previous password after restoring database backup. This action can not be undone.</source>
+        <target>Введите предыдущий пароль после восстановления резервной копии. Это действие нельзя отменить.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
         <target>Пожалуйста, перезапустите приложение и переместите данные чата, чтобы включить доставку уведомлений.</target>
@@ -1746,6 +1756,26 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Restart the app to use imported chat database" xml:space="preserve">
         <source>Restart the app to use imported chat database</source>
         <target>Перезапустите приложение, чтобы использовать импортированные данные чата.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore" xml:space="preserve">
+        <source>Restore</source>
+        <target>Восстановить</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore database backup" xml:space="preserve">
+        <source>Restore database backup</source>
+        <target>Восстановить резервную копию</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore database backup?" xml:space="preserve">
+        <source>Restore database backup?</source>
+        <target>Восстановить резервную копию?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Restore database error" xml:space="preserve">
+        <source>Restore database error</source>
+        <target>Ошибка при восстановлении базы данных</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Revert" xml:space="preserve">
@@ -2016,6 +2046,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Приложение может посылать вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
+        <source>The attempt to change database passphrase was not completed.</source>
+        <target>Попытка поменять пароль базы данных не была завершена.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
@@ -2960,7 +2995,7 @@ SimpleX серверы не могут получить доступ к ваше
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -2992,7 +3027,7 @@ SimpleX серверы не могут получить доступ к ваше
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.4.1" build-num="13F100"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
