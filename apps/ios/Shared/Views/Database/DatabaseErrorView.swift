@@ -15,7 +15,7 @@ struct DatabaseErrorView: View {
     @State private var dbKey = ""
     @State private var storedDBKey = getDatabaseKey()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
-    @State private var restoreDbFromBackup = false
+    @State private var showRestoreDbButton = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -54,7 +54,7 @@ struct DatabaseErrorView: View {
             case .ok:
                 EmptyView()
             }
-            if restoreDbFromBackup {
+            if showRestoreDbButton {
                 Spacer().frame(height: 10)
                 Text("The attempt to change database passphrase was not completed.")
                 restoreDbButton()
@@ -62,7 +62,7 @@ struct DatabaseErrorView: View {
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .topLeading)
-        .onAppear() { restoreDbFromBackup = shouldShowRestoreDbButton() }
+        .onAppear() { showRestoreDbButton = shouldShowRestoreDbButton() }
     }
 
     private func databaseKeyField(onSubmit: @escaping () -> Void) -> some View {
@@ -124,7 +124,7 @@ struct DatabaseErrorView: View {
     private func shouldShowRestoreDbButton() -> Bool {
         if !encryptionStartedDefault.get() { return false }
         let startedAt = encryptionStartedAtDefault.get()
-        // In case there is a small difference between saved encryptionStartedAt time and modified timestamp on a file
+        // In case there is a small difference between saved encryptionStartedAt time and last modified timestamp on a file
         let safeDiffInTime = TimeInterval(10)
         let dbChatBak = getAppDatabasePath().path + "_chat.db.bak"
         let dbAgentBak = getAppDatabasePath().path + "_agent.db.bak"
@@ -161,7 +161,7 @@ struct DatabaseErrorView: View {
             try fm.copyItem(atPath: "\(dbChatBase).bak", toPath: dbChatBase)
             try fm.removeItem(atPath: dbAgentBase)
             try fm.copyItem(atPath: "\(dbAgentBase).bak", toPath: dbAgentBase)
-            restoreDbFromBackup = false
+            showRestoreDbButton = false
             encryptionStartedDefault.set(false)
         } catch {
             AlertManager.shared.showAlert(Alert(
