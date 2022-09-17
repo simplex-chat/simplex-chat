@@ -52,7 +52,11 @@ let appDefaults: [String: Any] = [
 
 private var indent: CGFloat = 36
 
+let performLocalAuthenticationDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_PERFORM_LA)
+
 let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CHAT_ARCHIVE_TIME)
+
+let developerToolsDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_DEVELOPER_TOOLS)
 
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
