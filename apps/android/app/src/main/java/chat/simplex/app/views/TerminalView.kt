@@ -46,14 +46,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
     TerminalLayout(
       chatModel.terminalItems,
       composeState,
-      sendCommand = {
-        withApi {
-          // show "in progress"
-          chatModel.controller.sendCmd(CC.Console(composeState.value.message))
-          composeState.value = ComposeState(useLinkPreviews = false)
-          // hide "in progress"
-        }
-      },
+      sendCommand = { sendCommand(chatModel, composeState) },
       close
     )
   } else {
@@ -89,6 +82,27 @@ private fun runAuth(authorized: MutableState<Boolean>, context: Context) {
       }
     }
   )
+}
+
+private fun sendCommand(chatModel: ChatModel, composeState: MutableState<ComposeState>) {
+  val developerTools = chatModel.controller.appPrefs.developerTools.get()
+  val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
+  val cmd = CC.Console(composeState.value.message)
+  if (cmd.isSQL && (!prefPerformLA || !developerTools)) {
+    val resp = CR.ChatCmdError(ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
+    withApi {
+      chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
+      chatModel.terminalItems.add(TerminalItem.resp(resp))
+      composeState.value = ComposeState(useLinkPreviews = false)
+    }
+  } else {
+    withApi {
+      // show "in progress"
+      chatModel.controller.sendCmd(cmd)
+      composeState.value = ComposeState(useLinkPreviews = false)
+      // hide "in progress"
+    }
+  }
 }
 
 @Composable

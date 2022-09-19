@@ -1384,6 +1384,12 @@ sealed class CC {
 
   private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
 
+  val isSQL: Boolean
+    get() = when (this) {
+      is Console -> cmd.startsWith("/sql")
+      else -> false
+    }
+
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
@@ -1833,13 +1839,15 @@ sealed class ChatError {
 @Serializable
 sealed class ChatErrorType {
   val string: String get() = when (this) {
+    is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
     is ContactGroups -> "groupNames $groupNames"
-    is NoActiveUser -> "noActiveUser"
+    is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
+  @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 
 @Serializable
