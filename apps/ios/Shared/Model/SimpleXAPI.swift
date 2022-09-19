@@ -89,6 +89,10 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
                 : sendSimpleXCmd(cmd)
+    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+    if case let .response(_, json) = resp {
+        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+    }
     DispatchQueue.main.async {
         ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
