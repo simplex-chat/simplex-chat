@@ -197,7 +197,7 @@ fun SendMsgView(
           val channels by remember { mutableStateOf(listOf(1, 2)) }
           AnySettingRow(channel, channels, !recordingInProgress.value)
           Spacer(Modifier.width(10.dp))
-          val encoders by remember { mutableStateOf(listOf("AMR_NB", "AMR_WB", "AAC", "HE_AAC", "AAC_ELD", "VORBIS", "OPUS")) }
+          val encoders by remember { mutableStateOf(listOf("AMR_NB", "AMR_WB", "AAC", "HE_AAC", "AAC_ELD", "OPUS")) }
           AnySettingRow(encoder, encoders, !recordingInProgress.value)
           Spacer(Modifier.width(10.dp))
           val sampleRates by remember { mutableStateOf(listOf(800, 1600, 8000, 16000, 24000, 48000)) }
@@ -231,7 +231,6 @@ private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitr
     "AAC" -> MediaRecorder.OutputFormat.MPEG_4
     "HE_AAC" -> MediaRecorder.OutputFormat.MPEG_4
     "AAC_ELD" -> MediaRecorder.OutputFormat.MPEG_4
-    "VORBIS" -> MediaRecorder.OutputFormat.OGG
     else -> MediaRecorder.OutputFormat.OGG
   }
   val enc = when (encoder) {
@@ -240,7 +239,6 @@ private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitr
     "AAC" -> MediaRecorder.AudioEncoder.AAC
     "HE_AAC" -> MediaRecorder.AudioEncoder.HE_AAC
     "AAC_ELD" -> MediaRecorder.AudioEncoder.AAC_ELD
-    "VORBIS" -> MediaRecorder.AudioEncoder.VORBIS
     else -> MediaRecorder.AudioEncoder.OPUS
   }
   val ext = when (encoder) {
@@ -249,7 +247,6 @@ private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitr
     "AAC" -> "m4a"
     "HE_AAC" -> "m4a"
     "AAC_ELD" -> "m4a"
-    "VORBIS" -> "ogg"
     else -> "ogg"
   }
   recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
