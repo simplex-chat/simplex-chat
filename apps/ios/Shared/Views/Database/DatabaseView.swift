@@ -17,6 +17,7 @@ enum DatabaseAlert: Identifiable {
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
+    case storageCleared(removedFilesCount: Int?)
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -28,6 +29,7 @@ enum DatabaseAlert: Identifiable {
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
+        case let .storageCleared(removedFilesCount): return "storageCleared \(removedFilesCount ?? 0)"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -249,6 +251,18 @@ struct DatabaseView: View {
                 },
                 secondaryButton: .cancel()
             )
+        case let .storageCleared(removedFilesCount):
+            if let n = removedFilesCount {
+                return Alert(
+                    title: Text("Storage clear complete"),
+                    message: n > 0 ? Text("\(n) file(s) deleted") : Text("No files to delete")
+                )
+            } else {
+                return Alert(
+                    title: Text("Clear storage error"),
+                    message: Text("An error occured - please try again")
+                )
+            }
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
         }
@@ -383,12 +397,14 @@ struct DatabaseView: View {
     }
 
     private func deleteFiles(olderThan days: Int? = nil) {
+        var removedFilesCount: Int?
         if let days = days {
-            deleteAppFiles(olderThan: days)
+            removedFilesCount = deleteAppFiles(olderThan: days)
         } else {
-            deleteAllAppFiles()
+            removedFilesCount = deleteAllAppFiles()
         }
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        alert = .storageCleared(removedFilesCount: removedFilesCount)
     }
 }
 

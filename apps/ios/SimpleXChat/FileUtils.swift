@@ -70,31 +70,39 @@ func fileCreationDate(_ path: String) -> Date? {
     }
 }
 
-public func deleteAppFiles(olderThan days: Int) {
+public func deleteAppFiles(olderThan days: Int) -> Int? {
     let fm = FileManager.default
     do {
         let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
+        var fileCount = 0
         for fileName in fileNames {
             if let fileCreated = fileCreationDate(getAppFilePath(fileName).path),
                let pastDate = Calendar.current.date(byAdding: .day, value: -days, to: Date.now),
                fileCreated < pastDate {
                 removeFile(fileName)
+                fileCount += 1
             }
         }
+        return fileCount
     } catch {
         logger.error("FileUtils deleteFiles error: \(error.localizedDescription)")
+        return nil
     }
 }
 
-public func deleteAllAppFiles() {
+public func deleteAllAppFiles() -> Int? {
     let fm = FileManager.default
     do {
         let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
+        var fileCount = 0
         for fileName in fileNames {
             removeFile(fileName)
+            fileCount += 1
         }
+        return fileCount
     } catch {
         logger.error("FileUtils deleteAllFiles error: \(error.localizedDescription)")
+        return nil
     }
 }
 
