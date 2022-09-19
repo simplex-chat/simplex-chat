@@ -17,6 +17,7 @@ enum DatabaseAlert: Identifiable {
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
+    case deleteFilesAndMedia
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -28,6 +29,7 @@ enum DatabaseAlert: Identifiable {
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
+        case .deleteFilesAndMedia: return "deleteFilesAndMedia"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -46,6 +48,7 @@ struct DatabaseView: View {
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var appFilesCountAndSize: (Int, Int)?
 
     var body: some View {
         ZStack {
@@ -147,8 +150,27 @@ struct DatabaseView: View {
                     }
                 }
             }
+
+            Section {
+                Button("Delete files & media", role: .destructive) {
+                    alert = .deleteFilesAndMedia
+                }
+            } header: {
+                Text("Files")
+            } footer: {
+                if let (fileCount, size) = appFilesCountAndSize {
+                    if fileCount == 0 {
+                        Text("No received or sent files")
+                    } else {
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                    }
+                }
+            }
         }
-        .onAppear { runChat = m.chatRunning ?? true }
+        .onAppear {
+            runChat = m.chatRunning ?? true
+            appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        }
         .alert(item: $alert) { item in databaseAlert(item) }
         .fileImporter(
             isPresented: $showFileImporter,
@@ -219,6 +241,15 @@ struct DatabaseView: View {
                 message: Text("The old database was not removed during the migration, it can be deleted."),
                 primaryButton: .destructive(Text("Delete")) {
                     deleteLegacyDatabase()
+                },
+                secondaryButton: .cancel()
+            )
+        case .deleteFilesAndMedia:
+            return Alert(
+                title: Text("Delete files and media?"),
+                message: Text("This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteFiles()
                 },
                 secondaryButton: .cancel()
             )
@@ -353,6 +384,11 @@ struct DatabaseView: View {
                 alert = .error(title: "Error starting chat", error: responseError(error))
             }
         }
+    }
+
+    private func deleteFiles() {
+        deleteAppFiles()
+        appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
     }
 }
 
