@@ -559,7 +559,7 @@
     <string name="files_section">ФАЙЛЫ</string>
     <string name="delete_files_and_media">Удалить файлы и медиа</string>
     <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
-    <string name="delete_files_and_media_desc">Это действие нельзя отменить - все полученные и отправленные файлы и медиа будут удалены. Картинки с маленьким разрешением останутся.</string>
+    <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
     <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
 
