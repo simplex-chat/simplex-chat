@@ -61,6 +61,43 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
+func fileCreationDate(_ path: String) -> Date? {
+    do {
+        let attr = try FileManager.default.attributesOfItem(atPath: path)
+        return attr[FileAttributeKey.modificationDate] as? Date
+    } catch {
+        return nil
+    }
+}
+
+public func deleteAppFiles(olderThan days: Int) {
+    let fm = FileManager.default
+    do {
+        let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
+        for fileName in fileNames {
+            if let fileCreated = fileCreationDate(getAppFilePath(fileName).path),
+               let pastDate = Calendar.current.date(byAdding: .day, value: -days, to: Date.now),
+               fileCreated < pastDate {
+                removeFile(fileName)
+            }
+        }
+    } catch {
+        logger.error("FileUtils deleteFiles error: \(error.localizedDescription)")
+    }
+}
+
+public func deleteAllAppFiles() {
+    let fm = FileManager.default
+    do {
+        let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
+        for fileName in fileNames {
+            removeFile(fileName)
+        }
+    } catch {
+        logger.error("FileUtils deleteAllFiles error: \(error.localizedDescription)")
+    }
+}
+
 public func hasBackup(newerThan date: Date) -> Bool {
     let dbPath = getAppDatabasePath().path
     return hasBackupFile(dbPath + AGENT_DB_BAK, newerThan: date)

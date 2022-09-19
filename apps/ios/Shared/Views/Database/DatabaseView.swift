@@ -46,6 +46,7 @@ struct DatabaseView: View {
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
+    @State private var showClearStorage = false
 
     var body: some View {
         ZStack {
@@ -146,6 +147,20 @@ struct DatabaseView: View {
                         }
                     }
                 }
+            }
+
+            Section {
+                Button("Clear storage", role: .destructive) {
+                    showClearStorage = true
+                }
+                .confirmationDialog("Delete files and media", isPresented: $showClearStorage, titleVisibility: .visible) {
+                    Button("Older than 30 days", role: .destructive) { deleteFiles(olderThan: 30) }
+                    Button("Older than 7 days", role: .destructive) { deleteFiles(olderThan: 7) }
+                    Button("Older than one day", role: .destructive) { deleteFiles(olderThan: 1) }
+                    Button("Delete all files", role: .destructive) { deleteFiles() }
+                }
+            } header: {
+                Text("Media")
             }
         }
         .onAppear { runChat = m.chatRunning ?? true }
@@ -352,6 +367,14 @@ struct DatabaseView: View {
                 runChat = false
                 alert = .error(title: "Error starting chat", error: responseError(error))
             }
+        }
+    }
+
+    private func deleteFiles(olderThan days: Int? = nil) {
+        if let days = days {
+            deleteAppFiles(olderThan: days)
+        } else {
+            deleteAllAppFiles()
         }
     }
 }
