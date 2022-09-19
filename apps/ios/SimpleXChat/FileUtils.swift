@@ -78,7 +78,7 @@ func fileSize(_ url: URL) -> Int? { // in bytes
         let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
         return val.totalFileAllocatedSize ?? val.fileAllocatedSize
     } catch {
-        print(error)
+        logger.error("FileUtils fileSize error: \(error.localizedDescription)")
         return nil
     }
 }
@@ -86,7 +86,7 @@ func fileSize(_ url: URL) -> Int? { // in bytes
 public func directoryFileCountAndSize(_ dir: URL) -> (Int, Int)? { // size in bytes
     let fm = FileManager.default
     if let enumerator = fm.enumerator(at: dir, includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey], options: [], errorHandler: { (_, error) -> Bool in
-        print(error)
+        logger.error("FileUtils directoryFileCountAndSize error: \(error.localizedDescription)")
         return false
     }) {
         var fileCount = 0
