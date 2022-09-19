@@ -247,7 +247,7 @@ struct DatabaseView: View {
         case .deleteFilesAndMedia:
             return Alert(
                 title: Text("Delete files and media?"),
-                message: Text("This action cannot be undone - all received and sent files and media will be deleted."),
+                message: Text("This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain."),
                 primaryButton: .destructive(Text("Delete")) {
                     deleteFiles()
                 },
