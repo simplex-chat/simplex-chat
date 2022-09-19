@@ -158,7 +158,7 @@ fun SendMsgView(
         val channel = remember { mutableStateOf(1) }
         val encoder = remember { mutableStateOf("OPUS") }
         val sampleRate = remember { mutableStateOf(8000) }
-        val bitrate = remember { mutableStateOf(8000) }
+        val bitRate = remember { mutableStateOf(8000) }
         val startStopRecording = {
           if (!permissionsState.allPermissionsGranted) {
             permissionsState.launchMultiplePermissionRequest()
@@ -168,7 +168,7 @@ fun SendMsgView(
               saveFileLauncher.launch(filePath.value!!.substringAfterLast("/"))
             } else {
               startedRecording = System.currentTimeMillis()
-              filePath.value = startRecording(channel.value, encoder.value, sampleRate.value, bitrate.value, recorder, recordingInProgress)
+              filePath.value = startRecording(channel.value, encoder.value, sampleRate.value, bitRate.value, recorder, recordingInProgress)
             }
           }
         }
@@ -200,11 +200,11 @@ fun SendMsgView(
           val encoders by remember { mutableStateOf(listOf("AMR_NB", "AMR_WB", "AAC", "HE_AAC", "AAC_ELD", "OPUS")) }
           AnySettingRow(encoder, encoders, !recordingInProgress.value)
           Spacer(Modifier.width(10.dp))
-          val sampleRates by remember { mutableStateOf(listOf(800, 1600, 8000, 16000, 24000, 48000)) }
+          val sampleRates by remember { mutableStateOf(listOf(800, 1600, 4000, 8000, 16000, 24000, 48000)) }
           AnySettingRow(sampleRate, sampleRates, !recordingInProgress.value)
           Spacer(Modifier.width(10.dp))
-          val bitrates by remember { mutableStateOf(listOf(8000, 12000, 16000, 24000, 48000)) }
-          AnySettingRow(bitrate, bitrates, !recordingInProgress.value)
+          val bitRates by remember { mutableStateOf(listOf(4000, 8000, 12000, 16000, 24000, 48000)) }
+          AnySettingRow(bitRate, bitRates, !recordingInProgress.value)
           Spacer(Modifier.width(10.dp))
         } else {
           Text("${now - startedRecording} ms                 ")
@@ -223,7 +223,7 @@ fun SendMsgView(
   }
 }
 
-private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitrate: Int, recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>): String {
+private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitRate: Int, recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>): String {
   recordingInProgress.value = true
   val format = when (encoder) {
     "AMR_NB" -> MediaRecorder.OutputFormat.AMR_NB
@@ -255,10 +255,10 @@ private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitr
   // Mono
   recorder.setAudioChannels(channels)
   recorder.setAudioSamplingRate(sampleRate)
-  recorder.setAudioEncodingBitRate(bitrate)
+  recorder.setAudioEncodingBitRate(bitRate)
   recorder.setMaxDuration(-1)
 
-  val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "$encoder-$sampleRate-$bitrate-$channels-voice.$ext")))
+  val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "$encoder-$sampleRate-$bitRate-$channels-voice.$ext")))
   recorder.setOutputFile(filePath)
   recorder.prepare()
   recorder.start()
