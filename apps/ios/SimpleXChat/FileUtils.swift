@@ -61,15 +61,6 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
-func fileCreationDate(_ path: String) -> Date? {
-    do {
-        let attr = try FileManager.default.attributesOfItem(atPath: path)
-        return attr[FileAttributeKey.creationDate] as? Date
-    } catch {
-        return nil
-    }
-}
-
 public func deleteAppFiles() {
     let fm = FileManager.default
     do {
