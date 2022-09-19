@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve">
@@ -80,6 +80,11 @@
       <trans-unit id="%lld contact(s) selected" xml:space="preserve">
         <source>%lld contact(s) selected</source>
         <target>Выбрано контактов: %lld</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
+        <source>%lld file(s) with total size of %@</source>
+        <target>%lld файл(ов) общим размером %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
@@ -701,6 +706,16 @@
         <target>Удалить данные чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete files &amp; media" xml:space="preserve">
+        <source>Delete files &amp; media</source>
+        <target>Удалить файлы и медиа</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete files and media?" xml:space="preserve">
+        <source>Delete files and media?</source>
+        <target>Удалить файлы и медиа?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete for everyone" xml:space="preserve">
         <source>Delete for everyone</source>
         <target>Удалить для всех</target>
@@ -1014,6 +1029,11 @@
       <trans-unit id="File: %@" xml:space="preserve">
         <source>File: %@</source>
         <target>Файл: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files" xml:space="preserve">
+        <source>Files</source>
+        <target>Файлы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -1476,6 +1496,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="No group!" xml:space="preserve">
         <source>Group not found!</source>
         <target>Группа не найдена!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No received or sent files" xml:space="preserve">
+        <source>No received or sent files</source>
+        <target>Нет полученных или отправленных файлов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -2101,6 +2126,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Theme" xml:space="preserve">
         <source>Theme</source>
         <target>Тема</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+        <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
+        <target>Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
@@ -2995,7 +3025,7 @@ SimpleX серверы не могут получить доступ к ваше
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -3027,7 +3057,7 @@ SimpleX серверы не могут получить доступ к ваше
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="ru" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="13.3" build-num="13E113"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
