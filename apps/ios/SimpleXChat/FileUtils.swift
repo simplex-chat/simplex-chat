@@ -69,7 +69,7 @@ public func deleteAppFiles() {
             removeFile(fileName)
         }
     } catch {
-        logger.error("FileUtils deleteAllFiles error: \(error.localizedDescription)")
+        logger.error("FileUtils deleteAppFiles error: \(error.localizedDescription)")
     }
 }
 
