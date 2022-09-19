@@ -47,6 +47,7 @@ struct DatabaseView: View {
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var showClearStorage = false
+    @State private var appFilesCountAndSize: (Int, Int)?
 
     var body: some View {
         ZStack {
@@ -161,9 +162,20 @@ struct DatabaseView: View {
                 }
             } header: {
                 Text("Media")
+            } footer: {
+                if let (fileCount, size) = appFilesCountAndSize {
+                    if fileCount == 0 {
+                        Text("No files in storage")
+                    } else {
+                        Text("Storage has \(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                    }
+                }
             }
         }
-        .onAppear { runChat = m.chatRunning ?? true }
+        .onAppear {
+            runChat = m.chatRunning ?? true
+            appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        }
         .alert(item: $alert) { item in databaseAlert(item) }
         .fileImporter(
             isPresented: $showFileImporter,
@@ -376,6 +388,7 @@ struct DatabaseView: View {
         } else {
             deleteAllAppFiles()
         }
+        appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
     }
 }
 

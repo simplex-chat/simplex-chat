@@ -98,6 +98,34 @@ public func deleteAllAppFiles() {
     }
 }
 
+func fileSize(_ url: URL) -> Int? { // in bytes
+    do {
+        let val = try url.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey])
+        return val.totalFileAllocatedSize ?? val.fileAllocatedSize
+    } catch {
+        print(error)
+        return nil
+    }
+}
+
+public func directoryFileCountAndSize(_ dir: URL) -> (Int, Int)? { // size in bytes
+    let fm = FileManager.default
+    if let enumerator = fm.enumerator(at: dir, includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileAllocatedSizeKey], options: [], errorHandler: { (_, error) -> Bool in
+        print(error)
+        return false
+    }) {
+        var fileCount = 0
+        var bytes = 0
+        for case let url as URL in enumerator {
+            fileCount += 1
+            bytes += fileSize(url) ?? 0
+        }
+        return (fileCount, bytes)
+    } else {
+        return nil
+    }
+}
+
 public func hasBackup(newerThan date: Date) -> Bool {
     let dbPath = getAppDatabasePath().path
     return hasBackupFile(dbPath + AGENT_DB_BAK, newerThan: date)
