@@ -88,9 +88,9 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
-  if (s.starts(with: "/sql") && (!prefPerformLA || !developerTools)) {
+  if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
     val resp = CR.ChatCmdError(ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
-    chatModel.terminalItems.add(TerminalItem.cmd(CC.Console(s))
+    chatModel.terminalItems.add(TerminalItem.cmd(CC.Console(s)))
     chatModel.terminalItems.add(TerminalItem.resp(resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
