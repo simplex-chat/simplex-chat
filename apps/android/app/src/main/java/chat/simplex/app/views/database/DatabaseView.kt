@@ -204,12 +204,9 @@ fun DatabaseLayout(
     SectionSpacer()
 
     SectionView(stringResource(R.string.files_section)) {
-      SettingsActionItem(
-        Icons.Outlined.DeleteForever,
-        stringResource(R.string.delete_files_and_media),
-        deleteAppFilesAndMedia,
-        textColor = Color.Red
-      )
+      SectionItemView(deleteAppFilesAndMedia) {
+        Text(stringResource(R.string.delete_files_and_media), color = Color.Red)
+      }
     }
     val (count, size) = appFilesCountAndSize.value
     SectionTextFooter(
