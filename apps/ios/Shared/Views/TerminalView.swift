@@ -103,11 +103,19 @@ struct TerminalView: View {
     
     func sendMessage() {
         let cmd = ChatCommand.string(composeState.message)
-        DispatchQueue.global().async {
-            Task {
-                composeState.inProgress = true
-                _ = await chatSendCmd(cmd)
-                composeState.inProgress = false
+        if cmd.isSQL && (!performLocalAuthenticationDefault.get() || !developerToolsDefault.get()) {
+            let resp = ChatResponse.chatCmdError(chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "Failed reading: empty")))
+            DispatchQueue.main.async {
+                ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
+                ChatModel.shared.terminalItems.append(.resp(.now, resp))
+            }
+        } else {
+            DispatchQueue.global().async {
+                Task {
+                    composeState.inProgress = true
+                    _ = await chatSendCmd(cmd)
+                    composeState.inProgress = false
+                }
             }
         }
         composeState = ComposeState()

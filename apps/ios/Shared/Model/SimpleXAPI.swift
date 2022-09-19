@@ -86,20 +86,9 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
 
 func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
     logger.debug("chatSendCmd \(cmd.cmdType)")
-    var resp: ChatResponse
-    if cmd.isSQL && (!performLocalAuthenticationDefault.get() || !developerToolsDefault.get())  {
-        resp = ChatResponse.chatCmdError(chatError: ChatError.error(errorType: ChatErrorType.commandError(message: "unauthorized")))
-    } else {
-        resp = (
-            bgTask
-            ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
-            : sendSimpleXCmd(cmd)
-        )
-    }
-    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
-    if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
-    }
+    let resp = bgTask
+                ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
+                : sendSimpleXCmd(cmd)
     DispatchQueue.main.async {
         ChatModel.shared.terminalItems.append(.cmd(.now, cmd.obfuscated))
         ChatModel.shared.terminalItems.append(.resp(.now, resp))
