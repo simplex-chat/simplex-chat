@@ -87,18 +87,16 @@ private fun runAuth(authorized: MutableState<Boolean>, context: Context) {
 private fun sendCommand(chatModel: ChatModel, composeState: MutableState<ComposeState>) {
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
-  val cmd = CC.Console(composeState.value.message)
-  if (cmd.isSQL && (!prefPerformLA || !developerTools)) {
+  val s = composeState.value.message
+  if (s.starts(with: "/sql") && (!prefPerformLA || !developerTools)) {
     val resp = CR.ChatCmdError(ChatError.ChatErrorChat(ChatErrorType.СommandError("Failed reading: empty")))
-    withApi {
-      chatModel.terminalItems.add(TerminalItem.cmd(cmd.obfuscated))
-      chatModel.terminalItems.add(TerminalItem.resp(resp))
-      composeState.value = ComposeState(useLinkPreviews = false)
-    }
+    chatModel.terminalItems.add(TerminalItem.cmd(CC.Console(s))
+    chatModel.terminalItems.add(TerminalItem.resp(resp))
+    composeState.value = ComposeState(useLinkPreviews = false)
   } else {
     withApi {
       // show "in progress"
-      chatModel.controller.sendCmd(cmd)
+      chatModel.controller.sendCmd(CC.Console(s))
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }

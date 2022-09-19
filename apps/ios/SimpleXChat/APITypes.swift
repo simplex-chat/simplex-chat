@@ -229,14 +229,6 @@ public enum ChatCommand {
     private func obfuscate(_ s: String) -> String {
         s == "" ? "" : "***"
     }
-
-    public var isSQL: Bool {
-        switch self {
-        case let .string(str):
-            return str.starts(with: "/sql")
-        default: return false
-        }
-    }
 }
 
 struct APIResponse: Decodable {

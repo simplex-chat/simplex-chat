@@ -1384,12 +1384,6 @@ sealed class CC {
 
   private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
 
-  val isSQL: Boolean
-    get() = when (this) {
-      is Console -> cmd.startsWith("/sql")
-      else -> false
-    }
-
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
 
