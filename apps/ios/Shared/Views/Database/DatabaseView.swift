@@ -17,7 +17,7 @@ enum DatabaseAlert: Identifiable {
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
-    case storageCleared(removedFilesCount: Int?)
+    case deleteFilesAndMedia
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -29,7 +29,7 @@ enum DatabaseAlert: Identifiable {
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
-        case let .storageCleared(removedFilesCount): return "storageCleared \(removedFilesCount ?? 0)"
+        case .deleteFilesAndMedia: return "deleteFilesAndMedia"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -48,7 +48,6 @@ struct DatabaseView: View {
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
-    @State private var showClearStorage = false
     @State private var appFilesCountAndSize: (Int, Int)?
 
     var body: some View {
@@ -153,23 +152,17 @@ struct DatabaseView: View {
             }
 
             Section {
-                Button("Clear storage", role: .destructive) {
-                    showClearStorage = true
-                }
-                .confirmationDialog("Delete files and media", isPresented: $showClearStorage, titleVisibility: .visible) {
-                    Button("Older than 30 days", role: .destructive) { deleteFiles(olderThan: 30) }
-                    Button("Older than 7 days", role: .destructive) { deleteFiles(olderThan: 7) }
-                    Button("Older than one day", role: .destructive) { deleteFiles(olderThan: 1) }
-                    Button("Delete all files", role: .destructive) { deleteFiles() }
+                Button("Delete files & media", role: .destructive) {
+                    alert = .deleteFilesAndMedia
                 }
             } header: {
-                Text("Media")
+                Text("Files")
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
-                        Text("No files in storage")
+                        Text("No files in app storage")
                     } else {
-                        Text("Storage has \(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
+                        Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
                     }
                 }
             }
@@ -251,18 +244,15 @@ struct DatabaseView: View {
                 },
                 secondaryButton: .cancel()
             )
-        case let .storageCleared(removedFilesCount):
-            if let n = removedFilesCount {
-                return Alert(
-                    title: Text("Storage clear complete"),
-                    message: n > 0 ? Text("\(n) file(s) deleted") : Text("No files to delete")
-                )
-            } else {
-                return Alert(
-                    title: Text("Clear storage error"),
-                    message: Text("An error occured - please try again")
-                )
-            }
+        case .deleteFilesAndMedia:
+            return Alert(
+                title: Text("Delete files and media?"),
+                message: Text("This action cannot be undone - files in app storage will be irreversibly lost."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteFiles()
+                },
+                secondaryButton: .cancel()
+            )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
         }
@@ -396,15 +386,9 @@ struct DatabaseView: View {
         }
     }
 
-    private func deleteFiles(olderThan days: Int? = nil) {
-        var removedFilesCount: Int?
-        if let days = days {
-            removedFilesCount = deleteAppFiles(olderThan: days)
-        } else {
-            removedFilesCount = deleteAllAppFiles()
-        }
+    private func deleteFiles() {
+        deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
-        alert = .storageCleared(removedFilesCount: removedFilesCount)
     }
 }
 
