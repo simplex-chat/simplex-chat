@@ -160,7 +160,7 @@ struct DatabaseView: View {
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
-                        Text("No files in app storage")
+                        Text("No received or sent files")
                     } else {
                         Text("\(fileCount) file(s) with total size of \(ByteCountFormatter().string(fromByteCount: Int64(size)))")
                     }
@@ -247,7 +247,7 @@ struct DatabaseView: View {
         case .deleteFilesAndMedia:
             return Alert(
                 title: Text("Delete files and media?"),
-                message: Text("This action cannot be undone - files in app storage will be irreversibly lost."),
+                message: Text("This action cannot be undone - all received and sent files and media will be deleted."),
                 primaryButton: .destructive(Text("Delete")) {
                     deleteFiles()
                 },
