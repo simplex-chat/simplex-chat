@@ -202,13 +202,13 @@ fun DatabaseLayout(
       }
     )
     SectionSpacer()
-    SectionView {
+
+    SectionView(stringResource(R.string.files_section)) {
       SettingsActionItem(
         Icons.Outlined.DeleteForever,
         stringResource(R.string.delete_files_and_media),
         deleteAppFilesAndMedia,
-        textColor = Color.Red,
-        disabled = operationsDisabled || appFilesCountAndSize.value.first == 0
+        textColor = Color.Red
       )
     }
     val (count, size) = appFilesCountAndSize.value
@@ -534,6 +534,7 @@ private fun deleteFilesAndMediaAlert(context: Context, appFilesCountAndSize: Mut
     destructive = true
   )
 }
+
 private fun deleteFiles(appFilesCountAndSize: MutableState<Pair<Int, Long>>, context: Context) {
   deleteAppFiles(context)
   appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
