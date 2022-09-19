@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
+import androidx.core.net.toFile
 import androidx.core.text.HtmlCompat
 import chat.simplex.app.BuildConfig
 import chat.simplex.app.SimplexApp
@@ -214,6 +215,7 @@ private fun spannableStringToAnnotatedString(
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 236700
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
+const val MAX_VOICE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE_AUTO_RCV
 const val MAX_FILE_SIZE: Long = 8000000
 
 fun getFilesDirectory(context: Context): String {
@@ -357,6 +359,9 @@ fun saveFileFromUri(context: Context, uri: Uri): String? {
       val destFile = File(getAppFilePath(context, destFileName))
       FileUtils.copy(inputStream, FileOutputStream(destFile))
       destFileName
+    } else if (uri.toFile().exists()) {
+      // It can be a file:// scheme for audio messages that have audio already saved into app's file dir, nothing to do here
+      uri.toFile().name
     } else {
       Log.e(chat.simplex.app.TAG, "Util.kt saveFileFromUri null inputStream")
       null

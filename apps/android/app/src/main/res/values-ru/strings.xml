@@ -509,6 +509,7 @@
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="auto_accept_voice">Автоприем голосовых сообщений</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
 
     <!-- Settings sections -->

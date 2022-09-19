@@ -6,7 +6,6 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.Application
 import android.content.*
 import android.net.Uri
-import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -88,6 +87,7 @@ class AppPreferences(val context: Context) {
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
+  val privacyAcceptVoice = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_VOICE, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -175,6 +175,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
+    private const val SHARED_PREFS_PRIVACY_ACCEPT_VOICE = "PrivacyAcceptVoice"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
@@ -804,6 +805,8 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.addChatItem(cInfo, cItem)
         val file = cItem.file
         if (cItem.content.msgContent is MsgContent.MCImage && file != null && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV && appPrefs.privacyAcceptImages.get()) {
+          withApi { receiveFile(file.fileId) }
+        } else if (cItem.content.msgContent is MsgContent.MCFile && file != null && file.isVoiceMessage() && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && appPrefs.privacyAcceptVoice.get()) {
           withApi { receiveFile(file.fileId) }
         }
         if (!cItem.chatDir.sent && !cItem.isCall && (!isAppOnForeground(appContext) || chatModel.chatId.value != cInfo.id)) {

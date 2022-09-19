@@ -1222,6 +1222,8 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
+  fun isVoiceMessage() = fileName.endsWith(".ogg")
+
   companion object {
     fun getSample(
       fileId: Long = 1,

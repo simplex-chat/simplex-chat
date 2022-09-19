@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
@@ -444,6 +445,11 @@ fun ComposeView(
     }
   }
 
+  fun onAudioAdded(filePath: String) {
+    chosenFile.value = File(filePath).toUri()
+    composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(filePath))
+  }
+
   fun cancelLinkPreview() {
     val uri = composeState.value.linkPreview?.uri
     if (uri != null) {
@@ -507,28 +513,39 @@ fun ComposeView(
       horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
       val attachEnabled = !composeState.value.editing
-      Box(Modifier.padding(bottom = 12.dp)) {
-        Icon(
-          Icons.Filled.AttachFile,
-          contentDescription = stringResource(R.string.attach),
-          tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
-          modifier = Modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .clickable {
-              if (attachEnabled) {
-                showChooseAttachment()
+      var showRecordingUi by remember { mutableStateOf(false) }
+      if (!showRecordingUi) {
+        Box(Modifier.padding(bottom = 12.dp)) {
+          Icon(
+            Icons.Filled.AttachFile,
+            contentDescription = stringResource(R.string.attach),
+            tint = if (attachEnabled) MaterialTheme.colors.primary else Color.Gray,
+            modifier = Modifier
+              .size(28.dp)
+              .clip(CircleShape)
+              .clickable {
+                if (attachEnabled) {
+                  showChooseAttachment()
+                }
               }
-            }
-        )
+          )
+        }
       }
       SendMsgView(
         composeState,
+        allowVoiceRecord = true,
         sendMessage = {
           sendMessage()
+          showRecordingUi = false
           resetLinkPreview()
         },
         ::onMessageChange,
+        ::onAudioAdded,
+        showRecordingUi = {
+          showRecordingUi = it
+          chosenFile.value = null
+          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+        },
         textStyle
       )
     }

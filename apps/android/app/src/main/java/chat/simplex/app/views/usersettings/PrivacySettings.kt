@@ -6,8 +6,7 @@ import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.TravelExplore
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +33,8 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
 
     SectionView(stringResource(R.string.settings_section_title_chats)) {
       SettingsPreferenceItem(Icons.Outlined.Image, stringResource(R.string.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      SectionDivider()
+      SettingsPreferenceItem(Icons.Outlined.RecordVoiceOver, stringResource(R.string.auto_accept_voice), chatModel.controller.appPrefs.privacyAcceptVoice)
       SectionDivider()
       SettingsPreferenceItem(Icons.Outlined.TravelExplore, stringResource(R.string.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
     }

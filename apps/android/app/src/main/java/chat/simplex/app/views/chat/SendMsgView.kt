@@ -21,6 +21,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
@@ -31,11 +32,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
@@ -52,14 +56,17 @@ import java.io.File
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
+  allowVoiceRecord: Boolean,
   sendMessage: () -> Unit,
   onMessageChange: (String) -> Unit,
+  onAudioAdded: (String) -> Unit,
+  showRecordingUi: (Boolean) -> Unit,
   textStyle: MutableState<TextStyle>
 ) {
   val cs = composeState.value
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
-  val recordingInProgress = rememberSaveable { mutableStateOf(false) }
+  var recordingTimeRange by remember { mutableStateOf(0L..0L) } // since..to
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -68,71 +75,81 @@ fun SendMsgView(
     keyboard?.show()
   }
 
-  Row {
-    BasicTextField(
-      value = cs.message,
-      onValueChange = onMessageChange,
-      textStyle = textStyle.value,
-      maxLines = 16,
-      keyboardOptions = KeyboardOptions.Default.copy(
-        capitalization = KeyboardCapitalization.Sentences,
-        autoCorrect = true
-      ),
-      modifier = Modifier.weight(1f).padding(vertical = 8.dp).focusRequester(focusRequester),
-      cursorBrush = SolidColor(HighOrLowlight),
-      decorationBox = { innerTextField ->
-        Surface(
-          shape = RoundedCornerShape(18.dp),
-          border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
-        ) {
-          Row(
-            Modifier.background(MaterialTheme.colors.background),
-            verticalAlignment = Alignment.Bottom
+  Box {
+    Row {
+      BasicTextField(
+        value = cs.message,
+        enabled = recordingTimeRange.first == 0L || !allowVoiceRecord,
+        onValueChange = onMessageChange,
+        textStyle = textStyle.value,
+        maxLines = 16,
+        keyboardOptions = KeyboardOptions.Default.copy(
+          capitalization = KeyboardCapitalization.Sentences,
+          autoCorrect = true
+        ),
+        modifier = Modifier.weight(1f).padding(vertical = 8.dp).focusRequester(focusRequester),
+        cursorBrush = SolidColor(HighOrLowlight),
+        decorationBox = { innerTextField ->
+          Surface(
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
           ) {
-            Box(
-              Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp)
-                .padding(top = 5.dp)
-                .padding(bottom = 7.dp)
+            Row(
+              Modifier.background(MaterialTheme.colors.background),
+              verticalAlignment = Alignment.Bottom
             ) {
-              innerTextField()
-            }
-            val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
-            val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
-            if (cs.inProgress
-              && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
-            ) {
-              CircularProgressIndicator(
+              Box(
                 Modifier
-                  .size(36.dp)
-                  .padding(4.dp),
-                color = HighOrLowlight,
-                strokeWidth = 3.dp
-              )
-            } else if (!recordingInProgress.value && cs.message.isNotEmpty()) {
-              Icon(
-                icon,
-                stringResource(R.string.icon_descr_send_message),
-                tint = Color.White,
-                modifier = Modifier
-                  .size(36.dp)
-                  .padding(4.dp)
-                  .clip(CircleShape)
-                  .background(color)
-                  .clickable {
-                    if (cs.sendEnabled()) {
-                      sendMessage()
+                  .weight(1f)
+                  .height(36.dp)
+                  .padding(horizontal = 12.dp)
+                  .padding(top = 5.dp)
+                  .padding(bottom = 7.dp)
+              ) {
+                innerTextField()
+              }
+              val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
+              val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight
+              if (cs.inProgress
+                && (cs.preview is ComposePreview.ImagePreview || cs.preview is ComposePreview.FilePreview)
+              ) {
+                CircularProgressIndicator(
+                  Modifier
+                    .size(36.dp)
+                    .padding(4.dp),
+                  color = HighOrLowlight,
+                  strokeWidth = 3.dp
+                )
+              } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord) {
+                Icon(
+                  icon,
+                  stringResource(R.string.icon_descr_send_message),
+                  tint = Color.White,
+                  modifier = Modifier
+                    .size(36.dp)
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(color)
+                    .clickable {
+                      if (cs.sendEnabled()) {
+                        sendMessage()
+                      }
                     }
-                  }
-              )
+                )
+              }
             }
           }
         }
-      }
-    )
-    if (cs.message.isEmpty()) {
-      Row(Modifier.wrapContentWidth()) {
+      )
+    }
+    if (cs.message.isEmpty() && allowVoiceRecord) {
+      Row(
+        if (recordingTimeRange.first == 0L)
+          Modifier.height(52.dp)
+        else
+          Modifier.clickable(false, onClick = {}).background(MaterialTheme.colors.background).height(52.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
         val permissionsState = rememberMultiplePermissionsState(
           permissions = listOf(
             Manifest.permission.RECORD_AUDIO,
@@ -145,7 +162,6 @@ fun SendMsgView(
             MediaRecorder()
           }
         }
-        var startedRecording by remember { mutableStateOf(System.currentTimeMillis()) }
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(Unit) {
           while (isActive) {
@@ -153,112 +169,97 @@ fun SendMsgView(
             delay(100)
           }
         }
-        val filePath = remember { mutableStateOf("" as String?) }
-        val saveFileLauncher = rememberSaveFileLauncher(cxt = SimplexApp.context, filePath)
-        val channel = remember { mutableStateOf(1) }
-        val encoder = remember { mutableStateOf("OPUS") }
-        val sampleRate = remember { mutableStateOf(8000) }
-        val bitRate = remember { mutableStateOf(8000) }
+        val recordingInProgress = rememberSaveable { mutableStateOf(false) }
+        val filePath = remember { mutableStateOf(null as String?) }
         val startStopRecording = {
-          if (!permissionsState.allPermissionsGranted) {
-            permissionsState.launchMultiplePermissionRequest()
-          } else {
-            if (recordingInProgress.value) {
+          when {
+            !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
+            recordingInProgress.value -> {
               stopRecording(recorder, recordingInProgress)
-              saveFileLauncher.launch(filePath.value!!.substringAfterLast("/"))
-            } else {
-              startedRecording = System.currentTimeMillis()
-              filePath.value = startRecording(channel.value, encoder.value, sampleRate.value, bitRate.value, recorder, recordingInProgress)
+              filePath.value?.let(onAudioAdded)
+              recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
+            }
+            filePath.value == null -> {
+              showRecordingUi(true)
+              filePath.value = startRecording(recorder, recordingInProgress)
+              recordingTimeRange = System.currentTimeMillis()..0L
             }
           }
+        }
+        val cleanUp = { remove: Boolean ->
+          if (remove) filePath.value?.let { File(it).delete() }
+          filePath.value = null
+          recordingInProgress.value = false
+          recordingTimeRange = 0L..0L
+          showRecordingUi(false)
         }
         val interactionSource = interactionSourceWithTapDetection(
           onPress = {
-            if (filePath.value != null && filePath.value!!.isNotEmpty()) {
-              File(filePath.value).delete()
-              filePath.value = ""
-            }
-            startStopRecording()
+            if (filePath.value == null) startStopRecording()
           },
           onClick = {
-            if (!recordingInProgress.value) return@interactionSourceWithTapDetection
+            if (!recordingInProgress.value && filePath.value != null) {
+              sendMessage()
+              cleanUp(false)
+              return@interactionSourceWithTapDetection
+            }
             Toast.makeText(SimplexApp.context, generalGetString(R.string.tap_and_hold_to_record), Toast.LENGTH_LONG).show()
             cancelRecording(filePath.value!!, recorder, recordingInProgress)
-            filePath.value = ""
+            cleanUp(true)
           },
-          onCancel = {
-          },
-          onRelease = {
-            if (!recordingInProgress.value) return@interactionSourceWithTapDetection
-            startStopRecording()
-          }
+          onCancel = startStopRecording,
+          onRelease = startStopRecording
         )
-        if (!recordingInProgress.value) {
-          val channels by remember { mutableStateOf(listOf(1, 2)) }
-          AnySettingRow(channel, channels, !recordingInProgress.value)
-          Spacer(Modifier.width(10.dp))
-          val encoders by remember { mutableStateOf(listOf("AMR_NB", "AMR_WB", "AAC", "HE_AAC", "AAC_ELD", "OPUS")) }
-          AnySettingRow(encoder, encoders, !recordingInProgress.value)
-          Spacer(Modifier.width(10.dp))
-          val sampleRates by remember { mutableStateOf(listOf(800, 1600, 4000, 8000, 16000, 24000, 48000)) }
-          AnySettingRow(sampleRate, sampleRates, !recordingInProgress.value)
-          Spacer(Modifier.width(10.dp))
-          val bitRates by remember { mutableStateOf(listOf(4000, 8000, 12000, 16000, 24000, 48000)) }
-          AnySettingRow(bitRate, bitRates, !recordingInProgress.value)
-          Spacer(Modifier.width(10.dp))
-        } else {
-          Text("${now - startedRecording} ms                 ")
-        }
-        IconButton({}, interactionSource = interactionSource) {
+        if (recordingTimeRange.first != 0L) {
           Icon(
-            if (recordingInProgress.value) Icons.Default.Send else Icons.Default.Mic,
-            stringResource(R.string.icon_descr_record_audio),
+            Icons.Filled.DeleteForever,
+            stringResource(R.string.delete_verb),
             tint = MaterialTheme.colors.primary,
-            modifier = Modifier
-              .size(40.dp)
+            modifier = Modifier.size(28.dp).clickable { cleanUp(true) }
           )
+          Spacer(Modifier.width(5.dp))
+          val diff = if (recordingTimeRange.last == 0L) now - recordingTimeRange.first else recordingTimeRange.last - recordingTimeRange.first
+          Text(
+            "%02d:%02d.%01d".format(diff / 1000 / 60, diff / 1000 % 60, diff % 1000 / 100),
+            style = TextStyle.Default.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+            color = HighOrLowlight,
+          )
+        }
+        Spacer(Modifier.weight(1f))
+        Icon(
+          if (recordingTimeRange.last != 0L) Icons.Outlined.ArrowUpward else Icons.Default.Mic,
+          stringResource(R.string.icon_descr_record_audio),
+          tint = MaterialTheme.colors.primary,
+          modifier = Modifier
+              .size(36.dp)
+            .clickable(
+              onClick = {},
+              role = Role.Button,
+              interactionSource = interactionSource,
+              indication = rememberRipple(bounded = false, radius = 24.dp)
+            )
+        )
+        DisposableEffect(Unit) {
+          onDispose {
+            stopRecording(recorder, recordingInProgress)
+            cleanUp(true)
+          }
         }
       }
     }
   }
 }
 
-private fun startRecording(channels: Int, encoder: String, sampleRate: Int, bitRate: Int, recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>): String {
+private fun startRecording(recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>): String {
   recordingInProgress.value = true
-  val format = when (encoder) {
-    "AMR_NB" -> MediaRecorder.OutputFormat.AMR_NB
-    "AMR_WB" -> MediaRecorder.OutputFormat.AMR_WB
-    "AAC" -> MediaRecorder.OutputFormat.MPEG_4
-    "HE_AAC" -> MediaRecorder.OutputFormat.MPEG_4
-    "AAC_ELD" -> MediaRecorder.OutputFormat.MPEG_4
-    else -> MediaRecorder.OutputFormat.OGG
-  }
-  val enc = when (encoder) {
-    "AMR_NB" -> MediaRecorder.AudioEncoder.AMR_NB
-    "AMR_WB" -> MediaRecorder.AudioEncoder.AMR_WB
-    "AAC" -> MediaRecorder.AudioEncoder.AAC
-    "HE_AAC" -> MediaRecorder.AudioEncoder.HE_AAC
-    "AAC_ELD" -> MediaRecorder.AudioEncoder.AAC_ELD
-    else -> MediaRecorder.AudioEncoder.OPUS
-  }
-  val ext = when (encoder) {
-    "AMR_NB" -> "amr"
-    "AMR_WB" -> "amr"
-    "AAC" -> "m4a"
-    "HE_AAC" -> "m4a"
-    "AAC_ELD" -> "m4a"
-    else -> "ogg"
-  }
   recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-  recorder.setOutputFormat(format)
-  recorder.setAudioEncoder(enc)
-  // Mono
-  recorder.setAudioChannels(channels)
-  recorder.setAudioSamplingRate(sampleRate)
-  recorder.setAudioEncodingBitRate(bitRate)
+  recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB)
+  recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
+  recorder.setAudioChannels(1)
+  recorder.setAudioSamplingRate(8000)
+  recorder.setAudioEncodingBitRate(8000)
   recorder.setMaxDuration(-1)
-
-  val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "$encoder-$sampleRate-$bitRate-$channels-voice.$ext")))
+  val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.amr")))
   recorder.setOutputFile(filePath)
   recorder.prepare()
   recorder.start()
@@ -371,8 +372,11 @@ fun PreviewSendMsgView() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+      allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
+      onAudioAdded = {},
+      showRecordingUi = {},
       textStyle = textStyle
     )
   }
@@ -392,8 +396,11 @@ fun PreviewSendMsgViewEditing() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateEditing) },
+      allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
+      onAudioAdded = {},
+      showRecordingUi = {},
       textStyle = textStyle
     )
   }
@@ -413,8 +420,11 @@ fun PreviewSendMsgViewInProgress() {
   SimpleXTheme {
     SendMsgView(
       composeState = remember { mutableStateOf(composeStateInProgress) },
+      allowVoiceRecord = false,
       sendMessage = {},
       onMessageChange = { _ -> },
+      onAudioAdded = {},
+      showRecordingUi = {},
       textStyle = textStyle
     )
   }
