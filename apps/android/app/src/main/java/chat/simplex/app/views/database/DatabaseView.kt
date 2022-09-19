@@ -62,6 +62,7 @@ fun DatabaseView(
       importArchiveAlert(m, context, uri, progressIndicator)
     }
   }
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory(context))) }
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
@@ -78,10 +79,12 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
+      appFilesCountAndSize,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m, runChat, context) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
+      deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(context, appFilesCountAndSize) },
       showSettingsModal
     )
     if (progressIndicator.value) {
@@ -112,10 +115,12 @@ fun DatabaseLayout(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
+  deleteAppFilesAndMedia: () -> Unit,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
@@ -194,6 +199,24 @@ fun DatabaseLayout(
         stringResource(R.string.you_must_use_the_most_recent_version_of_database)
       } else {
         stringResource(R.string.stop_chat_to_enable_database_actions)
+      }
+    )
+    SectionSpacer()
+    SectionView {
+      SettingsActionItem(
+        Icons.Outlined.DeleteForever,
+        stringResource(R.string.delete_files_and_media),
+        deleteAppFilesAndMedia,
+        textColor = Color.Red,
+        disabled = operationsDisabled || appFilesCountAndSize.value.first == 0
+      )
+    }
+    val (count, size) = appFilesCountAndSize.value
+    SectionTextFooter(
+      if (count == 0) {
+        stringResource(R.string.no_received_app_files)
+      } else {
+        String.format(stringResource(R.string.total_files_count_and_size), count, formatBytes(size))
       }
     )
   }
@@ -502,6 +525,20 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   }
 }
 
+private fun deleteFilesAndMediaAlert(context: Context, appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.delete_files_and_media_question),
+    text = generalGetString(R.string.delete_files_and_media_desc),
+    confirmText = generalGetString(R.string.delete_verb),
+    onConfirm = { deleteFiles(appFilesCountAndSize, context) },
+    destructive = true
+  )
+}
+private fun deleteFiles(appFilesCountAndSize: MutableState<Pair<Int, Long>>, context: Context) {
+  deleteAppFiles(context)
+  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
+}
+
 private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean>, alert: () -> Unit) {
   m.chatDbChanged.value = true
   progressIndicator.value = false
@@ -527,10 +564,12 @@ fun PreviewDatabaseLayout() {
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
+      appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       startChat = {},
       stopChatAlert = {},
       exportArchive = {},
       deleteChatAlert = {},
+      deleteAppFilesAndMedia = {},
       showSettingsModal = { {} }
     )
   }

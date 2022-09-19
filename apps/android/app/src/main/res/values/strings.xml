@@ -557,6 +557,11 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Restart the app to create a new chat profile.</string>
   <string name="you_must_use_the_most_recent_version_of_database">You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</string>
   <string name="stop_chat_to_enable_database_actions">Stop chat to enable database actions.</string>
+  <string name="delete_files_and_media">Delete files \&amp; media</string>
+  <string name="delete_files_and_media_question">Delete files and media?</string>
+  <string name="delete_files_and_media_desc">This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</string>
+  <string name="no_received_app_files">No received or sent files</string>
+  <string name="total_files_count_and_size">%d file(s) with total size of %s</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>

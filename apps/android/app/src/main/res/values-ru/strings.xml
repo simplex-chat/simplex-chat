@@ -556,6 +556,11 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
+    <string name="delete_files_and_media">Удалить файлы и медиа</string>
+    <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
+    <string name="delete_files_and_media_desc">Это действие нельзя отменить - все полученные и отправленные файлы и медиа будут удалены. Картинки с маленьким разрешением останутся.</string>
+    <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
+    <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
 
     <!-- DatabaseEncryptionView.kt -->
     <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
