@@ -77,7 +77,7 @@ fun ChatView(chatModel: ChatModel) {
     chatModel.chatId.value = null
   } else {
     val chat = activeChat!!
-    BackHandler { chatModel.chatId.value = null }
+    BackHandler { AudioPlayer.stop(); chatModel.chatId.value = null }
 
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)

@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +24,10 @@ import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.datetime.Clock
+import java.io.File
 
 @Composable
 fun CIFileView(
@@ -34,6 +37,37 @@ fun CIFileView(
 ) {
   val context = LocalContext.current
   val saveFileLauncher = rememberSaveFileLauncher(cxt = context, ciFile = file)
+  val voiceInfo = remember { mutableStateOf(0 to 0) }
+  val voicePlaying = rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(file?.fileName, file?.fileStatus) {
+    if (file != null && file.loaded && file.isVoiceMessage() && voiceInfo.value.second == 0) {
+      val filePath = getLoadedFilePath(context, file)
+      if (filePath != null && File(filePath).exists()) {
+        voiceInfo.value = voiceInfo.value.first to AudioPlayer.duration(filePath)
+      }
+    }
+  }
+
+  LaunchedEffect(voicePlaying.value) {
+    if (voicePlaying.value) {
+      while (isActive && voicePlaying.value) {
+        voiceInfo.value = AudioPlayer.progressAndDuration()
+        if (voiceInfo.value.first == voiceInfo.value.second) {
+          voiceInfo.value = 0 to voiceInfo.value.second
+          voicePlaying.value = false
+        }
+        delay(100)
+      }
+    }
+  }
+
+  LaunchedEffect(AudioPlayer.currentlyPlaying.value) {
+    val current = AudioPlayer.currentlyPlaying.value ?: return@LaunchedEffect
+    file?.filePath ?: return@LaunchedEffect
+    if (!current.endsWith(File.separator + file.filePath) && voicePlaying.value) {
+      voicePlaying.value = false
+    }
+  }
 
   @Composable
   fun fileIcon(
@@ -71,6 +105,15 @@ fun CIFileView(
 
   fun fileAction() {
     if (file != null) {
+      if (file.isVoiceMessage() && file.loaded) {
+        if (!voicePlaying.value) {
+          AudioPlayer.start(getAppFilePath(context, file.filePath ?: return), voiceInfo.value.first)
+        } else {
+          voiceInfo.value = AudioPlayer.pause() to voiceInfo.value.second
+        }
+        voicePlaying.value = !voicePlaying.value
+        return
+      }
       when (file.fileStatus) {
         CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
@@ -119,20 +162,33 @@ fun CIFileView(
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
-        when (file.fileStatus) {
-          CIFileStatus.SndStored -> fileIcon()
-          CIFileStatus.SndTransfer -> progressIndicator()
-          CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
-          CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
-          CIFileStatus.RcvInvitation ->
-            if (fileSizeValid())
-              fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
-            else
-              fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
-          CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
-          CIFileStatus.RcvTransfer -> progressIndicator()
-          CIFileStatus.RcvComplete -> fileIcon()
-          CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+        if (file.isVoiceMessage() && file.loaded) {
+          Box(
+            contentAlignment = Alignment.Center
+          ) {
+            Icon(
+              if (voicePlaying.value) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+              stringResource(R.string.icon_descr_file),
+              Modifier.size(36.dp),
+              tint = HighOrLowlight,
+            )
+          }
+        } else {
+          when (file.fileStatus) {
+            CIFileStatus.SndStored -> fileIcon()
+            CIFileStatus.SndTransfer -> progressIndicator()
+            CIFileStatus.SndComplete -> fileIcon(innerIcon = Icons.Filled.Check)
+            CIFileStatus.SndCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+            CIFileStatus.RcvInvitation ->
+              if (fileSizeValid())
+                fileIcon(innerIcon = Icons.Outlined.ArrowDownward, color = MaterialTheme.colors.primary)
+              else
+                fileIcon(innerIcon = Icons.Outlined.PriorityHigh, color = WarningOrange)
+            CIFileStatus.RcvAccepted -> fileIcon(innerIcon = Icons.Outlined.MoreHoriz)
+            CIFileStatus.RcvTransfer -> progressIndicator()
+            CIFileStatus.RcvComplete -> fileIcon()
+            CIFileStatus.RcvCancelled -> fileIcon(innerIcon = Icons.Outlined.Close)
+          }
         }
       } else {
         fileIcon()
@@ -155,11 +211,17 @@ fun CIFileView(
         horizontalAlignment = Alignment.Start
       ) {
         Text(
-          file.fileName,
+          if (file.isVoiceMessage()) stringResource(R.string.voice_message) else file.fileName,
           maxLines = 1
         )
+        val text = if (file.isVoiceMessage()) {
+          val time = if (voicePlaying.value) voiceInfo.value.first else voiceInfo.value.second
+          val mins = time / 1000 / 60
+          val secs = time / 1000 % 60
+          String.format("%02d:%02d", mins, secs)
+        } else formatBytes(file.fileSize) + metaReserve
         Text(
-          formatBytes(file.fileSize) + metaReserve,
+          text,
           color = HighOrLowlight,
           fontSize = 14.sp,
           maxLines = 1

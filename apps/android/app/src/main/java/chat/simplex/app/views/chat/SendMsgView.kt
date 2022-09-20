@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +62,7 @@ fun SendMsgView(
   val focusRequester = remember { FocusRequester() }
   val keyboard = LocalSoftwareKeyboardController.current
   var recordingTimeRange by remember { mutableStateOf(0L..0L) } // since..to
+  val attachEnabled = !composeState.value.editing
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -116,7 +116,7 @@ fun SendMsgView(
                   color = HighOrLowlight,
                   strokeWidth = 3.dp
                 )
-              } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord) {
+              } else if ((recordingTimeRange.first == 0L && cs.message.isNotEmpty()) || !allowVoiceRecord || !attachEnabled) {
                 Icon(
                   icon,
                   stringResource(R.string.icon_descr_send_message),
@@ -138,7 +138,7 @@ fun SendMsgView(
         }
       )
     }
-    if (cs.message.isEmpty() && allowVoiceRecord) {
+    if (cs.message.isEmpty() && allowVoiceRecord && attachEnabled) {
       Row(
         if (recordingTimeRange.first == 0L)
           Modifier.height(52.dp)
@@ -151,7 +151,7 @@ fun SendMsgView(
             Manifest.permission.RECORD_AUDIO,
           )
         )
-        val rec: Recorder = remember { RecorderExternal() }
+        val rec: Recorder = remember { RecorderNative() }
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(Unit) {
           while (isActive) {
@@ -239,84 +239,6 @@ fun SendMsgView(
     }
   }
 }
-
-@Composable
-fun <T> AnySettingRow(selection: MutableState<T>, values: List<T>, enabled: Boolean) {
-  var expanded by remember { mutableStateOf(false) }
-  ExposedDropdownMenuBox(
-    expanded = expanded,
-    onExpandedChange = {
-      expanded = !expanded
-    }
-  ) {
-    Row {
-      Text(
-        selection.value.toString(),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = HighOrLowlight
-      )
-      Spacer(Modifier.size(4.dp))
-      Icon(
-        if (!expanded) Icons.Outlined.ExpandMore else Icons.Outlined.ExpandLess,
-        null,
-        modifier = Modifier.padding(start = 8.dp),
-        tint = HighOrLowlight
-      )
-    }
-    ExposedDropdownMenu(
-      expanded = expanded && enabled,
-      onDismissRequest = {
-        expanded = false
-      }
-    ) {
-      values.forEach { selectionOption ->
-        DropdownMenuItem(
-          onClick = {
-            selection.value = selectionOption
-            expanded = false
-          }
-        ) {
-          Text(
-            selectionOption.toString(),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-          )
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun rememberSaveFileLauncher(cxt: Context, chatArchiveFile: MutableState<String?>): ManagedActivityResultLauncher<String, Uri?> =
-  rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.CreateDocument(),
-    onResult = { destination ->
-      try {
-        destination?.let {
-          val filePath = chatArchiveFile.value
-          if (filePath != null) {
-            val contentResolver = cxt.contentResolver
-            contentResolver.openOutputStream(destination)?.let { stream ->
-              val outputStream = BufferedOutputStream(stream)
-              val file = File(filePath)
-              outputStream.write(file.readBytes())
-              outputStream.close()
-              Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
-            }
-          } else {
-            Toast.makeText(cxt, generalGetString(R.string.file_not_found), Toast.LENGTH_SHORT).show()
-          }
-        }
-      } catch (e: Error) {
-        Toast.makeText(cxt, generalGetString(R.string.error_saving_file), Toast.LENGTH_SHORT).show()
-        Log.e(TAG, "rememberSaveFileLauncher error saving file $e")
-      } finally {
-        chatArchiveFile.value = null
-      }
-    }
-  )
 
 @Preview(showBackground = true)
 @Preview(

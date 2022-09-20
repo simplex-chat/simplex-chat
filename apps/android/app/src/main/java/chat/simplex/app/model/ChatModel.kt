@@ -1222,7 +1222,7 @@ class CIFile(
     CIFileStatus.RcvComplete -> true
   }
 
-  fun isVoiceMessage() = fileName.endsWith(".ogg")
+  fun isVoiceMessage() = fileName.endsWith(".m4a") || fileName.endsWith(".amr") || fileName.endsWith(".ogg")
 
   companion object {
     fun getSample(

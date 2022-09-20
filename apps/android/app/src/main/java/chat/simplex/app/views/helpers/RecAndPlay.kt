@@ -4,6 +4,7 @@ import android.media.*
 import android.os.Build
 import android.util.Log
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import chat.simplex.app.SimplexApp
 import chat.simplex.app.TAG
 import cn.org.hentai.acodec.AudioCodec
@@ -29,13 +30,13 @@ class RecorderNative: Recorder {
   override fun start(recordingInProgress: MutableState<Boolean>): String {
     recordingInProgress.value = true
     recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-    recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB)
-    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
+    recorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+    recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
     recorder.setAudioChannels(1)
-    recorder.setAudioSamplingRate(8000)
-    recorder.setAudioEncodingBitRate(8000)
+    recorder.setAudioSamplingRate(16000)
+    recorder.setAudioEncodingBitRate(16000)
     recorder.setMaxDuration(-1)
-    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.amr")))
+    val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.m4a")))
     recorder.setOutputFile(filePath)
     recorder.prepare()
     recorder.start()
@@ -68,7 +69,6 @@ class RecorderExternal: Recorder {
   private val recorder = AudioRecord(
     MediaRecorder.AudioSource.DEFAULT, SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, ENCODING, BUFFER_SIZE
   )
-
   private var job: Job? = null
 
   override fun start(recordingInProgress: MutableState<Boolean>): String {
@@ -107,7 +107,6 @@ class RecorderExternal: Recorder {
       recorder.stop()
     }
     recordingInProgress.value = false
-    //    job?.cancel()
   }
 
   override fun cancel(filePath: String, recordingInProgress: MutableState<Boolean>) {
@@ -118,17 +117,16 @@ class RecorderExternal: Recorder {
   private fun encode(filePath: String) {
     val codec: AudioCodec = CodecFactory.getCodec("g711a")
     val pcmData: ByteArray = File(filePath).readBytes()
-
     val audio = AudioTrack(
       AudioManager.STREAM_MUSIC,
       SAMPLE_RATE,
       AudioFormat.CHANNEL_OUT_MONO,
       AudioFormat.ENCODING_PCM_16BIT,
       BUFFER_SIZE,
-      AudioTrack.MODE_STREAM )
+      AudioTrack.MODE_STREAM
+    )
     audio.play()
     audio.write(pcmData, 0, pcmData.size)
-
     val res = codec.fromPCM(pcmData)
     File(filePath.replace(".pcm", ".g711pcm")).outputStream().use { it.write(res) }
   }
@@ -141,5 +139,63 @@ class RecorderExternal: Recorder {
       AudioRecord.ERROR -> "ERROR"
       else -> "Unknown ($errorCode)"
     }
+  }
+}
+
+object AudioPlayer {
+  private val player = MediaPlayer().apply {
+    setAudioAttributes(
+      AudioAttributes.Builder()
+        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+        .setUsage(AudioAttributes.USAGE_MEDIA)
+        .build()
+    )
+  }
+  private val helperPlayer: MediaPlayer =  MediaPlayer().apply {
+        setAudioAttributes(
+          AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .build()
+        )
+  }
+  val currentlyPlaying: MutableState<String?> = mutableStateOf(null)
+
+  fun start(filePath: String, seek: Int? = null) {
+    if (currentlyPlaying.value != filePath) {
+      player.reset()
+      kotlin.runCatching {
+        player.setDataSource(filePath)
+      }.getOrElse { Log.e(TAG, it.stackTraceToString()); return } // probably missing file in data directory
+      player.prepare()
+    }
+    if (seek != null) player.seekTo(seek)
+    player.start()
+    currentlyPlaying.value = filePath
+  }
+
+  fun pause(): Int {
+    player.pause()
+    return player.currentPosition
+  }
+
+  fun stop() {
+    if (!player.isPlaying) return
+    player.stop()
+  }
+
+  fun progressAndDuration(): Pair<Int, Int> = player.currentPosition to player.duration
+
+  fun duration(filePath: String): Int {
+    var res = 0
+    kotlin.runCatching {
+      helperPlayer.setDataSource(filePath)
+      helperPlayer.prepare()
+      helperPlayer.start()
+      helperPlayer.stop()
+      res = helperPlayer.duration
+      helperPlayer.reset()
+    }
+    return res
   }
 }
