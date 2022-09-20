@@ -204,8 +204,15 @@ fun DatabaseLayout(
     SectionSpacer()
 
     SectionView(stringResource(R.string.files_section)) {
-      SectionItemView(deleteAppFilesAndMedia) {
-        Text(stringResource(R.string.delete_files_and_media), color = Color.Red)
+      val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
+      SectionItemView(
+        deleteAppFilesAndMedia,
+        disabled = deleteFilesDisabled
+      ) {
+        Text(
+          stringResource(R.string.delete_files_and_media),
+          color = if (deleteFilesDisabled) HighOrLowlight else Color.Red
+        )
       }
     }
     val (count, size) = appFilesCountAndSize.value
