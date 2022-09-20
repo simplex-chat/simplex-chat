@@ -3,9 +3,7 @@ package chat.simplex.app.views.chat
 import android.Manifest
 import android.content.Context
 import android.content.res.Configuration
-import android.media.MediaRecorder
 import android.net.Uri
-import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.ManagedActivityResultLauncher
@@ -47,10 +45,8 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import java.io.BufferedOutputStream
-import java.io.File
+import kotlinx.coroutines.*
+import java.io.*
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -155,13 +151,7 @@ fun SendMsgView(
             Manifest.permission.RECORD_AUDIO,
           )
         )
-        val recorder = remember {
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(SimplexApp.context)
-          } else {
-            MediaRecorder()
-          }
-        }
+        val rec: Recorder = remember { RecorderExternal() }
         var now by remember { mutableStateOf(System.currentTimeMillis()) }
         LaunchedEffect(Unit) {
           while (isActive) {
@@ -175,13 +165,13 @@ fun SendMsgView(
           when {
             !permissionsState.allPermissionsGranted -> permissionsState.launchMultiplePermissionRequest()
             recordingInProgress.value -> {
-              stopRecording(recorder, recordingInProgress)
+              rec.stop(recordingInProgress)
               filePath.value?.let(onAudioAdded)
               recordingTimeRange = recordingTimeRange.first..System.currentTimeMillis()
             }
             filePath.value == null -> {
               showRecordingUi(true)
-              filePath.value = startRecording(recorder, recordingInProgress)
+              filePath.value = rec.start(recordingInProgress)
               recordingTimeRange = System.currentTimeMillis()..0L
             }
           }
@@ -204,7 +194,7 @@ fun SendMsgView(
               return@interactionSourceWithTapDetection
             }
             Toast.makeText(SimplexApp.context, generalGetString(R.string.tap_and_hold_to_record), Toast.LENGTH_LONG).show()
-            cancelRecording(filePath.value!!, recorder, recordingInProgress)
+            rec.cancel(filePath.value!!, recordingInProgress)
             cleanUp(true)
           },
           onCancel = startStopRecording,
@@ -241,44 +231,13 @@ fun SendMsgView(
         )
         DisposableEffect(Unit) {
           onDispose {
-            stopRecording(recorder, recordingInProgress)
+            rec.stop(recordingInProgress)
             cleanUp(true)
           }
         }
       }
     }
   }
-}
-
-private fun startRecording(recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>): String {
-  recordingInProgress.value = true
-  recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
-  recorder.setOutputFormat(MediaRecorder.OutputFormat.AMR_WB)
-  recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_WB)
-  recorder.setAudioChannels(1)
-  recorder.setAudioSamplingRate(8000)
-  recorder.setAudioEncodingBitRate(8000)
-  recorder.setMaxDuration(-1)
-  val filePath = getAppFilePath(SimplexApp.context, uniqueCombine(SimplexApp.context, getAppFilePath(SimplexApp.context, "voice.amr")))
-  recorder.setOutputFile(filePath)
-  recorder.prepare()
-  recorder.start()
-  return filePath
-}
-
-private fun stopRecording(recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>) {
-  recordingInProgress.value = false
-  runCatching {
-    recorder.stop()
-  }
-  runCatching {
-    recorder.reset()
-  }
-}
-
-private fun cancelRecording(filePath: String, recorder: MediaRecorder, recordingInProgress: MutableState<Boolean>) {
-  stopRecording(recorder, recordingInProgress)
-  runCatching { File(filePath).delete() }.getOrElse { Log.d(TAG, "Unable to delete a file: ${it.stackTraceToString()}") }
 }
 
 @Composable
