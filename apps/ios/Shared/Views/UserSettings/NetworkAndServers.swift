@@ -40,6 +40,13 @@ struct NetworkAndServers: View {
                         settingsRow("server.rack") { Text("SMP servers") }
                     }
 
+                    NavigationLink {
+                        RTCServers()
+                            .navigationTitle("Your ICE servers")
+                    } label: {
+                        settingsRow("dot.radiowaves.left.and.right") { Text("WebRTC ICE servers") }
+                    }
+
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }

@@ -899,9 +899,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 call.peerMedia = callType.media
                 call.sharedKey = sharedKey
                 let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
-                let iceServers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS),
+                let iceServers = getIceServers()
                 logger.debug(".callOffer useRelay \(useRelay)")
-                logger.debug(".callOffer iceServers \(iceServers)")
+                logger.debug(".callOffer iceServers \(String(describing: iceServers))")
                 m.callCommand = .offer(
                     offer: offer.rtcSession,
                     iceCandidates: offer.rtcIceCandidates,

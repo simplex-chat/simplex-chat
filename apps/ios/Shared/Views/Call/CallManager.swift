@@ -47,9 +47,9 @@ class CallManager {
         )
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
-        let iceServers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS)
-        logger.debug("answerIncomingCall useRelay \(useRelay)")
-        logger.debug("answerIncomingCall iceServers \(iceServers)")
+        let iceServers = getIceServers()
+        logger.debug("answerIncomingCall useRelay: \(useRelay)")
+        logger.debug("answerIncomingCall iceServers: \(String(describing: iceServers))")
         m.callCommand = .start(
             media: invitation.callType.media,
             aesKey: invitation.sharedKey,

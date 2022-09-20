@@ -39,7 +39,6 @@ let appDefaults: [String: Any] = [
     DEFAULT_LA_NOTICE_SHOWN: false,
     DEFAULT_PERFORM_LA: false,
     DEFAULT_WEBRTC_POLICY_RELAY: true,
-    DEFAULT_WEBRTC_ICE_SERVERS: nil,
     DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
     DEFAULT_PRIVACY_LINK_PREVIEWS: true,
     DEFAULT_EXPERIMENTAL_CALLS: false,
@@ -195,7 +194,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    settingsRow("gear") {
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
                     ZStack(alignment: .leading) {
