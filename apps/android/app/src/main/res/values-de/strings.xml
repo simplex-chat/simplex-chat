@@ -4,73 +4,73 @@
   <string name="thousand_abbreviation">k</string>
 
   <!-- Connect via Link - MainActivity.kt -->
-  <string name="connect_via_contact_link">Connect via contact link?</string>
-  <string name="connect_via_invitation_link">Connect via invitation link?</string>
-  <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
-  <string name="connect_via_link_verb">Connect</string>
+  <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
+  <string name="connect_via_invitation_link">Über den Einladungs-Link verbinden?</string>
+  <string name="profile_will_be_sent_to_contact_sending_link">Dein Profil wird an den Kontakt gesendet von dem Du diesen Link erhalten hast.</string>
+  <string name="connect_via_link_verb">Verbinden</string>
 
   <!-- Server info - ChatModel.kt -->
-  <string name="server_connected">connected</string>
-  <string name="server_error">error</string>
-  <string name="server_connecting">connecting</string>
-  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
-  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
+  <string name="server_connected">Verbunden</string>
+  <string name="server_error">Fehler</string>
+  <string name="server_connecting">verbinde</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">Du bist mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
 
   <!-- Item Content - ChatModel.kt -->
-  <string name="deleted_description">deleted</string>
-  <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
-  <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
-  <string name="sender_you_pronoun">you</string>
-  <string name="unknown_message_format">unknown message format</string>
-  <string name="invalid_message_format">invalid message format</string>
+  <string name="deleted_description">Gelöscht</string>
+  <string name="sending_files_not_yet_supported">Das Senden von Dateien wird aktuell nicht unterstützt</string>
+  <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird aktuell nicht unterstützt</string>
+  <string name="sender_you_pronoun">Du</string>
+  <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
+  <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
-  <string name="connection_local_display_name">connection <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
-  <string name="display_name_connection_established">connection established</string>
-  <string name="display_name_invited_to_connect">invited to connect</string>
-  <string name="display_name_connecting">connecting…</string>
-  <string name="description_you_shared_one_time_link">you shared one-time link</string>
-  <string name="description_you_shared_one_time_link_incognito">you shared one-time link incognito</string>
-  <string name="description_via_contact_address_link">via contact address link</string>
-  <string name="description_via_contact_address_link_incognito">incognito via contact address link</string>
-  <string name="description_via_one_time_link">via one-time link</string>
-  <string name="description_via_one_time_link_incognito">incognito via one-time link</string>
+  <string name="connection_local_display_name">Verbindung <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+  <string name="display_name_connection_established">Verbindung hergestellt</string>
+  <string name="display_name_invited_to_connect">Für eine Verbindung eingeladen</string>
+  <string name="display_name_connecting">verbinde …</string>
+  <string name="description_you_shared_one_time_link">Du hast einen One-Time Link geteilt</string>
+  <string name="description_you_shared_one_time_link_incognito">Du hast einen Inkognito One-Time Link geteilt</string>
+  <string name="description_via_contact_address_link">Über einen Kontaktadressen Link</string>
+  <string name="description_via_contact_address_link_incognito">Über einen Inkognito-Kontaktadressen Link</string>
+  <string name="description_via_one_time_link">Über einen One-Time Link</string>
+  <string name="description_via_one_time_link_incognito">Über einen Inkognito-One-Time Link</string>
 
   <!-- SimpleXAPI.kt -->
-  <string name="error_saving_smp_servers">Error saving SMP servers</string>
-  <string name="ensure_smp_server_address_are_correct_format_and_unique">Make sure SMP server addresses are in correct format, line separated and are not duplicated.</string>
-  <string name="error_setting_network_config">Error updating network configuration</string>
+  <string name="error_saving_smp_servers">Fehler beim Speichern des SMP Servers</string>
+  <string name="ensure_smp_server_address_are_correct_format_and_unique">Stelle sicher, dass die SMP Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
+  <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
-  <string name="contact_already_exists">Contact already exists</string>
-  <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
+  <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">Du bist bereits über diesen Link mit <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> verbunden.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
-  <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
-  <string name="connection_error_auth">Connection error (AUTH)</string>
-  <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
-  <string name="cannot_delete_contact">Can\'t delete contact!</string>
-  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
-  <string name="error_deleting_contact">Error deleting contact</string>
-  <string name="error_deleting_group">Error deleting group</string>
-  <string name="error_deleting_contact_request">Error deleting contact request</string>
-  <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
+  <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfe bitte, ob Du den richtigen Link genutzt hast oder bitte Deinen Kontakt darum, Dir nochmal einen Link zuzusenden.</string>
+  <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>
+  <string name="connection_error_auth_desc">Entweder hat Dein Kontakt die Verbindung gelöscht oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melde es uns.\nBitte Deinen Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um Dich neu zu verbinden und stelle sicher, dass Du eine stabile Netzwerk-Verbindung hast.</string>
+  <string name="cannot_delete_contact">Der Kontakt kann nicht gelöscht werden!</string>
+  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Der Kontakt mit <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
+  <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
+  <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
+  <string name="error_deleting_contact_request">Fehler beim Löschen der Kontakt-Anfrage</string>
+  <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
-  <string name="icon_descr_instant_notifications">Instant notifications</string>
-  <string name="service_notifications">Instant notifications!</string>
-  <string name="service_notifications_disabled">Instant notifications are disabled!</string>
-  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">To preserve your privacy, instead of push notifications the app has a <b><xliff:g id="appName">SimpleX</xliff:g> background service</b> – it uses a few percent of the battery per day.</string>
-  <string name="it_can_disabled_via_settings_notifications_still_shown"><b>It can be disabled via settings</b> – notifications will still be shown while the app is running.</string>
-  <string name="turn_off_battery_optimization">In order to use it, please <b>disable battery optimization</b> for <xliff:g id="appName">SimpleX</xliff:g> in the next dialog. Otherwise, the notifications will be disabled.</string>
-  <string name="turning_off_service_and_periodic">Battery optimization is active, turning off background service and periodic requests for new messages. You can re-enable them via settings.</string>
-  <string name="periodic_notifications">Periodic notifications</string>
-  <string name="periodic_notifications_disabled">Periodic notifications are disabled!</string>
-  <string name="periodic_notifications_desc">The app fetches new messages periodically — it uses a few percent of the battery per day. The app doesn\'t use push notifications — data from your device is not sent to the servers.</string>
-  <string name="enter_passphrase_notification_title">Passphrase is needed</string>
-  <string name="enter_passphrase_notification_desc">To receive notifications, please, enter the database passphrase</string>
-  <string name="database_initialization_error_title">Can\'t initialize the database</string>
-  <string name="database_initialization_error_desc">The database is not working correctly. Tap to learn more</string>
+  <string name="icon_descr_instant_notifications">Sofortige Benachrichtigungen</string>
+  <string name="service_notifications">Sofortige Benachrichtigungen!</string>
+  <string name="service_notifications_disabled">Sofortige Benachrichtigungen sind deaktiviert!</string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Um Deine Privatsphäre zu schützen kann statt der Push-Benachrichtigung der <b><xliff:g id="appName">SimpleX</xliff:g> Hintergrunddienst genutzt werden</b> – dieser benötigt ein paar Prozent Akkuleistung am Tag.</string>
+  <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Kann über die Einstellungen deaktiviert werden</b> – Solange die App abläuft werden Benachrichtigungen weiterhin angezeigt.</string>
+  <string name="turn_off_battery_optimization">Um diese Funktion zu nutzen, ist es nötig die Einstellung <b>Akkuoptimierung</b> für <xliff:g id="appName">SimpleX</xliff:g> im nächsten Dialog zu <b>deaktivieren</b>. Ansonsten werden die Benachrichtigungen deaktiviert.</string>
+  <string name="turning_off_service_and_periodic">Die Akkuoptimierung ist aktiv, der Hintergrunddienst und die regelmäßige Nachfrage nach neuen Nachrichten ist abgeschaltet. Du kannst diese Funktion wieder in den Einstellungen aktivieren.</string>
+  <string name="periodic_notifications">Regelmäßige Benachrichtigungen</string>
+  <string name="periodic_notifications_disabled">Regelmäßige Benachrichtigungen sind deaktiviert!</string>
+  <string name="periodic_notifications_desc">Die App holt regelmäßig neue Benachrichtigungen ab — dies benötigt ein paar Prozent Akkuleistung am Tag. Die App nutzt keine Push-Benachrichtigungen — es werden keine Daten von Deinem Gerät an Server gesendet.</string>
+  <string name="enter_passphrase_notification_title">Passwort wird benötigt</string>
+  <string name="enter_passphrase_notification_desc">Gebe bitte das Datenbank-Passwort ein, um Benachrichtigungen zu erhalten</string>
+  <string name="database_initialization_error_title">Die Datenbank kann nicht initialisiert werden</string>
+  <string name="database_initialization_error_desc">Die Datenbank arbeitet nicht richtig. Tippe um mehr zu erfahren</string>
 
   <!-- SimpleX Chat foreground Service -->
   <string name="simplex_service_notification_title"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> service</string>
