@@ -403,6 +403,11 @@
         <target>Colors</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configure ICE servers" xml:space="preserve">
+        <source>Configure ICE servers</source>
+        <target>Configure ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
         <source>Configure SMP servers</source>
         <target>Configure SMP servers</target>
@@ -961,6 +966,11 @@
         <target>Error joining group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving ICE servers" xml:space="preserve">
+        <source>Error saving ICE servers</source>
+        <target>Error saving ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
         <target>Error saving SMP servers</target>
@@ -1134,6 +1144,11 @@
       <trans-unit id="How to use markdown" xml:space="preserve">
         <source>How to use markdown</source>
         <target>How to use markdown</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="ICE servers (one per line)" xml:space="preserve">
+        <source>ICE servers (one per line)</source>
+        <target>ICE servers (one per line)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
@@ -1361,6 +1376,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Make sure SMP server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
         <source>Make sure SMP server addresses are in correct format, line separated and are not duplicated.</source>
         <target>Make sure SMP server addresses are in correct format, line separated and are not duplicated.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+        <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
+        <target>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
@@ -1858,6 +1878,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Saved SMP servers will be removed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
+        <source>Saved WebRTC ICE servers will be removed</source>
+        <target>Saved WebRTC ICE servers will be removed</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
         <source>Scan QR code</source>
         <target>Scan QR code</target>
@@ -2322,6 +2347,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Waiting for image</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="WebRTC ICE servers" xml:space="preserve">
+        <source>WebRTC ICE servers</source>
+        <target>WebRTC ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
         <target>Welcome %@!</target>
@@ -2475,6 +2505,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
         <target>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your ICE servers" xml:space="preserve">
+        <source>Your ICE servers</source>
+        <target>Your ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">

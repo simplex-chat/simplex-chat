@@ -78,7 +78,7 @@ struct RTCServers: View {
                         .frame(height: 160)
                     }
                 } header: {
-                    Text("STUN/TURN servers (one per line)")
+                    Text("ICE servers (one per line)")
                 } footer: {
                     HStack(spacing: 20) {
                         if editRTCServers {
@@ -89,7 +89,7 @@ struct RTCServers: View {
                                 saveUserRTCServers()
                             }
                             .alert(isPresented: $showBadServersAlert) {
-                                Alert(title: Text("Error saving servers"), message: Text("Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated."))
+                                Alert(title: Text("Error saving ICE servers"), message: Text("Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated."))
                             }
                             Spacer()
                             howToButton()
