@@ -98,6 +98,9 @@
 "%lld contact(s) selected" = "Выбрано контактов: %lld";
 
 /* No comment provided by engineer. */
+"%lld file(s) with total size of %@" = "%lld файл(ов) общим размером %@";
+
+/* No comment provided by engineer. */
 "%lld members" = "Членов группы: %lld";
 
 /* No comment provided by engineer. */
@@ -501,6 +504,12 @@
 "Delete database" = "Удалить данные чата";
 
 /* No comment provided by engineer. */
+"Delete files & media" = "Удалить файлы и медиа";
+
+/* No comment provided by engineer. */
+"Delete files and media?" = "Удалить файлы и медиа?";
+
+/* No comment provided by engineer. */
 "Delete for everyone" = "Удалить для всех";
 
 /* No comment provided by engineer. */
@@ -712,6 +721,9 @@
 
 /* No comment provided by engineer. */
 "File: %@" = "Файл: %@";
+
+/* No comment provided by engineer. */
+"Files" = "Файлы";
 
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
@@ -1042,6 +1054,9 @@
 
 /* No comment provided by engineer. */
 "No group!" = "Группа не найдена!";
+
+/* No comment provided by engineer. */
+"No received or sent files" = "Нет полученных или отправленных файлов";
 
 /* No comment provided by engineer. */
 "Notifications" = "Уведомления";
@@ -1456,6 +1471,9 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Тема";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";

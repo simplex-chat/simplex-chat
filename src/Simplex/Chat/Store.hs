@@ -106,6 +106,8 @@ module Simplex.Chat.Store
     matchSentProbe,
     mergeContactRecords,
     createSndFileTransfer,
+    createSndDirectFileTransfer,
+    createSndDirectFTConnection,
     createSndGroupFileTransfer,
     createSndGroupFileTransferConnection,
     updateFileCancelled,
@@ -113,6 +115,7 @@ module Simplex.Chat.Store
     getSharedMsgIdByFileId,
     getFileIdBySharedMsgId,
     getGroupFileIdBySharedMsgId,
+    getDirectFileIdBySharedMsgId,
     getChatRefByFileId,
     updateSndFileStatus,
     createSndFileChunk,
@@ -2001,6 +2004,25 @@ createSndFileTransfer db userId Contact {contactId} filePath FileInvitation {fil
     (fileId, fileStatus, connId, currentTs, currentTs)
   pure fileId
 
+createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> IO Int64
+createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+    (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
+  insertedRowId db
+
+createSndDirectFTConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> IO ()
+createSndDirectFTConnection db user@User {userId} fileId (cmdId, acId) = do
+  currentTs <- getCurrentTime
+  Connection {connId} <- createSndFileConnection_ db userId fileId acId
+  setCommandConnId db user cmdId connId
+  DB.execute
+    db
+    "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+    (fileId, FSAccepted, connId, currentTs, currentTs)
+
 createSndGroupFileTransfer :: DB.Connection -> UserId -> GroupInfo -> FilePath -> FileInvitation -> Integer -> IO Int64
 createSndGroupFileTransfer db userId GroupInfo {groupId} filePath FileInvitation {fileName, fileSize} chunkSize = do
   currentTs <- getCurrentTime
@@ -2068,6 +2090,19 @@ getGroupFileIdBySharedMsgId db userId groupId sharedMsgId =
         WHERE i.user_id = ? AND i.group_id = ? AND i.shared_msg_id = ?
       |]
       (userId, groupId, sharedMsgId)
+
+getDirectFileIdBySharedMsgId :: DB.Connection -> User -> Contact -> SharedMsgId -> ExceptT StoreError IO Int64
+getDirectFileIdBySharedMsgId db User {userId} Contact {contactId} sharedMsgId =
+  ExceptT . firstRow fromOnly (SEFileIdNotFoundBySharedMsgId sharedMsgId) $
+    DB.query
+      db
+      [sql|
+        SELECT f.file_id
+        FROM files f
+        JOIN chat_items i ON i.chat_item_id = f.chat_item_id
+        WHERE i.user_id = ? AND i.contact_id = ? AND i.shared_msg_id = ?
+      |]
+      (userId, contactId, sharedMsgId)
 
 getChatRefByFileId :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO ChatRef
 getChatRefByFileId db User {userId} fileId =
