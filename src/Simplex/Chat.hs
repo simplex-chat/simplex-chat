@@ -259,6 +259,15 @@ processChatCommand = \case
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
+        -- This method creates file invitation without connection request - it has to be accepted with x.acpt.file.inv message sent back to the contact
+        -- setupSndFileTransfer' :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
+        -- setupSndFileTransfer' ct = forM file_ $ \file -> do
+        --   (fileSize, chSize) <- checkSndFile file
+        --   let fileName = takeFileName file
+        --       fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
+        --   fileId <- withStore' $ \db -> createSndDirectFileTransfer db userId ct file fileInvitation chSize
+        --   let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
+        --   pure (fileInvitation, ciFile)
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize) <- checkSndFile file
@@ -1121,30 +1130,37 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     _ -> throwChatError $ CEFileAlreadyReceiving fName
   case fileConnReq of
     -- direct file protocol
-    Just connReq ->
+    Just connReq -> do
       -- [async agent commands] keep command synchronous, but process error
-      tryError (withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName) >>= \case
-        Right agentConnId -> do
-          filePath <- getRcvFilePath filePath_ fName
-          withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
-        Left e -> throwError e
-    -- group file protocol
-    Nothing ->
-      case grpMemberId of
-        Nothing -> throwChatError $ CEFileInternal "group member not found for file transfer"
-        Just memId -> do
-          (GroupInfo {groupId}, GroupMember {activeConn}) <- withStore $ \db -> getGroupAndMember db user memId
+      agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
+      filePath <- getRcvFilePath filePath_ fName
+      withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
+    -- group & direct file protocol
+    Nothing -> do
+      chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
+      case (chatRef, grpMemberId) of
+        (ChatRef CTDirect contactId, Nothing) -> do
+          ct <- withStore $ \db -> getContact db userId contactId
+          (msg, ci) <- acceptFile
+          void $ sendDirectContactMessage ct msg
+          pure ci
+        (ChatRef CTGroup groupId, Just memId) -> do
+          GroupMember {activeConn} <- withStore $ \db -> getGroupMember db user groupId memId
           case activeConn of
             Just conn -> do
-              sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-              -- [async agent commands] keep command synchronous, but process error
-              (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-              filePath <- getRcvFilePath filePath_ fName
-              ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
-              void $ sendDirectMessage conn (XFileAcptInv sharedMsgId fileInvConnReq fName) (GroupId groupId)
+              (msg, ci) <- acceptFile
+              void $ sendDirectMessage conn msg $ GroupId groupId
               pure ci
             _ -> throwChatError $ CEFileInternal "member connection not active"
+        _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
+    acceptFile :: m (ChatMsgEvent, AChatItem)
+    acceptFile = do
+      sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+      (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+      filePath <- getRcvFilePath filePath_ fName
+      ci <- withStore (\db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath)
+      pure (XFileAcptInv sharedMsgId fileInvConnReq fName, ci)
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing ->
@@ -1416,6 +1432,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileCancel sharedMsgId -> xFileCancel ct sharedMsgId msgMeta
+              XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv msg msgMeta
               XInfoProbe probe -> xInfoProbe ct probe
@@ -1956,6 +1973,18 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         cancelRcvFileTransfer user ft
         toView $ CRRcvFileSndCancelled ft
 
+    xFileAcptInv :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
+    xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta = do
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+      fileId <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId
+      (FileTransferMeta {fileName, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
+      -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+      if fName == fileName
+        then unless cancelled $ do
+          connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
+          withStore' $ \db -> createSndDirectFTConnection db user fileId connIds
+        else messageError "x.file.acpt.inv: fileName is different from expected"
+
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
     xFileCancelGroup g@GroupInfo {groupId} mem@GroupMember {memberId} sharedMsgId msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g mem) msgMeta
@@ -1977,17 +2006,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
       (FileTransferMeta {fileName, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
-      unless cancelled $
-        if fName == fileName
-          then
-            tryError
-              -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-              (joinAgentConnectionAsync user True fileConnReq . directMessage $ XOk)
-              >>= \case
-                Right connIds ->
-                  withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m
-                Left e -> throwError e
-          else messageError "x.file.acpt.inv: fileName is different from expected"
+      if fName == fileName
+        then unless cancelled $ do
+          -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+          connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
+          withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m
+        else messageError "x.file.acpt.inv: fileName is different from expected"
 
     groupMsgToView :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()
     groupMsgToView gInfo m ci msgMeta = do
