@@ -12,7 +12,7 @@ An option to turn on scheduled deletion of chat history (chat items and files). 
 
 Scheduled deletion implementation plan:
 
-- Enum ChatItemTTL - None, 30Minutes, 1Hour, etc.
+- Enum ChatItemTTL - None, Day, Week, Month, etc.
 
 - Functions to convert ChatItemTTL to number of seconds for chatItemTTL and expireChatItemsInterval
 
@@ -23,6 +23,8 @@ Scheduled deletion implementation plan:
   - fixed - 30 min?
 
 - iOS is not a long running process so we have to check after start
+
+- To prevent NSE from running this process parameterize startChat to allow starting without scheduled deletion even if it is configured
 
 - Don't update chats and previews?
 
@@ -46,15 +48,15 @@ Core:
   - Add table settings, field chat_item_ttl
   - On chat start - read settings, convert chat_item_ttl into chatItemTTL and expireChatItemsInterval (may be Nothing); if not Nothing - run expireMessages thread and put into controller
   - On SetChatItemTTL - update settings
-    - if Nothing - cancel expireMessages, remove from controller, update setting in store
-    - if Just - start expireMessages, put into controller, update setting in store
+    - If Nothing - cancel expireMessages, remove from controller, update setting in store
+    - If Just - start expireMessages, put into controller, update setting in store
   - expireMessages thread:
     forever $ do
       threadDelay interval
       expiration logic
   - Expiration logic:
-    - select all (chat ref, chat item id) older than (current time - TTL), comparing with updated_at (created_at?)
-    - reuse logic from APIDeleteChatItem to delete each item (should messages be deleted or updated to XMsgDeleted?)
+    - Select all (chat ref, chat item id) older than (current time - TTL), comparing with updated_at (created_at?)
+    - Reuse logic from APIDeleteChatItem to delete each item (should messages be deleted or updated to XMsgDeleted?)
 
 ### Per chat expiration
 
