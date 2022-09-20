@@ -24,8 +24,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
-import chat.simplex.app.BuildConfig
-import chat.simplex.app.SimplexApp
+import chat.simplex.app.*
 import chat.simplex.app.model.CIFile
 import kotlinx.coroutines.*
 import java.io.*
@@ -403,6 +402,31 @@ fun removeFile(context: Context, fileName: String): Boolean {
     Log.e(chat.simplex.app.TAG, "Util.kt removeFile error")
   }
   return fileDeleted
+}
+
+fun deleteAppFiles(context: Context) {
+  val dir = File(getAppFilesDirectory(context))
+  try {
+    dir.list()?.forEach {
+      removeFile(context, it)
+    }
+  } catch (e: java.lang.Exception) {
+    Log.e(TAG, "Util deleteAppFiles error: ${e.stackTraceToString()}")
+  }
+}
+
+fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in bytes
+  var fileCount = 0
+  var bytes = 0L
+  try {
+    File(dir).listFiles()?.forEach {
+      fileCount++
+      bytes += it.length()
+    }
+  } catch (e: java.lang.Exception) {
+    Log.e(TAG, "Util directoryFileCountAndSize error: ${e.stackTraceToString()}")
+  }
+  return fileCount to bytes
 }
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
