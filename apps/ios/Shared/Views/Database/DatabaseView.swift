@@ -166,6 +166,7 @@ struct DatabaseView: View {
                     }
                 }
             }
+            .disabled(!stopped || appFilesCountAndSize?.0 == 0)
         }
         .onAppear {
             runChat = m.chatRunning ?? true
