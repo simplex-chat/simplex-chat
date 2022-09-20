@@ -394,3 +394,26 @@ struct RTCIceServer: Codable, Equatable {
     var username: String? = nil
     var credential: String? = nil
 }
+
+// the servers are expected in this format:
+// stun:stun.simplex.im:443
+// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443
+func parseRTCIceServer(_ str: String) -> RTCIceServer? {
+    var s = replaceScheme(str, "stun:")
+    s = replaceScheme(s, "turn:")
+    if let u: URL = URL(string: s), u.path == "" && (u.scheme == "stun" || u.scheme == "turn")  {
+        let url = [u.scheme, u.host, u.port].joined(separator: ":")
+        return RTCIceServer(
+            urls: [url],
+            username: u.user,
+            credential: u.password
+        )
+    }
+    return nil
+}
+
+private func replaceScheme(_ s: String, _ scheme: String) -> String {
+    s.starts(with: scheme)
+    ? s.replacingOccurrences(of: scheme, with: scheme + "//", options: .anchored, range: nil)) }
+    : s
+}

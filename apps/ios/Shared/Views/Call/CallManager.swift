@@ -47,8 +47,16 @@ class CallManager {
         )
         m.showCallView = true
         let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+        let iceServers = UserDefaults.standard.stringArray(forKey: DEFAULT_WEBRTC_ICE_SERVERS)
         logger.debug("answerIncomingCall useRelay \(useRelay)")
-        m.callCommand = .start(media: invitation.callType.media, aesKey: invitation.sharedKey, useWorker: true, relay: useRelay)
+        logger.debug("answerIncomingCall iceServers \(iceServers)")
+        m.callCommand = .start(
+            media: invitation.callType.media,
+            aesKey: invitation.sharedKey,
+            useWorker: true,
+            iceServers: iceServers,
+            relay: useRelay
+        )
     }
 
     func endCall(callUUID: UUID, completed: @escaping (Bool) -> Void) {
