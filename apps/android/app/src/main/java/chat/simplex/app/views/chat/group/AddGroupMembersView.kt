@@ -43,10 +43,14 @@ fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () ->
     selectedRole = selectedRole,
     inviteMembers = {
       withApi {
-        selectedContacts.forEach {
-          val member = chatModel.controller.apiAddMember(groupInfo.groupId, it, selectedRole.value)
-          if (member != null) {
-            chatModel.upsertGroupMember(groupInfo, member)
+        run breaking@{
+          selectedContacts.forEach {
+            val member = chatModel.controller.apiAddMember(groupInfo.groupId, it, selectedRole.value)
+            if (member != null) {
+              chatModel.upsertGroupMember(groupInfo, member)
+            } else {
+              return@breaking
+            }
           }
         }
         close.invoke()
