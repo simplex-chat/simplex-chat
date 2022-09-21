@@ -569,7 +569,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
         if (cItem.isRcvNew) {
           LaunchedEffect(cItem.id) {
             scope.launch {
-              delay(750)
+              delay(250)
               markRead(CC.ItemRange(cItem.id, cItem.id), null)
             }
           }
