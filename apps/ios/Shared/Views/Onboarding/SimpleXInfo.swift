@@ -78,7 +78,7 @@ struct OnboardingActionButton: View {
         if m.currentUser == nil {
             actionButton("Create your profile", onboarding: .step2_CreateProfile)
         } else {
-            actionButton("Make a private connection", onboarding: .step4_MakeConnection)
+            actionButton("Make a private connection", onboarding: .onboardingComplete)
         }
     }
 
