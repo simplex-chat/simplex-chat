@@ -76,7 +76,7 @@ struct UserAddress: View {
                 }
             }
             .padding()
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .alert(item: $alert) { alert in
                 switch alert {
                 case .deleteAddress:

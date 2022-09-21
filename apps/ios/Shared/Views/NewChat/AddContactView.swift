@@ -57,7 +57,7 @@ struct AddContactView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding()
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
 }
