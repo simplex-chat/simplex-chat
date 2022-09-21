@@ -303,6 +303,11 @@
         <target>Звонок уже завершен!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Calls" xml:space="preserve">
+        <source>Calls</source>
+        <target>Звонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Нельзя пригласить контакт!</target>
@@ -401,6 +406,11 @@
       <trans-unit id="Colors" xml:space="preserve">
         <source>Colors</source>
         <target>Цвета</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Configure ICE servers" xml:space="preserve">
+        <source>Configure ICE servers</source>
+        <target>Настройка ICE серверов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
@@ -961,6 +971,11 @@
         <target>Ошибка приглашения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error saving ICE servers" xml:space="preserve">
+        <source>Error saving ICE servers</source>
+        <target>Ошибка при сохранении ICE серверов</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
         <target>Ошибка при сохранении SMP серверов</target>
@@ -1134,6 +1149,11 @@
       <trans-unit id="How to use markdown" xml:space="preserve">
         <source>How to use markdown</source>
         <target>Как форматировать</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="ICE servers (one per line)" xml:space="preserve">
+        <source>ICE servers (one per line)</source>
+        <target>ICE серверы (один на строке)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
@@ -1363,6 +1383,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+        <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
+        <target>Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
         <target>Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*</target>
@@ -1396,6 +1421,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Текст сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages" xml:space="preserve">
+        <source>Messages</source>
+        <target>Сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
@@ -1856,6 +1886,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Saved SMP servers will be removed" xml:space="preserve">
         <source>Saved SMP servers will be removed</source>
         <target>Сохраненные SMP серверы будут удалены</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
+        <source>Saved WebRTC ICE servers will be removed</source>
+        <target>Сохраненные WebRTC ICE серверы будут удалены</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
@@ -2322,6 +2357,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ожидается прием изображения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="WebRTC ICE servers" xml:space="preserve">
+        <source>WebRTC ICE servers</source>
+        <target>WebRTC ICE серверы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
         <target>Здравствуйте %@!</target>
@@ -2475,6 +2515,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
         <target>Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие вашего основного профиля, приглашать контакты не разрешено</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your ICE servers" xml:space="preserve">
+        <source>Your ICE servers</source>
+        <target>Ваши ICE серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">

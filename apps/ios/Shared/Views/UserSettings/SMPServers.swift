@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private let serversFont = Font.custom("Menlo", size: 14)
+let serversFont = Font.custom("Menlo", size: 14)
 
 private let howToUrl = URL(string: "https://github.com/simplex-chat/simplexmq#using-smp-server-and-smp-agent")!
 
