@@ -112,14 +112,9 @@ struct MakeConnection: View {
     }
 
     private func addContactAction() {
-        do {
-            connReq = try apiAddContact()
+        if let cReq = apiAddContact() {
+            connReq = cReq
             actionSheet = .createLink
-        } catch {
-            DispatchQueue.global().async {
-                connectionErrorAlert(error)
-            }
-            logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
 

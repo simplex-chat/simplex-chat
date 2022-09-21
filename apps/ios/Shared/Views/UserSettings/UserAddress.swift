@@ -7,10 +7,23 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct UserAddress: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State private var deleteAddressAlert = false
+    @State private var alert: UserAddressAlert?
+
+    private enum UserAddressAlert: Identifiable {
+        case deleteAddress
+        case error(title: LocalizedStringKey, error: String = "")
+
+        var id: String {
+            switch self {
+            case .deleteAddress: return "deleteAddress"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -27,28 +40,10 @@ struct UserAddress: View {
                         }
                         .padding()
 
-                        Button(role: .destructive) { deleteAddressAlert = true } label: {
+                        Button(role: .destructive) { alert = .deleteAddress } label: {
                             Label("Delete address", systemImage: "trash")
                         }
                         .padding()
-                        .alert(isPresented: $deleteAddressAlert) {
-                            Alert(
-                                title: Text("Delete address?"),
-                                message: Text("All your contacts will remain connected"),
-                                primaryButton: .destructive(Text("Delete")) {
-                                    Task {
-                                        do {
-                                            try await apiDeleteUserAddress()
-                                            DispatchQueue.main.async {
-                                                chatModel.userAddress = nil
-                                            }
-                                        } catch let error {
-                                            logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
-                                        }
-                                    }
-                                }, secondaryButton: .cancel()
-                            )
-                        }
                     }
                     .frame(maxWidth: .infinity)
                 } else {
@@ -61,6 +56,14 @@ struct UserAddress: View {
                                 }
                             } catch let error {
                                 logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                                switch error as? ChatResponse {
+                                case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+                                    alert = .error(title: "Connection timeout", error: "Please check your network connection and try again.")
+                                case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+                                    alert = .error(title: "Connection error", error: "Please check your network connection and try again.")
+                                default:
+                                    alert = .error(title: "Error creating address", error: "Error: \(responseError(error))")
+                                }
                             }
                         }
                     } label: { Label("Create address", systemImage: "qrcode") }
@@ -69,6 +72,29 @@ struct UserAddress: View {
             }
             .padding()
             .frame(maxHeight: .infinity, alignment: .top)
+            .alert(item: $alert) { alert in
+                switch alert {
+                case .deleteAddress:
+                    return Alert(
+                        title: Text("Delete address?"),
+                        message: Text("All your contacts will remain connected"),
+                        primaryButton: .destructive(Text("Delete")) {
+                            Task {
+                                do {
+                                    try await apiDeleteUserAddress()
+                                    DispatchQueue.main.async {
+                                        chatModel.userAddress = nil
+                                    }
+                                } catch let error {
+                                    logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                }
+                            }
+                        }, secondaryButton: .cancel()
+                    )
+                case let .error(title, error):
+                    return Alert(title: Text(title), message: Text("\(error)"))
+                }
+            }
         }
     }
 }

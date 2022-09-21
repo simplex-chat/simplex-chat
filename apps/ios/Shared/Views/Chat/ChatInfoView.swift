@@ -56,10 +56,18 @@ struct ChatInfoView: View {
 
     enum ChatInfoViewAlert: Identifiable {
         case deleteContactAlert
+        case contactGroupsAlert(groupNames: [GroupName])
         case clearChatAlert
         case networkStatusAlert
 
-        var id: ChatInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .deleteContactAlert: return "deleteContactAlert"
+            case .contactGroupsAlert: return "contactGroupsAlert"
+            case .clearChatAlert: return "clearChatAlert"
+            case .networkStatusAlert: return "networkStatusAlert"
+            }
+        }
     }
 
     var body: some View {
@@ -111,6 +119,7 @@ struct ChatInfoView: View {
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .deleteContactAlert: return deleteContactAlert()
+            case let .contactGroupsAlert(groupNames): return contactGroupsAlert(groupNames)
             case .clearChatAlert: return clearChatAlert()
             case .networkStatusAlert: return networkStatusAlert()
             }
@@ -221,10 +230,20 @@ struct ChatInfoView: View {
                         }
                     } catch let error {
                         logger.error("deleteContactAlert apiDeleteChat error: \(error.localizedDescription)")
+                        if case let .chatCmdError(.error(.contactGroups(_, groupNames))) = error as? ChatResponse {
+                            alert = .contactGroupsAlert(groupNames: groupNames)
+                        }
                     }
                 }
             },
             secondaryButton: .cancel()
+        )
+    }
+
+    private func contactGroupsAlert(_ groupNames: [GroupName]) -> Alert {
+        Alert(
+            title: Text("Can't delete contact!"),
+            message: Text("Contact \(contact.displayName) cannot be deleted, they are a member of the group(s) \(groupNames.joined(separator: ", ")).")
         )
     }
 

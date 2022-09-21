@@ -222,6 +222,9 @@
 "Calls" = "Звонки";
 
 /* No comment provided by engineer. */
+"Can't delete contact!" = "Невозможно удалить контакт!";
+
+/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -232,6 +235,9 @@
 
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Ошибка доступа к Keychain при сохранении пароля";
+
+/* No comment provided by engineer. */
+"Cannot receive file" = "Невозможно получить файл";
 
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Поменять пароль базы данных?";
@@ -373,6 +379,9 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
+
+/* No comment provided by engineer. */
+"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Контакт %@ не может быть удален, так как является членом групп(ы) %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -651,16 +660,25 @@
 "error" = "ошибка";
 
 /* No comment provided by engineer. */
+"Error accepting contact request" = "Ошибка при принятии запроса на соединение";
+
+/* No comment provided by engineer. */
 "Error accessing database file" = "Ошибка при доступе к данным чата";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* No comment provided by engineer. */
+"Error creating address" = "Ошибка при создании адреса";
+
+/* No comment provided by engineer. */
 "Error creating group" = "Ошибка при создании группы";
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
+
+/* No comment provided by engineer. */
+"Error deleting chat!" = "Ошибка при удалении чата!";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
@@ -687,6 +705,9 @@
 "Error joining group" = "Ошибка приглашения";
 
 /* No comment provided by engineer. */
+"Error receiving file" = "Ошибка при получении файла";
+
+/* No comment provided by engineer. */
 "Error saving group profile" = "Ошибка при сохранении профиля группы";
 
 /* No comment provided by engineer. */
@@ -696,10 +717,16 @@
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
 
 /* No comment provided by engineer. */
+"Error sending message" = "Ошибка при отправке сообщения";
+
+/* No comment provided by engineer. */
 "Error starting chat" = "Ошибка при запуске чата";
 
 /* No comment provided by engineer. */
 "Error stopping chat" = "Ошибка при остановке чата";
+
+/* No comment provided by engineer. */
+"Error updating message" = "Ошибка при обновлении сообщения";
 
 /* No comment provided by engineer. */
 "Error updating settings" = "Ошибка при сохранении настроек сети";
@@ -1339,6 +1366,12 @@
 
 /* No comment provided by engineer. */
 "Send notifications:" = "Отправлять уведомления:";
+
+/* No comment provided by engineer. */
+"Sender cancelled file transfer." = "Отправитель отменил передачу файла.";
+
+/* No comment provided by engineer. */
+"Sender may have deleted the connection request." = "Отправитель мог удалить запрос на соединение.";
 
 /* No comment provided by engineer. */
 "Sending via" = "Отправка через";

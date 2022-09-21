@@ -271,7 +271,6 @@ processChatCommand = \case
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize) <- checkSndFile file
-          -- [async agent commands] keep command synchronous, but process error
           (agentConnId, fileConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
@@ -765,7 +764,6 @@ processChatCommand = \case
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
-        -- [async agent commands] keep command synchronous, but process error
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
@@ -778,7 +776,6 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- [async agent commands] keep command synchronous, but process error
       agentConnId <- withAgent $ \a -> joinConnection a True connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
@@ -1131,7 +1128,6 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
   case fileConnReq of
     -- direct file protocol
     Just connReq -> do
-      -- [async agent commands] keep command synchronous, but process error
       agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath filePath_ fName
       withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath

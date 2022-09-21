@@ -308,6 +308,11 @@
         <target>Calls</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Can't delete contact!" xml:space="preserve">
+        <source>Can't delete contact!</source>
+        <target>Can't delete contact!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Can't invite contact!</target>
@@ -326,6 +331,11 @@
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
         <target>Cannot access keychain to save database password</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cannot receive file" xml:space="preserve">
+        <source>Cannot receive file</source>
+        <target>Cannot receive file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -496,6 +506,11 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Connection timeout</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
+        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
+        <target>Contact %@ cannot be deleted, they are a member of the group(s) %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -911,6 +926,11 @@
         <target>Enter passphrase…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error accepting contact request" xml:space="preserve">
+        <source>Error accepting contact request</source>
+        <target>Error accepting contact request</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error accessing database file" xml:space="preserve">
         <source>Error accessing database file</source>
         <target>Error accessing database file</target>
@@ -921,6 +941,11 @@
         <target>Error adding member(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating address" xml:space="preserve">
+        <source>Error creating address</source>
+        <target>Error creating address</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating group" xml:space="preserve">
         <source>Error creating group</source>
         <target>Error creating group</target>
@@ -929,6 +954,11 @@
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Error deleting chat database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting chat!" xml:space="preserve">
+        <source>Error deleting chat!</source>
+        <target>Error deleting chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -971,6 +1001,11 @@
         <target>Error joining group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error receiving file" xml:space="preserve">
+        <source>Error receiving file</source>
+        <target>Error receiving file</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
         <target>Error saving ICE servers</target>
@@ -986,6 +1021,11 @@
         <target>Error saving group profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error sending message" xml:space="preserve">
+        <source>Error sending message</source>
+        <target>Error sending message</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
         <target>Error starting chat</target>
@@ -994,6 +1034,11 @@
       <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
         <target>Error stopping chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating message" xml:space="preserve">
+        <source>Error updating message</source>
+        <target>Error updating message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating settings" xml:space="preserve">
@@ -1926,6 +1971,16 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Send notifications:" xml:space="preserve">
         <source>Send notifications:</source>
         <target>Send notifications:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+        <source>Sender cancelled file transfer.</source>
+        <target>Sender cancelled file transfer.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+        <source>Sender may have deleted the connection request.</source>
+        <target>Sender may have deleted the connection request.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
