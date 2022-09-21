@@ -801,7 +801,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   private fun networkErrorAlert(r: CR): Boolean {
-    when {
+    return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.BROKER
           && r.chatError.agentError.brokerErr is BrokerErrorType.TIMEOUT -> {
@@ -809,7 +809,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           generalGetString(R.string.connection_timeout),
           generalGetString(R.string.network_error_desc)
         )
-        return true
+        true
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.BROKER
@@ -818,9 +818,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
           generalGetString(R.string.connection_error),
           generalGetString(R.string.network_error_desc)
         )
-        return true
+        true
       }
-      else -> return false
+      else -> false
     }
   }
 
