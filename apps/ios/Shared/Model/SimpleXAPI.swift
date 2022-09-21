@@ -480,31 +480,24 @@ func apiGetUserAddress() throws -> String? {
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact? {
+func apiAcceptContactRequest(contactReqId: Int64) async -> Contact? {
     let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
     let am = AlertManager.shared
-    switch r {
-    case let .acceptingContactRequest(contact): return contact
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-        am.showAlertMsg(
-            title: "Connection timeout",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-        am.showAlertMsg(
-            title: "Connection error",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    case .chatCmdError(.errorAgent(.SMP(.AUTH))):
+
+    if case let .acceptingContactRequest(contact) = r { return contact }
+    if case .chatCmdError(.errorAgent(.SMP(.AUTH))) = r {
         am.showAlertMsg(
             title: "Connection error (AUTH)",
             message: "Sender may have deleted the connection request."
         )
-        return nil
-    default: throw r
+    } else if !networkErrorAlert(r) {
+        logger.error("apiAcceptContactRequest error: \(String(describing: r))")
+        am.showAlertMsg(
+            title: "Error accepting contact request",
+            message: "Error: \(String(describing: r))"
+        )
     }
+    return nil
 }
 
 func apiRejectContactRequest(contactReqId: Int64) async throws {
@@ -533,7 +526,7 @@ func apiReceiveFile(fileId: Int64) async -> AChatItem? {
             message: "Sender cancelled file transfer."
         )
     } else if !networkErrorAlert(r) {
-        logger.error("receiveFile error: \(String(describing: r))")
+        logger.error("apiReceiveFile error: \(String(describing: r))")
         am.showAlertMsg(
             title: "Error receiving file",
             message: "Error: \(String(describing: r))"
@@ -563,14 +556,9 @@ func networkErrorAlert(_ r: ChatResponse) -> Bool {
 }
 
 func acceptContactRequest(_ contactRequest: UserContactRequest) async {
-    do {
-        if let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
-            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-            DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
-        }
-    } catch let error {
-        logger.error("acceptContactRequest error: \(responseError(error))")
-        AlertManager.shared.showAlertMsg(title: "Error accepting contact request", message: "Error: \(responseError(error))")
+    if let contact = await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
+        let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
     }
 }
 
