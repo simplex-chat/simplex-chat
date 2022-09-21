@@ -19,13 +19,13 @@ enum NewChatAction: Identifiable {
 }
 
 struct NewChatButton: View {
-    @State private var showAddChat = false
+    @Binding var showAddChat: Bool
     @State private var connReq: String = ""
     @State private var actionSheet: NewChatAction?
 
     var body: some View {
         Button { showAddChat = true } label: {
-            Image(systemName: "plus.circle.fill")
+            Image(systemName: "square.and.pencil")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
@@ -85,6 +85,6 @@ func connectionReqSentAlert(_ type: ConnReqType) {
 
 struct NewChatButton_Previews: PreviewProvider {
     static var previews: some View {
-        NewChatButton()
+        NewChatButton(showAddChat: Binding.constant(false))
     }
 }

@@ -16,7 +16,6 @@ struct OnboardingView: View {
         case .step1_SimpleXInfo: SimpleXInfo(onboarding: true)
         case .step2_CreateProfile: CreateProfile()
         case .step3_SetNotificationsMode: SetNotificationsMode()
-        case .step4_MakeConnection: MakeConnection()
         case .onboardingComplete: EmptyView()
         }
     }
@@ -26,7 +25,6 @@ enum OnboardingStage {
     case step1_SimpleXInfo
     case step2_CreateProfile
     case step3_SetNotificationsMode
-    case step4_MakeConnection
     case onboardingComplete
 }
 

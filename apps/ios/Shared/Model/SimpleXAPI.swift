@@ -763,8 +763,6 @@ func startChat() throws {
         withAnimation {
             m.onboardingStage = m.onboardingStage == .step2_CreateProfile
                                 ? .step3_SetNotificationsMode
-                                : m.chats.isEmpty
-                                ? .step4_MakeConnection
                                 : .onboardingComplete
         }
     }
