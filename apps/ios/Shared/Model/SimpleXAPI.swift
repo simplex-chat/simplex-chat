@@ -254,25 +254,10 @@ func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int6
         }
     } else {
         r = await chatSendCmd(cmd, bgDelay: msgDelay)
-        let am = AlertManager.shared
-        switch r {
-        case let .newChatItem(aChatItem):
+        if case let .newChatItem(aChatItem) = r {
             return aChatItem.chatItem
-        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-            am.showAlertMsg(
-                title: "Connection timeout",
-                message: "Please check your network connection and try again."
-            )
-            return nil
-        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-            am.showAlertMsg(
-                title: "Connection error",
-                message: "Please check your network connection and try again."
-            )
-            return nil
-        default:
-            throw r
         }
+        throw r
     }
 }
 
@@ -494,20 +479,10 @@ func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Co
     throw r
 }
 
-enum CreateUserAddressResult {
-    case created(address: String)
-    case connectionTimeout
-    case connectionError
-}
-
-func apiCreateUserAddress() async throws -> CreateUserAddressResult {
+func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
-    switch r {
-    case let .userContactLinkCreated(connReq): return .created(address: connReq)
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))): return .connectionTimeout
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))): return .connectionError
-    default: throw r
-    }
+    if case let .userContactLinkCreated(connReq) = r { return connReq }
+    throw r
 }
 
 func apiDeleteUserAddress() async throws {

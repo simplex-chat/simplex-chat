@@ -15,15 +15,11 @@ struct UserAddress: View {
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
-        case connectionTimeout
-        case connectionError
         case error(title: LocalizedStringKey, error: String = "")
 
         var id: String {
             switch self {
             case .deleteAddress: return "deleteAddress"
-            case .connectionTimeout: return "connectionTimeout"
-            case .connectionError: return "connectionError"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -54,18 +50,20 @@ struct UserAddress: View {
                     Button {
                         Task {
                             do {
-                                let r = try await apiCreateUserAddress()
-                                switch r {
-                                case let .created(address):
-                                    DispatchQueue.main.async {
-                                        chatModel.userAddress = address
-                                    }
-                                case .connectionTimeout: alert = .connectionTimeout
-                                case .connectionError: alert = .connectionError
+                                let userAddress = try await apiCreateUserAddress()
+                                DispatchQueue.main.async {
+                                    chatModel.userAddress = userAddress
                                 }
                             } catch let error {
                                 logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
-                                alert = .error(title: "Error creating address", error: "Error: \(responseError(error))")
+                                switch error as? ChatResponse {
+                                case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+                                    alert = .error(title: "Connection timeout", error: "Please check your network connection and try again.")
+                                case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+                                    alert = .error(title: "Connection error", error: "Please check your network connection and try again.")
+                                default:
+                                    alert = .error(title: "Error creating address", error: "Error: \(responseError(error))")
+                                }
                             }
                         }
                     } label: { Label("Create address", systemImage: "qrcode") }
@@ -93,10 +91,6 @@ struct UserAddress: View {
                             }
                         }, secondaryButton: .cancel()
                     )
-                case .connectionTimeout:
-                    return Alert(title: Text("Connection timeout"), message: Text("Please check your network connection and try again."))
-                case .connectionError:
-                    return Alert(title: Text("Connection error"), message: Text("Please check your network connection and try again."))
                 case let .error(title, error):
                     return Alert(title: Text(title), message: Text("\(error)"))
                 }
