@@ -324,9 +324,6 @@
 "Connect via relay" = "Соединяться через сервер (relay)";
 
 /* No comment provided by engineer. */
-"Connect with the developers" = "Соединиться с разработчиками";
-
-/* No comment provided by engineer. */
 "connected" = "соединение установлено";
 
 /* No comment provided by engineer. */
@@ -412,9 +409,6 @@
 
 /* No comment provided by engineer. */
 "Create" = "Создать";
-
-/* No comment provided by engineer. */
-"Create 1-time link / QR code" = "Создать ссылку / QR код";
 
 /* No comment provided by engineer. */
 "Create address" = "Создать адрес";
@@ -861,9 +855,6 @@
 "Import database" = "Импорт архива чата";
 
 /* No comment provided by engineer. */
-"In person or via a video call – the most secure way to connect." = "При встрече или в видеозвонке – самый безопасный способ установить соединение";
-
-/* No comment provided by engineer. */
 "Incognito" = "Инкогнито";
 
 /* No comment provided by engineer. */
@@ -940,9 +931,6 @@
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).";
-
-/* No comment provided by engineer. */
-"It's secure to share - only one contact can use it." = "Ей безопасно поделиться - только один контакт может использовать её.";
 
 /* No comment provided by engineer. */
 "italic" = "курсив";
@@ -1149,10 +1137,7 @@
 "Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
 
 /* No comment provided by engineer. */
-"or" = "или";
-
-/* No comment provided by engineer. */
-"Or open the link in the browser and tap **Open in mobile**." = "Или откройте ссылку в браузере и нажмите **Open in mobile**.";
+"or chat with the developers" = "или соединитесь с разработчиками";
 
 /* No comment provided by engineer. */
 "owner" = "владелец";
@@ -1165,9 +1150,6 @@
 
 /* No comment provided by engineer. */
 "Paste received link" = "Вставить полученную ссылку";
-
-/* No comment provided by engineer. */
-"Paste the link you received" = "Вставьте полученную ссылку";
 
 /* No comment provided by engineer. */
 "Paste the link you received into the box below to connect with your contact." = "Чтобы соединиться, вставьте ссылку, полученную от вашего контакта.";
@@ -1341,9 +1323,6 @@
 "Saved WebRTC ICE servers will be removed" = "Сохраненные WebRTC ICE серверы будут удалены";
 
 /* No comment provided by engineer. */
-"Scan contact's QR code" = "Сосканировать QR код контакта";
-
-/* No comment provided by engineer. */
 "Scan QR code" = "Сканировать QR код";
 
 /* No comment provided by engineer. */
@@ -1473,6 +1452,9 @@
 "Tap to join incognito" = "Нажмите, чтобы вступить инкогнито";
 
 /* No comment provided by engineer. */
+"Tap to start a new chat" = "Нажмите, чтобы начать чат";
+
+/* No comment provided by engineer. */
 "TCP connection timeout" = "Таймаут TCP соединения";
 
 /* No comment provided by engineer. */
@@ -1539,9 +1521,6 @@
 "This group no longer exists." = "Эта группа больше не существует.";
 
 /* No comment provided by engineer. */
-"To ask any questions and to receive SimpleX Chat updates." = "Чтобы задать вопросы и получать уведомления о SimpleX Chat.";
-
-/* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Чтобы задать вопросы и получать уведомления о новых версиях,";
 
 /* No comment provided by engineer. */
@@ -1549,9 +1528,6 @@
 
 /* No comment provided by engineer. */
 "To make a new connection" = "Чтобы соединиться";
-
-/* No comment provided by engineer. */
-"To make your first private connection, choose **one of the following**:" = "Чтобы добавить ваш первый контакт, выберите **одно из**:";
 
 /* No comment provided by engineer. */
 "To prevent the call interruption, enable Do Not Disturb mode." = "Чтобы избежать прерывания звонков, включите режим Не Беспокоить.";
@@ -1732,6 +1708,9 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Верификация не удалась; пожалуйста, попробуйте ещё раз.";
+
+/* No comment provided by engineer. */
+"You have no chats" = "У вас нет чатов";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Пароль не сохранен на устройстве — вы будете должны ввести его при каждом запуске чата.";

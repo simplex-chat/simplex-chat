@@ -19,7 +19,7 @@ struct ChatListView: View {
 
     var body: some View {
         let v = NavigationView {
-            VStack(alignment: .trailing) {
+            VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()
                 }
@@ -112,8 +112,14 @@ struct ChatListView: View {
                 }
             }
             .padding(.top, 10)
+
+            Spacer()
+            Text("You have no chats")
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
         }
         .padding(.trailing, 6)
+        .frame(maxHeight: .infinity)
     }
 
     private func connectButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {

@@ -463,11 +463,6 @@
         <target>Соединяться через сервер (relay)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect with the developers" xml:space="preserve">
-        <source>Connect with the developers</source>
-        <target>Соединиться с разработчиками</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
         <source>Connecting to server…</source>
         <target>Устанавливается соединение с сервером…</target>
@@ -551,11 +546,6 @@
       <trans-unit id="Create" xml:space="preserve">
         <source>Create</source>
         <target>Создать</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Create 1-time link / QR code" xml:space="preserve">
-        <source>Create 1-time link / QR code</source>
-        <target>Создать ссылку / QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create address" xml:space="preserve">
@@ -1251,11 +1241,6 @@
         <target>Импорт архива чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In person or via a video call – the most secure way to connect." xml:space="preserve">
-        <source>In person or via a video call – the most secure way to connect.</source>
-        <target>При встрече или в видеозвонке – самый безопасный способ установить соединение</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
         <source>Incognito</source>
         <target>Инкогнито</target>
@@ -1351,11 +1336,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
         <source>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</source>
         <target>Возможно, вы уже соединились через эту ссылку. Если это не так, то это ошибка (%@).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="It's secure to share - only one contact can use it." xml:space="preserve">
-        <source>It's secure to share - only one contact can use it.</source>
-        <target>Ей безопасно поделиться - только один контакт может использовать её.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
@@ -1653,11 +1633,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Открытый протокол и код - кто угодно может запустить сервер.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
-        <source>Or open the link in the browser and tap **Open in mobile**.</source>
-        <target>Или откройте ссылку в браузере и нажмите **Open in mobile**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>Интервал PING</target>
@@ -1676,11 +1651,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Paste received link" xml:space="preserve">
         <source>Paste received link</source>
         <target>Вставить полученную ссылку</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Paste the link you received" xml:space="preserve">
-        <source>Paste the link you received</source>
-        <target>Вставьте полученную ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
@@ -1943,11 +1913,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Сканировать QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan contact's QR code" xml:space="preserve">
-        <source>Scan contact's QR code</source>
-        <target>Сосканировать QR код контакта</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
         <source>Search</source>
         <target>Поиск</target>
@@ -2148,6 +2113,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Нажмите, чтобы вступить инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap to start a new chat" xml:space="preserve">
+        <source>Tap to start a new chat</source>
+        <target>Нажмите, чтобы начать чат</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
         <source>Thank you for installing SimpleX Chat!</source>
         <target>Спасибо, что установили SimpleX Chat!</target>
@@ -2233,11 +2203,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Эта группа больше не существует.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To ask any questions and to receive SimpleX Chat updates." xml:space="preserve">
-        <source>To ask any questions and to receive SimpleX Chat updates.</source>
-        <target>Чтобы задать вопросы и получать уведомления о SimpleX Chat.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
         <target>Чтобы задать вопросы и получать уведомления о новых версиях,</target>
@@ -2251,11 +2216,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>Чтобы соединиться</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="To make your first private connection, choose **one of the following**:" xml:space="preserve">
-        <source>To make your first private connection, choose **one of the following**:</source>
-        <target>Чтобы добавить ваш первый контакт, выберите **одно из**:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
@@ -2505,6 +2465,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
         <source>You could not be verified; please try again.</source>
         <target>Верификация не удалась; пожалуйста, попробуйте ещё раз.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You have no chats" xml:space="preserve">
+        <source>You have no chats</source>
+        <target>У вас нет чатов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
@@ -2966,9 +2931,9 @@ SimpleX серверы не могут получить доступ к ваше
         <target>нет e2e шифрования</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="or" xml:space="preserve">
-        <source>or</source>
-        <target>или</target>
+      <trans-unit id="or chat with the developers" xml:space="preserve">
+        <source>or chat with the developers</source>
+        <target>или соединитесь с разработчиками</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">
