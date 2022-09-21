@@ -16,6 +16,13 @@ struct CallSettings: View {
             List {
                 Section {
                     Toggle("Connect via relay", isOn: $webrtcPolicyRelay)
+
+                    NavigationLink {
+                        RTCServers()
+                            .navigationTitle("Your ICE servers")
+                    } label: {
+                        Text("WebRTC ICE servers")
+                    }
                 } header: {
                     Text("Settings")
                 } footer: {

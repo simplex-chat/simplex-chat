@@ -219,6 +219,9 @@
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
+"Calls" = "Звонки";
+
+/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -283,6 +286,9 @@
 
 /* No comment provided by engineer. */
 "complete" = "соединение завершено";
+
+/* No comment provided by engineer. */
+"Configure ICE servers" = "Настройка ICE серверов";
 
 /* No comment provided by engineer. */
 "Configure SMP servers" = "Настройка SMP серверов";
@@ -684,6 +690,9 @@
 "Error saving group profile" = "Ошибка при сохранении профиля группы";
 
 /* No comment provided by engineer. */
+"Error saving ICE servers" = "Ошибка при сохранении ICE серверов";
+
+/* No comment provided by engineer. */
 "Error saving SMP servers" = "Ошибка при сохранении SMP серверов";
 
 /* No comment provided by engineer. */
@@ -790,6 +799,9 @@
 
 /* No comment provided by engineer. */
 "How to use markdown" = "Как форматировать";
+
+/* No comment provided by engineer. */
+"ICE servers (one per line)" = "ICE серверы (один на строке)";
 
 /* No comment provided by engineer. */
 "If the video fails to connect, flip the camera to resolve it." = "Если видео не соединилось, переключите камеру.";
@@ -957,6 +969,9 @@
 "Make sure SMP server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
 
 /* No comment provided by engineer. */
+"Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." = "Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.";
+
+/* No comment provided by engineer. */
 "Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" = "Много пользователей спросили: *как SimpleX доставляет сообщения без идентификаторов пользователей?*";
 
 /* No comment provided by engineer. */
@@ -985,6 +1000,9 @@
 
 /* No comment provided by engineer. */
 "Message text" = "Текст сообщения";
+
+/* No comment provided by engineer. */
+"Messages" = "Сообщения";
 
 /* No comment provided by engineer. */
 "Migrating database archive..." = "Данные чата перемещаются...";
@@ -1291,6 +1309,9 @@
 
 /* No comment provided by engineer. */
 "Saved SMP servers will be removed" = "Сохраненные SMP серверы будут удалены";
+
+/* No comment provided by engineer. */
+"Saved WebRTC ICE servers will be removed" = "Сохраненные WebRTC ICE серверы будут удалены";
 
 /* No comment provided by engineer. */
 "Scan contact's QR code" = "Сосканировать QR код контакта";
@@ -1620,6 +1641,9 @@
 "wants to connect to you!" = "хочет соединиться с вами!";
 
 /* No comment provided by engineer. */
+"WebRTC ICE servers" = "WebRTC ICE серверы";
+
+/* No comment provided by engineer. */
 "Welcome %@!" = "Здравствуйте %@!";
 
 /* No comment provided by engineer. */
@@ -1765,6 +1789,9 @@
 
 /* No comment provided by engineer. */
 "Your current chat database will be DELETED and REPLACED with the imported one." = "Текущие данные вашего чата будет УДАЛЕНЫ и ЗАМЕНЕНЫ импортированными.";
+
+/* No comment provided by engineer. */
+"Your ICE servers" = "Ваши ICE серверы";
 
 /* No comment provided by engineer. */
 "Your privacy" = "Конфиденциальность";

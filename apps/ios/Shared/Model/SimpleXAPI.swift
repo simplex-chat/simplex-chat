@@ -1007,8 +1007,17 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 call.peerMedia = callType.media
                 call.sharedKey = sharedKey
                 let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+                let iceServers = getIceServers()
                 logger.debug(".callOffer useRelay \(useRelay)")
-                m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey, useWorker: true, relay: useRelay)
+                logger.debug(".callOffer iceServers \(String(describing: iceServers))")
+                m.callCommand = .offer(
+                    offer: offer.rtcSession,
+                    iceCandidates: offer.rtcIceCandidates,
+                    media: callType.media, aesKey: sharedKey,
+                    useWorker: true,
+                    iceServers: iceServers,
+                    relay: useRelay
+                )
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in

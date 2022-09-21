@@ -19,6 +19,7 @@ let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
@@ -193,7 +194,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    settingsRow("gear") {
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
                     ZStack(alignment: .leading) {
