@@ -348,8 +348,8 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
-func apiAddContact() -> String? {
-    let r = chatSendCmdSync(.addContact, bgTask: false)
+func apiAddContact() async -> String? {
+    let r = await chatSendCmd(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
     connectionErrorAlert(r)
     return nil

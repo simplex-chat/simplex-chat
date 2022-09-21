@@ -10,17 +10,23 @@ import SwiftUI
 import SimpleXChat
 
 enum NewChatAction: Identifiable {
-    case createLink
+    case createLink(link: String)
     case pasteLink
     case scanQRCode
     case createGroup
 
-    var id: NewChatAction { get { self } }
+    var id: String {
+        switch self {
+        case let .createLink(link): return "createLink \(link)"
+        case .pasteLink: return "pasteLink"
+        case .scanQRCode: return "scanQRCode"
+        case .createGroup: return "createGroup"
+        }
+    }
 }
 
 struct NewChatButton: View {
     @Binding var showAddChat: Bool
-    @State private var connReq: String = ""
     @State private var actionSheet: NewChatAction?
 
     var body: some View {
@@ -38,7 +44,7 @@ struct NewChatButton: View {
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
-            case .createLink: AddContactView(connReqInvitation: connReq)
+            case let .createLink(link): AddContactView(connReqInvitation: link)
             case .pasteLink: PasteToConnectView()
             case .scanQRCode: ScanToConnectView()
             case .createGroup: AddGroupView()
@@ -47,9 +53,10 @@ struct NewChatButton: View {
     }
 
     func addContactAction() {
-        if let cReq = apiAddContact() {
-            connReq = cReq
-            actionSheet = .createLink
+        Task {
+            if let connReq = await apiAddContact() {
+                actionSheet = .createLink(link: connReq)
+            }
         }
     }
 }
