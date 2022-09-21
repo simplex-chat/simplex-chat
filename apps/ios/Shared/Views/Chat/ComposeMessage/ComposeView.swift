@@ -327,14 +327,14 @@ struct ComposeView: View {
                     default:
                         quotedItemId = nil
                     }
-                    if let mc = mc {
-                        let chatItem = try await apiSendMessage(
+                    if let mc = mc,
+                       let chatItem = try await apiSendMessage(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             file: file,
                             quotedItemId: quotedItemId,
                             msg: mc
-                        )
+                       ) {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
@@ -342,6 +342,7 @@ struct ComposeView: View {
             } catch {
                 clearState()
                 logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                AlertManager.shared.showAlertMsg(title: "Error sending message", message: "Error: \(responseError(error))")
             }
         }
     }

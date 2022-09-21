@@ -113,8 +113,10 @@ struct MakeConnection: View {
 
     private func addContactAction() {
         do {
-            connReq = try apiAddContact()
-            actionSheet = .createLink
+            if let cReq = try apiAddContact() {
+                connReq = cReq
+                actionSheet = .createLink
+            }
         } catch {
             DispatchQueue.global().async {
                 connectionErrorAlert(error)

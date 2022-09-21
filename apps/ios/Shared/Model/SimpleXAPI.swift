@@ -220,7 +220,7 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg)
     let r: ChatResponse
@@ -228,19 +228,52 @@ func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int6
         var cItem: ChatItem!
         let endTask = beginBGTask({ if cItem != nil { chatModel.messageDelivery.removeValue(forKey: cItem.id) } })
         r = await chatSendCmd(cmd, bgTask: false)
-        if case let .newChatItem(aChatItem) = r {
+        let am = AlertManager.shared
+        switch r {
+        case let .newChatItem(aChatItem):
             cItem = aChatItem.chatItem
             chatModel.messageDelivery[cItem.id] = endTask
             return cItem
+        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+            am.showAlertMsg(
+                title: "Connection timeout",
+                message: "Please check your network connection and try again."
+            )
+            endTask()
+            return nil
+        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+            am.showAlertMsg(
+                title: "Connection error",
+                message: "Please check your network connection and try again."
+            )
+            endTask()
+            return nil
+        default:
+            endTask()
+            throw r
         }
-        endTask()
     } else {
         r = await chatSendCmd(cmd, bgDelay: msgDelay)
-        if case let .newChatItem(aChatItem) = r {
+        let am = AlertManager.shared
+        switch r {
+        case let .newChatItem(aChatItem):
             return aChatItem.chatItem
+        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+            am.showAlertMsg(
+                title: "Connection timeout",
+                message: "Please check your network connection and try again."
+            )
+            return nil
+        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+            am.showAlertMsg(
+                title: "Connection error",
+                message: "Please check your network connection and try again."
+            )
+            return nil
+        default:
+            throw r
         }
     }
-    throw r
 }
 
 func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent) async throws -> ChatItem {
@@ -335,10 +368,25 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
-func apiAddContact() throws -> String {
+func apiAddContact() throws -> String? {
     let r = chatSendCmdSync(.addContact, bgTask: false)
-    if case let .invitation(connReqInvitation) = r { return connReqInvitation }
-    throw r
+    let am = AlertManager.shared
+    switch r {
+    case let .invitation(connReqInvitation): return connReqInvitation
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        am.showAlertMsg(
+            title: "Connection timeout",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        am.showAlertMsg(
+            title: "Connection error",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    default: throw r
+    }
 }
 
 func apiConnect(connReq: String) async throws -> ConnReqType? {
@@ -446,10 +494,20 @@ func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Co
     throw r
 }
 
-func apiCreateUserAddress() async throws -> String {
+enum CreateUserAddressResult {
+    case created(address: String)
+    case connectionTimeout
+    case connectionError
+}
+
+func apiCreateUserAddress() async throws -> CreateUserAddressResult {
     let r = await chatSendCmd(.createMyAddress)
-    if case let .userContactLinkCreated(connReq) = r { return connReq }
-    throw r
+    switch r {
+    case let .userContactLinkCreated(connReq): return .created(address: connReq)
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))): return .connectionTimeout
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))): return .connectionError
+    default: throw r
+    }
 }
 
 func apiDeleteUserAddress() async throws {
@@ -469,10 +527,31 @@ func apiGetUserAddress() throws -> String? {
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact {
+func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact? {
     let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
-    if case let .acceptingContactRequest(contact) = r { return contact }
-    throw r
+    let am = AlertManager.shared
+    switch r {
+    case let .acceptingContactRequest(contact): return contact
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        am.showAlertMsg(
+            title: "Connection timeout",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        am.showAlertMsg(
+            title: "Connection error",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    case .chatCmdError(.errorAgent(.SMP(.AUTH))):
+        am.showAlertMsg(
+            title: "Connection error (AUTH)",
+            message: "Sender may have deleted the connection request."
+        )
+        return nil
+    default: throw r
+    }
 }
 
 func apiRejectContactRequest(contactReqId: Int64) async throws {
@@ -487,26 +566,51 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
 
 func receiveFile(fileId: Int64) async {
     do {
-        let chatItem = try await apiReceiveFile(fileId: fileId)
-        DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
+        if let chatItem = try await apiReceiveFile(fileId: fileId) {
+            DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
+        }
     } catch let error {
         logger.error("receiveFile error: \(responseError(error))")
+        AlertManager.shared.showAlertMsg(title: "Error receiving file", message: "Error: \(responseError(error))")
     }
 }
 
-func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
+func apiReceiveFile(fileId: Int64) async throws -> AChatItem? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
-    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
-    throw r
+    let am = AlertManager.shared
+    switch r {
+    case let .rcvFileAccepted(chatItem): return chatItem
+    case .rcvFileAcceptedSndCancelled:
+        am.showAlertMsg(
+            title: "Cannot receive file",
+            message: "Sender cancelled file transfer."
+        )
+        return nil
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        am.showAlertMsg(
+            title: "Connection timeout",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        am.showAlertMsg(
+            title: "Connection error",
+            message: "Please check your network connection and try again."
+        )
+        return nil
+    default: throw r
+    }
 }
 
 func acceptContactRequest(_ contactRequest: UserContactRequest) async {
     do {
-        let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId)
-        let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
+        if let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
+            let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
+            DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
+        }
     } catch let error {
         logger.error("acceptContactRequest error: \(responseError(error))")
+        AlertManager.shared.showAlertMsg(title: "Error accepting contact request", message: "Error: \(responseError(error))")
     }
 }
 
@@ -603,6 +707,8 @@ func apiAddMember(_ groupId: Int64, _ contactId: Int64, _ memberRole: GroupMembe
 
 enum JoinGroupResult {
     case joined(groupInfo: GroupInfo)
+    case connectionTimeout
+    case connectionError
     case invitationRemoved
     case groupNotFound
 }
@@ -611,6 +717,8 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     switch r {
     case let .userAcceptedGroupSent(groupInfo): return .joined(groupInfo: groupInfo)
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))): return .connectionTimeout
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))): return .connectionError
     case .chatCmdError(.errorAgent(.SMP(.AUTH))): return .invitationRemoved
     case .chatCmdError(.errorStore(.groupNotFound)): return .groupNotFound
     default: throw r
