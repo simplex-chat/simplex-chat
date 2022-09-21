@@ -37,14 +37,15 @@ struct NewChatButton: View {
                 .frame(width: 24, height: 24)
         }
         .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Create link / QR code") { addContactAction() }
+            Button("Create one-time invitation link") { addContactAction() }
             Button("Paste received link") { actionSheet = .pasteLink }
             Button("Scan QR code") { actionSheet = .scanQRCode }
             Button("Create secret group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
-            case let .createLink(link): AddContactView(connReqInvitation: link)
+            case let .createLink(link):
+                CreateLinkView(selection: .oneTime, connReqInvitation: link)
             case .pasteLink: PasteToConnectView()
             case .scanQRCode: ScanToConnectView()
             case .createGroup: AddGroupView()

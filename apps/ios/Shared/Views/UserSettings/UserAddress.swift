@@ -10,8 +10,9 @@ import SwiftUI
 import SimpleXChat
 
 struct UserAddress: View {
-    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject private var chatModel: ChatModel
     @State private var alert: UserAddressAlert?
+    var viaSettings = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -28,6 +29,10 @@ struct UserAddress: View {
     var body: some View {
         ScrollView {
             VStack (alignment: .leading) {
+                Text("Your contact address")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(viaSettings ? .bottom : .vertical)
                 Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
                     .padding(.bottom)
                 if let userAdress = chatModel.userAddress {

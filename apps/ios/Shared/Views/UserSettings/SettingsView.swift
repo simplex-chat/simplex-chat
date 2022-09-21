@@ -89,8 +89,8 @@ struct SettingsView: View {
                         .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        UserAddress()
-                            .navigationTitle("Your chat address")
+                        CreateLinkView(selection: .longTerm, viaSettings: true)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
