@@ -219,6 +219,9 @@
 "calling…" = "входящий звонок…";
 
 /* No comment provided by engineer. */
+"Calls" = "Звонки";
+
+/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -997,6 +1000,9 @@
 
 /* No comment provided by engineer. */
 "Message text" = "Текст сообщения";
+
+/* No comment provided by engineer. */
+"Messages" = "Сообщения";
 
 /* No comment provided by engineer. */
 "Migrating database archive..." = "Данные чата перемещаются...";

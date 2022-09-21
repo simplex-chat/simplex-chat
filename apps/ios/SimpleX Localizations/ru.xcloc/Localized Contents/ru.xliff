@@ -303,6 +303,11 @@
         <target>Звонок уже завершен!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Calls" xml:space="preserve">
+        <source>Calls</source>
+        <target>Звонки</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Нельзя пригласить контакт!</target>
@@ -1416,6 +1421,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Текст сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages" xml:space="preserve">
+        <source>Messages</source>
+        <target>Сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">

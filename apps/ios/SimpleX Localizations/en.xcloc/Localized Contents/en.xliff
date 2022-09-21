@@ -303,6 +303,11 @@
         <target>Call already ended!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Calls" xml:space="preserve">
+        <source>Calls</source>
+        <target>Calls</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Can't invite contact!</target>
@@ -1416,6 +1421,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Message text</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages" xml:space="preserve">
+        <source>Messages</source>
+        <target>Messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
