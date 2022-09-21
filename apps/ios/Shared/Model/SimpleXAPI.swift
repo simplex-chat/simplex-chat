@@ -353,28 +353,14 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
-func apiAddContact() throws -> String? {
+func apiAddContact() -> String? {
     let r = chatSendCmdSync(.addContact, bgTask: false)
-    let am = AlertManager.shared
-    switch r {
-    case let .invitation(connReqInvitation): return connReqInvitation
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-        am.showAlertMsg(
-            title: "Connection timeout",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-        am.showAlertMsg(
-            title: "Connection error",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    default: throw r
-    }
+    if case let .invitation(connReqInvitation) = r { return connReqInvitation }
+    connectionErrorAlert(r)
+    return nil
 }
 
-func apiConnect(connReq: String) async throws -> ConnReqType? {
+func apiConnect(connReq: String) async -> ConnReqType? {
     let r = await chatSendCmd(.connect(connReq: connReq))
     let am = AlertManager.shared
     switch r {
@@ -392,18 +378,6 @@ func apiConnect(connReq: String) async throws -> ConnReqType? {
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
         return nil
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-        am.showAlertMsg(
-            title: "Connection timeout",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-        am.showAlertMsg(
-            title: "Connection error",
-            message: "Please check your network connection and try again."
-        )
-        return nil
     case .chatCmdError(.errorAgent(.SMP(.AUTH))):
         am.showAlertMsg(
             title: "Connection error (AUTH)",
@@ -417,10 +391,19 @@ func apiConnect(connReq: String) async throws -> ConnReqType? {
                 message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
             )
             return nil
-        } else {
-            throw r
         }
-    default: throw r
+    default: ()
+    }
+    connectionErrorAlert(r)
+    return nil
+}
+
+private func connectionErrorAlert(_ r: ChatResponse) {
+    if !networkErrorAlert(r) {
+        AlertManager.shared.showAlertMsg(
+            title: "Connection error",
+            message: "Error: \(String(describing: r))"
+        )
     }
 }
 
@@ -540,40 +523,47 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
 }
 
 func receiveFile(fileId: Int64) async {
-    do {
-        if let chatItem = try await apiReceiveFile(fileId: fileId) {
-            DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
-        }
-    } catch let error {
-        logger.error("receiveFile error: \(responseError(error))")
-        AlertManager.shared.showAlertMsg(title: "Error receiving file", message: "Error: \(responseError(error))")
+    if let chatItem = await apiReceiveFile(fileId: fileId) {
+        DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
     }
 }
 
-func apiReceiveFile(fileId: Int64) async throws -> AChatItem? {
+func apiReceiveFile(fileId: Int64) async -> AChatItem? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
     let am = AlertManager.shared
-    switch r {
-    case let .rcvFileAccepted(chatItem): return chatItem
-    case .rcvFileAcceptedSndCancelled:
+    if case let .rcvFileAccepted(chatItem) = r { return chatItem }
+    if case .rcvFileAcceptedSndCancelled = r {
         am.showAlertMsg(
             title: "Cannot receive file",
             message: "Sender cancelled file transfer."
         )
-        return nil
+    } else if !networkErrorAlert(r) {
+        logger.error("receiveFile error: \(String(describing: r))")
+        am.showAlertMsg(
+            title: "Error receiving file",
+            message: "Error: \(String(describing: r))"
+        )
+    }
+    return nil
+}
+
+func networkErrorAlert(_ r: ChatResponse) -> Bool {
+    let am = AlertManager.shared
+    switch r {
     case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
         am.showAlertMsg(
             title: "Connection timeout",
             message: "Please check your network connection and try again."
         )
-        return nil
+        return true
     case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
         am.showAlertMsg(
             title: "Connection error",
             message: "Please check your network connection and try again."
         )
-        return nil
-    default: throw r
+        return true
+    default:
+        return false
     }
 }
 

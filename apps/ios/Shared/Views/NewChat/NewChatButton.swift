@@ -47,16 +47,9 @@ struct NewChatButton: View {
     }
 
     func addContactAction() {
-        do {
-            if let cReq = try apiAddContact() {
-                connReq = cReq
-                actionSheet = .createLink
-            }
-        } catch {
-            DispatchQueue.global().async {
-                connectionErrorAlert(error)
-            }
-            logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
+        if let cReq = apiAddContact() {
+            connReq = cReq
+            actionSheet = .createLink
         }
     }
 }
@@ -68,26 +61,17 @@ enum ConnReqType: Equatable {
 
 func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
     Task {
-        do {
-            let res = try await apiConnect(connReq: connectionLink)
+        if let connReqType = await apiConnect(connReq: connectionLink) {
             DispatchQueue.main.async {
                 dismiss?()
-                if let connReqType = res {
-                    connectionReqSentAlert(connReqType)
-                }
+                connectionReqSentAlert(connReqType)
             }
-        } catch {
-            logger.error("connectViaLink apiConnect error: \(responseError(error))")
+        } else {
             DispatchQueue.main.async {
                 dismiss?()
-                connectionErrorAlert(error)
             }
         }
     }
-}
-
-func connectionErrorAlert(_ error: Error) {
-    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(responseError(error))")
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {
