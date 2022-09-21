@@ -415,8 +415,20 @@ func deleteChat(_ chat: Chat) async {
         let cInfo = chat.chatInfo
         try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
-    } catch {
+    } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
+        switch error as? ChatResponse {
+        case let .chatCmdError(.error(.contactGroups(contact, groupNames))):
+            AlertManager.shared.showAlertMsg(
+                title: "Can't delete contact!",
+                message: "Contact \(contact.displayName) cannot be deleted, they are a member of the group(s) \(groupNames.joined(separator: ", "))."
+            )
+        default:
+            AlertManager.shared.showAlertMsg(
+                title: "Error deleting chat!",
+                message: "Error: \(responseError(error))"
+            )
+        }
     }
 }
 

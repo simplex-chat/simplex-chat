@@ -308,6 +308,11 @@
         <target>Calls</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Can't delete contact!" xml:space="preserve">
+        <source>Can't delete contact!</source>
+        <target>Can't delete contact!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Can't invite contact!</target>
@@ -501,6 +506,11 @@
       <trans-unit id="Connection timeout" xml:space="preserve">
         <source>Connection timeout</source>
         <target>Connection timeout</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
+        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
+        <target>Contact %@ cannot be deleted, they are a member of the group(s) %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
@@ -944,6 +954,11 @@
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Error deleting chat database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting chat!" xml:space="preserve">
+        <source>Error deleting chat!</source>
+        <target>Error deleting chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">

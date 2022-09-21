@@ -222,6 +222,9 @@
 "Calls" = "Звонки";
 
 /* No comment provided by engineer. */
+"Can't delete contact!" = "Невозможно удалить контакт!";
+
+/* No comment provided by engineer. */
 "Can't invite contact!" = "Нельзя пригласить контакт!";
 
 /* No comment provided by engineer. */
@@ -234,7 +237,7 @@
 "Cannot access keychain to save database password" = "Ошибка доступа к Keychain при сохранении пароля";
 
 /* No comment provided by engineer. */
-"Cannot receive file" = "Ошибка при получении файла";
+"Cannot receive file" = "Невозможно получить файл";
 
 /* No comment provided by engineer. */
 "Change database passphrase?" = "Поменять пароль базы данных?";
@@ -376,6 +379,9 @@
 
 /* connection information */
 "connection:%@" = "connection:%@";
+
+/* No comment provided by engineer. */
+"Contact %@ cannot be deleted, they are a member of the group(s) %@." = "Контакт %@ не может быть удален, так как является членом групп(ы) %@.";
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
@@ -670,6 +676,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
+
+/* No comment provided by engineer. */
+"Error deleting chat!" = "Ошибка при удалении чата!";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
