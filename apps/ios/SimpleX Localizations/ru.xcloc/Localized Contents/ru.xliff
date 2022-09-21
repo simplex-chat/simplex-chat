@@ -328,6 +328,11 @@
         <target>Ошибка доступа к Keychain при сохранении пароля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Cannot receive file" xml:space="preserve">
+        <source>Cannot receive file</source>
+        <target>Ошибка при получении файла</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
         <source>Change database passphrase?</source>
         <target>Поменять пароль базы данных?</target>
@@ -911,6 +916,11 @@
         <target>Введите пароль…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error accepting contact request" xml:space="preserve">
+        <source>Error accepting contact request</source>
+        <target>Ошибка при принятии запроса на соединение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error accessing database file" xml:space="preserve">
         <source>Error accessing database file</source>
         <target>Ошибка при доступе к данным чата</target>
@@ -919,6 +929,11 @@
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
         <target>Ошибка при добавлении членов группы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error creating address" xml:space="preserve">
+        <source>Error creating address</source>
+        <target>Ошибка при создании адреса</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating group" xml:space="preserve">
@@ -971,6 +986,11 @@
         <target>Ошибка приглашения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error receiving file" xml:space="preserve">
+        <source>Error receiving file</source>
+        <target>Ошибка при получении файла</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving ICE servers" xml:space="preserve">
         <source>Error saving ICE servers</source>
         <target>Ошибка при сохранении ICE серверов</target>
@@ -986,6 +1006,11 @@
         <target>Ошибка при сохранении профиля группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error sending message" xml:space="preserve">
+        <source>Error sending message</source>
+        <target>Ошибка при отправке сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
         <target>Ошибка при запуске чата</target>
@@ -994,6 +1019,11 @@
       <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
         <target>Ошибка при остановке чата</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating message" xml:space="preserve">
+        <source>Error updating message</source>
+        <target>Ошибка при обновлении сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating settings" xml:space="preserve">
@@ -1926,6 +1956,16 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Send notifications:" xml:space="preserve">
         <source>Send notifications:</source>
         <target>Отправлять уведомления:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+        <source>Sender cancelled file transfer.</source>
+        <target>Отправитель отменил передачу файла.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+        <source>Sender may have deleted the connection request.</source>
+        <target>Отправитель мог удалить запрос на соединение.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
