@@ -284,10 +284,10 @@ struct ComposeView: View {
         logger.debug("ChatView sendMessage")
         Task {
             logger.debug("ChatView sendMessage: in Task")
-            do {
-                switch composeState.contextItem {
-                case let .editingItem(chatItem: ei):
-                    if let oldMsgContent = ei.content.msgContent {
+            switch composeState.contextItem {
+            case let .editingItem(chatItem: ei):
+                if let oldMsgContent = ei.content.msgContent {
+                    do {
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
@@ -297,53 +297,53 @@ struct ComposeView: View {
                         DispatchQueue.main.async {
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                         }
-                    }
-                default:
-                    var mc: MsgContent? = nil
-                    var file: String? = nil
-                    switch (composeState.preview) {
-                    case .noPreview:
-                        mc = .text(composeState.message)
-                    case .linkPreview:
-                        mc = checkLinkPreview()
-                    case let .imagePreview(imagePreview: image):
-                        if let uiImage = chosenImage,
-                           let savedFile = saveImage(uiImage) {
-                            mc = .image(text: composeState.message, image: image)
-                            file = savedFile
-                        }
-                    case .filePreview:
-                        if let fileURL = chosenFile,
-                           let savedFile = saveFileFromURL(fileURL) {
-                            mc = .file(composeState.message)
-                            file = savedFile
-                        }
-                    }
-
-                    var quotedItemId: Int64? = nil
-                    switch (composeState.contextItem) {
-                    case let .quotedItem(chatItem: quotedItem):
-                        quotedItemId = quotedItem.id
-                    default:
-                        quotedItemId = nil
-                    }
-                    if let mc = mc,
-                       let chatItem = try await apiSendMessage(
-                            type: chat.chatInfo.chatType,
-                            id: chat.chatInfo.apiId,
-                            file: file,
-                            quotedItemId: quotedItemId,
-                            msg: mc
-                       ) {
-                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    } catch {
+                        clearState()
+                        logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                        AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
                     }
                 }
-                clearState()
-            } catch {
-                clearState()
-                logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-                AlertManager.shared.showAlertMsg(title: "Error sending message", message: "Error: \(responseError(error))")
+            default:
+                var mc: MsgContent? = nil
+                var file: String? = nil
+                switch (composeState.preview) {
+                case .noPreview:
+                    mc = .text(composeState.message)
+                case .linkPreview:
+                    mc = checkLinkPreview()
+                case let .imagePreview(imagePreview: image):
+                    if let uiImage = chosenImage,
+                       let savedFile = saveImage(uiImage) {
+                        mc = .image(text: composeState.message, image: image)
+                        file = savedFile
+                    }
+                case .filePreview:
+                    if let fileURL = chosenFile,
+                       let savedFile = saveFileFromURL(fileURL) {
+                        mc = .file(composeState.message)
+                        file = savedFile
+                    }
+                }
+                
+                var quotedItemId: Int64? = nil
+                switch (composeState.contextItem) {
+                case let .quotedItem(chatItem: quotedItem):
+                    quotedItemId = quotedItem.id
+                default:
+                    quotedItemId = nil
+                }
+                if let mc = mc,
+                   let chatItem = await apiSendMessage(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    file: file,
+                    quotedItemId: quotedItemId,
+                    msg: mc
+                   ) {
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                }
             }
+            clearState()
         }
     }
 

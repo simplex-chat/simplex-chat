@@ -333,10 +333,6 @@ func joinGroup(_ groupId: Int64) {
             switch r {
             case let .joined(groupInfo):
                 await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
-            case .connectionTimeout:
-                AlertManager.shared.showAlertMsg(title: "Connection timeout", message: "Please check your network connection and try again.")
-            case .connectionError:
-                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Please check your network connection and try again.")
             case .invitationRemoved:
                 AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
                 await deleteGroup()
@@ -345,9 +341,15 @@ func joinGroup(_ groupId: Int64) {
                 await deleteGroup()
             }
         } catch let error {
-            let err = responseError(error)
-            AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
-            logger.error("apiJoinGroup error: \(err)")
+            switch error as? ChatResponse {
+            case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+                AlertManager.shared.showAlertMsg(title: "Connection timeout", message: "Please check your network connection and try again.")
+            case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Please check your network connection and try again.")
+            default:
+                logger.error("apiJoinGroup error: \(responseError(error))")
+                AlertManager.shared.showAlertMsg(title: "Error joining group", message: "\(responseError(error))")
+            }
         }
 
         func deleteGroup() async {
