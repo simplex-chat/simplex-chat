@@ -85,10 +85,17 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     floatingActionButton = {
-      FloatingActionButton(onClick = { if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse() },
+      FloatingActionButton(
+        onClick = { if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse() },
         Modifier.padding(bottom = 90.dp),
+        elevation = FloatingActionButtonDefaults.elevation(
+          defaultElevation = 0.dp,
+          pressedElevation = 0.dp,
+          hoveredElevation = 0.dp,
+          focusedElevation = 0.dp,
+        ),
         backgroundColor = MaterialTheme.colors.primary,
-        contentColor = MaterialTheme.colors.background
+        contentColor = Color.White
       ) {
         Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group))
       }
