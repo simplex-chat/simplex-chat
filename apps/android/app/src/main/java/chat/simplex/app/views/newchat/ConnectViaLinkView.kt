@@ -46,6 +46,7 @@ fun ConnectViaLinkView(m: ChatModel) {
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
+      backgroundColor = MaterialTheme.colors.background,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->

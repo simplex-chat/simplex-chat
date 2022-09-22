@@ -51,6 +51,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     }
     TabRow(
       selectedTabIndex = selection.value.ordinal,
+      backgroundColor = MaterialTheme.colors.background,
       contentColor = MaterialTheme.colors.primary,
     ) {
       tabTitles.forEachIndexed { index, it ->
