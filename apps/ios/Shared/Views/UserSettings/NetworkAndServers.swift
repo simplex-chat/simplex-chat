@@ -37,7 +37,7 @@ struct NetworkAndServers: View {
                         SMPServers()
                             .navigationTitle("Your SMP servers")
                     } label: {
-                        settingsRow("server.rack") { Text("SMP servers") }
+                        Text("SMP servers")
                     }
 
                     Picker("Use .onion hosts", selection: $onionHosts) {
@@ -49,13 +49,22 @@ struct NetworkAndServers: View {
                             AdvancedNetworkSettings()
                                 .navigationTitle("Network settings")
                         } label: {
-                            settingsRow("app.connected.to.app.below.fill") { Text("Advanced network settings") }
+                            Text("Advanced network settings")
                         }
                     }
                 } header: {
-                    Text("")
+                    Text("Messages")
                 } footer: {
                     Text("Using .onion hosts requires compatible VPN provider.")
+                }
+
+                Section("Calls") {
+                    NavigationLink {
+                        RTCServers()
+                            .navigationTitle("Your ICE servers")
+                    } label: {
+                        Text("WebRTC ICE servers")
+                    }
                 }
             }
         }

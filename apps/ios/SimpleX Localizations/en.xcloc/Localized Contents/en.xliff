@@ -233,11 +233,6 @@
         <target>Accept incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add contact to start a new chat" xml:space="preserve">
-        <source>Add contact to start a new chat</source>
-        <target>Add contact to start a new chat</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
         <source>Advanced network settings</source>
         <target>Advanced network settings</target>
@@ -303,6 +298,16 @@
         <target>Call already ended!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Calls" xml:space="preserve">
+        <source>Calls</source>
+        <target>Calls</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Can't delete contact!" xml:space="preserve">
+        <source>Can't delete contact!</source>
+        <target>Can't delete contact!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
         <source>Can't invite contact!</source>
         <target>Can't invite contact!</target>
@@ -321,6 +326,11 @@
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
         <target>Cannot access keychain to save database password</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cannot receive file" xml:space="preserve">
+        <source>Cannot receive file</source>
+        <target>Cannot receive file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change database passphrase?" xml:space="preserve">
@@ -403,6 +413,11 @@
         <target>Colors</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configure ICE servers" xml:space="preserve">
+        <source>Configure ICE servers</source>
+        <target>Configure ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
         <source>Configure SMP servers</source>
         <target>Configure SMP servers</target>
@@ -433,6 +448,11 @@
         <target>Connect via link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect via link / QR code" xml:space="preserve">
+        <source>Connect via link / QR code</source>
+        <target>Connect via link / QR code</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect via one-time link?" xml:space="preserve">
         <source>Connect via one-time link?</source>
         <target>Connect via one-time link?</target>
@@ -441,11 +461,6 @@
       <trans-unit id="Connect via relay" xml:space="preserve">
         <source>Connect via relay</source>
         <target>Connect via relay</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connect with the developers" xml:space="preserve">
-        <source>Connect with the developers</source>
-        <target>Connect with the developers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -488,6 +503,11 @@
         <target>Connection timeout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Contact %@ cannot be deleted, they are a member of the group(s) %@." xml:space="preserve">
+        <source>Contact %@ cannot be deleted, they are a member of the group(s) %@.</source>
+        <target>Contact %@ cannot be deleted, they are a member of the group(s) %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Contact already exists" xml:space="preserve">
         <source>Contact already exists</source>
         <target>Contact already exists</target>
@@ -528,19 +548,14 @@
         <target>Create</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create 1-time link / QR code" xml:space="preserve">
-        <source>Create 1-time link / QR code</source>
-        <target>Create 1-time link / QR code</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create address" xml:space="preserve">
         <source>Create address</source>
         <target>Create address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create link / QR code" xml:space="preserve">
-        <source>Create link / QR code</source>
-        <target>Create link / QR code</target>
+      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+        <source>Create one-time invitation link</source>
+        <target>Create one-time invitation link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create secret group" xml:space="preserve">
@@ -901,6 +916,11 @@
         <target>Enter passphrase…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error accepting contact request" xml:space="preserve">
+        <source>Error accepting contact request</source>
+        <target>Error accepting contact request</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error accessing database file" xml:space="preserve">
         <source>Error accessing database file</source>
         <target>Error accessing database file</target>
@@ -911,6 +931,11 @@
         <target>Error adding member(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating address" xml:space="preserve">
+        <source>Error creating address</source>
+        <target>Error creating address</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating group" xml:space="preserve">
         <source>Error creating group</source>
         <target>Error creating group</target>
@@ -919,6 +944,11 @@
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Error deleting chat database</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting chat!" xml:space="preserve">
+        <source>Error deleting chat!</source>
+        <target>Error deleting chat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -961,6 +991,16 @@
         <target>Error joining group</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error receiving file" xml:space="preserve">
+        <source>Error receiving file</source>
+        <target>Error receiving file</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error saving ICE servers" xml:space="preserve">
+        <source>Error saving ICE servers</source>
+        <target>Error saving ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error saving SMP servers" xml:space="preserve">
         <source>Error saving SMP servers</source>
         <target>Error saving SMP servers</target>
@@ -971,6 +1011,11 @@
         <target>Error saving group profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error sending message" xml:space="preserve">
+        <source>Error sending message</source>
+        <target>Error sending message</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error starting chat" xml:space="preserve">
         <source>Error starting chat</source>
         <target>Error starting chat</target>
@@ -979,6 +1024,11 @@
       <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
         <target>Error stopping chat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error updating message" xml:space="preserve">
+        <source>Error updating message</source>
+        <target>Error updating message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating settings" xml:space="preserve">
@@ -1136,6 +1186,11 @@
         <target>How to use markdown</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="ICE servers (one per line)" xml:space="preserve">
+        <source>ICE servers (one per line)</source>
+        <target>ICE servers (one per line)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="If the video fails to connect, flip the camera to resolve it." xml:space="preserve">
         <source>If the video fails to connect, flip the camera to resolve it.</source>
         <target>If the video fails to connect, flip the camera to resolve it.</target>
@@ -1184,11 +1239,6 @@
       <trans-unit id="Import database" xml:space="preserve">
         <source>Import database</source>
         <target>Import database</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="In person or via a video call – the most secure way to connect." xml:space="preserve">
-        <source>In person or via a video call – the most secure way to connect.</source>
-        <target>In person or via a video call – the most secure way to connect.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito" xml:space="preserve">
@@ -1288,11 +1338,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>It seems like you are already connected via this link. If it is not the case, there was an error (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It's secure to share - only one contact can use it." xml:space="preserve">
-        <source>It's secure to share - only one contact can use it.</source>
-        <target>It's secure to share - only one contact can use it.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Join" xml:space="preserve">
         <source>Join</source>
         <target>Join</target>
@@ -1363,6 +1408,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Make sure SMP server addresses are in correct format, line separated and are not duplicated.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+        <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
+        <target>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
         <source>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</source>
         <target>Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*</target>
@@ -1396,6 +1446,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
         <target>Message text</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Messages" xml:space="preserve">
+        <source>Messages</source>
+        <target>Messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive..." xml:space="preserve">
@@ -1578,11 +1633,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Open-source protocol and code – anybody can run the servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Or open the link in the browser and tap **Open in mobile**." xml:space="preserve">
-        <source>Or open the link in the browser and tap **Open in mobile**.</source>
-        <target>Or open the link in the browser and tap **Open in mobile**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
         <source>PING interval</source>
         <target>PING interval</target>
@@ -1601,11 +1651,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Paste received link" xml:space="preserve">
         <source>Paste received link</source>
         <target>Paste received link</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Paste the link you received" xml:space="preserve">
-        <source>Paste the link you received</source>
-        <target>Paste the link you received</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received into the box below to connect with your contact." xml:space="preserve">
@@ -1858,14 +1903,14 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Saved SMP servers will be removed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
+        <source>Saved WebRTC ICE servers will be removed</source>
+        <target>Saved WebRTC ICE servers will be removed</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
         <source>Scan QR code</source>
         <target>Scan QR code</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Scan contact's QR code" xml:space="preserve">
-        <source>Scan contact's QR code</source>
-        <target>Scan contact's QR code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search" xml:space="preserve">
@@ -1891,6 +1936,16 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Send notifications:" xml:space="preserve">
         <source>Send notifications:</source>
         <target>Send notifications:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+        <source>Sender cancelled file transfer.</source>
+        <target>Sender cancelled file transfer.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+        <source>Sender may have deleted the connection request.</source>
+        <target>Sender may have deleted the connection request.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending via" xml:space="preserve">
@@ -1943,6 +1998,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>Share link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share one-time invitation link" xml:space="preserve">
+        <source>Share one-time invitation link</source>
+        <target>Share one-time invitation link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Show preview</target>
@@ -1977,6 +2037,11 @@ We will be adding server redundancy to prevent lost messages.</target>
         <source>Somebody</source>
         <target>Somebody</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Start a new chat" xml:space="preserve">
+        <source>Start a new chat</source>
+        <target>Start a new chat</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
@@ -2056,6 +2121,11 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="Tap to join incognito" xml:space="preserve">
         <source>Tap to join incognito</source>
         <target>Tap to join incognito</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap to start a new chat" xml:space="preserve">
+        <source>Tap to start a new chat</source>
+        <target>Tap to start a new chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Thank you for installing SimpleX Chat!" xml:space="preserve">
@@ -2143,11 +2213,6 @@ We will be adding server redundancy to prevent lost messages.</target>
         <target>This group no longer exists.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To ask any questions and to receive SimpleX Chat updates." xml:space="preserve">
-        <source>To ask any questions and to receive SimpleX Chat updates.</source>
-        <target>To ask any questions and to receive SimpleX Chat updates.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="To ask any questions and to receive updates:" xml:space="preserve">
         <source>To ask any questions and to receive updates:</source>
         <target>To ask any questions and to receive updates:</target>
@@ -2161,11 +2226,6 @@ We will be adding server redundancy to prevent lost messages.</target>
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>To make a new connection</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="To make your first private connection, choose **one of the following**:" xml:space="preserve">
-        <source>To make your first private connection, choose **one of the following**:</source>
-        <target>To make your first private connection, choose **one of the following**:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To prevent the call interruption, enable Do Not Disturb mode." xml:space="preserve">
@@ -2322,6 +2382,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Waiting for image</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="WebRTC ICE servers" xml:space="preserve">
+        <source>WebRTC ICE servers</source>
+        <target>WebRTC ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
         <target>Welcome %@!</target>
@@ -2412,6 +2477,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>You could not be verified; please try again.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You have no chats" xml:space="preserve">
+        <source>You have no chats</source>
+        <target>You have no chats</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
         <source>You have to enter passphrase every time the app starts - it is not stored on the device.</source>
         <target>You have to enter passphrase every time the app starts - it is not stored on the device.</target>
@@ -2477,6 +2547,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your ICE servers" xml:space="preserve">
+        <source>Your ICE servers</source>
+        <target>Your ICE servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
         <source>Your SMP servers</source>
         <target>Your SMP servers</target>
@@ -2490,11 +2565,6 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
         <target>Your calls</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your chat address" xml:space="preserve">
-        <source>Your chat address</source>
-        <target>Your chat address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
@@ -2525,6 +2595,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
         <target>Your chats</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact address" xml:space="preserve">
+        <source>Your contact address</source>
+        <target>Your contact address</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
@@ -2866,9 +2941,9 @@ SimpleX servers cannot see your profile.</target>
         <target>no e2e encryption</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="or" xml:space="preserve">
-        <source>or</source>
-        <target>or</target>
+      <trans-unit id="or chat with the developers" xml:space="preserve">
+        <source>or chat with the developers</source>
+        <target>or chat with the developers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">

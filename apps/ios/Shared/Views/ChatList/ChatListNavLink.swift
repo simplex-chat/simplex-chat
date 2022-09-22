@@ -42,7 +42,7 @@ struct ChatListNavLink: View {
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             clearChatButton()
-            Button(role: .destructive) {
+            Button {
                 AlertManager.shared.showAlert(
                     contact.ready
                     ? deleteContactAlert(chat.chatInfo)
@@ -51,6 +51,7 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .tint(.red)
         }
         .frame(height: 80)
 
@@ -147,11 +148,12 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func deleteGroupChatButton(_ groupInfo: GroupInfo) -> some View {
-        Button(role: .destructive) {
+        Button {
             AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
         } label: {
             Label("Delete", systemImage: "trash")
         }
+        .tint(.red)
     }
 
     private func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
@@ -161,11 +163,12 @@ struct ChatListNavLink: View {
                 Task { await acceptContactRequest(contactRequest) }
             } label: { Label("Accept", systemImage: chatModel.incognito ? "theatermasks" : "checkmark") }
                 .tint(chatModel.incognito ? .indigo : .accentColor)
-            Button(role: .destructive) {
+            Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
                 Label("Reject", systemImage: "multiply")
             }
+            .tint(.red)
         }
         .frame(height: 80)
         .onTapGesture { showContactRequestDialog = true }
@@ -178,11 +181,12 @@ struct ChatListNavLink: View {
     private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
         ContactConnectionView(contactConnection: contactConnection)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
+            Button {
                 AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection))
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .tint(.red)
         }
         .frame(height: 80)
         .onTapGesture {
@@ -341,9 +345,15 @@ func joinGroup(_ groupId: Int64) {
                 await deleteGroup()
             }
         } catch let error {
-            let err = responseError(error)
-            AlertManager.shared.showAlert(Alert(title: Text("Error joining group"), message: Text(err)))
-            logger.error("apiJoinGroup error: \(err)")
+            switch error as? ChatResponse {
+            case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+                AlertManager.shared.showAlertMsg(title: "Connection timeout", message: "Please check your network connection and try again.")
+            case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Please check your network connection and try again.")
+            default:
+                logger.error("apiJoinGroup error: \(responseError(error))")
+                AlertManager.shared.showAlertMsg(title: "Error joining group", message: "\(responseError(error))")
+            }
         }
 
         func deleteGroup() async {

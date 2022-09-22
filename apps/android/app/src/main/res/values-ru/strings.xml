@@ -43,12 +43,24 @@
     <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
 
     <!-- API Error Responses - SimpleXAPI.kt -->
+    <string name="connection_timeout">Превышено время соединения</string>
+    <string name="connection_error">Ошибка соединения</string>
+    <string name="network_error_desc">Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</string>
+    <string name="error_sending_message">Ошибка при отправке сообщения</string>
+    <string name="error_adding_members">Ошибка при добавлении членов группы</string>
+    <string name="error_joining_group">Ошибка при вступлении в группу</string>
+    <string name="cannot_receive_file">Невозможно получить файл</string>
+    <string name="sender_cancelled_file_transfer">Отправитель отменил передачу файла.</string>
+    <string name="error_receiving_file">Ошибка при получении файла</string>
+    <string name="error_creating_address">Ошибка при создании адреса</string>
     <string name="contact_already_exists">Существующий контакт</string>
     <string name="you_are_already_connected_to_vName_via_this_link">Вы уже соединены с <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> через эту ссылку.</string>
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что вы использовали правильную ссылку, или попросите ваш контакт отправить вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
+    <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
+    <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
     <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
     <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="error_deleting_contact">Ошибка удаления контакта</string>
@@ -152,6 +164,9 @@
     <string name="group_preview_you_are_invited">вы приглашены в группу</string>
     <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
+    <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
+    <string name="chat_with_developers">или соединитесь с разработчиками</string>
+    <string name="you_have_no_chats">У вас нет чатов</string>
 
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
@@ -315,12 +330,18 @@
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
-    <string name="saved_SMP_servers_will_br_removed">Сохраненные SMP серверы будут удалены.</string>
+    <string name="saved_SMP_servers_will_be_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
     <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
+    <string name="your_ICE_servers">Ваши ICE серверы</string>
+    <string name="configure_ICE_servers">Настройка ICE серверов</string>
+    <string name="enter_one_ICE_server_per_line">ICE серверы (один на строке)</string>
+    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE серверов</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
@@ -429,18 +450,6 @@
     <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
     <string name="read_more_in_github_with_link">Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.</string>
 
-    <!-- MakeConnection -->
-    <string name="to_make_your_first_private_connection_choose">Чтобы добавить ваш первый контакт, выберите <b>одно из</b>:</string>
-    <string name="create_1_time_link_qr_code">Создать ссылку / QR код</string>
-    <string name="it_s_secure_to_share__only_one_contact_can_use_it">Ей безопасно поделиться - только один контакт может использовать её.</string>
-    <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
-    <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Или откройте ссылку в браузере и нажмите <b>Open in mobile</b>.</string>
-    <string name="scan_contact_s_qr_code">Сосканировать QR код контакта</string>
-    <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">При встрече или в видеозвонке – самый безопасный способ установить соединение</string>
-    <string name="or">или</string>
-    <string name="connect_with_the_developers">Соединиться с разработчиками</string>
-    <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
-
     <!-- Call -->
     <string name="incoming_video_call">Входящий видеозвонок</string>
     <string name="incoming_audio_call">Входящий аудиозвонок</string>
@@ -464,6 +473,8 @@
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
+    <string name="your_ice_servers">Ваши ICE серверы</string>
+    <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
 
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
@@ -521,6 +532,8 @@
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
+    <string name="settings_section_title_messages">СООБЩЕНИЯ</string>
+    <string name="settings_section_title_calls">ЗВОНКИ</string>
     <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
@@ -645,7 +658,6 @@
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
     <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
-    <string name="alert_title_join_group_error">Ошибка приглашения</string>
     <string name="alert_title_cant_invite_contacts">Нельзя пригласить контакты!</string>
     <string name="alert_title_cant_invite_contacts_descr">Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие вашего основного профиля, приглашать контакты не разрешено</string>
 

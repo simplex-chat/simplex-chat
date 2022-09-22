@@ -22,16 +22,19 @@ struct SimpleXInfo: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: g.size.width * 0.7)
                     .padding(.bottom, 8)
+                    .frame(maxWidth: .infinity)
 
                 VStack(alignment: .leading) {
                     Text("The next generation of private messaging")
                         .font(.title)
-                        .padding(.bottom)
-                    infoRow("🎭", "Privacy redefined",
+                        .padding(.bottom, 24)
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
+                    infoRow("privacy", "Privacy redefined",
                             "The 1st platform without any user identifiers – private by design.")
-                    infoRow("📭", "Immune to spam and abuse",
+                    infoRow("shield", "Immune to spam and abuse",
                             "People can connect to you only via the links you share.")
-                    infoRow("🤝", "Decentralized",
+                    infoRow("decentralized", "Decentralized",
                             "Open-source protocol and code – anybody can run the servers.")
                 }
 
@@ -57,11 +60,14 @@ struct SimpleXInfo: View {
         .padding()
     }
 
-    private func infoRow(_ emoji: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
+    private func infoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .top) {
-            Text(emoji)
-                .font(mediumEmojiFont)
-                .frame(width: 40)
+            Image(image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 36, height: 40)
+                .padding(.top, 4)
+                .padding(.trailing, 6)
             VStack(alignment: .leading) {
                 Text(title).font(.headline)
                 Text(text)
@@ -78,7 +84,7 @@ struct OnboardingActionButton: View {
         if m.currentUser == nil {
             actionButton("Create your profile", onboarding: .step2_CreateProfile)
         } else {
-            actionButton("Make a private connection", onboarding: .step4_MakeConnection)
+            actionButton("Make a private connection", onboarding: .onboardingComplete)
         }
     }
 

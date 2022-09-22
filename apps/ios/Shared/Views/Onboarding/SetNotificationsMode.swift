@@ -32,9 +32,7 @@ struct SetNotificationsMode: View {
                     } else {
                         AlertManager.shared.showAlertMsg(title: "No device token!")
                     }
-                    m.onboardingStage = m.chats.isEmpty
-                                        ? .step4_MakeConnection
-                                        : .onboardingComplete
+                    m.onboardingStage = .onboardingComplete
                 } label: {
                     if case .off = notificationMode {
                         Text("Use chat")
