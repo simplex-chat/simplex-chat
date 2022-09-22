@@ -6,8 +6,6 @@ import SectionView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,10 +17,13 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
 
 @Composable
-fun CallSettingsView(m: ChatModel) {
+fun CallSettingsView(m: ChatModel,
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+) {
   CallSettingsLayout(
     webrtcPolicyRelay = m.controller.appPrefs.webrtcPolicyRelay,
-    callOnLockScreen = m.controller.appPrefs.callOnLockScreen
+    callOnLockScreen = m.controller.appPrefs.callOnLockScreen,
+    editIceServers = showModal { RTCServersView(m) }
   )
 }
 
@@ -30,6 +31,7 @@ fun CallSettingsView(m: ChatModel) {
 fun CallSettingsLayout(
   webrtcPolicyRelay: Preference<Boolean>,
   callOnLockScreen: Preference<CallOnLockScreen>,
+  editIceServers: () -> Unit,
 ) {
   Column(
     Modifier.fillMaxWidth(),
@@ -58,6 +60,8 @@ fun CallSettingsLayout(
           SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
         }
       }
+      SectionDivider()
+      SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
     }
   }
 }

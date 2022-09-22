@@ -43,12 +43,24 @@
   <string name="error_setting_network_config">Error updating network configuration</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
+  <string name="connection_timeout">Connection timeout</string>
+  <string name="connection_error">Connection error</string>
+  <string name="network_error_desc">Please check your network connection and try again.</string>
+  <string name="error_sending_message">Error sending message</string>
+  <string name="error_adding_members">Error adding member(s)</string>
+  <string name="error_joining_group">Error joining group</string>
+  <string name="cannot_receive_file">Cannot receive file</string>
+  <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>Error receiving file
+  <string name="error_receiving_file">Error receiving file</string>
+  <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Contact already exists</string>
   <string name="you_are_already_connected_to_vName_via_this_link">You are already connected to <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> via this link.</string>
   <string name="invalid_connection_link">Invalid connection link</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Please check that you used the correct link or ask your contact to send you another one.</string>
   <string name="connection_error_auth">Connection error (AUTH)</string>
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
+  <string name="error_accepting_contact_request">Error accepting contact request</string>
+  <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="cannot_delete_contact">Can\'t delete contact!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
@@ -322,12 +334,18 @@
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
-  <string name="saved_SMP_servers_will_br_removed">Saved SMP servers will be removed.</string>
+  <string name="saved_SMP_servers_will_be_removed">Saved SMP servers will be removed.</string>
   <string name="your_SMP_servers">Your SMP servers</string>
   <string name="configure_SMP_servers">Configure SMP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
+  <string name="saved_ICE_servers_will_be_removed">Saved WebRTC ICE servers will be removed.</string>
+  <string name="your_ICE_servers">Your ICE servers</string>
+  <string name="configure_ICE_servers">Configure ICE servers</string>
+  <string name="enter_one_ICE_server_per_line">ICE servers (one per line)</string>
+  <string name="error_saving_ICE_servers">Error saving ICE servers</string>
+  <string name="ensure_ICE_server_address_are_correct_format_and_unique">Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="save_servers_button">Save</string>
   <string name="network_and_servers">Network &amp; servers</string>
   <string name="network_settings">Advanced network settings</string>
@@ -456,6 +474,8 @@
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
+  <string name="your_ice_servers">Your ICE servers</string>
+  <string name="webrtc_ice_servers">WebRTC ICE servers</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
@@ -513,6 +533,8 @@
   <string name="settings_section_title_socks">SOCKS PROXY</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
+  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
 
   <!-- DatabaseView.kt -->
@@ -637,7 +659,6 @@
   <string name="alert_message_group_invitation_expired">Group invitation is no longer valid, it was removed by sender.</string>
   <string name="alert_title_no_group">Group not found!</string>
   <string name="alert_message_no_group">This group no longer exists.</string>
-  <string name="alert_title_join_group_error">Error joining group</string>
   <string name="alert_title_cant_invite_contacts">Can\'t invite contacts!</string>
   <string name="alert_title_cant_invite_contacts_descr">You\'re using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</string>
 

@@ -87,6 +87,7 @@ class AppPreferences(val context: Context) {
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+  val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
@@ -174,6 +175,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
+    private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
@@ -385,9 +387,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiSendMessage(type: ChatType, id: Long, file: String? = null, quotedItemId: Long? = null, mc: MsgContent): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc)
     val r = sendCmd(cmd)
-    if (r is CR.NewChatItem ) return r.chatItem
-    Log.e(TAG, "apiSendMessage bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.NewChatItem -> r.chatItem
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSendMessage", generalGetString(R.string.error_sending_message), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiUpdateChatItem(type: ChatType, id: Long, itemId: Long, mc: MsgContent): AChatItem? {
@@ -475,9 +483,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiAddContact(): String? {
     val r = sendCmd(CC.AddContact())
-    if (r is CR.Invitation) return r.connReqInvitation
-    Log.e(TAG, "apiAddContact bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.Invitation -> r.connReqInvitation
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiAddContact", generalGetString(R.string.connection_error), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiConnect(connReq: String): Boolean  {
@@ -509,7 +523,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         return false
       }
       else -> {
-        apiErrorAlert("apiConnect", "Connection error", r)
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiConnect", generalGetString(R.string.connection_error), r)
+        }
         return false
       }
     }
@@ -526,7 +542,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
           AlertManager.shared.showAlertMsg(
             generalGetString(R.string.cannot_delete_contact),
-            String.format(generalGetString(R.string.contact_cannot_be_deleted_as_they_are_in_groups), e.errorType.contact.displayName, e.errorType.groupNames)
+            String.format(generalGetString(R.string.contact_cannot_be_deleted_as_they_are_in_groups), e.errorType.contact.displayName, e.errorType.groupNames.joinToString(", "))
           )
         }
       }
@@ -581,9 +597,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
-    if (r is CR.UserContactLinkCreated) return r.connReqContact
-    Log.e(TAG, "apiCreateUserAddress bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.UserContactLinkCreated -> r.connReqContact
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiCreateUserAddress", generalGetString(R.string.error_creating_address), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiDeleteUserAddress(): Boolean {
@@ -606,9 +628,24 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiAcceptContactRequest(contactReqId: Long): Contact? {
     val r = sendCmd(CC.ApiAcceptContact(contactReqId))
-    if (r is CR.AcceptingContactRequest) return r.contact
-    Log.e(TAG, "apiAcceptContactRequest bad response: ${r.responseType} ${r.details}")
-    return null
+    return when {
+      r is CR.AcceptingContactRequest -> r.contact
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.AUTH -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.connection_error_auth),
+          generalGetString(R.string.sender_may_have_deleted_the_connection_request)
+        )
+        null
+      }
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiAcceptContactRequest", generalGetString(R.string.error_accepting_contact_request), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiRejectContactRequest(contactReqId: Long): Boolean {
@@ -666,9 +703,22 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiReceiveFile(fileId: Long): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId))
-    if (r is CR.RcvFileAccepted) return r.chatItem
-    Log.e(TAG, "apiReceiveFile bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.RcvFileAccepted -> r.chatItem
+      is CR.RcvFileAcceptedSndCancelled -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.cannot_receive_file),
+          generalGetString(R.string.sender_cancelled_file_transfer)
+        )
+        null
+      }
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiReceiveFile", generalGetString(R.string.error_receiving_file), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiNewGroup(p: GroupProfile): GroupInfo? {
@@ -680,9 +730,15 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
 
   suspend fun apiAddMember(groupId: Long, contactId: Long, memberRole: GroupMemberRole): GroupMember? {
     val r = sendCmd(CC.ApiAddMember(groupId, contactId, memberRole))
-    if (r is CR.SentGroupInvitation) return r.member
-    Log.e(TAG, "apiAddMember bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.SentGroupInvitation -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiAddMember", generalGetString(R.string.error_adding_members), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiJoinGroup(groupId: Long) {
@@ -699,11 +755,11 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         } else if (e is ChatError.ChatErrorStore && e.storeError is StoreError.GroupNotFound) {
           deleteGroup()
           AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_no_group), generalGetString(R.string.alert_message_no_group))
-        } else {
-          AlertManager.shared.showAlertMsg(generalGetString(R.string.alert_title_join_group_error), "$e")
+        } else if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiJoinGroup", generalGetString(R.string.error_joining_group), r)
         }
       }
-      else -> Log.e(TAG, "apiJoinGroup bad response: ${r.responseType} ${r.details}")
+      else -> apiErrorAlert("apiJoinGroup", generalGetString(R.string.error_joining_group), r)
     }
   }
 
@@ -743,6 +799,30 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         )
         null
       }
+    }
+  }
+
+  private fun networkErrorAlert(r: CR): Boolean {
+    return when {
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.connection_timeout),
+          generalGetString(R.string.network_error_desc)
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.connection_error),
+          generalGetString(R.string.network_error_desc)
+        )
+        true
+      }
+      else -> false
     }
   }
 
@@ -882,7 +962,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
           val useRelay = chatModel.controller.appPrefs.webrtcPolicyRelay.get()
-          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey, relay = useRelay)
+          val iceServers = getIceServers()
+          Log.d(TAG, ".callOffer iceServers $iceServers")
+          chatModel.callCommand.value = WCallCommand.Offer(
+            offer = r.offer.rtcSession,
+            iceCandidates = r.offer.rtcIceCandidates,
+            media = r.callType.media,
+            aesKey = r.sharedKey,
+            iceServers = iceServers,
+            relay = useRelay
+          )
         }
       }
       is CR.CallAnswer -> {
@@ -1592,6 +1681,7 @@ sealed class CR {
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val toGroup: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
+  @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileStart") class RcvFileStart(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileComplete") class RcvFileComplete(val chatItem: AChatItem): CR()
   // sending file events
@@ -1676,6 +1766,7 @@ sealed class CR {
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupRemoved -> "groupRemoved"
     is GroupUpdated -> "groupUpdated"
+    is RcvFileAcceptedSndCancelled -> "rcvFileAcceptedSndCancelled"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
     is RcvFileComplete -> "rcvFileComplete"
@@ -1761,6 +1852,7 @@ sealed class CR {
     is ConnectedToGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is GroupRemoved -> json.encodeToString(groupInfo)
     is GroupUpdated -> json.encodeToString(toGroup)
+    is RcvFileAcceptedSndCancelled -> noDetails()
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)
     is RcvFileComplete -> json.encodeToString(chatItem)
