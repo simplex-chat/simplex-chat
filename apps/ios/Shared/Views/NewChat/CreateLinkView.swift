@@ -19,6 +19,8 @@ struct CreateLinkView: View {
     @State private var creatingConnReq = false
     var viaSettings = false
 
+    private let minDragTranslationForSwipe: CGFloat = 50
+
     var body: some View {
         TabView(selection: $selection) {
             AddContactView(connReqInvitation: connReqInvitation, viaSettings: viaSettings)
@@ -31,11 +33,17 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
+                .highPriorityGesture(DragGesture().onEnded({
+                    handleSwipe(translation: $0.translation.width)
+                }))
             UserAddress(viaSettings: viaSettings)
                 .tabItem {
                     Label("Your contact address", systemImage: "infinity.circle")
                 }
                 .tag(CreateLinkTab.longTerm)
+                .highPriorityGesture(DragGesture().onEnded({
+                    handleSwipe(translation: $0.translation.width)
+                }))
         }
         .onChange(of: selection) { _ in
             if case .oneTime = selection, connReqInvitation == "" && !creatingConnReq {
@@ -55,6 +63,14 @@ struct CreateLinkView: View {
                     creatingConnReq = false
                 }
             }
+        }
+    }
+
+    private func handleSwipe(translation: CGFloat) {
+        if translation > minDragTranslationForSwipe && selection == .longTerm {
+            selection = .oneTime
+        } else if translation < -minDragTranslationForSwipe && selection == .oneTime {
+            selection = .longTerm
         }
     }
 }

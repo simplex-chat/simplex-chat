@@ -14,7 +14,10 @@ enum ConnectViaLinkTab: String {
 }
 
 struct ConnectViaLinkView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @State private var selection: ConnectViaLinkTab = connectViaLinkTabDefault.get()
+
+    private let minDragTranslationForSwipe: CGFloat = 50
 
     var body: some View {
         TabView(selection: $selection) {
@@ -23,14 +26,30 @@ struct ConnectViaLinkView: View {
                     Label("Scan QR code", systemImage: "qrcode")
                 }
                 .tag(ConnectViaLinkTab.scan)
+                .highPriorityGesture(DragGesture().onEnded({
+                    handleSwipe(translation: $0.translation)
+                }))
             PasteToConnectView()
                 .tabItem {
                     Label("Paste received link", systemImage: "doc.plaintext")
                 }
                 .tag(ConnectViaLinkTab.paste)
+                .highPriorityGesture(DragGesture().onEnded({
+                    handleSwipe(translation: $0.translation)
+                }))
         }
         .onChange(of: selection) { _ in
             connectViaLinkTabDefault.set(selection)
+        }
+    }
+
+    private func handleSwipe(translation: CGSize) {
+        if translation.width > minDragTranslationForSwipe && selection == .paste {
+            selection = .scan
+        } else if translation.width < -minDragTranslationForSwipe && selection == .scan {
+            selection = .paste
+        } else if translation.height > minDragTranslationForSwipe {
+            dismiss()
         }
     }
 }
