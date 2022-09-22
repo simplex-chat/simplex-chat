@@ -419,7 +419,7 @@ processChatCommand = \case
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
           let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
-          cancelFile user fileInfo
+          cancelFile user fileInfo `catchError` \_ -> pure ()
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
@@ -435,7 +435,7 @@ processChatCommand = \case
           conns <- withStore $ \db -> getContactConnections db userId ct
           withChatLock . procCmd $ do
             forM_ filesInfo $ \fileInfo -> do
-              cancelFile user fileInfo
+              cancelFile user fileInfo `catchError` \_ -> pure ()
               withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
@@ -472,7 +472,7 @@ processChatCommand = \case
       ciIdsAndFileInfo <- withStore' $ \db -> getContactChatItemIdsAndFileInfo db user chatId
       forM_ ciIdsAndFileInfo $ \(itemId, _, fileInfo_) -> do
         forM_ fileInfo_ $ \fileInfo -> do
-          cancelFile user fileInfo
+          cancelFile user fileInfo `catchError` \_ -> pure ()
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \db -> deleteDirectChatItemLocal db userId ct itemId CIDMInternal
       ct' <- case ciIdsAndFileInfo of
@@ -1036,7 +1036,7 @@ processChatCommand = \case
       forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
         unless itemDeleted $ do
           forM_ fileInfo_ $ \fileInfo -> do
-            cancelFile user fileInfo
+            cancelFile user fileInfo `catchError` \_ -> pure ()
             withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
           void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
       pure $ (\(_, lastItemTs, _, _) -> lastItemTs) <$> lastMaybe ciIdsAndFileInfo
