@@ -27,6 +27,7 @@ struct AddGroupView: View {
             AddGroupMembersView(
                 chat: chat,
                 groupInfo: groupInfo,
+                contactsToAdd: filterMembersToAdd(m.groupMembers),
                 showSkip: true,
                 showFooterCounter: false
             ) { _ in

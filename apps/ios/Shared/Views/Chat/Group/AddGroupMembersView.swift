@@ -14,6 +14,7 @@ struct AddGroupMembersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     var chat: Chat
     var groupInfo: GroupInfo
+    var contactsToAdd: [Contact]
     var showSkip: Bool = false
     var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
@@ -35,15 +36,13 @@ struct AddGroupMembersView: View {
 
     var body: some View {
         NavigationView {
-            let membersToAdd = filterMembersToAdd(chatModel.groupMembers)
-
             let v = List {
                 ChatInfoToolbar(chat: chat, imageSize: 48)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
 
-                if (membersToAdd.isEmpty) {
+                if (contactsToAdd.isEmpty) {
                     Text("No contacts to add")
                         .foregroundColor(.secondary)
                         .padding()
@@ -71,7 +70,7 @@ struct AddGroupMembersView: View {
                     }
 
                     Section {
-                        ForEach(membersToAdd) { contact in
+                        ForEach(contactsToAdd) { contact in
                             contactCheckView(contact)
                         }
                     }
@@ -195,6 +194,10 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersView_Previews: PreviewProvider {
     static var previews: some View {
-        AddGroupMembersView(chat: Chat(chatInfo: ChatInfo.sampleData.group), groupInfo: GroupInfo.sampleData)
+        AddGroupMembersView(
+            chat: Chat(chatInfo: ChatInfo.sampleData.group),
+            groupInfo: GroupInfo.sampleData,
+            contactsToAdd: [Contact.sampleData, Contact.sampleData]
+        )
     }
 }

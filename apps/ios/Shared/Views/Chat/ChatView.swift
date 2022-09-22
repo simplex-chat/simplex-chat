@@ -146,7 +146,7 @@ struct ChatView: View {
                             } else {
                                 addMembersButton()
                                     .sheet(isPresented: $showAddMembersSheet) {
-                                        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                        AddGroupMembersView(chat: chat, groupInfo: groupInfo, contactsToAdd: filterMembersToAdd(chatModel.groupMembers))
                                     }
                             }
                         }
