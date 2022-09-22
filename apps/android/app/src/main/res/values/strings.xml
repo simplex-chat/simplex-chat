@@ -152,6 +152,9 @@
   <string name="group_preview_you_are_invited">you are invited to group</string>
   <string name="group_preview_join_as">join as %s</string>
   <string name="group_connection_pending">connecting…</string>
+  <string name="tap_to_start_new_chat">Tap to start a new chat</string>
+  <string name="chat_with_developers">or chat with the developers</string>
+  <string name="you_have_no_chats">You have no chats</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
@@ -429,18 +432,6 @@
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Only client devices store user profiles, contacts, groups, and messages sent with <b>2-layer end-to-end encryption</b>.</string>
   <string name="read_more_in_github">Read more in our GitHub repository.</string>
   <string name="read_more_in_github_with_link">Read more in our <font color="#0088ff">GitHub repository</font>.</string>
-
-  <!-- MakeConnection -->
-  <string name="to_make_your_first_private_connection_choose">To make your first private connection, choose <b>one of the following</b>:</string>
-  <string name="create_1_time_link_qr_code">Create 1-time link / QR code</string>
-  <string name="it_s_secure_to_share__only_one_contact_can_use_it">It\'s secure to share - only one contact can use it.</string>
-  <string name="paste_the_link_you_received">Paste the link you received</string>
-  <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Or open the link in the browser and tap <b>Open in mobile</b>.</string>
-  <string name="scan_contact_s_qr_code">Scan contact\'s QR code</string>
-  <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">In person or via a video call – the most secure way to connect.</string>
-  <string name="or">or</string>
-  <string name="connect_with_the_developers">Connect with the developers</string>
-  <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">To ask any questions and to receive <xliff:g id="appNameFull">SimpleX Chat</xliff:g> updates.</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>

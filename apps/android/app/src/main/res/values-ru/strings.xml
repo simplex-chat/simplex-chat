@@ -152,6 +152,9 @@
     <string name="group_preview_you_are_invited">вы приглашены в группу</string>
     <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
+    <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
+    <string name="chat_with_developers">или соединитесь с разработчиками</string>
+    <string name="you_have_no_chats">У вас нет чатов</string>
 
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
@@ -428,18 +431,6 @@
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Только пользовательские устройства хранят контакты, группы и сообщения, которые отправляются <b>с двухуровневым end-to-end шифрованием</b>.</string>
     <string name="read_more_in_github">Узнайте больше из нашего GitHub репозитория.</string>
     <string name="read_more_in_github_with_link">Узнайте больше из нашего <font color="#0088ff">GitHub репозитория</font>.</string>
-
-    <!-- MakeConnection -->
-    <string name="to_make_your_first_private_connection_choose">Чтобы добавить ваш первый контакт, выберите <b>одно из</b>:</string>
-    <string name="create_1_time_link_qr_code">Создать ссылку / QR код</string>
-    <string name="it_s_secure_to_share__only_one_contact_can_use_it">Ей безопасно поделиться - только один контакт может использовать её.</string>
-    <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
-    <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Или откройте ссылку в браузере и нажмите <b>Open in mobile</b>.</string>
-    <string name="scan_contact_s_qr_code">Сосканировать QR код контакта</string>
-    <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">При встрече или в видеозвонке – самый безопасный способ установить соединение</string>
-    <string name="or">или</string>
-    <string name="connect_with_the_developers">Соединиться с разработчиками</string>
-    <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 
     <!-- Call -->
     <string name="incoming_video_call">Входящий видеозвонок</string>
