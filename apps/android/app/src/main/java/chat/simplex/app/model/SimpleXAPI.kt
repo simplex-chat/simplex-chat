@@ -87,6 +87,7 @@ class AppPreferences(val context: Context) {
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laNoticeShown = mkBoolPreference(SHARED_PREFS_LA_NOTICE_SHOWN, false)
+  val webrtcIceServers = mkStrPreference(SHARED_PREFS_WEBRTC_ICE_SERVERS, null)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
@@ -174,6 +175,7 @@ class AppPreferences(val context: Context) {
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
     private const val SHARED_PREFS_LA_NOTICE_SHOWN = "LANoticeShown"
+    private const val SHARED_PREFS_WEBRTC_ICE_SERVERS = "WebrtcICEServers"
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
@@ -960,7 +962,16 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.OfferReceived, peerMedia = r.callType.media, sharedKey = r.sharedKey)
           val useRelay = chatModel.controller.appPrefs.webrtcPolicyRelay.get()
-          chatModel.callCommand.value = WCallCommand.Offer(offer = r.offer.rtcSession, iceCandidates = r.offer.rtcIceCandidates, media = r.callType.media, aesKey = r.sharedKey, relay = useRelay)
+          val iceServers = getIceServers()
+          Log.d(TAG, ".callOffer iceServers $iceServers")
+          chatModel.callCommand.value = WCallCommand.Offer(
+            offer = r.offer.rtcSession,
+            iceCandidates = r.offer.rtcIceCandidates,
+            media = r.callType.media,
+            aesKey = r.sharedKey,
+            iceServers = iceServers,
+            relay = useRelay
+          )
         }
       }
       is CR.CallAnswer -> {

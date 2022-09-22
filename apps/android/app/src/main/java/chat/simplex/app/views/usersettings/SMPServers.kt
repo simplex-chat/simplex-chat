@@ -58,7 +58,7 @@ fun SMPServersView(chatModel: ChatModel) {
             if (userSMPServers.isNotEmpty()) {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(R.string.use_simplex_chat_servers__question),
-                text = generalGetString(R.string.saved_SMP_servers_will_br_removed),
+                text = generalGetString(R.string.saved_SMP_servers_will_be_removed),
                 confirmText = generalGetString(R.string.confirm_verb),
                 onConfirm = {
                   saveSMPServers(listOf())
@@ -198,7 +198,7 @@ fun SMPServersLayout(
 }
 
 @Composable
-fun howToButton() {
+private fun howToButton() {
   val uriHandler = LocalUriHandler.current
   Row(
     verticalAlignment = Alignment.CenterVertically,

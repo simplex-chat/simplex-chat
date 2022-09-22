@@ -331,12 +331,18 @@
   <string name="smp_servers">SMP servers</string>
   <string name="install_simplex_chat_for_terminal">Install <xliff:g id="appNameFull">SimpleX Chat</xliff:g> for terminal</string>
   <string name="use_simplex_chat_servers__question">Use <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers?</string>
-  <string name="saved_SMP_servers_will_br_removed">Saved SMP servers will be removed.</string>
+  <string name="saved_SMP_servers_will_be_removed">Saved SMP servers will be removed.</string>
   <string name="your_SMP_servers">Your SMP servers</string>
   <string name="configure_SMP_servers">Configure SMP servers</string>
   <string name="using_simplex_chat_servers">Using <xliff:g id="appNameFull">SimpleX Chat</xliff:g> servers.</string>
   <string name="enter_one_SMP_server_per_line">Enter one SMP server per line:</string>
   <string name="how_to">How to</string>
+  <string name="saved_ICE_servers_will_be_removed">Saved WebRTC ICE servers will be removed.</string>
+  <string name="your_ICE_servers">Your ICE servers</string>
+  <string name="configure_ICE_servers">Configure ICE servers</string>
+  <string name="enter_one_ICE_server_per_line">ICE servers (one per line)</string>
+  <string name="error_saving_ICE_servers">Error saving ICE servers</string>
+  <string name="ensure_ICE_server_address_are_correct_format_and_unique">Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="save_servers_button">Save</string>
   <string name="network_and_servers">Network &amp; servers</string>
   <string name="network_settings">Advanced network settings</string>
@@ -477,6 +483,8 @@
   <string name="accept_call_on_lock_screen">Accept</string>
   <string name="show_call_on_lock_screen">Show</string>
   <string name="no_call_on_lock_screen">Disable</string>
+  <string name="your_ice_servers">Your ICE servers</string>
+  <string name="webrtc_ice_servers">WebRTC ICE servers</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Open <xliff:g id="appNameFull">SimpleX Chat</xliff:g> to accept call</string>
@@ -534,6 +542,8 @@
   <string name="settings_section_title_socks">SOCKS PROXY</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
+  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Incognito mode</string>
 
   <!-- DatabaseView.kt -->

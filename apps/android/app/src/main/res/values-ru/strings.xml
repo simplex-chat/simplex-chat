@@ -327,12 +327,18 @@
     <string name="smp_servers">SMP серверы</string>
     <string name="install_simplex_chat_for_terminal"><xliff:g id="appNameFull">SimpleX Chat</xliff:g> для терминала</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
-    <string name="saved_SMP_servers_will_br_removed">Сохраненные SMP серверы будут удалены.</string>
+    <string name="saved_SMP_servers_will_be_removed">Сохраненные SMP серверы будут удалены.</string>
     <string name="your_SMP_servers">Ваши SMP серверы</string>
     <string name="configure_SMP_servers">Настройка SMP серверов</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
     <string name="enter_one_SMP_server_per_line">Введите SMP серверы, каждый сервер в отдельной строке:</string>
     <string name="how_to">Инфо</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
+    <string name="your_ICE_servers">Ваши ICE серверы</string>
+    <string name="configure_ICE_servers">Настройка ICE серверов</string>
+    <string name="enter_one_ICE_server_per_line">ICE серверы (один на строке)</string>
+    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE серверов</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
@@ -476,6 +482,8 @@
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
+    <string name="your_ice_servers">Ваши ICE серверы</string>
+    <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
 
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте <xliff:g id="appNameFull">SimpleX Chat</xliff:g>\nчтобы принять звонок</string>
@@ -533,6 +541,8 @@
     <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
     <string name="settings_section_title_icon">ИКОНКА</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
+    <string name="settings_section_title_messages">СООБЩЕНИЯ</string>
+    <string name="settings_section_title_calls">ЗВОНКИ</string>
     <string name="settings_section_title_incognito">Режим Инкогнито</string>
 
     <!-- DatabaseView.kt -->
