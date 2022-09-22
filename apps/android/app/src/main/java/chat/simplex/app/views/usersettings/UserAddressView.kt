@@ -61,7 +61,7 @@ fun UserAddressLayout(
     verticalArrangement = Arrangement.Top
   ) {
     Text(
-      stringResource(R.string.your_chat_address),
+      stringResource(R.string.your_contact_address),
       Modifier.padding(bottom = 16.dp),
       style = MaterialTheme.typography.h1,
     )

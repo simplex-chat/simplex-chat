@@ -3,18 +3,17 @@ package chat.simplex.app.views.newchat
 import android.content.ClipboardManager
 import android.content.res.Configuration
 import android.net.Uri
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
@@ -25,11 +24,10 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
-  val connectionLink = remember { mutableStateOf("")}
+fun PasteToConnectView(chatModel: ChatModel) {
+  val connectionLink = remember { mutableStateOf("") }
   val context = LocalContext.current
   val clipboard = getSystemService(context, ClipboardManager::class.java)
-  BackHandler(onBack = close)
   PasteToConnectLayout(
     chatModel.incognito.value,
     connectionLink = connectionLink,
@@ -48,9 +46,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
           text = generalGetString(R.string.this_string_is_not_a_connection_link)
         )
       }
-      close()
     },
-    close = close
   )
 }
 
@@ -60,52 +56,49 @@ fun PasteToConnectLayout(
   connectionLink: MutableState<String>,
   pasteFromClipboard: () -> Unit,
   connectViaLink: (String) -> Unit,
-  close: () -> Unit
 ) {
-  ModalView(close) {
-    Column(
+  Column(
+    Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+    verticalArrangement = Arrangement.SpaceBetween,
+  ) {
+    Text(
+      stringResource(R.string.connect_via_link),
       Modifier.padding(bottom = 16.dp),
-      verticalArrangement = Arrangement.SpaceBetween,
-    ) {
-      Text(
-        stringResource(R.string.connect_via_link),
-        style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-        modifier = Modifier.padding(vertical = 5.dp)
-      )
-      Text(stringResource(R.string.paste_connection_link_below_to_connect))
+      style = MaterialTheme.typography.h1,
+    )
+    Text(stringResource(R.string.paste_connection_link_below_to_connect))
 
-      InfoAboutIncognito(
-        chatModelIncognito,
-        true,
-        generalGetString(R.string.incognito_random_profile_from_contact_description),
-        generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
-      )
+    InfoAboutIncognito(
+      chatModelIncognito,
+      true,
+      generalGetString(R.string.incognito_random_profile_from_contact_description),
+      generalGetString(R.string.profile_will_be_sent_to_contact_sending_link)
+    )
 
-      Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
-        TextEditor(Modifier.height(180.dp), text = connectionLink)
-      }
-
-      Row(
-        Modifier.fillMaxWidth().padding(bottom = 6.dp),
-        horizontalArrangement = Arrangement.Start,
-      ) {
-        if (connectionLink.value == "") {
-          SimpleButton(text = "Paste", icon = Icons.Outlined.ContentPaste) {
-            pasteFromClipboard()
-          }
-        } else {
-          SimpleButton(text = "Clear", icon = Icons.Outlined.Clear) {
-            connectionLink.value = ""
-          }
-        }
-        Spacer(Modifier.weight(1f).fillMaxWidth())
-        SimpleButton(text = "Connect", icon = Icons.Outlined.Link) {
-          connectViaLink(connectionLink.value)
-        }
-      }
-
-      Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
+    Box(Modifier.padding(top = 16.dp, bottom = 6.dp)) {
+      TextEditor(Modifier.height(180.dp), text = connectionLink)
     }
+
+    Row(
+      Modifier.fillMaxWidth().padding(bottom = 6.dp),
+      horizontalArrangement = Arrangement.Start,
+    ) {
+      if (connectionLink.value == "") {
+        SimpleButton(text = stringResource(R.string.paste_button), icon = Icons.Outlined.ContentPaste) {
+          pasteFromClipboard()
+        }
+      } else {
+        SimpleButton(text = stringResource(R.string.clear_verb), icon = Icons.Outlined.Clear) {
+          connectionLink.value = ""
+        }
+      }
+      Spacer(Modifier.weight(1f).fillMaxWidth())
+      SimpleButton(text = stringResource(R.string.connect_button), icon = Icons.Outlined.Link) {
+        connectViaLink(connectionLink.value)
+      }
+    }
+
+    Text(annotatedStringResource(R.string.you_can_also_connect_by_clicking_the_link))
   }
 }
 
@@ -130,7 +123,6 @@ fun PreviewPasteToConnectTextbox() {
           e.printStackTrace()
         }
       },
-      close = {}
     )
   }
 }

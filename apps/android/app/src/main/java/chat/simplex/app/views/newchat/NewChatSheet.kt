@@ -1,6 +1,5 @@
 package chat.simplex.app.views.newchat
 
-import android.Manifest
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,32 +21,17 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.withApi
-import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
-  val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   NewChatSheetLayout(
     addContact = {
-      withApi {
-        //        show spinner
-        chatModel.connReqInvitation = chatModel.controller.apiAddContact()
-        //        hide spinner
-        if (chatModel.connReqInvitation != null) {
-          newChatCtrl.collapse()
-          ModalManager.shared.showModal { AddContactView(chatModel) }
-        }
-      }
-    },
-    scanCode = {
       newChatCtrl.collapse()
-      ModalManager.shared.showCustomModal { close -> ScanToConnectView(chatModel, close) }
-      cameraPermissionState.launchPermissionRequest()
+      ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
-    pasteLink = {
+    connectViaLink = {
       newChatCtrl.collapse()
-      ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel, close) }
+      ModalManager.shared.showModal { ConnectViaLinkView(chatModel) }
     },
     createGroup = {
       newChatCtrl.collapse()
@@ -59,8 +43,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
 @Composable
 fun NewChatSheetLayout(
   addContact: () -> Unit,
-  scanCode: () -> Unit,
-  pasteLink: () -> Unit,
+  connectViaLink: () -> Unit,
   createGroup: () -> Unit
 ) {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -73,7 +56,7 @@ fun NewChatSheetLayout(
     Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
-        stringResource(R.string.create_one_time_link),
+        stringResource(R.string.share_one_time_link),
         stringResource(R.string.to_share_with_your_contact),
         Icons.Outlined.AddLink,
         click = addContact
@@ -82,19 +65,10 @@ fun NewChatSheetLayout(
     Divider(Modifier.padding(horizontal = 8.dp))
     Box(boxModifier) {
       ActionRowButton(
-        stringResource(R.string.paste_received_link),
-        stringResource(R.string.paste_received_link_from_clipboard),
-        Icons.Outlined.Article,
-        click = pasteLink
-      )
-    }
-    Divider(Modifier.padding(horizontal = 8.dp))
-    Box(boxModifier) {
-      ActionRowButton(
-        stringResource(R.string.scan_QR_code),
-        stringResource(R.string.in_person_or_in_video_call__bracketed),
+        stringResource(R.string.connect_via_link_or_qr),
+        stringResource(R.string.connect_via_link_or_qr_from_clipboard_or_in_person),
         Icons.Outlined.QrCode,
-        click = scanCode
+        click = connectViaLink
       )
     }
     Divider(Modifier.padding(horizontal = 8.dp))
@@ -189,8 +163,7 @@ fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
       addContact = {},
-      scanCode = {},
-      pasteLink = {},
+      connectViaLink = {},
       createGroup = {}
     )
   }
