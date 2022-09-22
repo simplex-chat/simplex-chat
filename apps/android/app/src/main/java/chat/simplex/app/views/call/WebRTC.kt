@@ -3,11 +3,13 @@ package chat.simplex.app.views.call
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import chat.simplex.app.R
+import chat.simplex.app.SimplexApp
 import chat.simplex.app.model.Contact
 import chat.simplex.app.views.helpers.generalGetString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.net.URI
 
 data class Call(
   val contact: Contact,
@@ -115,7 +117,7 @@ sealed class WCallResponse {
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 @Serializable class RTCIceCandidate(val candidateType: RTCIceCandidateType?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
-@Serializable class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
+@Serializable data class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate/type
 @Serializable
@@ -154,3 +156,47 @@ class ConnectionState(
   val iceGatheringState: String,
   val signalingState: String
 )
+
+// the servers are expected in this format:
+// stun:stun.simplex.im:443
+// turn:private:yleob6AVkiNI87hpR94Z@turn.simplex.im:443
+fun parseRTCIceServer(str: String): RTCIceServer? {
+  var s = replaceScheme(str, "stun:")
+  s = replaceScheme(s, "turn:")
+  val u = runCatching { URI(s) }.getOrNull()
+  if (u != null) {
+    val scheme = u.scheme
+    val host = u.host
+    val port = u.port
+    if (u.path == "" && (scheme == "stun" || scheme == "turn")) {
+      val userInfo = u.userInfo?.split(":")
+      return RTCIceServer(
+        urls = listOf("$scheme:$host:$port"),
+        username = userInfo?.getOrNull(0),
+        credential = userInfo?.getOrNull(1)
+      )
+    }
+  }
+  return null
+}
+
+private fun replaceScheme(s: String, scheme: String): String = if (s.startsWith(scheme)) s.replace(scheme, "$scheme//") else s
+
+fun parseRTCIceServers(servers: List<String>): List<RTCIceServer>? {
+  val iceServers: ArrayList<RTCIceServer> = ArrayList()
+  for (s in servers) {
+    val server = parseRTCIceServer(s)
+    if (server != null) {
+      iceServers.add(server)
+    } else {
+      return null
+    }
+  }
+  return if (iceServers.isEmpty()) null else iceServers
+}
+
+fun getIceServers(): List<RTCIceServer>? {
+  val value = SimplexApp.context.chatController.appPrefs.webrtcIceServers.get() ?: return null
+  val servers: List<String> = value.split("\n")
+  return parseRTCIceServers(servers)
+}

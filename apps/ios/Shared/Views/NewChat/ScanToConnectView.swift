@@ -14,36 +14,39 @@ struct ScanToConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Scan QR code")
-                .font(.title)
-                .padding(.vertical)
-            if (chatModel.incognito) {
-                HStack {
-                    Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
-                    Spacer().frame(width: 8)
-                    Text("A random profile will be sent to your contact").font(.footnote)
+        ScrollView {
+            VStack(alignment: .leading) {
+                Text("Scan QR code")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.vertical)
+                if (chatModel.incognito) {
+                    HStack {
+                        Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
+                        Spacer().frame(width: 8)
+                        Text("A random profile will be sent to your contact").font(.footnote)
+                    }
+                    .padding(.bottom)
+                } else {
+                    HStack {
+                        Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
+                        Spacer().frame(width: 8)
+                        Text("Your chat profile will be sent to your contact").font(.footnote)
+                    }
+                    .padding(.bottom)
+                }
+                ZStack {
+                    CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                        .aspectRatio(1, contentMode: .fit)
+                        .border(.gray)
                 }
                 .padding(.bottom)
-            } else {
-                HStack {
-                    Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                    Spacer().frame(width: 8)
-                    Text("Your chat profile will be sent to your contact").font(.footnote)
-                }
-                .padding(.bottom)
+                Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
+                    .padding(.bottom)
             }
-            ZStack {
-                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                    .aspectRatio(1, contentMode: .fit)
-                    .border(.gray)
-            }
-            .padding(.bottom)
-            Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                .padding(.bottom)
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {

@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionItemViewSpaceBetween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,7 +59,7 @@ fun SMPServersView(chatModel: ChatModel) {
             if (userSMPServers.isNotEmpty()) {
               AlertManager.shared.showAlertMsg(
                 title = generalGetString(R.string.use_simplex_chat_servers__question),
-                text = generalGetString(R.string.saved_SMP_servers_will_br_removed),
+                text = generalGetString(R.string.saved_SMP_servers_will_be_removed),
                 confirmText = generalGetString(R.string.confirm_verb),
                 onConfirm = {
                   saveSMPServers(listOf())
@@ -107,9 +108,7 @@ fun SMPServersLayout(
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    Row(
-      verticalAlignment = Alignment.CenterVertically
-    ) {
+    SectionItemViewSpaceBetween(padding = PaddingValues()) {
       Text(stringResource(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
       Switch(
         checked = isUserSMPServers,
@@ -198,7 +197,7 @@ fun SMPServersLayout(
 }
 
 @Composable
-fun howToButton() {
+private fun howToButton() {
   val uriHandler = LocalUriHandler.current
   Row(
     verticalAlignment = Alignment.CenterVertically,

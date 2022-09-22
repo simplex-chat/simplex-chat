@@ -10,51 +10,50 @@ import SwiftUI
 import SimpleXChat
 
 enum NewChatAction: Identifiable {
-    case createLink
-    case pasteLink
-    case scanQRCode
+    case createLink(link: String)
+    case connectViaLink
     case createGroup
 
-    var id: NewChatAction { get { self } }
+    var id: String {
+        switch self {
+        case let .createLink(link): return "createLink \(link)"
+        case .connectViaLink: return "connectViaLink"
+        case .createGroup: return "createGroup"
+        }
+    }
 }
 
 struct NewChatButton: View {
-    @State private var showAddChat = false
-    @State private var connReq: String = ""
+    @Binding var showAddChat: Bool
     @State private var actionSheet: NewChatAction?
 
     var body: some View {
         Button { showAddChat = true } label: {
-            Image(systemName: "plus.circle.fill")
+            Image(systemName: "square.and.pencil")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Create link / QR code") { addContactAction() }
-            Button("Paste received link") { actionSheet = .pasteLink }
-            Button("Scan QR code") { actionSheet = .scanQRCode }
+        .confirmationDialog("Start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
+            Button("Share one-time invitation link") { addContactAction() }
+            Button("Connect via link / QR code") { actionSheet = .connectViaLink }
             Button("Create secret group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
-            case .createLink: AddContactView(connReqInvitation: connReq)
-            case .pasteLink: PasteToConnectView()
-            case .scanQRCode: ScanToConnectView()
+            case let .createLink(link):
+                CreateLinkView(selection: .oneTime, connReqInvitation: link)
+            case .connectViaLink: ConnectViaLinkView()
             case .createGroup: AddGroupView()
             }
         }
     }
 
     func addContactAction() {
-        do {
-            connReq = try apiAddContact()
-            actionSheet = .createLink
-        } catch {
-            DispatchQueue.global().async {
-                connectionErrorAlert(error)
+        Task {
+            if let connReq = await apiAddContact() {
+                actionSheet = .createLink(link: connReq)
             }
-            logger.error("NewChatButton.addContactAction apiAddContact error: \(error.localizedDescription)")
         }
     }
 }
@@ -66,26 +65,17 @@ enum ConnReqType: Equatable {
 
 func connectViaLink(_ connectionLink: String, _ dismiss: DismissAction? = nil) {
     Task {
-        do {
-            let res = try await apiConnect(connReq: connectionLink)
+        if let connReqType = await apiConnect(connReq: connectionLink) {
             DispatchQueue.main.async {
                 dismiss?()
-                if let connReqType = res {
-                    connectionReqSentAlert(connReqType)
-                }
+                connectionReqSentAlert(connReqType)
             }
-        } catch {
-            logger.error("connectViaLink apiConnect error: \(responseError(error))")
+        } else {
             DispatchQueue.main.async {
                 dismiss?()
-                connectionErrorAlert(error)
             }
         }
     }
-}
-
-func connectionErrorAlert(_ error: Error) {
-    AlertManager.shared.showAlertMsg(title: "Connection error", message: "Error: \(responseError(error))")
 }
 
 func connectionReqSentAlert(_ type: ConnReqType) {
@@ -99,6 +89,6 @@ func connectionReqSentAlert(_ type: ConnReqType) {
 
 struct NewChatButton_Previews: PreviewProvider {
     static var previews: some View {
-        NewChatButton()
+        NewChatButton(showAddChat: Binding.constant(false))
     }
 }

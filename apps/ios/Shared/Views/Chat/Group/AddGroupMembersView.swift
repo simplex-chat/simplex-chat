@@ -128,7 +128,14 @@ struct AddGroupMembersView: View {
                 await MainActor.run { dismiss() }
                 if let cb = addedMembersCb { cb(selectedContacts) }
             } catch {
-                alert = .error(title: "Error adding member(s)", error: responseError(error))
+                switch error as? ChatResponse {
+                case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+                    alert = .error(title: "Connection timeout", error: "Please check your network connection and try again.")
+                case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+                    alert = .error(title: "Connection error", error: "Please check your network connection and try again.")
+                default:
+                    alert = .error(title: "Error adding member(s)", error: responseError(error))
+                }
             }
         }
     }

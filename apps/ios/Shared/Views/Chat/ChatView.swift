@@ -215,7 +215,7 @@ struct ChatView: View {
                                 itemsInView.insert(ci.viewId)
                                 loadChatItems(cInfo, ci, proxy)
                                 if ci.isRcvNew() {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                                         if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
                                             Task {
                                                 await apiMarkChatItemRead(cInfo, ci)

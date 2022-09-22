@@ -302,6 +302,7 @@ public enum ChatResponse: Decodable, Error {
     case groupUpdated(toGroup: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
+    case rcvFileAcceptedSndCancelled(rcvFileTransfer: RcvFileTransfer)
     case rcvFileStart(chatItem: AChatItem)
     case rcvFileComplete(chatItem: AChatItem)
     // sending file events
@@ -392,6 +393,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupRemoved: return "groupRemoved"
             case .groupUpdated: return "groupUpdated"
             case .rcvFileAccepted: return "rcvFileAccepted"
+            case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .rcvFileStart: return "rcvFileStart"
             case .rcvFileComplete: return "rcvFileComplete"
             case .sndFileStart: return "sndFileStart"
@@ -484,6 +486,7 @@ public enum ChatResponse: Decodable, Error {
             case let .groupRemoved(groupInfo): return String(describing: groupInfo)
             case let .groupUpdated(toGroup): return String(describing: toGroup)
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
+            case .rcvFileAcceptedSndCancelled: return noDetails
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
             case let .rcvFileComplete(chatItem): return String(describing: chatItem)
             case let .sndFileStart(chatItem, _): return String(describing: chatItem)

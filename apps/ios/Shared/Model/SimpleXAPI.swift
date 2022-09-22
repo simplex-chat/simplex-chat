@@ -220,7 +220,7 @@ func loadChat(chat: Chat, search: String = "") {
     }
 }
 
-func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async throws -> ChatItem {
+func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int64?, msg: MsgContent) async -> ChatItem? {
     let chatModel = ChatModel.shared
     let cmd: ChatCommand = .apiSendMessage(type: type, id: id, file: file, quotedItemId: quotedItemId, msg: msg)
     let r: ChatResponse
@@ -233,14 +233,27 @@ func apiSendMessage(type: ChatType, id: Int64, file: String?, quotedItemId: Int6
             chatModel.messageDelivery[cItem.id] = endTask
             return cItem
         }
+        if !networkErrorAlert(r) {
+            sendMessageErrorAlert(r)
+        }
         endTask()
+        return nil
     } else {
         r = await chatSendCmd(cmd, bgDelay: msgDelay)
         if case let .newChatItem(aChatItem) = r {
             return aChatItem.chatItem
         }
+        sendMessageErrorAlert(r)
+        return nil
     }
-    throw r
+}
+
+private func sendMessageErrorAlert(_ r: ChatResponse) {
+    logger.error("apiSendMessage error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
 }
 
 func apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent) async throws -> ChatItem {
@@ -335,13 +348,14 @@ func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -
     throw r
 }
 
-func apiAddContact() throws -> String {
-    let r = chatSendCmdSync(.addContact, bgTask: false)
+func apiAddContact() async -> String? {
+    let r = await chatSendCmd(.addContact, bgTask: false)
     if case let .invitation(connReqInvitation) = r { return connReqInvitation }
-    throw r
+    connectionErrorAlert(r)
+    return nil
 }
 
-func apiConnect(connReq: String) async throws -> ConnReqType? {
+func apiConnect(connReq: String) async -> ConnReqType? {
     let r = await chatSendCmd(.connect(connReq: connReq))
     let am = AlertManager.shared
     switch r {
@@ -359,18 +373,6 @@ func apiConnect(connReq: String) async throws -> ConnReqType? {
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
         return nil
-    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-        am.showAlertMsg(
-            title: "Connection timeout",
-            message: "Please check your network connection and try again."
-        )
-        return nil
-    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-        am.showAlertMsg(
-            title: "Connection error",
-            message: "Please check your network connection and try again."
-        )
-        return nil
     case .chatCmdError(.errorAgent(.SMP(.AUTH))):
         am.showAlertMsg(
             title: "Connection error (AUTH)",
@@ -384,10 +386,19 @@ func apiConnect(connReq: String) async throws -> ConnReqType? {
                 message: "It seems like you are already connected via this link. If it is not the case, there was an error (\(responseError(r)))."
             )
             return nil
-        } else {
-            throw r
         }
-    default: throw r
+    default: ()
+    }
+    connectionErrorAlert(r)
+    return nil
+}
+
+private func connectionErrorAlert(_ r: ChatResponse) {
+    if !networkErrorAlert(r) {
+        AlertManager.shared.showAlertMsg(
+            title: "Connection error",
+            message: "Error: \(String(describing: r))"
+        )
     }
 }
 
@@ -404,8 +415,20 @@ func deleteChat(_ chat: Chat) async {
         let cInfo = chat.chatInfo
         try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
-    } catch {
+    } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
+        switch error as? ChatResponse {
+        case let .chatCmdError(.error(.contactGroups(contact, groupNames))):
+            AlertManager.shared.showAlertMsg(
+                title: "Can't delete contact!",
+                message: "Contact \(contact.displayName) cannot be deleted, they are a member of the group(s) \(groupNames.joined(separator: ", "))."
+            )
+        default:
+            AlertManager.shared.showAlertMsg(
+                title: "Error deleting chat!",
+                message: "Error: \(responseError(error))"
+            )
+        }
     }
 }
 
@@ -469,10 +492,24 @@ func apiGetUserAddress() throws -> String? {
     }
 }
 
-func apiAcceptContactRequest(contactReqId: Int64) async throws -> Contact {
+func apiAcceptContactRequest(contactReqId: Int64) async -> Contact? {
     let r = await chatSendCmd(.apiAcceptContact(contactReqId: contactReqId))
+    let am = AlertManager.shared
+
     if case let .acceptingContactRequest(contact) = r { return contact }
-    throw r
+    if case .chatCmdError(.errorAgent(.SMP(.AUTH))) = r {
+        am.showAlertMsg(
+            title: "Connection error (AUTH)",
+            message: "Sender may have deleted the connection request."
+        )
+    } else if !networkErrorAlert(r) {
+        logger.error("apiAcceptContactRequest error: \(String(describing: r))")
+        am.showAlertMsg(
+            title: "Error accepting contact request",
+            message: "Error: \(String(describing: r))"
+        )
+    }
+    return nil
 }
 
 func apiRejectContactRequest(contactReqId: Int64) async throws {
@@ -486,27 +523,54 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
 }
 
 func receiveFile(fileId: Int64) async {
-    do {
-        let chatItem = try await apiReceiveFile(fileId: fileId)
+    if let chatItem = await apiReceiveFile(fileId: fileId) {
         DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
-    } catch let error {
-        logger.error("receiveFile error: \(responseError(error))")
     }
 }
 
-func apiReceiveFile(fileId: Int64) async throws -> AChatItem {
+func apiReceiveFile(fileId: Int64) async -> AChatItem? {
     let r = await chatSendCmd(.receiveFile(fileId: fileId))
+    let am = AlertManager.shared
     if case let .rcvFileAccepted(chatItem) = r { return chatItem }
-    throw r
+    if case .rcvFileAcceptedSndCancelled = r {
+        am.showAlertMsg(
+            title: "Cannot receive file",
+            message: "Sender cancelled file transfer."
+        )
+    } else if !networkErrorAlert(r) {
+        logger.error("apiReceiveFile error: \(String(describing: r))")
+        am.showAlertMsg(
+            title: "Error receiving file",
+            message: "Error: \(String(describing: r))"
+        )
+    }
+    return nil
+}
+
+func networkErrorAlert(_ r: ChatResponse) -> Bool {
+    let am = AlertManager.shared
+    switch r {
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        am.showAlertMsg(
+            title: "Connection timeout",
+            message: "Please check your network connection and try again."
+        )
+        return true
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        am.showAlertMsg(
+            title: "Connection error",
+            message: "Please check your network connection and try again."
+        )
+        return true
+    default:
+        return false
+    }
 }
 
 func acceptContactRequest(_ contactRequest: UserContactRequest) async {
-    do {
-        let contact = try await apiAcceptContactRequest(contactReqId: contactRequest.apiId)
+    if let contact = await apiAcceptContactRequest(contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
-    } catch let error {
-        logger.error("acceptContactRequest error: \(responseError(error))")
     }
 }
 
@@ -699,8 +763,6 @@ func startChat() throws {
         withAnimation {
             m.onboardingStage = m.onboardingStage == .step2_CreateProfile
                                 ? .step3_SetNotificationsMode
-                                : m.chats.isEmpty
-                                ? .step4_MakeConnection
                                 : .onboardingComplete
         }
     }
@@ -899,8 +961,17 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 call.peerMedia = callType.media
                 call.sharedKey = sharedKey
                 let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
+                let iceServers = getIceServers()
                 logger.debug(".callOffer useRelay \(useRelay)")
-                m.callCommand = .offer(offer: offer.rtcSession, iceCandidates: offer.rtcIceCandidates, media: callType.media, aesKey: sharedKey, useWorker: true, relay: useRelay)
+                logger.debug(".callOffer iceServers \(String(describing: iceServers))")
+                m.callCommand = .offer(
+                    offer: offer.rtcSession,
+                    iceCandidates: offer.rtcIceCandidates,
+                    media: callType.media, aesKey: sharedKey,
+                    useWorker: true,
+                    iceServers: iceServers,
+                    relay: useRelay
+                )
             }
         case let .callAnswer(contact, answer):
             withCall(contact) { call in

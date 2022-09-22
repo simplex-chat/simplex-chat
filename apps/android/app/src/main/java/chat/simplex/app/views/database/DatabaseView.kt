@@ -62,6 +62,7 @@ fun DatabaseView(
       importArchiveAlert(m, context, uri, progressIndicator)
     }
   }
+  val chatDbDeleted = remember { m.chatDbDeleted }
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory(context))) }
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
@@ -79,6 +80,7 @@ fun DatabaseView(
       chatArchiveName,
       chatArchiveTime,
       chatLastStart,
+      chatDbDeleted.value,
       appFilesCountAndSize,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m, runChat, context) },
@@ -115,6 +117,7 @@ fun DatabaseLayout(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatLastStart: MutableState<Instant?>,
+  chatDbDeleted: Boolean,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
@@ -137,7 +140,7 @@ fun DatabaseLayout(
     )
 
     SectionView(stringResource(R.string.run_chat_section)) {
-      RunChatSetting(runChat, stopped, startChat, stopChatAlert)
+      RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
     SectionSpacer()
 
@@ -230,6 +233,7 @@ fun DatabaseLayout(
 fun RunChatSetting(
   runChat: Boolean,
   stopped: Boolean,
+  chatDbDeleted: Boolean,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
@@ -248,6 +252,7 @@ fun RunChatSetting(
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
       Switch(
+        enabled= !chatDbDeleted,
         checked = runChat,
         onCheckedChange = { runChatSwitch ->
           if (runChatSwitch) {
@@ -516,6 +521,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   withApi {
     try {
       m.controller.apiDeleteStorage()
+      m.chatDbDeleted.value = true
       DatabaseUtils.removeDatabaseKey()
       m.controller.appPrefs.storeDBPassphrase.set(true)
       operationEnded(m, progressIndicator) {
@@ -569,6 +575,7 @@ fun PreviewDatabaseLayout() {
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
+      chatDbDeleted = false,
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
       startChat = {},
       stopChatAlert = {},
