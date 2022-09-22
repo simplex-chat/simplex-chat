@@ -54,7 +54,6 @@ struct ChatPreviewView: View {
             }
             .frame(maxHeight: .infinity)
         }
-        .padding(.top, -2)
         .padding(.bottom, -8)
     }
 

@@ -10,18 +10,18 @@ import SwiftUI
 import SimpleXChat
 
 private let rowHeights: [DynamicTypeSize: CGFloat] = [
-    .xSmall: 66,
+    .xSmall: 68,
     .small: 72,
     .medium: 76,
     .large: 80,
-    .xLarge: 86,
-    .xxLarge: 92,
-    .xxxLarge: 102,
+    .xLarge: 88,
+    .xxLarge: 94,
+    .xxxLarge: 104,
     .accessibility1: 90,
     .accessibility2: 100,
-    .accessibility3: 116,
-    .accessibility4: 124,
-    .accessibility5: 132
+    .accessibility3: 120,
+    .accessibility4: 130,
+    .accessibility5: 140
 ]
 
 struct ChatListNavLink: View {
