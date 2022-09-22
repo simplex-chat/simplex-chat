@@ -87,7 +87,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     floatingActionButton = {
       FloatingActionButton(onClick = { if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse() },
         Modifier.padding(bottom = 90.dp),
-        backgroundColor = MaterialTheme.colors.primary, contentColor = MaterialTheme.colors.onBackground) {
+        backgroundColor = MaterialTheme.colors.primary,
+        contentColor = MaterialTheme.colors.background
+      ) {
         Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group))
       }
     },
