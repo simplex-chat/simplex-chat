@@ -226,7 +226,7 @@
     <string name="scan_QR_code">Сканировать QR код</string>
     <string name="create_group">Создать секретную группу</string>
     <string name="to_share_with_your_contact">(чтобы отправить вашему контакту)</string>
-    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(вставить ссылку из буфера обмена)</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканировать или вставить из буфера обмена)</string>
     <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
 
     <!-- GetImageView -->

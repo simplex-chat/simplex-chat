@@ -67,7 +67,7 @@ fun NewChatSheetLayout(
       ActionRowButton(
         stringResource(R.string.connect_via_link_or_qr),
         stringResource(R.string.connect_via_link_or_qr_from_clipboard_or_in_person),
-        Icons.Outlined.Article,
+        Icons.Outlined.QrCode,
         click = connectViaLink
       )
     }

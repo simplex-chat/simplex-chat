@@ -226,7 +226,7 @@
   <string name="scan_QR_code">Scan QR code</string>
   <string name="create_group">Create secret group</string>
   <string name="to_share_with_your_contact">(to share with your contact)</string>
-  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(paste link from clipboard or in person)</string>
+  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
   <!-- GetImageView -->
