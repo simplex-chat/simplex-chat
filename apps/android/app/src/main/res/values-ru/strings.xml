@@ -165,7 +165,7 @@
     <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
     <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
-    <string name="chat_with_developers">или соединитесь с разработчиками</string>
+    <string name="chat_with_developers">Соединиться с разработчиками</string>
     <string name="you_have_no_chats">У вас нет чатов</string>
 
     <!-- ComposeView.kt, helpers -->
@@ -465,7 +465,6 @@
     <string name="scan_contact_s_qr_code">Сосканировать QR код контакта</string>
     <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">При встрече или в видеозвонке – самый безопасный способ установить соединение</string>
     <string name="or">или</string>
-    <string name="connect_with_the_developers">Соединиться с разработчиками</string>
     <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Чтобы задать вопросы и получать уведомления о <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
 
     <!-- Call -->
