@@ -31,6 +31,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.CreateLinkTab
+import chat.simplex.app.views.newchat.CreateLinkView
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
@@ -113,7 +115,7 @@ fun SettingsLayout(
         SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }

@@ -206,13 +206,12 @@
 
   <!-- NewChatSheet -->
   <string name="add_contact_or_create_group">Start new chat</string>
-  <string name="create_one_time_link">Create link / QR code</string>
-  <string name="paste_received_link">Connect via received link</string>
+  <string name="share_one_time_link">Share one-time invitation link</string>
+  <string name="connect_via_link_or_qr">Connect via link / QR code</string>
   <string name="scan_QR_code">Scan QR code</string>
   <string name="create_group">Create secret group</string>
   <string name="to_share_with_your_contact">(to share with your contact)</string>
-  <string name="in_person_or_in_video_call__bracketed">(in person or in video call)</string>
-  <string name="paste_received_link_from_clipboard">(paste link from clipboard)</string>
+  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(paste link from clipboard or in person)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
   <!-- GetImageView -->
@@ -301,8 +300,15 @@
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Connect via link</string>
+  <string name="connect_button">Connect</string>
+  <string name="paste_button">Paste</string>
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
   <string name="you_can_also_connect_by_clicking_the_link">You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.</string>
+
+  <!-- CreateLinkView.kt -->
+  <string name="create_one_time_link">Create one-time invitation link</string>
+  <string name="one_time_link">One-time invitation link</string>
+  <string name="your_contact_address">Your contact address</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Your settings</string>
@@ -351,7 +357,6 @@
   <string name="create_address">Create address</string>
   <string name="delete_address__question">Delete address?</string>
   <string name="all_your_contacts_will_remain_connected">All your contacts will remain connected.</string>
-  <string name="your_chat_address">Your chat address</string>
   <string name="you_can_share_your_address_anybody_will_be_able_to_connect">You can share your address as a link or as a QR code - anybody will be able to connect to you.</string>
   <string name="if_you_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts.</string>
   <string name="share_link">Share link</string>
@@ -434,7 +439,7 @@
   <string name="to_make_your_first_private_connection_choose">To make your first private connection, choose <b>one of the following</b>:</string>
   <string name="create_1_time_link_qr_code">Create 1-time link / QR code</string>
   <string name="it_s_secure_to_share__only_one_contact_can_use_it">It\'s secure to share - only one contact can use it.</string>
-  <string name="paste_the_link_you_received">Paste the link you received</string>
+  <string name="paste_the_link_you_received">Paste received link</string>
   <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Or open the link in the browser and tap <b>Open in mobile</b>.</string>
   <string name="scan_contact_s_qr_code">Scan contact\'s QR code</string>
   <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">In person or via a video call – the most secure way to connect.</string>

@@ -35,18 +35,18 @@ fun MakeConnection(chatModel: ChatModel) {
     createLink = {
       withApi {
         //        show spinner
-        chatModel.connReqInvitation = chatModel.controller.apiAddContact()
+        val connReqInvitation = chatModel.controller.apiAddContact()
         //        hide spinner
-        if (chatModel.connReqInvitation != null) {
-          ModalManager.shared.showModal { AddContactView(chatModel) }
+        if (connReqInvitation != null) {
+          ModalManager.shared.showModal { AddContactView(chatModel, connReqInvitation) }
         }
       }
     },
     pasteLink = {
-      ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel, close) }
+      ModalManager.shared.showCustomModal { close -> PasteToConnectView(chatModel) }
     },
     scanCode = {
-      ModalManager.shared.showCustomModal { close -> ScanToConnectView(chatModel, close) }
+      ModalManager.shared.showCustomModal { close -> ScanToConnectView(chatModel) }
       cameraPermissionState.launchPermissionRequest()
     },
     about = {

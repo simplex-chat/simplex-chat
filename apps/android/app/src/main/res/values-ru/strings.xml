@@ -206,13 +206,12 @@
 
     <!-- NewChatSheet -->
     <string name="add_contact_or_create_group">Начать новый разговор</string>
-    <string name="create_one_time_link">Создать одноразовую ссылку</string>
-    <string name="paste_received_link">Вставить полученную ссылку</string>
+    <string name="share_one_time_link">Поделиться ссылкой-приглашением</string>
+    <string name="connect_via_link_or_qr">Соединиться через ссылку / QR код</string>
     <string name="scan_QR_code">Сканировать QR код</string>
     <string name="create_group">Создать секретную группу</string>
     <string name="to_share_with_your_contact">(чтобы отправить вашему контакту)</string>
-    <string name="in_person_or_in_video_call__bracketed">(при встрече или через видеозвонок)</string>
-    <string name="paste_received_link_from_clipboard">(вставить ссылку из буфера обмена)</string>
+    <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(вставить ссылку из буфера обмена)</string>
     <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
 
     <!-- GetImageView -->
@@ -299,6 +298,14 @@
     <string name="paste_connection_link_below_to_connect">Чтобы соединиться, вставьте в это поле ссылку, полученную от вашего контакта.</string>
     <string name="your_profile_will_be_sent">Ваш профиль будет отправлен вашему контакту</string>
 
+    <!-- PasteToConnect.kt -->
+    <string name="connect_button">Соединиться</string>
+    <string name="paste_button">Вставить</string>
+
+    <!-- CreateLinkView.kt -->
+    <string name="create_one_time_link">Создать ссылку</string>
+    <string name="one_time_link">Поделиться ссылкой</string>
+    <string name="your_contact_address">Ваш SimpleX адрес</string>
 
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
@@ -347,7 +354,6 @@
     <string name="create_address">Создать адрес</string>
     <string name="delete_address__question">Удалить адрес?</string>
     <string name="all_your_contacts_will_remain_connected">Все контакты, которые соединились через этот адрес, сохранятся.</string>
-    <string name="your_chat_address">Ваш <xliff:g id="appName">SimpleX</xliff:g> адрес</string>
     <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Вы можете использовать адрес как ссылку или как QR код - через него можно с вами соединиться.</string>
     <string name="if_you_delete_address_you_wont_lose_contacts">Вы сможете удалить адрес, сохранив контакты, которые через него соединились.</string>
     <string name="share_link">Поделиться\nссылкой</string>
@@ -386,7 +392,7 @@
     <string name="secret">секрет</string>
     <string name="connect_via_link">Соединиться через ссылку</string>
     <string name="this_string_is_not_a_connection_link">Эта строка не является ссылкой-приглашением!</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Open in mobile app</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link">Вы также можете соединиться, открыв ссылку там, где вы её получили. Если ссылка откроется в браузере, нажмите кнопку <b>Открыть в приложении</b>.</string>
 
     <!-- CICallStatus -->
     <string name="callstatus_calling">входящий звонок…</string>
@@ -433,7 +439,7 @@
     <string name="to_make_your_first_private_connection_choose">Чтобы добавить ваш первый контакт, выберите <b>одно из</b>:</string>
     <string name="create_1_time_link_qr_code">Создать ссылку / QR код</string>
     <string name="it_s_secure_to_share__only_one_contact_can_use_it">Ей безопасно поделиться - только один контакт может использовать её.</string>
-    <string name="paste_the_link_you_received">Вставьте полученную ссылку</string>
+    <string name="paste_the_link_you_received">Вставьте ссылку</string>
     <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Или откройте ссылку в браузере и нажмите <b>Open in mobile</b>.</string>
     <string name="scan_contact_s_qr_code">Сосканировать QR код контакта</string>
     <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">При встрече или в видеозвонке – самый безопасный способ установить соединение</string>
