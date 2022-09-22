@@ -233,11 +233,6 @@
         <target>Принять инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add contact to start a new chat" xml:space="preserve">
-        <source>Add contact to start a new chat</source>
-        <target>Добавьте контакт, чтобы начать разговор</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Advanced network settings" xml:space="preserve">
         <source>Advanced network settings</source>
         <target>Настройки сети</target>
@@ -453,6 +448,11 @@
         <target>Соединиться через ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect via link / QR code" xml:space="preserve">
+        <source>Connect via link / QR code</source>
+        <target>Соединиться через ссылку / QR код</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect via one-time link?" xml:space="preserve">
         <source>Connect via one-time link?</source>
         <target>Соединиться через одноразовую ссылку?</target>
@@ -553,9 +553,9 @@
         <target>Создать адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create link / QR code" xml:space="preserve">
-        <source>Create link / QR code</source>
-        <target>Создать ссылку / QR код</target>
+      <trans-unit id="Create one-time invitation link" xml:space="preserve">
+        <source>Create one-time invitation link</source>
+        <target>Создать ссылку-приглашение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create secret group" xml:space="preserve">
@@ -1998,6 +1998,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Поделиться ссылкой</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share one-time invitation link" xml:space="preserve">
+        <source>Share one-time invitation link</source>
+        <target>Поделиться ссылкой-приглашением</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Показывать уведомления</target>
@@ -2032,6 +2037,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Somebody</source>
         <target>Контакт</target>
         <note>notification title</note>
+      </trans-unit>
+      <trans-unit id="Start a new chat" xml:space="preserve">
+        <source>Start a new chat</source>
+        <target>Начать новый разговор</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
@@ -2557,11 +2567,6 @@ To connect, please ask your contact to create another connection link and check 
         <target>Ваши звонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat address" xml:space="preserve">
-        <source>Your chat address</source>
-        <target>Ваш SimpleX адрес</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
         <source>Your chat database</source>
         <target>База данных</target>
@@ -2590,6 +2595,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
         <target>Ваши чаты</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your contact address" xml:space="preserve">
+        <source>Your contact address</source>
+        <target>Ваш SimpleX адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">

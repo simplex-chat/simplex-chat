@@ -153,9 +153,6 @@
 "accepted call" = " принятый звонок";
 
 /* No comment provided by engineer. */
-"Add contact to start a new chat" = "Добавьте контакт, чтобы начать разговор";
-
-/* No comment provided by engineer. */
 "admin" = "админ";
 
 /* No comment provided by engineer. */
@@ -318,6 +315,9 @@
 "Connect via link" = "Соединиться через ссылку";
 
 /* No comment provided by engineer. */
+"Connect via link / QR code" = "Соединиться через ссылку / QR код";
+
+/* No comment provided by engineer. */
 "Connect via one-time link?" = "Соединиться через одноразовую ссылку?";
 
 /* No comment provided by engineer. */
@@ -414,7 +414,7 @@
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
-"Create link / QR code" = "Создать ссылку / QR код";
+"Create one-time invitation link" = "Создать ссылку-приглашение";
 
 /* No comment provided by engineer. */
 "Create secret group" = "Создать скрытую группу";
@@ -1383,6 +1383,9 @@
 "Share link" = "Поделиться ссылкой";
 
 /* No comment provided by engineer. */
+"Share one-time invitation link" = "Поделиться ссылкой-приглашением";
+
+/* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
 
 /* notification */
@@ -1408,6 +1411,9 @@
 
 /* notification title */
 "Somebody" = "Контакт";
+
+/* No comment provided by engineer. */
+"Start a new chat" = "Начать новый разговор";
 
 /* No comment provided by engineer. */
 "Start chat" = "Запустить чат";
@@ -1770,9 +1776,6 @@
 "Your calls" = "Ваши звонки";
 
 /* No comment provided by engineer. */
-"Your chat address" = "Ваш SimpleX адрес";
-
-/* No comment provided by engineer. */
 "Your chat database" = "База данных";
 
 /* No comment provided by engineer. */
@@ -1789,6 +1792,9 @@
 
 /* No comment provided by engineer. */
 "Your chats" = "Ваши чаты";
+
+/* No comment provided by engineer. */
+"Your contact address" = "Ваш SimpleX адрес";
 
 /* No comment provided by engineer. */
 "Your contact can scan it from the app." = "Ваш контакт может сосканировать QR код в приложении";
