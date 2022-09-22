@@ -26,18 +26,15 @@ struct ConnectViaLinkView: View {
                     Label("Scan QR code", systemImage: "qrcode")
                 }
                 .tag(ConnectViaLinkTab.scan)
-                .highPriorityGesture(DragGesture().onEnded({
-                    handleSwipe(translation: $0.translation)
-                }))
             PasteToConnectView()
                 .tabItem {
                     Label("Paste received link", systemImage: "doc.plaintext")
                 }
                 .tag(ConnectViaLinkTab.paste)
-                .highPriorityGesture(DragGesture().onEnded({
-                    handleSwipe(translation: $0.translation)
-                }))
         }
+        .highPriorityGesture(DragGesture().onEnded({
+            handleSwipe(translation: $0.translation)
+        }))
         .onChange(of: selection) { _ in
             connectViaLinkTabDefault.set(selection)
         }

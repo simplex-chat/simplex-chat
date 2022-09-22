@@ -33,18 +33,15 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
-                .highPriorityGesture(DragGesture().onEnded({
-                    handleSwipe(translation: $0.translation.width)
-                }))
             UserAddress(viaSettings: viaSettings)
                 .tabItem {
                     Label("Your contact address", systemImage: "infinity.circle")
                 }
                 .tag(CreateLinkTab.longTerm)
-                .highPriorityGesture(DragGesture().onEnded({
-                    handleSwipe(translation: $0.translation.width)
-                }))
         }
+        .highPriorityGesture(DragGesture().onEnded({
+            handleSwipe(translation: $0.translation.width)
+        }))
         .onChange(of: selection) { _ in
             if case .oneTime = selection, connReqInvitation == "" && !creatingConnReq {
                 createInvitation()
