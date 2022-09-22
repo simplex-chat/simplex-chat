@@ -43,12 +43,24 @@
   <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
+  <string name="connection_timeout">Connection timeout</string>
+  <string name="connection_error">Connection error</string>
+  <string name="network_error_desc">Please check your network connection and try again.</string>
+  <string name="error_sending_message">Error sending message</string>
+  <string name="error_adding_members">Error adding member(s)</string>
+  <string name="error_joining_group">Error joining group</string>
+  <string name="cannot_receive_file">Cannot receive file</string>
+  <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>Error receiving file
+  <string name="error_receiving_file">Error receiving file</string>
+  <string name="error_creating_address">Error creating address</string>
   <string name="contact_already_exists">Kontakt ist bereits vorhanden</string>
   <string name="you_are_already_connected_to_vName_via_this_link">Sie sind bereits über diesen Link mit <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> verbunden.</string>
   <string name="invalid_connection_link">Ungültiger Verbindungslink</string>
   <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt darum, Ihnen nochmal einen Link zuzusenden.</string>
   <string name="connection_error_auth">Verbindungsfehler (AUTH)</string>
   <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu zu verbinden und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.</string>
+  <string name="error_accepting_contact_request">Error accepting contact request</string>
+  <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="cannot_delete_contact">Der Kontakt kann nicht gelöscht werden!</string>
   <string name="contact_cannot_be_deleted_as_they_are_in_groups">Der Kontakt mit <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
@@ -152,6 +164,9 @@
   <string name="group_preview_you_are_invited">Du bist zu der Gruppe eingeladen</string>
   <string name="group_preview_join_as">beitreten als %s</string>
   <string name="group_connection_pending">verbinde …</string>
+  <string name="tap_to_start_new_chat">Tap to start a new chat</string>
+  <string name="chat_with_developers">Chat with the developers</string>
+  <string name="you_have_no_chats">You have no chats</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Anfügen</string>
@@ -206,13 +221,12 @@
 
   <!-- NewChatSheet -->
   <string name="add_contact_or_create_group">Neuen Chat starten</string>
-  <string name="create_one_time_link">Link / QR-Code erstellen</string>
-  <string name="paste_received_link">Über empfangenen Link verbinden</string>
+  <string name="share_one_time_link">Create one-time invitation link</string>
+  <string name="connect_via_link_or_qr">Connect via link / QR code</string>
   <string name="scan_QR_code">QR-Code scannen</string>
   <string name="create_group">Geheime Gruppe erstellen</string>
   <string name="to_share_with_your_contact">(zum Teilen mit Ihrem Kontakt)</string>
-  <string name="in_person_or_in_video_call__bracketed">(persönlich oder per Videoanruf)</string>
-  <string name="paste_received_link_from_clipboard">(Link aus der Zwischenablage einfügen)</string>
+  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(wird nur von Gruppenmitgliedern gespeichert)</string>
 
   <!-- GetImageView -->
@@ -301,8 +315,15 @@
 
   <!-- PasteToConnect.kt -->
   <string name="connect_via_link">Über Link verbinden</string>
+  <string name="connect_button">Connect</string>
+  <string name="paste_button">Paste</string>
   <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge ist kein Verbindungslink!</string>
   <string name="you_can_also_connect_by_clicking_the_link">Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche <b>In mobiler App öffnen</b>.</string>
+
+  <!-- CreateLinkView.kt -->
+  <string name="create_one_time_link">Link / QR-Code erstellen</string>
+  <string name="one_time_link">One-time invitation link</string>
+  <string name="your_contact_address">Your contact address</string>
 
   <!-- settings - SettingsView.kt -->
   <string name="your_settings">Ihre Einstellungen</string>
@@ -319,12 +340,18 @@
   <string name="smp_servers">SMP-Server</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
-  <string name="saved_SMP_servers_will_br_removed">Gespeicherte SMP-Server werden entfernt.</string>
+  <string name="saved_SMP_servers_will_be_removed">Gespeicherte SMP-Server werden entfernt.</string>
   <string name="your_SMP_servers">Ihre SMP-Server</string>
   <string name="configure_SMP_servers">SMP-Server konfigurieren</string>
   <string name="using_simplex_chat_servers">Verwendung von <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Servern.</string>
   <string name="enter_one_SMP_server_per_line">Geben Sie einen SMP-Server pro Zeile ein:</string>
   <string name="how_to">Anleitung</string>
+  <string name="saved_ICE_servers_will_be_removed">Saved WebRTC ICE servers will be removed.</string>
+  <string name="your_ICE_servers">Your ICE servers</string>
+  <string name="configure_ICE_servers">Configure ICE servers</string>
+  <string name="enter_one_ICE_server_per_line">ICE servers (one per line)</string>
+  <string name="error_saving_ICE_servers">Error saving ICE servers</string>
+  <string name="ensure_ICE_server_address_are_correct_format_and_unique">Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</string>
   <string name="save_servers_button">Speichern</string>
   <string name="network_and_servers">Netzwerk &amp; Server</string>
   <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
@@ -351,7 +378,6 @@
   <string name="create_address">Adresse erstellen</string>
   <string name="delete_address__question">Adresse löschen?</string>
   <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
-  <string name="your_chat_address">Ihre Chat-Adresse</string>
   <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – jeder kann sich mit Ihnen verbinden.</string>
   <string name="if_you_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse später löschen, werden Sie Ihre Kontakte nicht verlieren.</string>
   <string name="share_link">Link teilen</string>
@@ -361,7 +387,7 @@
   <string name="display_name__field">Angezeigter Name:</string>
   <string name="full_name__field">"Vollständiger Name:</string>
   <string name="your_chat_profile">Ihr Chat-Profil</string>
-  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.< /Zeichenfolge>
+  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\n\n<xliff:g id="appName">SimpleX</xliff:g>-Server können Ihr Profil nicht sehen.</string>
   <string name="edit_image">Bild bearbeiten</string>
   <string name="delete_image">Bild löschen</string>
   <string name="save_and_notify_contacts">Speichern (und Kontakte benachrichtigen)</string>
@@ -465,6 +491,8 @@
   <string name="accept_call_on_lock_screen">Akzeptieren</string>
   <string name="show_call_on_lock_screen">Anzeigen</string>
   <string name="no_call_on_lock_screen">Deaktivieren</string>
+  <string name="your_ice_servers">Your ICE servers</string>
+  <string name="webrtc_ice_servers">WebRTC ICE servers</string>
 
   <!-- Call Lock Screen -->
   <string name="open_simplex_chat_to_accept_call">Öffnen Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g>, um den Anruf anzunehmen</string>
@@ -522,6 +550,8 @@
   <string name="settings_section_title_socks">SOCKS-PROXY</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">ERSCHEINUNGSBILD</string>
+  <string name="settings_section_title_messages">MESSAGES</string>
+  <string name="settings_section_title_calls">CALLS</string>
   <string name="settings_section_title_incognito">Inkognito Modus</string>
 
   <!-- DatabaseView.kt -->
@@ -646,7 +676,6 @@
   <string name="alert_message_group_invitation_expired">Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.</string>
   <string name="alert_title_no_group">Gruppe nicht gefunden!</string>
   <string name="alert_message_no_group">Diese Gruppe existiert nicht mehr.</string>
-  <string name="alert_title_join_group_error">Fehler beim Beitritt zur Gruppe</string>
   <string name="alert_title_cant_invite_contacts">Kontakte können nicht eingeladen werden!</string>
   <string name="alert_title_cant_invite_contacts_descr">Du verwendest ein Inkognito-Profil für diese Gruppe – um zu verhindern, dass du dein Hauptprofil teilst, ist das Einladen von Kontakten nicht erlaubt</string>
 

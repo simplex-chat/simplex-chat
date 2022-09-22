@@ -165,7 +165,7 @@
     <string name="group_preview_join_as">вступить как %s</string>
     <string name="group_connection_pending">соединяется…</string>
     <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
-    <string name="chat_with_developers">или соединитесь с разработчиками</string>
+    <string name="chat_with_developers">Cоединиться с разработчиками</string>
     <string name="you_have_no_chats">У вас нет чатов</string>
 
     <!-- ComposeView.kt, helpers -->
