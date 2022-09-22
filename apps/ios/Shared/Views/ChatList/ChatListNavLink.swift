@@ -9,8 +9,24 @@
 import SwiftUI
 import SimpleXChat
 
+private let rowHeights: [DynamicTypeSize: CGFloat] = [
+    .xSmall: 68,
+    .small: 72,
+    .medium: 76,
+    .large: 80,
+    .xLarge: 88,
+    .xxLarge: 94,
+    .xxxLarge: 104,
+    .accessibility1: 90,
+    .accessibility2: 100,
+    .accessibility3: 120,
+    .accessibility4: 130,
+    .accessibility5: 140
+]
+
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
@@ -53,7 +69,7 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: 80)
+        .frame(height: rowHeights[dynamicTypeSize])
 
         if contact.ready {
             v
@@ -68,7 +84,7 @@ struct ChatListNavLink: View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
             ChatPreviewView(chat: chat)
-                .frame(height: 80)
+                .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton(groupInfo.hostConnCustomUserProfileId)
                     if groupInfo.canDelete {
@@ -84,7 +100,7 @@ struct ChatListNavLink: View {
                 }
         case .memAccepted:
             ChatPreviewView(chat: chat)
-                .frame(height: 80)
+                .frame(height: rowHeights[dynamicTypeSize])
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
@@ -95,7 +111,7 @@ struct ChatListNavLink: View {
                 label: { ChatPreviewView(chat: chat) },
                 disabled: !groupInfo.ready
             )
-            .frame(height: 80)
+            .frame(height: rowHeights[dynamicTypeSize])
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 if chat.chatStats.unreadCount > 0 {
                     markReadButton()
@@ -170,7 +186,7 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: 80)
+        .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Connection request", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button(chatModel.incognito ? "Accept incognito" : "Accept contact") { Task { await acceptContactRequest(contactRequest) } }
@@ -188,7 +204,7 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: 80)
+        .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture {
             AlertManager.shared.showAlertMsg(
                 title:
@@ -385,6 +401,6 @@ struct ChatListNavLink_Previews: PreviewProvider {
                 chatItems: []
             ))
         }
-        .previewLayout(.fixed(width: 360, height: 80))
+        .previewLayout(.fixed(width: 360, height: 82))
     }
 }

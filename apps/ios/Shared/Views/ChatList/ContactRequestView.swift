@@ -15,19 +15,18 @@ struct ContactRequestView: View {
     @ObservedObject var chat: Chat
 
     var body: some View {
-        return HStack(spacing: 8) {
+        HStack(spacing: 8) {
             ChatInfoImage(chat: chat)
                 .frame(width: 63, height: 63)
                 .padding(.leading, 4)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     Text(contactRequest.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(chatModel.incognito ? .indigo : .accentColor)
                         .padding(.leading, 8)
-                        .padding(.top, 4)
-                        .frame(maxHeight: .infinity, alignment: .topLeading)
+                        .frame(alignment: .topLeading)
                     Spacer()
                     formatTimestampText(contactRequest.updatedAt)
                         .font(.subheadline)
@@ -36,12 +35,15 @@ struct ContactRequestView: View {
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                 }
+                .padding(.bottom, 2)
+
                 Text("wants to connect to you!")
-                    .frame(minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                    .frame(alignment: .topLeading)
                     .padding([.leading, .trailing], 8)
-                    .padding(.bottom, 4)
-                    .padding(.top, 1)
+                
+                Spacer()
             }
+            .frame(maxHeight: .infinity)
         }
     }
 }
