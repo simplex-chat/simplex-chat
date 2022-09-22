@@ -1442,6 +1442,9 @@ enum class FormatColor(val color: String) {
 class SndFileTransfer() {}
 
 @Serializable
+class RcvFileTransfer() {}
+
+@Serializable
 class FileTransferMeta() {}
 
 @Serializable

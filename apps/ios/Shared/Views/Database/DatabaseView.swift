@@ -100,7 +100,7 @@ struct DatabaseView: View {
                 }
                 settingsRow("square.and.arrow.up") {
                     Button("Export database") {
-                        if initialRandomDBPassphraseGroupDefault.get() {
+                        if initialRandomDBPassphraseGroupDefault.get() && !unencrypted {
                             alert = .exportProhibited
                         } else {
                             exportArchive()

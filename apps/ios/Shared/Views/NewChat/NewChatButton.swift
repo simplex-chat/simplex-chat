@@ -11,15 +11,13 @@ import SimpleXChat
 
 enum NewChatAction: Identifiable {
     case createLink(link: String)
-    case pasteLink
-    case scanQRCode
+    case connectViaLink
     case createGroup
 
     var id: String {
         switch self {
         case let .createLink(link): return "createLink \(link)"
-        case .pasteLink: return "pasteLink"
-        case .scanQRCode: return "scanQRCode"
+        case .connectViaLink: return "connectViaLink"
         case .createGroup: return "createGroup"
         }
     }
@@ -36,17 +34,16 @@ struct NewChatButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .confirmationDialog("Add contact to start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
-            Button("Create link / QR code") { addContactAction() }
-            Button("Paste received link") { actionSheet = .pasteLink }
-            Button("Scan QR code") { actionSheet = .scanQRCode }
+        .confirmationDialog("Start a new chat", isPresented: $showAddChat, titleVisibility: .visible) {
+            Button("Share one-time invitation link") { addContactAction() }
+            Button("Connect via link / QR code") { actionSheet = .connectViaLink }
             Button("Create secret group") { actionSheet = .createGroup }
         }
         .sheet(item: $actionSheet) { sheet in
             switch sheet {
-            case let .createLink(link): AddContactView(connReqInvitation: link)
-            case .pasteLink: PasteToConnectView()
-            case .scanQRCode: ScanToConnectView()
+            case let .createLink(link):
+                CreateLinkView(selection: .oneTime, connReqInvitation: link)
+            case .connectViaLink: ConnectViaLinkView()
             case .createGroup: AddGroupView()
             }
         }
