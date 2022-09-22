@@ -169,10 +169,11 @@ fun parseRTCIceServer(str: String): RTCIceServer? {
     val host = u.host
     val port = u.port
     if (u.path == "" && (scheme == "stun" || scheme == "turn")) {
+      val userInfo = u.userInfo?.split(":")
       return RTCIceServer(
         urls = listOf("$scheme:$host:$port"),
-        username = u.userInfo?.split(":")?.getOrNull(0),
-        credential = u.userInfo?.split(":")?.getOrNull(1)
+        username = userInfo?.getOrNull(0),
+        credential = userInfo?.getOrNull(1)
       )
     }
   }
