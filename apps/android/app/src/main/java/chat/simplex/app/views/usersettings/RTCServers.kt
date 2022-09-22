@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionItemViewSpaceBetween
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -106,9 +107,7 @@ fun RTCServersLayout(
       Modifier.padding(bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    Row(
-      verticalAlignment = Alignment.CenterVertically
-    ) {
+    SectionItemViewSpaceBetween(padding = PaddingValues()) {
       Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
       Switch(
         checked = isUserRTCServers,

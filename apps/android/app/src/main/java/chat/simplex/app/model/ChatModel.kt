@@ -30,6 +30,7 @@ class ChatModel(val controller: ChatController) {
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
+  val chatDbDeleted = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
 
   // current chat
