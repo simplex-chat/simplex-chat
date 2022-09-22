@@ -84,6 +84,13 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     sheetPeekHeight = 0.dp,
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
+    floatingActionButton = {
+      FloatingActionButton(onClick = { if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse() },
+        Modifier.padding(bottom = 90.dp),
+        backgroundColor = MaterialTheme.colors.primary, contentColor = MaterialTheme.colors.onBackground) {
+        Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group))
+      }
+    },
     sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
   ) {
     Box {
@@ -113,29 +120,29 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 @Composable
 private fun OnboardingButtons(scaffoldCtrl: ScaffoldController) {
   Box {
-    Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.End) {
+    Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
+      val uriHandler = LocalUriHandler.current
+      ConnectButton(generalGetString(R.string.chat_with_developers)) {
+        uriHandler.openUri(simplexTeamUri)
+      }
+      Spacer(Modifier.height(10.dp))
+      ConnectButton(generalGetString(R.string.tap_to_start_new_chat)) {
+        scaffoldCtrl.toggleSheet()
+      }
       val color = MaterialTheme.colors.primary
-      Canvas(modifier = Modifier.width(30.dp).height(10.dp), onDraw = {
+      Canvas(modifier = Modifier.width(46.dp).height(10.dp), onDraw = {
         val trianglePath = Path().apply {
-          moveTo(8.dp.toPx(), 0f)
-          lineTo(16.dp.toPx(), 10.dp.toPx())
-          lineTo(0f, 10.dp.toPx())
-          lineTo(8.dp.toPx(), 0f)
+          moveTo(0.dp.toPx(), 0f)
+          lineTo(16.dp.toPx(), 0.dp.toPx())
+          lineTo(8.dp.toPx(), 10.dp.toPx())
+          lineTo(0.dp.toPx(), 0.dp.toPx())
         }
         drawPath(
           color = color,
           path = trianglePath
         )
       })
-
-      ConnectButton(generalGetString(R.string.tap_to_start_new_chat)) {
-        scaffoldCtrl.toggleSheet()
-      }
-      Spacer(Modifier.height(10.dp))
-      val uriHandler = LocalUriHandler.current
-      ConnectButton(generalGetString(R.string.chat_with_developers)) {
-        uriHandler.openUri(simplexTeamUri)
-      }
+      Spacer(Modifier.height(80.dp))
     }
     Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
   }
@@ -169,17 +176,7 @@ fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stop
       }
     }
   }
-  if (!stopped) {
-    barButtons.add {
-      IconButton(onClick = { scaffoldCtrl.toggleSheet() }) {
-        Icon(
-          Icons.Outlined.Edit,
-          stringResource(R.string.add_contact),
-          tint = MaterialTheme.colors.primary,
-        )
-      }
-    }
-  } else {
+  if (stopped) {
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(

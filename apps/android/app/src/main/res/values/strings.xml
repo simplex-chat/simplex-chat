@@ -165,7 +165,7 @@
   <string name="group_preview_join_as">join as %s</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
-  <string name="chat_with_developers">or chat with the developers</string>
+  <string name="chat_with_developers">Сhat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
 
   <!-- ComposeView.kt, helpers -->
@@ -465,7 +465,6 @@
   <string name="scan_contact_s_qr_code">Scan contact\'s QR code</string>
   <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">In person or via a video call – the most secure way to connect.</string>
   <string name="or">or</string>
-  <string name="connect_with_the_developers">Connect with the developers</string>
   <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">To ask any questions and to receive <xliff:g id="appNameFull">SimpleX Chat</xliff:g> updates.</string>
 
   <!-- Call -->
