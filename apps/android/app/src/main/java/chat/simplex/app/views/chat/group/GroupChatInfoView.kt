@@ -151,7 +151,7 @@ fun GroupChatInfoLayout(
         }
         SectionDivider()
       }
-      SectionItemView(height = 50.dp) {
+      SectionItemView(minHeight = 50.dp) {
         MemberRow(groupInfo.membership, user = true)
       }
       if (members.isNotEmpty()) {
@@ -243,7 +243,7 @@ fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () 
 fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   Column {
     members.forEachIndexed { index, member ->
-      SectionItemView(height = 50.dp) {
+      SectionItemView(minHeight = 50.dp) {
         MemberRow(member, showMemberInfo)
       }
       if (index < members.lastIndex) {
