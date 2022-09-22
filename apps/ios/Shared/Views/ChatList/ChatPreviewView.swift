@@ -102,6 +102,9 @@ struct ChatPreviewView: View {
         if let cItem = cItem {
             ZStack(alignment: .topTrailing) {
                 (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
+                    .font(.callout)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
                     .padding(.leading, 8)
                     .padding(.trailing, 36)
