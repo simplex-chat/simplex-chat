@@ -16,7 +16,8 @@ struct ScanToConnectView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("Scan QR code")
-                .font(.title)
+                .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             if (chatModel.incognito) {
                 HStack {
@@ -43,7 +44,7 @@ struct ScanToConnectView: View {
                 .padding(.bottom)
         }
         .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {

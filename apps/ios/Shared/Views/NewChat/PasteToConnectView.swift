@@ -16,7 +16,8 @@ struct PasteToConnectView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text("Connect via link")
-                .font(.title)
+                .font(.largeTitle)
+                .bold()
                 .padding(.vertical)
             Text("Paste the link you received into the box below to connect with your contact.")
                 .padding(.bottom, 4)
@@ -73,7 +74,7 @@ struct PasteToConnectView: View {
             Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
         }
         .padding()
-        .frame(maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func connect() {

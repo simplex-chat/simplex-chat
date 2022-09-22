@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "icon-light.png",
+      "filename" : "decentralized.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "icon-light@2x.png",
+      "filename" : "decentralized@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "icon-light@3x.png",
+      "filename" : "decentralized@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }
