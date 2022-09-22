@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
@@ -56,7 +57,7 @@ fun ConnectViaLinkView(m: ChatModel) {
             selection.value = ConnectViaLinkTab.values()[index]
             m.controller.appPrefs.connectViaLinkTab.set(selection.value .name)
           },
-          text = { Text(it) },
+          text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
               if (ConnectViaLinkTab.SCAN.ordinal == index) Icons.Outlined.QrCode else Icons.Outlined.Article,

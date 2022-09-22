@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
@@ -60,10 +61,10 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
           onClick = {
             selection.value = CreateLinkTab.values()[index]
           },
-          text = { Text(it) },
+          text = { Text(it, fontSize = 13.sp) },
           icon = {
             Icon(
-              if (CreateLinkTab.ONE_TIME.ordinal == index) Icons.Outlined.PlusOne else Icons.Outlined.QrCode,
+              if (CreateLinkTab.ONE_TIME.ordinal == index) Icons.Outlined.RepeatOne else Icons.Outlined.AllInclusive,
               it
             )
           },

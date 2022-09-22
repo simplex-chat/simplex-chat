@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.generalGetString
-import chat.simplex.app.views.helpers.shareText
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun AddContactView(chatModel: ChatModel, connReqInvitation: String) {
@@ -75,7 +74,7 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
           )
       }
       Text(
-        stringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
+        annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
           .padding(bottom = if (screenHeight > 600.dp) 8.dp else 0.dp)
