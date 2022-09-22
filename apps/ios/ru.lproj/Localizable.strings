@@ -696,7 +696,7 @@
 "Error importing chat database" = "Ошибка при импорте архива чата";
 
 /* No comment provided by engineer. */
-"Error joining group" = "Ошибка приглашения";
+"Error joining group" = "Ошибка при вступлении в группу";
 
 /* No comment provided by engineer. */
 "Error receiving file" = "Ошибка при получении файла";
