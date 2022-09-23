@@ -552,7 +552,7 @@
   <string name="chat_is_running">Chat läuft</string>
   <string name="chat_is_stopped">Chat ist beendet</string>
   <string name="chat_database_section">CHAT-DATENBANK</string>
-  <string name="database_passphrase">Datenbank Passwort</string>
+  <string name="database_passphrase">Datenbank-Passwort</string>
   <string name="export_database">Datenbank exportieren</string>
   <string name="import_database">Datenbank importieren</string>
   <string name="new_database_archive">Neues Datenbankarchiv</string>
@@ -595,9 +595,9 @@
   <string name="remove_passphrase">Entfernen</string>
   <string name="encrypt_database">Verschlüsseln</string>
   <string name="update_database">Aktualisieren</string>
-  <string name="current_passphrase">Aktuelles Passwort …</string>
-  <string name="new_passphrase">Neues Passwort …</string>
-  <string name="confirm_new_passphrase">Neues Passwort bestätigen …</string>
+  <string name="current_passphrase">Aktuelles Passwort…</string>
+  <string name="new_passphrase">Neues Passwort…</string>
+  <string name="confirm_new_passphrase">Neues Passwort bestätigen…</string>
   <string name="update_database_passphrase">Datenbank-Passwort aktualisieren</string>
   <string name="enter_correct_current_passphrase">Bitte geben Sie das korrekte, aktuelle Passwort ein.</string>
   <string name="database_is_not_encrypted">Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.</string>
@@ -629,7 +629,7 @@
   <string name="wrong_passphrase_title">Falsches Passwort!</string>
   <string name="enter_correct_passphrase">Geben Sie das korrekte Passwort ein.</string>
   <string name="unknown_error">Unbekannter Fehler</string>
-  <string name="enter_passphrase">Passwort eingeben …</string>
+  <string name="enter_passphrase">Passwort eingeben…</string>
   <string name="save_passphrase_and_open_chat">Passwort speichern und Chat öffnen</string>
   <string name="open_chat">Chat öffnen</string>
   <string name="database_backup_can_be_restored">Der Versuch, das Passwort der Datenbank zu ändern, konnte nicht abgeschlossen werden.</string>
