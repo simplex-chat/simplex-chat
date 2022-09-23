@@ -56,9 +56,9 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (exexSQL)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), exexSQL)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
@@ -86,8 +86,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            dbFile = "simplex_v1",
-            dbKey = "",
+            database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
             yesToMigrations = False
           },
       yesToMigrations = False,
@@ -125,16 +124,21 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, dbKey, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let f = chatStoreFile dbFilePrefix
-      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
+createChatDatabase :: FilePath -> String -> Bool -> IO ChatDatabase
+createChatDatabase filePrefix key yesToMigrations = do
+  chatStore <- createChatStore (chatStoreFile filePrefix) key yesToMigrations
+  agentStore <- createAgentStore (agentStoreFile filePrefix) key yesToMigrations
+  pure ChatDatabase {chatStore, agentStore}
+
+newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
+  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
       sendNotification = fromMaybe (const $ pure ()) sendToast
+      firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
-  firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = agentStoreFile dbFilePrefix, dbKey} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers {netCfg = networkConfig}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -2653,9 +2657,9 @@ withStore ::
   (DB.Connection -> ExceptT StoreError IO a) ->
   m a
 withStore action = do
-  st <- asks chatStore
+  ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $
-    withTransaction st (runExceptT . action) `E.catch` handleInternal
+    withTransaction chatStore (runExceptT . action) `E.catch` handleInternal
   where
     handleInternal :: E.SomeException -> IO (Either StoreError a)
     handleInternal = pure . Left . SEInternalError . show
