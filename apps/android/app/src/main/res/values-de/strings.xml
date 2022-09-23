@@ -452,7 +452,7 @@
   <string name="how_simplex_works">Wie <xliff:g id="appName">SimpleX</xliff:g> funktioniert</string>
   <string name="many_people_asked_how_can_it_deliver">Viele Menschen haben gefragt: <i>Wenn <xliff:g id="appName">SimpleX</xliff:g> keine Benutzerkennungen hat, wie kann es dann Nachrichten zustellen?</i></string>
   <string name="to_protect_privacy_simplex_has_ids_for_queues">Zum Schutz Ihrer Privatsphäre verwendet <xliff:g id="appName">SimpleX</xliff:g> an Stelle von Benutzer-IDs, die von allen anderen Plattformen verwendet werden, Kennungen für Nachrichtenwarteschlangen, die für jeden Ihrer Kontakte individuell sind.</string>
-  <string name="you_control_servers_to_receive_your_contacts_to_send">Sie legen fest, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden/b>.</string>
+  <string name="you_control_servers_to_receive_your_contacts_to_send">Sie legen fest, über welche Server Sie Ihre Nachrichten <b>empfangen</b> und an Ihre Kontakte <b>senden</b>.</string>
   <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Nur die Endgeräte speichern Benutzerprofile, Kontakte, Gruppen und Nachrichten, die über eine <b>2-Schichten Ende-zu-Ende-Verschlüsselung</b> gesendet werden.</string>
   <string name="read_more_in_github">Erfahren Sie mehr dazu in unserem GitHub-Repository.</string>
   <string name="read_more_in_github_with_link">Erfahren Sie mehr dazu in unserem <font color="#0088ff">GitHub-Repository</font>.</string>
