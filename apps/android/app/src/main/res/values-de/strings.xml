@@ -380,6 +380,7 @@
   <string name="all_your_contacts_will_remain_connected">Alle Ihre Kontakte bleiben verbunden.</string>
   <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Sie können Ihre Adresse als Link oder als QR-Code teilen – jeder kann sich mit Ihnen verbinden.</string>
   <string name="if_you_delete_address_you_wont_lose_contacts">Wenn Sie diese Adresse später löschen, werden Sie Ihre Kontakte nicht verlieren.</string>
+  <string name="if_you_later_delete_address_you_wont_lose_contacts">If you later delete it - you won\'t lose your contacts made via the address.</string>
   <string name="share_link">Link teilen</string>
   <string name="delete_address">Adresse löschen</string>
 
@@ -457,16 +458,7 @@
   <string name="read_more_in_github_with_link">Erfahren Sie mehr dazu in unserem <font color="#0088ff">GitHub-Repository</font>.</string>
 
   <!-- MakeConnection -->
-  <string name="to_make_your_first_private_connection_choose">Um Ihre erste private Verbindung herzustellen, wählen Sie <b>eine der folgenden Optionen aus</b>:</string>
-  <string name="create_1_time_link_qr_code">One-Time Link / QR-Code erstellen</string>
-  <string name="it_s_secure_to_share__only_one_contact_can_use_it">Es ist sicher diesen zu teilen, da ihn nur ein Kontakt verwenden kann.</string>
   <string name="paste_the_link_you_received">Fügen Sie den erhaltenen Link ein</string>
-  <string name="or_open_the_link_in_the_browser_and_tap_open_in_mobile">Oder öffnen Sie den Link im Browser und tippen Sie auf <b>In mobiler App öffnen</b>.</string>
-  <string name="scan_contact_s_qr_code">QR-Code des Kontakts scannen</string>
-  <string name="in_person_or_via_a_video_call__the_most_secure_way_to_connect">Persönlich oder über einen Videoanruf – dies ist die sicherste Art, eine Verbindung herzustellen.</string>
-  <string name="or">oder</string>
-  <string name="connect_with_the_developers">Verbinden Sie sich mit den Entwicklern</string>
-  <string name="to_ask_any_questions_and_to_receive_simplex_chat_updates">Um Fragen zu stellen und <xliff:g id="appNameFull">SimpleX Chat</xliff:g>-Updates zu erhalten.</string>
 
   <!-- Call -->
   <string name="incoming_video_call">Eingehender Videoanruf</string>
