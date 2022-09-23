@@ -275,6 +275,8 @@
 		5CB2084E28DA4B4800D024EC /* RTCServers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCServers.swift; sourceTree = "<group>"; };
 		5CB2085028DB64CA00D024EC /* CreateLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateLinkView.swift; sourceTree = "<group>"; };
 		5CB2085228DB7CAF00D024EC /* ConnectViaLinkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectViaLinkView.swift; sourceTree = "<group>"; };
+		5CB2085428DE647400D024EC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		5CB2085528DE647400D024EC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CB346E42868AA7F001FD2EF /* SuspendChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendChat.swift; sourceTree = "<group>"; };
 		5CB346E62868D76D001FD2EF /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushEnvironment.swift; sourceTree = "<group>"; };
@@ -803,6 +805,7 @@
 				en,
 				ru,
 				Base,
+				de,
 			);
 			mainGroup = 5CA059BD279559F40002BEB4;
 			packageReferences = (
@@ -1036,6 +1039,7 @@
 			children = (
 				5CB0BA8A2826CB3A00B3292C /* ru */,
 				5C9CC7B128D1F8F400BEF955 /* en */,
+				5CB2085528DE647400D024EC /* de */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -1045,6 +1049,7 @@
 			children = (
 				5CC2C0FB2809BF11000C35E3 /* ru */,
 				6493D667280ED77F007A76FB /* en */,
+				5CB2085428DE647400D024EC /* de */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
