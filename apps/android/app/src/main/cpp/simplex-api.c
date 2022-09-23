@@ -40,9 +40,16 @@ Java_chat_simplex_app_SimplexAppKt_chatMigrateInit(JNIEnv *env, __unused jclass 
     jstring res = (*env)->NewStringUTF(env, chat_migrate_init(_dbPath, _dbKey, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
-    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/String"), (*env)->NewStringUTF(env, ""));
+
+    // Creating array of Object's (boxed values can be passed, eg. Long instead of long)
+    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
+    // Java's String
     (*env)->SetObjectArrayElement(env, ret, 0, res);
-    (*env)->SetObjectArrayElement(env, ret, 1, (jstring*)_ctrl);
+    // Java's Long
+    (*env)->SetObjectArrayElement(env, ret, 1,
+        (*env)->NewObject(env, (*env)->FindClass(env, "java/lang/Long"),
+        (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Long"), "<init>", "(J)V"),
+        _ctrl));
     return ret;
 }
 

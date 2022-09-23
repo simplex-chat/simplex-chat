@@ -57,12 +57,12 @@ object DatabaseUtils {
       }
     }
     Log.d(TAG, "migrateChatDatabase DB path: $dbAbsolutePathPrefix")
-    val migrated: Array<String> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
+    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {
-      json.decodeFromString<DBMigrationResult>(migrated[0])
-    }.getOrElse { DBMigrationResult.Unknown(migrated[0]) }
+      json.decodeFromString<DBMigrationResult>(migrated[0] as String)
+    }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
     val encrypted = dbKey != ""
-    return Triple(encrypted, res, migrated[1].toLong())
+    return Triple(encrypted, res, migrated[1] as Long)
   }
 
   private fun randomDatabasePassword(): String = ByteArray(32).apply { SecureRandom().nextBytes(this) }.toBase64String()

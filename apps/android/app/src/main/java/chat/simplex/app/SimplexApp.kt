@@ -26,7 +26,7 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatMigrateInit(dbPath: String, dbKey: String): Array<String>
+external fun chatMigrateInit(dbPath: String, dbKey: String): Array<Any>
 external fun chatInitKey(dbPath: String, dbKey: String): ChatCtrl
 external fun chatInit(dbPath: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
