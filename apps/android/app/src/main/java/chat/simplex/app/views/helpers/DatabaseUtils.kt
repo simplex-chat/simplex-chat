@@ -57,7 +57,7 @@ object DatabaseUtils {
       }
     }
     Log.d(TAG, "migrateChatDatabase DB path: $dbAbsolutePathPrefix")
-    val migrated: Array<String> = chatMigrateDB(dbAbsolutePathPrefix, dbKey)
+    val migrated: Array<String> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0])
     }.getOrElse { DBMigrationResult.Unknown(migrated[0]) }
