@@ -41,7 +41,7 @@ object DatabaseUtils {
     appPreferences.initializationVectorDBPassphrase.set(null)
   }
 
-  fun migrateChatDatabase(useKey: String? = null): Pair<Boolean, DBMigrationResult> {
+  fun migrateChatDatabase(useKey: String? = null): Triple<Boolean, DBMigrationResult, Long> {
     Log.d(TAG, "migrateChatDatabase ${appPreferences.storeDBPassphrase.get()}")
     val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
     var dbKey = ""
@@ -57,12 +57,12 @@ object DatabaseUtils {
       }
     }
     Log.d(TAG, "migrateChatDatabase DB path: $dbAbsolutePathPrefix")
-    val migrated = chatMigrateDB(dbAbsolutePathPrefix, dbKey)
+    val migrated: Array<String> = chatMigrateDB(dbAbsolutePathPrefix, dbKey)
     val res: DBMigrationResult = kotlin.runCatching {
-      json.decodeFromString<DBMigrationResult>(migrated)
-    }.getOrElse { DBMigrationResult.Unknown(migrated) }
+      json.decodeFromString<DBMigrationResult>(migrated[0])
+    }.getOrElse { DBMigrationResult.Unknown(migrated[0]) }
     val encrypted = dbKey != ""
-    return encrypted to res
+    return Triple(encrypted, res, migrated[1].toLong())
   }
 
   private fun randomDatabasePassword(): String = ByteArray(32).apply { SecureRandom().nextBytes(this) }.toBase64String()

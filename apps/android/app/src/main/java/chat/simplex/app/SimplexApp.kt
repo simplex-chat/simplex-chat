@@ -26,7 +26,7 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 
 // SimpleX API
 typealias ChatCtrl = Long
-external fun chatMigrateDB(dbPath: String, dbKey: String): String
+external fun chatMigrateDB(dbPath: String, dbKey: String): Array<String>
 external fun chatInitKey(dbPath: String, dbKey: String): ChatCtrl
 external fun chatInit(dbPath: String): ChatCtrl
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
@@ -41,7 +41,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     val dbKey = useKey ?: DatabaseUtils.getDatabaseKey() ?: ""
     val res = DatabaseUtils.migrateChatDatabase(dbKey)
     val ctrl = if (res.second is DBMigrationResult.OK) {
-      chatInitKey(getFilesDirectory(applicationContext), dbKey)
+      res.third
     } else null
     if (::chatController.isInitialized) {
       chatController.ctrl = ctrl
