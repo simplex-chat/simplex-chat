@@ -24,7 +24,7 @@ Java_chat_simplex_app_SimplexAppKt_initHS(__unused JNIEnv *env, __unused jclass 
 // from simplex-chat
 typedef long* chat_ctrl;
 
-extern char *chat_migrate_db(const char *path, const char *key, chat_ctrl *ctrl);
+extern char *chat_migrate_init(const char *path, const char *key, chat_ctrl *ctrl);
 extern chat_ctrl chat_init_key(const char *path, const char *key);
 extern chat_ctrl chat_init(const char *path); // deprecated
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
@@ -33,18 +33,17 @@ extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 
 JNIEXPORT jobjectArray JNICALL
-Java_chat_simplex_app_SimplexAppKt_chatMigrateDB(JNIEnv *env, __unused jclass clazz, jobject jobj, jstring dbPath, jstring dbKey) {
+Java_chat_simplex_app_SimplexAppKt_chatMigrateInit(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey) {
     const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
     const char *_dbKey = (*env)->GetStringUTFChars(env, dbKey, JNI_FALSE);
-    jlong *_ctrl = (jlong) 0;
-    jstring res = (*env)->NewStringUTF(env, chat_migrate_db(_dbPath, _dbKey, _ctrl));
+    jlong _ctrl = (jlong) 0;
+    jstring res = (*env)->NewStringUTF(env, chat_migrate_init(_dbPath, _dbKey, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
-    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/String"),
-    (*env)->NewStringUTF(env, ""));
-    (*env)->SetObjectArrayElement(env, ret, 0, (*env)->NewStringUTF(env, res));
-    (*env)->SetObjectArrayElement(env, ret, 1, (*env)->NewStringUTF(env, &_ctrl));
-    return res;
+    jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/String"), (*env)->NewStringUTF(env, ""));
+    (*env)->SetObjectArrayElement(env, ret, 0, res);
+    (*env)->SetObjectArrayElement(env, ret, 1, (jstring*)_ctrl);
+    return ret;
 }
 
 JNIEXPORT jlong JNICALL
