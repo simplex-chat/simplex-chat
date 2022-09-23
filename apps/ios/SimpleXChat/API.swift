@@ -10,6 +10,8 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
+private var migrationResult: (Bool, DBMigrationResult)?
+
 public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
     let dbPath = getAppDatabasePath().path
@@ -23,6 +25,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
 }
 
 public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+    if let res = migrationResult { return res }
     logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
@@ -52,6 +55,7 @@ public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationRe
 
 public func resetChatCtrl() {
     chatController = nil
+    migrationResult = nil
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
