@@ -32,7 +32,7 @@ fun PasteToConnectView(chatModel: ChatModel) {
     chatModel.incognito.value,
     connectionLink = connectionLink,
     pasteFromClipboard = {
-      connectionLink.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as String
+      connectionLink.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as? String ?: return@PasteToConnectLayout
     },
     connectViaLink = { connReqUri ->
       try {
