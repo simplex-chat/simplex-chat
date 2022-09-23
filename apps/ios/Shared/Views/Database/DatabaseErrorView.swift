@@ -91,6 +91,7 @@ struct DatabaseErrorView: View {
 
     private func runChat() {
         do {
+            resetChatCtrl()
             try initializeChat(start: m.v3DBMigration.startChat, dbKey: dbKey)
             if let s = m.chatDbStatus {
                 status = s

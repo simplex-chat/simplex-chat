@@ -14,19 +14,12 @@ private var migrationResult: (Bool, DBMigrationResult)?
 
 public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
-    let dbPath = getAppDatabasePath().path
-    let dbKey = useKey ?? getDatabaseKey() ?? ""
-    logger.debug("getChatCtrl DB path: \(dbPath)")
-    var cPath = dbPath.cString(using: .utf8)!
-    var cKey = dbKey.cString(using: .utf8)!
-    chatController = chat_init_key(&cPath, &cKey)
-    logger.debug("getChatCtrl: chat_init_key")
-    return chatController!
+    fatalError("chat controller not initialized")
 }
 
-public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
-    logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
+    logger.debug("initChatController \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
     let useKeychain = storeDBPassphraseGroupDefault.get()
@@ -41,10 +34,10 @@ public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationRe
         }
     }
     logger.debug("migrateChatDatabase DB path: \(dbPath)")
-//    logger.debug("migrateChatDatabase DB key: \(dbKey)")
+    logger.debug("migrateChatDatabase DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
-    let cjson = chat_migrate_db(&cPath, &cKey)!
+    let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
