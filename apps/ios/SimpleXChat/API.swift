@@ -10,6 +10,8 @@ import Foundation
 
 private var chatController: chat_ctrl?
 
+private var migrationResult: (Bool, DBMigrationResult)?
+
 public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     if let controller = chatController { return controller }
     let dbPath = getAppDatabasePath().path
@@ -23,6 +25,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
 }
 
 public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
+    if let res = migrationResult { return res }
     logger.debug("migrateChatDatabase \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
@@ -42,16 +45,17 @@ public func migrateChatDatabase(_ useKey: String? = nil) -> (Bool, DBMigrationRe
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     let cjson = chat_migrate_db(&cPath, &cKey)!
-    let res = dbMigrationResult(fromCString(cjson))
+    let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
-    if case .ok = res, useKeychain && encrypted && !setDatabaseKey(dbKey) {
-        return (encrypted, .errorKeychain)
-    }
-    return (encrypted, res)
+    let keychainErr = dbRes == .ok && useKeychain && encrypted && !setDatabaseKey(dbKey)
+    let result = (encrypted, keychainErr ? .errorKeychain : dbRes)
+    migrationResult = result
+    return result
 }
 
 public func resetChatCtrl() {
     chatController = nil
+    migrationResult = nil
 }
 
 public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {

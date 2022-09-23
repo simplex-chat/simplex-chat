@@ -354,6 +354,7 @@ struct DatabaseView: View {
     private func operationEnded(_ dbAlert: DatabaseAlert) async {
         await MainActor.run {
             m.chatDbChanged = true
+            m.chatInitialized = false
             progressIndicator = false
             alert = dbAlert
         }

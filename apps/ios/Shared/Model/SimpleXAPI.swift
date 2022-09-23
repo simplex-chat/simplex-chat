@@ -734,6 +734,7 @@ func initializeChat(start: Bool, dbKey: String? = nil) throws {
     let _ = getChatCtrl(dbKey)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
+    m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
         m.onboardingStage = .step1_SimpleXInfo
