@@ -24,6 +24,8 @@ Java_chat_simplex_app_SimplexAppKt_initHS(__unused JNIEnv *env, __unused jclass 
 // from simplex-chat
 typedef void* chat_ctrl;
 
+extern char *chat_migrate_init(const char *path, const char *key, chat_ctrl *ctrl);
+
 extern char *chat_migrate_db(const char *path, const char *key);
 extern chat_ctrl chat_init_key(const char *path, const char *key);
 extern chat_ctrl chat_init(const char *path); // deprecated
