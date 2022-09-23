@@ -37,6 +37,7 @@ public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult
     logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
+    // the last parameter of chat_migrate_init is used to return the pointer to chat controller
     let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
