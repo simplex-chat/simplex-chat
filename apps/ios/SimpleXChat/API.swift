@@ -19,7 +19,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
 
 public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
-    logger.debug("initChatController \(storeDBPassphraseGroupDefault.get())")
+    logger.debug("chatMigrateInit \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
     let useKeychain = storeDBPassphraseGroupDefault.get()
@@ -33,8 +33,8 @@ public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult
             dbKey = key
         }
     }
-    logger.debug("migrateChatDatabase DB path: \(dbPath)")
-    logger.debug("migrateChatDatabase DB key: \(dbKey)")
+    logger.debug("chatMigrateInit DB path: \(dbPath)")
+    logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     let cjson = chat_migrate_init(&cPath, &cKey, &chatController)!
