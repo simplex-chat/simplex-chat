@@ -37,7 +37,7 @@ struct ChatPreviewView: View {
                         .foregroundColor(.secondary)
                         .padding(.top, 4)
                 }
-                .padding(.top, 4)
+                .padding(.bottom, 4)
                 .padding(.horizontal, 8)
 
                 ZStack(alignment: .topTrailing) {
@@ -45,14 +45,16 @@ struct ChatPreviewView: View {
                     if case .direct = chat.chatInfo {
                         chatStatusImage()
                             .padding(.top, 24)
-                            .padding(.bottom, 4)
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
                 }
-
                 .padding(.trailing, 8)
+                
+                Spacer()
             }
+            .frame(maxHeight: .infinity)
         }
+        .padding(.bottom, -8)
     }
 
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
@@ -82,7 +84,7 @@ struct ChatPreviewView: View {
             .font(.title3)
             .fontWeight(.bold)
             .lineLimit(1)
-            .frame(maxHeight: .infinity, alignment: .topLeading)
+            .frame(alignment: .topLeading)
         switch (chat.chatInfo) {
         case .direct:
             v.foregroundColor(chat.chatInfo.ready ? .primary : .secondary)
@@ -102,10 +104,11 @@ struct ChatPreviewView: View {
         if let cItem = cItem {
             ZStack(alignment: .topTrailing) {
                 (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
-                    .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.leading, 8)
                     .padding(.trailing, 36)
-                    .padding(.bottom, 4)
                 if unread > 0 {
                     unreadCountText(unread)
                         .font(.caption)

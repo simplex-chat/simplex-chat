@@ -245,6 +245,7 @@ struct DatabaseEncryptionView: View {
     private func operationEnded(_ dbAlert: DatabaseEncryptionAlert) async {
         await MainActor.run {
             m.chatDbChanged = true
+            m.chatInitialized = false
             progressIndicator = false
             alert = dbAlert
         }

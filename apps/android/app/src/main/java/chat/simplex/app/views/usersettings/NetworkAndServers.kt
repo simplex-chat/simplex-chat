@@ -115,7 +115,7 @@ fun NetworkAndServersView(
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SectionView(generalGetString(R.string.settings_section_title_calls)) {
+    SectionView(generalGetString(R.string.settings_section_title_messages)) {
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
       SectionDivider()
       SectionItemView {
@@ -146,6 +146,7 @@ fun UseSocksProxySwitch(
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Row(
+      Modifier.weight(1f),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
