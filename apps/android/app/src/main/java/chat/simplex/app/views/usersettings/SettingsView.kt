@@ -122,7 +122,7 @@ fun SettingsLayout(
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) })
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
