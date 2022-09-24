@@ -23,9 +23,11 @@ struct SendMessageView: View {
         ZStack {
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
+                    let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
                     Text(composeState.message)
                         .lineLimit(10)
                         .font(teFont)
+                        .multilineTextAlignment(alignment)
                         .foregroundColor(.clear)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 8)
@@ -35,7 +37,7 @@ struct SendMessageView: View {
                         .focused($keyboardVisible)
                         .font(teFont)
                         .textInputAutocapitalization(.sentences)
-                        .multilineTextAlignment(getTextDirection(composeState.message) == .rightToLeft ? .trailing : .leading)
+                        .multilineTextAlignment(alignment)
                         .padding(.horizontal, 5)
                         .allowsTightening(false)
                         .frame(height: teHeight)

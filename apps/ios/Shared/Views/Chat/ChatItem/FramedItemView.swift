@@ -159,16 +159,16 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem, _ showMember: Bool = false) -> some View {
-        let textDirection = getTextDirection(chatItem.text)
+        let rtl = isRightToLeft(chatItem.text)
         let v = MsgContentView(
             text: ci.text,
             formattedText: ci.formattedText,
             sender: showMember ? ci.memberDisplayName : nil,
             metaText: ci.timestampText,
             edited: ci.meta.itemEdited,
-            textDirection: textDirection
+            rightToLeft: rtl
         )
-        .multilineTextAlignment(textDirection == .rightToLeft ? .trailing : .leading)
+        .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
@@ -183,11 +183,11 @@ struct FramedItemView: View {
     }
 }
 
-func getTextDirection(_ s: String) -> NSLocale.LanguageDirection {
+func isRightToLeft(_ s: String) -> Bool {
     if let lang = CFStringTokenizerCopyBestStringLanguage(s as CFString, CFRange(location: 0, length: min(s.count, 80))) {
-        return NSLocale.characterDirection(forLanguage: lang as String)
+        return NSLocale.characterDirection(forLanguage: lang as String) == .rightToLeft
     }
-    return .leftToRight
+    return false
 }
 
 private struct MetaColorPreferenceKey: PreferenceKey {
