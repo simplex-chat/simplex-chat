@@ -86,7 +86,11 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     sheetContent = { NewChatSheet(chatModel, scaffoldCtrl) },
     floatingActionButton = {
       FloatingActionButton(
-        onClick = { if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse() },
+        onClick = {
+          if (!stopped) {
+            if (!scaffoldCtrl.expanded.value) scaffoldCtrl.expand() else scaffoldCtrl.collapse()
+          }
+        },
         Modifier.padding(bottom = 90.dp),
         elevation = FloatingActionButtonDefaults.elevation(
           defaultElevation = 0.dp,
@@ -94,7 +98,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           hoveredElevation = 0.dp,
           focusedElevation = 0.dp,
         ),
-        backgroundColor = MaterialTheme.colors.primary,
+        backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
         contentColor = Color.White
       ) {
         Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group))
@@ -111,7 +115,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
         } else {
-          OnboardingButtons(scaffoldCtrl)
+          if (!stopped) {
+            OnboardingButtons(scaffoldCtrl)
+          }
         }
       }
       if (scaffoldCtrl.expanded.value) {
