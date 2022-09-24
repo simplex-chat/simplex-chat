@@ -451,7 +451,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "createActiveUser":
       return `/u ${JSON.stringify(cmd.profile)}`
     case "startChat":
-      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"}`
+      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"}` // TODO expire onOff
     case "apiStopChat":
       return "/_stop"
     case "setFilesFolder":

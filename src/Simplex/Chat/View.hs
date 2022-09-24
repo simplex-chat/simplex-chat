@@ -63,6 +63,7 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
@@ -573,6 +574,15 @@ viewSMPServers smpServers testView =
       if null smpServers
         then "no custom SMP servers saved"
         else viewServers smpServers
+
+viewChatItemTTL :: ChatItemTTL -> [StyledString]
+viewChatItemTTL = \case
+  CITTLNone -> ["old messages are not being deleted"]
+  CITTLDay -> deletedAfter "one day"
+  CITTLWeek -> deletedAfter "one week"
+  CITTLMonth -> deletedAfter "one month"
+  where
+    deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =

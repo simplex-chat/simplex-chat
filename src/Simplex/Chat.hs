@@ -66,6 +66,7 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P, parseAll)
 import Simplex.Messaging.Protocol (ErrorType (..), MsgBody, MsgFlags (..), NtfServer)
 import qualified Simplex.Messaging.Protocol as SMP
+import Simplex.Messaging.Server.Expiration (ExpirationConfig (..), expireBeforeEpoch)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
@@ -151,7 +152,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   filesFolder <- newTVarIO Nothing
   incognitoMode <- newTVarIO False
   chatStoreChanged <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder}
+  expireChatItemsAsync <- newTVarIO Nothing
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireChatItemsAsync}
   where
     resolveServers :: InitialAgentServers -> IO InitialAgentServers
     resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
@@ -162,8 +164,8 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
           pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
         _ -> pure ss
 
-startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> m (Async ())
-startChatController user subConns = do
+startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
+startChatController user subConns runExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   restoreCalls user
   s <- asks agentAsync
@@ -176,7 +178,20 @@ startChatController user subConns = do
           then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections user)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
+      runExpireChatItems
       pure a1
+    runExpireChatItems = do
+      a <-
+        if runExpireCIs
+          then do
+            ttl <- fromRight CITTLNone <$> runExceptT (withStore' $ \db -> getChatItemTTL db user)
+            let ciExpirationConfig = ciTtlToExpirationConfig ttl
+            case ciExpirationConfig of
+              Just expCfg -> Just <$> async (void . runExceptT $ expireChatItems user expCfg)
+              _ -> pure Nothing
+          else pure Nothing
+      expireCIAsync <- asks expireChatItemsAsync
+      atomically $ writeTVar expireCIAsync a
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
@@ -219,10 +234,10 @@ processChatCommand = \case
     user <- withStore $ \db -> createUser db p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  StartChat subConns -> withUser' $ \user ->
+  StartChat subConns runExpireCIs -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController user subConns $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController user subConns runExpireCIs $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
@@ -614,6 +629,17 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
+  APISetChatItemTTL ttl -> withUser $ \user -> withChatLock $ do
+    withStore' $ \db -> setChatItemTTL db user ttl
+    expireCIAsync <- asks expireChatItemsAsync
+    readTVarIO expireCIAsync >>= mapM_ (forkIO . uninterruptibleCancel)
+    case ciTtlToExpirationConfig ttl of
+      Nothing -> atomically $ writeTVar expireCIAsync Nothing
+      Just expCfg -> do
+        a <- Just <$> async (void . runExceptT $ expireChatItems user expCfg)
+        atomically $ writeTVar expireCIAsync a
+    pure CRCmdOk
+  APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user@User {userId} -> case cType of
@@ -1332,6 +1358,16 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just (Left e) -> Just $ ChatErrorAgent e
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
+
+expireChatItems :: forall m. ChatMonad m => User -> ExpirationConfig -> m ()
+expireChatItems _user expCfg@ExpirationConfig {ttl = _ttl, checkInterval} = do
+  let interval = checkInterval * 1000000
+  forever $ do
+    threadDelay interval
+    _old <- liftIO $ expireBeforeEpoch expCfg -- need UTCTime instead of this function
+    -- getExpiredChatItemIdsAndFileInfo
+    -- deletion logic
+    pure ()
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
@@ -2671,8 +2707,8 @@ chatCommandP =
       "/unmute " *> ((`ShowMessages` True) <$> chatNameP'),
       ("/user " <|> "/u ") *> (CreateActiveUser <$> userProfile),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start subscribe=" *> (StartChat <$> ("on" $> True <|> "off" $> False)),
-      "/_start" $> StartChat True,
+      "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP),
+      "/_start" $> StartChat True True,
       "/_stop" $> APIStopChat,
       "/_app activate" $> APIActivateChat,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
@@ -2723,6 +2759,8 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
+      "/ttl " *> (APISetChatItemTTL <$> ciTTL),
+      "/ttl" $> APIGetChatItemTTL,
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
@@ -2831,6 +2869,11 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
+    ciTTL =
+      ("none" $> CITTLNone)
+        <|> ("day" $> CITTLDay)
+        <|> ("week" $> CITTLWeek)
+        <|> ("month" $> CITTLMonth)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal

@@ -188,6 +188,9 @@ module Simplex.Chat.Store
     setConnConnReqInv,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
+    getChatItemTTL,
+    setChatItemTTL,
+    getExpiredChatItemIdsAndFileInfo,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -248,6 +251,7 @@ import Simplex.Chat.Migrations.M20220822_groups_host_conn_custom_user_profile_id
 import Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
 import Simplex.Chat.Migrations.M20220824_profiles_local_alias
 import Simplex.Chat.Migrations.M20220909_commands
+import Simplex.Chat.Migrations.M20220922_settings
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -283,7 +287,8 @@ schemaMigrations =
     ("20220822_groups_host_conn_custom_user_profile_id", m20220822_groups_host_conn_custom_user_profile_id),
     ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items),
     ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
-    ("20220909_commands", m20220909_commands)
+    ("20220909_commands", m20220909_commands),
+    ("20220922_settings", m20220922_settings)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -336,6 +341,10 @@ createUser db Profile {displayName, fullName, image} activeUser =
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
+    DB.execute
+      db
+      "INSERT INTO settings (user_id, created_at, updated_at) VALUES (?,?,?)"
+      (userId, currentTs, currentTs)
     pure $ toUser (userId, contactId, profileId, activeUser, displayName, fullName, image)
 
 getUsers :: DB.Connection -> IO [User]
@@ -4057,6 +4066,21 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
     toCont (hostConnId, connReq_) = case connReq_ of
       Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
+
+getChatItemTTL :: DB.Connection -> User -> IO ChatItemTTL
+getChatItemTTL db User {userId} = do
+  [chatItemTTL] <- map fromOnly <$> DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  pure $ fromMaybe CITTLNone chatItemTTL
+
+setChatItemTTL :: DB.Connection -> User -> ChatItemTTL -> IO ()
+setChatItemTTL db User {userId} chatItemTTL = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
+    (chatItemTTL, updatedAt, userId)
+
+getExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _olderThan =
+  pure []
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
