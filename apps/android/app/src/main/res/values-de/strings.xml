@@ -231,9 +231,9 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Berechtigung verweigert!</string>
-  <string name="use_camera_button">Kamera verwenden</string>
-  <string name="from_gallery_button">Aus dem Fotoalbum</string>
-  <string name="choose_file">Datei auswählen</string>
+  <string name="use_camera_button">Kamera\nverwenden</string>
+  <string name="from_gallery_button">Aus dem\nFotoalbum</string>
+  <string name="choose_file">Datei\nauswählen</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
