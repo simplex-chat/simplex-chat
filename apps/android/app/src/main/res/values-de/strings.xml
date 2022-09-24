@@ -32,9 +32,9 @@
   <string name="display_name_connecting">verbinde …</string>
   <string name="description_you_shared_one_time_link">Sie haben einen Einmal-Link geteilt</string>
   <string name="description_you_shared_one_time_link_incognito">Sie haben Inkognito einen Einmal-Link geteilt</string>
-  <string name="description_via_contact_address_link">Über einen Kontaktadressen Link</string>
+  <string name="description_via_contact_address_link">über einen Kontaktadressen Link</string>
   <string name="description_via_contact_address_link_incognito">Inkognito über einen Kontaktadressen Link</string>
-  <string name="description_via_one_time_link">Über einen Einmal-Link</string>
+  <string name="description_via_one_time_link">über einen Einmal-Link</string>
   <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
 
   <!-- SimpleXAPI.kt -->
@@ -417,22 +417,22 @@
   <string name="secret">geheim</string>
 
   <!-- CICallStatus - in chat items -->
-  <string name="callstatus_calling">Anruf …</string>
+  <string name="callstatus_calling">Anruf…</string>
   <string name="callstatus_missed">Anruf verpasst</string>
   <string name="callstatus_rejected">Anruf abgelehnt</string>
   <string name="callstatus_accepted">Anruf angenommen</string>
-  <string name="callstatus_connecting">Anruf wird verbunden …</string>
+  <string name="callstatus_connecting">Anruf wird verbunden…</string>
   <string name="callstatus_in_progress">Anruf läuft</string>
   <string name="callstatus_ended">Anruf beendet <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
   <string name="callstatus_error">Fehler bei Anruf</string>
 
   <!-- CallState -->
-  <string name="callstate_starting">Verbindung wird gestartet …</string>
-  <string name="callstate_waiting_for_answer">Warten auf Antwort …</string>
-  <string name="callstate_waiting_for_confirmation">Warten auf Bestätigung …</string>
-  <string name="callstate_received_answer">Antwort erhalten …</string>
-  <string name="callstate_received_confirmation">Bestätigung erhalten …</string>
-  <string name="callstate_connecting">Verbindung wird hergestellt …</string>
+  <string name="callstate_starting">Verbindung wird gestartet…</string>
+  <string name="callstate_waiting_for_answer">Warten auf Antwort…</string>
+  <string name="callstate_waiting_for_confirmation">Warten auf Bestätigung…</string>
+  <string name="callstate_received_answer">Antwort erhalten…</string>
+  <string name="callstate_received_confirmation">Bestätigung erhalten…</string>
+  <string name="callstate_connecting">Verbindung wird hergestellt…</string>
   <string name="callstate_connected">verbunden</string>
   <string name="callstate_ended">beendet</string>
 
@@ -694,7 +694,7 @@
 
   <!-- GroupMemberRole -->
   <string name="group_member_role_member">Mitglied</string>
-  <string name="group_member_role_admin">Administrator</string>
+  <string name="group_member_role_admin">Admin</string>
   <string name="group_member_role_owner">Eigentümer</string>
 
   <!-- GroupMemberStatus -->

@@ -2369,301 +2369,301 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
         <source>Video call</source>
-        <target>Video call</target>
+        <target>Videoanruf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
         <source>Waiting for file</source>
-        <target>Waiting for file</target>
+        <target>Warte auf Datei</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for image" xml:space="preserve">
         <source>Waiting for image</source>
-        <target>Waiting for image</target>
+        <target>Warten auf ein Bild</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="WebRTC ICE servers" xml:space="preserve">
         <source>WebRTC ICE servers</source>
-        <target>WebRTC ICE servers</target>
+        <target>WebRTC ICE-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Welcome %@!" xml:space="preserve">
         <source>Welcome %@!</source>
-        <target>Welcome %@!</target>
+        <target>Willkommen %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When available" xml:space="preserve">
         <source>When available</source>
-        <target>When available</target>
+        <target>Wenn verfügbar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</target>
+        <target>Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen sie Sie eingeladen haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
         <source>Wrong database passphrase</source>
-        <target>Wrong database passphrase</target>
+        <target>Falsches Datenbank-Passwort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
         <source>Wrong passphrase!</source>
-        <target>Wrong passphrase!</target>
+        <target>Falsches Passwort!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
         <source>You</source>
-        <target>You</target>
+        <target>Sie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
         <source>You accepted connection</source>
-        <target>You accepted connection</target>
+        <target>Sie haben die Verbindung akzeptiert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@ via this link." xml:space="preserve">
         <source>You are already connected to %@ via this link.</source>
-        <target>You are already connected to %@ via this link.</target>
+        <target>Sie sind bereits über diesen Link mit %@ verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>You are connected to the server used to receive messages from this contact.</target>
+        <target>Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
         <source>You are invited to group</source>
-        <target>You are invited to group</target>
+        <target>Sie sind zu der Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
         <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.</source>
-        <target>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.</target>
+        <target>Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche **In mobiler App öffnen**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>You can now send messages to %@</target>
-        <note>notification body</note>
+        <note>*** notification body</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
         <target>You can set lock screen notification preview via settings.</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
         <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
-        <target>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</target>
+        <target>Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich mit Ihnen verbinden. Wenn Sie diese Adresse später löschen, werden Sie Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
-        <target>You can start chat via app Settings / Database or by restarting the app</target>
+        <target>Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
-        <target>You can use markdown to format messages:</target>
+        <target>Sie können Markdowns verwenden, um Nachrichten zu formatieren:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</target>
+        <target>Sie legen fest, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
         <source>You could not be verified; please try again.</source>
         <target>You could not be verified; please try again.</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have no chats" xml:space="preserve">
         <source>You have no chats</source>
-        <target>You have no chats</target>
+        <target>Sie haben keine Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
         <source>You have to enter passphrase every time the app starts - it is not stored on the device.</source>
-        <target>You have to enter passphrase every time the app starts - it is not stored on the device.</target>
+        <target>Sie müssen das Passwort jedes Mal eingeben, wenn die App startet. Es wird nicht auf dem Gerät gespeichert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You invited your contact" xml:space="preserve">
         <source>You invited your contact</source>
-        <target>You invited your contact</target>
+        <target>Sie haben Ihren Kontakt eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You joined this group" xml:space="preserve">
         <source>You joined this group</source>
-        <target>You joined this group</target>
+        <target>Sie sind dieser Gruppe beigetreten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target>You joined this group. Connecting to inviting group member.</target>
+        <target>Sie sind dieser Gruppe beigetreten. Sie werden mit dem einladenden Gruppenmitglied verbunden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
         <source>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</source>
-        <target>You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts.</target>
+        <target>Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You rejected group invitation" xml:space="preserve">
         <source>You rejected group invitation</source>
-        <target>You rejected group invitation</target>
+        <target>Sie haben die Gruppeneinladung abgelehnt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You sent group invitation" xml:space="preserve">
         <source>You sent group invitation</source>
-        <target>You sent group invitation</target>
+        <target>Sie haben eine Gruppeneinladung gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target>You will be connected when your connection request is accepted, please wait or check later!</target>
+        <target>Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird, bitte warten oder schauen Sie später nochmal nach!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target>You will be connected when your contact's device is online, please wait or check later!</target>
+        <target>Sie werden verbunden, wenn das Gerät Ihres Kontakts online ist, bitte warten oder schauen Sie später nochmal nach!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
         <source>You will be required to authenticate when you start or resume the app after 30 seconds in background.</source>
-        <target>You will be required to authenticate when you start or resume the app after 30 seconds in background.</target>
+        <target>Sie müssen sich authentifizieren, wenn Sie die im Hintergrund befindliche App nach 30 Sekunden starten oder fortsetzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
         <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
-        <target>You will stop receiving messages from this group. Chat history will be preserved.</target>
+        <target>Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
         <source>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</source>
-        <target>You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile</target>
+        <target>Sie versuchen, einen Kontakt, mit dem Sie ein Inkognito-Profil geteilt haben, in die Gruppe einzuladen, in der Sie Ihr Hauptprofil verwenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" xml:space="preserve">
         <source>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</source>
-        <target>You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed</target>
+        <target>Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your ICE servers" xml:space="preserve">
         <source>Your ICE servers</source>
-        <target>Your ICE servers</target>
+        <target>Ihre ICE-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SMP servers" xml:space="preserve">
         <source>Your SMP servers</source>
-        <target>Your SMP servers</target>
+        <target>Ihre SMP-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your SimpleX contact address" xml:space="preserve">
         <source>Your SimpleX contact address</source>
-        <target>Your SimpleX contact address</target>
-        <note>No comment provided by engineer.</note>
+        <target>Ihre SimpleX Kontaktadresse</target>
+        <note>??? No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
-        <target>Your calls</target>
+        <target>Ihre Anrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
         <source>Your chat database</source>
-        <target>Your chat database</target>
+        <target>Ihre Chat-Datenbank</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database is not encrypted - set passphrase to encrypt it." xml:space="preserve">
         <source>Your chat database is not encrypted - set passphrase to encrypt it.</source>
-        <target>Your chat database is not encrypted - set passphrase to encrypt it.</target>
+        <target>Ihre Chat-Datenbank ist nicht verschlüsselt. Bitte legen Sie ein Passwort fest, um sie zu schützen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile" xml:space="preserve">
         <source>Your chat profile</source>
-        <target>Your chat profile</target>
+        <target>Ihr Chat-Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to group members" xml:space="preserve">
         <source>Your chat profile will be sent to group members</source>
-        <target>Your chat profile will be sent to group members</target>
+        <target>Ihr Chat-Profil wird an Gruppenmitglieder gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat profile will be sent to your contact" xml:space="preserve">
         <source>Your chat profile will be sent to your contact</source>
-        <target>Your chat profile will be sent to your contact</target>
+        <target>Ihr Chat-Profil wird an Ihren Kontakt gesendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chats" xml:space="preserve">
         <source>Your chats</source>
-        <target>Your chats</target>
+        <target>Ihre Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact address" xml:space="preserve">
         <source>Your contact address</source>
-        <target>Your contact address</target>
+        <target>Ihre Kontaktadresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact can scan it from the app." xml:space="preserve">
         <source>Your contact can scan it from the app.</source>
-        <target>Your contact can scan it from the app.</target>
+        <target>Zeigen Sie Ihrem Kontakt den QR-Code aus der App zum Scannen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
         <source>Your contact needs to be online for the connection to complete.
 You can cancel this connection and remove the contact (and try later with a new link).</source>
-        <target>Your contact needs to be online for the connection to complete.
-You can cancel this connection and remove the contact (and try later with a new link).</target>
+        <target>Ihr Kontakt muss online sein, damit die Verbindung hergestellt werden kann.
+Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später nochmals mit einem neuen Link versuchen).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>Your contact sent a file that is larger than currently supported maximum size (%@).</target>
+        <target>Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
         <source>Your current chat database will be DELETED and REPLACED with the imported one.</source>
-        <target>Your current chat database will be DELETED and REPLACED with the imported one.</target>
+        <target>Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die Importierte ERSETZT.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
         <source>Your privacy</source>
-        <target>Your privacy</target>
-        <note>No comment provided by engineer.</note>
+        <target>Ihre Privatsphäre</target>
+        <note>??? is this a correct translation? - No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
-        <target>Your profile is stored on your device and shared only with your contacts.
-SimpleX servers cannot see your profile.</target>
+        <target>Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.
+SimpleX-Server können Ihr Profil nicht sehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
         <source>Your profile will be sent to the contact that you received this link from</source>
-        <target>Your profile will be sent to the contact that you received this link from</target>
+        <target>Ihr Profil wird an den Kontakt gesendet von dem Sie diesen Link erhalten haben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile, contacts and delivered messages are stored on your device." xml:space="preserve">
         <source>Your profile, contacts and delivered messages are stored on your device.</source>
-        <target>Your profile, contacts and delivered messages are stored on your device.</target>
+        <target>Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">
         <source>Your random profile</source>
-        <target>Your random profile</target>
+        <target>Ihr Zufallsprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
         <source>Your settings</source>
-        <target>Your settings</target>
+        <target>Ihre Einstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Send us email](mailto:chat@simplex.chat)" xml:space="preserve">
         <source>[Send us email](mailto:chat@simplex.chat)</source>
-        <target>[Send us email](mailto:chat@simplex.chat)</target>
+        <target>[Senden Sie uns eine E-Mail](mailto:chat@simplex.chat)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="_italic_" xml:space="preserve">
         <source>\_italic_</source>
-        <target>\_italic_</target>
+        <target>\_kursiv_</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="`a + b`" xml:space="preserve">
@@ -2674,351 +2674,351 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="above, then choose:" xml:space="preserve">
         <source>above, then choose:</source>
         <target>above, then choose:</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
         <source>accepted call</source>
-        <target>accepted call</target>
+        <target>Anruf angenommen</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="admin" xml:space="preserve">
         <source>admin</source>
-        <target>admin</target>
+        <target>Admin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
         <source>audio call (not e2e encrypted)</source>
-        <target>audio call (not e2e encrypted)</target>
+        <target>Audioanruf (nicht E2E verschlüsselt)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
         <source>bad message ID</source>
-        <target>bad message ID</target>
+        <target>Falsche Nachrichten-ID</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="bad message hash" xml:space="preserve">
         <source>bad message hash</source>
-        <target>bad message hash</target>
+        <target>Ungültiger Nachrichten-Hash</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
-        <target>bold</target>
+        <target>fett</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="call error" xml:space="preserve">
         <source>call error</source>
-        <target>call error</target>
+        <target>Fehler bei Anruf</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="call in progress" xml:space="preserve">
         <source>call in progress</source>
-        <target>call in progress</target>
+        <target>Anruf läuft</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="calling…" xml:space="preserve">
         <source>calling…</source>
-        <target>calling…</target>
+        <target>Anruf…</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
         <source>colored</source>
-        <target>colored</target>
+        <target>farbig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="complete" xml:space="preserve">
         <source>complete</source>
-        <target>complete</target>
+        <target>vollständig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connect to SimpleX Chat developers." xml:space="preserve">
         <source>connect to SimpleX Chat developers.</source>
         <target>connect to SimpleX Chat developers.</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connected" xml:space="preserve">
         <source>connected</source>
-        <target>connected</target>
+        <target>Verbunden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
-        <target>connecting</target>
+        <target>verbinde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (accepted)" xml:space="preserve">
         <source>connecting (accepted)</source>
-        <target>connecting (accepted)</target>
-        <note>No comment provided by engineer.</note>
+        <target>Verbindung (akzeptiert)</target>
+        <note>??? No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (announced)" xml:space="preserve">
         <source>connecting (announced)</source>
-        <target>connecting (announced)</target>
+        <target>Verbindung (angekündigt)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduced)" xml:space="preserve">
         <source>connecting (introduced)</source>
-        <target>connecting (introduced)</target>
+        <target>Verbindung (erstellt)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting (introduction invitation)" xml:space="preserve">
         <source>connecting (introduction invitation)</source>
-        <target>connecting (introduction invitation)</target>
+        <target>Verbindung (eingeladen)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="connecting call" xml:space="preserve">
         <source>connecting call…</source>
-        <target>connecting call…</target>
+        <target>Anruf wird verbunden…</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
         <source>connecting…</source>
-        <target>connecting…</target>
+        <target>Verbindung wird hergestellt…</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="connection established" xml:space="preserve">
         <source>connection established</source>
-        <target>connection established</target>
+        <target>Verbindung hergestellt</target>
         <note>chat list item title (it should not be shown</note>
       </trans-unit>
       <trans-unit id="connection:%@" xml:space="preserve">
         <source>connection:%@</source>
-        <target>connection:%@</target>
+        <target>Verbindung:%@</target>
         <note>connection information</note>
       </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
         <source>contact has e2e encryption</source>
-        <target>contact has e2e encryption</target>
+        <target>Kontakt hat E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contact has no e2e encryption" xml:space="preserve">
         <source>contact has no e2e encryption</source>
-        <target>contact has no e2e encryption</target>
+        <target>Kontakt hat keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="creator" xml:space="preserve">
         <source>creator</source>
-        <target>creator</target>
+        <target>Ersteller</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="deleted" xml:space="preserve">
         <source>deleted</source>
-        <target>deleted</target>
+        <target>Gelöscht</target>
         <note>deleted chat item</note>
       </trans-unit>
       <trans-unit id="deleted group" xml:space="preserve">
         <source>deleted group</source>
-        <target>deleted group</target>
+        <target>Gruppe gelöscht</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="direct" xml:space="preserve">
         <source>direct</source>
-        <target>direct</target>
+        <target>direkt</target>
         <note>connection level description</note>
       </trans-unit>
       <trans-unit id="duplicate message" xml:space="preserve">
         <source>duplicate message</source>
-        <target>duplicate message</target>
+        <target>Doppelte Nachricht</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="e2e encrypted" xml:space="preserve">
         <source>e2e encrypted</source>
-        <target>e2e encrypted</target>
+        <target>E2E-verschlüsselt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ended" xml:space="preserve">
         <source>ended</source>
-        <target>ended</target>
+        <target>beendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ended call %@" xml:space="preserve">
         <source>ended call %@</source>
         <target>ended call %@</target>
-        <note>call status</note>
+        <note>*** call status</note>
       </trans-unit>
       <trans-unit id="error" xml:space="preserve">
         <source>error</source>
-        <target>error</target>
+        <target>Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group deleted" xml:space="preserve">
         <source>group deleted</source>
-        <target>group deleted</target>
+        <target>Gruppe gelöscht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="group profile updated" xml:space="preserve">
         <source>group profile updated</source>
-        <target>group profile updated</target>
+        <target>Gruppenprofil aktualisiert</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
         <source>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</source>
         <target>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
         <target>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve">
         <source>incognito via contact address link</source>
-        <target>incognito via contact address link</target>
+        <target>Inkognito über einen Kontaktadressen Link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="incognito via one-time link" xml:space="preserve">
         <source>incognito via one-time link</source>
-        <target>incognito via one-time link</target>
+        <target>Inkognito über einen Einmal-Link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="indirect (%d)" xml:space="preserve">
         <source>indirect (%d)</source>
-        <target>indirect (%d)</target>
+        <target>indirekt (%d)</target>
         <note>connection level description</note>
       </trans-unit>
       <trans-unit id="invitation to group %@" xml:space="preserve">
         <source>invitation to group %@</source>
-        <target>invitation to group %@</target>
+        <target>Einladung zur Gruppe %@</target>
         <note>group name</note>
       </trans-unit>
       <trans-unit id="invited" xml:space="preserve">
         <source>invited</source>
-        <target>invited</target>
+        <target>eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited %@" xml:space="preserve">
         <source>invited %@</source>
-        <target>invited %@</target>
+        <target>Sie haben %@ eingeladen</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="invited to connect" xml:space="preserve">
         <source>invited to connect</source>
-        <target>invited to connect</target>
+        <target>Für eine Verbindung eingeladen</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="italic" xml:space="preserve">
         <source>italic</source>
-        <target>italic</target>
+        <target>kursiv</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="join as %@" xml:space="preserve">
         <source>join as %@</source>
-        <target>join as %@</target>
+        <target>beitreten als %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="left" xml:space="preserve">
         <source>left</source>
-        <target>left</target>
+        <target>verlassen</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
         <source>member</source>
-        <target>member</target>
+        <target>Mitglied</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
-        <target>connected</target>
+        <target>verbunden</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
         <source>message received</source>
         <target>message received</target>
-        <note>notification</note>
+        <note>*** notification</note>
       </trans-unit>
       <trans-unit id="missed call" xml:space="preserve">
         <source>missed call</source>
-        <target>missed call</target>
+        <target>Anruf verpasst</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="new message" xml:space="preserve">
         <source>new message</source>
-        <target>new message</target>
+        <target>neue Nachricht</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="no e2e encryption" xml:space="preserve">
         <source>no e2e encryption</source>
-        <target>no e2e encryption</target>
+        <target>Keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="or chat with the developers" xml:space="preserve">
         <source>or chat with the developers</source>
         <target>or chat with the developers</target>
-        <note>No comment provided by engineer.</note>
+        <note>*** No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="owner" xml:space="preserve">
         <source>owner</source>
-        <target>owner</target>
+        <target>Eigentümer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="peer-to-peer" xml:space="preserve">
         <source>peer-to-peer</source>
-        <target>peer-to-peer</target>
+        <target>Peer-to-Peer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received answer…" xml:space="preserve">
         <source>received answer…</source>
-        <target>received answer…</target>
+        <target>Antwort erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="received confirmation…" xml:space="preserve">
         <source>received confirmation…</source>
-        <target>received confirmation…</target>
+        <target>Bestätigung erhalten…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="rejected call" xml:space="preserve">
         <source>rejected call</source>
-        <target>rejected call</target>
+        <target>Abgelehnter Anruf</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="removed" xml:space="preserve">
         <source>removed</source>
-        <target>removed</target>
+        <target>entfernt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="removed %@" xml:space="preserve">
         <source>removed %@</source>
-        <target>removed %@</target>
+        <target>entfernte %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
         <source>removed you</source>
-        <target>removed you</target>
+        <target>hat Sie entfernt</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
         <source>sec</source>
-        <target>sec</target>
+        <target>sek</target>
         <note>network option</note>
       </trans-unit>
       <trans-unit id="secret" xml:space="preserve">
         <source>secret</source>
-        <target>secret</target>
+        <target>geheim</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
-        <target>starting…</target>
+        <target>Verbindung wird gestartet…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="strike" xml:space="preserve">
         <source>strike</source>
-        <target>strike</target>
+        <target>durchstreichen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="this contact" xml:space="preserve">
         <source>this contact</source>
         <target>this contact</target>
-        <note>notification title</note>
+        <note>*** notification title</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
         <source>unknown</source>
         <target>unknown</target>
-        <note>connection info</note>
+        <note>*** connection info</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
         <source>updated group profile</source>
-        <target>updated group profile</target>
+        <target>aktualisiertes Gruppenprofil</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
@@ -3028,72 +3028,72 @@ SimpleX servers cannot see your profile.</target>
       </trans-unit>
       <trans-unit id="via contact address link" xml:space="preserve">
         <source>via contact address link</source>
-        <target>via contact address link</target>
+        <target>über einen Kontaktadressen Link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via one-time link" xml:space="preserve">
         <source>via one-time link</source>
-        <target>via one-time link</target>
+        <target>über einen Einmal-Link</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="via relay" xml:space="preserve">
         <source>via relay</source>
-        <target>via relay</target>
+        <target>über Relais</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
         <source>video call (not e2e encrypted)</source>
-        <target>video call (not e2e encrypted)</target>
+        <target>Videoanruf (nicht E2E verschlüsselt)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for answer…" xml:space="preserve">
         <source>waiting for answer…</source>
-        <target>waiting for answer…</target>
+        <target>Warten auf Antwort…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for confirmation…" xml:space="preserve">
         <source>waiting for confirmation…</source>
-        <target>waiting for confirmation…</target>
+        <target>Warten auf Bestätigung…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="wants to connect to you!" xml:space="preserve">
         <source>wants to connect to you!</source>
-        <target>wants to connect to you!</target>
+        <target>möchte sich mit Ihnen verbinden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are invited to group" xml:space="preserve">
         <source>you are invited to group</source>
-        <target>you are invited to group</target>
+        <target>Sie sind zur Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you left" xml:space="preserve">
         <source>you left</source>
-        <target>you left</target>
+        <target>Sie haben verlassen</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you removed %@" xml:space="preserve">
         <source>you removed %@</source>
-        <target>you removed %@</target>
+        <target>Sie haben %@ entfernt</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you shared one-time link" xml:space="preserve">
         <source>you shared one-time link</source>
-        <target>you shared one-time link</target>
+        <target>Sie haben einen Einmal-Link geteilt</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve">
         <source>you shared one-time link incognito</source>
-        <target>you shared one-time link incognito</target>
+        <target>Sie haben Inkognito einen Einmal-Link geteilt</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">
         <source>you: </source>
-        <target>you: </target>
+        <target>Sie: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
-        <target>\~strike~</target>
+        <target>\~durchstreichen~</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
@@ -3111,22 +3111,22 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="NSCameraUsageDescription" xml:space="preserve">
         <source>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</source>
         <target>SimpleX needs camera access to scan QR codes to connect to other users and for video calls.</target>
-        <note>Privacy - Camera Usage Description</note>
+        <note>*** Privacy - Camera Usage Description</note>
       </trans-unit>
       <trans-unit id="NSFaceIDUsageDescription" xml:space="preserve">
         <source>SimpleX uses Face ID for local authentication</source>
         <target>SimpleX uses Face ID for local authentication</target>
-        <note>Privacy - Face ID Usage Description</note>
+        <note>*** Privacy - Face ID Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
         <source>SimpleX needs microphone access for audio and video calls.</source>
-        <target>SimpleX needs microphone access for audio and video calls.</target>
+        <target>*** SimpleX needs microphone access for audio and video calls.</target>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
       <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
         <source>SimpleX needs access to Photo Library for saving captured and received media</source>
         <target>SimpleX needs access to Photo Library for saving captured and received media</target>
-        <note>Privacy - Photo Library Additions Usage Description</note>
+        <note>*** Privacy - Photo Library Additions Usage Description</note>
       </trans-unit>
     </body>
   </file>
