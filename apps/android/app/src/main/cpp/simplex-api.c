@@ -25,8 +25,6 @@ Java_chat_simplex_app_SimplexAppKt_initHS(__unused JNIEnv *env, __unused jclass 
 typedef long* chat_ctrl;
 
 extern char *chat_migrate_init(const char *path, const char *key, chat_ctrl *ctrl);
-extern chat_ctrl chat_init_key(const char *path, const char *key);
-extern chat_ctrl chat_init(const char *path); // deprecated
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
@@ -51,24 +49,6 @@ Java_chat_simplex_app_SimplexAppKt_chatMigrateInit(JNIEnv *env, __unused jclass 
         (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Long"), "<init>", "(J)V"),
         _ctrl));
     return ret;
-}
-
-JNIEXPORT jlong JNICALL
-Java_chat_simplex_app_SimplexAppKt_chatInitKey(JNIEnv *env, __unused jclass clazz, jstring dbPath, jstring dbKey) {
-    const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
-    const char *_dbKey = (*env)->GetStringUTFChars(env, dbKey, JNI_FALSE);
-    jlong ctrl = (jlong)chat_init_key(_dbPath, _dbKey);
-    (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
-    (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
-    return ctrl;
-}
-
-JNIEXPORT jlong JNICALL
-Java_chat_simplex_app_SimplexAppKt_chatInit(JNIEnv *env, __unused jclass clazz, jstring dbPath) {
-    const char *_dbPath = (*env)->GetStringUTFChars(env, dbPath, JNI_FALSE);
-    jlong ctrl = (jlong)chat_init(_dbPath);
-    (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
-    return ctrl;
 }
 
 JNIEXPORT jstring JNICALL
