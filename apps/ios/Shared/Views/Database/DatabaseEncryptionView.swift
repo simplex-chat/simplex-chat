@@ -318,11 +318,11 @@ enum PassphraseStrength {
 
     init(passphrase s: String) {
         let enthropy = passphraseEnthropy(s)
-        self = enthropy > 60
+        self = enthropy > 100
                 ? .strong
-                : enthropy > 45
+                : enthropy > 70
                 ? .reasonable
-                : enthropy > 30
+                : enthropy > 40
                 ? .weak
                 : .veryWeak
     }

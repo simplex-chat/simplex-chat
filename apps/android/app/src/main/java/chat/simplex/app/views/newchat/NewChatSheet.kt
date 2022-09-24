@@ -101,7 +101,7 @@ fun ActionRowButton(
       Column {
         Text(
           text,
-          textAlign = TextAlign.Center,
+          textAlign = TextAlign.Left,
           fontWeight = FontWeight.Bold,
           color = tint
         )
@@ -109,7 +109,7 @@ fun ActionRowButton(
         if (comment != null) {
           Text(
             comment,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.Left,
             style = MaterialTheme.typography.body2
           )
         }
