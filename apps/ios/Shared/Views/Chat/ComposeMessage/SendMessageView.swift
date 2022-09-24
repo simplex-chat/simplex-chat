@@ -35,6 +35,7 @@ struct SendMessageView: View {
                         .focused($keyboardVisible)
                         .font(teFont)
                         .textInputAutocapitalization(.sentences)
+                        .multilineTextAlignment(getTextDirection(composeState.message) == .rightToLeft ? .trailing : .leading)
                         .padding(.horizontal, 5)
                         .allowsTightening(false)
                         .frame(height: teHeight)

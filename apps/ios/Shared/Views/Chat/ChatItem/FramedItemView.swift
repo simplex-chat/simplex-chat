@@ -181,13 +181,13 @@ struct FramedItemView: View {
             v
         }
     }
+}
 
-    private func getTextDirection(_ s: String) -> NSLocale.LanguageDirection {
-        if let lang = CFStringTokenizerCopyBestStringLanguage(s as CFString, CFRange(location: 0, length: min(s.count, 80))) {
-            return NSLocale.characterDirection(forLanguage: lang as String)
-        }
-        return .leftToRight
+func getTextDirection(_ s: String) -> NSLocale.LanguageDirection {
+    if let lang = CFStringTokenizerCopyBestStringLanguage(s as CFString, CFRange(location: 0, length: min(s.count, 80))) {
+        return NSLocale.characterDirection(forLanguage: lang as String)
     }
+    return .leftToRight
 }
 
 private struct MetaColorPreferenceKey: PreferenceKey {
