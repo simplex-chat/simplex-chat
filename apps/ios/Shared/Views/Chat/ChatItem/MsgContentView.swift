@@ -18,6 +18,7 @@ struct MsgContentView: View {
     var sender: String? = nil
     var metaText: Text? = nil
     var edited = false
+    var textDirection: NSLocale.LanguageDirection = .leftToRight
 
     var body: some View {
         let v = messageText(text, formattedText, sender)
@@ -29,7 +30,7 @@ struct MsgContentView: View {
     }
     
     private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
-        let reserve = edited ? "          " : "      "
+        let reserve = textDirection == .rightToLeft ? "\n" : edited ? "          " : "      "
         return (Text(reserve) + meta)
             .font(.caption)
             .foregroundColor(.clear)
