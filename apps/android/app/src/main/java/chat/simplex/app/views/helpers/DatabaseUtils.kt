@@ -3,7 +3,6 @@ package chat.simplex.app.views.helpers
 import android.util.Log
 import chat.simplex.app.*
 import chat.simplex.app.model.AppPreferences
-import chat.simplex.app.model.json
 import chat.simplex.app.views.usersettings.Cryptor
 import kotlinx.serialization.*
 import java.io.File
@@ -41,31 +40,27 @@ object DatabaseUtils {
     appPreferences.initializationVectorDBPassphrase.set(null)
   }
 
-  fun migrateChatDatabase(useKey: String? = null): Triple<Boolean, DBMigrationResult, Long> {
-    Log.d(TAG, "migrateChatDatabase ${appPreferences.storeDBPassphrase.get()}")
-    val dbAbsolutePathPrefix = getFilesDirectory(SimplexApp.context)
+  fun useDatabaseKey(): String {
+    Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")
     var dbKey = ""
     val useKeychain = appPreferences.storeDBPassphrase.get()
-    if (useKey != null) {
-      dbKey = useKey
-    } else if (useKeychain) {
+    if (useKeychain) {
       if (!hasDatabase(SimplexApp.context.dataDir.absolutePath)) {
         dbKey = randomDatabasePassword()
+        setDatabaseKey(dbKey)
         appPreferences.initialRandomDBPassphrase.set(true)
       } else {
         dbKey = getDatabaseKey() ?: ""
       }
     }
-    Log.d(TAG, "migrateChatDatabase DB path: $dbAbsolutePathPrefix")
-    val migrated: Array<Any> = chatMigrateInit(dbAbsolutePathPrefix, dbKey)
-    val res: DBMigrationResult = kotlin.runCatching {
-      json.decodeFromString<DBMigrationResult>(migrated[0] as String)
-    }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
-    val encrypted = dbKey != ""
-    return Triple(encrypted, res, migrated[1] as Long)
+    return dbKey
   }
 
-  private fun randomDatabasePassword(): String = ByteArray(32).apply { SecureRandom().nextBytes(this) }.toBase64String()
+  private fun randomDatabasePassword(): String {
+    val s = ByteArray(32)
+    SecureRandom().nextBytes(s)
+    return s.toBase64String().replace("\n", "")
+  }
 }
 
 @Serializable
