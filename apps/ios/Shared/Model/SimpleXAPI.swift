@@ -117,7 +117,6 @@ func chatRecvMsg() async -> ChatResponse? {
 }
 
 func apiGetActiveUser() throws -> User? {
-    let _ = getChatCtrl()
     let r = chatSendCmdSync(.showActiveUser)
     switch r {
     case let .activeUser(user): return user
@@ -725,13 +724,12 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
-    (m.chatDbEncrypted, m.chatDbStatus) = migrateChatDatabase(dbKey)
+    (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
-    let _ = getChatCtrl(dbKey)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try apiSetIncognito(incognito: incognitoGroupDefault.get())
     m.chatInitialized = true

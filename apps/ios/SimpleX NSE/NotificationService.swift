@@ -158,7 +158,7 @@ var chatStarted = false
 func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
     if chatStarted { return .ok }
-    let (_, dbStatus) = migrateChatDatabase()
+    let (_, dbStatus) = chatMigrateInit()
     if dbStatus != .ok { return dbStatus }
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
@@ -230,7 +230,6 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, UNMutableNotification
 }
 
 func apiGetActiveUser() -> User? {
-    let _ = getChatCtrl()
     let r = sendSimpleXCmd(.showActiveUser)
     logger.debug("apiGetActiveUser sendSimpleXCmd responce: \(String(describing: r))")
     switch r {
