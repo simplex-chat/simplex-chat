@@ -58,6 +58,13 @@ Core:
     - Select all (chat ref, chat item id) older than (current time - TTL), comparing with updated_at (created_at?)
     - Reuse logic from APIDeleteChatItem to delete each item (should messages be deleted or updated to XMsgDeleted?)
 
+#### Questions
+
+- single thread (don't re-create on change), read flag on each cycle and on each chat item
+- if ttl changed from none to some value - first run sync, no delay between chat items on first run
+- seconds instead of enum in api / backend
+- part of APISetChatSettings api? - unclear can block for long on first deletion
+
 ### Per chat expiration
 
 API:
