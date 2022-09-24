@@ -1,5 +1,6 @@
 package chat.simplex.app.views.newchat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import chat.simplex.app.views.helpers.ModalManager
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
+  if (newChatCtrl.expanded.value) BackHandler { newChatCtrl.collapse() }
   NewChatSheetLayout(
     addContact = {
       newChatCtrl.collapse()
