@@ -38,7 +38,7 @@
   <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
 
   <!-- SimpleXAPI.kt -->
-  <string name="error_saving_smp_servers">Fehler beim Speichern des SMP Servers</string>
+  <string name="error_saving_smp_servers">Fehler beim Speichern des SMP-Server</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
   <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration.</string>
 
@@ -337,19 +337,19 @@
   <string name="send_us_an_email">Senden Sie uns eine E-Mail</string>
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
-  <string name="smp_servers">SMP-Servers</string>
+  <string name="smp_servers">SMP-Server</string>
   <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
   <string name="saved_SMP_servers_will_be_removed">Gespeicherte SMP-Server werden entfernt.</string>
   <string name="your_SMP_servers">Ihre SMP-Server</string>
   <string name="configure_SMP_servers">SMP-Server konfigurieren</string>
   <string name="using_simplex_chat_servers">Verwendung von <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Servern.</string>
-  <string name="enter_one_SMP_server_per_line">SMP-Servers (einer pro Zeile)</string>
+  <string name="enter_one_SMP_server_per_line">SMP-Server (einer pro Zeile)</string>
   <string name="how_to">Anleitung</string>
   <string name="saved_ICE_servers_will_be_removed">Gespeicherte WebRTC ICE-Server werden entfernt.</string>
   <string name="your_ICE_servers">Ihre ICE-Server</string>
   <string name="configure_ICE_servers">Konfigurieren Sie ICE-Server</string>
-  <string name="enter_one_ICE_server_per_line">ICE-Servers (einer pro Zeile)</string>
+  <string name="enter_one_ICE_server_per_line">ICE-Server (einer pro Zeile)</string>
   <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
   <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
   <string name="save_servers_button">Speichern</string>
