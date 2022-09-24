@@ -338,7 +338,7 @@
   <string name="chat_lock">SimpleX Sperre</string>
   <string name="chat_console">Chat Konsole</string>
   <string name="smp_servers">SMP-Server</string>
-  <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung.</string>
+  <string name="install_simplex_chat_for_terminal">Installieren Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> als Terminalanwendung</string>
   <string name="use_simplex_chat_servers__question">Verwenden Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> Server?</string>
   <string name="saved_SMP_servers_will_be_removed">Gespeicherte SMP-Server werden entfernt.</string>
   <string name="your_SMP_servers">Ihre SMP-Server</string>
@@ -441,9 +441,9 @@
   <string name="privacy_redefined">Datenschutz neu definiert</string>
   <string name="first_platform_without_user_ids">Die erste Plattform ohne Benutzerkennungen – Privat per Design</string>
   <string name="immune_to_spam_and_abuse">Immun gegen Spam und Missbrauch</string>
-  <string name="people_can_connect_only_via_links_you_share">Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte teilen</string>
+  <string name="people_can_connect_only_via_links_you_share">Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte teilen.</string>
   <string name="decentralized">Dezentral</string>
-  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server nutzen</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server nutzen.</string>
   <string name="create_your_profile">Erstellen Sie Ihr Profil</string>
   <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
   <string name="how_it_works">Wie es funktioniert</string>
@@ -522,7 +522,7 @@
   <string name="integrity_msg_bad_id">Falsche Nachrichten-ID</string>
   <string name="integrity_msg_duplicate">Doppelte Nachricht</string>
   <string name="alert_title_skipped_messages">Übersprungene Nachrichten</string>
-  <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden,\n2. Der Server, den Sie zum Empfangen der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden.\n2. Der Server, den Sie zum Empfangen der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.</string>
 
   <!-- Privacy settings -->
   <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
