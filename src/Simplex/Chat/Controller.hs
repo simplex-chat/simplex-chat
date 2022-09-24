@@ -75,6 +75,8 @@ data ChatConfig = ChatConfig
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)
 
+data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
+
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     activeTo :: TVar ActiveTo,

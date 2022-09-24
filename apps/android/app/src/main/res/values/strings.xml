@@ -165,7 +165,7 @@
   <string name="group_preview_join_as">join as %s</string>
   <string name="group_connection_pending">connecting…</string>
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
-  <string name="chat_with_developers">Сhat with the developers</string>
+  <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
 
   <!-- ComposeView.kt, helpers -->
