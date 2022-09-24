@@ -1,4 +1,7 @@
+# Using custom WebRTC ICE servers in SimpleX Chat
+
 ## Deploy STUN/TURN server
+
 For this guide, we'll be using the most featureful and battle-tested STUN/TURN server implementation – [`coturn`](https://github.com/coturn/coturn) and [`Ubuntu 20.04 LTS`](https://ubuntu.com/download/server) Linux distribution.
 
 0. Obtain `stun.$YOUR_DOMAIN` and `turn.$YOUR_DOMAIN` certificates.
@@ -6,11 +9,13 @@ For this guide, we'll be using the most featureful and battle-tested STUN/TURN s
    We're using [Let's Encrypt](https://letsencrypt.org/getting-started/).
 
 1. Install `coturn` package from the main repository.
+
 ```sh
 apt update && apt install coturn`
 ```
 
 2. Uncomment `TURNSERVER_ENABLED=1` from `/etc/default/coturn`:
+
 ```sh
 sed -i '/TURN/s/^#//g' /etc/default/coturn
 ```
@@ -18,12 +23,13 @@ sed -i '/TURN/s/^#//g' /etc/default/coturn
 3. Configure `coturn` in `/etc/turnserver.conf`:
 
    Also, please see comments for each individual option.
+
 ```sh
 # Also listen to 443 port for tls
 alt-tls-listening-port=443
 # Use fingerprints in the TURN messages
 fingerprint
-# Use long-term credentials mechanism 
+# Use long-term credentials mechanism
 lt-cred-mech
 # Your credentials
 user=$YOUR_LOGIN:$YOUR_PASSWORD
@@ -48,11 +54,13 @@ no-tlsv1_2
 ```
 
 4. Start and enable `coturn` service:
+
 ```sh
 systemctl enable coturn && systemctl start coturn
 ```
 
 5. Optionally, if using `ufw` firewall, open relevant ports:
+
 - **3478** – "plain" TURN/STUN;
 - **5349** – TURN/STUN over TLS;
 - **443** – TURN/STUN over TLS, which can bypass firewalls;
@@ -65,3 +73,18 @@ ufw allow 5349 && \
 ufw allow 49152:65535/tcp && \
 ufw allow 49152:65535/udp
 ```
+
+## Configure mobile apps
+
+To configure your mobile app to use your server:
+
+1. Open `Settings / Network & Servers / WebRTC ICE servers` and switch toggle `Configure ICE servers`.
+
+2. Enter all server addresses in the field, one per line, for example if you servers are on the port 5349:
+
+```
+stun:stun.example.com:5349
+turn:username:password@turn.example.com:5349
+```
+
+This is it - you now can make audio and video calls via your own server, without sharing any data with our servers (other than the key excange with your contact in E2E encrypted messages).
