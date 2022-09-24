@@ -288,20 +288,23 @@ struct ComposeView: View {
             case let .editingItem(chatItem: ei):
                 if let oldMsgContent = ei.content.msgContent {
                     do {
+                        let mc = updateMsgContent(oldMsgContent)
+                        await MainActor.run { clearState() }
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
-                            msg: updateMsgContent(oldMsgContent)
+                            msg: mc
                         )
                         DispatchQueue.main.async {
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                         }
                     } catch {
-                        clearState()
                         logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
                         AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
                     }
+                } else {
+                    await MainActor.run { clearState() }
                 }
             default:
                 var mc: MsgContent? = nil
@@ -332,6 +335,7 @@ struct ComposeView: View {
                 default:
                     quotedItemId = nil
                 }
+                await MainActor.run { clearState() }
                 if let mc = mc,
                    let chatItem = await apiSendMessage(
                     type: chat.chatInfo.chatType,
@@ -343,7 +347,6 @@ struct ComposeView: View {
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
             }
-            clearState()
         }
     }
 
