@@ -28,6 +28,7 @@ Jul 23, 2022 [v3.1-beta: access servers via Tor](./20220723-simplex-chat-v3.1-to
 Jul 11, 2022 [v3: instant push notifications for iOS and audio/video calls](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md):
 
 - chat database export and import
+- end-to-end encrypted audio/video calls
 - protocol privacy and performance improvements
 
 Jun 4, 2022 [v2.2: the new Privacy and Security settings](./20220604-simplex-chat-new-privacy-security-settings.md)
