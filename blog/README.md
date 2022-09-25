@@ -1,5 +1,15 @@
 # Blog
 
+Sep 28, 2022 [v4: local database encryption](./20220928-simplex-chat-v4-encrypted-database.md)
+
+- encrypted local chat database - if you already use the app, you can encrypt the database in tha app settings
+- support for self-hosted WebRTC STUN/TURN servers
+- improved stability of creating new connections: more reliable groups, files and contacts
+- deleting files and media
+- For developers - TypeScript SDK for integrating with SimpleX Chat
+- support animated images in Android app
+- German language in mobile apps UI
+
 Sep 1, 2022 [v3.2: Incognito mode](./20220901-simplex-chat-v3.2-incognito-mode.md)
 
 - Incognito mode - use a new random profile name for each contact

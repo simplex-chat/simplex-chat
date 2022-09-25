@@ -5,22 +5,23 @@ date: 2022-09-28
 permalink: "/blog/20220928-simplex-chat-v4-encrypted-database.html"
 ---
 
-# SimpleX Chat v4.0 with encrypted database is released
+# SimpleX Chat v4 with encrypted local database is released
 
 **Published:** Sep 28, 2022
 
-## What's new in v4.0
+## What's new in v4
 
-- [encrypted chat database](#chat-database-encrypted-with-passphrase).
+- [encrypted local chat database](#local-chat-database-encrypted-with-passphrase).
+- [support for self-hosted WebRTC STUN/TURN servers](#self-hosted-webrtc-stunturn-servers).
 - [improved stability of creating new connections: more reliable groups, files and contacts](#improved-stability-of-creating-new-connections).
-- [deleting files and media](#deleting-files-and-media)
-- [support for self-hosted WebRTC STUN/TURN servers](#self-hosted-webrtc-stunturn-servers)
+- [deleting files and media](#deleting-files-and-media).
 - [For developers - TypeScript SDK for integrating with SimpleX Chat](#for-developers---typescript-sdk-for-integrating-with-simplex-chat) (e.g., chat bots or chat assistants).
-- support animated images in Android app.
-- disable notifications per contact / group in terminal app (it is already supported in mobile apps).
-- German language in mobile apps UI.
+- animated images in Android app.
+- disable messages per contact / group in terminal app (it is already supported in mobile apps).
 
-Other new features since v3.0:
+Also, this version adds German language to mobile apps UI!
+
+Other new features since v3:
 
 - secret chat groups (see details in [v3.1 announcement](./20220808-simplex-chat-v3.1-chat-groups.md#secret-chat-groups) - they are fully decentralized, only their members know these groups exist.
 - accessing messaging servers via Tor with support for .onion server addresses (see details in [v3.1](./20220808-simplex-chat-v3.1-chat-groups.md#access-messaging-servers-via-tor) and [v3.2](./20220901-simplex-chat-v3.2-incognito-mode.md#using-onion-server-addresses-with-tor) announcements) - to protect users anonymity on the TCP transport level.
@@ -30,7 +31,7 @@ Other new features since v3.0:
 
 [Implementation audit is arranged for October](#we-ask-you-to-help-us-pay-for-3rd-party-security-audit)!
 
-### Chat database encrypted with passphrase
+### Local chat database encrypted with passphrase
 
 SimpleX Chat focus has always been on protecting messages in delivery, not when they are stored on the device. This release changes it - now all messages that you receive and send are stored on the device encrypted using SQLCipher 4.0.
 
@@ -39,6 +40,10 @@ If you are already using SimpleX Chat, your database will remain unencrypted unt
 By default the passphrase you enter will be stored securely on the device (in KeyChain on iOS or encrypted with the key stored in TPM, if available, on Android) - it is only accessible to the app, and only on one device. Storing passphrase is required for instant notifications to work. In this case, if you lose the passphrase, the app will continue to work, but you will not be able to change the passphrase and to migrate your user profile to another device.
 
 For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.
+
+### Self-hosted WebRTC STUN/TURN servers
+
+You could make audio and video calls via SimpleX Chat WebRTC servers since [v3](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#end-to-end-encrypted-audiovideo-calls) - that meant that our servers could observe your IP addresses. This release adds configuration to use your own servers, helping you protect your privacy.
 
 ### Improved stability of creating new connections
 
@@ -49,10 +54,6 @@ The reason for that problem was that many network operations required for group 
 ### Deleting files and media
 
 While the database with messages and all contacts is now encrypted, the files you receive and send are not (we will improve it later). We have added a simple option to delete all files from the app storage.
-
-### Self-hosted WebRTC STUN/TURN servers
-
-You could make audio and video calls via SimpleX Chat WebRTC servers since [v3](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#end-to-end-encrypted-audiovideo-calls) - that meant that our servers could observe your IP addresses. This release adds configuration to use your own servers, helping you protect your privacy.
 
 ### For developers - TypeScript SDK for integrating with SimpleX Chat
 
