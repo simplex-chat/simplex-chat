@@ -159,7 +159,10 @@ func startChat() -> DBMigrationResult? {
     hs_init(0, nil)
     if chatStarted { return .ok }
     let (_, dbStatus) = chatMigrateInit()
-    if dbStatus != .ok { return dbStatus }
+    if dbStatus != .ok {
+        resetChatCtrl()
+        return dbStatus
+    }
     if let user = apiGetActiveUser() {
         logger.debug("active user \(String(describing: user))")
         do {

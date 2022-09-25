@@ -87,6 +87,7 @@ struct DatabaseEncryptionView: View {
                     }
                 }
                 .disabled(
+                    (m.chatDbEncrypted == true && currentKey == "") ||
                     currentKey == newKey ||
                     newKey != confirmNewKey ||
                     newKey == "" ||
@@ -184,6 +185,7 @@ struct DatabaseEncryptionView: View {
                 message: Text("Instant push notifications will be hidden!\n") + storeSecurelyDanger(),
                 primaryButton: .destructive(Text("Remove")) {
                     if removeDatabaseKey() {
+                        logger.debug("passphrase removed from keychain")
                         setUseKeychain(false)
                         storedKey = false
                     } else {
