@@ -100,7 +100,7 @@ struct DatabaseView: View {
                 }
                 settingsRow("square.and.arrow.up") {
                     Button("Export database") {
-                        if initialRandomDBPassphraseGroupDefault.get() {
+                        if initialRandomDBPassphraseGroupDefault.get() && !unencrypted {
                             alert = .exportProhibited
                         } else {
                             exportArchive()
@@ -354,6 +354,7 @@ struct DatabaseView: View {
     private func operationEnded(_ dbAlert: DatabaseAlert) async {
         await MainActor.run {
             m.chatDbChanged = true
+            m.chatInitialized = false
             progressIndicator = false
             alert = dbAlert
         }

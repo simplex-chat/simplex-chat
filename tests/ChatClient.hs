@@ -18,7 +18,7 @@ import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
@@ -104,23 +104,21 @@ testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
 
 createTestChat :: ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat cfg opts@ChatOpts {dbKey} dbPrefix profile = do
-  let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
-  Right user <- withTransaction st $ \db -> runExceptT $ createUser db profile True
-  startTestChat_ st cfg opts dbFilePrefix user
+  db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUser db' profile True
+  startTestChat_ db cfg opts user
 
 startTestChat :: ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat cfg opts@ChatOpts {dbKey} dbPrefix = do
-  let dbFilePrefix = testDBPrefix <> dbPrefix
-  st <- createChatStore (dbFilePrefix <> "_chat.db") dbKey False
-  Just user <- find activeUser <$> withTransaction st getUsers
-  startTestChat_ st cfg opts dbFilePrefix user
+  db@ChatDatabase {chatStore} <- createChatDatabase (testDBPrefix <> dbPrefix) dbKey False
+  Just user <- find activeUser <$> withTransaction chatStore getUsers
+  startTestChat_ db cfg opts user
 
-startTestChat_ :: SQLiteStore -> ChatConfig -> ChatOpts -> FilePath -> User -> IO TestCC
-startTestChat_ st cfg opts dbFilePrefix user = do
+startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
+startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t
-  cc <- newChatController st (Just user) cfg opts {dbFilePrefix} Nothing -- no notifications
+  cc <- newChatController db (Just user) cfg opts Nothing -- no notifications
   chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO

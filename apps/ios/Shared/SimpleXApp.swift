@@ -41,11 +41,13 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    do {
-                        chatModel.v3DBMigration = v3DBMigrationDefault.get()
-                        try initializeChat(start: chatModel.v3DBMigration.startChat)
-                    } catch let error {
-                        fatalError("Failed to start or load chats: \(responseError(error))")
+                    if (!chatModel.chatInitialized) {
+                        do {
+                            chatModel.v3DBMigration = v3DBMigrationDefault.get()
+                            try initializeChat(start: chatModel.v3DBMigration.startChat)
+                        } catch let error {
+                            fatalError("Failed to start or load chats: \(responseError(error))")
+                        }
                     }
                 }
                 .onChange(of: scenePhase) { phase in

@@ -58,11 +58,11 @@ fun <T> SectionViewSelectable(
 }
 
 @Composable
-fun SectionItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: Boolean = false, content: (@Composable RowScope.() -> Unit)) {
+fun SectionItemView(click: (() -> Unit)? = null, minHeight: Dp = 46.dp, disabled: Boolean = false, content: (@Composable RowScope.() -> Unit)) {
   val modifier = Modifier
     .padding(horizontal = 8.dp)
     .fillMaxWidth()
-    .height(height)
+    .sizeIn(minHeight = minHeight)
   Row(
     if (click == null || disabled) modifier else modifier.clickable(onClick = click),
     verticalAlignment = Alignment.CenterVertically
@@ -74,7 +74,7 @@ fun SectionItemView(click: (() -> Unit)? = null, height: Dp = 46.dp, disabled: B
 @Composable
 fun SectionItemViewSpaceBetween(
   click: (() -> Unit)? = null,
-  height: Dp = 46.dp,
+  minHeight: Dp = 46.dp,
   padding: PaddingValues = PaddingValues(horizontal = 8.dp),
   disabled: Boolean = false,
   content: (@Composable () -> Unit)
@@ -82,7 +82,7 @@ fun SectionItemViewSpaceBetween(
   val modifier = Modifier
     .padding(padding)
     .fillMaxWidth()
-    .height(height)
+    .sizeIn(minHeight = minHeight)
   Row(
     if (click == null || disabled) modifier else modifier.clickable(onClick = click),
     horizontalArrangement = Arrangement.SpaceBetween,

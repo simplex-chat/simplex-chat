@@ -30,6 +30,7 @@ class ChatModel(val controller: ChatController) {
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
+  val chatDbDeleted = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
 
   // current chat
@@ -37,7 +38,6 @@ class ChatModel(val controller: ChatController) {
   val chatItems = mutableStateListOf<ChatItem>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  var connReqInvitation: String? = null
   val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<String?>(null)
   val userSMPServers = mutableStateOf<(List<String>)?>(null)
@@ -1441,6 +1441,9 @@ enum class FormatColor(val color: String) {
 
 @Serializable
 class SndFileTransfer() {}
+
+@Serializable
+class RcvFileTransfer() {}
 
 @Serializable
 class FileTransferMeta() {}

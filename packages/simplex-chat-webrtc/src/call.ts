@@ -217,8 +217,8 @@ const processCommand = (function () {
   }
 
   const defaultIceServers: RTCIceServer[] = [
-    {urls: ["stun:stun.simplex.im:5349"]},
-    {urls: ["turn:turn.simplex.im:5349"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
+    {urls: ["stun:stun.simplex.im:443"]},
+    {urls: ["turn:turn.simplex.im:443"], username: "private", credential: "yleob6AVkiNI87hpR94Z"},
   ]
 
   function getCallConfig(encodedInsertableStreams: boolean, iceServers?: RTCIceServer[], relay?: boolean): CallConfig {
@@ -703,16 +703,12 @@ interface CallCrypto {
   decodeBase64url: (b64: Uint8Array) => Uint8Array | undefined
 }
 
-interface RTCEncodedVideoFrame {
-  type: "key" | "delta"
-  data: ArrayBuffer
-}
-
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
 function callCryptoFunction(): CallCrypto {
   const initialPlainTextRequired = {
     key: 10,
     delta: 3,
+    empty: 1,
   }
 
   const IV_LENGTH = 12
@@ -725,9 +721,9 @@ function callCryptoFunction(): CallCrypto {
       const initial = data.subarray(0, n)
       const plaintext = data.subarray(n, data.byteLength)
       try {
-        const ciphertext = new Uint8Array(
-          plaintext.length ? await crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext) : 0
-        )
+        const ciphertext = plaintext.length
+          ? new Uint8Array(await crypto.subtle.encrypt({name: "AES-GCM", iv: iv.buffer}, key, plaintext))
+          : new Uint8Array(0)
         frame.data = concatN(initial, ciphertext, iv).buffer
         controller.enqueue(frame)
       } catch (e) {
@@ -745,7 +741,9 @@ function callCryptoFunction(): CallCrypto {
       const ciphertext = data.subarray(n, data.byteLength - IV_LENGTH)
       const iv = data.subarray(data.byteLength - IV_LENGTH, data.byteLength)
       try {
-        const plaintext = new Uint8Array(ciphertext.length ? await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, ciphertext) : 0)
+        const plaintext = ciphertext.length
+          ? new Uint8Array(await crypto.subtle.decrypt({name: "AES-GCM", iv}, key, ciphertext))
+          : new Uint8Array(0)
         frame.data = concatN(initial, plaintext).buffer
         controller.enqueue(frame)
       } catch (e) {

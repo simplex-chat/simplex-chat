@@ -31,6 +31,8 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.TerminalView
 import chat.simplex.app.views.database.DatabaseView
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.CreateLinkTab
+import chat.simplex.app.views.newchat.CreateLinkView
 import chat.simplex.app.views.onboarding.SimpleXInfo
 
 @Composable
@@ -113,16 +115,16 @@ fun SettingsLayout(
         SectionDivider()
         SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { UserAddressView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
         DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) })
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()

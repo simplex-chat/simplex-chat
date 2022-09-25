@@ -245,6 +245,7 @@ struct DatabaseEncryptionView: View {
     private func operationEnded(_ dbAlert: DatabaseEncryptionAlert) async {
         await MainActor.run {
             m.chatDbChanged = true
+            m.chatInitialized = false
             progressIndicator = false
             alert = dbAlert
         }
@@ -317,11 +318,11 @@ enum PassphraseStrength {
 
     init(passphrase s: String) {
         let enthropy = passphraseEnthropy(s)
-        self = enthropy > 60
+        self = enthropy > 100
                 ? .strong
-                : enthropy > 45
+                : enthropy > 70
                 ? .reasonable
-                : enthropy > 30
+                : enthropy > 40
                 ? .weak
                 : .veryWeak
     }

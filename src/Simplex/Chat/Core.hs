@@ -10,22 +10,20 @@ import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Store
 import Simplex.Chat.Types
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {yesToMigrations} opts sendToast chat
+simplexChatCore cfg@ChatConfig {yesToMigrations} opts@ChatOpts {dbFilePrefix, dbKey} sendToast chat
   | logAgent opts = do
     setLogLevel LogInfo -- LogError
     withGlobalLogging logCfg initRun
   | otherwise = initRun
   where
     initRun = do
-      let f = chatStoreFile $ dbFilePrefix opts
-      st <- createChatStore f (dbKey opts) yesToMigrations
-      u <- getCreateActiveUser st
-      cc <- newChatController st (Just u) cfg opts sendToast
+      db@ChatDatabase {chatStore} <- createChatDatabase dbFilePrefix dbKey yesToMigrations
+      u <- getCreateActiveUser chatStore
+      cc <- newChatController db (Just u) cfg opts sendToast
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()

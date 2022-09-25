@@ -19,6 +19,7 @@ let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
 let DEFAULT_PERFORM_LA = "performLocalAuthentication"
 let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
+let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 let DEFAULT_EXPERIMENTAL_CALLS = "experimentalCalls"
@@ -32,6 +33,7 @@ let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -48,6 +50,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
     DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_CONNECT_VIA_LINK_TAB: "scan"
 ]
 
 private var indent: CGFloat = 36
@@ -57,6 +60,8 @@ let chatArchiveTimeDefault = DateDefault(defaults: UserDefaults.standard, forKey
 let encryptionStartedDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED)
 
 let encryptionStartedAtDefault = DateDefault(defaults: UserDefaults.standard, forKey: DEFAULT_ENCRYPTION_STARTED_AT)
+
+let connectViaLinkTabDefault = EnumDefault<ConnectViaLinkTab>(defaults: UserDefaults.standard, forKey: DEFAULT_CONNECT_VIA_LINK_TAB, withDefault: .scan)
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
@@ -88,8 +93,8 @@ struct SettingsView: View {
                         .disabled(chatModel.chatRunning != true)
 
                     NavigationLink {
-                        UserAddress()
-                            .navigationTitle("Your chat address")
+                        CreateLinkView(selection: .longTerm, viaSettings: true)
+                            .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("qrcode") { Text("Your SimpleX contact address") }
                     }
@@ -193,7 +198,7 @@ struct SettingsView: View {
                     } label: {
                         settingsRow("terminal") { Text("Chat console") }
                     }
-                    settingsRow("gear") {
+                    settingsRow("chevron.left.forwardslash.chevron.right") {
                         Toggle("Developer tools", isOn: $developerTools)
                     }
                     ZStack(alignment: .leading) {

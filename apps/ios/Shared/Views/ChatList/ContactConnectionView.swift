@@ -21,15 +21,14 @@ struct ContactConnectionView: View {
                 .frame(width: 48, height: 48)
                 .frame(width: 63, height: 63)
                 .padding(.leading, 4)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     Text(contactConnection.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.secondary)
                         .padding(.leading, 8)
-                        .padding(.top, 4)
-                        .frame(maxHeight: .infinity, alignment: .topLeading)
+                        .frame(alignment: .topLeading)
                     Spacer()
                     formatTimestampText(contactConnection.updatedAt)
                         .font(.subheadline)
@@ -38,12 +37,15 @@ struct ContactConnectionView: View {
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                 }
+                .padding(.bottom, 2)
+
                 Text(contactConnection.description)
-                    .frame(minHeight: 44, maxHeight: 44, alignment: .topLeading)
+                    .frame(alignment: .topLeading)
                     .padding([.leading, .trailing], 8)
-                    .padding(.bottom, 4)
-                    .padding(.top, 1)
+
+                Spacer()
             }
+            .frame(maxHeight: .infinity)
         }
     }
 }

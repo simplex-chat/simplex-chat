@@ -115,7 +115,7 @@ fun NetworkAndServersView(
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SectionView {
+    SectionView(generalGetString(R.string.settings_section_title_messages)) {
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
       SectionDivider()
       SectionItemView {
@@ -127,6 +127,10 @@ fun NetworkAndServersView(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
       }
+    }
+    Spacer(Modifier.height(8.dp))
+    SectionView(generalGetString(R.string.settings_section_title_calls)) {
+      SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
     }
   }
 }
@@ -142,6 +146,7 @@ fun UseSocksProxySwitch(
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
     Row(
+      Modifier.weight(1f),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {

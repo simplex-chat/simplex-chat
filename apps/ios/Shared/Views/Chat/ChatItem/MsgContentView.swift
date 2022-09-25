@@ -18,6 +18,7 @@ struct MsgContentView: View {
     var sender: String? = nil
     var metaText: Text? = nil
     var edited = false
+    var rightToLeft = false
 
     var body: some View {
         let v = messageText(text, formattedText, sender)
@@ -29,7 +30,7 @@ struct MsgContentView: View {
     }
     
     private func reserveSpaceForMeta(_ meta: Text, _ edited: Bool) -> Text {
-        let reserve = edited ? "          " : "      "
+        let reserve = rightToLeft ? "\n" : edited ? "          " : "      "
         return (Text(reserve) + meta)
             .font(.caption)
             .foregroundColor(.clear)
@@ -40,10 +41,10 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     let s = text
     var res: Text
     if let ft = formattedText, ft.count > 0 {
-        res = formattText(ft[0], preview)
+        res = formatText(ft[0], preview)
         var i = 1
         while i < ft.count {
-            res = res + formattText(ft[i], preview)
+            res = res + formatText(ft[i], preview)
             i = i + 1
         }
     } else {
@@ -58,7 +59,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-private func formattText(_ ft: FormattedText, _ preview: Bool) -> Text {
+private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {

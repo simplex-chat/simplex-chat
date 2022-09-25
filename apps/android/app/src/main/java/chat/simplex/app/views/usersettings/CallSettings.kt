@@ -6,8 +6,6 @@ import SectionView
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,12 +15,17 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
+import chat.simplex.app.views.helpers.ExposedDropDownSettingRow
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
-fun CallSettingsView(m: ChatModel) {
+fun CallSettingsView(m: ChatModel,
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+) {
   CallSettingsLayout(
     webrtcPolicyRelay = m.controller.appPrefs.webrtcPolicyRelay,
-    callOnLockScreen = m.controller.appPrefs.callOnLockScreen
+    callOnLockScreen = m.controller.appPrefs.callOnLockScreen,
+    editIceServers = showModal { RTCServersView(m) }
   )
 }
 
@@ -30,6 +33,7 @@ fun CallSettingsView(m: ChatModel) {
 fun CallSettingsLayout(
   webrtcPolicyRelay: Preference<Boolean>,
   callOnLockScreen: Preference<CallOnLockScreen>,
+  editIceServers: () -> Unit,
 ) {
   Column(
     Modifier.fillMaxWidth(),
@@ -48,18 +52,33 @@ fun CallSettingsLayout(
       }
       SectionDivider()
 
-      Column(Modifier.padding(start = 10.dp, top = 12.dp)) {
-        Text(stringResource(R.string.call_on_lock_screen))
-        Row {
-          SharedPreferenceRadioButton(stringResource(R.string.no_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.DISABLE)
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-          SharedPreferenceRadioButton(stringResource(R.string.show_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.SHOW)
-          Spacer(Modifier.fillMaxWidth().weight(1f))
-          SharedPreferenceRadioButton(stringResource(R.string.accept_call_on_lock_screen), lockCallState, callOnLockScreen, CallOnLockScreen.ACCEPT)
-        }
+      val enabled = remember { mutableStateOf(true) }
+      SectionItemView { LockscreenOpts(lockCallState, enabled, onSelected = { callOnLockScreen.set(it); lockCallState.value = it }) }
+      SectionDivider()
+      SectionItemView(editIceServers) { Text(stringResource(R.string.webrtc_ice_servers)) }
+    }
+  }
+}
+
+@Composable
+private fun LockscreenOpts(lockscreenOpts: State<CallOnLockScreen>, enabled: State<Boolean>, onSelected: (CallOnLockScreen) -> Unit) {
+  val values = remember {
+    CallOnLockScreen.values().map {
+      when (it) {
+        CallOnLockScreen.DISABLE -> it to generalGetString(R.string.no_call_on_lock_screen)
+        CallOnLockScreen.SHOW -> it to generalGetString(R.string.show_call_on_lock_screen)
+        CallOnLockScreen.ACCEPT -> it to generalGetString(R.string.accept_call_on_lock_screen)
       }
     }
   }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.call_on_lock_screen),
+    values,
+    lockscreenOpts,
+    icon = null,
+    enabled = enabled,
+    onSelected = onSelected
+  )
 }
 
 @Composable

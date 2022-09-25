@@ -56,9 +56,9 @@ import Simplex.Chat.Store
 import Simplex.Chat.Types
 import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (exexSQL)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), exexSQL)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
@@ -86,8 +86,7 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = undefined, -- agent does not listen to TCP
-            dbFile = "simplex_v1",
-            dbKey = "",
+            database = AgentDBFile {dbFile = "simplex_v1_agent", dbKey = ""},
             yesToMigrations = False
           },
       yesToMigrations = False,
@@ -125,16 +124,21 @@ fixedImagePreview = ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEA
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-newChatController :: SQLiteStore -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController chatStore user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {dbFilePrefix, dbKey, smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
-  let f = chatStoreFile dbFilePrefix
-      config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
+createChatDatabase :: FilePath -> String -> Bool -> IO ChatDatabase
+createChatDatabase filePrefix key yesToMigrations = do
+  chatStore <- createChatStore (chatStoreFile filePrefix) key yesToMigrations
+  agentStore <- createAgentStore (agentStoreFile filePrefix) key yesToMigrations
+  pure ChatDatabase {chatStore, agentStore}
+
+newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, tbqSize, defaultServers} ChatOpts {smpServers, networkConfig, logConnections, logServerHosts} sendToast = do
+  let config = cfg {subscriptionEvents = logConnections, hostEvents = logServerHosts}
       sendNotification = fromMaybe (const $ pure ()) sendToast
+      firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
-  firstTime <- not <$> doesFileExist f
   currentUser <- newTVarIO user
   servers <- resolveServers defaultServers
-  smpAgent <- getSMPAgentClient aCfg {dbFile = agentStoreFile dbFilePrefix, dbKey} servers {netCfg = networkConfig}
+  smpAgent <- getSMPAgentClient aCfg {database = AgentDB agentStore} servers {netCfg = networkConfig}
   agentAsync <- newTVarIO Nothing
   idsDrg <- newTVarIO =<< drgNew
   inputQ <- newTBQueueIO tbqSize
@@ -271,7 +275,6 @@ processChatCommand = \case
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize) <- checkSndFile file
-          -- [async agent commands] keep command synchronous, but process error
           (agentConnId, fileConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Just fileConnReq}
@@ -420,7 +423,7 @@ processChatCommand = \case
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
           let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
-          cancelFile user fileInfo
+          cancelFile user fileInfo `catchError` \_ -> pure ()
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
@@ -436,7 +439,7 @@ processChatCommand = \case
           conns <- withStore $ \db -> getContactConnections db userId ct
           withChatLock . procCmd $ do
             forM_ filesInfo $ \fileInfo -> do
-              cancelFile user fileInfo
+              cancelFile user fileInfo `catchError` \_ -> pure ()
               withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
             withAgent $ \a -> forM_ conns $ \conn ->
               deleteConnection a (aConnId conn) `catchError` \(_ :: AgentErrorType) -> pure ()
@@ -473,7 +476,7 @@ processChatCommand = \case
       ciIdsAndFileInfo <- withStore' $ \db -> getContactChatItemIdsAndFileInfo db user chatId
       forM_ ciIdsAndFileInfo $ \(itemId, _, fileInfo_) -> do
         forM_ fileInfo_ $ \fileInfo -> do
-          cancelFile user fileInfo
+          cancelFile user fileInfo `catchError` \_ -> pure ()
           withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
         void $ withStore $ \db -> deleteDirectChatItemLocal db userId ct itemId CIDMInternal
       ct' <- case ciIdsAndFileInfo of
@@ -765,7 +768,6 @@ processChatCommand = \case
     case contactMember contact members of
       Nothing -> do
         gVar <- asks idsDrg
-        -- [async agent commands] keep command synchronous, but process error
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
         member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq
         sendInvitation member cReq
@@ -778,7 +780,6 @@ processChatCommand = \case
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} <- withStore $ \db -> getGroupInvitation db user groupId
     withChatLock . procCmd $ do
-      -- [async agent commands] keep command synchronous, but process error
       agentConnId <- withAgent $ \a -> joinConnection a True connRequest . directMessage $ XGrpAcpt (memberId (membership :: GroupMember))
       withStore' $ \db -> do
         createMemberConnection db userId fromMember agentConnId
@@ -1039,7 +1040,7 @@ processChatCommand = \case
       forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
         unless itemDeleted $ do
           forM_ fileInfo_ $ \fileInfo -> do
-            cancelFile user fileInfo
+            cancelFile user fileInfo `catchError` \_ -> pure ()
             withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
           void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
       pure $ (\(_, lastItemTs, _, _) -> lastItemTs) <$> lastMaybe ciIdsAndFileInfo
@@ -1131,7 +1132,6 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
   case fileConnReq of
     -- direct file protocol
     Just connReq -> do
-      -- [async agent commands] keep command synchronous, but process error
       agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
       filePath <- getRcvFilePath filePath_ fName
       withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
@@ -2657,9 +2657,9 @@ withStore ::
   (DB.Connection -> ExceptT StoreError IO a) ->
   m a
 withStore action = do
-  st <- asks chatStore
+  ChatController {chatStore} <- ask
   liftEitherError ChatErrorStore $
-    withTransaction st (runExceptT . action) `E.catch` handleInternal
+    withTransaction chatStore (runExceptT . action) `E.catch` handleInternal
   where
     handleInternal :: E.SomeException -> IO (Either StoreError a)
     handleInternal = pure . Left . SEInternalError . show
