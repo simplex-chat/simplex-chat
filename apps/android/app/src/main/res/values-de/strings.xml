@@ -38,7 +38,7 @@
   <string name="description_via_one_time_link_incognito">Inkognito über einen Einmal-Link</string>
 
   <!-- SimpleXAPI.kt -->
-  <string name="error_saving_smp_servers">Fehler beim Speichern des SMP-Server</string>
+  <string name="error_saving_smp_servers">Fehler beim Speichern der SMP-Server</string>
   <string name="ensure_smp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die SMP-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht kopiert sind.</string>
   <string name="error_setting_network_config">Fehler bei der Aktualisierung der Netzwerk-Konfiguration.</string>
 
