@@ -30,7 +30,19 @@ Other new features since v3.0:
 
 ### Chat database encrypted with passphrase
 
+SimpleX Chat focus has always been on protecting message in delivery, not when they are stored on the device. This release changes it - now all the messages that you receive and send are stored on the device encrypted using SQLCipher 4.0.
+
+If you are already using SimpleX Chat, your database will remain unencrypted until you enter the passphrase via the app settings. You have to remember passphrase you choose, as there is no way to recover it if it is lost.
+
+By default the passphrase you enter will be stored securely on the device (in KeyChain on iOS or encrypted with the key stored in TPM, if available, on Android) - it is only accessible to the app, and only on one device. Storing passphrase is required for instant notifications to work. In this case, if you lose the passphrase, the app will continue to work, but you will not be able to change the passphrase and to migrate your user profile to another device.
+
+For additional security of your messages, you also have the option to remove passphrase from the device for additional security. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it securely.
+
 ### Improved stability of creating new connections
+
+Adding groups to SimpleX Chat made it much more useful, but because SimpleX groups are completely decentralized and for them to work each member should connect to each member, sometimes these connections failed - for example, because of bad network connection, - and the group became fragmented - some users did not receive all messages. That was more common with larger groups, as the number of required member connections is O(n^2) of the group size.
+
+The reason for that problem was that many network operations required for group connections were not retried. This is now improved - any network 
 
 ### Deleting files and media
 
