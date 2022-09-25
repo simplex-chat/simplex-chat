@@ -12,7 +12,7 @@ permalink: "/blog/20220928-simplex-chat-v4-encrypted-database.html"
 ## What's new in v4
 
 - [encrypted local chat database](#local-chat-database-encrypted-with-passphrase).
-- [support for self-hosted WebRTC STUN/TURN servers](#self-hosted-webrtc-stunturn-servers).
+- [support for self-hosted WebRTC STUN/TURN servers](#self-hosted-webrtc-ice-servers).
 - [improved stability of creating new connections: more reliable groups, files and contacts](#improved-stability-of-creating-new-connections).
 - [deleting files and media](#deleting-files-and-media).
 - [For developers - TypeScript SDK for integrating with SimpleX Chat](#for-developers---typescript-sdk-for-integrating-with-simplex-chat) (e.g., chat bots or chat assistants).
@@ -41,9 +41,11 @@ By default the passphrase you enter will be stored securely on the device (in Ke
 
 For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.
 
-### Self-hosted WebRTC STUN/TURN servers
+### Self-hosted WebRTC ICE servers
 
-You could make audio and video calls via SimpleX Chat WebRTC servers since [v3](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#end-to-end-encrypted-audiovideo-calls) - that meant that our servers could observe your IP addresses. This release adds configuration to use your own servers, helping you protect your privacy.
+You could make audio and video calls via SimpleX Chat WebRTC servers since [v3](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#end-to-end-encrypted-audiovideo-calls) - that meant that our servers could observe your IP addresses. This release adds configuration to use your own STUN/TURN servers, helping you protect your privacy.
+
+See [this guide](https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md) about how to deploy your own `coturn` server and to configure the mobile app to use it.
 
 ### Improved stability of creating new connections
 
