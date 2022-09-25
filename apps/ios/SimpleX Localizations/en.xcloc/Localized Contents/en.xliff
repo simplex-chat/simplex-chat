@@ -901,9 +901,9 @@
         <target>Encrypted message: no passphrase</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpeсted error" xml:space="preserve">
-        <source>Encrypted message: unexpeсted error</source>
-        <target>Encrypted message: unexpeсted error</target>
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+        <source>Encrypted message: unexpected error</source>
+        <target>Encrypted message: unexpected error</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">

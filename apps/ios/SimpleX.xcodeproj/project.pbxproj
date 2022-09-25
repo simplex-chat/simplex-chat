@@ -302,6 +302,8 @@
 		5CDCAD7428188D2900503DA2 /* APITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APITypes.swift; sourceTree = "<group>"; };
 		5CDCAD7D2818941F00503DA2 /* API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = API.swift; sourceTree = "<group>"; };
 		5CDCAD80281A7E2700503DA2 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		5CE1330328E118CC00FFFD8C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = "de.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5CE1330428E118CC00FFFD8C /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5CE2BA682845308900EC33A6 /* SimpleXChat.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SimpleXChat.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CE2BA76284530BF00EC33A6 /* SimpleXChat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleXChat.h; sourceTree = "<group>"; };
 		5CE2BA78284530CC00EC33A6 /* SimpleXChat.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = SimpleXChat.docc; sourceTree = "<group>"; };
@@ -1030,6 +1032,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				5CB0BA872826CB3A00B3292C /* ru */,
+				5CE1330428E118CC00FFFD8C /* de */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1058,6 +1061,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				5CC2C0FE2809BF11000C35E3 /* ru */,
+				5CE1330328E118CC00FFFD8C /* de */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
 			sourceTree = "<group>";

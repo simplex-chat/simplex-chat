@@ -901,8 +901,8 @@
         <target>Зашифрованное сообщение: пароль не сохранен</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpeсted error" xml:space="preserve">
-        <source>Encrypted message: unexpeсted error</source>
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+        <source>Encrypted message: unexpected error</source>
         <target>Зашифрованное сообщение: неожиданная ошибка</target>
         <note>notification</note>
       </trans-unit>

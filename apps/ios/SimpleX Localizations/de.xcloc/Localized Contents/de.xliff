@@ -55,17 +55,17 @@
       <trans-unit id="%@ is connected!" xml:space="preserve">
         <source>%@ is connected!</source>
         <target>%@ ist mit Ihnen verbunden!</target>
-        <note>Verbindungsbenachrichtigungs</note>
+        <note>notification title</note>
       </trans-unit>
       <trans-unit id="%@ wants to connect!" xml:space="preserve">
         <source>%@ wants to connect!</source>
         <target>%@ will sich mit Ihnen verbinden!</target>
-        <note>Verbindungsbenachrichtigung</note>
+        <note>notification title</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
         <source>%d skipped message(s)</source>
         <target>%d übersprungene Nachricht(en)</target>
-        <note>Integritätsfehler im Chateintrag</note>
+        <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
@@ -215,7 +215,8 @@
       <trans-unit id="Accept" xml:space="preserve">
         <source>Accept</source>
         <target>Annehmen</target>
-        <note>No comment provided by engineer.</note>
+        <note>accept contact request via notification
+   accept incoming call via notification</note>
       </trans-unit>
       <trans-unit id="Accept contact" xml:space="preserve">
         <source>Accept contact</source>
@@ -340,7 +341,7 @@
       <trans-unit id="Chat archive" xml:space="preserve">
         <source>Chat archive</source>
         <target>Datenbank Archiv</target>
-        <note>Datenbank-Chat-Archiv</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
         <source>Chat console</source>
@@ -525,7 +526,7 @@
       <trans-unit id="Contact is connected" xml:space="preserve">
         <source>Contact is connected</source>
         <target>Mit Ihrem Kontakt verbunden</target>
-        <note>Benachrichtigung</note>
+        <note>notification</note>
       </trans-unit>
       <trans-unit id="Contact is not connected yet!" xml:space="preserve">
         <source>Contact is not connected yet!</source>
@@ -1281,8 +1282,10 @@
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
-        <source>Instant push notifications will be hidden!</source>
-        <target>Sofortige Push-Benachrichtigungen werden verborgen!</target>
+        <source>Instant push notifications will be hidden!
+</source>
+        <target>Sofortige Push-Benachrichtigungen werden verborgen!
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Instantly" xml:space="preserve">
@@ -2260,7 +2263,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Turn off" xml:space="preserve">
         <source>Turn off</source>
         <target>Abschalten</target>
-        <note> *** No comment provided by engineer.</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Turn off notifications?" xml:space="preserve">
         <source>Turn off notifications?</source>
