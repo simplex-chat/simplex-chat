@@ -19,14 +19,15 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
 
 public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
-    logger.debug("chatMigrateInit \(storeDBPassphraseGroupDefault.get())")
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
     let useKeychain = storeDBPassphraseGroupDefault.get()
+    logger.debug("chatMigrateInit uses keychain: \(useKeychain)")
     if let key = useKey {
         dbKey = key
     } else if useKeychain {
         if !hasDatabase() {
+            logger.debug("chatMigrateInit generating a random DB key")
             dbKey = randomDatabasePassword()
             initialRandomDBPassphraseGroupDefault.set(true)
         } else if let key = getDatabaseKey() {
@@ -34,7 +35,7 @@ public func chatMigrateInit(_ useKey: String? = nil) -> (Bool, DBMigrationResult
         }
     }
     logger.debug("chatMigrateInit DB path: \(dbPath)")
-    logger.debug("chatMigrateInit DB key: \(dbKey)")
+//    logger.debug("chatMigrateInit DB key: \(dbKey)")
     var cPath = dbPath.cString(using: .utf8)!
     var cKey = dbKey.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller

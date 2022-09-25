@@ -177,7 +177,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 @Composable
 fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.clear_verb),
+    stringResource(R.string.clear_chat_menu_action),
     Icons.Outlined.Restore,
     onClick = {
       clearChatDialog(chat.chatInfo, chatModel)
@@ -190,7 +190,7 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
 @Composable
 fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.delete_verb),
+    stringResource(R.string.delete_contact_menu_action),
     Icons.Outlined.Delete,
     onClick = {
       deleteContactDialog(chat.chatInfo, chatModel)
@@ -203,7 +203,7 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
 @Composable
 fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
-    stringResource(R.string.delete_verb),
+    stringResource(R.string.delete_group_menu_action),
     Icons.Outlined.Delete,
     onClick = {
       deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)

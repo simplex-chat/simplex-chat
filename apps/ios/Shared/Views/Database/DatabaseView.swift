@@ -337,6 +337,7 @@ struct DatabaseView: View {
                 _ = removeDatabaseKey()
                 storeDBPassphraseGroupDefault.set(true)
                 await operationEnded(.chatDeleted)
+                appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
             } catch let error {
                 await operationEnded(.error(title: "Error deleting database", error: responseError(error)))
             }

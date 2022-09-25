@@ -231,9 +231,9 @@
 
   <!-- GetImageView -->
   <string name="toast_permission_denied">Berechtigung verweigert!</string>
-  <string name="use_camera_button">Kamera verwenden</string>
-  <string name="from_gallery_button">Aus dem Fotoalbum</string>
-  <string name="choose_file">Datei auswählen</string>
+  <string name="use_camera_button">Kamera\nverwenden</string>
+  <string name="from_gallery_button">Aus dem\nFotoalbum</string>
+  <string name="choose_file">Datei\nauswählen</string>
 
   <!-- help - ChatHelpView.kt -->
   <string name="thank_you_for_installing_simplex">Danke, dass Sie <xliff:g id="appNameFull">SimpleX Chat</xliff:g> installiert haben!</string>
@@ -260,6 +260,9 @@
   <string name="clear_chat_warning">Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
   <string name="clear_verb">Löschen</string>
   <string name="clear_chat_button">Chatinhalte löschen</string>
+  <string name="clear_chat_menu_action">Chatinhalte löschen</string>
+  <string name="delete_contact_menu_action">Kontakt löschen</string>
+  <string name="delete_group_menu_action">Gruppe löschen</string>
   <string name="mark_read">Als gelesen markieren</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
