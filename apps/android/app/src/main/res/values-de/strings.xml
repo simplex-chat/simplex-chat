@@ -260,6 +260,9 @@
   <string name="clear_chat_warning">Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
   <string name="clear_verb">Löschen</string>
   <string name="clear_chat_button">Chatinhalte löschen</string>
+  <string name="clear_chat_menu_action">Chatinhalte löschen</string>
+  <string name="delete_contact_menu_action">Kontakt löschen</string>
+  <string name="delete_group_menu_action">Gruppe löschen</string>
   <string name="mark_read">Als gelesen markieren</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
