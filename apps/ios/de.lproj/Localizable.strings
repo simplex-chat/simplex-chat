@@ -576,7 +576,10 @@
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
 
 /* No comment provided by engineer. */
-"Display name" = "Angezeigter Name:";
+"Display name" = "Angezeigter Name";
+
+/* No comment provided by engineer. */
+"Display name:" = "Angezeigter Name:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Später wiederholen";
@@ -760,6 +763,9 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Vollständiger Name (optional)";
+
+/* No comment provided by engineer. */
+"Full name:" = "Vollständiger:";
 
 /* No comment provided by engineer. */
 "Group" = "Gruppe";

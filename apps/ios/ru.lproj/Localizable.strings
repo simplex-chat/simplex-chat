@@ -579,6 +579,9 @@
 "Display name" = "Имя профиля";
 
 /* No comment provided by engineer. */
+"Display name:" = "Имя профиля:";
+
+/* No comment provided by engineer. */
 "Do it later" = "Отложить";
 
 /* No comment provided by engineer. */
@@ -636,7 +639,7 @@
 "Encrypted message: no passphrase" = "Зашифрованное сообщение: пароль не сохранен";
 
 /* notification */
-"Encrypted message: unexpeсted error" = "Зашифрованное сообщение: неожиданная ошибка";
+"Encrypted message: unexpected error" = "Зашифрованное сообщение: неожиданная ошибка";
 
 /* No comment provided by engineer. */
 "ended" = "завершён";
@@ -760,6 +763,9 @@
 
 /* No comment provided by engineer. */
 "Full name (optional)" = "Полное имя (не обязательно)";
+
+/* No comment provided by engineer. */
+"Full name:" = "Полное имя:";
 
 /* No comment provided by engineer. */
 "Group" = "Группа";

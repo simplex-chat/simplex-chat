@@ -813,6 +813,11 @@
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
         <source>Display name</source>
+        <target>Angezeigter Name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Display name:" xml:space="preserve">
+        <source>Display name:</source>
         <target>Angezeigter Name:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1094,6 +1099,11 @@
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Vollständiger Name (optional)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Full name:" xml:space="preserve">
+        <source>Full name:</source>
+        <target>Vollständiger:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group" xml:space="preserve">

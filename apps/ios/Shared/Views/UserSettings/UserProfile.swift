@@ -114,7 +114,7 @@ struct UserProfile: View {
         }
     }
 
-    func profileNameTextEdit(_ label: String, _ name: Binding<String>) -> some View {
+    func profileNameTextEdit(_ label: LocalizedStringKey, _ name: Binding<String>) -> some View {
         TextField(label, text: name)
             .textInputAutocapitalization(.never)
             .disableAutocorrection(true)
@@ -122,7 +122,7 @@ struct UserProfile: View {
             .padding(.leading, 28)
     }
 
-    func profileNameView(_ label: String, _ name: String) -> some View {
+    func profileNameView(_ label: LocalizedStringKey, _ name: String) -> some View {
         HStack {
             Text(label)
             Text(name).fontWeight(.bold)
