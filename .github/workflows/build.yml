@@ -58,9 +58,9 @@ jobs:
           - os: macos-latest
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
-          # - os: windows-latest
-          #   cache_path: C:/sr
-          #   asset_name: simplex-chat-windows-x86-64
+          - os: windows-latest
+            cache_path: C:/cabal
+            asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2
