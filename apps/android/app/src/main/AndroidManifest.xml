@@ -103,6 +103,12 @@
           android:resource="@xml/file_paths" />
     </provider>
 
+    <!-- NtfManager action processing (buttons in notifications) -->
+    <receiver
+        android:name=".model.NtfManager$NtfActionReceiver"
+        android:enabled="true"
+        android:exported="false" />
+
     <!-- SimplexService foreground service -->
     <service
         android:name=".SimplexService"

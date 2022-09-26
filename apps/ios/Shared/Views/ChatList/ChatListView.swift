@@ -18,21 +18,19 @@ struct ChatListView: View {
     @State private var showAddChat = false
 
     var body: some View {
-        let v = NavigationView {
+        NavigationView {
             VStack {
                 if chatModel.chats.isEmpty {
                     onboardingButtons()
                 }
-                chatList
+                if chatModel.chats.count > 8 {
+                    chatList.searchable(text: $searchText)
+                } else {
+                    chatList
+                }
             }
         }
         .navigationViewStyle(.stack)
-
-        if chatModel.chats.count > 8 {
-            v.searchable(text: $searchText)
-        } else {
-            v
-        }
     }
 
     var chatList: some View {

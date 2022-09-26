@@ -2392,8 +2392,8 @@ testAsyncInitiatingOffline = withTmpFiles $ do
     alice ##> "/c"
     getInvitation alice
   withNewTestChat "bob" bobProfile $ \bob -> do
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
+    bob `send` ("/c " <> inv)
+    bob <### ["/c " <> inv, "confirmation sent!"]
     withTestChat "alice" $ \alice -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")

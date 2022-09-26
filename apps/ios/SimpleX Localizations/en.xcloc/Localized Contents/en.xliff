@@ -816,6 +816,11 @@
         <target>Display name</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Display name:" xml:space="preserve">
+        <source>Display name:</source>
+        <target>Display name:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
         <source>Do NOT use SimpleX for emergency calls.</source>
         <target>Do NOT use SimpleX for emergency calls.</target>
@@ -901,9 +906,9 @@
         <target>Encrypted message: no passphrase</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpeсted error" xml:space="preserve">
-        <source>Encrypted message: unexpeсted error</source>
-        <target>Encrypted message: unexpeсted error</target>
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+        <source>Encrypted message: unexpected error</source>
+        <target>Encrypted message: unexpected error</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Enter correct passphrase." xml:space="preserve">
@@ -1094,6 +1099,11 @@
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Full name (optional)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Full name:" xml:space="preserve">
+        <source>Full name:</source>
+        <target>Full name:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group" xml:space="preserve">

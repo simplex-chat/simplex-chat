@@ -19,7 +19,7 @@ enum class ConnectViaLinkTab {
 }
 
 @Composable
-fun ConnectViaLinkView(m: ChatModel) {
+fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
   val selection = remember {
     mutableStateOf(
       runCatching { ConnectViaLinkTab.valueOf(m.controller.appPrefs.connectViaLinkTab.get()!!) }.getOrDefault(ConnectViaLinkTab.SCAN)
@@ -38,10 +38,10 @@ fun ConnectViaLinkView(m: ChatModel) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         ConnectViaLinkTab.SCAN -> {
-          ScanToConnectView(m)
+          ScanToConnectView(m, close)
         }
         ConnectViaLinkTab.PASTE -> {
-          PasteToConnectView(m)
+          PasteToConnectView(m, close)
         }
       }
     }

@@ -816,6 +816,11 @@
         <target>Имя профиля</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Display name:" xml:space="preserve">
+        <source>Display name:</source>
+        <target>Имя профиля:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
         <source>Do NOT use SimpleX for emergency calls.</source>
         <target>Не используйте SimpleX для экстренных звонков</target>
@@ -901,8 +906,8 @@
         <target>Зашифрованное сообщение: пароль не сохранен</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: unexpeсted error" xml:space="preserve">
-        <source>Encrypted message: unexpeсted error</source>
+      <trans-unit id="Encrypted message: unexpected error" xml:space="preserve">
+        <source>Encrypted message: unexpected error</source>
         <target>Зашифрованное сообщение: неожиданная ошибка</target>
         <note>notification</note>
       </trans-unit>
@@ -1094,6 +1099,11 @@
       <trans-unit id="Full name (optional)" xml:space="preserve">
         <source>Full name (optional)</source>
         <target>Полное имя (не обязательно)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Full name:" xml:space="preserve">
+        <source>Full name:</source>
+        <target>Полное имя:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group" xml:space="preserve">

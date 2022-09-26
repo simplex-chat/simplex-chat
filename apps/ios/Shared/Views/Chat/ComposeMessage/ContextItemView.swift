@@ -27,6 +27,7 @@ struct ContextItemView: View {
                 formattedText: contextItem.formattedText,
                 sender: contextItem.memberDisplayName
             )
+            .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
             .lineLimit(3)
             Spacer()
             Button {

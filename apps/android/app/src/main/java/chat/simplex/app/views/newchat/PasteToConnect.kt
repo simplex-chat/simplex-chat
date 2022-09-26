@@ -24,7 +24,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun PasteToConnectView(chatModel: ChatModel) {
+fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
   val connectionLink = remember { mutableStateOf("") }
   val context = LocalContext.current
   val clipboard = getSystemService(context, ClipboardManager::class.java)
@@ -32,13 +32,15 @@ fun PasteToConnectView(chatModel: ChatModel) {
     chatModel.incognito.value,
     connectionLink = connectionLink,
     pasteFromClipboard = {
-      connectionLink.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as String
+      connectionLink.value = clipboard?.primaryClip?.getItemAt(0)?.coerceToText(context) as? String ?: return@PasteToConnectLayout
     },
     connectViaLink = { connReqUri ->
       try {
         val uri = Uri.parse(connReqUri)
         withUriAction(uri) { action ->
-          connectViaUri(chatModel, action, uri)
+          if (connectViaUri(chatModel, action, uri)) {
+            close()
+          }
         }
       } catch (e: RuntimeException) {
         AlertManager.shared.showAlertMsg(
