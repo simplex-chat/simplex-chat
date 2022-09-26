@@ -33,6 +33,8 @@ Other new features since v3:
 
 ### Local chat database encrypted with passphrase
 
+<img src="./images/20220928-passphrase.png" width="330">
+
 SimpleX Chat focus has always been on protecting messages in delivery, not when they are stored on the device. This release changes it - now all messages that you receive and send are stored on the device encrypted using SQLCipher 4.0.
 
 If you are already using SimpleX Chat, your database will remain unencrypted until you enter the passphrase via the app settings. You have to remember the passphrase you choose, as there is no way to recover it if it is lost.
@@ -42,6 +44,8 @@ By default the passphrase you enter will be stored securely on the device (in Ke
 For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.
 
 ### Self-hosted WebRTC ICE servers
+
+<img src="./images/20220928-ice-servers.png" width="330">
 
 You could make audio and video calls via SimpleX Chat WebRTC servers since [v3](./20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.md#end-to-end-encrypted-audiovideo-calls) - that meant that our servers could observe your IP addresses. This release adds configuration to use your own STUN/TURN servers, helping you protect your privacy.
 
@@ -54,6 +58,8 @@ Adding groups made SimpleX Chat much more useful, but because SimpleX groups are
 The reason for that problem was that many network operations required for group connections were not retried. This release improves stability of all network operations - receiving messages, making new contact connections, receiving files and connecting to members in the groups you join.
 
 ### Deleting files and media
+
+<img src="./images/20220928-files-media.png" width="330">
 
 While the database with messages and all contacts is now encrypted, the files you receive and send are not (we will improve it later). We have added a simple option to delete all files from the app storage.
 
