@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
-        <target>**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte oder welche Nachrichten Sie haben.</target>
+        <target>**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte Sie haben oder welche Nachrichten Sie empfangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve">
@@ -129,7 +129,7 @@
       </trans-unit>
       <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
         <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
-        <target>**Fügen Sie den empfangenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.</target>
+        <target>**Fügen Sie den von Ihrem Kontakt erhaltenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
@@ -144,7 +144,7 @@
       </trans-unit>
       <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
         <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
-        <target>**Scannen Sie den QR-Code**: Um sich persönlich oder per Videoanruf mit Ihrem Kontakt zu verbinden.</target>
+        <target>**Scannen Sie den QR-Code ein**, um sich während einem persönlichen Treffen oder per Videoanruf mit Ihrem Kontakt zu verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -400,7 +400,7 @@
       </trans-unit>
       <trans-unit id="Clear conversation" xml:space="preserve">
         <source>Clear conversation</source>
-        <target>Unterhaltung löschen</target>
+        <target>Chatinhalte löschen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear conversation?" xml:space="preserve">
@@ -415,12 +415,12 @@
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
         <source>Configure ICE servers</source>
-        <target>Konfigurieren Sie die ICE-Server</target>
+        <target>ICE-Server konfigurieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure SMP servers" xml:space="preserve">
         <source>Configure SMP servers</source>
-        <target>Konfigurieren Sie die SMP-Server</target>
+        <target>SMP-Server konfigurieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1103,7 +1103,7 @@
       </trans-unit>
       <trans-unit id="Full name:" xml:space="preserve">
         <source>Full name:</source>
-        <target>Vollständiger:</target>
+        <target>Vollständiger Name:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group" xml:space="preserve">
@@ -1193,7 +1193,7 @@
       </trans-unit>
       <trans-unit id="How to use markdown" xml:space="preserve">
         <source>How to use markdown</source>
-        <target>Wie Sie Markdowns anwenden</target>
+        <target>Markdowns verwenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="ICE servers (one per line)" xml:space="preserve">
@@ -1325,7 +1325,7 @@
       </trans-unit>
       <trans-unit id="It allows having many anonymous connections without any shared data between them in a single chat profile." xml:space="preserve">
         <source>It allows having many anonymous connections without any shared data between them in a single chat profile.</source>
-        <target>Es ermöglicht viele anonyme Verbindungen ohne gemeinsame Daten zwischen diesen in einem einzigen Chat-Profil zu haben.</target>
+        <target>Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expire on the server if they were not received for 30 days,&#10;2. The server you use to receive the messages from this contact was updated and restarted.&#10;3. The connection is compromised.&#10;Please connect to the developers via Settings to receive the updates about the servers.&#10;We will be adding server redundancy to prevent lost messages." xml:space="preserve">
@@ -1435,7 +1435,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
         <source>Markdown in messages</source>
-        <target>Markdown in Nachrichten</target>
+        <target>Markdowns in Nachrichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
@@ -1625,7 +1625,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Open Settings" xml:space="preserve">
         <source>Open Settings</source>
-        <target>Einstellungen öffnen</target>
+        <target>Geräte-Einstellungen öffnen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open chat" xml:space="preserve">
@@ -1640,7 +1640,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       </trans-unit>
       <trans-unit id="Open-source protocol and code – anybody can run the servers." xml:space="preserve">
         <source>Open-source protocol and code – anybody can run the servers.</source>
-        <target>Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server nutzen.</target>
+        <target>Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server aufsetzen und nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING interval" xml:space="preserve">
@@ -2409,7 +2409,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." xml:space="preserve">
         <source>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</source>
-        <target>Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen sie Sie eingeladen haben.</target>
+        <target>Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -2459,12 +2459,12 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
-        <target>Über die Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.</target>
+        <target>Über die Geräte-Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
         <source>You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.</source>
-        <target>Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Wenn Sie diese Adresse später löschen, werden Sie Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren.</target>
+        <target>Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -2474,7 +2474,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
-        <target>Sie können Markdowns verwenden, um Nachrichten zu formatieren:</target>
+        <target>Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
@@ -2574,7 +2574,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
-        <target>Ihre Anrufe</target>
+        <target>Anrufe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your chat database" xml:space="preserve">
@@ -2643,7 +2643,7 @@ Sie können diese Verbindung abbrechen und den Kontakt entfernen (und es später
         <source>Your profile is stored on your device and shared only with your contacts.
 SimpleX servers cannot see your profile.</source>
         <target>Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.
-SimpleX-Server können Ihr Profil nicht sehen.</target>
+SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile will be sent to the contact that you received this link from" xml:space="preserve">
@@ -2683,7 +2683,7 @@ SimpleX-Server können Ihr Profil nicht sehen.</target>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve">
         <source>above, then choose:</source>
-        <target>oberhalb, danach auswählen:</target>
+        <target>Danach eine Aktion auswählen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="accepted call" xml:space="preserve">
