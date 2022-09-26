@@ -117,8 +117,9 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
+      .setVibrate(if (actions.isEmpty()) null else longArrayOf(0, 250, 250, 250))
       .setContentIntent(chatPendingIntent(OpenChatAction, chatId))
-      .setSilent(recentNotification)
+      .setSilent(if (actions.isEmpty()) recentNotification else false)
 
     for (action in actions) {
       val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
