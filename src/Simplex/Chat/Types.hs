@@ -779,6 +779,8 @@ data PendingContactConnection = PendingContactConnection
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
     customUserProfileId :: Maybe Int64,
+    connReqInv :: Maybe ConnReqInvitation,
+    localAlias :: Text,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }

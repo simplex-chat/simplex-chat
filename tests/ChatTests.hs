@@ -2419,8 +2419,8 @@ testFullAsync = withTmpFiles $ do
     alice ##> "/c"
     getInvitation alice
   withNewTestChat "bob" bobProfile $ \bob -> do
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
+    bob `send` ("/c " <> inv)
+    bob <### ["/c " <> inv, "confirmation sent!"]
   withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
   withTestChat "bob" $ \_ -> pure () -- connecting... notification in UI
   withTestChat "alice" $ \alice -> do

@@ -244,6 +244,7 @@ CREATE TABLE connections(
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BLOB,
+  local_alias DEFAULT '' CHECK(local_alias NOT NULL),
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

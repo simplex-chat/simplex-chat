@@ -118,6 +118,7 @@ responseToView testView = \case
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactAliasUpdated c -> viewContactAliasUpdated c
+  CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -634,6 +635,11 @@ viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
   | localAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
   | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain localAlias]
+
+viewConnectionAliasUpdated :: PendingContactConnection -> [StyledString]
+viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
+  | localAlias == "" = ["connection " <> sShow pccConnId <> " alias removed"]
+  | otherwise = ["connection " <> sShow pccConnId <> " alias updated: " <> plain localAlias]
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
