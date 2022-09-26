@@ -112,6 +112,8 @@
     <string name="notification_display_mode_hidden_desc">Скрывать контакт и сообщение</string>
     <string name="notification_preview_somebody">Контакт скрыт:</string>
     <string name="notification_preview_new_message">новое сообщение</string>
+    <string name="notification_new_contact_request">Новый запрос на соединение</string>
+    <string name="notification_contact_connected">Соединен(а)</string>
 
     <!-- local authentication notice - SimpleXAPI.kt -->
     <string name="la_notice_title_simplex_lock">Блокировка SimpleX</string>

@@ -6,7 +6,6 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.app.Application
 import android.content.*
 import android.net.Uri
-import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
@@ -849,7 +848,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.updateContact(r.contact)
         chatModel.removeChat(r.contact.activeConn.id)
         chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
-//        NtfManager.shared.notifyContactConnected(contact)
+        ntfManager.notifyContactConnected(r.contact)
       }
       is CR.ContactConnecting -> {
         chatModel.updateContact(r.contact)
@@ -859,7 +858,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
         chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
-//        NtfManager.shared.notifyContactRequest(contactRequest)
+        ntfManager.notifyContactRequestReceived(cInfo)
       }
       is CR.ContactUpdated -> {
         val cInfo = ChatInfo.Direct(r.toContact)
