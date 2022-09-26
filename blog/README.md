@@ -2,10 +2,10 @@
 
 Sep 28, 2022 [v4: local database encryption](./20220928-simplex-chat-v4-encrypted-database.md)
 
-- encrypted local chat database - if you already use the app, you can encrypt the database in tha app settings
-- support for self-hosted WebRTC STUN/TURN servers
+- encrypted on-device chat database - if you already use the app, you can encrypt the database in the app settings
+- support for self-hosted WebRTC ICE servers
 - improved stability of creating new connections: more reliable groups, files and contacts
-- deleting files and media
+- deleting files and media - for security and to save storage
 - For developers - TypeScript SDK for integrating with SimpleX Chat
 - support animated images in Android app
 - German language in mobile apps UI
