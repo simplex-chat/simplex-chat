@@ -37,7 +37,7 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
 }
 
 @Composable
-fun MarkdownText(
+fun MarkdownText (
   text: String,
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
@@ -57,50 +57,54 @@ fun MarkdownText(
     edited -> "        "
     else -> "    "
   }
-  if (formattedText == null) {
-    val annotatedText = buildAnnotatedString {
-      appendSender(this, sender, senderBold)
-      append(text)
-      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
-    }
-    Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
-  } else {
-    var hasLinks = false
-    val annotatedText = buildAnnotatedString {
-      appendSender(this, sender, senderBold)
-      for (ft in formattedText) {
-        if (ft.format == null) append(ft.text)
-        else {
-          val link = ft.link
-          if (link != null) {
-            hasLinks = true
-            val ftStyle = ft.format.style
-            withAnnotation(tag = "URL", annotation = link) {
-              withStyle(ftStyle) { append(ft.text) }
+  CompositionLocalProvider(
+    LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
+  ) {
+    if (formattedText == null) {
+      val annotatedText = buildAnnotatedString {
+        appendSender(this, sender, senderBold)
+        append(text)
+        if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
+      }
+      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+    } else {
+      var hasLinks = false
+      val annotatedText = buildAnnotatedString {
+        appendSender(this, sender, senderBold)
+        for (ft in formattedText) {
+          if (ft.format == null) append(ft.text)
+          else {
+            val link = ft.link
+            if (link != null) {
+              hasLinks = true
+              val ftStyle = ft.format.style
+              withAnnotation(tag = "URL", annotation = link) {
+                withStyle(ftStyle) { append(ft.text) }
+              }
+            } else {
+              withStyle(ft.format.style) { append(ft.text) }
             }
-          } else {
-            withStyle(ft.format.style) { append(ft.text) }
           }
         }
+        if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
       }
-      if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
-    }
-    if (hasLinks && uriHandler != null) {
-      ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
-        onLongClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
-        },
-        onClick = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-            .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
-        },
-        shouldConsumeEvent = { offset ->
-          annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
-        }
-      )
-    } else {
-      Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      if (hasLinks && uriHandler != null) {
+        ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
+          onLongClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+          },
+          onClick = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+              .firstOrNull()?.let { annotation -> uriHandler.openUri(annotation.item) }
+          },
+          shouldConsumeEvent = { offset ->
+            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
+          }
+        )
+      } else {
+        Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow)
+      }
     }
   }
 }
@@ -126,18 +130,18 @@ fun ClickableText(
       }
     }, onPress = { pos ->
       layoutResult.value?.let { layoutResult ->
-        val res = tryAwaitRelease()
+        val res  = tryAwaitRelease()
         if (res) {
           onClick(layoutResult.getOffsetForPosition(pos))
         }
       }
     }, shouldConsumeEvent = { pos ->
       var consume = false
-      layoutResult.value?.let { layoutResult ->
-        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
-      }
+        layoutResult.value?.let { layoutResult ->
+          consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
+        }
       consume
-    }
+      }
     )
   }
 
