@@ -67,15 +67,15 @@ While the database with messages and all contacts is now encrypted, the files yo
 
 It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you would have to write Haskell code, and this is not the most widely used language.
 
-With v4 we are announcing [TypeScript SimpleX Chat Client SDK](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript) that you can use to create for any integrations with SimpleX Chat CLI, that can be used as a local WebSockets server.
+With v4 we are announcing [TypeScript SimpleX Chat Client SDK](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript) that you can use to create any integrations with SimpleX Chat CLI.
 
-You can run SimpleX Chat CLI as a local server:
+You can run SimpleX Chat CLI as a local WebSockets server on any port, we use 5225 here:
 
 ```bash
 simplex-chat -p 5225
 ```
 
-Then you can make a simple JavaScript or TypeScript application that would connect to it and control it via simple WebSocket API that has all necessary types and convenience functions defined in TypeScript SDK. See this [sample bot](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js) you can start from.
+Then you can make a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this [sample bot](https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js) you can start from and [README page](https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript).
 
 SimpleX Chat API allows you to:
 
