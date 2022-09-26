@@ -75,6 +75,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       chatId = cInfo.id,
       displayName = cInfo.displayName,
       msgText = generalGetString(R.string.notification_new_contact_request),
+      image = cInfo.image,
       listOf(NotificationAction.ACCEPT_CONTACT_REQUEST)
     )
   }
@@ -93,7 +94,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     notifyMessageReceived(chatId = cInfo.id, displayName = cInfo.displayName, msgText = hideSecrets(cItem))
   }
 
-  fun notifyMessageReceived(chatId: String, displayName: String, msgText: String, actions: List<NotificationAction> = emptyList()) {
+  fun notifyMessageReceived(chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<NotificationAction> = emptyList()) {
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
     val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
@@ -102,6 +103,10 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(R.string.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(R.string.notification_preview_new_message) else msgText
+    val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
+      BitmapFactory.decodeResource(context.resources, R.drawable.icon)
+    else
+      base64ToBitmap(image)
     val builder = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(title)
       .setContentText(content)
@@ -109,6 +114,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
       .setSmallIcon(R.drawable.ntf_icon)
+      .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
       .setContentIntent(chatPendingIntent(OpenChatAction, chatId))
