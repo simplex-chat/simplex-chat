@@ -181,6 +181,10 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       generalGetString(R.string.notification_preview_somebody)
     else
       invitation.contact.displayName
+    val largeIcon = if (image == null || previewMode == NotificationPreviewMode.HIDDEN.name)
+      BitmapFactory.decodeResource(context.resources, R.drawable.icon)
+    else
+      base64ToBitmap(image)
 
     ntfBuilder = ntfBuilder
       .setContentTitle(title)
@@ -188,7 +192,7 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_CALL)
       .setSmallIcon(R.drawable.ntf_icon)
-      .setLargeIcon(if (image == null) BitmapFactory.decodeResource(context.resources, R.drawable.icon) else base64ToBitmap(image))
+      .setLargeIcon(largeIcon)
       .setColor(0x88FFFF)
       .setAutoCancel(true)
     with(NotificationManagerCompat.from(context)) {
