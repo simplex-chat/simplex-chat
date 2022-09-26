@@ -37,6 +37,10 @@ class ModalManager {
     showCustomModal { close -> ModalView(close, content = content) }
   }
 
+  fun showModalCloseable(content: @Composable (close: () -> Unit) -> Unit) {
+    showCustomModal { close -> ModalView(close, content = { content(close) }) }
+  }
+
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showModal")
     modalViews.add(modal)
