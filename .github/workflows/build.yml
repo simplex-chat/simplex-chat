@@ -134,6 +134,7 @@ jobs:
         shell: cmd
         run: |
           cabal build --enable-tests
+          cabal list-bin simplex-chat
           echo "::set-output name=bin_path::$(cabal list-bin simplex-chat)"
 
       - name: Windows upload binary to release
