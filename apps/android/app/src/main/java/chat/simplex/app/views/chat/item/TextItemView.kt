@@ -92,7 +92,10 @@ fun MarkdownText (
             }
           }
         }
-        if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
+        // With RTL language set globally links looks bad sometimes, better to add a new line to bo sure everything looks good
+        /*if (metaText != null && hasLinks && LocalLayoutDirection.current == LayoutDirection.Rtl)
+          withStyle(reserveTimestampStyle) { append("\n" + metaText) }
+        else */if (metaText != null) withStyle(reserveTimestampStyle) { append(reserve + metaText) }
       }
       if (hasLinks && uriHandler != null) {
         ClickableText(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow,
