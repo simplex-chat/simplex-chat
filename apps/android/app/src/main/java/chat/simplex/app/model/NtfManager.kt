@@ -103,12 +103,11 @@ class NtfManager(val context: Context, private val appPreferences: AppPreference
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(R.string.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(R.string.notification_preview_new_message) else msgText
-    val largeIcon = if ((image == null || previewMode == NotificationPreviewMode.HIDDEN.name) && actions.isNotEmpty())
-      BitmapFactory.decodeResource(context.resources, R.drawable.icon)
-    else if (image != null && actions.isNotEmpty())
-      base64ToBitmap(image)
-    else
-      null
+    val largeIcon = when {
+      actions.isEmpty() -> null
+      image == null || previewMode == NotificationPreviewMode.HIDDEN.name -> BitmapFactory.decodeResource(context.resources, R.drawable.icon)
+      else -> base64ToBitmap(image)
+    }
     val builder = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(title)
       .setContentText(content)
