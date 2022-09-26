@@ -18,7 +18,8 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -42,6 +43,7 @@ fun FramedItemView(
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val sent = ci.chatDir.sent
+
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
   }
@@ -54,7 +56,7 @@ fun FramedItemView(
     ) {
       MarkdownText(
         qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
-        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
       )
     }
   }
@@ -164,7 +166,7 @@ fun CIMarkdownText(
     MarkdownText(
       ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
       metaText = ci.timestampText, edited = ci.meta.itemEdited,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick,
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
   }
 }
