@@ -1566,7 +1566,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           unless (memberActive membership) $
             updateGroupMemberStatus db userId membership GSMemConnected
         sendPendingGroupMessages m conn
-        unless (enableNtfs chatSettings) . withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) False
+        withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ enableNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
             memberConnectedChatItem gInfo m
@@ -2203,7 +2203,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {membership} m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId _ _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -2211,8 +2211,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              groupConnIds <- createAgentConnectionAsync user True SCMInvitation
-              directConnIds <- createAgentConnectionAsync user True SCMInvitation
+              groupConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
+              directConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
@@ -2238,7 +2238,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership} m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       toMember <- case find (sameMemberId memId) members of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
@@ -2251,8 +2251,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       -- [incognito] send membership incognito profile, create direct connection as incognito
       let msg = XGrpMemInfo (memberId (membership :: GroupMember)) (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      groupConnIds <- joinAgentConnectionAsync user True groupConnReq $ directMessage msg
-      directConnIds <- joinAgentConnectionAsync user True directConnReq $ directMessage msg
+      groupConnIds <- joinAgentConnectionAsync user enableNtfs groupConnReq $ directMessage msg
+      directConnIds <- joinAgentConnectionAsync user enableNtfs directConnReq $ directMessage msg
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
       withStore' $ \db -> createIntroToMemberContact db user m toMember groupConnIds directConnIds customUserProfileId
 
