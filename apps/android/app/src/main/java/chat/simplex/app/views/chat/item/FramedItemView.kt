@@ -20,12 +20,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.text.BidiFormatter
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ChatItemLinkView
 import chat.simplex.app.views.helpers.base64ToBitmap
 import kotlinx.datetime.Clock
+import kotlin.math.min
 
 val SentColorLight = Color(0x1E45B8FF)
 val ReceivedColorLight = Color(0x20B1B0B5)
@@ -43,20 +45,22 @@ fun FramedItemView(
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   val sent = ci.chatDir.sent
-
+  val isRtl = remember (ci.text) { BidiFormatter.getInstance().isRtl(ci.text.subSequence(0, min(50, ci.text.length))) }
   fun membership(): GroupMember? {
     return if (chatInfo is ChatInfo.Group) chatInfo.groupInfo.membership else null
   }
 
   @Composable
   fun ciQuotedMsgView(qi: CIQuote) {
+    val isRtl = remember (qi.text) { BidiFormatter.getInstance().isRtl(qi.text.subSequence(0, min(50, qi.text.length))) }
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.TopStart
     ) {
       MarkdownText(
         qi.text, qi.formattedText, sender = qi.sender(membership()), senderBold = true, maxLines = 3,
-        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface)
+        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+        isRtl = isRtl
       )
     }
   }
@@ -130,20 +134,20 @@ fun FramedItemView(
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {
-                  CIMarkdownText(ci, showMember, uriHandler)
+                  CIMarkdownText(ci, showMember, uriHandler, isRtl)
                 }
               }
               is MsgContent.MCFile -> {
                 CIFileView(ci.file, ci.meta.itemEdited, receiveFile)
                 if (mc.text != "") {
-                  CIMarkdownText(ci, showMember, uriHandler)
+                  CIMarkdownText(ci, showMember, uriHandler, isRtl)
                 }
               }
               is MsgContent.MCLink -> {
                 ChatItemLinkView(mc.preview)
-                CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
+                CIMarkdownText(ci, showMember, uriHandler, isRtl, onLinkLongClick)
               }
-              else -> CIMarkdownText(ci, showMember, uriHandler, onLinkLongClick)
+              else -> CIMarkdownText(ci, showMember, uriHandler, isRtl, onLinkLongClick)
             }
           }
         }
@@ -160,13 +164,14 @@ fun CIMarkdownText(
   ci: ChatItem,
   showMember: Boolean,
   uriHandler: UriHandler?,
+  isRtl: Boolean,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     MarkdownText(
       ci.content.text, ci.formattedText, if (showMember) ci.memberDisplayName else null,
       metaText = ci.timestampText, edited = ci.meta.itemEdited,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick, isRtl = isRtl
     )
   }
 }

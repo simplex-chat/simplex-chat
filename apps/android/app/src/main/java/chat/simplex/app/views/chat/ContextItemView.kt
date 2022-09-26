@@ -7,12 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.text.BidiFormatter
 import chat.simplex.app.R
 import chat.simplex.app.model.CIDirection
 import chat.simplex.app.model.ChatItem
@@ -20,6 +22,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chat.item.*
 import kotlinx.datetime.Clock
+import kotlin.math.min
 
 @Composable
 fun ContextItemView(
@@ -50,9 +53,12 @@ fun ContextItemView(
         contentDescription = stringResource(R.string.icon_descr_context),
         tint = HighOrLowlight,
       )
+      val isRtl = remember (contextItem.text) { BidiFormatter.getInstance().isRtl(contextItem.text.subSequence(0, min(50, contextItem.text.length))) }
       MarkdownText(
         contextItem.text, contextItem.formattedText,
-        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3
+        sender = contextItem.memberDisplayName, senderBold = true, maxLines = 3,
+        modifier = if (isRtl) Modifier.fillMaxWidth() else Modifier,
+        isRtl = isRtl
       )
     }
     IconButton(onClick = cancelContextItem) {

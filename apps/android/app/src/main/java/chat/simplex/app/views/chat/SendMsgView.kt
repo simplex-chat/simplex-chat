@@ -18,17 +18,21 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.text.BidiFormatter
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatItem
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import kotlinx.coroutines.delay
+import kotlin.math.min
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -48,7 +52,7 @@ fun SendMsgView(
     delay(50)
     keyboard?.show()
   }
-
+  val isRtl = remember(cs.message) { BidiFormatter.getInstance().isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
   BasicTextField(
     value = cs.message,
     onValueChange = onMessageChange,
@@ -69,14 +73,18 @@ fun SendMsgView(
           Modifier.background(MaterialTheme.colors.background),
           verticalAlignment = Alignment.Bottom
         ) {
-          Box(
-            Modifier
-              .weight(1f)
-              .padding(horizontal = 12.dp)
-              .padding(top = 5.dp)
-              .padding(bottom = 7.dp)
+          CompositionLocalProvider(
+            LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
           ) {
-            innerTextField()
+            Box(
+              Modifier
+                .weight(1f)
+                .padding(horizontal = 12.dp)
+                .padding(top = 5.dp)
+                .padding(bottom = 7.dp)
+            ) {
+              innerTextField()
+            }
           }
           val icon = if (cs.editing) Icons.Filled.Check else Icons.Outlined.ArrowUpward
           val color = if (cs.sendEnabled()) MaterialTheme.colors.primary else HighOrLowlight

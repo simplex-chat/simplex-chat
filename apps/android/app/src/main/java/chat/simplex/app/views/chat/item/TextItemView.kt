@@ -7,11 +7,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import androidx.core.text.BidiFormatter
 import chat.simplex.app.model.*
 import chat.simplex.app.views.helpers.detectGesture
 
@@ -36,7 +37,7 @@ fun appendSender(b: AnnotatedString.Builder, sender: String?, senderBold: Boolea
 }
 
 @Composable
-fun MarkdownText (
+fun MarkdownText(
   text: String,
   formattedText: List<FormattedText>? = null,
   sender: String? = null,
@@ -48,9 +49,14 @@ fun MarkdownText (
   uriHandler: UriHandler? = null,
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
+  isRtl: Boolean = LocalLayoutDirection.current == LayoutDirection.Rtl,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
-  val reserve = if (edited) "        " else "    "
+  val reserve = when {
+    isRtl && metaText != null -> "\n"
+    edited -> "        "
+    else -> "    "
+  }
   if (formattedText == null) {
     val annotatedText = buildAnnotatedString {
       appendSender(this, sender, senderBold)
@@ -120,18 +126,18 @@ fun ClickableText(
       }
     }, onPress = { pos ->
       layoutResult.value?.let { layoutResult ->
-        val res  = tryAwaitRelease()
+        val res = tryAwaitRelease()
         if (res) {
           onClick(layoutResult.getOffsetForPosition(pos))
         }
       }
     }, shouldConsumeEvent = { pos ->
       var consume = false
-        layoutResult.value?.let { layoutResult ->
-          consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
-        }
-      consume
+      layoutResult.value?.let { layoutResult ->
+        consume = shouldConsumeEvent(layoutResult.getOffsetForPosition(pos))
       }
+      consume
+    }
     )
   }
 
