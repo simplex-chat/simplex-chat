@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,15 +17,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.text.BidiFormatter
+import androidx.compose.ui.unit.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.item.MarkdownText
 import chat.simplex.app.views.helpers.*
-import kotlin.math.min
 
 @Composable
 fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileDisplayName: String?, stopped: Boolean) {
@@ -85,15 +81,15 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
   fun chatPreviewText(chatModelIncognito: Boolean) {
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
-      val isRtl = remember (ci.text) { BidiFormatter.getInstance().isRtl(ci.text.subSequence(0, min(50, ci.text.length))) }
       MarkdownText(
-        ci.text, ci.formattedText, ci.memberDisplayName,
+        ci.text,
+        ci.formattedText,
+        sender = null,
         metaText = null,
         maxLines = 2,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
-        modifier = if (isRtl) Modifier.fillMaxWidth() else Modifier,
-        isRtl = isRtl,
+        modifier = Modifier.fillMaxWidth(),
       )
     } else {
       when (cInfo) {

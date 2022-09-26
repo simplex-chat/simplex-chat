@@ -49,16 +49,22 @@ fun MarkdownText (
   uriHandler: UriHandler? = null,
   senderBold: Boolean = false,
   modifier: Modifier = Modifier,
-  isRtl: Boolean = LocalLayoutDirection.current == LayoutDirection.Rtl,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
+  val textLayoutDirection = remember (text) {
+    if (BidiFormatter.getInstance().isRtl(text.subSequence(0, kotlin.math.min(50, text.length)))) LayoutDirection.Rtl else LayoutDirection.Ltr
+  }
   val reserve = when {
-    isRtl && metaText != null -> "\n"
+    textLayoutDirection != LocalLayoutDirection.current && metaText != null -> "\n"
     edited -> "        "
     else -> "    "
   }
   CompositionLocalProvider(
-    LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
+    // When we draw `sender` is has issues on LTR languages set globally with RTL text language
+    LocalLayoutDirection provides if (textLayoutDirection != LocalLayoutDirection.current && sender == null)
+      if (LocalLayoutDirection.current == LayoutDirection.Ltr) LayoutDirection.Rtl else LayoutDirection.Ltr
+    else
+      LocalLayoutDirection.current
   ) {
     if (formattedText == null) {
       val annotatedText = buildAnnotatedString {
