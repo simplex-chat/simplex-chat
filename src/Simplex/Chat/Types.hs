@@ -760,6 +760,7 @@ data Connection = Connection
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
+    localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     createdAt :: UTCTime
   }

@@ -390,11 +390,14 @@ viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
       incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
-   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct) . sortOn ldn
+   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct <> alias ct) . sortOn ldn
   where
     muted Contact {chatSettings, localDisplayName = ldn}
       | enableNtfs chatSettings = ""
       | otherwise = " (muted, you can " <> highlight ("/unmute @" <> ldn) <> ")"
+    alias Contact {profile = LocalProfile {localAlias}}
+      | localAlias == "" = ""
+      | otherwise = " (alias: " <> plain localAlias <> ")"
 
 viewUserContactLinkDeleted :: [StyledString]
 viewUserContactLinkDeleted =
