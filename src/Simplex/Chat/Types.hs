@@ -760,6 +760,7 @@ data Connection = Connection
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
+    localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     createdAt :: UTCTime
   }
@@ -779,6 +780,8 @@ data PendingContactConnection = PendingContactConnection
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
     customUserProfileId :: Maybe Int64,
+    connReqInv :: Maybe ConnReqInvitation,
+    localAlias :: Text,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }

@@ -144,6 +144,7 @@ data ChatCommand
   | APICallStatus ContactId WebRTCCallStatus
   | APIUpdateProfile Profile
   | APISetContactAlias ContactId LocalAlias
+  | APISetConnectionAlias Int64 LocalAlias
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
@@ -280,6 +281,7 @@ data ChatResponse
   | CRSndGroupFileCancelled {chatItem :: AChatItem, fileTransferMeta :: FileTransferMeta, sndFileTransfers :: [SndFileTransfer]}
   | CRUserProfileUpdated {fromProfile :: Profile, toProfile :: Profile}
   | CRContactAliasUpdated {toContact :: Contact}
+  | CRConnectionAliasUpdated {toConnection :: PendingContactConnection}
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}

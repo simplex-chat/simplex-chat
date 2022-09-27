@@ -597,6 +597,11 @@ processChatCommand = \case
       ct <- getContact db userId contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated ct'
+  APISetConnectionAlias connId localAlias -> withUser $ \User {userId} -> do
+    conn' <- withStore $ \db -> do
+      conn <- getPendingContactConnection db userId connId
+      liftIO $ updateContactConnectionAlias db userId conn localAlias
+    pure $ CRConnectionAliasUpdated conn'
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -662,7 +667,7 @@ processChatCommand = \case
     incognito <- readTVarIO =<< asks incognitoMode
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnNew incognitoProfile
+    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnNew incognitoProfile
     toView $ CRNewContactConnection conn
     pure $ CRInvitation cReq
   Connect (Just (ACR SCMInvitation cReq)) -> withUser $ \User {userId, profile} -> withChatLock . procCmd $ do
@@ -671,7 +676,7 @@ processChatCommand = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
     connId <- withAgent $ \a -> joinConnection a True cReq . directMessage $ XInfo profileToSend
-    conn <- withStore' $ \db -> createDirectConnection db userId connId ConnJoined incognitoProfile
+    conn <- withStore' $ \db -> createDirectConnection db userId connId cReq ConnJoined incognitoProfile
     toView $ CRNewContactConnection conn
     pure CRSentConfirmation
   Connect (Just (ACR SCMContact cReq)) -> withUser $ \User {userId, profile} ->
@@ -2709,6 +2714,7 @@ chatCommandP =
       "/_call get" $> APIGetCallInvitations,
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
