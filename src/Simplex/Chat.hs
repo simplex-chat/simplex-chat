@@ -1403,12 +1403,10 @@ expireChatItemsCycle user@User {userId} expirationDate doExpire sync = do
   where
     expireChatsLoop :: [ChatRef] -> m ()
     expireChatsLoop [] = pure ()
-    expireChatsLoop [chat] = do
-      expireOn <- if sync then pure True else readTVarIO doExpire
-      when expireOn $ expireChat chat
-    expireChatsLoop (chat : chats) = do
-      expireOn <- if sync then pure True else readTVarIO doExpire
-      when expireOn $ do
+    expireChatsLoop [chat] =
+      withContinueExpire $ expireChat chat
+    expireChatsLoop (chat : chats) =
+      withContinueExpire $ do
         expireChat chat
         expireChatsLoop chats
     expireChat :: ChatRef -> m ()
@@ -1425,18 +1423,20 @@ expireChatItemsCycle user@User {userId} expirationDate doExpire sync = do
       CTContactConnection -> pure ()
     expireChatItemsLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
     expireChatItemsLoop [] _ = pure ()
-    expireChatItemsLoop [ci] f = do
-      expireOn <- if sync then pure True else readTVarIO doExpire
-      when expireOn $ expireChatItem ci f
-    expireChatItemsLoop (ci : cis) f = do
-      expireOn <- if sync then pure True else readTVarIO doExpire
-      when expireOn $ do
+    expireChatItemsLoop [ci] f =
+      withContinueExpire $ expireChatItem ci f
+    expireChatItemsLoop (ci : cis) f =
+      withContinueExpire $ do
         expireChatItem ci f
         expireChatItemsLoop cis f
     expireChatItem :: (ChatItemId, Maybe CIFileInfo) -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
     expireChatItem ciIdAndFileInfo expirationFunction = do
       expirationFunction ciIdAndFileInfo
       unless sync $ threadDelay 100000
+    withContinueExpire :: m () -> m ()
+    withContinueExpire a = do
+      expireOn <- if sync then pure True else readTVarIO doExpire
+      when expireOn a
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
