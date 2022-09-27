@@ -64,6 +64,8 @@ Core:
 - if ttl changed from none to some value - first run sync, no delay between chat items on first run
 - seconds instead of enum in api / backend
 - part of APISetChatSettings api? - unclear can block for long on first deletion
+- fixed interval
+- if ttl became smaller, set flag to false, then one sync cycle
 
 ### Per chat expiration
 

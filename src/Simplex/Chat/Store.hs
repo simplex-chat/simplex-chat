@@ -190,7 +190,9 @@ module Simplex.Chat.Store
     getXGrpMemIntroContGroup,
     getChatItemTTL,
     setChatItemTTL,
-    getExpiredChatItemIdsAndFileInfo,
+    getChatsWithExpiredItems,
+    getContactExpiredChatItemIdsAndFileInfo,
+    getGroupExpiredChatItemIdsAndFileInfo,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -4075,11 +4077,21 @@ getChatItemTTL db User {userId} = do
 setChatItemTTL :: DB.Connection -> User -> ChatItemTTL -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
   updatedAt <- getCurrentTime
-  DB.execute db "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
+  DB.execute
+    db
+    "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
     (chatItemTTL, updatedAt, userId)
 
-getExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
-getExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _olderThan =
+getChatsWithExpiredItems :: DB.Connection -> User -> UTCTime -> IO [ChatRef]
+getChatsWithExpiredItems _db User {userId = _userId} _expirationDate =
+  pure []
+
+getContactExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> ContactId -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getContactExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _contactId _expirationDate =
+  pure []
+
+getGroupExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> Int64 -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getGroupExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _groupId _expirationDate =
   pure []
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.

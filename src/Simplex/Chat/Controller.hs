@@ -97,7 +97,8 @@ data ChatController = ChatController
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
-    expireChatItemsAsync :: TVar (Maybe (Async ()))
+    expireChatItemsAsync :: TVar (Maybe (Async ())),
+    doExpireCI :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings

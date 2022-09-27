@@ -37,7 +37,6 @@ import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
-import Simplex.Messaging.Server.Expiration (ExpirationConfig (..))
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -995,11 +994,11 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   deriving (Show)
 
 data ChatItemTTL
-  = CITTLNone
-  | CITTLDay
+  = CITTLDay
   | CITTLWeek
   | CITTLMonth
-  deriving (Show, Generic)
+  | CITTLNone
+  deriving (Eq, Ord, Show, Generic)
 
 instance FromField ChatItemTTL where fromField = fromTextField_ textDecode
 
@@ -1007,24 +1006,24 @@ instance ToField ChatItemTTL where toField = toField . textEncode
 
 instance TextEncoding ChatItemTTL where
   textDecode = \case
-    "none" -> Just CITTLNone
     "day" -> Just CITTLDay
     "week" -> Just CITTLWeek
     "month" -> Just CITTLMonth
+    "none" -> Just CITTLNone
     _ -> Nothing
   textEncode = \case
-    CITTLNone -> "none"
     CITTLDay -> "day"
     CITTLWeek -> "week"
     CITTLMonth -> "month"
+    CITTLNone -> "none"
 
 instance ToJSON ChatItemTTL where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "CITTL"
   toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CITTL"
 
-ciTtlToExpirationConfig :: ChatItemTTL -> Maybe ExpirationConfig
-ciTtlToExpirationConfig = \case
+ciTtlToSeconds :: ChatItemTTL -> Maybe Int64
+ciTtlToSeconds = \case
+  CITTLDay -> Just 86400
+  CITTLWeek -> Just $ 7 * 86400
+  CITTLMonth -> Just $ 30 * 86400
   CITTLNone -> Nothing
-  CITTLDay -> Just ExpirationConfig {ttl = 86400, checkInterval = 1800}
-  CITTLWeek -> Just ExpirationConfig {ttl = 7 * 86400, checkInterval = 3600}
-  CITTLMonth -> Just ExpirationConfig {ttl = 30 * 86400, checkInterval = 3600}
