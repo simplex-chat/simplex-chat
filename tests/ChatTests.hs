@@ -119,6 +119,8 @@ chatTests = do
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
+  describe "chat item expiration" $ do
+    it "set chat item TTL" testSetChatItemTTL
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -2850,6 +2852,18 @@ testMuteGroup =
         (cath <# "#team alice> hi again")
       bob ##> "/gs"
       bob <## "#team"
+
+testSetChatItemTTL :: IO ()
+testSetChatItemTTL =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      alice #$> ("/ttl month", id, "ok")
+      threadDelay 1000000
+      alice #$> ("/ttl day", id, "ok")
+      threadDelay 1000000
+      alice #$> ("/ttl none", id, "ok")
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

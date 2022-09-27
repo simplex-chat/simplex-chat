@@ -2939,10 +2939,10 @@ chatCommandP =
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTL =
-      ("none" $> CITTLNone)
-        <|> ("day" $> CITTLDay)
+      ("day" $> CITTLDay)
         <|> ("week" $> CITTLWeek)
         <|> ("month" $> CITTLMonth)
+        <|> ("none" $> CITTLNone)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal
