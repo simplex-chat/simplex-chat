@@ -10,7 +10,7 @@ m20220922_settings =
   [sql|
 CREATE TABLE settings (
   settings_id INTEGER PRIMARY KEY,
-  chat_item_ttl TEXT,
+  chat_item_ttl INTEGER,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

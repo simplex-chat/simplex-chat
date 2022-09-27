@@ -161,7 +161,7 @@ data ChatCommand
   | APIUpdateGroupProfile GroupId GroupProfile
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
-  | APISetChatItemTTL ChatItemTTL
+  | APISetChatItemTTL (Maybe Int64)
   | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
@@ -228,7 +228,7 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
-  | CRChatItemTTL {chatItemTTL :: ChatItemTTL}
+  | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}

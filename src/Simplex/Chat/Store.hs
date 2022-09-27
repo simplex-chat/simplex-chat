@@ -4069,12 +4069,12 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
       Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
 
-getChatItemTTL :: DB.Connection -> User -> IO ChatItemTTL
+getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
 getChatItemTTL db User {userId} = do
   [chatItemTTL] <- map fromOnly <$> DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
-  pure $ fromMaybe CITTLNone chatItemTTL
+  pure chatItemTTL
 
-setChatItemTTL :: DB.Connection -> User -> ChatItemTTL -> IO ()
+setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
   updatedAt <- getCurrentTime
   DB.execute

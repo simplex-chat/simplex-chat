@@ -636,14 +636,18 @@ processChatCommand = \case
       setChatItemTTL db user newTTL
       pure oldTTL
     doExpire <- asks doExpireCI
-    if newTTL /= CITTLNone
-      then do
+    case newTTL of
+      Just newTTL' -> do
         expireOff <- not <$> readTVarIO doExpire
-        when (expireOff || newTTL < oldTTL) $ do
+        when (expireOff || ttlDecreased) $ do
           atomically $ writeTVar doExpire False
-          expireChatItemsCycle_ user newTTL doExpire True
+          expireChatItemsCycle user newTTL' doExpire True
         atomically $ writeTVar doExpire True
-      else atomically $ writeTVar doExpire False
+        where
+          ttlDecreased = case oldTTL of
+            Nothing -> True
+            Just oldTTL' -> newTTL' < oldTTL'
+      _ -> atomically $ writeTVar doExpire False
     pure CRCmdOk
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
@@ -1384,20 +1388,18 @@ expireChatItems user = do
   forever $ do
     doExpire <- asks doExpireCI
     atomically $ readTVar doExpire >>= \b -> unless b retry
-    ttl <- fromRight CITTLNone <$> runExceptT (withStore' $ \db -> getChatItemTTL db user)
-    expireChatItemsCycle_ user ttl doExpire False
+    ttl <- withStore' $ \db -> getChatItemTTL db user
+    forM_ ttl $ \t -> expireChatItemsCycle user t doExpire False
     threadDelay interval
 
-expireChatItemsCycle_ :: ChatMonad m => User -> ChatItemTTL -> TVar Bool -> Bool -> m ()
-expireChatItemsCycle_ user ttl doExpire sync = do
-  let ttlSec = ciTtlToSeconds ttl
-  forM_ ttlSec $ \sec -> do
-    currentTs <- liftIO getCurrentTime
-    let expirationDate = addUTCTime (-1 * fromIntegral sec) currentTs
-    expireChatItemsCycle user expirationDate doExpire sync
+expireChatItemsCycle :: ChatMonad m => User -> Int64 -> TVar Bool -> Bool -> m ()
+expireChatItemsCycle user ttl doExpire sync = do
+  currentTs <- liftIO getCurrentTime
+  let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
+  expireChatItemsCycle' user expirationDate doExpire sync
 
-expireChatItemsCycle :: forall m. ChatMonad m => User -> UTCTime -> TVar Bool -> Bool -> m ()
-expireChatItemsCycle user@User {userId} expirationDate doExpire sync = do
+expireChatItemsCycle' :: forall m. ChatMonad m => User -> UTCTime -> TVar Bool -> Bool -> m ()
+expireChatItemsCycle' user@User {userId} expirationDate doExpire sync = do
   chats <- withStore' $ \db -> getChatsWithExpiredItems db user expirationDate
   expireChatsLoop chats
   where
@@ -2828,7 +2830,8 @@ chatCommandP =
       "/smp_servers default" $> SetUserSMPServers [],
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
-      "/ttl " *> (APISetChatItemTTL <$> ciTTL),
+      "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
+      -- "/ttl " *> (APISetChatItemTTL <$> ciTTL),
       "/ttl" $> APIGetChatItemTTL,
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
@@ -2938,11 +2941,12 @@ chatCommandP =
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
-    ciTTL =
-      ("day" $> CITTLDay)
-        <|> ("week" $> CITTLWeek)
-        <|> ("month" $> CITTLMonth)
-        <|> ("none" $> CITTLNone)
+    ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
+    -- ciTTL =
+    --   ("day" $> CITTLDay)
+    --     <|> ("week" $> CITTLWeek)
+    --     <|> ("month" $> CITTLMonth)
+    --     <|> ("none" $> CITTLNone)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal

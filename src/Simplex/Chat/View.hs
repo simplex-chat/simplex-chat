@@ -575,12 +575,14 @@ viewSMPServers smpServers testView =
         then "no custom SMP servers saved"
         else viewServers smpServers
 
-viewChatItemTTL :: ChatItemTTL -> [StyledString]
+viewChatItemTTL :: Maybe Int64 -> [StyledString]
 viewChatItemTTL = \case
-  CITTLNone -> ["old messages are not being deleted"]
-  CITTLDay -> deletedAfter "one day"
-  CITTLWeek -> deletedAfter "one week"
-  CITTLMonth -> deletedAfter "one month"
+  Nothing -> ["old messages are not being deleted"]
+  Just ttl
+    | ttl == 86400 -> deletedAfter "one day"
+    | ttl == 7 * 86400 -> deletedAfter "one week"
+    | ttl == 30 * 86400 -> deletedAfter "one month"
+    | otherwise -> deletedAfter $ sShow ttl <> " seconds"
   where
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 

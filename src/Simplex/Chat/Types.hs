@@ -36,7 +36,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util ((<$?>))
 
 class IsContact a where
@@ -993,37 +993,9 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
-data ChatItemTTL
-  = CITTLDay
-  | CITTLWeek
-  | CITTLMonth
-  | CITTLNone
-  deriving (Eq, Ord, Show, Generic)
-
-instance FromField ChatItemTTL where fromField = fromTextField_ textDecode
-
-instance ToField ChatItemTTL where toField = toField . textEncode
-
-instance TextEncoding ChatItemTTL where
-  textDecode = \case
-    "day" -> Just CITTLDay
-    "week" -> Just CITTLWeek
-    "month" -> Just CITTLMonth
-    "none" -> Just CITTLNone
-    _ -> Nothing
-  textEncode = \case
-    CITTLDay -> "day"
-    CITTLWeek -> "week"
-    CITTLMonth -> "month"
-    CITTLNone -> "none"
-
-instance ToJSON ChatItemTTL where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CITTL"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CITTL"
-
-ciTtlToSeconds :: ChatItemTTL -> Maybe Int64
-ciTtlToSeconds = \case
-  CITTLDay -> Just 86400
-  CITTLWeek -> Just $ 7 * 86400
-  CITTLMonth -> Just $ 30 * 86400
-  CITTLNone -> Nothing
+-- ciTtlToSeconds :: ChatItemTTL -> Maybe Int64
+-- ciTtlToSeconds = \case
+--   CITTLDay -> Just 86400
+--   CITTLWeek -> Just $ 7 * 86400
+--   CITTLMonth -> Just $ 30 * 86400
+--   CITTLNone -> Nothing
