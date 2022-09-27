@@ -218,7 +218,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -4083,16 +4083,56 @@ setChatItemTTL db User {userId} chatItemTTL = do
     (chatItemTTL, updatedAt, userId)
 
 getChatsWithExpiredItems :: DB.Connection -> User -> UTCTime -> IO [ChatRef]
-getChatsWithExpiredItems _db User {userId = _userId} _expirationDate =
-  pure []
+getChatsWithExpiredItems db User {userId} expirationDate =
+  mapMaybe toChatRef
+    <$> DB.query
+      db
+      [sql|
+        SELECT contact_id, group_id
+        FROM chat_items
+        WHERE user_id = ? AND item_ts <= ?
+        ORDER BY contact_id ASC, group_id ASC
+      |]
+      (userId, expirationDate)
+  where
+    toChatRef :: (Maybe ContactId, Maybe GroupId) -> Maybe ChatRef
+    toChatRef (Just contactId, Nothing) = Just $ ChatRef CTDirect contactId
+    toChatRef (Nothing, Just groupId) = Just $ ChatRef CTGroup groupId
+    toChatRef _ = Nothing
 
 getContactExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> ContactId -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
-getContactExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _contactId _expirationDate =
-  pure []
+getContactExpiredChatItemIdsAndFileInfo db User {userId} contactId expirationDate =
+  map toItemIdAndFileInfo'
+    <$> DB.query
+      db
+      [sql|
+        SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+        FROM chat_items i
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.contact_id = ? AND i.item_ts <= ?
+        ORDER BY i.item_ts ASC
+      |]
+      (userId, contactId, expirationDate)
 
 getGroupExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> Int64 -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
-getGroupExpiredChatItemIdsAndFileInfo _db User {userId = _userId} _groupId _expirationDate =
-  pure []
+getGroupExpiredChatItemIdsAndFileInfo db User {userId} groupId expirationDate =
+  map toItemIdAndFileInfo'
+    <$> DB.query
+      db
+      [sql|
+        SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+        FROM chat_items i
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.item_deleted != 1
+        ORDER BY i.item_ts ASC
+      |]
+      (userId, groupId, expirationDate)
+
+toItemIdAndFileInfo' :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
+toItemIdAndFileInfo' (chatItemId, fileId_, fileStatus_, filePath) =
+  case (fileId_, fileStatus_) of
+    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, Nothing)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.
