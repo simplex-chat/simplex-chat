@@ -120,7 +120,7 @@ chatTests = do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
-    it "set chat item TTL" testSetChatItemTTL
+    fit "set chat item TTL" testSetChatItemTTL
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -2858,12 +2858,24 @@ testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice <##> bob
-      alice #$> ("/ttl month", id, "ok")
-      threadDelay 1000000
-      alice #$> ("/ttl day", id, "ok")
-      threadDelay 1000000
+      alice #> "@bob 1"
+      bob <# "alice> 1"
+      bob #> "@alice 2"
+      alice <# "bob> 2"
+      threadDelay 2000000
+      alice #> "@bob 3"
+      bob <# "alice> 3"
+      bob #> "@alice 4"
+      alice <# "bob> 4"
+      alice #$> ("/_ttl 1", id, "ok")
+      threadDelay 100000
+      alice @@@ [("@bob", "2")] -- when expiration is turned on, first cycle is synchronous
+      bob @@@ [("@alice", "4")]
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      alice #$> ("/ttl week", id, "ok")
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
+      alice #$> ("/ttl", id, "old messages are not being deleted")
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =

@@ -2831,7 +2831,7 @@ chatCommandP =
       "/smp_servers " *> (SetUserSMPServers <$> smpServersP),
       "/smp_servers" $> GetUserSMPServers,
       "/_ttl " *> (APISetChatItemTTL <$> ciTTLDecimal),
-      -- "/ttl " *> (APISetChatItemTTL <$> ciTTL),
+      "/ttl " *> (APISetChatItemTTL <$> ciTTL),
       "/ttl" $> APIGetChatItemTTL,
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (APISetNetworkConfig <$> netCfgP),
@@ -2942,11 +2942,11 @@ chatCommandP =
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
     ciTTLDecimal = ("none" $> Nothing) <|> (Just <$> A.decimal)
-    -- ciTTL =
-    --   ("day" $> CITTLDay)
-    --     <|> ("week" $> CITTLWeek)
-    --     <|> ("month" $> CITTLMonth)
-    --     <|> ("none" $> CITTLNone)
+    ciTTL =
+      ("day" $> Just 86400)
+        <|> ("week" $> Just (7 * 86400))
+        <|> ("month" $> Just (30 * 86400))
+        <|> ("none" $> Nothing)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
       t_ <- optional $ " timeout=" *> A.decimal

@@ -992,10 +992,3 @@ data XGrpMemIntroCont = XGrpMemIntroCont
     groupConnReq :: ConnReqInvitation
   }
   deriving (Show)
-
--- ciTtlToSeconds :: ChatItemTTL -> Maybe Int64
--- ciTtlToSeconds = \case
---   CITTLDay -> Just 86400
---   CITTLWeek -> Just $ 7 * 86400
---   CITTLMonth -> Just $ 30 * 86400
---   CITTLNone -> Nothing
