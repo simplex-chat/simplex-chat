@@ -132,6 +132,7 @@ export interface CreateActiveUser extends IChatCommand {
 export interface StartChat extends IChatCommand {
   type: "startChat"
   subscribeConnections?: boolean
+  expireChatItems?: boolean
 }
 
 export interface APIStopChat extends IChatCommand {
@@ -451,7 +452,7 @@ export function cmdString(cmd: ChatCommand): string {
     case "createActiveUser":
       return `/u ${JSON.stringify(cmd.profile)}`
     case "startChat":
-      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"}` // TODO expire onOff
+      return `/_start subscribe=${cmd.subscribeConnections ? "on" : "off"} expire=${cmd.expireChatItems ? "on" : "off"}`
     case "apiStopChat":
       return "/_stop"
     case "setFilesFolder":
