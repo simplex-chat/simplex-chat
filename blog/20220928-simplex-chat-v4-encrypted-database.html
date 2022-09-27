@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SimpleX Chat v4.0 with encrypted database is released</title>
+  <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+  <link href="/css/tailwind.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/blogs.css" />
+  <link rel="stylesheet" href="/css/blog.css" />
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+<body class="sm:bg-gray-100">
+  <header>
+    <nav class="container">
+        <div class="flex items-center gap-[16px] h-full">
+            <a href="/">
+                <img alt="simplex logo" class="logo" src="/img/simplex.svg" />
+            </a>
+
+            <div class="hidden lg:flex gap-[16px]">
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium white-paper-nav-btn"
+                    href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                    target="_blank">Whitepaper</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium comparison-nav-btn"
+                    href="/#comparison">Comparison</a>
+                <a class="tracking-[1px] rounded text-[1.4rem] font-medium blog-nav-btn" href="/blog">Blog</a>
+            </div>
+        </div>
+
+        <div class="flex gap-4">
+            <div class="nav__buttons">
+                <div class="github">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="donate d-none-576">
+                    <a href="https://opencollective.com/simplex-chat" target="_blank">
+                        <span class="button">Donate</span></a>
+                </div>
+            </div>
+
+            <div class="toggle self-stretch">
+                <label class="toggle-btn"><span></span></i></label>
+            </div>
+        </div>
+    </nav>
+
+    <div class="w-full fixed top-[60px] z-[99] bg-[#fbd561] mobile-nav">
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 white-paper-nav-btn"
+            href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md">Whitepaper</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 comparison-nav-btn"
+            href="/#comparison">Comparison</a>
+        <a class="flex-1 flex justify-center text-[1.2rem] tracking-[1px] font-medium text-base px-3 py-4 border-x-0 border-y-0 border-t-[1px] border-solid border-yellow-200 blog-nav-btn"
+            href="/blog">Blog</a>
+    </div>
+</header>
+
+<script>
+    const toggleBtn = document.querySelector(".toggle-btn")
+
+    toggleBtn.addEventListener("click", () => {
+        if (toggleBtn.classList.contains("active-toggle-btn")) {
+            console.log("unchecked")
+            document.querySelector(".mobile-nav").classList.remove("mobile-nav-active")
+            toggleBtn.classList.remove("active-toggle-btn")
+        } else {
+            console.log("checked")
+            document.querySelector(".mobile-nav").classList.add("mobile-nav-active")
+            toggleBtn.classList.add("active-toggle-btn")
+        }
+    })
+</script>
+
+<style>
+    header {
+        overflow: hidden;
+    }
+
+    /* ====== NAV TOGGLE BUTTON ====== */
+    .toggle {
+        display: none;
+    }
+
+    .toggle-btn {
+        height: 100%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toggle-btn span {
+        width: 20px;
+        height: 2px;
+        background-color: #062d56;
+        position: relative;
+    }
+
+    .toggle-btn span::after,
+    .toggle-btn span::before {
+        content: "";
+        width: 100%;
+        height: 100%;
+        background-color: #062d56;
+        position: absolute;
+        left: 0;
+    }
+
+    span::before {
+        top: -8px;
+    }
+
+    span::after {
+        top: 8px;
+    }
+
+    /* ====== Styles Applied AFTER the CLICK of TOGGLE BUTTON ====== */
+    .active-toggle-btn span {
+        background-color: transparent;
+    }
+
+    .active-toggle-btn span::before {
+        top: 0;
+        transform: rotate(45deg);
+        background-color: #062d56;
+    }
+
+    .active-toggle-btn span::after {
+        top: 0;
+        transform: rotate(-45deg);
+        background-color: #062d56;
+    }
+
+    .mobile-nav {
+        display: none;
+        transform: translateX(-100%);
+        transition: transform 0.5s ease-out;
+    }
+
+    .mobile-nav-active {
+        display: block;
+        transform: translateX(0%);
+        transition: transform 0.5s cubic-bezier(0.02, 0.48, 0.59, 1.48);
+    }
+
+    @media (max-width: 1024px) {
+        .toggle {
+            display: inline-block;
+        }
+    }
+</style>
+
+  <section class="container">
+    <div class="bg-white py-6 sm:py-12 sm:px-8 md:px-16 lg:px-20"><h1 id="simplex-chat-v4-with-encrypted-local-database-is-released" tabindex="-1">SimpleX Chat v4 with encrypted local database is released</h1>
+<p><strong>Published:</strong> Sep 28, 2022</p>
+<h2 id="whats-new-in-v4" tabindex="-1">What's new in v4</h2>
+<ul>
+<li><a href="#on-device-chat-database-encrypted-with-passphrase">encrypted on-device chat database</a>.</li>
+<li><a href="#self-hosted-webrtc-ice-servers">support for self-hosted WebRTC ICE servers</a>.</li>
+<li><a href="#improved-stability-of-creating-new-connections">improved stability of creating new connections: more reliable groups, files and contacts</a>.</li>
+<li><a href="#deleting-files-and-media">deleting files and media</a>.</li>
+<li><a href="#for-developers---typescript-sdk-for-integrating-with-simplex-chat">For developers - TypeScript SDK for integrating with SimpleX Chat</a> (e.g., chat bots or chat assistants).</li>
+<li>animated images in Android app.</li>
+<li>disable messages per contact / group in terminal app (it is already supported in mobile apps).</li>
+</ul>
+<p>Also, this version adds German language to mobile apps UI - huge thanks to <a href="https://github.com/mlanp">Michael</a> who contributed them!</p>
+<p>Other new features since v3:</p>
+<ul>
+<li>secret chat groups (see details in <a href="20220808-simplex-chat-v3.1-chat-groups.html#secret-chat-groups">v3.1 announcement</a> - they are fully decentralized, only their members know these groups exist.</li>
+<li>accessing messaging servers via Tor with support for .onion server addresses (see details in <a href="20220808-simplex-chat-v3.1-chat-groups.html#access-messaging-servers-via-tor">v3.1</a> and <a href="20220901-simplex-chat-v3.2-incognito-mode.html#using-onion-server-addresses-with-tor">v3.2</a> announcements) - to protect users anonymity on the TCP transport level.</li>
+<li>Incognito mode - sharing a random profile name with each new contact, to completely eliminate any shared data between them (see details in <a href="20220901-simplex-chat-v3.2-incognito-mode.html#incognito-mode">v3.2</a> announcement).</li>
+<li>endless scrolling and search in chats.</li>
+<li>reduced Android APK size for direct download and in F-Droid repo from 200 to 50Mb!</li>
+</ul>
+<p><a href="#we-ask-you-to-help-us-pay-for-3rd-party-security-audit">Implementation audit is arranged for October</a>!</p>
+<h3 id="on-device-chat-database-encrypted-with-passphrase" tabindex="-1">On-device chat database encrypted with passphrase</h3>
+<img src="./images/20220928-passphrase.png" width="330">
+<p>SimpleX Chat focus has always been on protecting messages in delivery, not when they are stored on the device. This release changes it - now all messages that you receive and send are stored on the device encrypted using SQLCipher 4.0.</p>
+<p>If you are already using SimpleX Chat, your database will remain unencrypted until you enter the passphrase via the app settings. You have to remember the passphrase you choose, as there is no way to recover it if it is lost.</p>
+<p>By default your passphrase will be stored securely on the device (in KeyChain on iOS or encrypted with the key stored in TPM, if available, on Android) - it is only accessible to the app, and only on one device. Storing passphrase is required for instant notifications to work. In this case, if you lose the passphrase, the app will continue to work, but you will not be able to change the passphrase and to migrate your user profile to another device.</p>
+<p>For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.</p>
+<h3 id="self-hosted-webrtc-ice-servers" tabindex="-1">Self-hosted WebRTC ICE servers</h3>
+<img src="./images/20220928-ice-servers.png" width="330">
+<p>You could make audio and video calls via SimpleX Chat WebRTC servers since <a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#end-to-end-encrypted-audiovideo-calls">v3</a> - that meant that our servers could observe your IP addresses. This release adds configuration to use your own STUN/TURN servers, helping you protect your privacy.</p>
+<p>See <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/WEBRTC.md">this guide</a> to learn how to deploy your own <code>coturn</code> server and to configure the mobile apps to use it.</p>
+<h3 id="improved-stability-of-creating-new-connections" tabindex="-1">Improved stability of creating new connections</h3>
+<p>Secret groups made SimpleX Chat much more useful, but because SimpleX groups are completely decentralized and for them to work each member should connect to all other members, sometimes these connections fail and the group becomes fragmented - some members do not receive all messages. That was more common for larger groups, as the number of required member connections is O(n^2) of the group size.</p>
+<p>The reason for that problem was that some network operations required for group connections were not retried. This release improves stability of all network operations - receiving messages, making new contact connections, receiving files and connecting to members in the groups you join.</p>
+<h3 id="deleting-files-and-media" tabindex="-1">Deleting files and media</h3>
+<img src="./images/20220928-files-media.png" width="330">
+<p>While the database with messages and all contacts is now encrypted, the files you receive and send are not (we are planning to improve it later). To protect the security of the files we have added an option to delete all files from the app storage - just make sure not to do it before the files you send are delivered to the recipients, or they won't receive them.</p>
+<h3 id="for-developers-typescript-sdk-for-integrating-with-simplex-chat" tabindex="-1">For developers - TypeScript SDK for integrating with SimpleX Chat</h3>
+<p>It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you would have to write Haskell code, and this is not the most widely used language.</p>
+<p>With v4 we are announcing <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript">TypeScript SimpleX Chat Client SDK</a> that you can use to create any integrations with SimpleX Chat CLI.</p>
+<p>You can run SimpleX Chat CLI as a local WebSockets server on any port, we use 5225 here:</p>
+<pre><code class="language-bash">simplex-chat -p 5225
+</code></pre>
+<p>Then you can make a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js">sample bot</a> you can start from and <a href="https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript">README page</a>.</p>
+<p>SimpleX Chat API allows you to:</p>
+<ul>
+<li>create and change user profile (although in most cases you would do it manually, via SimpleX Chat terminal app).</li>
+<li>create and accept invitations or connect with the contacts.</li>
+<li>create and manage long-term user address, accepting connection requests automatically.</li>
+<li>create, join and manage groups - this can be used, for example, to connect two different people who connected to chat-bot.</li>
+<li>send and receive files.</li>
+</ul>
+<p>Some possible applications you can create:</p>
+<ul>
+<li>peer-to-peer trading bots, that would connect people with matching buy/sell orders,</li>
+<li>bots to access information,</li>
+<li>language translation bots,</li>
+<li>etc.</li>
+</ul>
+<p>As SimpleX Chat protocols provide strong encryption and authorization of the connections, you could use it not only in various communication scenarios, but also to remotely control any equipment where high level of security is required, for example:</p>
+<ul>
+<li>smart home automation,</li>
+<li>network services,</li>
+<li>remote deletion of application data,</li>
+<li>etc.</li>
+</ul>
+<p>We are really looking forward to seeing what applications you create - please submit your ideas and implementations, we will publish the links on a separate page on the website and GitHub repository.</p>
+<p>We are planning to announce the prizes to the best projects soon!</p>
+<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
+<p>Some links to answer the most common questions:</p>
+<p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
+<p><a href="20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
+<p><a href="20220723-simplex-chat-v3.1-tor-groups-efficiency.html#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
+<h2 id="we-ask-you-to-help-us-pay-for-3rd-party-security-audit" tabindex="-1">We ask you to help us pay for 3rd party security audit</h2>
+<p>We have already signed the agreement and paid for the security audit!</p>
+<p>It is planned for October, and if there are no major issues we will publish this report straight away, otherwise - once we fix them.</p>
+<p>This is a major expense for use - over $20,000 - I would really appreciate if you could help us cover some part of this cost with the donations.</p>
+<p>Our promise to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We will be establishing a legal framework this year to ensure that it doesn't change if the ownership of SimpleX Chat Ltd changes at any future point.</p>
+<p>Please consider making a donation - it will help us to raise more funds. Donating any amount, even the price of the cup of coffee, would make a huge difference for us.</p>
+<p>It is possible to donate via:</p>
+<ul>
+<li><a href="https://github.com/sponsors/simplex-chat">GitHub</a>: it is commission-free for us.</li>
+<li><a href="https://opencollective.com/simplex-chat">OpenCollective</a>: it also accepts donations in crypto-currencies, but charges a commission.</li>
+<li>Monero wallet: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt</li>
+<li>Bitcoin wallet: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG</li>
+</ul>
+<p>Thank you,</p>
+<p>Evgeny</p>
+<p>SimpleX Chat founder</p>
+</div>
+  </section>
+  <footer>
+    <div class="container">
+        <img alt="simplex logo" class="logo d-none-992" src="/img/simplex.svg" />
+        <p class="copyright">
+            &#169; 2020-22 SimpleX | Open-Source Project <span class="d-none-576">|</span>
+            <a class="d-none-576" href="https://github.com/simplex-chat" target="_blank"><img
+                    src="/img/icons/github.svg" /></a>
+            <a class="d-none-576" href="https://www.reddit.com/r/SimpleXChat/" target="_blank"><img
+                    src="/img/icons/reddit.svg" /></a>
+            <a class="d-none-576" href="https://twitter.com/simplexchat" target="_blank"><img
+                    src="/img/icons/twitter.svg" /></a>
+            <a class="d-none-576" href="https://www.linkedin.com/company/simplex-chat/" target="_blank"><img
+                    src="/img/icons/linkedin.svg" /></a>
+            <a class="d-none-576" href="mailto:chat@simplex.chat" target="_blank"><img src="/img/icons/email.svg" /></a>
+        </p>
+        <div class="github d-none-992">
+            <a class="github-button" href="https://github.com/simplex-chat/protocol" data-size="large"
+                data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+
+</html>
