@@ -10,8 +10,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import chat.simplex.app.R
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
-import chat.simplex.app.views.helpers.DBMigrationResult
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.usersettings.NotificationPreviewMode
 import chat.simplex.app.views.usersettings.NotificationsMode
@@ -63,6 +62,9 @@ class ChatModel(val controller: ChatController) {
   val callCommand = mutableStateOf<WCallCommand?>(null)
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
+
+  // working with external intents
+  val sharedContent = mutableStateOf(null as SharedContent?)
 
   fun updateUserProfile(profile: LocalProfile) {
     val user = currentUser.value

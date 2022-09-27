@@ -169,6 +169,7 @@
     <string name="tap_to_start_new_chat">Нажмите, чтобы начать чат</string>
     <string name="chat_with_developers">Соединиться с разработчиками</string>
     <string name="you_have_no_chats">У вас нет чатов</string>
+    <string name="choose_chat">Выберите чат…</string>
 
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>

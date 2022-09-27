@@ -213,7 +213,7 @@ fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stop
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          stringResource(R.string.your_chats),
+          if (chatModel.sharedContent.value == null) stringResource(R.string.your_chats) else stringResource(R.string.choose_chat),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
