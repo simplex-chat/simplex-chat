@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20220922_settings where
+module Simplex.Chat.Migrations.M20220928_settings where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20220922_settings :: Query
-m20220922_settings =
+m20220928_settings :: Query
+m20220928_settings =
   [sql|
 CREATE TABLE settings (
   settings_id INTEGER PRIMARY KEY,
