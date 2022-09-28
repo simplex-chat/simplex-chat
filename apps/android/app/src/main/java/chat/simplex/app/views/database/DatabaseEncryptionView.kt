@@ -169,7 +169,7 @@ fun DatabaseEncryptionLayout(
         DatabaseKeyField(
           currentKey,
           generalGetString(R.string.current_passphrase),
-          modifier = Modifier.padding(start = 8.dp),
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
@@ -178,7 +178,7 @@ fun DatabaseEncryptionLayout(
       DatabaseKeyField(
         newKey,
         generalGetString(R.string.new_passphrase),
-        modifier = Modifier.padding(start = 8.dp),
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
         showStrength = true,
         isValid = ::validKey,
         keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
@@ -209,7 +209,7 @@ fun DatabaseEncryptionLayout(
       DatabaseKeyField(
         confirmNewKey,
         generalGetString(R.string.confirm_new_passphrase),
-        modifier = Modifier.padding(start = 8.dp),
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
         isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
         keyboardActions = KeyboardActions(onDone = {
           if (!disabled) onClickUpdate()
@@ -217,7 +217,7 @@ fun DatabaseEncryptionLayout(
         }),
       )
 
-      SectionItemViewSpaceBetween(onClickUpdate, padding = PaddingValues(start = 8.dp, end = 12.dp), disabled = disabled) {
+      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled) {
         Text(generalGetString(R.string.update_database_passphrase), color = if (disabled) HighOrLowlight else MaterialTheme.colors.primary)
       }
     }
@@ -292,7 +292,7 @@ fun SavePassphraseSetting(
   progressIndicator: Boolean,
   onCheckedChange: (Boolean) -> Unit,
 ) {
-  SectionItemView() {
+  SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(
         if (storedKey) Icons.Filled.VpnKey else Icons.Filled.VpnKeyOff,

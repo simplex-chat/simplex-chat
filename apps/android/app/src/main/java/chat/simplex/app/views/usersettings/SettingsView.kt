@@ -311,7 +311,7 @@ fun MaintainIncognitoState(chatModel: ChatModel) {
 @Composable
 fun SettingsActionItem(icon: ImageVector, text: String, click: (() -> Unit)? = null, textColor: Color = Color.Unspecified, iconColor: Color = HighOrLowlight, disabled: Boolean = false) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = iconColor)
+    Icon(icon, text, tint = if (disabled) HighOrLowlight else iconColor)
     Spacer(Modifier.padding(horizontal = 4.dp))
     Text(text, color = if (disabled) HighOrLowlight else textColor)
   }
@@ -338,8 +338,8 @@ fun SettingsPreferenceItemWithInfo(
   pref: Preference<Boolean>,
   prefState: MutableState<Boolean>? = null
 ) {
-  SectionItemView() {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onClickInfo() }) {
+  SectionItemView(onClickInfo) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, text, tint = if (stopped) HighOrLowlight else iconTint)
       Spacer(Modifier.padding(horizontal = 4.dp))
       SharedPreferenceToggleWithIcon(text, Icons.Outlined.Info, stopped, onClickInfo, pref, prefState)

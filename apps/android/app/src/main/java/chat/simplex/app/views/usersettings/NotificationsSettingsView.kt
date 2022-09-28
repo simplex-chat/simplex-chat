@@ -3,6 +3,7 @@ package chat.simplex.app.views.usersettings
 import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
+import SectionViewSelectable
 import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.model.OnionHosts
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
@@ -115,30 +117,26 @@ fun NotificationsSettingsLayout(
       style = MaterialTheme.typography.h1
     )
     SectionView(null) {
-      Column(
-        Modifier.padding(horizontal = 8.dp)
-      ) {
-        SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATIONS_MODE) }, padding = PaddingValues()) {
-          Text(stringResource(R.string.settings_notifications_mode_title))
-          Spacer(Modifier.padding(horizontal = 10.dp))
-          Text(
-            modes.first { it.first == notificationsMode.value }.second,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = HighOrLowlight
-          )
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
-        SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }, padding = PaddingValues()) {
-          Text(stringResource(R.string.settings_notification_preview_mode_title))
-          Spacer(Modifier.padding(horizontal = 10.dp))
-          Text(
-            previewModes.first { it.first == notificationPreviewMode.value }.second,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = HighOrLowlight
-          )
-        }
+      SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
+        Text(stringResource(R.string.settings_notifications_mode_title))
+        Spacer(Modifier.padding(horizontal = 10.dp))
+        Text(
+          modes.first { it.value == notificationsMode.value }.title,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          color = HighOrLowlight
+        )
+      }
+      Spacer(Modifier.padding(horizontal = 4.dp))
+      SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
+        Text(stringResource(R.string.settings_notification_preview_mode_title))
+        Spacer(Modifier.padding(horizontal = 10.dp))
+        Text(
+          previewModes.first { it.value == notificationPreviewMode.value }.title,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          color = HighOrLowlight
+        )
       }
     }
   }
@@ -150,7 +148,6 @@ fun NotificationsModeView(
   onNotificationsModeSelected: (NotificationsMode) -> Unit,
 ) {
   val modes = remember { notificationModes() }
-
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
@@ -160,26 +157,7 @@ fun NotificationsModeView(
       Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SectionView(null) {
-      LazyColumn(
-        Modifier.padding(horizontal = 8.dp)
-      ) {
-        items(modes.size) { index ->
-          val item = modes[index]
-          val onClick = {
-            onNotificationsModeSelected(item.first)
-          }
-          SectionItemViewSpaceBetween(onClick, padding = PaddingValues()) {
-            Text(item.second)
-            if (notificationsMode.value == item.first) {
-              Icon(Icons.Outlined.Check, item.second, tint = HighOrLowlight)
-            }
-          }
-          Spacer(Modifier.padding(horizontal = 4.dp))
-        }
-      }
-    }
-    SectionTextFooter(modes.first { it.first == notificationsMode.value }.third)
+    SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
   }
 }
 
@@ -189,7 +167,6 @@ fun NotificationPreviewView(
   onNotificationPreviewModeSelected: (NotificationPreviewMode) -> Unit,
 ) {
   val previewModes = remember { notificationPreviewModes() }
-
   Column(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
@@ -199,49 +176,29 @@ fun NotificationPreviewView(
       Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-
-    SectionView(null) {
-      LazyColumn(
-        Modifier.padding(horizontal = 8.dp)
-      ) {
-        items(previewModes.size) { index ->
-          val item = previewModes[index]
-          val onClick = {
-            onNotificationPreviewModeSelected(item.first)
-          }
-          SectionItemViewSpaceBetween(onClick, padding = PaddingValues()) {
-            Text(item.second)
-            if (notificationPreviewMode.value == item.first) {
-              Icon(Icons.Outlined.Check, item.second, tint = HighOrLowlight)
-            }
-          }
-          Spacer(Modifier.padding(horizontal = 4.dp))
-        }
-      }
-    }
-    SectionTextFooter(previewModes.first { it.first == notificationPreviewMode.value }.third)
+    SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
   }
 }
 
 // mode, name, description
-fun notificationModes(): List<Triple<NotificationsMode, String, String>> {
-  val res = ArrayList<Triple<NotificationsMode, String, String>>()
+fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
+  val res = ArrayList<ValueTitleDesc<NotificationsMode>>()
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationsMode.OFF,
       generalGetString(R.string.notifications_mode_off),
       generalGetString(R.string.notifications_mode_off_desc),
     )
   )
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationsMode.PERIODIC,
       generalGetString(R.string.notifications_mode_periodic),
       generalGetString(R.string.notifications_mode_periodic_desc),
     )
   )
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationsMode.SERVICE,
       generalGetString(R.string.notifications_mode_service),
       generalGetString(R.string.notifications_mode_service_desc),
@@ -251,24 +208,24 @@ fun notificationModes(): List<Triple<NotificationsMode, String, String>> {
 }
 
 // preview mode, name, description
-fun notificationPreviewModes(): List<Triple<NotificationPreviewMode, String, String>> {
-  val res = ArrayList<Triple<NotificationPreviewMode, String, String>>()
+fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
+  val res = ArrayList<ValueTitleDesc<NotificationPreviewMode>>()
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationPreviewMode.MESSAGE,
       generalGetString(R.string.notification_preview_mode_message),
       generalGetString(R.string.notification_preview_mode_message_desc),
     )
   )
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationPreviewMode.CONTACT,
       generalGetString(R.string.notification_preview_mode_contact),
       generalGetString(R.string.notification_preview_mode_contact_desc),
     )
   )
   res.add(
-    Triple(
+    ValueTitleDesc(
       NotificationPreviewMode.HIDDEN,
       generalGetString(R.string.notification_preview_mode_hidden),
       generalGetString(R.string.notification_display_mode_hidden_desc),

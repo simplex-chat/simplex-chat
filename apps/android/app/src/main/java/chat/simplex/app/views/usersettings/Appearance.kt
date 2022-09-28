@@ -97,7 +97,7 @@ fun AppearanceView(
       Modifier.padding(start = 16.dp, bottom = 24.dp),
       style = MaterialTheme.typography.h1
     )
-    SectionView(stringResource(R.string.settings_section_title_icon)) {
+    SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
           val item = AppIcon.values()[index]
@@ -123,19 +123,15 @@ fun AppearanceView(
     SectionSpacer()
     val currentTheme by CurrentColors.collectAsState()
     SectionView(stringResource(R.string.settings_section_title_themes)) {
-      Column(
-        Modifier.padding(horizontal = 8.dp)
-      ) {
-        SectionItemViewSpaceBetween(showThemeSelector, padding = PaddingValues()) {
-          Text(generalGetString(R.string.theme))
-        }
-        Spacer(Modifier.padding(horizontal = 4.dp))
+      SectionItemViewSpaceBetween(showThemeSelector) {
+        Text(generalGetString(R.string.theme))
+      }
+      Spacer(Modifier.padding(horizontal = 4.dp))
 
-        SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }, padding = PaddingValues()) {
-          val title = generalGetString(R.string.color_primary)
-          Text(title)
-          Icon(Icons.Filled.Circle, title, tint = colors.primary)
-        }
+      SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
+        val title = generalGetString(R.string.color_primary)
+        Text(title)
+        Icon(Icons.Filled.Circle, title, tint = colors.primary)
       }
     }
     if (currentTheme.first.primary != LightColorPalette.primary) {

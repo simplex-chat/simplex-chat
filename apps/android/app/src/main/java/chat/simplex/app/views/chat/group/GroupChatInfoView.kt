@@ -144,10 +144,10 @@ fun GroupChatInfoLayout(
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
-        SectionItemView {
+        val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
+        SectionItemView(onAddMembersClick) {
           val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
-          val onClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-          AddMembersButton(tint, onClick)
+          AddMembersButton(tint)
         }
         SectionDivider()
       }
@@ -163,25 +163,17 @@ fun GroupChatInfoLayout(
 
     SectionView {
       if (groupInfo.canEdit) {
-        SectionItemView {
-          EditGroupProfileButton(editGroupProfile)
-        }
+        SectionItemView(editGroupProfile) { EditGroupProfileButton() }
         SectionDivider()
       }
-      SectionItemView {
-        ClearChatButton(clearChat)
-      }
+      ClearChatButton(clearChat)
       if (groupInfo.canDelete) {
         SectionDivider()
-        SectionItemView {
-          DeleteGroupButton(deleteGroup)
-        }
+        SectionItemView(deleteGroup) { DeleteGroupButton() }
       }
       if (groupInfo.membership.memberCurrent) {
         SectionDivider()
-        SectionItemView {
-          LeaveGroupButton(leaveGroup)
-        }
+        SectionItemView(leaveGroup) { LeaveGroupButton() }
       }
     }
     SectionSpacer()
@@ -222,11 +214,9 @@ fun GroupChatInfoHeader(cInfo: ChatInfo) {
 }
 
 @Composable
-fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, addMembers: () -> Unit) {
+fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { addMembers() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -290,11 +280,10 @@ fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = nu
 }
 
 @Composable
-fun EditGroupProfileButton(editGroupProfile: () -> Unit) {
+fun EditGroupProfileButton() {
   Row(
     Modifier
-      .fillMaxSize()
-      .clickable { editGroupProfile() },
+      .fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -308,11 +297,9 @@ fun EditGroupProfileButton(editGroupProfile: () -> Unit) {
 }
 
 @Composable
-fun LeaveGroupButton(leaveGroup: () -> Unit) {
+fun LeaveGroupButton() {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { leaveGroup() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
@@ -326,11 +313,9 @@ fun LeaveGroupButton(leaveGroup: () -> Unit) {
 }
 
 @Composable
-fun DeleteGroupButton(deleteGroup: () -> Unit) {
+fun DeleteGroupButton() {
   Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { deleteGroup() },
+    Modifier.fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
