@@ -1418,12 +1418,9 @@ expireChatItems user@User {userId} ttl sync = do
     where
       ciLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
       ciLoop [] _ = pure ()
-      ciLoop (ci : cis) f = continue $ do
-        f ci
-        unless sync $ threadDelay 100000
-        ciLoop cis f
+      ciLoop (ci : cis) f = continue $ f ci >> ciLoop cis f
       continue :: m () -> m ()
-      continue = if sync then id else whenM (readTVarIO expire)
+      continue = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
