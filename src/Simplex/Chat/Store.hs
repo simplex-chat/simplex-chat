@@ -4109,7 +4109,8 @@ getChatsWithExpiredItems db User {userId} expirationDate =
       [sql|
         SELECT contact_id, group_id
         FROM chat_items
-        WHERE user_id = ? AND item_ts <= ?
+        WHERE user_id = ? AND item_ts <= ? AND item_deleted != 1
+        GROUP BY contact_id, group_id
         ORDER BY contact_id ASC, group_id ASC
       |]
       (userId, expirationDate)
