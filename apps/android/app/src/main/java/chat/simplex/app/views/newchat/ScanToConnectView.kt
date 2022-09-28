@@ -20,7 +20,7 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
-fun ScanToConnectView(chatModel: ChatModel) {
+fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
   val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   LaunchedEffect(Unit) {
     cameraPermissionState.launchPermissionRequest()
@@ -32,7 +32,9 @@ fun ScanToConnectView(chatModel: ChatModel) {
         try {
           val uri = Uri.parse(connReqUri)
           withUriAction(uri) { action ->
-            connectViaUri(chatModel, action, uri)
+            if (connectViaUri(chatModel, action, uri)) {
+              close()
+            }
           }
         } catch (e: RuntimeException) {
           AlertManager.shared.showAlertMsg(
@@ -57,7 +59,7 @@ fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
   }
 }
 
-suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
+suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri): Boolean {
   val r = chatModel.controller.apiConnect(uri.toString())
   if (r) {
     AlertManager.shared.showAlertMsg(
@@ -67,6 +69,7 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri) {
         else generalGetString(R.string.you_will_be_connected_when_your_contacts_device_is_online)
     )
   }
+  return r
 }
 
 @Composable

@@ -94,7 +94,9 @@ chatTests = do
     it "accept contact request incognito" testAcceptContactRequestIncognito
     it "join group incognito" testJoinGroupIncognito
     it "can't invite contact to whom user connected incognito to a group" testCantInviteContactIncognito
+  describe "contact aliases" $ do
     it "set contact alias" testSetAlias
+    it "set connection alias" testSetConnectionAlias
   describe "SMP servers" $
     it "get and set SMP servers" testGetSetSMPServers
   describe "async connection handshake" $ do
@@ -2374,7 +2376,28 @@ testSetAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     connectUsers alice bob
     alice #$> ("/_set alias @2 my friend bob", id, "contact bob alias updated: my friend bob")
+    alice ##> "/cs"
+    alice <## "bob (Bob) (alias: my friend bob)"
     alice #$> ("/_set alias @2", id, "contact bob alias removed")
+    alice ##> "/cs"
+    alice <## "bob (Bob)"
+
+testSetConnectionAlias :: IO ()
+testSetConnectionAlias = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/c"
+    inv <- getInvitation alice
+    alice @@@ [(":1","")]
+    alice ##> "/_set alias :1 friend"
+    alice <## "connection 1 alias updated: friend"
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## ("bob (Bob): contact is connected"))
+      (bob <## ("alice (Alice): contact is connected"))
+    alice @@@ [("@bob","")]
+    alice ##> "/cs"
+    alice <## "bob (Bob) (alias: friend)"
 
 testGetSetSMPServers :: IO ()
 testGetSetSMPServers =
@@ -2394,8 +2417,8 @@ testAsyncInitiatingOffline = withTmpFiles $ do
     alice ##> "/c"
     getInvitation alice
   withNewTestChat "bob" bobProfile $ \bob -> do
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
+    bob `send` ("/c " <> inv)
+    bob <### ["/c " <> inv, "confirmation sent!"]
     withTestChat "alice" $ \alice -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
@@ -2421,8 +2444,8 @@ testFullAsync = withTmpFiles $ do
     alice ##> "/c"
     getInvitation alice
   withNewTestChat "bob" bobProfile $ \bob -> do
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
+    bob `send` ("/c " <> inv)
+    bob <### ["/c " <> inv, "confirmation sent!"]
   withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
   withTestChat "bob" $ \_ -> pure () -- connecting... notification in UI
   withTestChat "alice" $ \alice -> do

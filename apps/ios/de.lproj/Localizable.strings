@@ -44,13 +44,13 @@
 "**e2e encrypted** video call" = "**E2E-verschlüsselter** Videoanruf";
 
 /* No comment provided by engineer. */
-"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte oder welche Nachrichten Sie haben.";
+"**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." = "**Mehr Privatsphäre**: Es wird alle 20 Minuten auf neue Nachrichten geprüft. Nur Ihr Geräte-Token wird dem SimpleX-Chat-Server mitgeteilt, aber nicht wie viele Kontakte Sie haben oder welche Nachrichten Sie empfangen.";
 
 /* No comment provided by engineer. */
 "**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." = "**Beste Privatsphäre**: Es wird kein SimpleX-Chat-Benachrichtigungs-Server genutzt, Nachrichten werden in regelmäßigen Abständen im Hintergrund geprüft (dies hängt davon ab, wie häufig Sie die App nutzen).";
 
 /* No comment provided by engineer. */
-"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Fügen Sie den empfangenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.";
+"**Paste received link** or open it in the browser and tap **Open in mobile app**." = "**Fügen Sie den von Ihrem Kontakt erhaltenen Link ein** oder öffnen Sie ihn im Browser und tippen Sie auf **In mobiler App öffnen**.";
 
 /* No comment provided by engineer. */
 "**Please note**: you will NOT be able to recover or change passphrase if you lose it." = "**Bitte beachten Sie**: Sie können das Passwort NICHT wiederherstellen oder ändern, wenn Sie es vergessen haben oder verlieren.";
@@ -59,7 +59,7 @@
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Empfohlen**: Nur Ihr Geräte-Token und ihre Benachrichtigungen werden an den SimpleX-Chat-Benachrichtigungs-Server gesendet, aber weder der Nachrichteninhalt noch deren Größe oder von wem sie gesendet wurde.";
 
 /* No comment provided by engineer. */
-"**Scan QR code**: to connect to your contact in person or via video call." = "**Scannen Sie den QR-Code**: Um sich persönlich oder per Videoanruf mit Ihrem Kontakt zu verbinden.";
+"**Scan QR code**: to connect to your contact in person or via video call." = "**Scannen Sie den QR-Code ein**, um sich während einem persönlichen Treffen oder per Videoanruf mit Ihrem Kontakt zu verbinden.";
 
 /* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Warnung**: Sofortige Push-Benachrichtigungen erfordern die Eingabe eines Passworts, welches in Ihrem Schlüsselbund gespeichert ist.";
@@ -131,7 +131,7 @@
 "About SimpleX Chat" = "Über SimpleX Chat";
 
 /* No comment provided by engineer. */
-"above, then choose:" = "oberhalb, danach auswählen:";
+"above, then choose:" = "Danach eine Aktion auswählen:";
 
 /* No comment provided by engineer. */
 "Accent color" = "Akzentfarbe";
@@ -276,7 +276,7 @@
 "Clear" = "Löschen";
 
 /* No comment provided by engineer. */
-"Clear conversation" = "Unterhaltung löschen";
+"Clear conversation" = "Chatinhalte löschen";
 
 /* No comment provided by engineer. */
 "Clear conversation?" = "Unterhaltung löschen?";
@@ -291,10 +291,10 @@
 "complete" = "vollständig";
 
 /* No comment provided by engineer. */
-"Configure ICE servers" = "Konfigurieren Sie die ICE-Server";
+"Configure ICE servers" = "ICE-Server konfigurieren";
 
 /* No comment provided by engineer. */
-"Configure SMP servers" = "Konfigurieren Sie die SMP-Server";
+"Configure SMP servers" = "SMP-Server konfigurieren";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bestätigen";
@@ -576,7 +576,10 @@
 "Disable SimpleX Lock" = "SimpleX Sperre deaktivieren";
 
 /* No comment provided by engineer. */
-"Display name" = "Angezeigter Name:";
+"Display name" = "Angezeigter Name";
+
+/* No comment provided by engineer. */
+"Display name:" = "Angezeigter Name:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Später wiederholen";
@@ -762,6 +765,9 @@
 "Full name (optional)" = "Vollständiger Name (optional)";
 
 /* No comment provided by engineer. */
+"Full name:" = "Vollständiger Name:";
+
+/* No comment provided by engineer. */
 "Group" = "Gruppe";
 
 /* No comment provided by engineer. */
@@ -819,7 +825,7 @@
 "How to use it" = "Wie man SimpleX nutzt";
 
 /* No comment provided by engineer. */
-"How to use markdown" = "Wie Sie Markdowns anwenden";
+"How to use markdown" = "Markdowns verwenden";
 
 /* No comment provided by engineer. */
 "ICE servers (one per line)" = "ICE-Server (einer pro Zeile)";
@@ -924,7 +930,7 @@
 "iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Für die sichere Speicherung des Passworts nach dem Neustart der App und dem Wechsel des Passworts wird der iOS Schlüsselbund verwendet - dies erlaubt den Empfang von Push-Benachrichtigungen.";
 
 /* No comment provided by engineer. */
-"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Es ermöglicht viele anonyme Verbindungen ohne gemeinsame Daten zwischen diesen in einem einzigen Chat-Profil zu haben.";
+"It allows having many anonymous connections without any shared data between them in a single chat profile." = "Er ermöglicht mehrere anonyme Verbindungen in einem einzigen Chat-Profil ohne Daten zwischen diesen zu teilen.";
 
 /* No comment provided by engineer. */
 "It can happen when:\n1. The messages expire on the server if they were not received for 30 days,\n2. The server you use to receive the messages from this contact was updated and restarted.\n3. The connection is compromised.\nPlease connect to the developers via Settings to receive the updates about the servers.\nWe will be adding server redundancy to prevent lost messages." = "Dies kann unter folgenden Umständen passieren:\n1. Die Nachrichten verfallen auf dem Server, wenn sie 30 Tage lang nicht empfangen wurden.\n2. Der Server, den Sie zum Empfang der Nachrichten von diesem Kontakt verwenden, wurde aktualisiert und neu gestartet.\n3. Die Verbindung ist kompromittiert.\nBitte nehmen Sie über die Einstellungen Verbindung mit den Entwicklern auf, um Updates zu den Servern zu erhalten.\nWir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu verhindern.";
@@ -993,7 +999,7 @@
 "Mark read" = "Als gelesen markieren";
 
 /* No comment provided by engineer. */
-"Markdown in messages" = "Markdown in Nachrichten";
+"Markdown in messages" = "Markdowns in Nachrichten";
 
 /* No comment provided by engineer. */
 "member" = "Mitglied";
@@ -1131,10 +1137,10 @@
 "Open chat console" = "Chat-Konsole öffnen";
 
 /* No comment provided by engineer. */
-"Open Settings" = "Einstellungen öffnen";
+"Open Settings" = "Geräte-Einstellungen öffnen";
 
 /* No comment provided by engineer. */
-"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server nutzen.";
+"Open-source protocol and code – anybody can run the servers." = "Open-Source-Protokoll und -Code – Jeder kann seine eigenen Server aufsetzen und nutzen.";
 
 /* No comment provided by engineer. */
 "or chat with the developers" = "oder chatten Sie mit den Entwicklern";
@@ -1665,7 +1671,7 @@
 "When available" = "Wenn verfügbar";
 
 /* No comment provided by engineer. */
-"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil für die Gruppen verwendet, zu denen sie Sie eingeladen haben.";
+"When you share an incognito profile with somebody, this profile will be used for the groups they invite you to." = "Wenn Sie ein Inkognito-Profil mit Jemandem teilen, wird dieses Profil auch für die Gruppen verwendet, für die Sie von diesem Kontakt eingeladen werden.";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
@@ -1698,16 +1704,16 @@
 "You can now send messages to %@" = "Sie können nun Nachrichten an %@ versenden";
 
 /* No comment provided by engineer. */
-"You can set lock screen notification preview via settings." = "Über die Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.";
+"You can set lock screen notification preview via settings." = "Über die Geräte-Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.";
 
 /* No comment provided by engineer. */
-"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Wenn Sie diese Adresse später löschen, werden Sie Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren.";
+"You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten.";
 
 /* No comment provided by engineer. */
-"You can use markdown to format messages:" = "Sie können Markdowns verwenden, um Nachrichten zu formatieren:";
+"You can use markdown to format messages:" = "Um Nachrichteninhalte zu formatieren, können Sie Markdowns verwenden:";
 
 /* No comment provided by engineer. */
 "You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." = "Sie legen fest, über welche Server Sie Ihre Nachrichten **empfangen** und an Ihre Kontakte **senden**.";
@@ -1773,7 +1779,7 @@
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt.";
 
 /* No comment provided by engineer. */
-"Your calls" = "Ihre Anrufe";
+"Your calls" = "Anrufe";
 
 /* No comment provided by engineer. */
 "Your chat database" = "Ihre Chat-Datenbank";
@@ -1815,7 +1821,7 @@
 "Your privacy" = "Ihre Privatsphäre";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\nSimpleX-Server können Ihr Profil nicht sehen.";
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt.\nSimpleX-Server können Ihr Profil nicht einsehen.";
 
 /* No comment provided by engineer. */
 "Your profile will be sent to the contact that you received this link from" = "Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.";

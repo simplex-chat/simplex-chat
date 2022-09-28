@@ -24,6 +24,8 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
+**NEW**: v4.0 is released - now local chat database is encrypted with passphrase! See [the release announcement](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+
 ## Contents
 
 - [Why privacy matters](#why-privacy-matters)
@@ -80,6 +82,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent updates:
+
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
 
 [Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
 
@@ -176,16 +180,17 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Dual server addresses to access messaging servers as v3 hidden services.
 - ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
 - ✅ Incognito mode to share a new random name with each contact.
-- 🏗 Chat database encryption.
+- ✅ Chat database encryption.
+- 🏗 Automatic chat history deletion.
+- 🏗 SMP queue redundancy and rotation.
 - 🏗 Links to join groups and improve groups stability.
+- Feeds/broadcasts
 - Disappearing messages, with mutual agreement.
 - Voice messages
 - Video messages
 - Web widgets for custom interactivity in the chats.
-- SMP protocol improvements:
-  - SMP queue redundancy and rotation.
-  - Message delivery confirmation.
-  - Supporting the same profile on multiple devices.
+- Message delivery confirmation.
+- Supporting the same profile on multiple devices.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.

@@ -33,7 +33,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     },
     connectViaLink = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModal { ConnectViaLinkView(chatModel) }
+      ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
       newChatCtrl.collapse()

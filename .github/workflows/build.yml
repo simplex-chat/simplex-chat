@@ -58,9 +58,9 @@ jobs:
           - os: macos-latest
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
-          # - os: windows-latest
-          #   cache_path: C:/sr
-          #   asset_name: simplex-chat-windows-x86-64
+          - os: windows-latest
+            cache_path: C:/cabal
+            asset_name: simplex-chat-windows-x86-64
     steps:
       - name: Clone project
         uses: actions/checkout@v2
@@ -127,26 +127,24 @@ jobs:
 
       # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
       # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
-      # * So we're running a separate set of actions for Windows build
 
-      # TODO run tests on Windows
-      # - name: Windows build
-      #   id: windows_build
-      #   if: matrix.os == 'windows-latest'
-      #   shell: cmd
-      #   run: |
-      #     stack build
-      #     stack path --local-install-root > tmp_file
-      #     set /p local_install_root= < tmp_file
-      #     echo ::set-output name=local_install_root::%local_install_root%
+      - name: Windows build
+        id: windows_build
+        if: matrix.os == 'windows-latest'
+        shell: cmd
+        run: |
+          cabal build --enable-tests
+          cabal list-bin simplex-chat > tmp_bin_path
+          set /p bin_path= < tmp_bin_path
+          echo ::set-output name=bin_path::%bin_path%
 
-      # - name: Windows upload binary to release
-      #   if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: ${{ steps.windows_build.outputs.local_install_root }}\bin\simplex-chat.exe
-      #     asset_name: ${{ matrix.asset_name }}
-      #     tag: ${{ github.ref }}
+      - name: Windows upload binary to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.windows_build.outputs.bin_path }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
 
       # Windows /

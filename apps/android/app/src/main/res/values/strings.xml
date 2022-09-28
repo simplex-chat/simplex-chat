@@ -112,6 +112,8 @@
   <string name="notification_display_mode_hidden_desc">Hide contact and message</string>
   <string name="notification_preview_somebody">Contact hidden:</string>
   <string name="notification_preview_new_message">new message</string>
+  <string name="notification_new_contact_request">New contact request</string>
+  <string name="notification_contact_connected">Connected</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
