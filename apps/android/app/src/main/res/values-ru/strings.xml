@@ -171,9 +171,9 @@
     <string name="you_have_no_chats">У вас нет чатов</string>
 
     <!-- ShareListView.kt -->
-    <string name="share_message">Поделиться сообщением…</string>
-    <string name="share_image">Поделиться изображением…</string>
-    <string name="share_file">Поделиться файлом…</string>
+    <string name="share_message">Отправить сообщение…</string>
+    <string name="share_image">Отправить изображение…</string>
+    <string name="share_file">Отправить файл…</string>
 
     <!-- ComposeView.kt, helpers -->
     <string name="attach">Прикрепить</string>
