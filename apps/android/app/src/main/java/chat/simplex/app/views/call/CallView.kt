@@ -32,12 +32,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
+import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.TAG
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.ProfileImage
 import chat.simplex.app.views.helpers.withApi
+import chat.simplex.app.views.usersettings.NotificationsMode
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -51,6 +52,16 @@ fun ActiveCallView(chatModel: ChatModel) {
     val call = chatModel.activeCall.value
     if (call != null) withApi { chatModel.callManager.endCall(call) }
   })
+  val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE.name }
+  LaunchedEffect(Unit) {
+    // Start service when call happening since it's not already started.
+    // It's needed to prevent Android from shutting down a microphone after a minute or so when screen is off
+    if (!ntfModeService) SimplexService.start(SimplexApp.context)
+  }
+  DisposableEffect(Unit) {
+    // Stop it when call ended
+    onDispose { if (!ntfModeService) SimplexService.stop(SimplexApp.context) }
+  }
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
   Box(Modifier.fillMaxSize()) {
