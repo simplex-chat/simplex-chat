@@ -183,14 +183,12 @@ startChatController user subConns enableExpireCIs = do
       pure a1
     startExpireCIs = do
       expireAsync <- asks expireCIsAsync
-      expire <- asks expireCIs
       readTVarIO expireAsync >>= \case
         Nothing -> do
           a <- Just <$> async (void $ runExceptT runExpireCIs)
-          atomically $ do
-            writeTVar expireAsync a
-            writeTVar expire True
-        _ -> atomically $ writeTVar expire True
+          atomically $ writeTVar expireAsync a
+          setExpireCIs True
+        _ -> setExpireCIs True
     runExpireCIs = do
       let interval = 1800 * 1000000 -- 30 minutes
       forever $ do
@@ -1099,7 +1097,7 @@ processChatCommand = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
 
-setExpireCIs :: ChatMonad m => Bool -> m ()
+setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
   expire <- asks expireCIs
   atomically $ writeTVar expire b
