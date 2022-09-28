@@ -122,7 +122,7 @@ chatTests = do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
-    fit "set chat item TTL" testSetChatItemTTL
+    it "set chat item TTL" testSetChatItemTTL
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
