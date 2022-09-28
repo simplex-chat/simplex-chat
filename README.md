@@ -180,7 +180,8 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Dual server addresses to access messaging servers as v3 hidden services.
 - ✅ Chat server and TypeScript client SDK to develop chat interfaces, integrations and chat bots (ready for announcement).
 - ✅ Incognito mode to share a new random name with each contact.
-- 🏗 Chat database encryption.
+- ✅ Chat database encryption.
+- 🏗 Automatic chat history deletion.
 - 🏗 Links to join groups and improve groups stability.
 - Disappearing messages, with mutual agreement.
 - Voice messages
