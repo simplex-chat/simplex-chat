@@ -160,7 +160,7 @@
 <p><strong>Published:</strong> Sep 28, 2022</p>
 <h2 id="whats-new-in-v4" tabindex="-1">What's new in v4</h2>
 <ul>
-<li><a href="#on-device-chat-database-encrypted-with-passphrase">encrypted on-device chat database</a>.</li>
+<li><a href="#local-chat-database-encryption">encrypted local chat database</a>.</li>
 <li><a href="#self-hosted-webrtc-ice-servers">support for self-hosted WebRTC ICE servers</a>.</li>
 <li><a href="#improved-stability-of-creating-new-connections">improved stability of creating new connections: more reliable groups, files and contacts</a>.</li>
 <li><a href="#deleting-files-and-media">deleting files and media</a>.</li>
@@ -178,10 +178,10 @@
 <li>reduced Android APK size for direct download and in F-Droid repo from 200 to 50Mb!</li>
 </ul>
 <p><a href="#we-ask-you-to-help-us-pay-for-3rd-party-security-audit">Implementation audit is arranged for October</a>!</p>
-<h3 id="on-device-chat-database-encrypted-with-passphrase" tabindex="-1">On-device chat database encrypted with passphrase</h3>
+<h3 id="local-chat-database-encryption" tabindex="-1">Local chat database encryption</h3>
 <img src="./images/20220928-passphrase.png" width="330">
-<p>SimpleX Chat focus has always been on protecting messages in delivery, not when they are stored on the device. This release changes it - now all messages that you receive and send are stored on the device encrypted using SQLCipher 4.0.</p>
-<p>If you are already using SimpleX Chat, your database will remain unencrypted until you enter the passphrase via the app settings. You have to remember the passphrase you choose, as there is no way to recover it if it is lost.</p>
+<p>SimpleX Chat focus has always been on protecting messages in delivery, not when they are stored on the device. This release changes it - now all messages that you receive and send are stored on the device encrypted with <a href="https://github.com/sqlcipher/sqlcipher">SQLCipher</a>.</p>
+<p><strong>Please note</strong>: If you are already using SimpleX Chat, your database will remain unencrypted until you enter the passphrase via the app settings. You have to remember the passphrase you choose, as there is no way to recover it if it is lost.</p>
 <p>By default your passphrase will be stored securely on the device (in KeyChain on iOS or encrypted with the key stored in TPM, if available, on Android) - it is only accessible to the app, and only on one device. Storing passphrase is required for instant notifications to work. In this case, if you lose the passphrase, the app will continue to work, but you will not be able to change the passphrase and to migrate your user profile to another device.</p>
 <p>For additional security of your messages you also have the option to remove the passphrase from the device. In this case you will need to enter the passphrase every time you start the app. The notifications will continue to work only while the app is in the background. For iOS it means that periodic and local notifications will work, but instant notifications will only show that there is a message available, but not message content or who it is from - you will need to open the app and enter the passphrase to see the messages. In this case, if you lose the passphrase, you will not be able to open the app or decrypt the database - so make sure you store it safely.</p>
 <h3 id="self-hosted-webrtc-ice-servers" tabindex="-1">Self-hosted WebRTC ICE servers</h3>
@@ -195,17 +195,17 @@
 <img src="./images/20220928-files-media.png" width="330">
 <p>While the database with messages and all contacts is now encrypted, the files you receive and send are not (we are planning to improve it later). To protect the security of the files we have added an option to delete all files from the app storage - just make sure not to do it before the files you send are delivered to the recipients, or they won't receive them.</p>
 <h3 id="for-developers-typescript-sdk-for-integrating-with-simplex-chat" tabindex="-1">For developers - TypeScript SDK for integrating with SimpleX Chat</h3>
-<p>It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you would have to write Haskell code, and this is not the most widely used language.</p>
+<p>It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you had to either write Haskell code or use foreign function interface in any other language.</p>
 <p>With v4 we are announcing <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript">TypeScript SimpleX Chat Client SDK</a> that you can use to create any integrations with SimpleX Chat CLI.</p>
 <p>You can run SimpleX Chat CLI as a local WebSockets server on any port, we use 5225 here:</p>
 <pre><code class="language-bash">simplex-chat -p 5225
 </code></pre>
-<p>Then you can make a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js">sample bot</a> you can start from and <a href="https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript">README page</a>.</p>
+<p>Then you can create a JavaScript or TypeScript application that would connect to it and control it via a simple WebSocket API. TypeScript SDK defines all necessary types and convenience functions to use in your applications. See this <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/packages/simplex-chat-client/typescript/examples/squaring-bot.js">sample bot</a> and <a href="https://github.com/simplex-chat/simplex-chat/tree/ep/blog-v4/packages/simplex-chat-client/typescript">README page</a>.</p>
 <p>SimpleX Chat API allows you to:</p>
 <ul>
 <li>create and change user profile (although in most cases you would do it manually, via SimpleX Chat terminal app).</li>
 <li>create and accept invitations or connect with the contacts.</li>
-<li>create and manage long-term user address, accepting connection requests automatically.</li>
+<li>create and manage long-term user address, accepting connection requests from the code or automatically.</li>
 <li>create, join and manage groups - this can be used, for example, to connect two different people who connected to chat-bot.</li>
 <li>send and receive files.</li>
 </ul>
@@ -224,7 +224,6 @@
 <li>etc.</li>
 </ul>
 <p>We are really looking forward to seeing what applications you create - please submit your ideas and implementations, we will publish the links on a separate page on the website and GitHub repository.</p>
-<p>We are planning to announce the prizes to the best projects soon!</p>
 <h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
 <p>Some links to answer the most common questions:</p>
 <p><a href="20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
