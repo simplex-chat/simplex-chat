@@ -1393,21 +1393,18 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-expireChatItems :: ChatMonad m => User -> Int64 -> Bool -> m ()
+expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
 expireChatItems user@User {userId} ttl sync = do
   currentTs <- liftIO getCurrentTime
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
+  chats <- withStore' $ \db -> getChatsWithExpiredItems db user expirationDate
   expire <- asks expireCIs
-  expireChatItems' expirationDate expire
+  chatsLoop chats expirationDate expire
   where
-  expireChatItems' :: forall m. ChatMonad m => UTCTime -> TVar Bool -> m ()
-  expireChatItems' expirationDate expire = do
-    chats <- withStore' $ \db -> getChatsWithExpiredItems db user expirationDate
-    chatsLoop chats
+  chatsLoop :: [ChatRef] -> UTCTime -> TVar Bool -> m ()
+  chatsLoop [] _ _ = pure ()
+  chatsLoop (chat : chats) expirationDate expire = continue $ expireChat chat >> chatsLoop chats expirationDate expire
     where
-      chatsLoop :: [ChatRef] -> m ()
-      chatsLoop [] = pure ()
-      chatsLoop (chat : chats) = continue $ expireChat chat >> chatsLoop chats
       expireChat :: ChatRef -> m ()
       expireChat (ChatRef cType chatId) = case cType of
         CTDirect -> do
