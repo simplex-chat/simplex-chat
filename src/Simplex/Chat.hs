@@ -152,9 +152,9 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   filesFolder <- newTVarIO Nothing
   incognitoMode <- newTVarIO False
   chatStoreChanged <- newTVarIO False
-  expireChatItemsAsync <- newTVarIO Nothing
-  doExpireCI <- newTVarIO False
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireChatItemsAsync, doExpireCI}
+  expireCIsAsync <- newTVarIO Nothing
+  expireCIs <- newTVarIO False
+  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, incognitoMode, filesFolder, expireCIsAsync, expireCIs}
   where
     resolveServers :: InitialAgentServers -> IO InitialAgentServers
     resolveServers ss@InitialAgentServers {smp = defaultSMPServers} = case nonEmpty smpServers of
@@ -166,7 +166,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         _ -> pure ss
 
 startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
-startChatController user subConns runExpireCIs = do
+startChatController user subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   restoreCalls user
   s <- asks agentAsync
@@ -179,18 +179,27 @@ startChatController user subConns runExpireCIs = do
           then Just <$> async (void . runExceptT $ subscribeUserConnections Agent.subscribeConnections user)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when runExpireCIs runExpireChatItems
+      when enableExpireCIs startExpireCIs
       pure a1
-    runExpireChatItems = do
-      expireCIAsync <- asks expireChatItemsAsync
-      doExpire <- asks doExpireCI
-      readTVarIO expireCIAsync >>= \case
+    startExpireCIs = do
+      expireAsync <- asks expireCIsAsync
+      doExpire <- asks expireCIs
+      readTVarIO expireAsync >>= \case
         Nothing -> do
-          a <- Just <$> async (void . runExceptT $ expireChatItems user)
+          a <- Just <$> async (void . runExceptT $ runExpireCIs user)
           atomically $ do
-            writeTVar expireCIAsync a
+            writeTVar expireAsync a
             writeTVar doExpire True
         _ -> atomically $ writeTVar doExpire True
+    runExpireCIs :: ChatMonad m => User -> m ()
+    runExpireCIs user = do
+      let interval = 1800 * 1000000 -- 30 minutes
+      forever $ do
+        expire <- asks expireCIs
+        atomically $ readTVar expire >>= \b -> unless b retry
+        ttl <- withStore' (`getChatItemTTL` user)
+        forM_ ttl $ \t -> expireChatItemsCycle user t False
+        threadDelay interval
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
@@ -200,11 +209,11 @@ restoreCalls user = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: MonadUnliftIO m => ChatController -> m ()
-stopChatController ChatController {smpAgent, agentAsync = s, doExpireCI} = do
+stopChatController ChatController {smpAgent, agentAsync = s, expireCIs} = do
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   atomically $ do
-    writeTVar doExpireCI False
+    writeTVar expireCIs False
     writeTVar s Nothing
 
 withLock :: MonadUnliftIO m => TMVar () -> m a -> m a
@@ -235,19 +244,20 @@ processChatCommand = \case
     user <- withStore $ \db -> createUser db p True
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
-  StartChat subConns runExpireCIs -> withUser' $ \user ->
+  StartChat subConns enableExpireCIs -> withUser' $ \user ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController user subConns runExpireCIs $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController user subConns enableExpireCIs $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
   APIActivateChat -> do
     withUser $ \user -> restoreCalls user
-    withAgent activateAgent $> CRCmdOk
+    setExpireCIs True
+    withAgent activateAgent
+    pure CRCmdOk
   APISuspendChat t -> do
-    doExpire <- asks doExpireCI
-    atomically $ writeTVar doExpire False
+    setExpireCIs False
     withAgent (`suspendAgent` t)
     pure CRCmdOk
   ResubscribeAllConnections -> withUser (subscribeUserConnections Agent.resubscribeConnections) $> CRCmdOk
@@ -630,24 +640,16 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APISetChatItemTTL newTTL -> withUser $ \user -> withChatLock $ do
-    oldTTL <- withStore' $ \db -> do
-      oldTTL <- getChatItemTTL db user
-      setChatItemTTL db user newTTL
-      pure oldTTL
-    doExpire <- asks doExpireCI
-    case newTTL of
-      Just newTTL' -> do
-        expireOff <- not <$> readTVarIO doExpire
-        when (expireOff || ttlDecreased) $ do
-          atomically $ writeTVar doExpire False
-          expireChatItemsCycle user newTTL' doExpire True
-        atomically $ writeTVar doExpire True
-        where
-          ttlDecreased = case oldTTL of
-            Nothing -> True
-            Just oldTTL' -> newTTL' < oldTTL'
-      _ -> atomically $ writeTVar doExpire False
+  APISetChatItemTTL newTTL_ -> withUser $ \user -> withChatLock $ do
+    case newTTL_ of
+      Nothing -> setExpireCIs False
+      Just newTTL -> do
+        oldTTL <- withStore' (`getChatItemTTL` user)
+        when (maybe True (newTTL <) oldTTL) $ do
+          setExpireCIs False
+          expireChatItemsCycle user newTTL True
+        withStore' $ \db -> setChatItemTTL db user newTTL_
+        setExpireCIs True
     pure CRCmdOk
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
@@ -1091,6 +1093,11 @@ processChatCommand = \case
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
 
+setExpireCIs :: ChatMonad m => Bool -> m ()
+setExpireCIs b = do
+  doExpire <- asks expireCIs
+  atomically $ writeTVar doExpire b
+
 deleteDirectChatItem :: ChatMonad m => User -> Contact -> (ChatItemId, Maybe CIFileInfo) -> m ()
 deleteDirectChatItem user@User {userId} ct (itemId, fileInfo_) = do
   forM_ fileInfo_ $ \fileInfo -> do
@@ -1382,18 +1389,9 @@ subscribeUserConnections agentBatchSubscribe user = do
               Just _ -> Nothing
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
-expireChatItems :: ChatMonad m => User -> m ()
-expireChatItems user = do
-  let interval = 1800 * 1000000 -- 30 minutes
-  forever $ do
-    doExpire <- asks doExpireCI
-    atomically $ readTVar doExpire >>= \b -> unless b retry
-    ttl <- withStore' $ \db -> getChatItemTTL db user
-    forM_ ttl $ \t -> expireChatItemsCycle user t doExpire False
-    threadDelay interval
-
-expireChatItemsCycle :: ChatMonad m => User -> Int64 -> TVar Bool -> Bool -> m ()
-expireChatItemsCycle user ttl doExpire sync = do
+expireChatItemsCycle :: ChatMonad m => User -> Int64 -> Bool -> m ()
+expireChatItemsCycle user ttl sync = do
+  doExpire <- asks expireCIs
   currentTs <- liftIO getCurrentTime
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
   expireChatItemsCycle' user expirationDate doExpire sync
@@ -1401,44 +1399,31 @@ expireChatItemsCycle user ttl doExpire sync = do
 expireChatItemsCycle' :: forall m. ChatMonad m => User -> UTCTime -> TVar Bool -> Bool -> m ()
 expireChatItemsCycle' user@User {userId} expirationDate doExpire sync = do
   chats <- withStore' $ \db -> getChatsWithExpiredItems db user expirationDate
-  expireChatsLoop chats
+  chatsLoop chats
   where
-    expireChatsLoop :: [ChatRef] -> m ()
-    expireChatsLoop [] = pure ()
-    expireChatsLoop [chat] =
-      withContinueExpire $ expireChat chat
-    expireChatsLoop (chat : chats) =
-      withContinueExpire $ do
-        expireChat chat
-        expireChatsLoop chats
+    chatsLoop :: [ChatRef] -> m ()
+    chatsLoop [] = pure ()
+    chatsLoop (chat : chats) = continue $ expireChat chat >> chatsLoop chats
     expireChat :: ChatRef -> m ()
     expireChat (ChatRef cType chatId) = case cType of
       CTDirect -> do
         ct <- withStore $ \db -> getContact db userId chatId
-        ciIdsAndFileInfo <- withStore' $ \db -> getContactExpiredChatItemIdsAndFileInfo db user chatId expirationDate
-        expireChatItemsLoop ciIdsAndFileInfo $ deleteDirectChatItem user ct
+        ciIdsAndFileInfo <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
+        ciLoop ciIdsAndFileInfo $ deleteDirectChatItem user ct
       CTGroup -> do
         gInfo <- withStore $ \db -> getGroupInfo db user chatId
-        ciIdsAndFileInfo <- withStore' $ \db -> getGroupExpiredChatItemIdsAndFileInfo db user chatId expirationDate
-        expireChatItemsLoop ciIdsAndFileInfo $ deleteGroupChatItem user gInfo
-      CTContactRequest -> pure ()
-      CTContactConnection -> pure ()
-    expireChatItemsLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
-    expireChatItemsLoop [] _ = pure ()
-    expireChatItemsLoop [ci] f =
-      withContinueExpire $ expireChatItem ci f
-    expireChatItemsLoop (ci : cis) f =
-      withContinueExpire $ do
-        expireChatItem ci f
-        expireChatItemsLoop cis f
+        ciIdsAndFileInfo <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
+        ciLoop ciIdsAndFileInfo $ deleteGroupChatItem user gInfo
+      _ -> pure ()
+    ciLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
+    ciLoop [] _ = pure ()
+    ciLoop (ci : cis) f = continue $ expireChatItem ci f >> ciLoop cis f
     expireChatItem :: (ChatItemId, Maybe CIFileInfo) -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
-    expireChatItem ciIdAndFileInfo expirationFunction = do
-      expirationFunction ciIdAndFileInfo
+    expireChatItem ciIdAndFileInfo expire = do
+      expire ciIdAndFileInfo
       unless sync $ threadDelay 100000
-    withContinueExpire :: m () -> m ()
-    withContinueExpire a = do
-      expireOn <- if sync then pure True else readTVarIO doExpire
-      when expireOn a
+    continue :: m () -> m ()
+    continue = if sync then id else whenM (readTVarIO doExpire)
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser

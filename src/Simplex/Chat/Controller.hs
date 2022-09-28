@@ -97,8 +97,8 @@ data ChatController = ChatController
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     incognitoMode :: TVar Bool,
-    expireChatItemsAsync :: TVar (Maybe (Async ())),
-    doExpireCI :: TVar Bool
+    expireCIsAsync :: TVar (Maybe (Async ())),
+    expireCIs :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -111,7 +111,7 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
-  | StartChat {subscribeConnections :: Bool, runExpireChatItems :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}

@@ -191,8 +191,8 @@ module Simplex.Chat.Store
     getChatItemTTL,
     setChatItemTTL,
     getChatsWithExpiredItems,
-    getContactExpiredChatItemIdsAndFileInfo,
-    getGroupExpiredChatItemIdsAndFileInfo,
+    getContactExpiredCIs,
+    getGroupExpiredCIs,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -4100,8 +4100,8 @@ getChatsWithExpiredItems db User {userId} expirationDate =
     toChatRef (Nothing, Just groupId) = Just $ ChatRef CTGroup groupId
     toChatRef _ = Nothing
 
-getContactExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> ContactId -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
-getContactExpiredChatItemIdsAndFileInfo db User {userId} contactId expirationDate =
+getContactExpiredCIs :: DB.Connection -> User -> ContactId -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getContactExpiredCIs db User {userId} contactId expirationDate =
   map toItemIdAndFileInfo'
     <$> DB.query
       db
@@ -4114,8 +4114,8 @@ getContactExpiredChatItemIdsAndFileInfo db User {userId} contactId expirationDat
       |]
       (userId, contactId, expirationDate)
 
-getGroupExpiredChatItemIdsAndFileInfo :: DB.Connection -> User -> Int64 -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
-getGroupExpiredChatItemIdsAndFileInfo db User {userId} groupId expirationDate =
+getGroupExpiredCIs :: DB.Connection -> User -> Int64 -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getGroupExpiredCIs db User {userId} groupId expirationDate =
   map toItemIdAndFileInfo'
     <$> DB.query
       db
