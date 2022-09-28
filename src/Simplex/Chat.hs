@@ -190,7 +190,7 @@ startChatController user subConns enableExpireCIs = do
           setExpireCIs True
         _ -> setExpireCIs True
     runExpireCIs = do
-      let interval = 180 * 1000000 -- 30 minutes
+      let interval = 1800 * 1000000 -- 30 minutes
       forever $ do
         expire <- asks expireCIs
         atomically $ readTVar expire >>= \b -> unless b retry
