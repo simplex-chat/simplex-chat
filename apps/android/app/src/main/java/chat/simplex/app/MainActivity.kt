@@ -31,8 +31,7 @@ import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
-import chat.simplex.app.views.chatlist.ChatListView
-import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
@@ -329,7 +328,12 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA, stopped)
+            if (chatModel.chatId.value == null) {
+              if (chatModel.sharedContent.value == null)
+                ChatListView(chatModel, setPerformLA, stopped)
+              else
+                ShareListView(chatModel, stopped)
+            }
             else ChatView(chatModel)
           }
         }

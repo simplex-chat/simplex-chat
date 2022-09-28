@@ -623,7 +623,7 @@ data class GroupInfo (
   override val chatType get() = ChatType.Group
   override val id get() = "#$groupId"
   override val apiId get() = groupId
-  override val ready get() = true
+  override val ready get() = membership.memberActive
   override val sendMsgEnabled get() = membership.memberActive
   override val ntfsEnabled get() = chatSettings.enableNtfs
   override val displayName get() = groupProfile.displayName

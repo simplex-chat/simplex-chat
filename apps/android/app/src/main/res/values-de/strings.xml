@@ -169,7 +169,11 @@
   <string name="tap_to_start_new_chat">Tippen Sie um einen neuen Chat zu starten</string>
   <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
   <string name="you_have_no_chats">Sie haben keine Chats</string>
-  <string name="choose_chat">Choose chat…</string>
+
+  <!-- ShareListView.kt -->
+  <string name="share_message">Share message…</string>
+  <string name="share_image">Share image…</string>
+  <string name="share_file">Share file…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Anhängen</string>

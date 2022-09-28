@@ -177,7 +177,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
+private fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stopped: Boolean, onSearchValueChanged: (String) -> Unit) {
   var showSearch by rememberSaveable { mutableStateOf(false) }
   val hideSearchOnBack = { onSearchValueChanged(""); showSearch = false }
   if (showSearch) {
@@ -213,7 +213,7 @@ fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stop
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
-          if (chatModel.sharedContent.value == null) stringResource(R.string.your_chats) else stringResource(R.string.choose_chat),
+          stringResource(R.string.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
@@ -236,7 +236,7 @@ fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldController, stop
 }
 
 @Composable
-fun ChatList(chatModel: ChatModel, search: String) {
+private fun ChatList(chatModel: ChatModel, search: String) {
   val filter: (Chat) -> Boolean = { chat: Chat ->
     chat.chatInfo.chatViewName.lowercase().contains(search.lowercase())
   }

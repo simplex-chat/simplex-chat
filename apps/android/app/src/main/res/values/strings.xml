@@ -169,7 +169,11 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
-  <string name="choose_chat">Choose chat…</string>
+
+  <!-- ShareListView.kt -->
+  <string name="share_message">Share message…</string>
+  <string name="share_image">Share image…</string>
+  <string name="share_file">Share file…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
