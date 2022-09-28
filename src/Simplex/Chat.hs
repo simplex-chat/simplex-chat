@@ -641,7 +641,9 @@ processChatCommand = \case
     pure CRCmdOk
   APISetChatItemTTL newTTL_ -> withUser $ \user -> withChatLock $ do
     case newTTL_ of
-      Nothing -> setExpireCIs False
+      Nothing -> do
+        withStore' $ \db -> setChatItemTTL db user newTTL_
+        setExpireCIs False
       Just newTTL -> do
         oldTTL <- withStore' (`getChatItemTTL` user)
         when (maybe True (newTTL <) oldTTL) $ do
