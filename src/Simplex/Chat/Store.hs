@@ -4082,23 +4082,20 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
       _ -> Nothing
 
 getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
-getChatItemTTL db User {userId} = do
-  r <- map fromOnly <$> DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
-  pure $ case r of
-    [chatItemTTL] -> chatItemTTL
-    _ -> Nothing
+getChatItemTTL db User {userId} =
+  fmap join . maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
 
 setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
   currentTs <- getCurrentTime
-  r :: [Int64] <- map fromOnly <$> DB.query db "SELECT 1 FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  r :: (Maybe Int64) <- maybeFirstRow fromOnly $ DB.query db "SELECT 1 FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
   case r of
-    [_rowExists] -> do
+    Just _ -> do
       DB.execute
         db
         "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
         (chatItemTTL, currentTs, userId)
-    _ -> do
+    Nothing -> do
       DB.execute
         db
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
