@@ -1403,26 +1403,25 @@ expireChatItems user@User {userId} ttl sync = do
   where
   chatsLoop :: [ChatRef] -> UTCTime -> TVar Bool -> m ()
   chatsLoop [] _ _ = pure ()
-  chatsLoop (chat : chats) expirationDate expire = continue $ expireChat chat >> chatsLoop chats expirationDate expire
+  chatsLoop ((ChatRef cType chatId) : chats) expirationDate expire = continue $ do
+    case cType of
+      CTDirect -> do
+        ct <- withStore $ \db -> getContact db userId chatId
+        ciIdsAndFileInfo <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
+        ciLoop ciIdsAndFileInfo $ deleteDirectChatItem user ct
+      CTGroup -> do
+        gInfo <- withStore $ \db -> getGroupInfo db user chatId
+        ciIdsAndFileInfo <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
+        ciLoop ciIdsAndFileInfo $ deleteGroupChatItem user gInfo
+      _ -> pure ()
+    chatsLoop chats expirationDate expire
     where
-      expireChat :: ChatRef -> m ()
-      expireChat (ChatRef cType chatId) = case cType of
-        CTDirect -> do
-          ct <- withStore $ \db -> getContact db userId chatId
-          ciIdsAndFileInfo <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
-          ciLoop ciIdsAndFileInfo $ deleteDirectChatItem user ct
-        CTGroup -> do
-          gInfo <- withStore $ \db -> getGroupInfo db user chatId
-          ciIdsAndFileInfo <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
-          ciLoop ciIdsAndFileInfo $ deleteGroupChatItem user gInfo
-        _ -> pure ()
       ciLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
       ciLoop [] _ = pure ()
-      ciLoop (ci : cis) f = continue $ expireCI ci f >> ciLoop cis f
-      expireCI :: (ChatItemId, Maybe CIFileInfo) -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
-      expireCI ciIdAndFileInfo cleanupFunction = do
-        cleanupFunction ciIdAndFileInfo
+      ciLoop (ci : cis) f = continue $ do
+        f ci
         unless sync $ threadDelay 100000
+        ciLoop cis f
       continue :: m () -> m ()
       continue = if sync then id else whenM (readTVarIO expire)
 
