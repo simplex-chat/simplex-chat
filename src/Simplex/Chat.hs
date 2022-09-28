@@ -252,8 +252,8 @@ processChatCommand = \case
     pure CRChatStopped
   APIActivateChat -> do
     withUser $ \user -> restoreCalls user
-    setExpireCIs True
     withAgent activateAgent
+    setExpireCIs True
     pure CRCmdOk
   APISuspendChat t -> do
     setExpireCIs False
