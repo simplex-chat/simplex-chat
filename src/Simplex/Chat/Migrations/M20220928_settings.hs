@@ -15,7 +15,4 @@ CREATE TABLE settings (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
-INSERT INTO settings (user_id)
-  SELECT user_id FROM users WHERE active_user = 1 LIMIT 1;
 |]

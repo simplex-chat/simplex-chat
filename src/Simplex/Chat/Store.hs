@@ -346,10 +346,6 @@ createUser db Profile {displayName, fullName, image} activeUser =
       (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    DB.execute
-      db
-      "INSERT INTO settings (user_id, created_at, updated_at) VALUES (?,?,?)"
-      (userId, currentTs, currentTs)
     pure $ toUser (userId, contactId, profileId, activeUser, displayName, fullName, image)
 
 getUsers :: DB.Connection -> IO [User]
@@ -4087,16 +4083,26 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
 
 getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
 getChatItemTTL db User {userId} = do
-  [chatItemTTL] <- map fromOnly <$> DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
-  pure chatItemTTL
+  r <- map fromOnly <$> DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  pure $ case r of
+    [chatItemTTL] -> chatItemTTL
+    _ -> Nothing
 
 setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
 setChatItemTTL db User {userId} chatItemTTL = do
-  updatedAt <- getCurrentTime
-  DB.execute
-    db
-    "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
-    (chatItemTTL, updatedAt, userId)
+  currentTs <- getCurrentTime
+  r :: [Int64] <- map fromOnly <$> DB.query db "SELECT 1 FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  case r of
+    [_rowExists] -> do
+      DB.execute
+        db
+        "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
+        (chatItemTTL, currentTs, userId)
+    _ -> do
+      DB.execute
+        db
+        "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
+        (userId, chatItemTTL, currentTs, currentTs)
 
 getChatsWithExpiredItems :: DB.Connection -> User -> UTCTime -> IO [ChatRef]
 getChatsWithExpiredItems db User {userId} expirationDate =
