@@ -1407,12 +1407,12 @@ expireChatItems user@User {userId} ttl sync = do
     case cType of
       CTDirect -> do
         ct <- withStore $ \db -> getContact db userId chatId
-        ciIdsAndFileInfo <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
-        ciLoop ciIdsAndFileInfo $ deleteDirectChatItem user ct
+        cis <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
+        ciLoop cis $ deleteDirectChatItem user ct
       CTGroup -> do
         gInfo <- withStore $ \db -> getGroupInfo db user chatId
-        ciIdsAndFileInfo <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
-        ciLoop ciIdsAndFileInfo $ deleteGroupChatItem user gInfo
+        cis <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
+        ciLoop cis $ deleteGroupChatItem user gInfo
       _ -> pure ()
     chatsLoop chats expirationDate expire
     where
