@@ -182,15 +182,15 @@ If you are considering developing with SimpleX platform please get in touch for 
 - ✅ Incognito mode to share a new random name with each contact.
 - ✅ Chat database encryption.
 - 🏗 Automatic chat history deletion.
+- 🏗 SMP queue redundancy and rotation.
 - 🏗 Links to join groups and improve groups stability.
+- Feeds/broadcasts
 - Disappearing messages, with mutual agreement.
 - Voice messages
 - Video messages
 - Web widgets for custom interactivity in the chats.
-- SMP protocol improvements:
-  - SMP queue redundancy and rotation.
-  - Message delivery confirmation.
-  - Supporting the same profile on multiple devices.
+- Message delivery confirmation.
+- Supporting the same profile on multiple devices.
 - Privacy-preserving identity server for optional DNS-based contact/group addresses to simplify connection and discovery, but not used to deliver messages:
   - keep all your contacts and groups even if you lose the domain.
   - the server doesn't have information about your contacts and groups.
