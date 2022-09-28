@@ -189,6 +189,11 @@ module Simplex.Chat.Store
     setConnConnReqInv,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
+    getChatItemTTL,
+    setChatItemTTL,
+    getChatsWithExpiredItems,
+    getContactExpiredCIs,
+    getGroupExpiredCIs,
     getPendingContactConnection,
     deletePendingContactConnection,
     updateContactSettings,
@@ -214,7 +219,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, listToMaybe, mapMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -250,6 +255,7 @@ import Simplex.Chat.Migrations.M20220823_delete_broken_group_event_chat_items
 import Simplex.Chat.Migrations.M20220824_profiles_local_alias
 import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Migrations.M20220926_connection_alias
+import Simplex.Chat.Migrations.M20220928_settings
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -286,7 +292,8 @@ schemaMigrations =
     ("20220823_delete_broken_group_event_chat_items", m20220823_delete_broken_group_event_chat_items),
     ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
     ("20220909_commands", m20220909_commands),
-    ("20220926_connection_alias", m20220926_connection_alias)
+    ("20220926_connection_alias", m20220926_connection_alias),
+    ("20220928_settings", m20220928_settings)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -4073,6 +4080,79 @@ getXGrpMemIntroContGroup db User {userId} GroupMember {groupMemberId} = do
     toCont (hostConnId, connReq_) = case connReq_ of
       Just connReq -> Just (hostConnId, connReq)
       _ -> Nothing
+
+getChatItemTTL :: DB.Connection -> User -> IO (Maybe Int64)
+getChatItemTTL db User {userId} =
+  fmap join . maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+
+setChatItemTTL :: DB.Connection -> User -> Maybe Int64 -> IO ()
+setChatItemTTL db User {userId} chatItemTTL = do
+  currentTs <- getCurrentTime
+  r :: (Maybe Int64) <- maybeFirstRow fromOnly $ DB.query db "SELECT 1 FROM settings WHERE user_id = ? LIMIT 1" (Only userId)
+  case r of
+    Just _ -> do
+      DB.execute
+        db
+        "UPDATE settings SET chat_item_ttl = ?, updated_at = ? WHERE user_id = ?"
+        (chatItemTTL, currentTs, userId)
+    Nothing -> do
+      DB.execute
+        db
+        "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
+        (userId, chatItemTTL, currentTs, currentTs)
+
+getChatsWithExpiredItems :: DB.Connection -> User -> UTCTime -> IO [ChatRef]
+getChatsWithExpiredItems db User {userId} expirationDate =
+  mapMaybe toChatRef
+    <$> DB.query
+      db
+      [sql|
+        SELECT contact_id, group_id
+        FROM chat_items
+        WHERE user_id = ? AND item_ts <= ? AND item_deleted != 1
+        GROUP BY contact_id, group_id
+        ORDER BY contact_id ASC, group_id ASC
+      |]
+      (userId, expirationDate)
+  where
+    toChatRef :: (Maybe ContactId, Maybe GroupId) -> Maybe ChatRef
+    toChatRef (Just contactId, Nothing) = Just $ ChatRef CTDirect contactId
+    toChatRef (Nothing, Just groupId) = Just $ ChatRef CTGroup groupId
+    toChatRef _ = Nothing
+
+getContactExpiredCIs :: DB.Connection -> User -> ContactId -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getContactExpiredCIs db User {userId} contactId expirationDate =
+  map toItemIdAndFileInfo'
+    <$> DB.query
+      db
+      [sql|
+        SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+        FROM chat_items i
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.contact_id = ? AND i.item_ts <= ?
+        ORDER BY i.item_ts ASC
+      |]
+      (userId, contactId, expirationDate)
+
+getGroupExpiredCIs :: DB.Connection -> User -> Int64 -> UTCTime -> IO [(ChatItemId, Maybe CIFileInfo)]
+getGroupExpiredCIs db User {userId} groupId expirationDate =
+  map toItemIdAndFileInfo'
+    <$> DB.query
+      db
+      [sql|
+        SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
+        FROM chat_items i
+        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.item_deleted != 1
+        ORDER BY i.item_ts ASC
+      |]
+      (userId, groupId, expirationDate)
+
+toItemIdAndFileInfo' :: (ChatItemId, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, Maybe CIFileInfo)
+toItemIdAndFileInfo' (chatItemId, fileId_, fileStatus_, filePath) =
+  case (fileId_, fileStatus_) of
+    (Just fileId, Just fileStatus) -> (chatItemId, Just CIFileInfo {fileId, fileStatus, filePath})
+    _ -> (chatItemId, Nothing)
 
 -- | Saves unique local display name based on passed displayName, suffixed with _N if required.
 -- This function should be called inside transaction.

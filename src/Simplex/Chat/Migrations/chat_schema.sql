@@ -413,3 +413,10 @@ CREATE TABLE commands(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE settings(
+  settings_id INTEGER PRIMARY KEY,
+  chat_item_ttl INTEGER,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);

@@ -96,7 +96,9 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
-    incognitoMode :: TVar Bool
+    incognitoMode :: TVar Bool,
+    expireCIsAsync :: TVar (Maybe (Async ())),
+    expireCIs :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSMyAddress | HSMarkdown | HSMessages | HSSettings
@@ -109,7 +111,7 @@ instance ToJSON HelpSection where
 data ChatCommand
   = ShowActiveUser
   | CreateActiveUser Profile
-  | StartChat {subscribeConnections :: Bool}
+  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool}
   | APIStopChat
   | APIActivateChat
   | APISuspendChat {suspendTimeout :: Int}
@@ -160,6 +162,8 @@ data ChatCommand
   | APIUpdateGroupProfile GroupId GroupProfile
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
+  | APISetChatItemTTL (Maybe Int64)
+  | APIGetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
   | APISetChatSettings ChatRef ChatSettings
@@ -225,6 +229,7 @@ data ChatResponse
   | CRLastMessages {chatItems :: [AChatItem]}
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
   | CRUserSMPServers {smpServers :: [SMPServer]}
+  | CRChatItemTTL {chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupMemberInfo {groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}

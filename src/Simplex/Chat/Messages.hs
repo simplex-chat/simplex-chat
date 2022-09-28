@@ -398,6 +398,7 @@ data CIFileInfo = CIFileInfo
     fileStatus :: ACIFileStatus,
     filePath :: Maybe FilePath
   }
+  deriving (Show)
 
 data CIStatus (d :: MsgDirection) where
   CISSndNew :: CIStatus 'MDSnd
