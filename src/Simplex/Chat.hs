@@ -242,7 +242,7 @@ processChatCommand = \case
     pure CRCmdOk
   APIExportArchive cfg -> checkChatStopped $ exportArchive cfg $> CRCmdOk
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
-  APIDeleteStorage -> withStoreChanged $ deleteStorage
+  APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`exexSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)

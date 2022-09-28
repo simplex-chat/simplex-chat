@@ -2664,8 +2664,8 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent} shar
             (Just $ Just userMemberId == memberId, memberId)
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
-createNewChatItemNoMsg db user chatDirection ciContent itemTs createdAt =
-  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow itemTs createdAt
+createNewChatItemNoMsg db user chatDirection ciContent =
+  createNewChatItem_ db user chatDirection Nothing Nothing ciContent quoteRow
   where
     quoteRow :: NewQuoteRow
     quoteRow = (Nothing, Nothing, Nothing, Nothing, Nothing)
@@ -3556,8 +3556,8 @@ deleteGroupChatItemInternal db user gInfo itemId = do
   pure ci
 
 deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId =
-  deleteGroupChatItemBroadcast_ db user gInfo itemId False msgId
+deleteGroupChatItemRcvBroadcast db user gInfo itemId =
+  deleteGroupChatItemBroadcast_ db user gInfo itemId False
 
 deleteGroupChatItemSndBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
 deleteGroupChatItemSndBroadcast db user gInfo itemId msgId = do
