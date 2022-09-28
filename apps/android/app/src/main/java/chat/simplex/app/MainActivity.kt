@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
 import androidx.activity.compose.setContent
@@ -30,8 +31,7 @@ import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
 import chat.simplex.app.views.chat.ChatView
-import chat.simplex.app.views.chatlist.ChatListView
-import chat.simplex.app.views.chatlist.openChat
+import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
@@ -66,6 +66,7 @@ class MainActivity: FragmentActivity() {
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
       processNotificationIntent(intent, m)
+      processExternalIntent(intent, m)
     }
     setContent {
       SimpleXTheme {
@@ -92,6 +93,7 @@ class MainActivity: FragmentActivity() {
   override fun onNewIntent(intent: Intent?) {
     super.onNewIntent(intent)
     processIntent(intent, vm.chatModel)
+    processExternalIntent(intent, vm.chatModel)
   }
 
   override fun onStart() {
@@ -113,6 +115,10 @@ class MainActivity: FragmentActivity() {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       clearAuthState()
       laFailed.value = true
+    }
+    if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
+      // Drop shared content
+      SimplexApp.context.chatModel.sharedContent.value = null
     }
   }
 
@@ -322,7 +328,12 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            if (chatModel.chatId.value == null) ChatListView(chatModel, setPerformLA, stopped)
+            if (chatModel.chatId.value == null) {
+              if (chatModel.sharedContent.value == null)
+                ChatListView(chatModel, setPerformLA, stopped)
+              else
+                ShareListView(chatModel, stopped)
+            }
             else ChatView(chatModel)
           }
         }
@@ -376,6 +387,27 @@ fun processIntent(intent: Intent?, chatModel: ChatModel) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) connectIfOpenedViaUri(uri, chatModel)
+    }
+  }
+}
+
+fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
+  when (intent?.action) {
+    Intent.ACTION_SEND -> {
+      // Close active chat and show a list of chats
+      chatModel.chatId.value = null
+      chatModel.clearOverlays.value = true
+      when {
+        "text/plain" == intent.type -> intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
+          chatModel.sharedContent.value = SharedContent.Text(it)
+        }
+        intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
+          chatModel.sharedContent.value = SharedContent.Image(it)
+        } // All other mime types
+        else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
+          chatModel.sharedContent.value = SharedContent.File(it)
+        }
+      }
     }
   }
 }
