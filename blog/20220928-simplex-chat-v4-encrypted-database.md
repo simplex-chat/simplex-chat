@@ -65,7 +65,7 @@ While the database with messages and all contacts is now encrypted, the files yo
 
 ### For developers - TypeScript SDK for integrating with SimpleX Chat
 
-It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you would have to either write Haskell code, and this is not the most widely used language, or use foreign functions interface in any other language.
+It's been quite some time since it's been possible to create a chat-bot using SimpleX Chat as a library - but you had to either write Haskell code or use foreign function interface in any other language.
 
 With v4 we are announcing [TypeScript SimpleX Chat Client SDK](https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript) that you can use to create any integrations with SimpleX Chat CLI.
 
