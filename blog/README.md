@@ -2,7 +2,7 @@
 
 Sep 28, 2022 [v4: local database encryption](./20220928-simplex-chat-v4-encrypted-database.md)
 
-- encrypted on-device chat database - if you already use the app, you can encrypt the database in the app settings
+- encrypted local chat database - if you already use the app, you can encrypt the database in the app settings
 - support for self-hosted WebRTC ICE servers
 - improved stability of creating new connections: more reliable groups, files and contacts
 - deleting files and media - for security and to save storage

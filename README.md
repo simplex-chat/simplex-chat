@@ -24,6 +24,8 @@
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) app / CLI on Linux, MacOS, Windows.
 
+**NEW**: v4.0 is released - now local chat database is encrypted with passphrase! See [the release announcement](./blog/20220928-simplex-chat-v4-encrypted-database.md).
+
 ## Contents
 
 - [Why privacy matters](#why-privacy-matters)
@@ -80,6 +82,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent updates:
+
+[Sep 28, 2022. v4.0: encrypted local chat database and many other changes](./blog/20220928-simplex-chat-v4-encrypted-database.md)
 
 [Sep 1, 2022. v3.2: incognito mode, support .onion server hostnames, setting contact names, changing color scheme, etc. Implementation audit is arranged for October!](./blog/20220901-simplex-chat-v3.2-incognito-mode.md)
 
