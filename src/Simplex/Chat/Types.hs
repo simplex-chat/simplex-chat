@@ -420,7 +420,11 @@ fromInvitedBy userCtId = \case
   IBContact ctId -> Just ctId
   IBUser -> Just userCtId
 
-data GroupMemberRole = GRMember | GRAdmin | GROwner
+data GroupMemberRole
+  = GRAuthor -- can send messages to all group members
+  | GRMember -- + add new members with role Member and below
+  | GRAdmin -- + change member roles (excl. Owners), add Admins, remove members (excl. Owners)
+  | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
 instance FromField GroupMemberRole where fromField = fromBlobField_ strDecode
@@ -432,10 +436,12 @@ instance StrEncoding GroupMemberRole where
     GROwner -> "owner"
     GRAdmin -> "admin"
     GRMember -> "member"
+    GRAuthor -> "author"
   strDecode = \case
     "owner" -> Right GROwner
     "admin" -> Right GRAdmin
     "member" -> Right GRMember
+    "author" -> Right GRAuthor
     r -> Left $ "bad GroupMemberRole " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 
