@@ -188,7 +188,7 @@ responseToView testView = \case
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items, Just $ connStatus activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just $ pccConnStatus)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Text
         toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
         toCIPreview _ = ""
