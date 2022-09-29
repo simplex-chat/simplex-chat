@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
+import chat.simplex.app.ui.theme.SettingsBackgroundLight
+import chat.simplex.app.ui.theme.isInDarkTheme
 
 @Composable
 fun ModalView(
@@ -32,12 +34,16 @@ class ModalManager {
   private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
   private val modalCount = mutableStateOf(0)
 
-  fun showModal(title: String?, content: @Composable () -> Unit) {
-    showCustomModal { close -> ModalView(title, close, content = content) }
+  fun showModal(title: String?, settings: Boolean = false, content: @Composable () -> Unit) {
+    showCustomModal { close ->
+      ModalView(title, close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = content)
+    }
   }
 
-  fun showModalCloseable(title: String?, content: @Composable (close: () -> Unit) -> Unit) {
-    showCustomModal { close -> ModalView(title, close, content = { content(close) }) }
+  fun showModalCloseable(title: String?, settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
+    showCustomModal { close ->
+      ModalView(title, close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = { content(close) })
+    }
   }
 
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {

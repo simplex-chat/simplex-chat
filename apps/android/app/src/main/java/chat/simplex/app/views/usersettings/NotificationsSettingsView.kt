@@ -44,7 +44,6 @@ enum class NotificationPreviewMode {
 @Composable
 fun NotificationsSettingsView(
   chatModel: ChatModel,
-  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   val onNotificationsModeSelected = { mode: NotificationsMode ->
     chatModel.controller.appPrefs.notificationsMode.set(mode.name)
@@ -78,12 +77,12 @@ fun NotificationsSettingsView(
         CurrentPage.NOTIFICATIONS_MODE -> generalGetString(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current)
         CurrentPage.NOTIFICATION_PREVIEW_MODE -> generalGetString(R.string.settings_notification_preview_title)
       }
-      showModalCloseable(title) { _, _ ->
+      ModalManager.shared.showModalCloseable(title, true) {
           when (page) {
             CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.notificationsMode, onNotificationsModeSelected)
             CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
           }
-      }()
+      }
     },
   )
 }

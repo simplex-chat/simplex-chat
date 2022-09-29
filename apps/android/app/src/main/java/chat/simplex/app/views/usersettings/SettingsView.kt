@@ -53,6 +53,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       user.displayName,
       setPerformLA = setPerformLA,
       showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
+      showSettingsModal = { title, modalView -> { ModalManager.shared.showModal(title, true) { modalView(chatModel) } } },
       showModalCloseable = { title, modalView -> { ModalManager.shared.showModalCloseable(title) { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
@@ -84,6 +85,7 @@ fun SettingsLayout(
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
   showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
   showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
 //  showVideoChatPrototype: () -> Unit
@@ -114,20 +116,20 @@ fun SettingsLayout(
         SectionDivider()
         SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal(generalGetString(R.string.your_contact_address)) { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(encrypted, showModal(stringResource(R.string.your_chat_database)) { DatabaseView(it, showModal) }, stopped)
+        DatabaseItem(encrypted, showSettingsModal(stringResource(R.string.your_chat_database)) { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showModal(generalGetString(R.string.notifications)) { NotificationsSettingsView(it, showModalCloseable) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal(generalGetString(R.string.notifications)) { NotificationsSettingsView(it) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showModal(generalGetString(R.string.your_calls)) { CallSettingsView(it, showModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal(generalGetString(R.string.your_calls)) { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showModal(generalGetString(R.string.your_privacy)) { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal(generalGetString(R.string.your_privacy)) { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showModal(generalGetString(R.string.appearance_settings)) { AppearanceView(showModalCloseable) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal(generalGetString(R.string.appearance_settings)) { AppearanceView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showModal(generalGetString(R.string.network_and_servers)) { NetworkAndServersView(it, showModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal(generalGetString(R.string.network_and_servers)) { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
       SectionSpacer()
 
@@ -359,6 +361,7 @@ fun PreviewSettingsLayout() {
       userDisplayName = "Alice",
       setPerformLA = {},
       showModal = { _, _ -> {} },
+      showSettingsModal = { _, _ -> {} },
       showModalCloseable = { _, _ -> {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}

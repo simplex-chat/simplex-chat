@@ -24,6 +24,7 @@ import chat.simplex.app.views.helpers.*
 fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -36,6 +37,7 @@ fun NetworkAndServersView(
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
     showModal = showModal,
+    showSettingsModal = showSettingsModal,
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertMsg(
@@ -99,6 +101,7 @@ fun NetworkAndServersView(
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
 ) {
@@ -114,10 +117,10 @@ fun NetworkAndServersView(
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
       }
       SectionDivider()
-      UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
+      UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
       if (developerTools) {
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showModal(stringResource(R.string.network_settings_title)) { AdvancedNetworkSettingsView(it) })
+        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal(stringResource(R.string.network_settings_title)) { AdvancedNetworkSettingsView(it) })
       }
     }
     Spacer(Modifier.height(8.dp))
@@ -219,6 +222,7 @@ fun PreviewNetworkAndServersLayout() {
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
       showModal = { _, _ -> {} },
+      showSettingsModal = { _, _ -> {} },
       toggleSocksProxy = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       useOnion = {},

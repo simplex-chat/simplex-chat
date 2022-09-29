@@ -31,7 +31,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.app.*
 import chat.simplex.app.R
-import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import com.godaddy.android.colorpicker.*
@@ -42,9 +41,7 @@ enum class AppIcon(val resId: Int) {
 }
 
 @Composable
-fun AppearanceView(
-  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
-) {
+fun AppearanceView() {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
   fun setAppIcon(newIcon: AppIcon) {
@@ -67,13 +64,15 @@ fun AppearanceView(
   AppearanceLayout(
     appIcon,
     changeIcon = ::setAppIcon,
-    showThemeSelector = showModalCloseable(stringResource(R.string.settings_section_title_themes).lowercase().capitalize(Locale.current)) { _, _ ->
-      ThemeSelectorView()
+    showThemeSelector = {
+      ModalManager.shared.showModal(generalGetString(R.string.settings_section_title_themes).lowercase().capitalize(Locale.current), true) {
+        ThemeSelectorView()
+      }
     },
     editPrimaryColor = { primary ->
-      showModalCloseable(generalGetString(R.string.color_primary)) { _, close ->
+      ModalManager.shared.showModalCloseable(generalGetString(R.string.color_primary)) { close ->
         ColorEditor(primary, close)
-      }()
+      }
     },
   )
 }
