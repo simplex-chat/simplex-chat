@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.call.parseRTCIceServers
 import chat.simplex.app.views.helpers.*
@@ -98,15 +99,12 @@ fun RTCServersLayout(
   editOn: () -> Unit,
 ) {
   Column(
-    Modifier.fillMaxWidth(),
+    Modifier
+      .fillMaxWidth()
+      .padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    Text(
-      stringResource(R.string.your_ICE_servers),
-      Modifier.padding(bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionItemViewSpaceBetween(padding = PaddingValues()) {
       Text(stringResource(R.string.configure_ICE_servers), Modifier.padding(end = 24.dp))
       Switch(

@@ -20,12 +20,12 @@ import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun CallSettingsView(m: ChatModel,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   CallSettingsLayout(
     webrtcPolicyRelay = m.controller.appPrefs.webrtcPolicyRelay,
     callOnLockScreen = m.controller.appPrefs.callOnLockScreen,
-    editIceServers = showModal { RTCServersView(m) }
+    editIceServers = showModal(stringResource(R.string.your_ICE_servers)) { RTCServersView(m) }
   )
 }
 
@@ -41,11 +41,6 @@ fun CallSettingsLayout(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
-    Text(
-      stringResource(R.string.your_calls),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView() {
         SharedPreferenceToggle(stringResource(R.string.connect_calls_via_relay), webrtcPolicyRelay)

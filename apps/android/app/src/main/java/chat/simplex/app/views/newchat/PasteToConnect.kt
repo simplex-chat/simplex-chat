@@ -6,7 +6,6 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -19,8 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat.getSystemService
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.SimpleButton
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
@@ -60,14 +58,9 @@ fun PasteToConnectLayout(
   connectViaLink: (String) -> Unit,
 ) {
   Column(
-    Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+    Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    Text(
-      stringResource(R.string.connect_via_link),
-      Modifier.padding(bottom = 16.dp),
-      style = MaterialTheme.typography.h1,
-    )
     Text(stringResource(R.string.paste_connection_link_below_to_connect))
 
     InfoAboutIncognito(

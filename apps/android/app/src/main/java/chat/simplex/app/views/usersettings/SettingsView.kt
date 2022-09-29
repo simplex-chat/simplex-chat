@@ -50,15 +50,10 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       chatModel.incognito,
       chatModel.controller.appPrefs.incognito,
       developerTools = chatModel.controller.appPrefs.developerTools,
+      user.displayName,
       setPerformLA = setPerformLA,
-      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
-      showSettingsModal = { modalView -> { ModalManager.shared.showCustomModal { close ->
-        ModalView(close = close, modifier = Modifier,
-          background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight) {
-          modalView(chatModel)
-        }
-      } } },
-      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
+      showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
+      showModalCloseable = { title, modalView -> { ModalManager.shared.showModalCloseable(title) { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
@@ -86,10 +81,10 @@ fun SettingsLayout(
   incognito: MutableState<Boolean>,
   incognitoPref: Preference<Boolean>,
   developerTools: Preference<Boolean>,
+  userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
 //  showVideoChatPrototype: () -> Unit
 ) {
@@ -99,47 +94,49 @@ fun SettingsLayout(
       Modifier
         .fillMaxSize()
         .background(if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight)
-        .padding(top = 16.dp)
+        .padding(top = DEFAULT_PADDING)
     ) {
       Text(
         stringResource(R.string.your_settings),
-        style = MaterialTheme.typography.h1,
-        modifier = Modifier.padding(start = 16.dp)
+        style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+        overflow = TextOverflow.Ellipsis,
       )
-      SectionSpacer()
+
+      Spacer(Modifier.height(30.dp))
 
       SectionView(stringResource(R.string.settings_section_title_you)) {
-        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
+        SectionItemView(showModal(stringResource(R.string.your_chat_profile)) { chatModel -> UserProfileView(chatModel) }, 80.dp, disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { onClickIncognitoInfo(showModal) }
+        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal(generalGetString(R.string.settings_section_title_incognito)) { IncognitoView() }() }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal(generalGetString(R.string.your_contact_address)) { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
+        DatabaseItem(encrypted, showModal(stringResource(R.string.your_chat_database)) { DatabaseView(it, showModal) }, stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it, showCustomModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showModal(generalGetString(R.string.notifications)) { NotificationsSettingsView(it, showModalCloseable) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showModal(generalGetString(R.string.your_calls)) { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showModal(generalGetString(R.string.your_privacy)) { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView(showCustomModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showModal(generalGetString(R.string.appearance_settings)) { AppearanceView(showModalCloseable) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showModal(generalGetString(R.string.network_and_servers)) { NetworkAndServersView(it, showModal) }, disabled = stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal(String.format(stringResource(R.string.personal_welcome), userDisplayName)) { HelpView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
+        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal(generalGetString(R.string.about_simplex_chat)) { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal { MarkdownHelpView() })
+        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal(generalGetString(R.string.how_to_use_markdown)) { MarkdownHelpView() })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
@@ -178,10 +175,6 @@ fun SettingsIncognitoActionItem(
     incognitoPref,
     incognito
   )
-}
-
-private val onClickIncognitoInfo: ((@Composable (ChatModel) -> Unit) -> (() -> Unit)) -> Unit = { showModal ->
-  showModal { IncognitoView() }()
 }
 
 @Composable
@@ -361,12 +354,12 @@ fun PreviewSettingsLayout() {
       stopped = false,
       encrypted = false,
       incognito = remember { mutableStateOf(false) },
-      incognitoPref = Preference({ false}, {}),
+      incognitoPref = Preference({ false }, {}),
       developerTools = Preference({ false }, {}),
+      userDisplayName = "Alice",
       setPerformLA = {},
-      showModal = { {} },
-      showSettingsModal = { {} },
-      showCustomModal = { {} },
+      showModal = { _, _ -> {} },
+      showModalCloseable = { _, _ -> {} },
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

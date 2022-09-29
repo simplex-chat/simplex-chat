@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,7 +24,6 @@ import chat.simplex.app.views.chat.group.AddGroupMembersView
 import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
-import chat.simplex.app.views.onboarding.ReadableText
 import chat.simplex.app.views.usersettings.DeleteImageButton
 import chat.simplex.app.views.usersettings.EditImageButton
 import com.google.accompanist.insets.ProvideWindowInsets
@@ -45,13 +43,8 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(groupInfo, chatModel)
           close.invoke()
-          ModalManager.shared.showCustomModal { close ->
-            ModalView(
-              close = close, modifier = Modifier,
-              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
-            }
+          ModalManager.shared.showModalCloseable(generalGetString(R.string.button_add_members)) { close ->
+            AddGroupMembersView(groupInfo, chatModel, close)
           }
         }
       }
@@ -85,75 +78,67 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close) {
-        Surface(Modifier.background(MaterialTheme.colors.onBackground).fillMaxSize()) {
-          Column(
+        Column(
+          Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = DEFAULT_PADDING)
+        ) {
+          Text(stringResource(R.string.group_is_decentralized))
+          InfoAboutIncognito(
+            chatModelIncognito,
+            false,
+            generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
+            generalGetString(R.string.group_main_profile_sent)
+          )
+          Box(
             Modifier
-              .verticalScroll(rememberScrollState())
-              .padding(bottom = 16.dp),
+              .fillMaxWidth()
+              .padding(bottom = 24.dp),
+            contentAlignment = Alignment.Center
           ) {
-            Text(
-              stringResource(R.string.create_secret_group_title),
-              style = MaterialTheme.typography.h1.copy(fontWeight = FontWeight.Normal),
-              modifier = Modifier.padding(vertical = 5.dp)
-            )
-            Text(stringResource(R.string.group_is_decentralized))
-            InfoAboutIncognito(
-              chatModelIncognito,
-              false,
-              generalGetString(R.string.group_unsupported_incognito_main_profile_sent),
-              generalGetString(R.string.group_main_profile_sent)
-            )
-            Box(
-              Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-              contentAlignment = Alignment.Center
-            ) {
-              Box(contentAlignment = Alignment.TopEnd) {
-                Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(size = 192.dp, image = profileImage.value)
-                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
-                }
-                if (profileImage.value != null) {
-                  DeleteImageButton { profileImage.value = null }
-                }
+            Box(contentAlignment = Alignment.TopEnd) {
+              Box(contentAlignment = Alignment.Center) {
+                ProfileImage(size = 192.dp, image = profileImage.value)
+                EditImageButton { scope.launch { bottomSheetModalState.show() } }
+              }
+              if (profileImage.value != null) {
+                DeleteImageButton { profileImage.value = null }
               }
             }
-            Text(
-              stringResource(R.string.group_display_name_field),
-              Modifier.padding(bottom = 3.dp)
-            )
-            ProfileNameField(displayName, focusRequester)
-            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-            Text(
-              errorText,
-              fontSize = 15.sp,
-              color = MaterialTheme.colors.error
-            )
-            Spacer(Modifier.height(3.dp))
-            Text(
-              stringResource(R.string.group_full_name_field),
-              Modifier.padding(bottom = 5.dp)
-            )
-            ProfileNameField(fullName)
+          }
+          Text(
+            stringResource(R.string.group_display_name_field),
+            Modifier.padding(bottom = 3.dp)
+          )
+          ProfileNameField(displayName, focusRequester)
+          val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
+          Text(
+            errorText,
+            fontSize = 15.sp,
+            color = MaterialTheme.colors.error
+          )
+          Spacer(Modifier.height(3.dp))
+          Text(
+            stringResource(R.string.group_full_name_field),
+            Modifier.padding(bottom = 5.dp)
+          )
+          ProfileNameField(fullName)
 
-            Spacer(Modifier.height(8.dp))
-            val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-            if (enabled) {
-              CreateGroupButton(MaterialTheme.colors.primary, Modifier
-                .clickable { createGroup(GroupProfile(displayName.value, fullName.value, profileImage.value)) }
-                .padding(8.dp))
-            } else {
-              CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
-            }
-            LaunchedEffect(Unit) {
-              focusRequester.requestFocus()
-            }
+          Spacer(Modifier.height(8.dp))
+          val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+          if (enabled) {
+            CreateGroupButton(MaterialTheme.colors.primary, Modifier
+              .clickable { createGroup(GroupProfile(displayName.value, fullName.value, profileImage.value)) }
+              .padding(8.dp))
+          } else {
+            CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
+          }
+          LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
           }
         }
       }
-    }
   }
 }
 

@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.capitalize
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -41,7 +43,7 @@ enum class AppIcon(val resId: Int) {
 
 @Composable
 fun AppearanceView(
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
 
@@ -65,18 +67,12 @@ fun AppearanceView(
   AppearanceLayout(
     appIcon,
     changeIcon = ::setAppIcon,
-    showThemeSelector = showCustomModal { _, close ->
-      ModalView(
-        close = close, modifier = Modifier,
-        background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
-      ) { ThemeSelectorView() }
+    showThemeSelector = showModalCloseable(stringResource(R.string.settings_section_title_themes).lowercase().capitalize(Locale.current)) { _, _ ->
+      ThemeSelectorView()
     },
     editPrimaryColor = { primary ->
-      showCustomModal { _, close ->
-        ModalView(
-          close = close, modifier = Modifier,
-          background = if (isInDarkTheme()) colors.background else SettingsBackgroundLight
-        ) { ColorEditor(primary, close) }
+      showModalCloseable(generalGetString(R.string.color_primary)) { _, close ->
+        ColorEditor(primary, close)
       }()
     },
   )
@@ -92,11 +88,6 @@ fun AppearanceView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.appearance_settings),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->

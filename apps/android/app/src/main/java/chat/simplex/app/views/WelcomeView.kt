@@ -1,7 +1,6 @@
 package chat.simplex.app.views
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -26,8 +25,7 @@ import chat.simplex.app.R
 import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleButton
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
@@ -45,12 +43,12 @@ fun CreateProfilePanel(chatModel: ChatModel) {
 
   Surface(Modifier.background(MaterialTheme.colors.onBackground)) {
     Column(
-      modifier = Modifier.fillMaxSize()
+      modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     ) {
       Text(
         stringResource(R.string.create_profile),
-        style = MaterialTheme.typography.h4,
-        modifier = Modifier.padding(vertical = 5.dp)
+        style = MaterialTheme.typography.h6,
+        modifier = Modifier.padding(bottom = DEFAULT_PADDING)
       )
       ReadableText(R.string.your_profile_is_stored_on_your_device)
       ReadableText(R.string.profile_is_only_shared_with_your_contacts)

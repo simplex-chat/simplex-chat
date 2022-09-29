@@ -9,20 +9,31 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 
 @Composable
-fun CloseSheetBar(close: () -> Unit) {
+fun CloseSheetBar(title: String? = null, close: () -> Unit) {
   Row (
     Modifier
       .fillMaxWidth()
       .height(60.dp),
-    horizontalArrangement = Arrangement.End,
+    horizontalArrangement = if (title != null) Arrangement.SpaceBetween else Arrangement.End,
     verticalAlignment = Alignment.CenterVertically
   ) {
+    if (title != null) {
+      Text(
+        title,
+        style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Normal),
+        modifier = Modifier.padding(horizontal = DEFAULT_PADDING).weight(1f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+    }
     IconButton(onClick = close) {
       Icon(
         Icons.Outlined.Close,
@@ -43,6 +54,6 @@ fun CloseSheetBar(close: () -> Unit) {
 @Composable
 fun PreviewCloseSheetBar() {
   SimpleXTheme {
-    CloseSheetBar(close = {})
+    CloseSheetBar("Test", close = {})
   }
 }

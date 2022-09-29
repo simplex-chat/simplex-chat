@@ -2,7 +2,6 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -60,11 +59,6 @@ fun UserAddressLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Top
   ) {
-    Text(
-      stringResource(R.string.your_contact_address),
-      Modifier.padding(bottom = 16.dp),
-      style = MaterialTheme.typography.h1,
-    )
     Text(
       stringResource(R.string.you_can_share_your_address_anybody_will_be_able_to_connect),
       Modifier.padding(bottom = 12.dp),

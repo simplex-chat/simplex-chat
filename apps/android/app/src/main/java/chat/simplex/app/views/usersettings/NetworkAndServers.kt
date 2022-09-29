@@ -23,8 +23,7 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun NetworkAndServersView(
   chatModel: ChatModel,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -37,7 +36,6 @@ fun NetworkAndServersView(
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
     showModal = showModal,
-    showSettingsModal = showSettingsModal,
     toggleSocksProxy = { enable ->
       if (enable) {
         AlertManager.shared.showAlertMsg(
@@ -100,8 +98,7 @@ fun NetworkAndServersView(
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
 ) {
@@ -110,27 +107,22 @@ fun NetworkAndServersView(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    Text(
-      stringResource(R.string.network_and_servers),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
-      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
+      SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal(stringResource(R.string.your_SMP_servers)) { SMPServersView(it) })
       SectionDivider()
       SectionItemView {
         UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
       }
       SectionDivider()
-      UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
+      UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
       if (developerTools) {
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
+        SettingsActionItem(Icons.Outlined.Cable, stringResource(R.string.network_settings), showModal(stringResource(R.string.network_settings_title)) { AdvancedNetworkSettingsView(it) })
       }
     }
     Spacer(Modifier.height(8.dp))
     SectionView(generalGetString(R.string.settings_section_title_calls)) {
-      SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal { RTCServersView(it) })
+      SettingsActionItem(Icons.Outlined.ElectricalServices, stringResource(R.string.webrtc_ice_servers), showModal(stringResource(R.string.your_ICE_servers)) { RTCServersView(it) })
     }
   }
 }
@@ -172,7 +164,7 @@ fun UseSocksProxySwitch(
 private fun UseOnionHosts(
   onionHosts: MutableState<OnionHosts>,
   enabled: State<Boolean>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
   useOnion: (OnionHosts) -> Unit,
 ) {
   val values = remember {
@@ -184,16 +176,11 @@ private fun UseOnionHosts(
       }
     }
   }
-  val onSelected = showSettingsModal {
+  val onSelected = showModal(stringResource(R.string.network_use_onion_hosts)) {
     Column(
       Modifier.fillMaxWidth(),
       horizontalAlignment = Alignment.Start,
     ) {
-      Text(
-        stringResource(R.string.network_use_onion_hosts),
-        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-        style = MaterialTheme.typography.h1
-      )
       SectionViewSelectable(null, onionHosts, values, useOnion)
     }
   }
@@ -231,8 +218,7 @@ fun PreviewNetworkAndServersLayout() {
     NetworkAndServersLayout(
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
-      showModal = { {} },
-      showSettingsModal = { {} },
+      showModal = { _, _ -> {} },
       toggleSocksProxy = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       useOnion = {},

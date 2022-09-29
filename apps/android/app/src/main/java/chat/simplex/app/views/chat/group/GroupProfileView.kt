@@ -17,8 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
@@ -74,81 +73,79 @@ fun GroupProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(close = close) {
+      Column(
+        Modifier
+          .verticalScroll(scrollState)
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalAlignment = Alignment.Start
+      ) {
+        Text(
+          stringResource(R.string.group_profile_is_stored_on_members_devices),
+          Modifier.padding(bottom = 24.dp),
+          color = MaterialTheme.colors.onBackground,
+          lineHeight = 22.sp
+        )
         Column(
-          Modifier
-            .verticalScroll(scrollState)
-            .padding(bottom = 16.dp),
+          Modifier.fillMaxWidth(),
           horizontalAlignment = Alignment.Start
         ) {
-          Text(
-            stringResource(R.string.group_profile_is_stored_on_members_devices),
-            Modifier.padding(bottom = 24.dp),
-            color = MaterialTheme.colors.onBackground,
-            lineHeight = 22.sp
-          )
-          Column(
-            Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
+          Box(
+            Modifier
+              .fillMaxWidth()
+              .padding(bottom = 24.dp),
+            contentAlignment = Alignment.Center
           ) {
-            Box(
-              Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-              contentAlignment = Alignment.Center
-            ) {
-              Box(contentAlignment = Alignment.TopEnd) {
-                Box(contentAlignment = Alignment.Center) {
-                  ProfileImage(192.dp, profileImage.value)
-                  EditImageButton { scope.launch { bottomSheetModalState.show() } }
-                }
-                if (profileImage.value != null) {
-                  DeleteImageButton { profileImage.value = null }
-                }
+            Box(contentAlignment = Alignment.TopEnd) {
+              Box(contentAlignment = Alignment.Center) {
+                ProfileImage(192.dp, profileImage.value)
+                EditImageButton { scope.launch { bottomSheetModalState.show() } }
               }
-            }
-            Text(
-              stringResource(R.string.group_display_name_field),
-              Modifier.padding(bottom = 3.dp)
-            )
-            ProfileNameField(displayName, focusRequester)
-            val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
-            Text(
-              errorText,
-              fontSize = 15.sp,
-              color = MaterialTheme.colors.error
-            )
-            Spacer(Modifier.height(3.dp))
-            Text(
-              stringResource(R.string.group_full_name_field),
-              Modifier.padding(bottom = 5.dp)
-            )
-            ProfileNameField(fullName)
-            Spacer(Modifier.height(16.dp))
-            Row {
-              TextButton(stringResource(R.string.cancel_verb)) {
-                close.invoke()
-              }
-              Spacer(Modifier.padding(horizontal = 8.dp))
-              val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
-              if (enabled) {
-                Text(
-                  stringResource(R.string.save_group_profile),
-                  modifier = Modifier.clickable { saveProfile(GroupProfile(displayName.value, fullName.value, profileImage.value)) },
-                  color = MaterialTheme.colors.primary
-                )
-              } else {
-                Text(
-                  stringResource(R.string.save_group_profile),
-                  color = HighOrLowlight
-                )
+              if (profileImage.value != null) {
+                DeleteImageButton { profileImage.value = null }
               }
             }
           }
+          Text(
+            stringResource(R.string.group_display_name_field),
+            Modifier.padding(bottom = 3.dp)
+          )
+          ProfileNameField(displayName, focusRequester)
+          val errorText = if (!isValidDisplayName(displayName.value)) stringResource(R.string.display_name_cannot_contain_whitespace) else ""
+          Text(
+            errorText,
+            fontSize = 15.sp,
+            color = MaterialTheme.colors.error
+          )
+          Spacer(Modifier.height(3.dp))
+          Text(
+            stringResource(R.string.group_full_name_field),
+            Modifier.padding(bottom = 5.dp)
+          )
+          ProfileNameField(fullName)
+          Spacer(Modifier.height(16.dp))
+          Row {
+            TextButton(stringResource(R.string.cancel_verb)) {
+              close.invoke()
+            }
+            Spacer(Modifier.padding(horizontal = 8.dp))
+            val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            if (enabled) {
+              Text(
+                stringResource(R.string.save_group_profile),
+                modifier = Modifier.clickable { saveProfile(GroupProfile(displayName.value, fullName.value, profileImage.value)) },
+                color = MaterialTheme.colors.primary
+              )
+            } else {
+              Text(
+                stringResource(R.string.save_group_profile),
+                color = HighOrLowlight
+              )
+            }
+          }
+        }
 
-          LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-          }
+        LaunchedEffect(Unit) {
+          focusRequester.requestFocus()
         }
       }
     }

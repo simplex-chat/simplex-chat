@@ -52,7 +52,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   } else {
     Surface(Modifier.fillMaxSize()) {
       Column(Modifier.background(MaterialTheme.colors.background)) {
-        CloseSheetBar(close)
+        CloseSheetBar(null, close)
         Box(
           Modifier.fillMaxSize(),
           contentAlignment = Alignment.Center
@@ -119,7 +119,7 @@ fun TerminalLayout(
 
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
-      topBar = { CloseSheetBar(close) },
+      topBar = { CloseSheetBar(stringResource(R.string.chat_console), close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
           SendMsgView(composeState, sendCommand, ::onMessageChange, textStyle)
@@ -152,7 +152,7 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         modifier = Modifier
           .fillMaxWidth()
           .clickable {
-            ModalManager.shared.showModal {
+            ModalManager.shared.showModal(null) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details)
               }

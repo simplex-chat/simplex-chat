@@ -1,15 +1,11 @@
 package chat.simplex.app.views.usersettings
 
 import SectionItemViewSpaceBetween
-import SectionTextFooter
 import SectionView
 import SectionViewSelectable
 import android.os.Build
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.model.OnionHosts
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 import kotlinx.coroutines.*
@@ -49,7 +44,7 @@ enum class NotificationPreviewMode {
 @Composable
 fun NotificationsSettingsView(
   chatModel: ChatModel,
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   val onNotificationsModeSelected = { mode: NotificationsMode ->
     chatModel.controller.appPrefs.notificationsMode.set(mode.name)
@@ -79,16 +74,15 @@ fun NotificationsSettingsView(
     notificationsMode = chatModel.notificationsMode,
     notificationPreviewMode = chatModel.notificationPreviewMode,
     showPage = { page ->
-      showCustomModal { _, close ->
-        ModalView(
-          close = close, modifier = Modifier,
-          background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-        ) {
+      val title = when (page) {
+        CurrentPage.NOTIFICATIONS_MODE -> generalGetString(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current)
+        CurrentPage.NOTIFICATION_PREVIEW_MODE -> generalGetString(R.string.settings_notification_preview_title)
+      }
+      showModalCloseable(title) { _, _ ->
           when (page) {
             CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.notificationsMode, onNotificationsModeSelected)
             CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
           }
-        }
       }()
     },
   )
@@ -111,11 +105,6 @@ fun NotificationsSettingsLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.notifications),
-      Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionView(null) {
       SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
         Text(stringResource(R.string.settings_notifications_mode_title))
@@ -152,11 +141,6 @@ fun NotificationsModeView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current),
-      Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
   }
 }
@@ -171,11 +155,6 @@ fun NotificationPreviewView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.settings_notification_preview_title),
-      Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
     SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
   }
 }

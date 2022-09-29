@@ -22,11 +22,6 @@ fun PrivacySettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start
   ) {
-    Text(
-      stringResource(R.string.your_privacy),
-      style = MaterialTheme.typography.h1,
-      modifier = Modifier.padding(start = 16.dp, bottom = 24.dp)
-    )
     SectionView(stringResource(R.string.settings_section_title_device)) {
       ChatLockItem(chatModel.performLA, setPerformLA)
     }

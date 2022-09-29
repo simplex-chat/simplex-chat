@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.*
 import com.google.accompanist.permissions.rememberPermissionState
@@ -75,14 +76,9 @@ suspend fun connectViaUri(chatModel: ChatModel, action: String, uri: Uri): Boole
 @Composable
 fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable () -> Unit) {
   Column(
-    Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+    Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    Text(
-      generalGetString(R.string.scan_QR_code),
-      Modifier.padding(bottom = 16.dp),
-      style = MaterialTheme.typography.h1,
-    )
     InfoAboutIncognito(
       chatModelIncognito,
       true,

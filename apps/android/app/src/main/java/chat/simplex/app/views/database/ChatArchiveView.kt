@@ -36,12 +36,11 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
+fun ChatArchiveView(m: ChatModel, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
   ChatArchiveLayout(
-    title,
     archiveTime,
     saveArchive = { saveArchiveLauncher.launch(archivePath.substringAfterLast("/")) },
     deleteArchiveAlert = { deleteArchiveAlert(m, archivePath) }
@@ -50,7 +49,6 @@ fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTim
 
 @Composable
 fun ChatArchiveLayout(
-  title: String,
   archiveTime: Instant,
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
@@ -59,25 +57,21 @@ fun ChatArchiveLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      title,
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-
     SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
         Icons.Outlined.IosShare,
         stringResource(R.string.save_archive),
         saveArchive,
-        textColor = MaterialTheme.colors.primary
+        textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
       )
       SectionDivider()
       SettingsActionItem(
         Icons.Outlined.Delete,
         stringResource(R.string.delete_archive),
         deleteArchiveAlert,
-        textColor = Color.Red
+        textColor = Color.Red,
+        iconColor = Color.Red,
       )
     }
     val archiveTs = SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
@@ -137,7 +131,6 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
 fun PreviewChatArchiveLayout() {
   SimpleXTheme {
     ChatArchiveLayout(
-      title = "New database archive",
       archiveTime = Clock.System.now(),
       saveArchive = {},
       deleteArchiveAlert = {}

@@ -45,7 +45,7 @@ import java.util.*
 @Composable
 fun DatabaseView(
   m: ChatModel,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
@@ -87,7 +87,7 @@ fun DatabaseView(
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(context, appFilesCountAndSize) },
-      showSettingsModal
+      showModal
     )
     if (progressIndicator.value) {
       Box(
@@ -124,7 +124,7 @@ fun DatabaseLayout(
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
   val operationsDisabled = !stopped || progressIndicator
@@ -133,12 +133,6 @@ fun DatabaseLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.your_chat_database),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
@@ -149,7 +143,7 @@ fun DatabaseLayout(
       SettingsActionItem(
         if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
         stringResource(R.string.database_passphrase),
-        click = showSettingsModal { DatabaseEncryptionView(it) },
+        click = showModal(stringResource(R.string.database_passphrase)) { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
@@ -165,6 +159,7 @@ fun DatabaseLayout(
           }
         },
         textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
         disabled = operationsDisabled
       )
       SectionDivider()
@@ -173,6 +168,7 @@ fun DatabaseLayout(
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
+        iconColor = Color.Red,
         disabled = operationsDisabled
       )
       SectionDivider()
@@ -184,7 +180,7 @@ fun DatabaseLayout(
         SettingsActionItem(
           Icons.Outlined.Inventory2,
           title,
-          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
+          click = showModal(title) { ChatArchiveView(it, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
         SectionDivider()
@@ -194,6 +190,7 @@ fun DatabaseLayout(
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
+        iconColor = Color.Red,
         disabled = operationsDisabled
       )
     }
@@ -582,7 +579,7 @@ fun PreviewDatabaseLayout() {
       exportArchive = {},
       deleteChatAlert = {},
       deleteAppFilesAndMedia = {},
-      showSettingsModal = { {} }
+      showModal = { _, _  -> {} }
     )
   }
 }

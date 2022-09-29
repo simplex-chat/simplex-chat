@@ -46,31 +46,21 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showCustomModal { close ->
-            ModalView(
-              close = close, modifier = Modifier,
-              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              AddGroupMembersView(groupInfo, chatModel, close)
-            }
+          ModalManager.shared.showModalCloseable(generalGetString(R.string.button_add_members)) { close ->
+            AddGroupMembersView(groupInfo, chatModel, close)
           }
         }
       },
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showCustomModal { closeCurrent ->
-            ModalView(
-              close = closeCurrent, modifier = Modifier,
-              background = if (isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight
-            ) {
-              GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
-            }
+          ModalManager.shared.showModalCloseable(null) { closeCurrent ->
+            GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
           }
         }
       },
       editGroupProfile = {
-        ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
+        ModalManager.shared.showModalCloseable(generalGetString(R.string.button_edit_group_profile)) { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },

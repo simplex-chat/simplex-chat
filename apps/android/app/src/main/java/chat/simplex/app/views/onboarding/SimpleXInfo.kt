@@ -2,7 +2,7 @@ package chat.simplex.app.views.onboarding
 
 import android.content.res.Configuration
 import androidx.annotation.StringRes
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -24,13 +24,14 @@ import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.User
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   SimpleXInfoLayout(
     user = chatModel.currentUser.value,
     onboardingStage = if (onboarding) chatModel.onboardingStage else null,
-    showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+    showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
   )
 }
 
@@ -38,10 +39,16 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
 fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: MutableState<OnboardingStage?>?,
-  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
-  Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.Start) {
-    SimpleXLogo()
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+      .padding(horizontal = DEFAULT_PADDING),
+    horizontalAlignment = Alignment.Start
+  ) {
+    SimpleXLogo(onboardingStage != null)
 
     Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 16.dp))
 
@@ -49,38 +56,33 @@ fun SimpleXInfoLayout(
     InfoRow(painterResource(R.drawable.shield), R.string.immune_to_spam_and_abuse, R.string.people_can_connect_only_via_links_you_share)
     InfoRow(painterResource(R.drawable.decentralized), R.string.decentralized, R.string.opensource_protocol_and_code_anybody_can_run_servers)
 
-    Spacer(
-      Modifier
-        .fillMaxHeight()
-        .weight(1f))
+    Spacer(Modifier.fillMaxHeight().weight(1f))
 
     if (onboardingStage != null) {
       Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         OnboardingActionButton(user, onboardingStage)
       }
-      Spacer(
-        Modifier
-          .fillMaxHeight()
-          .weight(1f))
+      Spacer(Modifier.fillMaxHeight().weight(1f))
     }
 
     Box(
       Modifier
         .fillMaxWidth()
-        .padding(bottom = 16.dp), contentAlignment = Alignment.Center) {
+        .padding(bottom = 16.dp), contentAlignment = Alignment.Center
+    ) {
       SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
-        click = showModal { HowItWorks(user, onboardingStage) })
+        click = showModal(generalGetString(R.string.how_simplex_works)) { HowItWorks(user, onboardingStage) })
     }
   }
 }
 
 @Composable
-fun SimpleXLogo() {
+fun SimpleXLogo(onboarding: Boolean) {
   Image(
     painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(R.string.image_descr_simplex_logo),
     modifier = Modifier
-      .padding(vertical = 20.dp)
+      .padding(if (onboarding) PaddingValues(vertical = DEFAULT_PADDING) else PaddingValues(bottom = DEFAULT_PADDING))
       .fillMaxWidth(0.80f)
   )
 }
@@ -97,7 +99,6 @@ private fun InfoRow(icon: Painter, @StringRes titleId: Int, @StringRes textId: I
     }
   }
 }
-
 
 @Composable
 fun OnboardingActionButton(user: User?, onboardingStage: MutableState<OnboardingStage?>, onclick: (() -> Unit)? = null) {
@@ -139,7 +140,7 @@ fun PreviewSimpleXInfo() {
     SimpleXInfoLayout(
       user = null,
       onboardingStage = null,
-      showModal = {{}}
+      showModal = { _, _ -> {} }
     )
   }
 }

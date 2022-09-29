@@ -22,6 +22,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
@@ -29,15 +30,15 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
   NewChatSheetLayout(
     addContact = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
+      ModalManager.shared.showModal(generalGetString(R.string.your_contact_address)) { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
+      ModalManager.shared.showModalCloseable(generalGetString(R.string.connect_via_link_or_qr)) { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
       newChatCtrl.collapse()
-      ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
+      ModalManager.shared.showModalCloseable(generalGetString(R.string.create_secret_group_title)) { close -> AddGroupView(chatModel, close) }
     }
   )
 }
