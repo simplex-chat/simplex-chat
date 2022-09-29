@@ -115,7 +115,6 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
 }
 
 @Composable

@@ -5,8 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBackIos
-import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,7 +16,7 @@ import chat.simplex.app.ui.theme.*
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable RowScope.() -> Unit,
+  navigationButton: @Composable () -> Unit,
   title: @Composable () -> Unit,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
@@ -49,7 +48,7 @@ fun DefaultTopAppBar(
 fun NavigationButtonBack(onButtonClicked: () -> Unit) {
   IconButton(onButtonClicked) {
     Icon(
-      Icons.Outlined.ArrowBackIos, stringResource(R.string.back), tint = MaterialTheme.colors.primary
+      Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colors.primary
     )
   }
 }
@@ -69,52 +68,19 @@ fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
 private fun TopAppBar(
   title: @Composable () -> Unit,
   modifier: Modifier = Modifier,
-  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
+  navigationIcon: @Composable (() -> Unit)? = null,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
   backgroundColor: Color = MaterialTheme.colors.primarySurface,
   centered: Boolean,
 ) {
-  Box(
-    modifier
-      .fillMaxWidth()
-      .height(AppBarHeight)
-      .background(backgroundColor)
-      .padding(horizontal = 4.dp),
-    contentAlignment = Alignment.CenterStart,
-  ) {
-    if (navigationIcon != null) {
-      Row(
-        Modifier
-          .fillMaxHeight()
-          .width(TitleInsetWithIcon - AppBarHorizontalPadding),
-        verticalAlignment = Alignment.CenterVertically,
-        content = navigationIcon
-      )
-    }
-
-    Row(
-      Modifier
-        .fillMaxHeight()
-        .fillMaxWidth(),
-      horizontalArrangement = Arrangement.End,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      buttons.forEach { it() }
-    }
-    val startPadding = if (navigationIcon != null) TitleInsetWithIcon else TitleInsetWithoutIcon
-    val endPadding = (buttons.size * 50f).dp
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .padding(
-          start = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else startPadding,
-          end = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else endPadding
-        ),
-      contentAlignment = Alignment.Center
-    ) {
-      title()
-    }
-  }
+  TopAppBar(
+    title,
+    modifier,
+    navigationIcon,
+    { Row{ buttons.forEach { it() }}},
+    elevation = 1.dp,
+    backgroundColor = backgroundColor,
+  )
 }
 
 val AppBarHeight = 56.dp
