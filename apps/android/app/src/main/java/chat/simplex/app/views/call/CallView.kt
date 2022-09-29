@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
@@ -176,9 +178,19 @@ private fun setCallSound(cxt: Context, call: Call) {
   if (call.soundSpeaker) {
     am.mode = AudioManager.MODE_NORMAL
     am.isSpeakerphoneOn = true
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   } else {
     am.mode = AudioManager.MODE_IN_CALL
     am.isSpeakerphoneOn = false
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   }
 }
 
