@@ -73,11 +73,7 @@ fun NotificationsSettingsView(
     notificationsMode = chatModel.notificationsMode,
     notificationPreviewMode = chatModel.notificationPreviewMode,
     showPage = { page ->
-      val title = when (page) {
-        CurrentPage.NOTIFICATIONS_MODE -> generalGetString(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current)
-        CurrentPage.NOTIFICATION_PREVIEW_MODE -> generalGetString(R.string.settings_notification_preview_title)
-      }
-      ModalManager.shared.showModalCloseable(title, true) {
+      ModalManager.shared.showModalCloseable(true) {
           when (page) {
             CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.notificationsMode, onNotificationsModeSelected)
             CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)
@@ -104,6 +100,7 @@ fun NotificationsSettingsLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.notifications))
     SectionView(null) {
       SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
         Text(stringResource(R.string.settings_notifications_mode_title))
@@ -140,6 +137,7 @@ fun NotificationsModeView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.settings_notifications_mode_title).lowercase().capitalize(Locale.current))
     SectionViewSelectable(null, notificationsMode, modes, onNotificationsModeSelected)
   }
 }
@@ -154,6 +152,7 @@ fun NotificationPreviewView(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.settings_notification_preview_title))
     SectionViewSelectable(null, notificationPreviewMode, previewModes, onNotificationPreviewModeSelected)
   }
 }

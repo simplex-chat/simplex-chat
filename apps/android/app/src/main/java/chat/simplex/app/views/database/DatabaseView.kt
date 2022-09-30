@@ -45,7 +45,7 @@ import java.util.*
 @Composable
 fun DatabaseView(
   m: ChatModel,
-  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val context = LocalContext.current
   val progressIndicator = remember { mutableStateOf(false) }
@@ -124,7 +124,7 @@ fun DatabaseLayout(
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
-  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
   val operationsDisabled = !stopped || progressIndicator
@@ -133,6 +133,7 @@ fun DatabaseLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.your_chat_database))
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
@@ -143,7 +144,7 @@ fun DatabaseLayout(
       SettingsActionItem(
         if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
         stringResource(R.string.database_passphrase),
-        click = showSettingsModal(stringResource(R.string.database_passphrase)) { DatabaseEncryptionView(it) },
+        click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
@@ -180,7 +181,7 @@ fun DatabaseLayout(
         SettingsActionItem(
           Icons.Outlined.Inventory2,
           title,
-          click = showSettingsModal(title) { ChatArchiveView(it, chatArchiveNameVal, chatArchiveTimeVal) },
+          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
           disabled = operationsDisabled
         )
         SectionDivider()
@@ -579,7 +580,7 @@ fun PreviewDatabaseLayout() {
       exportArchive = {},
       deleteChatAlert = {},
       deleteAppFilesAndMedia = {},
-      showSettingsModal = { _, _  -> {} }
+      showSettingsModal = { {} }
     )
   }
 }

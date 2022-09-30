@@ -59,6 +59,7 @@ fun UserAddressLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.Top
   ) {
+    AppBarTitle(stringResource(R.string.your_contact_address), false)
     Text(
       stringResource(R.string.you_can_share_your_address_anybody_will_be_able_to_connect),
       Modifier.padding(bottom = 12.dp),

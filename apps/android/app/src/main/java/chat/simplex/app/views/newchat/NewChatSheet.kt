@@ -30,11 +30,11 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
   NewChatSheetLayout(
     addContact = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModal(generalGetString(R.string.your_contact_address)) { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
+      ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModalCloseable(generalGetString(R.string.connect_via_link_or_qr)) { close -> ConnectViaLinkView(chatModel, close) }
+      ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
       newChatCtrl.collapse()

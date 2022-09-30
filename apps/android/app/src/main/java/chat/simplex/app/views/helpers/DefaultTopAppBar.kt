@@ -22,35 +22,26 @@ fun DefaultTopAppBar(
   showSearch: Boolean,
   onSearchValueChanged: (String) -> Unit,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
-  bigBar: Boolean = false,
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
   } else Modifier
 
-  if (!bigBar) {
-    TopAppBar(
-      modifier = modifier,
-      title = {
-        if (!showSearch) {
-          title?.invoke()
-        } else {
-          SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
-        }
-      },
-      backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
-      navigationIcon = navigationButton,
-      buttons = if (!showSearch) buttons else emptyList(),
-      centered = !showSearch,
-    )
-  } else {
-    BigTopAppBar(
-      modifier = modifier,
-      title = if (!showSearch) title else { { SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)} },
-      navigationIcon = navigationButton,
-    )
-  }
+  TopAppBar(
+    modifier = modifier,
+    title = {
+      if (!showSearch) {
+        title?.invoke()
+      } else {
+        SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
+      }
+    },
+    backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
+    navigationIcon = navigationButton,
+    buttons = if (!showSearch) buttons else emptyList(),
+    centered = !showSearch,
+  )
 }
 
 @Composable
@@ -124,45 +115,7 @@ private fun TopAppBar(
   }
 }
 
-@Composable
-private fun BigTopAppBar(
-  title: (@Composable () -> Unit)?,
-  modifier: Modifier = Modifier,
-  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
-  backgroundColor: Color = MaterialTheme.colors.background,
-) {
-  Column(
-    modifier
-      .fillMaxWidth()
-      .heightIn(min = AppBarHeight)
-      .background(backgroundColor)
-      .padding(horizontal = 4.dp),
-  ) {
-    if (navigationIcon != null) {
-      Row(
-        Modifier
-          .width(TitleInsetWithIcon - AppBarHorizontalPadding)
-          .padding(top = 4.dp),
-        content = navigationIcon
-      )
-    }
-    if (title != null) {
-      Box(
-        Modifier
-          .fillMaxWidth()
-          .padding(
-            start = DEFAULT_PADDING,
-            end = DEFAULT_PADDING,
-            bottom = DEFAULT_PADDING
-          ),
-      ) {
-        title()
-      }
-    }
-  }
-}
-
 val AppBarHeight = 56.dp
-private val AppBarHorizontalPadding = 4.dp
+val AppBarHorizontalPadding = 4.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
-private val TitleInsetWithIcon = 72.dp
+val TitleInsetWithIcon = 72.dp

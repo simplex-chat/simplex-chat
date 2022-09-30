@@ -17,6 +17,8 @@ import chat.simplex.app.model.Format
 import chat.simplex.app.model.FormatColor
 import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.AppBarTitle
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun MarkdownHelpView() {
@@ -26,6 +28,7 @@ fun MarkdownHelpView() {
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING)
   ) {
+    AppBarTitle(stringResource(R.string.how_to_use_markdown), false)
     Text(stringResource(R.string.you_can_use_markdown_to_format_messages__prompt))
     Spacer(Modifier.height(DEFAULT_PADDING))
     val bold = stringResource(R.string.bold)

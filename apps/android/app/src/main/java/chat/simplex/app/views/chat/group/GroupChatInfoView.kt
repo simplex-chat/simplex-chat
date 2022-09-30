@@ -46,7 +46,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(generalGetString(R.string.button_add_members), true) { close ->
+          ModalManager.shared.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, chatModel, close)
           }
         }
@@ -54,7 +54,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       showMemberInfo = { member ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showModalCloseable(null, true) { closeCurrent ->
+          ModalManager.shared.showModalCloseable(true) { closeCurrent ->
             GroupMemberInfoView(groupInfo, member, stats, chatModel, closeCurrent) { closeCurrent(); close() }
           }
         }

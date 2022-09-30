@@ -138,6 +138,7 @@ fun DatabaseEncryptionLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.database_passphrase))
     SectionView(null) {
       SavePassphraseSetting(useKeychain.value, initialRandomDBPassphrase.value, storedKey.value, progressIndicator.value) { checked ->
         if (checked) {

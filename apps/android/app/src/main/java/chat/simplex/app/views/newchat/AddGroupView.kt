@@ -44,7 +44,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(groupInfo, chatModel)
           close.invoke()
-          ModalManager.shared.showModalCloseable(generalGetString(R.string.button_add_members), true) { close ->
+          ModalManager.shared.showModalCloseable(true) { close ->
             AddGroupMembersView(groupInfo, chatModel, close)
           }
         }
@@ -79,13 +79,14 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(stringResource(R.string.create_secret_group_title), close = close) {
+      ModalView(close = close) {
         Column(
           Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
+          AppBarTitle(stringResource(R.string.create_secret_group_title), false)
           Text(stringResource(R.string.group_is_decentralized))
           InfoAboutIncognito(
             chatModelIncognito,

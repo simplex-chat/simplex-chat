@@ -36,11 +36,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun ChatArchiveView(m: ChatModel, archiveName: String, archiveTime: Instant) {
+fun ChatArchiveView(m: ChatModel, title: String, archiveName: String, archiveTime: Instant) {
   val context = LocalContext.current
   val archivePath = "${getFilesDirectory(context)}/$archiveName"
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, archivePath)
   ChatArchiveLayout(
+    title,
     archiveTime,
     saveArchive = { saveArchiveLauncher.launch(archivePath.substringAfterLast("/")) },
     deleteArchiveAlert = { deleteArchiveAlert(m, archivePath) }
@@ -49,6 +50,7 @@ fun ChatArchiveView(m: ChatModel, archiveName: String, archiveTime: Instant) {
 
 @Composable
 fun ChatArchiveLayout(
+  title: String,
   archiveTime: Instant,
   saveArchive: () -> Unit,
   deleteArchiveAlert: () -> Unit
@@ -57,6 +59,7 @@ fun ChatArchiveLayout(
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(title)
     SectionView(stringResource(R.string.chat_archive_section)) {
       SettingsActionItem(
         Icons.Outlined.IosShare,
@@ -131,6 +134,7 @@ private fun deleteArchiveAlert(m: ChatModel, archivePath: String) {
 fun PreviewChatArchiveLayout() {
   SimpleXTheme {
     ChatArchiveLayout(
+      "New database archive",
       archiveTime = Clock.System.now(),
       saveArchive = {},
       deleteArchiveAlert = {}

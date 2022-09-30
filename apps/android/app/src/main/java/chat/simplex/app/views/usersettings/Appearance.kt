@@ -65,12 +65,12 @@ fun AppearanceView() {
     appIcon,
     changeIcon = ::setAppIcon,
     showThemeSelector = {
-      ModalManager.shared.showModal(generalGetString(R.string.settings_section_title_themes).lowercase().capitalize(Locale.current), true) {
+      ModalManager.shared.showModal(true) {
         ThemeSelectorView()
       }
     },
     editPrimaryColor = { primary ->
-      ModalManager.shared.showModalCloseable(generalGetString(R.string.color_primary)) { close ->
+      ModalManager.shared.showModalCloseable { close ->
         ColorEditor(primary, close)
       }
     },
@@ -87,6 +87,7 @@ fun AppearanceView() {
     Modifier.fillMaxWidth(),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.appearance_settings))
     SectionView(stringResource(R.string.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
         items(AppIcon.values().size, { index -> AppIcon.values()[index] }) { index ->
@@ -147,6 +148,7 @@ fun ColorEditor(
     Modifier
       .fillMaxWidth()
   ) {
+    AppBarTitle(stringResource(R.string.color_primary))
     var currentColor by remember { mutableStateOf(initialColor) }
     ColorPicker(initialColor) {
       currentColor = it

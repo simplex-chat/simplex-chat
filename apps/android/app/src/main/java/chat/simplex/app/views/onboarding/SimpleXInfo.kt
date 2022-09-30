@@ -31,7 +31,7 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   SimpleXInfoLayout(
     user = chatModel.currentUser.value,
     onboardingStage = if (onboarding) chatModel.onboardingStage else null,
-    showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
+    showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
   )
 }
 
@@ -39,16 +39,15 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
 fun SimpleXInfoLayout(
   user: User?,
   onboardingStage: MutableState<OnboardingStage?>?,
-  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   Column(
     Modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start
   ) {
-    SimpleXLogo(onboardingStage != null)
+    SimpleXLogo()
 
     Text(stringResource(R.string.next_generation_of_private_messaging), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = 16.dp))
 
@@ -71,18 +70,18 @@ fun SimpleXInfoLayout(
         .padding(bottom = 16.dp), contentAlignment = Alignment.Center
     ) {
       SimpleButton(text = stringResource(R.string.how_it_works), icon = Icons.Outlined.Info,
-        click = showModal(generalGetString(R.string.how_simplex_works)) { HowItWorks(user, onboardingStage) })
+        click = showModal { HowItWorks(user, onboardingStage) })
     }
   }
 }
 
 @Composable
-fun SimpleXLogo(onboarding: Boolean) {
+fun SimpleXLogo() {
   Image(
     painter = painterResource(if (isInDarkTheme()) R.drawable.logo_light else R.drawable.logo),
     contentDescription = stringResource(R.string.image_descr_simplex_logo),
     modifier = Modifier
-      .padding(if (onboarding) PaddingValues(vertical = DEFAULT_PADDING) else PaddingValues(bottom = DEFAULT_PADDING))
+      .padding(vertical = DEFAULT_PADDING)
       .fillMaxWidth(0.80f)
   )
 }
@@ -140,7 +139,7 @@ fun PreviewSimpleXInfo() {
     SimpleXInfoLayout(
       user = null,
       onboardingStage = null,
-      showModal = { _, _ -> {} }
+      showModal = { {} }
     )
   }
 }

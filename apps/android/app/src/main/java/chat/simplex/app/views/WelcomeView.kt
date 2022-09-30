@@ -26,6 +26,7 @@ import chat.simplex.app.SimplexService
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.model.Profile
 import chat.simplex.app.ui.theme.*
+import chat.simplex.app.views.helpers.AppBarTitle
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
@@ -46,11 +47,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
     Column(
       modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())
     ) {
-      Text(
-        stringResource(R.string.create_profile),
-        style = MaterialTheme.typography.h6,
-        modifier = Modifier.padding(bottom = DEFAULT_PADDING)
-      )
+      AppBarTitle(stringResource(R.string.create_profile), false)
       ReadableText(R.string.your_profile_is_stored_on_your_device)
       ReadableText(R.string.profile_is_only_shared_with_your_contacts)
       Spacer(Modifier.height(10.dp))

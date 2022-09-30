@@ -101,9 +101,8 @@ fun SMPServersLayout(
     Modifier
       .fillMaxWidth()
       .padding(horizontal = DEFAULT_PADDING),
-    horizontalAlignment = Alignment.Start,
-    verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    AppBarTitle(stringResource(R.string.your_SMP_servers), false)
     SectionItemViewSpaceBetween(padding = PaddingValues()) {
       Text(stringResource(R.string.configure_SMP_servers), Modifier.padding(end = 24.dp))
       Switch(

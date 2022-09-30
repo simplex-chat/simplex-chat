@@ -92,6 +92,7 @@ fun AddGroupMembersLayout(
       .verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
+    AppBarTitle(stringResource(R.string.button_add_members))
     Row(
       Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center

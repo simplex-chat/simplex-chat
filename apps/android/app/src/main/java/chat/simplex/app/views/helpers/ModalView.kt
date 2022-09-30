@@ -16,7 +16,6 @@ import chat.simplex.app.ui.theme.isInDarkTheme
 
 @Composable
 fun ModalView(
-  title: String?,
   close: () -> Unit,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
@@ -25,7 +24,7 @@ fun ModalView(
   BackHandler(onBack = close)
   Surface(Modifier.fillMaxSize()) {
     Column(Modifier.background(background)) {
-      CloseSheetBar(title, close)
+      CloseSheetBar(close)
       Box(modifier) { content() }
     }
   }
@@ -35,15 +34,15 @@ class ModalManager {
   private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
   private val modalCount = mutableStateOf(0)
 
-  fun showModal(title: String?, settings: Boolean = false, content: @Composable () -> Unit) {
+  fun showModal(settings: Boolean = false, content: @Composable () -> Unit) {
     showCustomModal { close ->
-      ModalView(title, close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = content)
+      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = content)
     }
   }
 
-  fun showModalCloseable(title: String?, settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, content: @Composable (close: () -> Unit) -> Unit) {
     showCustomModal { close ->
-      ModalView(title, close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = { content(close) })
+      ModalView(close, if (!settings || isInDarkTheme()) MaterialTheme.colors.background else SettingsBackgroundLight, content = { content(close) })
     }
   }
 

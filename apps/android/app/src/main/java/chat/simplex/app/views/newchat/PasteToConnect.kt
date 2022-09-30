@@ -61,6 +61,7 @@ fun PasteToConnectLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
+    AppBarTitle(stringResource(R.string.connect_via_link), false)
     Text(stringResource(R.string.paste_connection_link_below_to_connect))
 
     InfoAboutIncognito(

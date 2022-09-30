@@ -112,14 +112,14 @@ fun ChatView(chatModel: ChatModel) {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
             val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
-            ModalManager.shared.showModalCloseable(null, true) { close ->
+            ModalManager.shared.showModalCloseable(true) { close ->
               ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
                 activeChat = it
               }
             }
           } else if (cInfo is ChatInfo.Group) {
             setGroupMembers(cInfo.groupInfo, chatModel)
-            ModalManager.shared.showModalCloseable(null, true) { close ->
+            ModalManager.shared.showModalCloseable(true) { close ->
               GroupChatInfoView(chatModel, close)
             }
           }
@@ -128,7 +128,7 @@ fun ChatView(chatModel: ChatModel) {
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
         withApi {
           val stats = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
-          ModalManager.shared.showModalCloseable(null, true) { close ->
+          ModalManager.shared.showModalCloseable(true) { close ->
             GroupMemberInfoView(groupInfo, member, stats, chatModel, close, close)
           }
         }
@@ -179,7 +179,7 @@ fun ChatView(chatModel: ChatModel) {
       addMembers = { groupInfo ->
         withApi {
           setGroupMembers(groupInfo, chatModel)
-          ModalManager.shared.showModalCloseable(generalGetString(R.string.button_add_members), true) { close ->
+          ModalManager.shared.showModalCloseable(true) { close ->
               AddGroupMembersView(groupInfo, chatModel, close)
           }
         }

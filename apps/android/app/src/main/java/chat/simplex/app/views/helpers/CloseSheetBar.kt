@@ -1,31 +1,43 @@
 package chat.simplex.app.views.helpers
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import chat.simplex.app.ui.theme.*
 
 @Composable
-fun CloseSheetBar(title: String? = null, close: () -> Unit) {
-  DefaultTopAppBar(
-    navigationButton = { NavigationButtonBack(close) },
-    title = if (title != null) { { AppBarTitle(title)} } else null,
-    onTitleClick = null,
-    showSearch = false,
-    onSearchValueChanged = {},
-    buttons = emptyList(),
-    bigBar = true,
-  )
+fun CloseSheetBar(close: () -> Unit) {
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .heightIn(min = AppBarHeight)
+      .padding(horizontal = AppBarHorizontalPadding),
+  ) {
+    Row(
+      Modifier
+        .width(TitleInsetWithIcon - AppBarHorizontalPadding)
+        .padding(top = 4.dp), // Like in DefaultAppBar
+      content = { NavigationButtonBack(close) }
+    )
+  }
 }
 
 @Composable
-private fun AppBarTitle(title: String) {
+fun AppBarTitle(title: String, withPadding: Boolean = true) {
+  val padding = if (withPadding)
+    PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING )
+  else
+    PaddingValues(bottom = DEFAULT_PADDING)
   Text(
     title,
-    Modifier,
+    Modifier
+      .fillMaxWidth()
+      .padding(padding),
     overflow = TextOverflow.Ellipsis,
     style = MaterialTheme.typography.h1
   )
@@ -40,6 +52,6 @@ private fun AppBarTitle(title: String) {
 @Composable
 fun PreviewCloseSheetBar() {
   SimpleXTheme {
-    CloseSheetBar("Test", close = {})
+    CloseSheetBar(close = {})
   }
 }

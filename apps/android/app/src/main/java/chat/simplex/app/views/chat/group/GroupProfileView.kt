@@ -74,7 +74,7 @@ fun GroupProfileLayout(
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
-      ModalView(null, close = close) {
+      ModalView(close = close) {
         Column(
           Modifier
             .verticalScroll(scrollState)

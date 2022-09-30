@@ -52,8 +52,8 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       developerTools = chatModel.controller.appPrefs.developerTools,
       user.displayName,
       setPerformLA = setPerformLA,
-      showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
-      showSettingsModal = { title, modalView -> { ModalManager.shared.showModal(title, true) { modalView(chatModel) } } },
+      showModal = { modalView -> { ModalManager.shared.showModal { modalView(chatModel) } } },
+      showSettingsModal = { modalView -> { ModalManager.shared.showModal(true) { modalView(chatModel) } } },
       showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
@@ -84,8 +84,8 @@ fun SettingsLayout(
   developerTools: Preference<Boolean>,
   userDisplayName: String,
   setPerformLA: (Boolean) -> Unit,
-  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
 //  showVideoChatPrototype: () -> Unit
@@ -112,33 +112,33 @@ fun SettingsLayout(
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
-        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal(generalGetString(R.string.settings_section_title_incognito)) { IncognitoView() }() }
+        SettingsIncognitoActionItem(incognitoPref, incognito, stopped) { showModal { IncognitoView() }() }
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal(generalGetString(R.string.your_contact_address)) { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.QrCode, stringResource(R.string.your_simplex_contact_address), showModal { CreateLinkView(it, CreateLinkTab.LONG_TERM) }, disabled = stopped)
         SectionDivider()
-        DatabaseItem(encrypted, showSettingsModal(stringResource(R.string.your_chat_database)) { DatabaseView(it, showSettingsModal) }, stopped)
+        DatabaseItem(encrypted, showSettingsModal { DatabaseView(it, showSettingsModal) }, stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_settings)) {
-        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal(generalGetString(R.string.notifications)) { NotificationsSettingsView(it) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Bolt, stringResource(R.string.notifications), showSettingsModal { NotificationsSettingsView(it) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal(generalGetString(R.string.your_calls)) { CallSettingsView(it, showModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Videocam, stringResource(R.string.settings_audio_video_calls), showSettingsModal { CallSettingsView(it, showModal) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal(generalGetString(R.string.your_privacy)) { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.Lock, stringResource(R.string.privacy_and_security), showSettingsModal { PrivacySettingsView(it, setPerformLA) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal(generalGetString(R.string.appearance_settings)) { AppearanceView() }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.LightMode, stringResource(R.string.appearance_settings), showSettingsModal { AppearanceView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal(generalGetString(R.string.network_and_servers)) { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.WifiTethering, stringResource(R.string.network_and_servers), showSettingsModal { NetworkAndServersView(it, showModal, showSettingsModal) }, disabled = stopped)
       }
       SectionSpacer()
 
       SectionView(stringResource(R.string.settings_section_title_help)) {
-        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal(String.format(stringResource(R.string.personal_welcome), userDisplayName)) { HelpView() }, disabled = stopped)
+        SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal { HelpView(userDisplayName) }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal(null) { SimpleXInfo(it, onboarding = false) })
+        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal(generalGetString(R.string.how_to_use_markdown)) { MarkdownHelpView() })
+        SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal { MarkdownHelpView() })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.Tag, stringResource(R.string.chat_with_the_founder), { uriHandler.openUri(simplexTeamUri) }, textColor = MaterialTheme.colors.primary, disabled = stopped)
         SectionDivider()
@@ -360,8 +360,8 @@ fun PreviewSettingsLayout() {
       developerTools = Preference({ false }, {}),
       userDisplayName = "Alice",
       setPerformLA = {},
-      showModal = { _, _ -> {} },
-      showSettingsModal = { _, _ -> {} },
+      showModal = { {} },
+      showSettingsModal = { {} },
       showCustomModal = { {}},
       showTerminal = {},
 //      showVideoChatPrototype = {}

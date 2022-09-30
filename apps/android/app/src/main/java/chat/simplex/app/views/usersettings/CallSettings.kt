@@ -15,17 +15,16 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.views.helpers.ExposedDropDownSettingRow
-import chat.simplex.app.views.helpers.generalGetString
+import chat.simplex.app.views.helpers.*
 
 @Composable
 fun CallSettingsView(m: ChatModel,
-  showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   CallSettingsLayout(
     webrtcPolicyRelay = m.controller.appPrefs.webrtcPolicyRelay,
     callOnLockScreen = m.controller.appPrefs.callOnLockScreen,
-    editIceServers = showModal(stringResource(R.string.your_ICE_servers)) { RTCServersView(m) }
+    editIceServers = showModal { RTCServersView(m) }
   )
 }
 
@@ -40,6 +39,7 @@ fun CallSettingsLayout(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
+    AppBarTitle(stringResource(R.string.your_calls))
     val lockCallState = remember { mutableStateOf(callOnLockScreen.get()) }
     SectionView(stringResource(R.string.settings_section_title_settings)) {
       SectionItemView() {
