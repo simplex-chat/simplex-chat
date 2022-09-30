@@ -10,8 +10,9 @@ import SwiftUI
 import SimpleXChat
 
 struct ContactConnectionView: View {
-    var contactConnection: PendingContactConnection
-    
+    @EnvironmentObject var m: ChatModel
+    @State var contactConnection: PendingContactConnection
+
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
@@ -23,7 +24,7 @@ struct ContactConnectionView: View {
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    Text(contactConnection.chatViewName)
+                    Text(contactConnection.displayName)
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(.secondary)
@@ -42,10 +43,50 @@ struct ContactConnectionView: View {
                 Text(contactConnection.description)
                     .frame(alignment: .topLeading)
                     .padding([.leading, .trailing], 8)
+                    .padding(.bottom, 2)
+
+                EditContactConnectionAlias(contactConnection: contactConnection)
+                    .padding([.leading, .trailing], 8)
+                    .onTapGesture {}
 
                 Spacer()
             }
             .frame(maxHeight: .infinity)
+        }
+    }
+}
+
+struct EditContactConnectionAlias: View {
+    @State var contactConnection: PendingContactConnection
+    @FocusState private var aliasTextFieldFocused: Bool
+
+    var body: some View {
+        TextField("Set contact name…", text: $contactConnection.localAlias)
+            .disableAutocorrection(true)
+            .focused($aliasTextFieldFocused)
+            .submitLabel(.done)
+            .onChange(of: aliasTextFieldFocused) { focused in
+                if !focused {
+                    setConnectionAlias(contactConnection)
+                }
+            }
+            .onSubmit {
+                setConnectionAlias(contactConnection)
+            }
+            .foregroundColor(.secondary)
+    }
+}
+
+func setConnectionAlias(_ contactConnection: PendingContactConnection) {
+    Task {
+        do {
+            if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: contactConnection.localAlias) {
+                await MainActor.run {
+                    ChatModel.shared.updateContactConnection(conn)
+                }
+            }
+        } catch {
+            logger.error("setContactAlias error: \(responseError(error))")
         }
     }
 }

@@ -30,6 +30,7 @@ struct ChatListNavLink: View {
     @State var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
+    @State private var showContactConnectionInfo = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -210,17 +211,24 @@ struct ChatListNavLink: View {
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture {
-            AlertManager.shared.showAlertMsg(
-                title:
-                    contactConnection.initiated
+            if contactConnection.connReqInv != nil && contactConnection.initiated  {
+                showContactConnectionInfo = true
+            } else {
+                AlertManager.shared.showAlertMsg(
+                    title: contactConnection.initiated
                     ? "You invited your contact"
                     : "You accepted connection",
-                // below are the same messages that are shown in alert
-                message:
-                    contactConnection.viaContactUri
+                    // below are the same messages that are shown in alert
+                    message: contactConnection.viaContactUri
                     ? "You will be connected when your connection request is accepted, please wait or check later!"
                     : "You will be connected when your contact's device is online, please wait or check later!"
-            )
+                )
+            }
+        }
+        .sheet(isPresented: $showContactConnectionInfo) {
+            if let connReqInv = contactConnection.connReqInv {
+                ContactConnectionInfo(contactConnection: contactConnection, connReqInvitation: connReqInv)
+            }
         }
     }
 
