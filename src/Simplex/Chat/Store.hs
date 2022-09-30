@@ -3547,10 +3547,10 @@ deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatIte
 deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId = do
   currentTs <- liftIO getCurrentTime
   liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  updateGroupChatItemRcvDeleted db user gInfo itemId currentTs
+  updateGroupChatItemRcvDeleted_ db user gInfo itemId currentTs
 
-updateGroupChatItemRcvDeleted :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
-updateGroupChatItemRcvDeleted db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
+updateGroupChatItemRcvDeleted_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
+updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
   (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
   let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
       toText = ciDeleteModeToText CIDMBroadcast
