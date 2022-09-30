@@ -34,7 +34,7 @@ git_setup() {
   git clone https://github.com/simplex-chat/simplex-chat "$tmp/simplex-chat"
 
   # Switch to nix-android branch
-  git -C "$tmp/simplex-chat" checkout "$commit"
+  git -C "$tmp/simplex-chat" checkout stable
 
   # Create missing folders
   mkdir -p "$tmp/simplex-chat/apps/android/app/src/main/cpp/libs/arm64-v8a"
