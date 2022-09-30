@@ -80,7 +80,7 @@ public enum ChatCommand {
             switch self {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
-            case let .startChat(subscribe): return "/_start subscribe=\(subscribe ? "on" : "off")"
+            case let .startChat(subscribe): return "/_start subscribe=\(subscribe ? "on" : "off") expire=off"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
