@@ -5,7 +5,9 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.*
@@ -59,8 +61,15 @@ fun ActiveCallView(chatModel: ChatModel) {
     if (!ntfModeService) SimplexService.start(SimplexApp.context)
   }
   DisposableEffect(Unit) {
-    // Stop it when call ended
-    onDispose { if (!ntfModeService) SimplexService.stop(SimplexApp.context) }
+    onDispose {
+      // Stop it when call ended
+      if (!ntfModeService) SimplexService.stop(SimplexApp.context)
+      // Clear selected communication device to default value after we changed it in call
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val am = SimplexApp.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        am.clearCommunicationDevice()
+      }
+    }
   }
   val cxt = LocalContext.current
   val scope = rememberCoroutineScope()
@@ -176,9 +185,19 @@ private fun setCallSound(cxt: Context, call: Call) {
   if (call.soundSpeaker) {
     am.mode = AudioManager.MODE_NORMAL
     am.isSpeakerphoneOn = true
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   } else {
     am.mode = AudioManager.MODE_IN_CALL
     am.isSpeakerphoneOn = false
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      am.availableCommunicationDevices.firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE }?.let {
+        am.setCommunicationDevice(it)
+      }
+    }
   }
 }
 
