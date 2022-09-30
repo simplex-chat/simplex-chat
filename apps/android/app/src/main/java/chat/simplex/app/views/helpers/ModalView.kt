@@ -34,7 +34,7 @@ fun ModalView(
 class ModalManager {
   private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
   private val modalCount = mutableStateOf(0)
-  private val toRemove = arrayListOf<Int>()
+  private val toRemove = mutableSetOf<Int>()
 
   fun showModal(settings: Boolean = false, content: @Composable () -> Unit) {
     showCustomModal { close ->
@@ -57,7 +57,7 @@ class ModalManager {
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       //modalViews.removeAt(modalViews.lastIndex)
-      toRemove.add(modalViews.lastIndex)
+      toRemove.add(modalViews.lastIndex - toRemove.size)
     }
     modalCount.value = modalViews.size - toRemove.size
   }
@@ -79,14 +79,9 @@ class ModalManager {
       }
     ) {
       modalViews.getOrNull(it - 1)?.invoke(::closeModal)
-    }
-
-    // This is needed because if we delete from modalViews immediately on request, animation will be bad
-    LaunchedEffect(modalCount.value) {
-      if (toRemove.isNotEmpty()) {
-        delay(200)
-        toRemove.forEach { modalViews.removeAt(it) }
-        toRemove.clear()
+      // This is needed because if we delete from modalViews immediately on request, animation will be bad
+      if (it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning && toRemove.isNotEmpty()) {
+        toRemove.removeIf { elem -> modalViews.removeAt(elem); true }
       }
     }
   }
