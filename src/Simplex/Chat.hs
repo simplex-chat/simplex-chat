@@ -434,12 +434,12 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
           deleteCIFile user file
-          toCi <- withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+          toCi <- withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMInternal
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          void $ sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           deleteCIFile user file
-          toCi <- withStore $ \db -> deleteGroupChatItemSndBroadcast db user gInfo itemId msgId
+          toCi <- withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMBroadcast
           setActive $ ActiveG gName
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -1112,7 +1112,7 @@ deleteGroupChatItem user gInfo (itemId, fileInfo_) = do
   forM_ fileInfo_ $ \fileInfo -> do
     cancelFile user fileInfo `catchError` \_ -> pure ()
     withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-  void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+  void $ withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMInternal
 
 -- perform an action only if filesFolder is set (i.e. on mobile devices)
 withFilesFolder :: ChatMonad m => (FilePath -> m ()) -> m ()
