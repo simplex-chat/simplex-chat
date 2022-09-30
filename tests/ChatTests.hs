@@ -2408,13 +2408,21 @@ testGetSetSMPServers =
 
 testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
+  putStrLn "testAsyncInitiatingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    putStrLn "4"
     bob `send` ("/c " <> inv)
+    putStrLn "5"
     bob <### ["/c " <> inv, "confirmation sent!"]
+    putStrLn "6"
     withTestChat "alice" $ \alice -> do
+      putStrLn "7"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
