@@ -60,7 +60,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         }
       },
       editGroupProfile = {
-        ModalManager.shared.showModalCloseable(generalGetString(R.string.button_edit_group_profile)) { close -> GroupProfileView(groupInfo, chatModel, close) }
+        ModalManager.shared.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
       },
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },

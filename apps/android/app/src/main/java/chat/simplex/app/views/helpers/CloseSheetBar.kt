@@ -3,7 +3,7 @@ package chat.simplex.app.views.helpers
 import android.content.res.Configuration
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import chat.simplex.app.ui.theme.*
@@ -12,19 +12,22 @@ import chat.simplex.app.ui.theme.*
 fun CloseSheetBar(title: String? = null, close: () -> Unit) {
   DefaultTopAppBar(
     navigationButton = { NavigationButtonBack(close) },
-    title = { AppBarTitle(title) },
+    title = if (title != null) { { AppBarTitle(title)} } else null,
     onTitleClick = null,
     showSearch = false,
     onSearchValueChanged = {},
-    buttons = emptyList()
+    buttons = emptyList(),
+    bigBar = true,
   )
 }
 
 @Composable
-private fun AppBarTitle(title: String?) {
+private fun AppBarTitle(title: String) {
   Text(
-    title ?: "", fontWeight = FontWeight.SemiBold,
-    maxLines = 1, overflow = TextOverflow.Ellipsis
+    title,
+    Modifier,
+    overflow = TextOverflow.Ellipsis,
+    style = MaterialTheme.typography.h1
   )
 }
 

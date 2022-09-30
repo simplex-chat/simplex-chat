@@ -119,7 +119,7 @@ fun TerminalLayout(
 
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Scaffold(
-      topBar = { CloseSheetBar(stringResource(R.string.chat_console), close) },
+      topBar = { CloseSheetBar(null, close) },
       bottomBar = {
         Box(Modifier.padding(horizontal = 8.dp)) {
           SendMsgView(composeState, sendCommand, ::onMessageChange, textStyle)

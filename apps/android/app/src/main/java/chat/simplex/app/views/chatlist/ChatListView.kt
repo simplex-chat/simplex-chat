@@ -232,6 +232,7 @@ private fun ChatListToolbar(chatModel: ChatModel, scaffoldCtrl: ScaffoldControll
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
+  Divider()
 }
 
 @Composable

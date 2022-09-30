@@ -30,6 +30,7 @@ import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.onboarding.OnboardingStage
 import chat.simplex.app.views.onboarding.ReadableText
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import kotlinx.coroutines.delay
 
 fun isValidDisplayName(name: String) : Boolean {
   return (name.firstOrNull { it.isWhitespace() }) == null
@@ -100,6 +101,7 @@ fun CreateProfilePanel(chatModel: ChatModel) {
       }
 
       LaunchedEffect(Unit) {
+        delay(300)
         focusRequester.requestFocus()
       }
     }

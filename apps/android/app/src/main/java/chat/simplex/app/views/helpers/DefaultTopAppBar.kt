@@ -16,39 +16,48 @@ import chat.simplex.app.ui.theme.*
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable () -> Unit,
-  title: @Composable () -> Unit,
+  navigationButton: @Composable RowScope.() -> Unit,
+  title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
   onSearchValueChanged: (String) -> Unit,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
+  bigBar: Boolean = false,
 ) {
   // If I just disable clickable modifier when don't need it, it will stop passing clicks to search. Replacing the whole modifier
   val modifier = if (!showSearch) {
     Modifier.clickable(enabled = onTitleClick != null, onClick = onTitleClick ?: { })
   } else Modifier
 
-  TopAppBar(
-    modifier = modifier,
-    title = {
-      if (!showSearch) {
-        title()
-      } else {
-        SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
-      }
-    },
-    backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
-    navigationIcon = navigationButton,
-    buttons = if (!showSearch) buttons else emptyList(),
-    centered = !showSearch
-  )
+  if (!bigBar) {
+    TopAppBar(
+      modifier = modifier,
+      title = {
+        if (!showSearch) {
+          title?.invoke()
+        } else {
+          SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)
+        }
+      },
+      backgroundColor = if (isInDarkTheme()) ToolbarDark else ToolbarLight,
+      navigationIcon = navigationButton,
+      buttons = if (!showSearch) buttons else emptyList(),
+      centered = !showSearch,
+    )
+  } else {
+    BigTopAppBar(
+      modifier = modifier,
+      title = if (!showSearch) title else { { SearchTextField(Modifier.fillMaxWidth(), stringResource(android.R.string.search_go), onSearchValueChanged)} },
+      navigationIcon = navigationButton,
+    )
+  }
 }
 
 @Composable
 fun NavigationButtonBack(onButtonClicked: () -> Unit) {
   IconButton(onButtonClicked) {
     Icon(
-      Icons.Outlined.ArrowBack, stringResource(R.string.back), tint = MaterialTheme.colors.primary
+      Icons.Outlined.ArrowBackIos, stringResource(R.string.back), tint = MaterialTheme.colors.primary
     )
   }
 }
@@ -68,22 +77,92 @@ fun NavigationButtonMenu(onButtonClicked: () -> Unit) {
 private fun TopAppBar(
   title: @Composable () -> Unit,
   modifier: Modifier = Modifier,
-  navigationIcon: @Composable (() -> Unit)? = null,
+  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
   buttons: List<@Composable RowScope.() -> Unit> = emptyList(),
   backgroundColor: Color = MaterialTheme.colors.primarySurface,
   centered: Boolean,
 ) {
-  TopAppBar(
-    title,
-    modifier,
-    navigationIcon,
-    { Row{ buttons.forEach { it() }}},
-    elevation = 1.dp,
-    backgroundColor = backgroundColor,
-  )
+  Box(
+    modifier
+      .fillMaxWidth()
+      .height(AppBarHeight)
+      .background(backgroundColor)
+      .padding(horizontal = 4.dp),
+    contentAlignment = Alignment.CenterStart,
+  ) {
+    if (navigationIcon != null) {
+      Row(
+        Modifier
+          .fillMaxHeight()
+          .width(TitleInsetWithIcon - AppBarHorizontalPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        content = navigationIcon
+      )
+    }
+    Row(
+      Modifier
+        .fillMaxHeight()
+        .fillMaxWidth(),
+      horizontalArrangement = Arrangement.End,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      buttons.forEach { it() }
+    }
+    val startPadding = if (navigationIcon != null) TitleInsetWithIcon else TitleInsetWithoutIcon
+    val endPadding = (buttons.size * 50f).dp
+    Box(
+      Modifier
+        .fillMaxWidth()
+        .padding(
+          start = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else startPadding,
+          end = if (centered) kotlin.math.max(startPadding.value, endPadding.value).dp else endPadding
+        ),
+      contentAlignment = Alignment.Center
+    ) {
+      title()
+    }
+  }
+}
+
+@Composable
+private fun BigTopAppBar(
+  title: (@Composable () -> Unit)?,
+  modifier: Modifier = Modifier,
+  navigationIcon: @Composable (RowScope.() -> Unit)? = null,
+  backgroundColor: Color = MaterialTheme.colors.background,
+) {
+  Column(
+    modifier
+      .fillMaxWidth()
+      .heightIn(min = AppBarHeight)
+      .background(backgroundColor)
+      .padding(horizontal = 4.dp),
+  ) {
+    if (navigationIcon != null) {
+      Row(
+        Modifier
+          .width(TitleInsetWithIcon - AppBarHorizontalPadding)
+          .padding(top = 4.dp),
+        content = navigationIcon
+      )
+    }
+    if (title != null) {
+      Box(
+        Modifier
+          .fillMaxWidth()
+          .padding(
+            start = DEFAULT_PADDING,
+            end = DEFAULT_PADDING,
+            bottom = DEFAULT_PADDING
+          ),
+      ) {
+        title()
+      }
+    }
+  }
 }
 
 val AppBarHeight = 56.dp
 private val AppBarHorizontalPadding = 4.dp
-private val TitleInsetWithoutIcon = 16.dp - AppBarHorizontalPadding
+private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
 private val TitleInsetWithIcon = 72.dp

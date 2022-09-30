@@ -38,7 +38,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
     },
     createGroup = {
       newChatCtrl.collapse()
-      ModalManager.shared.showModalCloseable(generalGetString(R.string.create_secret_group_title)) { close -> AddGroupView(chatModel, close) }
+      ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
     }
   )
 }

@@ -28,6 +28,7 @@ import chat.simplex.app.views.usersettings.DeleteImageButton
 import chat.simplex.app.views.usersettings.EditImageButton
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -78,6 +79,7 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
       sheetState = bottomSheetModalState,
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
+      ModalView(stringResource(R.string.create_secret_group_title), close = close) {
         Column(
           Modifier
             .fillMaxSize()
@@ -135,10 +137,12 @@ fun AddGroupLayout(chatModelIncognito: Boolean, createGroup: (GroupProfile) -> U
             CreateGroupButton(HighOrLowlight, Modifier.padding(8.dp))
           }
           LaunchedEffect(Unit) {
+            delay(300)
             focusRequester.requestFocus()
           }
         }
       }
+    }
   }
 }
 

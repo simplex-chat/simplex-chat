@@ -54,7 +54,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit) {
       setPerformLA = setPerformLA,
       showModal = { title, modalView -> { ModalManager.shared.showModal(title) { modalView(chatModel) } } },
       showSettingsModal = { title, modalView -> { ModalManager.shared.showModal(title, true) { modalView(chatModel) } } },
-      showModalCloseable = { title, modalView -> { ModalManager.shared.showModalCloseable(title) { close -> modalView(chatModel, close) } } },
+      showCustomModal = { modalView -> { ModalManager.shared.showCustomModal { close -> modalView(chatModel, close) } } },
       showTerminal = { ModalManager.shared.showCustomModal { close -> TerminalView(chatModel, close) } },
 //      showVideoChatPrototype = { ModalManager.shared.showCustomModal { close -> CallViewDebug(close) } },
     )
@@ -86,7 +86,7 @@ fun SettingsLayout(
   setPerformLA: (Boolean) -> Unit,
   showModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (title: String?, @Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showModalCloseable: (title: String?, @Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showTerminal: () -> Unit,
 //  showVideoChatPrototype: () -> Unit
 ) {
@@ -100,7 +100,7 @@ fun SettingsLayout(
     ) {
       Text(
         stringResource(R.string.your_settings),
-        style = MaterialTheme.typography.h6.copy(fontWeight = FontWeight.Normal),
+        style = MaterialTheme.typography.h1,
         modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
         overflow = TextOverflow.Ellipsis,
       )
@@ -108,7 +108,7 @@ fun SettingsLayout(
       Spacer(Modifier.height(30.dp))
 
       SectionView(stringResource(R.string.settings_section_title_you)) {
-        SectionItemView(showModal(stringResource(R.string.your_chat_profile)) { chatModel -> UserProfileView(chatModel) }, 80.dp, disabled = stopped) {
+        SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, disabled = stopped) {
           ProfilePreview(profile, stopped = stopped)
         }
         SectionDivider()
@@ -136,7 +136,7 @@ fun SettingsLayout(
       SectionView(stringResource(R.string.settings_section_title_help)) {
         SettingsActionItem(Icons.Outlined.HelpOutline, stringResource(R.string.how_to_use_simplex_chat), showModal(String.format(stringResource(R.string.personal_welcome), userDisplayName)) { HelpView() }, disabled = stopped)
         SectionDivider()
-        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal(generalGetString(R.string.about_simplex_chat)) { SimpleXInfo(it, onboarding = false) })
+        SettingsActionItem(Icons.Outlined.Info, stringResource(R.string.about_simplex_chat), showModal(null) { SimpleXInfo(it, onboarding = false) })
         SectionDivider()
         SettingsActionItem(Icons.Outlined.TextFormat, stringResource(R.string.markdown_in_messages), showModal(generalGetString(R.string.how_to_use_markdown)) { MarkdownHelpView() })
         SectionDivider()
@@ -362,7 +362,7 @@ fun PreviewSettingsLayout() {
       setPerformLA = {},
       showModal = { _, _ -> {} },
       showSettingsModal = { _, _ -> {} },
-      showModalCloseable = { _, _ -> {} },
+      showCustomModal = { {}},
       showTerminal = {},
 //      showVideoChatPrototype = {}
     )

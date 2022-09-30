@@ -365,6 +365,8 @@ fun ChatInfoToolbar(
     buttons = barButtons
   )
 
+  Divider(Modifier.padding(top = AppBarHeight))
+
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
     DropdownMenu(
       expanded = showMenu,
