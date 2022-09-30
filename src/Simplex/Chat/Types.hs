@@ -963,6 +963,7 @@ data CommandFunction
   | CFJoinConn
   | CFAllowConn
   | CFAckMessage
+  | CFDeleteConn
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -975,12 +976,14 @@ instance TextEncoding CommandFunction where
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "ack_message" -> Just CFAckMessage
+    "delete_conn" -> Just CFDeleteConn
     _ -> Nothing
   textEncode = \case
     CFCreateConn -> "create_conn"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAckMessage -> "ack_message"
+    CFDeleteConn -> "delete_conn"
 
 commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
@@ -988,6 +991,7 @@ commandExpectedResponse = \case
   CFJoinConn -> OK_
   CFAllowConn -> OK_
   CFAckMessage -> OK_
+  CFDeleteConn -> OK_
 
 data CommandData = CommandData
   { cmdId :: CommandId,
