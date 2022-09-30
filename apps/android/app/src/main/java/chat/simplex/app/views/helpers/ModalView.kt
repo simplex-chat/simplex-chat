@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.SettingsBackgroundLight
 import chat.simplex.app.ui.theme.isInDarkTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun ModalView(
@@ -33,6 +34,7 @@ fun ModalView(
 class ModalManager {
   private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
   private val modalCount = mutableStateOf(0)
+  private val toRemove = arrayListOf<Int>()
 
   fun showModal(settings: Boolean = false, content: @Composable () -> Unit) {
     showCustomModal { close ->
@@ -49,14 +51,15 @@ class ModalManager {
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showModal")
     modalViews.add(modal)
-    modalCount.value = modalViews.count()
+    modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
-      modalViews.removeAt(modalViews.lastIndex)
+      //modalViews.removeAt(modalViews.lastIndex)
+      toRemove.add(modalViews.lastIndex)
     }
-    modalCount.value = modalViews.size
+    modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
@@ -77,28 +80,39 @@ class ModalManager {
     ) {
       modalViews.getOrNull(it - 1)?.invoke(::closeModal)
     }
+
+    // This is needed because if we delete from modalViews immediately on request, animation will be bad
+    LaunchedEffect(modalCount.value) {
+      if (toRemove.isNotEmpty()) {
+        delay(200)
+        toRemove.forEach { modalViews.removeAt(it) }
+        toRemove.clear()
+      }
+    }
   }
 
   @OptIn(ExperimentalAnimationApi::class)
   private fun fromStartToEndTransition() =
     slideInHorizontally(
-      initialOffsetX = { fullWidth -> -fullWidth / 20 },
-      animationSpec = animationSpec()
+      initialOffsetX = { fullWidth -> -fullWidth },
+      animationSpec = animationSpecFromStart()
     ) with slideOutHorizontally(
       targetOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
+      animationSpec = animationSpecFromStart()
     )
+
   @OptIn(ExperimentalAnimationApi::class)
   private fun fromEndToStartTransition() =
     slideInHorizontally(
-      initialOffsetX = { fullWidth -> fullWidth / 20 },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally (
-      targetOffsetX = { fullWidth -> 0 },
-      animationSpec = animationSpec()
+      initialOffsetX = { fullWidth -> fullWidth },
+      animationSpec = animationSpecFromEnd()
+    ) with slideOutHorizontally(
+      targetOffsetX = { fullWidth -> -fullWidth },
+      animationSpec = animationSpecFromEnd()
     )
 
-  fun <T> animationSpec() = spring<T>()
+  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
+  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
   companion object {
     val shared = ModalManager()
