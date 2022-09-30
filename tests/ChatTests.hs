@@ -2885,7 +2885,7 @@ testSetChatItemTTL =
       bob <# "alice> 1"
       bob #> "@alice 2"
       alice <# "bob> 2"
-      threadDelay 1000000
+      threadDelay 2000000
       alice #> "@bob 3"
       bob <# "alice> 3"
       bob #> "@alice 4"
