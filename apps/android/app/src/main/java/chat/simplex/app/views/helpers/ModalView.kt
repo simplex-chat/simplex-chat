@@ -80,7 +80,7 @@ class ModalManager {
     ) {
       modalViews.getOrNull(it - 1)?.invoke(::closeModal)
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
-      if (it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning && toRemove.isNotEmpty()) {
+      if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         toRemove.removeIf { elem -> modalViews.removeAt(elem); true }
       }
     }
