@@ -1688,7 +1688,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         withAckMessage agentConnId cmdId msgMeta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
+            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
@@ -2001,19 +2001,30 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
 
-    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
-    groupMessageUpdate gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId mc RcvMessage {msgId} = do
-      CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId sharedMsgId
-      case (msgDir, chatDir) of
-        (SMDRcv, CIGroupRcv m) ->
-          if sameMemberId memberId m
-            then do
-              updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
-              toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-              let g = groupName' gInfo
-              setActive $ ActiveG g
-            else messageError "x.msg.update: group member attempted to update a message of another member"
-        (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
+    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
+    groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta =
+      updateRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing
+            toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+            setActive $ ActiveG g
+          _ -> throwError e
+      where
+        updateRcvChatItem = do
+          CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId sharedMsgId
+          case (msgDir, chatDir) of
+            (SMDRcv, CIGroupRcv m') ->
+              if sameMemberId memberId m'
+                then do
+                  updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
+                  toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+                  setActive $ ActiveG g
+                else messageError "x.msg.update: group member attempted to update a message of another member"
+            (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> m ()
     groupMessageDelete gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId RcvMessage {msgId} = do
