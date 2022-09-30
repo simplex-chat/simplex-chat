@@ -2535,7 +2535,8 @@ deleteMemberConnection user GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> do
     deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
-  -- withStore $ \db -> deleteGroupMemberConnection db userId m
+
+-- withStore $ \db -> deleteGroupMemberConnection db userId m
 
 sendDirectContactMessage :: ChatMonad m => Contact -> ChatMsgEvent -> m SndMessage
 sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
@@ -2933,7 +2934,7 @@ chatCommandP =
         [ " owner" $> GROwner,
           " admin" $> GRAdmin,
           " member" $> GRMember,
-          " author" $> GRAuthor,
+          -- " author" $> GRAuthor,
           pure GRAdmin
         ]
     chatNameP = ChatName <$> chatTypeP <*> displayName
