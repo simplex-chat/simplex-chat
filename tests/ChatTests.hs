@@ -1008,17 +1008,15 @@ testGroupMessageDelete =
         (bob <# "#team alice> hello!")
         (cath <# "#team alice> hello!")
 
+      -- alice: deletes msg id 5
       alice #$> ("/_delete item #1 5 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat, [(0, "connected")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
       cath #$> ("/_get chat #1 count=1", chat, [(0, "hello!")])
 
-      alice #$> ("/_update item #1 5 text updating deleted message", id, "cannot update this item")
-      alice #$> ("/_send #1 json {\"quotedItemId\": 5, \"msgContent\": {\"type\": \"text\", \"text\": \"quoting deleted message\"}}", id, "cannot reply to this message")
-
       threadDelay 1000000
-      -- alice, bob: msg id 6, cath: msg id 5
+      -- alice: msg id 5, bob: msg id 6, cath: msg id 5
       bob `send` "> #team @alice (hello) hi alic"
       bob <# "#team > alice hello!"
       bob <## "      hi alic"
@@ -1036,17 +1034,14 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
       cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
-      alice #$> ("/_delete item #1 5 broadcast", id, "message deleted")
-      concurrently_
-        (bob <# "#team alice> [deleted] hello!")
-        (cath <# "#team alice> [deleted] hello!")
-
-      alice #$> ("/_delete item #1 6 internal", id, "message deleted")
+      -- alice: deletes msg id 5
+      alice #$> ("/_delete item #1 5 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "connected"), Nothing)])
-      bob #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
-      cath #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
+      bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alic"), Just (0, "hello!"))])
+      cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alic"), Just (0, "hello!"))])
 
+      -- alice: msg id 5
       bob #$> ("/_update item #1 6 text hi alice", id, "message updated")
       concurrently_
         (alice <# "#team bob> [edited] hi alice")
@@ -1056,11 +1051,11 @@ testGroupMessageDelete =
         )
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "hi alice"), Nothing)])
-      bob #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!"))])
-      cath #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+      bob #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!"))])
+      cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 
       threadDelay 1000000
-      -- alice, bob: msg id 7, cath: msg id 6
+      -- alice: msg id 6, bob: msg id 7, cath: msg id 6
       cath #> "#team how are you?"
       concurrently_
         (alice <# "#team cath> how are you?")
@@ -1071,12 +1066,12 @@ testGroupMessageDelete =
         (alice <# "#team cath> [deleted] how are you?")
         (bob <# "#team cath> [deleted] how are you?")
 
-      alice #$> ("/_delete item #1 6 broadcast", id, "cannot delete this item")
-      alice #$> ("/_delete item #1 6 internal", id, "message deleted")
+      alice #$> ("/_delete item #1 5 broadcast", id, "cannot delete this item")
+      alice #$> ("/_delete item #1 5 internal", id, "message deleted")
 
       alice #$> ("/_get chat #1 count=1", chat', [((0, "this item is deleted (broadcast)"), Nothing)])
-      bob #$> ("/_get chat #1 count=3", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
-      cath #$> ("/_get chat #1 count=2", chat', [((0, "this item is deleted (broadcast)"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
+      bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "this item is deleted (broadcast)"), Nothing)])
+      cath #$> ("/_get chat #1 count=2", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!"))])
 
 testUpdateGroupProfile :: IO ()
 testUpdateGroupProfile =
