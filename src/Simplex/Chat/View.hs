@@ -63,6 +63,7 @@ responseToView testView = \case
   CRApiChat chat -> if testView then testViewChat chat else [plain . bshow $ J.encode chat]
   CRApiParsedMarkdown ft -> [plain . bshow $ J.encode ft]
   CRUserSMPServers smpServers -> viewSMPServers smpServers testView
+  CRChatItemTTL ttl -> viewChatItemTTL ttl
   CRNetworkConfig cfg -> viewNetworkConfig cfg
   CRContactInfo ct cStats customUserProfile -> viewContactInfo ct cStats customUserProfile
   CRGroupMemberInfo g m cStats -> viewGroupMemberInfo g m cStats
@@ -118,6 +119,7 @@ responseToView testView = \case
   CRRcvFileCancelled ft -> receivingFile_ "cancelled" ft
   CRUserProfileUpdated p p' -> viewUserProfileUpdated p p'
   CRContactAliasUpdated c -> viewContactAliasUpdated c
+  CRConnectionAliasUpdated c -> viewConnectionAliasUpdated c
   CRContactUpdated c c' -> viewContactUpdated c c'
   CRContactsMerged intoCt mergedCt -> viewContactsMerged intoCt mergedCt
   CRReceivedContactRequest UserContactRequest {localDisplayName = c, profile} -> viewReceivedContactRequest c profile
@@ -186,7 +188,7 @@ responseToView testView = \case
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items, Just $ connStatus activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items, Nothing)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just $ pccConnStatus)
+        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Text
         toCIPreview ((CChatItem _ ChatItem {meta}) : _) = itemText meta
         toCIPreview _ = ""
@@ -389,11 +391,14 @@ viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
   let ldn = T.toLower . (localDisplayName :: Contact -> ContactName)
       incognito ct = if contactConnIncognito ct then incognitoPrefix else ""
-   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct) . sortOn ldn
+   in map (\ct -> incognito ct <> ttyFullContact ct <> muted ct <> alias ct) . sortOn ldn
   where
     muted Contact {chatSettings, localDisplayName = ldn}
       | enableNtfs chatSettings = ""
       | otherwise = " (muted, you can " <> highlight ("/unmute @" <> ldn) <> ")"
+    alias Contact {profile = LocalProfile {localAlias}}
+      | localAlias == "" = ""
+      | otherwise = " (alias: " <> plain localAlias <> ")"
 
 viewUserContactLinkDeleted :: [StyledString]
 viewUserContactLinkDeleted =
@@ -574,6 +579,17 @@ viewSMPServers smpServers testView =
         then "no custom SMP servers saved"
         else viewServers smpServers
 
+viewChatItemTTL :: Maybe Int64 -> [StyledString]
+viewChatItemTTL = \case
+  Nothing -> ["old messages are not being deleted"]
+  Just ttl
+    | ttl == 86400 -> deletedAfter "one day"
+    | ttl == 7 * 86400 -> deletedAfter "one week"
+    | ttl == 30 * 86400 -> deletedAfter "one month"
+    | otherwise -> deletedAfter $ sShow ttl <> " second(s)"
+  where
+    deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
+
 viewNetworkConfig :: NetworkConfig -> [StyledString]
 viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
   [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
@@ -634,6 +650,11 @@ viewContactAliasUpdated :: Contact -> [StyledString]
 viewContactAliasUpdated Contact {localDisplayName = n, profile = LocalProfile {localAlias}}
   | localAlias == "" = ["contact " <> ttyContact n <> " alias removed"]
   | otherwise = ["contact " <> ttyContact n <> " alias updated: " <> plain localAlias]
+
+viewConnectionAliasUpdated :: PendingContactConnection -> [StyledString]
+viewConnectionAliasUpdated PendingContactConnection {pccConnId, localAlias}
+  | localAlias == "" = ["connection " <> sShow pccConnId <> " alias removed"]
+  | otherwise = ["connection " <> sShow pccConnId <> " alias updated: " <> plain localAlias]
 
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated

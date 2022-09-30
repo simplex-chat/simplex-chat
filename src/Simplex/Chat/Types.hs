@@ -11,7 +11,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Simplex.Chat.Types where
 
@@ -760,6 +764,7 @@ data Connection = Connection
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
+    localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     createdAt :: UTCTime
   }
@@ -779,6 +784,8 @@ data PendingContactConnection = PendingContactConnection
     viaContactUri :: Bool,
     viaUserContactLink :: Maybe Int64,
     customUserProfileId :: Maybe Int64,
+    connReqInv :: Maybe ConnReqInvitation,
+    localAlias :: Text,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -950,6 +957,7 @@ data CommandFunction
   | CFJoinConn
   | CFAllowConn
   | CFAckMessage
+  | CFDeleteConn
   deriving (Eq, Show, Generic)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -962,12 +970,14 @@ instance TextEncoding CommandFunction where
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "ack_message" -> Just CFAckMessage
+    "delete_conn" -> Just CFDeleteConn
     _ -> Nothing
   textEncode = \case
     CFCreateConn -> "create_conn"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAckMessage -> "ack_message"
+    CFDeleteConn -> "delete_conn"
 
 commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
@@ -975,6 +985,7 @@ commandExpectedResponse = \case
   CFJoinConn -> OK_
   CFAllowConn -> OK_
   CFAckMessage -> OK_
+  CFDeleteConn -> OK_
 
 data CommandData = CommandData
   { cmdId :: CommandId,

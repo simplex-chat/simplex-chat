@@ -222,9 +222,7 @@ fun ComposeView(
       }
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
-  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
-  val filesLauncher = rememberGetContentLauncher { uri: Uri? ->
+  val processPickedFile  = { uri: Uri? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
       if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
@@ -241,6 +239,9 @@ fun ComposeView(
       }
     }
   }
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
+  val galleryLauncherFallback = rememberGetContentLauncher(processPickedImage)
+  val filesLauncher = rememberGetContentLauncher(processPickedFile)
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
@@ -493,6 +494,16 @@ fun ComposeView(
         clearState()
       }
     }
+  }
+
+  LaunchedEffect(chatModel.sharedContent.value) {
+    when (val shared = chatModel.sharedContent.value) {
+      is SharedContent.Text -> onMessageChange(shared.text)
+      is SharedContent.Image -> processPickedImage(shared.uri)
+      is SharedContent.File -> processPickedFile(shared.uri)
+      null -> {}
+    }
+    chatModel.sharedContent.value = null
   }
 
   Column {

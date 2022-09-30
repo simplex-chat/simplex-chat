@@ -57,7 +57,9 @@ struct ChatListNavLink: View {
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            clearChatButton()
+            if !chat.chatItems.isEmpty {
+                clearChatButton()
+            }
             Button {
                 AlertManager.shared.showAlert(
                     contact.ready
@@ -118,7 +120,9 @@ struct ChatListNavLink: View {
                 }
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                clearChatButton()
+                if !chat.chatItems.isEmpty {
+                    clearChatButton()
+                }
                 if (groupInfo.membership.memberCurrent) {
                     Button {
                         AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))

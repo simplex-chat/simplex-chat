@@ -170,6 +170,11 @@
   <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
   <string name="you_have_no_chats">Sie haben keine Chats</string>
 
+  <!-- ShareListView.kt -->
+  <string name="share_message">Share message…</string>
+  <string name="share_image">Share image…</string>
+  <string name="share_file">Share file…</string>
+
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Anhängen</string>
   <string name="icon_descr_context">Kontextsymbol</string>
