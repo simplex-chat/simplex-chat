@@ -22,9 +22,6 @@ struct ContactConnectionInfo: View {
                     .bold()
                     .padding(.vertical)
 
-                EditContactConnectionAlias(contactConnection: contactConnection)
-                    .padding(.bottom, 6)
-
                 if (contactConnection.customUserProfileId != nil) {
                     HStack {
                         Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
