@@ -2440,39 +2440,70 @@ testAsyncAcceptingOffline = withTmpFiles $ do
 
 testFullAsync :: IO ()
 testFullAsync = withTmpFiles $ do
+  putStrLn "testFullAsync"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    putStrLn "4"
     bob `send` ("/c " <> inv)
+    putStrLn "5"
     bob <### ["/c " <> inv, "confirmation sent!"]
+  putStrLn "6"
   withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
+  putStrLn "7"
   withTestChat "bob" $ \_ -> pure () -- connecting... notification in UI
+  putStrLn "8"
   withTestChat "alice" $ \alice -> do
+    putStrLn "9"
     alice <## "1 contacts connected (use /cs for the list)"
+    putStrLn "10"
     alice <## "bob (Bob): contact is connected"
+  putStrLn "11"
   withTestChat "bob" $ \bob -> do
+    putStrLn "12"
     bob <## "1 contacts connected (use /cs for the list)"
+    putStrLn "13"
     bob <## "alice (Alice): contact is connected"
 
 testFullAsyncV1 :: IO ()
 testFullAsyncV1 = withTmpFiles $ do
+  putStrLn "testFullAsyncV1"
   inv <- withNewAlice $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewBob $ \bob -> do
+    putStrLn "4"
     bob ##> ("/c " <> inv)
+    putStrLn "5"
     bob <## "confirmation sent!"
+  putStrLn "6"
   withAlice $ \_ -> pure ()
+  putStrLn "7"
   withBob $ \_ -> pure ()
-  withAlice $ \alice ->
-    alice <## "1 contacts connected (use /cs for the list)"
-  withBob $ \_ -> pure ()
+  putStrLn "8"
   withAlice $ \alice -> do
+    putStrLn "9"
     alice <## "1 contacts connected (use /cs for the list)"
+  putStrLn "10"
+  withBob $ \_ -> pure ()
+  putStrLn "11"
+  withAlice $ \alice -> do
+    putStrLn "12"
+    alice <## "1 contacts connected (use /cs for the list)"
+    putStrLn "13"
     alice <## "bob (Bob): contact is connected"
+  putStrLn "14"
   withBob $ \bob -> do
+    putStrLn "15"
     bob <## "1 contacts connected (use /cs for the list)"
+    putStrLn "16"
     bob <## "alice (Alice): contact is connected"
   where
     withNewAlice = withNewTestChatV1 "alice" aliceProfile
@@ -2482,22 +2513,38 @@ testFullAsyncV1 = withTmpFiles $ do
 
 testFullAsyncV1toV2 :: IO ()
 testFullAsyncV1toV2 = withTmpFiles $ do
+  putStrLn "testFullAsyncV1toV2"
   inv <- withNewAlice $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewBob $ \bob -> do
+    putStrLn "4"
     bob ##> ("/c " <> inv)
+    putStrLn "5"
     bob <## "confirmation sent!"
   withAlice $ \_ -> pure ()
+  putStrLn "6"
   withBob $ \_ -> pure ()
-  withAlice $ \alice ->
-    alice <## "1 contacts connected (use /cs for the list)"
-  withBob $ \_ -> pure ()
+  putStrLn "7"
   withAlice $ \alice -> do
+    putStrLn "8"
     alice <## "1 contacts connected (use /cs for the list)"
+  putStrLn "9"
+  withBob $ \_ -> pure ()
+  putStrLn "10"
+  withAlice $ \alice -> do
+    putStrLn "11"
+    alice <## "1 contacts connected (use /cs for the list)"
+    putStrLn "12"
     alice <## "bob (Bob): contact is connected"
+  putStrLn "13"
   withBob $ \bob -> do
+    putStrLn "14"
     bob <## "1 contacts connected (use /cs for the list)"
+    putStrLn "15"
     bob <## "alice (Alice): contact is connected"
   where
     withNewAlice = withNewTestChat "alice" aliceProfile
@@ -2507,22 +2554,39 @@ testFullAsyncV1toV2 = withTmpFiles $ do
 
 testFullAsyncV2toV1 :: IO ()
 testFullAsyncV2toV1 = withTmpFiles $ do
+  putStrLn "testFullAsyncV2toV1"
   inv <- withNewAlice $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewBob $ \bob -> do
+    putStrLn "4"
     bob ##> ("/c " <> inv)
+    putStrLn "5"
     bob <## "confirmation sent!"
+  putStrLn "6"
   withAlice $ \_ -> pure ()
+  putStrLn "7"
   withBob $ \_ -> pure ()
-  withAlice $ \alice ->
-    alice <## "1 contacts connected (use /cs for the list)"
-  withBob $ \_ -> pure ()
+  putStrLn "8"
   withAlice $ \alice -> do
+    putStrLn "9"
     alice <## "1 contacts connected (use /cs for the list)"
+  putStrLn "10"
+  withBob $ \_ -> pure ()
+  putStrLn "11"
+  withAlice $ \alice -> do
+    putStrLn "12"
+    alice <## "1 contacts connected (use /cs for the list)"
+    putStrLn "13"
     alice <## "bob (Bob): contact is connected"
+  putStrLn "14"
   withBob $ \bob -> do
+    putStrLn "15"
     bob <## "1 contacts connected (use /cs for the list)"
+    putStrLn "16"
     bob <## "alice (Alice): contact is connected"
   where
     withNewAlice = withNewTestChatV1 "alice" aliceProfile
