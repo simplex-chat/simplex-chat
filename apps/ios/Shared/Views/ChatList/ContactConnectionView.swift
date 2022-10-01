@@ -126,6 +126,8 @@ struct ContactConnectionView: View {
             return
         }
         Task {
+            let prevAlias = contactConnection.localAlias
+            contactConnection.localAlias = localAlias
             do {
                 if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
                     await MainActor.run {
@@ -137,6 +139,7 @@ struct ContactConnectionView: View {
                 }
             } catch {
                 logger.error("setContactAlias error: \(responseError(error))")
+                contactConnection.localAlias = prevAlias
             }
         }
     }
