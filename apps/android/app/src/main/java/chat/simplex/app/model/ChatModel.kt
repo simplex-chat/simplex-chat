@@ -1003,9 +1003,13 @@ data class ChatItem (
     when (content) {
       is CIContent.RcvGroupEventContent ->
         when (content.rcvGroupEvent) {
+          is RcvGroupEvent.GroupUpdated -> true
+          is RcvGroupEvent.MemberConnected -> true
           is RcvGroupEvent.UserDeleted -> false
           is RcvGroupEvent.GroupDeleted -> false
-          else -> true
+          is RcvGroupEvent.MemberAdded -> false
+          is RcvGroupEvent.MemberLeft -> false
+          is RcvGroupEvent.MemberDeleted -> false
         }
       is CIContent.SndGroupEventContent -> true
       else -> false

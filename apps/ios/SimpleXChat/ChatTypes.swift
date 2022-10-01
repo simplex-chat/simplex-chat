@@ -896,9 +896,13 @@ public struct ChatItem: Identifiable, Decodable {
         switch content {
         case let .rcvGroupEvent(event):
             switch event {
+            case .groupUpdated: return true
+            case .memberConnected: return true
             case .userDeleted: return false
             case .groupDeleted: return false
-            default: return true
+            case .memberAdded: return false
+            case .memberLeft: return false
+            case .memberDeleted: return false
             }
         case .sndGroupEvent: return true
         default: return true
