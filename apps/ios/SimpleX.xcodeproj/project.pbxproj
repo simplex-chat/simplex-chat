@@ -95,6 +95,7 @@
 		5CE1330C28E71B8F00FFFD8C /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE1330728E71B8F00FFFD8C /* libgmp.a */; };
 		5CE1330D28E71B8F00FFFD8C /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE1330828E71B8F00FFFD8C /* libffi.a */; };
 		5CE1330E28E71B8F00FFFD8C /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE1330928E71B8F00FFFD8C /* libgmpxx.a */; };
+		5CE1331028E7391000FFFD8C /* ContactConnectionInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE1330F28E7391000FFFD8C /* ContactConnectionInfo.swift */; };
 		5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5CE2BA77284530BF00EC33A6 /* SimpleXChat.h in Headers */ = {isa = PBXBuildFile; fileRef = 5CE2BA76284530BF00EC33A6 /* SimpleXChat.h */; };
@@ -304,6 +305,7 @@
 		5CE1330728E71B8F00FFFD8C /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		5CE1330828E71B8F00FFFD8C /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5CE1330928E71B8F00FFFD8C /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5CE1330F28E7391000FFFD8C /* ContactConnectionInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactConnectionInfo.swift; sourceTree = "<group>"; };
 		5CE2BA682845308900EC33A6 /* SimpleXChat.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SimpleXChat.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CE2BA76284530BF00EC33A6 /* SimpleXChat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleXChat.h; sourceTree = "<group>"; };
 		5CE2BA78284530CC00EC33A6 /* SimpleXChat.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = SimpleXChat.docc; sourceTree = "<group>"; };
@@ -586,6 +588,7 @@
 				5C063D2627A4564100AEC577 /* ChatPreviewView.swift */,
 				5C116CDB27AABE0400E66D01 /* ContactRequestView.swift */,
 				5C13730A28156D2700F43030 /* ContactConnectionView.swift */,
+				5CE1330F28E7391000FFFD8C /* ContactConnectionInfo.swift */,
 			);
 			path = ChatList;
 			sourceTree = "<group>";
@@ -905,6 +908,7 @@
 				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
 				6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */,
 				5C2E261227A30FEA00F70299 /* TerminalView.swift in Sources */,
+				5CE1331028E7391000FFFD8C /* ContactConnectionInfo.swift in Sources */,
 				5CB2085128DB64CA00D024EC /* CreateLinkView.swift in Sources */,
 				5C9FD96E27A5D6ED0075386C /* SendMessageView.swift in Sources */,
 				64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */,

@@ -419,11 +419,13 @@ public struct UserContactRequest: Decodable, NamedChat {
 }
 
 public struct PendingContactConnection: Decodable, NamedChat {
-    var pccConnId: Int64
+    public var pccConnId: Int64
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
     public var viaContactUri: Bool
     public var customUserProfileId: Int64?
+    public var connReqInv: String?
+    public var localAlias: String
     var createdAt: Date
     public var updatedAt: Date
 
@@ -448,7 +450,6 @@ public struct PendingContactConnection: Decodable, NamedChat {
     }
     public var fullName: String { get { "" } }
     public var image: String? { get { nil } }
-    public var localAlias: String { "" }
     public var initiated: Bool { get { (pccConnStatus.initiated ?? false) && !viaContactUri } }
 
     public var incognito: Bool {
@@ -491,6 +492,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
             pccAgentConnId: "abcd",
             pccConnStatus: status,
             viaContactUri: viaContactUri,
+            localAlias: "",
             createdAt: .now,
             updatedAt: .now
         )
