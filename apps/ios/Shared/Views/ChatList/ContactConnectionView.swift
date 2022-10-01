@@ -27,8 +27,8 @@ struct ContactConnectionView: View {
                     if contactConnection.connReqInv == nil {
                         v.foregroundColor(Color(uiColor: .secondarySystemBackground))
                     } else {
-                        v.foregroundColor(.accentColor)
-                            .onTapGesture { showContactConnectionInfo = true }
+                        v.foregroundColor(contactConnection.incognito ? .indigo : .accentColor)
+                        .onTapGesture { showContactConnectionInfo = true }
                     }
                 } else {
                     Image(systemName: "link")
