@@ -131,6 +131,7 @@ data ChatMsgEvent
   | XGrpMemInv MemberId IntroInvitation
   | XGrpMemFwd MemberInfo IntroInvitation
   | XGrpMemInfo MemberId Profile
+  | XGrpMemRole MemberId GroupMemberRole
   | XGrpMemCon MemberId -- TODO not implemented
   | XGrpMemConAll MemberId -- TODO not implemented
   | XGrpMemDel MemberId
@@ -312,6 +313,7 @@ data CMEventTag
   | XGrpMemInv_
   | XGrpMemFwd_
   | XGrpMemInfo_
+  | XGrpMemRole_
   | XGrpMemCon_
   | XGrpMemConAll_
   | XGrpMemDel_
@@ -349,6 +351,7 @@ instance StrEncoding CMEventTag where
     XGrpMemInv_ -> "x.grp.mem.inv"
     XGrpMemFwd_ -> "x.grp.mem.fwd"
     XGrpMemInfo_ -> "x.grp.mem.info"
+    XGrpMemRole_ -> "x.grp.mem.role"
     XGrpMemCon_ -> "x.grp.mem.con"
     XGrpMemConAll_ -> "x.grp.mem.con.all"
     XGrpMemDel_ -> "x.grp.mem.del"
@@ -383,6 +386,7 @@ instance StrEncoding CMEventTag where
     "x.grp.mem.inv" -> Right XGrpMemInv_
     "x.grp.mem.fwd" -> Right XGrpMemFwd_
     "x.grp.mem.info" -> Right XGrpMemInfo_
+    "x.grp.mem.role" -> Right XGrpMemRole_
     "x.grp.mem.con" -> Right XGrpMemCon_
     "x.grp.mem.con.all" -> Right XGrpMemConAll_
     "x.grp.mem.del" -> Right XGrpMemDel_
@@ -420,6 +424,7 @@ toCMEventTag = \case
   XGrpMemInv _ _ -> XGrpMemInv_
   XGrpMemFwd _ _ -> XGrpMemFwd_
   XGrpMemInfo _ _ -> XGrpMemInfo_
+  XGrpMemRole _ _ -> XGrpMemRole_
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel _ -> XGrpMemDel_
@@ -486,6 +491,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
       XGrpMemFwd_ -> XGrpMemFwd <$> p "memberInfo" <*> p "memberIntro"
       XGrpMemInfo_ -> XGrpMemInfo <$> p "memberId" <*> p "profile"
+      XGrpMemRole_ -> XGrpMemRole <$> p "memberId" <*> p "role"
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
@@ -528,6 +534,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]
       XGrpMemFwd memInfo memIntro -> o ["memberInfo" .= memInfo, "memberIntro" .= memIntro]
       XGrpMemInfo memId profile -> o ["memberId" .= memId, "profile" .= profile]
+      XGrpMemRole memId role -> o ["memberId" .= memId, "role" .= role]
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]

@@ -2539,7 +2539,8 @@ deleteMemberConnection user GroupMember {activeConn} = do
   forM_ activeConn $ \conn -> do
     deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
-  -- withStore $ \db -> deleteGroupMemberConnection db userId m
+
+-- withStore $ \db -> deleteGroupMemberConnection db userId m
 
 sendDirectContactMessage :: ChatMonad m => Contact -> ChatMsgEvent -> m SndMessage
 sendDirectContactMessage ct@Contact {activeConn = conn@Connection {connId, connStatus}} chatMsgEvent = do
@@ -2824,6 +2825,7 @@ chatCommandP =
       "/_ntf message " *> (APIGetNtfMessage <$> strP <* A.space <*> strP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
+      "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
@@ -2851,6 +2853,7 @@ chatCommandP =
       "/_group " *> (NewGroup <$> jsonP),
       ("/add #" <|> "/add " <|> "/a #" <|> "/a ") *> (AddMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName <*> memberRole),
       ("/join #" <|> "/join " <|> "/j #" <|> "/j ") *> (JoinGroup <$> displayName),
+      ("/member role #" <|> "/member role " <|> "/mr #" <|> "/mr ") *> (MemberRole <$> displayName <* A.space <* optional (A.char '@') <*> displayName <*> memberRole),
       ("/remove #" <|> "/remove " <|> "/rm #" <|> "/rm ") *> (RemoveMember <$> displayName <* A.space <* optional (A.char '@') <*> displayName),
       ("/leave #" <|> "/leave " <|> "/l #" <|> "/l ") *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
