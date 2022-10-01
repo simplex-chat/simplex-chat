@@ -19,13 +19,29 @@ struct ContactConnectionView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
-                .resizable()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .frame(width: 63, height: 63)
-                .padding(.leading, 4)
+            if contactConnection.initiated  {
+                let v = Image(systemName: contactConnection.initiated ? "qrcode" : "link")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 40, height: 40)
+                    .frame(width: 63, height: 63)
+                    .padding(.leading, 4)
+                if contactConnection.connReqInv == nil {
+                    v.foregroundColor(Color(uiColor: .secondarySystemBackground))
+                } else {
+                    v.foregroundColor(.accentColor)
+                    .onTapGesture { showContactConnectionInfo = true }
+                }
+            } else {
+                Image(systemName: contactConnection.initiated ? "qrcode" : "link")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 48, height: 48)
+                    .frame(width: 63, height: 63)
+                    .padding(.leading, 4)
+                    .foregroundColor(Color(uiColor: .secondarySystemBackground))
+            }
+
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
                     if editLocalAlias {
@@ -73,47 +89,33 @@ struct ContactConnectionView: View {
                 }
                 .padding(.bottom, 2)
 
-                HStack {
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(contactConnection.description)
-                            .frame(alignment: .topLeading)
-                            .padding(.horizontal, 8)
-                            .padding(.bottom, 2)
+                Text(contactConnection.description)
+                    .frame(alignment: .topLeading)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
 
-                        if editLocalAlias {
-                            HStack {
-                                Image(systemName: "multiply")
-                                Text("Cancel")
-                            }
-                            .foregroundColor(.accentColor               )
-                            .padding(.leading, 8)
-                            .onTapGesture {
-                                editLocalAlias = false
-                                aliasTextFieldFocused = false
-                            }
-                        } else {
-                            HStack {
-                                Image(systemName: "pencil")
-                                Text("Edit")
-                            }
-                            .foregroundColor(.accentColor               )
-                            .padding(.leading, 8)
-                            .onTapGesture {
-                                localAlias = contactConnection.localAlias
-                                editLocalAlias = true
-                                aliasTextFieldFocused = true
-                            }
-                        }
+                if editLocalAlias {
+                    HStack {
+                        Image(systemName: "multiply")
+                        Text("Cancel")
                     }
-                    Spacer()
-                    if contactConnection.connReqInv != nil && contactConnection.initiated  {
-                        Image(systemName: "qrcode")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 32, height: 32)
-                            .padding(.trailing, 8)
-                            .foregroundColor(.accentColor)
-                            .onTapGesture { showContactConnectionInfo = true }
+                    .foregroundColor(.accentColor               )
+                    .padding(.leading, 8)
+                    .onTapGesture {
+                        editLocalAlias = false
+                        aliasTextFieldFocused = false
+                    }
+                } else {
+                    HStack {
+                        Image(systemName: "pencil")
+                        Text("Edit")
+                    }
+                    .foregroundColor(.accentColor               )
+                    .padding(.leading, 8)
+                    .onTapGesture {
+                        localAlias = contactConnection.localAlias
+                        editLocalAlias = true
+                        aliasTextFieldFocused = true
                     }
                 }
 
