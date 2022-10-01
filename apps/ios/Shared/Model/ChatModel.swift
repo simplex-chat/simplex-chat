@@ -334,7 +334,6 @@ final class ChatModel: ObservableObject {
            case let .contactConnection(contactConnection) = c.chatInfo,
            connReqInv == contactConnection.connReqInv {
             dismissAllSheets()
-            }
         }
     }
 
