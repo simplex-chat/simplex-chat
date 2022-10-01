@@ -2429,14 +2429,23 @@ testAsyncInitiatingOffline = withTmpFiles $ do
 
 testAsyncAcceptingOffline :: IO ()
 testAsyncAcceptingOffline = withTmpFiles $ do
+  putStrLn "testAsyncAcceptingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    putStrLn "1"
     alice ##> "/c"
+    putStrLn "2"
     getInvitation alice
+  putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    putStrLn "4"
     bob ##> ("/c " <> inv)
+    putStrLn "5"
     bob <## "confirmation sent!"
+  putStrLn "6"
   withTestChat "alice" $ \alice ->
+    putStrLn "7"
     withTestChat "bob" $ \bob ->
+      putStrLn "8"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
