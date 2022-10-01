@@ -2442,9 +2442,9 @@ testAsyncAcceptingOffline = withTmpFiles $ do
     putStrLn "5"
     bob <## "confirmation sent!"
   putStrLn "6"
-  withTestChat "alice" $ \alice ->
+  withTestChat "alice" $ \alice -> do
     putStrLn "7"
-    withTestChat "bob" $ \bob ->
+    withTestChat "bob" $ \bob -> do
       putStrLn "8"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
