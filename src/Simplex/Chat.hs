@@ -59,7 +59,7 @@ import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), exexSQL)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (dbNew), execSQL)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding
@@ -271,7 +271,7 @@ processChatCommand = \case
   APIImportArchive cfg -> withStoreChanged $ importArchive cfg
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
-  ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`exexSQL` query)
+  ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -2139,7 +2139,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupInvitation ct@Contact {localDisplayName = c, activeConn = Connection {customUserProfileId}} inv@GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole)} msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
+      when (fromRole < GRMember || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
       when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
       -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
       gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = GroupMember {groupMemberId}} <- withStore $ \db -> createGroupInvitation db user ct inv customUserProfileId
@@ -2309,7 +2309,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> pure ()
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> MsgMeta -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId _ memberProfile) msg msgMeta = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole memberProfile) msg msgMeta = do
+      checkHostRole m memRole
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       unless (sameMemberId memId $ membership gInfo) $
         if isMember memId gInfo members
@@ -2321,13 +2322,14 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             toView $ CRJoinedGroupMemberConnecting gInfo m newMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId _ _) = do
+    xGrpMemIntro gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
           if isMember memId gInfo members
             then messageWarning "x.grp.mem.intro ignored: member already exists"
             else do
+              when (memberRole < GRMember) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               groupConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
               directConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
@@ -2356,7 +2358,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId _ _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} m memInfo@(MemberInfo memId memRole _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+      checkHostRole m memRole
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       toMember <- case find (sameMemberId memId) members of
         -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
@@ -2392,6 +2395,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
             groupMsgToView gInfo m ci msgMeta
             toView CRMemberRole {groupInfo = gInfo', byMember = m, member, fromRole, toRole = memRole}
+
+    checkHostRole :: GroupMember -> GroupMemberRole -> m ()
+    checkHostRole GroupMember {memberRole, localDisplayName} memRole =
+      when (memberRole < GRMember || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
@@ -2977,10 +2984,13 @@ chatCommandP =
     filePath = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     searchP = T.unpack . safeDecodeUtf8 <$> (" search=" *> A.takeByteString)
     memberRole =
-      (" owner" $> GROwner)
-        <|> (" admin" $> GRAdmin)
-        <|> (" member" $> GRMember)
-        <|> pure GRAdmin
+      A.choice
+        [ " owner" $> GROwner,
+          " admin" $> GRAdmin,
+          " member" $> GRMember,
+          -- " author" $> GRAuthor,
+          pure GRAdmin
+        ]
     chatNameP = ChatName <$> chatTypeP <*> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
