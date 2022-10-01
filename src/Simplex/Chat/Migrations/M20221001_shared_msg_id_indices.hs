@@ -10,13 +10,6 @@ m20221001_shared_msg_id_indices =
   [sql|
 DROP INDEX idx_messages_group_shared_msg_id;
 
--- re-create as non unique
-CREATE INDEX idx_messages_group_shared_msg_id ON messages(
-  group_id,
-  shared_msg_id_user,
-  shared_msg_id
-);
-
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
