@@ -999,9 +999,14 @@ data class ChatItem (
       else -> false
     }
 
-  val isMemberEvent: Boolean get() =
+  val isMutedMemberEvent: Boolean get() =
     when (content) {
-      is CIContent.RcvGroupEventContent -> true
+      is CIContent.RcvGroupEventContent ->
+        when (content.rcvGroupEvent) {
+          is RcvGroupEvent.UserDeleted -> false
+          is RcvGroupEvent.GroupDeleted -> false
+          else -> true
+        }
       is CIContent.SndGroupEventContent -> true
       else -> false
     }

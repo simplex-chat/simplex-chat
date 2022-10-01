@@ -892,11 +892,16 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-    public var isMemberEvent: Bool {
+    public var isMutedMemberEvent: Bool {
         switch content {
-        case .rcvGroupEvent: return true
+        case let .rcvGroupEvent(event):
+            switch event {
+            case .userDeleted: return false
+            case .groupDeleted: return false
+            default: return true
+            }
         case .sndGroupEvent: return true
-        default: return false
+        default: return true
         }
     }
 
