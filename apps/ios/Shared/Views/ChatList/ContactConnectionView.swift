@@ -13,6 +13,7 @@ struct ContactConnectionView: View {
     @EnvironmentObject var m: ChatModel
     @State var contactConnection: PendingContactConnection
     @State private var editLocalAlias = false
+    @State private var localAlias = ""
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var showContactConnectionInfo = false
 
@@ -50,25 +51,15 @@ struct ContactConnectionView: View {
                         .foregroundColor(.secondary)
                         .padding(.leading, 8)
                         .padding(.top, 8)
-                        .onTapGesture {
-                            editLocalAlias = true
-                            aliasTextFieldFocused = true
-                        }
+                        .onTapGesture(perform: enableEditing)
 
                     if editLocalAlias {
-                        let v = TextField("Set contact name…", text: $contactConnection.localAlias)
+                        let v = TextField("Set contact name…", text: $localAlias)
                             .font(.title3)
                             .disableAutocorrection(true)
                             .focused($aliasTextFieldFocused)
                             .submitLabel(.done)
-                            .onChange(of: aliasTextFieldFocused) { focused in
-                                if !focused {
-                                    setConnectionAlias()
-                                }
-                            }
-                            .onSubmit {
-                                setConnectionAlias()
-                            }
+                            .onSubmit(setConnectionAlias)
                             .foregroundColor(.secondary)
                             .padding(.trailing, 8)
                             .onTapGesture {}
@@ -87,10 +78,7 @@ struct ContactConnectionView: View {
                             .padding(.top, 1)
                             .padding(.bottom, 0.5)
                             .frame(alignment: .topLeading)
-                            .onTapGesture {
-                                editLocalAlias = true
-                                aliasTextFieldFocused = true
-                            }
+                            .onTapGesture(perform: enableEditing)
                     }
 
                     Spacer()
@@ -120,13 +108,25 @@ struct ContactConnectionView: View {
         }
     }
 
+    private func enableEditing() {
+        editLocalAlias = true
+        aliasTextFieldFocused = true
+        localAlias = contactConnection.localAlias
+    }
+
     private func setConnectionAlias() {
+        if localAlias == contactConnection.localAlias {
+            aliasTextFieldFocused = false
+            editLocalAlias = false
+            return
+        }
         Task {
             do {
-                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: contactConnection.localAlias) {
+                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
                     await MainActor.run {
                         contactConnection = conn
                         ChatModel.shared.updateContactConnection(conn)
+                        aliasTextFieldFocused = false
                         editLocalAlias = false
                     }
                 }
