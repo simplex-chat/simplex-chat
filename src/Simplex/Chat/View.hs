@@ -149,8 +149,8 @@ responseToView testView = \case
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
-  CRMemberRole g m _ _ -> []
-  CRMemberRoleUser g m _ _ -> []
+  CRMemberRole g by m r r' -> viewMemberRoleChanged g by m r r'
+  CRMemberRoleUser g m r r' -> viewMemberRoleUserChanged g m r r'
   CRDeletedMemberUser g by -> [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember g by m -> [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
@@ -479,6 +479,27 @@ connectedMember m = case memberCategory m of
   GCPreMember -> "member " <> ttyFullMember m
   GCPostMember -> "new member " <> ttyMember m -- without fullName as as it was shown in joinedGroupMemberConnecting
   _ -> "member " <> ttyMember m -- these case is not used
+
+viewMemberRoleChanged :: GroupInfo -> GroupMember -> GroupMember -> GroupMemberRole -> GroupMemberRole -> [StyledString]
+viewMemberRoleChanged g@GroupInfo {membership} by m r r'
+  | r == r' = [ttyGroup' g <> ": member role did not change"]
+  | groupMemberId' membership == memId = view "your role"
+  | groupMemberId' by == memId = view "the role"
+  | otherwise = view $ "the role of " <> ttyMember m
+  where
+    memId = groupMemberId' m
+    view s = [ttyGroup' g <> ": " <> ttyMember by <> " changed " <> s <> " from " <> showRole r <> " to " <> showRole r']
+
+viewMemberRoleUserChanged :: GroupInfo -> GroupMember -> GroupMemberRole -> GroupMemberRole -> [StyledString]
+viewMemberRoleUserChanged g@GroupInfo {membership} m r r'
+  | r == r' = [ttyGroup' g <> ": member role did not change"]
+  | groupMemberId' membership == groupMemberId' m = view "your role"
+  | otherwise = view $ "the role of " <> ttyMember m
+  where
+    view s = [ttyGroup' g <> ": you changed " <> s <> " from " <> showRole r <> " to " <> showRole r']
+
+showRole :: GroupMemberRole -> StyledString
+showRole = plain . strEncode
 
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members

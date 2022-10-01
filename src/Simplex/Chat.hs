@@ -848,11 +848,12 @@ processChatCommand = \case
             canChangeRole = userRole >= GRAdmin && userRole >= mRole && userRole >= memRole && memberCurrent membership
         unless canChangeRole $ throwChatError CEGroupUserRole
         withChatLock . procCmd $ do
-          withStore' $ \db -> updateGroupMemberRole db user m memRole
-          unless (mStatus == GSMemInvited) $ do
-            msg <- sendGroupMessage gInfo members $ XGrpMemRole mId memRole
-            ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent) Nothing Nothing
-            toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+          unless (mRole == memRole) $ do
+            withStore' $ \db -> updateGroupMemberRole db user m memRole
+            unless (mStatus == GSMemInvited) $ do
+              msg <- sendGroupMessage gInfo members $ XGrpMemRole mId memRole
+              ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent) Nothing Nothing
+              toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
           pure CRMemberRoleUser {groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
@@ -2390,7 +2391,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             withStore' $ \db -> updateGroupMemberRole db user member memRole
             ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
             groupMsgToView gInfo m ci msgMeta
-            toView CRMemberRole {groupInfo = gInfo', member, fromRole, toRole = memRole}
+            toView CRMemberRole {groupInfo = gInfo', byMember = m, member, fromRole, toRole = memRole}
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do

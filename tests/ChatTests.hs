@@ -19,7 +19,8 @@ import qualified Data.Text as T
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.Chat.Types (ConnStatus (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
+import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
@@ -58,6 +59,7 @@ chatTests = do
     it "group message update" testGroupMessageUpdate
     it "group message delete" testGroupMessageDelete
     it "update group profile" testUpdateGroupProfile
+    it "update member role" testUpdateMemberRole
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "user profiles" $ do
@@ -104,9 +106,9 @@ chatTests = do
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
     describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
       it "v2" testFullAsync
-      -- it "v1" testFullAsyncV1
-      -- it "v1 to v2" testFullAsyncV1toV2
-      -- it "v2 to v1" testFullAsyncV2toV1
+  -- it "v1" testFullAsyncV1
+  -- it "v1 to v2" testFullAsyncV1toV2
+  -- it "v2 to v1" testFullAsyncV2toV1
   describe "async sending and receiving files" $ do
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
@@ -140,27 +142,28 @@ versionTestMatrix2 runTest = do
 versionTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix3 runTest = do
   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
-  -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
-  -- it "v1 to v2" . withTmpFiles $
-  --   withNewTestChat "alice" aliceProfile $ \alice ->
-  --     withNewTestChatV1 "bob" bobProfile $ \bob ->
-  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
-  --         runTest alice bob cath
-  -- it "v2+v1 to v2" . withTmpFiles $
-  --   withNewTestChat "alice" aliceProfile $ \alice ->
-  --     withNewTestChat "bob" bobProfile $ \bob ->
-  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
-  --         runTest alice bob cath
-  -- it "v2 to v1" . withTmpFiles $
-  --   withNewTestChatV1 "alice" aliceProfile $ \alice ->
-  --     withNewTestChat "bob" bobProfile $ \bob ->
-  --       withNewTestChat "cath" cathProfile $ \cath ->
-  --         runTest alice bob cath
-  -- it "v2+v1 to v1" . withTmpFiles $
-  --   withNewTestChatV1 "alice" aliceProfile $ \alice ->
-  --     withNewTestChat "bob" bobProfile $ \bob ->
-  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
-  --         runTest alice bob cath
+
+-- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
+-- it "v1 to v2" . withTmpFiles $
+--   withNewTestChat "alice" aliceProfile $ \alice ->
+--     withNewTestChatV1 "bob" bobProfile $ \bob ->
+--       withNewTestChatV1 "cath" cathProfile $ \cath ->
+--         runTest alice bob cath
+-- it "v2+v1 to v2" . withTmpFiles $
+--   withNewTestChat "alice" aliceProfile $ \alice ->
+--     withNewTestChat "bob" bobProfile $ \bob ->
+--       withNewTestChatV1 "cath" cathProfile $ \cath ->
+--         runTest alice bob cath
+-- it "v2 to v1" . withTmpFiles $
+--   withNewTestChatV1 "alice" aliceProfile $ \alice ->
+--     withNewTestChat "bob" bobProfile $ \bob ->
+--       withNewTestChat "cath" cathProfile $ \cath ->
+--         runTest alice bob cath
+-- it "v2+v1 to v1" . withTmpFiles $
+--   withNewTestChatV1 "alice" aliceProfile $ \alice ->
+--     withNewTestChat "bob" bobProfile $ \bob ->
+--       withNewTestChatV1 "cath" cathProfile $ \cath ->
+--         runTest alice bob cath
 
 testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1094,6 +1097,48 @@ testUpdateGroupProfile =
       concurrently_
         (alice <# "#my_team bob> hi")
         (cath <# "#my_team bob> hi")
+
+testUpdateMemberRole :: IO ()
+testUpdateMemberRole =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      addMember "team" alice bob GRMember
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      connectUsers bob cath
+      bob ##> "/a team cath"
+      bob <## "you have insufficient permissions for this group command"
+      alice ##> "/mr team bob admin"
+      concurrently_
+        (alice <## "#team: you changed the role of bob from member to admin")
+        (bob <## "#team: alice changed your role from member to admin")
+      bob ##> "/a team cath owner"
+      bob <## "you have insufficient permissions for this group command"
+      addMember "team" bob cath GRMember
+      cath ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member alice (Alice) is connected",
+          do
+            alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
+            alice <## "#team: new member cath is connected"
+        ]
+      alice ##> "/mr team alice admin"
+      concurrentlyN_
+        [ alice <## "#team: you changed your role from owner to admin",
+          bob <## "#team: alice changed the role from owner to admin",
+          cath <## "#team: alice changed the role from owner to admin"
+        ]
+      alice ##> "/d #team"
+      alice <## "you have insufficient permissions for this group command"
 
 testGroupAsync :: IO ()
 testGroupAsync = withTmpFiles $ do
@@ -2382,15 +2427,15 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/c"
     inv <- getInvitation alice
-    alice @@@ [(":1","")]
+    alice @@@ [(":1", "")]
     alice ##> "/_set alias :1 friend"
     alice <## "connection 1 alias updated: friend"
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     concurrently_
-      (alice <## ("bob (Bob): contact is connected"))
-      (bob <## ("alice (Alice): contact is connected"))
-    alice @@@ [("@bob","")]
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    alice @@@ [("@bob", "")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
 
@@ -2417,9 +2462,9 @@ testAsyncInitiatingOffline = withTmpFiles $ do
   putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
     putStrLn "4"
-    bob `send` ("/c " <> inv)
+    bob ##> ("/c " <> inv)
     putStrLn "5"
-    bob <### ["/c " <> inv, "confirmation sent!"]
+    bob <## "confirmation sent!"
     putStrLn "6"
     withTestChat "alice" $ \alice -> do
       putStrLn "7"
@@ -2461,9 +2506,9 @@ testFullAsync = withTmpFiles $ do
   putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
     putStrLn "4"
-    bob `send` ("/c " <> inv)
+    bob ##> ("/c " <> inv)
     putStrLn "5"
-    bob <### ["/c " <> inv, "confirmation sent!"]
+    bob <## "confirmation sent!"
   putStrLn "6"
   withTestChat "alice" $ \_ -> pure () -- connecting... notification in UI
   putStrLn "7"
@@ -3066,7 +3111,7 @@ createGroup2 gName cc1 cc2 = do
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("use /a " <> gName <> " <name> to add members")
-  addMember gName cc1 cc2
+  addMember gName cc1 cc2 GRAdmin
   cc2 ##> ("/j " <> gName)
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
@@ -3079,7 +3124,7 @@ createGroup3 gName cc1 cc2 cc3 = do
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
-  addMember gName cc1 cc3
+  addMember gName cc1 cc3 GRAdmin
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
     [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),
@@ -3091,15 +3136,15 @@ createGroup3 gName cc1 cc2 cc3 = do
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
     ]
 
-addMember :: String -> TestCC -> TestCC -> IO ()
-addMember gName inviting invitee = do
+addMember :: String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+addMember gName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
-  inviting ##> ("/a " <> gName <> " " <> memName)
+  inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as admin")
+        invitee <## ("#" <> gName <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 
