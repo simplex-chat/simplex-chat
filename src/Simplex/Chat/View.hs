@@ -149,6 +149,8 @@ responseToView testView = \case
   CRHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
   CRJoinedGroupMemberConnecting g host m -> [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember g m -> [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
+  CRMemberRole g m _ _ -> []
+  CRMemberRoleUser g m _ _ -> []
   CRDeletedMemberUser g by -> [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember g by m -> [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember g m -> [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]

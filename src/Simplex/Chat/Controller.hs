@@ -302,6 +302,8 @@ data ChatResponse
   | CRUserJoinedGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRJoinedGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRJoinedGroupMemberConnecting {groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
+  | CRMemberRole {groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
+  | CRMemberRoleUser {groupInfo :: GroupInfo, member :: GroupMember, fromRole :: GroupMemberRole, toRole :: GroupMemberRole}
   | CRConnectedToGroupMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRDeletedMember {groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {groupInfo :: GroupInfo, member :: GroupMember}

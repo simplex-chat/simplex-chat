@@ -835,7 +835,25 @@ processChatCommand = \case
             let aciContent = ACIContent SMDRcv $ CIRcvGroupInvitation ciGroupInv {status = CIGISAccepted} memRole
             updateDirectChatItemView userId ct itemId aciContent Nothing
           _ -> pure () -- prohibited
-  APIMemberRole _groupId _groupMemberId _memRole -> throwChatError $ CECommandError "unsupported"
+  APIMemberRole groupId memberId memRole -> withUser $ \user -> do
+    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
+    if memberId == groupMemberId' membership
+      then changeMemberRole user gInfo members membership $ SGEUserRole memRole
+      else case find ((== memberId) . groupMemberId') members of
+        Nothing -> throwChatError CEGroupMemberNotFound
+        Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId memRole
+    where
+      changeMemberRole user gInfo@GroupInfo {membership} members m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} gEvent = do
+        let userRole = memberRole (membership :: GroupMember)
+            canChangeRole = userRole >= GRAdmin && userRole >= mRole && userRole >= memRole && memberCurrent membership
+        unless canChangeRole $ throwChatError CEGroupUserRole
+        withChatLock . procCmd $ do
+          withStore' $ \db -> updateGroupMemberRole db user m memRole
+          unless (mStatus == GSMemInvited) $ do
+            msg <- sendGroupMessage gInfo members $ XGrpMemRole mId memRole
+            ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent) Nothing Nothing
+            toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
+          pure CRMemberRoleUser {groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIRemoveMember groupId memberId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user groupId
     case find ((== memberId) . groupMemberId') members of
@@ -1698,6 +1716,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             XGrpMemIntro memInfo -> xGrpMemIntro gInfo m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
             XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m memInfo introInv
+            XGrpMemRole memId memRole -> xGrpMemRole gInfo m memId memRole msg msgMeta
             XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
             XGrpLeave -> xGrpLeave gInfo m msg msgMeta
             XGrpDel -> xGrpDel gInfo m msg msgMeta
@@ -2354,28 +2373,49 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
       withStore' $ \db -> createIntroToMemberContact db user m toMember groupConnIds directConnIds customUserProfileId
 
+    xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> MsgMeta -> m ()
+    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg msgMeta
+      | memberId (membership :: GroupMember) == memId =
+        let gInfo' = gInfo {membership = membership {memberRole = memRole}}
+         in changeMemberRole gInfo' membership $ RGEUserRole memRole
+      | otherwise = do
+        members <- withStore' $ \db -> getGroupMembers db user gInfo
+        case find (sameMemberId memId) members of
+          Just member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) memRole
+          _ -> messageError "x.grp.mem.role with unknown member ID"
+      where
+        changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
+          | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
+          | otherwise = do
+            withStore' $ \db -> updateGroupMemberRole db user member memRole
+            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
+            groupMsgToView gInfo m ci msgMeta
+            toView CRMemberRole {groupInfo = gInfo', member, fromRole, toRole = memRole}
+
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
-    xGrpMemDel gInfo@GroupInfo {membership} m memId msg msgMeta = do
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       if memberId (membership :: GroupMember) == memId
-        then do
+        then checkRole membership $ do
           forM_ members $ deleteMemberConnection user
-          withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
-          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent RGEUserDeleted) Nothing
-          groupMsgToView gInfo m ci msgMeta
+          deleteMember membership RGEUserDeleted
           toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else case find (sameMemberId memId) members of
           Nothing -> messageError "x.grp.mem.del with unknown member ID"
-          Just member@GroupMember {groupMemberId, memberProfile} -> do
-            let mRole = memberRole (m :: GroupMember)
-            if mRole < GRAdmin || mRole < memberRole (member :: GroupMember)
-              then messageError "x.grp.mem.del with insufficient member permissions"
-              else do
-                deleteMemberConnection user member
-                withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
-                ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)) Nothing
-                groupMsgToView gInfo m ci msgMeta
-                toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
+          Just member@GroupMember {groupMemberId, memberProfile} ->
+            checkRole member $ do
+              deleteMemberConnection user member
+              deleteMember member $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+              toView $ CRDeletedMember gInfo m member {memberStatus = GSMemRemoved}
+      where
+        checkRole GroupMember {memberRole} a
+          | senderRole < GRAdmin || senderRole < memberRole =
+            messageError "x.grp.mem.del with insufficient member permissions"
+          | otherwise = a
+        deleteMember member gEvent = do
+          withStore' $ \db -> updateGroupMemberStatus db userId member GSMemRemoved
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
+          groupMsgToView gInfo m ci msgMeta
 
     sameMemberId :: MemberId -> GroupMember -> Bool
     sameMemberId memId GroupMember {memberId} = memId == memberId

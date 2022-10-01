@@ -505,6 +505,8 @@ rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
+  RGEMemberRole _ r -> "role " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "your role " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
@@ -512,6 +514,8 @@ rcvGroupEventToText = \case
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
+  SGEMemberRole _ r -> "role " <> safeDecodeUtf8 (strEncode r)
+  SGEUserRole r -> "your role " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
@@ -544,6 +548,8 @@ data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
+  | RGEMemberRole {groupMemberId :: GroupMemberId, role :: GroupMemberRole}
+  | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
@@ -567,7 +573,9 @@ instance ToJSON DBRcvGroupEvent where
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
 
 data SndGroupEvent
-  = SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
+  = SGEMemberRole {groupMemberId :: GroupMemberId, role :: GroupMemberRole}
+  | SGEUserRole {role :: GroupMemberRole}
+  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
   deriving (Show, Generic)
