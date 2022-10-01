@@ -484,7 +484,7 @@ createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> Excep
 createDirectContact db userId activeConn@Connection {connId, localAlias} profile = do
   createdAt <- liftIO getCurrentTime
   (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image} localAlias viaGroup currentTs =
