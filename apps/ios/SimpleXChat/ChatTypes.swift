@@ -892,6 +892,14 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var isMemberEvent: Bool {
+        switch content {
+        case .rcvGroupEvent: return true
+        case .sndGroupEvent: return true
+        default: return false
+        }
+    }
+
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
