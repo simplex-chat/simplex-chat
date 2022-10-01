@@ -12,8 +12,10 @@ import SimpleXChat
 struct ContactConnectionView: View {
     @EnvironmentObject var m: ChatModel
     @State var contactConnection: PendingContactConnection
+    @State private var localAlias = ""
     @State private var editLocalAlias = false
     @FocusState private var aliasTextFieldFocused: Bool
+    @State private var showContactConnectionInfo = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -26,18 +28,8 @@ struct ContactConnectionView: View {
                 .padding(.leading, 4)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    Image(systemName: "pencil")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 18, height: 18)
-                        .padding(.leading, 8)
-                        .padding(.top, 6)
-                        .onTapGesture {
-                            editLocalAlias = true
-                            aliasTextFieldFocused = true
-                        }
                     if editLocalAlias {
-                        let v = TextField("Set contact name…", text: $contactConnection.localAlias)
+                        let v = TextField("Set contact name…", text: $localAlias)
                             .font(.title3)
                             .disableAutocorrection(true)
                             .focused($aliasTextFieldFocused)
@@ -51,7 +43,7 @@ struct ContactConnectionView: View {
                                 setConnectionAlias()
                             }
                             .foregroundColor(.secondary)
-                            .padding(.trailing, 8)
+                            .padding(.horizontal, 8)
                             .onTapGesture {}
                         if #available(iOS 16.0, *) {
                             v.bold()
@@ -64,38 +56,84 @@ struct ContactConnectionView: View {
                             .bold()
                             .allowsTightening(false)
                             .foregroundColor(.secondary)
-                            .padding(.trailing, 8)
+                            .padding(.horizontal, 8)
                             .padding(.top, 1)
                             .padding(.bottom, 0.5)
                             .frame(alignment: .topLeading)
                     }
 
                     Spacer()
+
                     formatTimestampText(contactConnection.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
-                        .padding(.top, 4)
+                        .padding(.vertical, 4)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                 }
                 .padding(.bottom, 2)
 
-                Text(contactConnection.description)
-                    .frame(alignment: .topLeading)
-                    .padding([.leading, .trailing], 8)
-                    .padding(.bottom, 2)
+                HStack {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(contactConnection.description)
+                            .frame(alignment: .topLeading)
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 2)
+
+                        if editLocalAlias {
+                            HStack {
+                                Image(systemName: "multiply")
+                                Text("Cancel")
+                            }
+                            .foregroundColor(.accentColor               )
+                            .padding(.leading, 8)
+                            .onTapGesture {
+                                editLocalAlias = false
+                                aliasTextFieldFocused = false
+                            }
+                        } else {
+                            HStack {
+                                Image(systemName: "pencil")
+                                Text("Edit")
+                            }
+                            .foregroundColor(.accentColor               )
+                            .padding(.leading, 8)
+                            .onTapGesture {
+                                localAlias = contactConnection.localAlias
+                                editLocalAlias = true
+                                aliasTextFieldFocused = true
+                            }
+                        }
+                    }
+                    Spacer()
+                    if contactConnection.connReqInv != nil && contactConnection.initiated  {
+                        Image(systemName: "qrcode")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                            .padding(.trailing, 8)
+                            .foregroundColor(.accentColor)
+                            .onTapGesture { showContactConnectionInfo = true }
+                    }
+                }
 
                 Spacer()
             }
             .frame(maxHeight: .infinity)
+            .sheet(isPresented: $showContactConnectionInfo) {
+                if let connReqInv = contactConnection.connReqInv {
+                    ContactConnectionInfo(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                }
+            }
         }
     }
 
     private func setConnectionAlias() {
         Task {
             do {
-                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: contactConnection.localAlias) {
+                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
                     await MainActor.run {
+                        contactConnection = conn
                         ChatModel.shared.updateContactConnection(conn)
                         editLocalAlias = false
                     }

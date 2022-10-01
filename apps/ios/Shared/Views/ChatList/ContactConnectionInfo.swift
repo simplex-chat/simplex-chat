@@ -22,21 +22,22 @@ struct ContactConnectionInfo: View {
                     .bold()
                     .padding(.vertical)
 
-                if (contactConnection.customUserProfileId != nil) {
-                    HStack {
+                HStack {
+                    if (contactConnection.customUserProfileId != nil) {
                         Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
                         Spacer().frame(width: 8)
                         Text("A random profile will be sent to your contact").font(.footnote)
-                    }
-                    .padding(.bottom)
-                } else {
-                    HStack {
+                    } else {
                         Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
                         Spacer().frame(width: 8)
                         Text("Your chat profile will be sent to your contact").font(.footnote)
                     }
-                    .padding(.bottom)
                 }
+
+                Text(contactConnectionText(contactConnection))
+                    .padding(.top, 4)
+                    .padding(.bottom, 8)
+
                 QRCode(uri: connReqInvitation).padding(.bottom)
 
                 Text("If you can't meet in person, **show QR code in the video call**, or share the link.")
