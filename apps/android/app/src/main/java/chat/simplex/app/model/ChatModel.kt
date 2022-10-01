@@ -999,6 +999,13 @@ data class ChatItem (
       else -> false
     }
 
+  val isMemberEvent: Boolean get() =
+    when (content) {
+      is CIContent.RcvGroupEventContent -> true
+      is CIContent.SndGroupEventContent -> true
+      else -> false
+    }
+
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
 
   companion object {
