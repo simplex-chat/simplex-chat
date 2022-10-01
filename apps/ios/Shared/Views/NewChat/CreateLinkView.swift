@@ -14,6 +14,7 @@ enum CreateLinkTab {
 }
 
 struct CreateLinkView: View {
+    @EnvironmentObject var m: ChatModel
     @State var selection: CreateLinkTab
     @State var connReqInvitation: String = ""
     @State private var creatingConnReq = false
@@ -42,6 +43,8 @@ struct CreateLinkView: View {
                 createInvitation()
             }
         }
+        .onAppear { m.connReqInv = connReqInvitation }
+        .onDisappear { m.connReqInv = nil }
     }
 
     private func createInvitation() {
@@ -51,6 +54,7 @@ struct CreateLinkView: View {
             await MainActor.run {
                 if let connReq = connReq {
                     connReqInvitation = connReq
+                    m.connReqInv = connReq
                 } else {
                     creatingConnReq = false
                 }

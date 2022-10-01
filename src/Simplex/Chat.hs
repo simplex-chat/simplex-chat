@@ -434,12 +434,12 @@ processChatCommand = \case
       case (mode, msgDir, itemSharedMsgId) of
         (CIDMInternal, _, _) -> do
           deleteCIFile user file
-          toCi <- withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+          toCi <- withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMInternal
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, SMDSnd, Just itemSharedMId) -> do
-          SndMessage {msgId} <- sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
+          void $ sendGroupMessage gInfo ms (XMsgDel itemSharedMId)
           deleteCIFile user file
-          toCi <- withStore $ \db -> deleteGroupChatItemSndBroadcast db user gInfo itemId msgId
+          toCi <- withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMBroadcast
           setActive $ ActiveG gName
           pure $ CRChatItemDeleted (AChatItem SCTGroup msgDir (GroupChat gInfo) deletedItem) toCi
         (CIDMBroadcast, _, _) -> throwChatError CEInvalidChatItemDelete
@@ -1112,7 +1112,7 @@ deleteGroupChatItem user gInfo (itemId, fileInfo_) = do
   forM_ fileInfo_ $ \fileInfo -> do
     cancelFile user fileInfo `catchError` \_ -> pure ()
     withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-  void $ withStore $ \db -> deleteGroupChatItemInternal db user gInfo itemId
+  void $ withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMInternal
 
 -- perform an action only if filesFolder is set (i.e. on mobile devices)
 withFilesFolder :: ChatMonad m => (FilePath -> m ()) -> m ()
@@ -1688,7 +1688,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         withAckMessage agentConnId cmdId msgMeta $
           case chatMsgEvent of
             XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg
+            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta
             XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
@@ -2001,30 +2001,41 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       when (enableNtfs chatSettings) $ showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
       setActive $ ActiveG g
 
-    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> m ()
-    groupMessageUpdate gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId mc RcvMessage {msgId} = do
-      CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId sharedMsgId
-      case (msgDir, chatDir) of
-        (SMDRcv, CIGroupRcv m) ->
-          if sameMemberId memberId m
-            then do
-              updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
-              toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
-              let g = groupName' gInfo
-              setActive $ ActiveG g
-            else messageError "x.msg.update: group member attempted to update a message of another member"
-        (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
+    groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
+    groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta =
+      updateRcvChatItem `catchError` \e ->
+        case e of
+          (ChatErrorStore (SEChatItemSharedMsgIdNotFound _)) -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) msgMeta (CIRcvMsgContent mc) Nothing
+            toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
+            setActive $ ActiveG g
+          _ -> throwError e
+      where
+        updateRcvChatItem = do
+          CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
+          case (msgDir, chatDir) of
+            (SMDRcv, CIGroupRcv m') ->
+              if sameMemberId memberId m'
+                then do
+                  updCi <- withStore $ \db -> updateGroupChatItem db user groupId itemId (CIRcvMsgContent mc) msgId
+                  toView . CRChatItemUpdated $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) updCi
+                  setActive $ ActiveG g
+                else messageError "x.msg.update: group member attempted to update a message of another member" -- shouldn't happen now that query includes group member id
+            (SMDSnd, _) -> messageError "x.msg.update: group member attempted invalid message update"
 
     groupMessageDelete :: GroupInfo -> GroupMember -> SharedMsgId -> RcvMessage -> m ()
-    groupMessageDelete gInfo@GroupInfo {groupId} GroupMember {memberId} sharedMsgId RcvMessage {msgId} = do
-      CChatItem msgDir deletedItem@ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId sharedMsgId
+    groupMessageDelete gInfo@GroupInfo {groupId} GroupMember {groupMemberId, memberId} sharedMsgId RcvMessage {msgId} = do
+      CChatItem msgDir deletedItem@ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
       case (msgDir, chatDir) of
         (SMDRcv, CIGroupRcv m) ->
           if sameMemberId memberId m
             then do
               toCi <- withStore $ \db -> deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId
               toView $ CRChatItemDeleted (AChatItem SCTGroup SMDRcv (GroupChat gInfo) deletedItem) toCi
-            else messageError "x.msg.del: group member attempted to delete a message of another member"
+            else messageError "x.msg.del: group member attempted to delete a message of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.msg.del: group member attempted invalid message delete"
 
     -- TODO remove once XFile is discontinued
@@ -2073,10 +2084,10 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancelGroup g@GroupInfo {groupId} mem@GroupMember {memberId} sharedMsgId msgMeta = do
+    xFileCancelGroup g@GroupInfo {groupId} mem@GroupMember {groupMemberId, memberId} sharedMsgId msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g mem) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      CChatItem msgDir ChatItem {chatDir} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId sharedMsgId
+      CChatItem msgDir ChatItem {chatDir} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
       case (msgDir, chatDir) of
         (SMDRcv, CIGroupRcv m) -> do
           if sameMemberId memberId m
@@ -2085,7 +2096,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               unless cancelled $ do
                 cancelRcvFileTransfer user ft
                 toView $ CRRcvFileSndCancelled ft
-            else messageError "x.file.cancel: group member attempted to cancel file of another member"
+            else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()

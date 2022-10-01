@@ -171,9 +171,8 @@ module Simplex.Chat.Store
     deleteDirectChatItemLocal,
     deleteDirectChatItemRcvBroadcast,
     updateGroupChatItem,
-    deleteGroupChatItemInternal,
+    deleteGroupChatItemLocal,
     deleteGroupChatItemRcvBroadcast,
-    deleteGroupChatItemSndBroadcast,
     updateDirectChatItemsRead,
     updateGroupChatItemsRead,
     getSMPServers,
@@ -256,13 +255,13 @@ import Simplex.Chat.Migrations.M20220824_profiles_local_alias
 import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Migrations.M20220926_connection_alias
 import Simplex.Chat.Migrations.M20220928_settings
+import Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), createSQLiteStore, firstRow, firstRow', maybeFirstRow, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Encoding.String (StrEncoding (strEncode))
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPServer)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -293,7 +292,8 @@ schemaMigrations =
     ("20220824_profiles_local_alias", m20220824_profiles_local_alias),
     ("20220909_commands", m20220909_commands),
     ("20220926_connection_alias", m20220926_connection_alias),
-    ("20220928_settings", m20220928_settings)
+    ("20220928_settings", m20220928_settings),
+    ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -484,7 +484,7 @@ createDirectContact :: DB.Connection -> UserId -> Connection -> Profile -> Excep
 createDirectContact db userId activeConn@Connection {connId, localAlias} profile = do
   createdAt <- liftIO getCurrentTime
   (localDisplayName, contactId, profileId) <- createContact_ db userId connId profile localAlias Nothing createdAt
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt, updatedAt = createdAt}
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile localAlias, activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt, updatedAt = createdAt}
 
 createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
 createContact_ db userId connId Profile {displayName, fullName, image} localAlias viaGroup currentTs =
@@ -3422,23 +3422,6 @@ deleteChatItemMessages_ db itemId =
     |]
     (Only itemId)
 
-setChatItemMessagesDeleted_ :: DB.Connection -> ChatItemId -> IO ()
-setChatItemMessagesDeleted_ db itemId =
-  DB.execute
-    db
-    [sql|
-      UPDATE messages
-      SET chat_msg_event = ?, msg_body = ?
-      WHERE message_id IN (
-        SELECT message_id
-        FROM chat_item_messages
-        WHERE chat_item_id = ?
-      )
-    |]
-    (XMsgDeleted_, xMsgDeletedBody, itemId)
-  where
-    xMsgDeletedBody = strEncode ChatMessage {msgId = Nothing, chatMsgEvent = XMsgDeleted}
-
 deleteDirectChatItemRcvBroadcast :: DB.Connection -> UserId -> Contact -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
 deleteDirectChatItemRcvBroadcast db userId ct itemId msgId = do
   currentTs <- liftIO getCurrentTime
@@ -3460,17 +3443,6 @@ updateDirectChatItemRcvDeleted_ db userId ct@Contact {contactId} itemId currentT
       |]
       (toContent, toText, currentTs, userId, contactId, itemId)
   pure $ AChatItem SCTDirect msgDir (DirectChat ct) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
-
-deleteQuote_ :: DB.Connection -> ChatItemId -> IO ()
-deleteQuote_ db itemId =
-  DB.execute
-    db
-    [sql|
-      UPDATE chat_items
-      SET quoted_shared_msg_id = NULL, quoted_sent_at = NULL, quoted_content = NULL, quoted_sent = NULL, quoted_member_id = NULL
-      WHERE chat_item_id = ?
-    |]
-    (Only itemId)
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> UserId -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db userId contactId sharedMsgId = do
@@ -3554,51 +3526,49 @@ updateGroupChatItem db user@User {userId} groupId itemId newContent msgId = do
     correctDir :: CChatItem c -> Either StoreError (ChatItem c d)
     correctDir (CChatItem _ ci) = first SEInternalError $ checkDirection ci
 
-deleteGroupChatItemInternal :: DB.Connection -> User -> GroupInfo -> ChatItemId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemInternal db user gInfo itemId = do
-  currentTs <- liftIO getCurrentTime
-  ci <- deleteGroupChatItem_ db user gInfo itemId CIDMInternal True currentTs
-  liftIO $ setChatItemMessagesDeleted_ db itemId
-  liftIO $ DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
-  pure ci
+deleteGroupChatItemLocal :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
+deleteGroupChatItemLocal db user gInfo itemId mode = do
+  liftIO $ deleteChatItemMessages_ db itemId
+  deleteGroupChatItem_ db user gInfo itemId mode
 
-deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemRcvBroadcast db user gInfo itemId =
-  deleteGroupChatItemBroadcast_ db user gInfo itemId False
-
-deleteGroupChatItemSndBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemSndBroadcast db user gInfo itemId msgId = do
-  ci <- deleteGroupChatItemBroadcast_ db user gInfo itemId True msgId
-  liftIO $ setChatItemMessagesDeleted_ db itemId
-  liftIO $ DB.execute db "DELETE FROM files WHERE chat_item_id = ?" (Only itemId)
-  pure ci
-
-deleteGroupChatItemBroadcast_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> Bool -> MessageId -> ExceptT StoreError IO AChatItem
-deleteGroupChatItemBroadcast_ db user gInfo itemId itemDeleted msgId = do
-  currentTs <- liftIO getCurrentTime
-  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
-  deleteGroupChatItem_ db user gInfo itemId CIDMBroadcast itemDeleted currentTs
-
-deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> Bool -> UTCTime -> ExceptT StoreError IO AChatItem
-deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode itemDeleted currentTs = do
+deleteGroupChatItem_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> CIDeleteMode -> ExceptT StoreError IO AChatItem
+deleteGroupChatItem_ db user@User {userId} gInfo@GroupInfo {groupId} itemId mode = do
   (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
   let toContent = msgDirToDeletedContent_ msgDir mode
   liftIO $ do
     DB.execute
       db
       [sql|
-        UPDATE chat_items
-        SET item_content = ?, item_text = ?, item_deleted = ?, updated_at = ?
+        DELETE FROM chat_items
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
-      (toContent, toText, itemDeleted, currentTs, userId, groupId, itemId)
-    when itemDeleted $ deleteQuote_ db itemId
-  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted}, formattedText = Nothing})
-  where
-    toText = ciDeleteModeToText mode
+      (userId, groupId, itemId)
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = ciDeleteModeToText mode, itemDeleted = True}, formattedText = Nothing})
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> Int64 -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} groupId sharedMsgId = do
+deleteGroupChatItemRcvBroadcast :: DB.Connection -> User -> GroupInfo -> ChatItemId -> MessageId -> ExceptT StoreError IO AChatItem
+deleteGroupChatItemRcvBroadcast db user gInfo itemId msgId = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $ insertChatItemMessage_ db itemId msgId currentTs
+  updateGroupChatItemRcvDeleted_ db user gInfo itemId currentTs
+
+updateGroupChatItemRcvDeleted_ :: DB.Connection -> User -> GroupInfo -> ChatItemId -> UTCTime -> ExceptT StoreError IO AChatItem
+updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} itemId currentTs = do
+  (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
+  let toContent = msgDirToDeletedContent_ msgDir CIDMBroadcast
+      toText = ciDeleteModeToText CIDMBroadcast
+  liftIO $ do
+    DB.execute
+      db
+      [sql|
+        UPDATE chat_items
+        SET item_content = ?, item_text = ?, updated_at = ?
+        WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
+      |]
+      (toContent, toText, currentTs, userId, groupId, itemId)
+  pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
+
+getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -3606,11 +3576,11 @@ getGroupChatItemBySharedMsgId db user@User {userId} groupId sharedMsgId = do
         [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
+            WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
             ORDER BY chat_item_id DESC
             LIMIT 1
           |]
-        (userId, groupId, sharedMsgId)
+        (userId, groupId, groupMemberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
@@ -4109,7 +4079,7 @@ getChatsWithExpiredItems db User {userId} expirationDate =
       [sql|
         SELECT contact_id, group_id
         FROM chat_items
-        WHERE user_id = ? AND item_ts <= ? AND item_deleted != 1
+        WHERE user_id = ? AND item_ts <= ?
         GROUP BY contact_id, group_id
         ORDER BY contact_id ASC, group_id ASC
       |]
@@ -4143,7 +4113,7 @@ getGroupExpiredCIs db User {userId} groupId expirationDate =
         SELECT i.chat_item_id, f.file_id, f.ci_file_status, f.file_path
         FROM chat_items i
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ? AND i.item_deleted != 1
+        WHERE i.user_id = ? AND i.group_id = ? AND i.item_ts <= ?
         ORDER BY i.item_ts ASC
       |]
       (userId, groupId, expirationDate)

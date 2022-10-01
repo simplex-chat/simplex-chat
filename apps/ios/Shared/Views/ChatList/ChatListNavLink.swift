@@ -211,15 +211,11 @@ struct ChatListNavLink: View {
         .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture {
             AlertManager.shared.showAlertMsg(
-                title:
-                    contactConnection.initiated
-                    ? "You invited your contact"
-                    : "You accepted connection",
+                title: contactConnection.initiated
+                ? "You invited your contact"
+                : "You accepted connection",
                 // below are the same messages that are shown in alert
-                message:
-                    contactConnection.viaContactUri
-                    ? "You will be connected when your connection request is accepted, please wait or check later!"
-                    : "You will be connected when your contact's device is online, please wait or check later!"
+                message: contactConnectionText(contactConnection)
             )
         }
     }
@@ -386,6 +382,12 @@ func joinGroup(_ groupId: Int64) {
             }
         }
     }
+}
+
+func contactConnectionText(_ contactConnection: PendingContactConnection) -> LocalizedStringKey {
+    contactConnection.viaContactUri
+    ? "You will be connected when your connection request is accepted, please wait or check later!"
+    : "You will be connected when your contact's device is online, please wait or check later!"
 }
 
 struct ChatListNavLink_Previews: PreviewProvider {

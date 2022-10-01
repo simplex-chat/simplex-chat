@@ -48,6 +48,8 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
+    // currently showing QR code
+    @Published var connReqInv: String?
     var callWebView: WKWebView?
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
@@ -324,6 +326,15 @@ final class ChatModel: ObservableObject {
     private func popChat_(_ i: Int, to position: Int = 0) {
         let chat = chats.remove(at: i)
         chats.insert(chat, at: position)
+    }
+
+    func dismissConnReqView(_ id: String) {
+        if let connReqInv = connReqInv,
+           let c = getChat(id),
+           case let .contactConnection(contactConnection) = c.chatInfo,
+           connReqInv == contactConnection.connReqInv {
+            dismissAllSheets()
+        }
     }
 
     func removeChat(_ id: String) {

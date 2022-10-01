@@ -10,30 +10,88 @@ import SwiftUI
 import SimpleXChat
 
 struct ContactConnectionView: View {
-    var contactConnection: PendingContactConnection
-    
+    @EnvironmentObject var m: ChatModel
+    @State var contactConnection: PendingContactConnection
+    @State private var editLocalAlias = false
+    @State private var localAlias = ""
+    @FocusState private var aliasTextFieldFocused: Bool
+    @State private var showContactConnectionInfo = false
+
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: contactConnection.initiated ? "link.badge.plus" : "link")
-                .resizable()
-                .foregroundColor(Color(uiColor: .secondarySystemBackground))
-                .scaledToFill()
-                .frame(width: 48, height: 48)
-                .frame(width: 63, height: 63)
-                .padding(.leading, 4)
+            Group {
+                if contactConnection.initiated  {
+                    let v = Image(systemName: "qrcode")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                    if contactConnection.connReqInv == nil {
+                        v.foregroundColor(Color(uiColor: .secondarySystemBackground))
+                    } else {
+                        v.foregroundColor(contactConnection.incognito ? .indigo : .accentColor)
+                        .onTapGesture { showContactConnectionInfo = true }
+                    }
+                } else {
+                    Image(systemName: "link")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 48, height: 48)
+                        .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                }
+            }
+            .frame(width: 63, height: 63)
+            .padding(.leading, 4)
+
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
-                    Text(contactConnection.chatViewName)
-                        .font(.title3)
-                        .fontWeight(.bold)
+                    Image(systemName: "pencil")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 16, height: 16)
                         .foregroundColor(.secondary)
                         .padding(.leading, 8)
-                        .frame(alignment: .topLeading)
+                        .padding(.top, 8)
+                        .onTapGesture(perform: enableEditing)
+
+                    if editLocalAlias {
+                        let v = TextField("Set contact name…", text: $localAlias)
+                            .font(.title3)
+                            .disableAutocorrection(true)
+                            .focused($aliasTextFieldFocused)
+                            .submitLabel(.done)
+                            .onSubmit(setConnectionAlias)
+                            .foregroundColor(.secondary)
+                            .padding(.trailing, 8)
+                            .onTapGesture {}
+                            .onChange(of: aliasTextFieldFocused) { focussed in
+                                if !focussed {
+                                    editLocalAlias = false
+                                }
+                            }
+                        if #available(iOS 16.0, *) {
+                            v.bold()
+                        } else {
+                            v
+                        }
+                    } else {
+                        Text(contactConnection.chatViewName)
+                            .font(.title3)
+                            .bold()
+                            .allowsTightening(false)
+                            .foregroundColor(.secondary)
+                            .padding(.trailing, 8)
+                            .padding(.top, 1)
+                            .padding(.bottom, 0.5)
+                            .frame(alignment: .topLeading)
+                            .onTapGesture(perform: enableEditing)
+                    }
+
                     Spacer()
+
                     formatTimestampText(contactConnection.updatedAt)
                         .font(.subheadline)
                         .padding(.trailing, 8)
-                        .padding(.top, 4)
+                        .padding(.vertical, 4)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(.secondary)
                 }
@@ -41,11 +99,48 @@ struct ContactConnectionView: View {
 
                 Text(contactConnection.description)
                     .frame(alignment: .topLeading)
-                    .padding([.leading, .trailing], 8)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 2)
 
                 Spacer()
             }
             .frame(maxHeight: .infinity)
+            .sheet(isPresented: $showContactConnectionInfo) {
+                if let connReqInv = contactConnection.connReqInv {
+                    ContactConnectionInfo(contactConnection: contactConnection, connReqInvitation: connReqInv)
+                }
+            }
+        }
+    }
+
+    private func enableEditing() {
+        editLocalAlias = true
+        aliasTextFieldFocused = true
+        localAlias = contactConnection.localAlias
+    }
+
+    private func setConnectionAlias() {
+        if localAlias == contactConnection.localAlias {
+            aliasTextFieldFocused = false
+            editLocalAlias = false
+            return
+        }
+        Task {
+            let prevAlias = contactConnection.localAlias
+            contactConnection.localAlias = localAlias
+            do {
+                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
+                    await MainActor.run {
+                        contactConnection = conn
+                        ChatModel.shared.updateContactConnection(conn)
+                        aliasTextFieldFocused = false
+                        editLocalAlias = false
+                    }
+                }
+            } catch {
+                logger.error("setContactAlias error: \(responseError(error))")
+                contactConnection.localAlias = prevAlias
+            }
         }
     }
 }
