@@ -63,6 +63,11 @@ struct ContactConnectionView: View {
                             .foregroundColor(.secondary)
                             .padding(.trailing, 8)
                             .onTapGesture {}
+                            .onChange(of: aliasTextFieldFocused) { focussed in
+                                if !focussed {
+                                    editLocalAlias = false
+                                }
+                            }
                         if #available(iOS 16.0, *) {
                             v.bold()
                         } else {
