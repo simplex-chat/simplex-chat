@@ -3565,8 +3565,8 @@ updateGroupChatItemRcvDeleted_ db user@User {userId} gInfo@GroupInfo {groupId} i
       (toContent, toText, currentTs, userId, groupId, itemId)
   pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) (ci {content = toContent, meta = (meta ci) {itemText = toText}, formattedText = Nothing})
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> Int64 -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} groupId sharedMsgId = do
+getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -3574,11 +3574,11 @@ getGroupChatItemBySharedMsgId db user@User {userId} groupId sharedMsgId = do
         [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
+            WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
             ORDER BY chat_item_id DESC
             LIMIT 1
           |]
-        (userId, groupId, sharedMsgId)
+        (userId, groupId, groupMemberId, sharedMsgId)
   getGroupChatItem db user groupId itemId
 
 getGroupChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTGroup)
