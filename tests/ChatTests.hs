@@ -2382,7 +2382,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/c"
     inv <- getInvitation alice
-    alice @@@ [(":1","")]
+    alice @@@ [(":1", "")]
     alice ##> "/_set alias :1 friend"
     alice <## "connection 1 alias updated: friend"
     bob ##> ("/c " <> inv)
@@ -2390,7 +2390,7 @@ testSetConnectionAlias = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## ("bob (Bob): contact is connected"))
       (bob <## ("alice (Alice): contact is connected"))
-    alice @@@ [("@bob","")]
+    alice @@@ [("@bob", "")]
     alice ##> "/cs"
     alice <## "bob (Bob) (alias: friend)"
 
