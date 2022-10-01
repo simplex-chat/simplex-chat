@@ -331,9 +331,9 @@ final class ChatModel: ObservableObject {
     func dismissConnReqView(_ id: String) {
         if let connReqInv = connReqInv,
            let c = getChat(id),
-           case let .contactConnection(contactConnection) = c.chatInfo {
-            if connReqInv == contactConnection.connReqInv {
-                dismissAllSheets()
+           case let .contactConnection(contactConnection) = c.chatInfo,
+           connReqInv == contactConnection.connReqInv {
+            dismissAllSheets()
             }
         }
     }
