@@ -12,40 +12,51 @@ import SimpleXChat
 struct ContactConnectionView: View {
     @EnvironmentObject var m: ChatModel
     @State var contactConnection: PendingContactConnection
-    @State private var localAlias = ""
     @State private var editLocalAlias = false
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var showContactConnectionInfo = false
 
     var body: some View {
         HStack(spacing: 8) {
-            if contactConnection.initiated  {
-                let v = Image(systemName: contactConnection.initiated ? "qrcode" : "link")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 40, height: 40)
-                    .frame(width: 63, height: 63)
-                    .padding(.leading, 4)
-                if contactConnection.connReqInv == nil {
-                    v.foregroundColor(Color(uiColor: .secondarySystemBackground))
+            Group {
+                if contactConnection.initiated  {
+                    let v = Image(systemName: "qrcode")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                    if contactConnection.connReqInv == nil {
+                        v.foregroundColor(Color(uiColor: .secondarySystemBackground))
+                    } else {
+                        v.foregroundColor(.accentColor)
+                            .onTapGesture { showContactConnectionInfo = true }
+                    }
                 } else {
-                    v.foregroundColor(.accentColor)
-                    .onTapGesture { showContactConnectionInfo = true }
+                    Image(systemName: "link")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 48, height: 48)
+                        .foregroundColor(Color(uiColor: .secondarySystemBackground))
                 }
-            } else {
-                Image(systemName: contactConnection.initiated ? "qrcode" : "link")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 48, height: 48)
-                    .frame(width: 63, height: 63)
-                    .padding(.leading, 4)
-                    .foregroundColor(Color(uiColor: .secondarySystemBackground))
             }
+            .frame(width: 63, height: 63)
+            .padding(.leading, 4)
 
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top) {
+                    Image(systemName: "pencil")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 16, height: 16)
+                        .foregroundColor(.accentColor)
+                        .padding(.leading, 8)
+                        .padding(.top, 8)
+                        .onTapGesture {
+                            editLocalAlias = true
+                            aliasTextFieldFocused = true
+                        }
+
                     if editLocalAlias {
-                        let v = TextField("Set contact name…", text: $localAlias)
+                        let v = TextField("Set contact name…", text: $contactConnection.localAlias)
                             .font(.title3)
                             .disableAutocorrection(true)
                             .focused($aliasTextFieldFocused)
@@ -59,7 +70,7 @@ struct ContactConnectionView: View {
                                 setConnectionAlias()
                             }
                             .foregroundColor(.secondary)
-                            .padding(.horizontal, 8)
+                            .padding(.trailing, 8)
                             .onTapGesture {}
                         if #available(iOS 16.0, *) {
                             v.bold()
@@ -72,10 +83,14 @@ struct ContactConnectionView: View {
                             .bold()
                             .allowsTightening(false)
                             .foregroundColor(.secondary)
-                            .padding(.horizontal, 8)
+                            .padding(.trailing, 8)
                             .padding(.top, 1)
                             .padding(.bottom, 0.5)
                             .frame(alignment: .topLeading)
+                            .onTapGesture {
+                                editLocalAlias = true
+                                aliasTextFieldFocused = true
+                            }
                     }
 
                     Spacer()
@@ -94,31 +109,6 @@ struct ContactConnectionView: View {
                     .padding(.horizontal, 8)
                     .padding(.bottom, 2)
 
-                if editLocalAlias {
-                    HStack {
-                        Image(systemName: "multiply")
-                        Text("Cancel")
-                    }
-                    .foregroundColor(.accentColor               )
-                    .padding(.leading, 8)
-                    .onTapGesture {
-                        editLocalAlias = false
-                        aliasTextFieldFocused = false
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "pencil")
-                        Text("Edit")
-                    }
-                    .foregroundColor(.accentColor               )
-                    .padding(.leading, 8)
-                    .onTapGesture {
-                        localAlias = contactConnection.localAlias
-                        editLocalAlias = true
-                        aliasTextFieldFocused = true
-                    }
-                }
-
                 Spacer()
             }
             .frame(maxHeight: .infinity)
@@ -133,7 +123,7 @@ struct ContactConnectionView: View {
     private func setConnectionAlias() {
         Task {
             do {
-                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
+                if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: contactConnection.localAlias) {
                     await MainActor.run {
                         contactConnection = conn
                         ChatModel.shared.updateContactConnection(conn)
