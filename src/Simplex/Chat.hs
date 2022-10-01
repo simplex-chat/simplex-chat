@@ -2015,8 +2015,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           _ -> throwError e
       where
         updateRcvChatItem = do
-          -- TODO re-create idx_messages_group_shared_msg_id as non unique
-          -- TODO index for chat_items on shared_msg_id and group_member_id
           CChatItem msgDir ChatItem {chatDir, meta = CIMeta {itemId}} <- withStore $ \db -> getGroupChatItemBySharedMsgId db user groupId groupMemberId sharedMsgId
           case (msgDir, chatDir) of
             (SMDRcv, CIGroupRcv m') ->
