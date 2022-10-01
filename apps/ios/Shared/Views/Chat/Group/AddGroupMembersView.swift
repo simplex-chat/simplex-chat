@@ -18,7 +18,7 @@ struct AddGroupMembersView: View {
     var showFooterCounter: Bool = true
     var addedMembersCb: ((Set<Int64>) -> Void)? = nil
     @State private var selectedContacts = Set<Int64>()
-    @State private var selectedRole: GroupMemberRole = .admin
+    @State private var selectedRole: GroupMemberRole = .member
     @State private var alert: AddGroupMembersAlert?
 
     private enum AddGroupMembersAlert: Identifiable {

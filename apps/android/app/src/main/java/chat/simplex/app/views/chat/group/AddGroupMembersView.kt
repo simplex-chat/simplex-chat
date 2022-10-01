@@ -33,7 +33,7 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun AddGroupMembersView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
-  val selectedRole = remember { mutableStateOf(GroupMemberRole.Admin) }
+  val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
 
   BackHandler(onBack = close)
   AddGroupMembersLayout(
