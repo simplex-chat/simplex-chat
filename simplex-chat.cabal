@@ -51,6 +51,7 @@ library
       Simplex.Chat.Migrations.M20220909_commands
       Simplex.Chat.Migrations.M20220926_connection_alias
       Simplex.Chat.Migrations.M20220928_settings
+      Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
       Simplex.Chat.Mobile
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator

@@ -468,6 +468,12 @@ func apiSetContactAlias(contactId: Int64, localAlias: String) async throws -> Co
     throw r
 }
 
+func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiSetConnectionAlias(connId: connId, localAlias: localAlias))
+    if case let .connectionAliasUpdated(toConnection) = r { return toConnection }
+    throw r
+}
+
 func apiCreateUserAddress() async throws -> String {
     let r = await chatSendCmd(.createMyAddress)
     if case let .userContactLinkCreated(connReq) = r { return connReq }
@@ -819,11 +825,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.removeChat(connection.id)
         case let .contactConnected(contact):
             m.updateContact(contact)
+            m.dismissConnReqView(contact.activeConn.id)
             m.removeChat(contact.activeConn.id)
             m.updateNetworkStatus(contact.id, .connected)
             NtfManager.shared.notifyContactConnected(contact)
         case let .contactConnecting(contact):
             m.updateContact(contact)
+            m.dismissConnReqView(contact.activeConn.id)
             m.removeChat(contact.activeConn.id)
         case let .receivedContactRequest(contactRequest):
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)

@@ -57,6 +57,7 @@ public enum ChatCommand {
     case listContacts
     case apiUpdateProfile(profile: Profile)
     case apiSetContactAlias(contactId: Int64, localAlias: String)
+    case apiSetConnectionAlias(connId: Int64, localAlias: String)
     case createMyAddress
     case deleteMyAddress
     case showMyAddress
@@ -124,6 +125,7 @@ public enum ChatCommand {
             case .listContacts: return "/contacts"
             case let .apiUpdateProfile(profile): return "/_profile \(encodeJSON(profile))"
             case let .apiSetContactAlias(contactId, localAlias): return "/_set alias @\(contactId) \(localAlias.trimmingCharacters(in: .whitespaces))"
+            case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case .createMyAddress: return "/address"
             case .deleteMyAddress: return "/delete_address"
             case .showMyAddress: return "/show_address"
@@ -190,6 +192,7 @@ public enum ChatCommand {
             case .listContacts: return "listContacts"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiSetContactAlias: return "apiSetContactAlias"
+            case .apiSetConnectionAlias: return "apiSetConnectionAlias"
             case .createMyAddress: return "createMyAddress"
             case .deleteMyAddress: return "deleteMyAddress"
             case .showMyAddress: return "showMyAddress"
@@ -257,6 +260,7 @@ public enum ChatResponse: Decodable, Error {
     case userProfileNoChange
     case userProfileUpdated(fromProfile: Profile, toProfile: Profile)
     case contactAliasUpdated(toContact: Contact)
+    case connectionAliasUpdated(toConnection: PendingContactConnection)
     case userContactLink(connReqContact: String)
     case userContactLinkCreated(connReqContact: String)
     case userContactLinkDeleted
@@ -350,6 +354,7 @@ public enum ChatResponse: Decodable, Error {
             case .userProfileNoChange: return "userProfileNoChange"
             case .userProfileUpdated: return "userProfileUpdated"
             case .contactAliasUpdated: return "contactAliasUpdated"
+            case .connectionAliasUpdated: return "connectionAliasUpdated"
             case .userContactLink: return "userContactLink"
             case .userContactLinkCreated: return "userContactLinkCreated"
             case .userContactLinkDeleted: return "userContactLinkDeleted"
@@ -443,6 +448,7 @@ public enum ChatResponse: Decodable, Error {
             case .userProfileNoChange: return noDetails
             case let .userProfileUpdated(_, toProfile): return String(describing: toProfile)
             case let .contactAliasUpdated(toContact): return String(describing: toContact)
+            case let .connectionAliasUpdated(toConnection): return String(describing: toConnection)
             case let .userContactLink(connReq): return connReq
             case let .userContactLinkCreated(connReq): return connReq
             case .userContactLinkDeleted: return noDetails
