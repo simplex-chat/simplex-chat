@@ -72,7 +72,7 @@ chatTests = do
     it "send and receive file to group" testGroupFileTransfer
     it "sender cancelled group file transfer before transfer" testGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
-    describe "send and receive message with file" testMessageWithFile
+    it "send and receive message with file" testMessageWithFile
     it "send and receive image" testSendImage
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
@@ -104,9 +104,9 @@ chatTests = do
     it "connect when accepting client goes offline" testAsyncAcceptingOffline
     describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
       it "v2" testFullAsync
-      it "v1" testFullAsyncV1
-      it "v1 to v2" testFullAsyncV1toV2
-      it "v2 to v1" testFullAsyncV2toV1
+      -- it "v1" testFullAsyncV1
+      -- it "v1 to v2" testFullAsyncV1toV2
+      -- it "v2 to v1" testFullAsyncV2toV1
   describe "async sending and receiving files" $ do
     xdescribe "send and receive file, fully asynchronous" $ do
       it "v2" testAsyncFileTransfer
@@ -126,8 +126,8 @@ chatTests = do
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile $ runTest
-  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile $ runTest
+  it "v2" $ testChat2 aliceProfile bobProfile runTest
+  it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
   it "v1 to v2" . withTmpFiles $
     withNewTestChat "alice" aliceProfile $ \alice ->
       withNewTestChatV1 "bob" bobProfile $ \bob ->
@@ -139,28 +139,28 @@ versionTestMatrix2 runTest = do
 
 versionTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix3 runTest = do
-  it "v2" $ testChat3 aliceProfile bobProfile cathProfile $ runTest
-  it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile $ runTest
-  it "v1 to v2" . withTmpFiles $
-    withNewTestChat "alice" aliceProfile $ \alice ->
-      withNewTestChatV1 "bob" bobProfile $ \bob ->
-        withNewTestChatV1 "cath" cathProfile $ \cath ->
-          runTest alice bob cath
-  it "v2+v1 to v2" . withTmpFiles $
-    withNewTestChat "alice" aliceProfile $ \alice ->
-      withNewTestChat "bob" bobProfile $ \bob ->
-        withNewTestChatV1 "cath" cathProfile $ \cath ->
-          runTest alice bob cath
-  it "v2 to v1" . withTmpFiles $
-    withNewTestChatV1 "alice" aliceProfile $ \alice ->
-      withNewTestChat "bob" bobProfile $ \bob ->
-        withNewTestChat "cath" cathProfile $ \cath ->
-          runTest alice bob cath
-  it "v2+v1 to v1" . withTmpFiles $
-    withNewTestChatV1 "alice" aliceProfile $ \alice ->
-      withNewTestChat "bob" bobProfile $ \bob ->
-        withNewTestChatV1 "cath" cathProfile $ \cath ->
-          runTest alice bob cath
+  it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
+  -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
+  -- it "v1 to v2" . withTmpFiles $
+  --   withNewTestChat "alice" aliceProfile $ \alice ->
+  --     withNewTestChatV1 "bob" bobProfile $ \bob ->
+  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
+  --         runTest alice bob cath
+  -- it "v2+v1 to v2" . withTmpFiles $
+  --   withNewTestChat "alice" aliceProfile $ \alice ->
+  --     withNewTestChat "bob" bobProfile $ \bob ->
+  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
+  --         runTest alice bob cath
+  -- it "v2 to v1" . withTmpFiles $
+  --   withNewTestChatV1 "alice" aliceProfile $ \alice ->
+  --     withNewTestChat "bob" bobProfile $ \bob ->
+  --       withNewTestChat "cath" cathProfile $ \cath ->
+  --         runTest alice bob cath
+  -- it "v2+v1 to v1" . withTmpFiles $
+  --   withNewTestChatV1 "alice" aliceProfile $ \alice ->
+  --     withNewTestChat "bob" bobProfile $ \bob ->
+  --       withNewTestChatV1 "cath" cathProfile $ \cath ->
+  --         runTest alice bob cath
 
 testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1474,10 +1474,10 @@ testGroupFileSndCancelBeforeTransfer =
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "file cancelled: test.txt"
 
-testMessageWithFile :: Spec
-testMessageWithFile = versionTestMatrix2 runTestMessageWithFile
-  where
-    runTestMessageWithFile alice bob = do
+testMessageWithFile :: IO ()
+testMessageWithFile =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
       connectUsers alice bob
       alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
       alice <# "@bob hi, sending a file"
