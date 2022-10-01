@@ -23,7 +23,7 @@ struct ContactConnectionInfo: View {
                     .padding(.vertical)
 
                 HStack {
-                    if (contactConnection.customUserProfileId != nil) {
+                    if contactConnection.incognito {
                         Image(systemName: "theatermasks").foregroundColor(.indigo).font(.footnote)
                         Spacer().frame(width: 8)
                         Text("A random profile will be sent to your contact").font(.footnote)
