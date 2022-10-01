@@ -18,6 +18,7 @@ enum DatabaseAlert: Identifiable {
     case chatDeleted
     case deleteLegacyDatabase
     case deleteFilesAndMedia
+    case setChatItemTTL(ttl: ChatItemTTL)
     case error(title: LocalizedStringKey, error: String = "")
 
     var id: String {
@@ -30,6 +31,7 @@ enum DatabaseAlert: Identifiable {
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
         case .deleteFilesAndMedia: return "deleteFilesAndMedia"
+        case .setChatItemTTL: return "setChatItemTTL"
         case let .error(title, _): return "error \(title)"
         }
     }
@@ -49,6 +51,9 @@ struct DatabaseView: View {
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var appFilesCountAndSize: (Int, Int)?
+    @State private var chatItemTTL: ChatItemTTL = .none
+    @State private var currentChatItemTTL: ChatItemTTL = .none
+    @State private var resettingChatItemTTL: Bool = false
 
     var body: some View {
         ZStack {
@@ -152,11 +157,21 @@ struct DatabaseView: View {
             }
 
             Section {
+                Picker("Automatically delete messages", selection: $chatItemTTL) {
+                    ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
+                        Text(ttl.autoDeleteText).tag(ttl)
+                    }
+                    if case let .seconds(seconds) = chatItemTTL {
+                        let ttl: ChatItemTTL = .seconds(seconds)
+                        Text(ttl.autoDeleteText).tag(ttl)
+                    }
+                }
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
+                .disabled(!stopped || appFilesCountAndSize?.0 == 0)
             } header: {
-                Text("Files")
+                Text("Data")
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
@@ -166,11 +181,22 @@ struct DatabaseView: View {
                     }
                 }
             }
-            .disabled(!stopped || appFilesCountAndSize?.0 == 0)
         }
         .onAppear {
             runChat = m.chatRunning ?? true
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+            chatItemTTL = getChatItemTTL()
+            currentChatItemTTL = chatItemTTL
+        }
+        .onChange(of: chatItemTTL) { ttl in
+            if ttl < currentChatItemTTL {
+                alert = .setChatItemTTL(ttl: ttl)
+            } else {
+                if !resettingChatItemTTL {
+                    setCiTTL(ttl)
+                }
+                resettingChatItemTTL = false
+            }
         }
         .alert(item: $alert) { item in databaseAlert(item) }
         .fileImporter(
@@ -253,6 +279,18 @@ struct DatabaseView: View {
                     deleteFiles()
                 },
                 secondaryButton: .cancel()
+            )
+        case let .setChatItemTTL(ttl):
+            return Alert(
+                title: Text("Enable automatic message deletion?"),
+                message: Text("This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting."),
+                primaryButton: .destructive(Text("Delete messages")) {
+                    setCiTTL(ttl)
+                },
+                secondaryButton: .cancel() {
+                    resettingChatItemTTL = true
+                    chatItemTTL = currentChatItemTTL
+                }
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text("\(error)"))
@@ -385,6 +423,23 @@ struct DatabaseView: View {
             } catch let error {
                 runChat = false
                 alert = .error(title: "Error starting chat", error: responseError(error))
+            }
+        }
+    }
+
+    private func setCiTTL(_ ttl: ChatItemTTL) {
+        logger.debug("DatabaseView setChatItemTTL \(ttl.seconds ?? -1)")
+        progressIndicator = true
+        Task {
+            do {
+                try await setChatItemTTL(ttl)
+                await MainActor.run { progressIndicator = false }
+            } catch {
+                await MainActor.run {
+                    alert = .error(title: "Error changing automatic message deletion", error: responseError(error))
+                    chatItemTTL = currentChatItemTTL
+                    progressIndicator = false
+                }
             }
         }
     }

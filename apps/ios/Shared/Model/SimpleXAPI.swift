@@ -132,7 +132,7 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true))
+    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -318,6 +318,22 @@ func getUserSMPServers() throws -> [String] {
 func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
+
+func getChatItemTTL() -> ChatItemTTL {
+    let r = chatSendCmdSync(.apiGetChatItemTTL)
+    if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    return .none
+}
+
+func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
+    try await sendCommandOkResp(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
+}
+
+//func setChatItemTTL(_ chatItemTTL: ChatItemTTL) throws {
+//    let r = chatSendCmdSync(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
+//    if case .cmdOk = r { return }
+//    throw r
+//}
 
 func getNetworkConfig() async throws -> NetCfg? {
     let r = await chatSendCmd(.apiGetNetworkConfig)
