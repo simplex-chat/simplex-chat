@@ -47,7 +47,7 @@ struct ContactConnectionView: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: 16, height: 16)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(.secondary)
                         .padding(.leading, 8)
                         .padding(.top, 8)
                         .onTapGesture {
