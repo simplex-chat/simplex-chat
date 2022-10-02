@@ -2465,6 +2465,7 @@ testAsyncInitiatingOffline = withTmpFiles $ do
     getInvitation alice
   putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
@@ -2486,6 +2487,7 @@ testAsyncAcceptingOffline = withTmpFiles $ do
     getInvitation alice
   putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
@@ -2509,6 +2511,7 @@ testFullAsync = withTmpFiles $ do
     getInvitation alice
   putStrLn "3"
   withNewTestChat "bob" bobProfile $ \bob -> do
+    threadDelay 250000
     putStrLn "4"
     bob ##> ("/c " <> inv)
     putStrLn "5"
