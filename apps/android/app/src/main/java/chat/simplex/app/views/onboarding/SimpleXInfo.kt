@@ -43,7 +43,7 @@ fun SimpleXInfoLayout(
 ) {
   Column(
     Modifier
-      .fillMaxWidth()
+      .fillMaxSize()
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING),
   ) {
