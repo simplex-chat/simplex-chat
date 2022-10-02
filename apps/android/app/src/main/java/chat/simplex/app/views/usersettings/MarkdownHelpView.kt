@@ -2,8 +2,9 @@ package chat.simplex.app.views.usersettings
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.MaterialTheme
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -14,19 +15,22 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.Format
 import chat.simplex.app.model.FormatColor
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.views.helpers.AppBarTitle
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun MarkdownHelpView() {
-  Column {
-    Text(
-      stringResource(R.string.how_to_use_markdown),
-      style = MaterialTheme.typography.h1,
-    )
-    Text(
-      stringResource(R.string.you_can_use_markdown_to_format_messages__prompt),
-      Modifier.padding(vertical = 16.dp)
-    )
+  Column(
+    Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+      .padding(horizontal = DEFAULT_PADDING)
+  ) {
+    AppBarTitle(stringResource(R.string.how_to_use_markdown), false)
+    Text(stringResource(R.string.you_can_use_markdown_to_format_messages__prompt))
+    Spacer(Modifier.height(DEFAULT_PADDING))
     val bold = stringResource(R.string.bold)
     val italic = stringResource(R.string.italic)
     val strikethrough = stringResource(R.string.strikethrough)
@@ -84,7 +88,6 @@ fun appendColor(b: AnnotatedString.Builder, s: String, c: FormatColor, after: St
   b.withStyle(Format.Colored(c).style) { append(s)}
   b.append(after)
 }
-
 
 @Preview(showBackground = true)
 @Preview(

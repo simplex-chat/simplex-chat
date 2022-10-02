@@ -2,7 +2,6 @@ package chat.simplex.app.views.chat.group
 
 import InfoRow
 import SectionDivider
-import SectionItemView
 import SectionSpacer
 import SectionView
 import androidx.activity.compose.BackHandler
@@ -26,6 +25,7 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.chat.SimplexServers
 import chat.simplex.app.views.chatlist.openChat
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
 fun GroupMemberInfoView(
@@ -107,9 +107,7 @@ fun GroupMemberInfoLayout(
     SectionSpacer()
 
     SectionView {
-      SectionItemView {
-        OpenChatButton(openDirectChat)
-      }
+      OpenChatButton(openDirectChat)
     }
     SectionSpacer()
 
@@ -147,9 +145,7 @@ fun GroupMemberInfoLayout(
 
     if (member.canBeRemoved(groupInfo.membership)) {
       SectionView {
-        SectionItemView {
-          RemoveMemberButton(removeMember)
-        }
+        RemoveMemberButton(removeMember)
       }
       SectionSpacer()
     }
@@ -190,40 +186,25 @@ fun GroupMemberInfoHeader(member: GroupMember) {
 }
 
 @Composable
-fun RemoveMemberButton(removeMember: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { removeMember() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Delete,
-      stringResource(R.string.button_remove_member),
-      tint = Color.Red
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_remove_member), color = Color.Red)
-  }
+fun RemoveMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    Icons.Outlined.Delete,
+    stringResource(R.string.button_remove_member),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
 }
 
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxSize()
-      .clickable { onClick() },
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Icon(
-      Icons.Outlined.Message,
-      stringResource(R.string.button_send_direct_message),
-      Modifier.padding(top = 5.dp),
-      tint = MaterialTheme.colors.primary
-    )
-    Spacer(Modifier.size(8.dp))
-    Text(stringResource(R.string.button_send_direct_message), color = MaterialTheme.colors.primary)
-  }
+  SettingsActionItem(
+    Icons.Outlined.Message,
+    stringResource(R.string.button_send_direct_message),
+    click = onClick,
+    textColor = MaterialTheme.colors.primary,
+    iconColor = MaterialTheme.colors.primary,
+  )
 }
 
 @Preview

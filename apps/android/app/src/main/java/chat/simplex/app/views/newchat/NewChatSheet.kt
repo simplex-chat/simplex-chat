@@ -22,6 +22,7 @@ import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.chatlist.ScaffoldController
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {

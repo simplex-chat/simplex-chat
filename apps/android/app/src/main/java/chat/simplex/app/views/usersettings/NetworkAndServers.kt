@@ -24,7 +24,7 @@ import chat.simplex.app.views.helpers.*
 fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
 ) {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
@@ -110,11 +110,7 @@ fun NetworkAndServersView(
     horizontalAlignment = Alignment.Start,
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    Text(
-      stringResource(R.string.network_and_servers),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
+    AppBarTitle(stringResource(R.string.network_and_servers))
     SectionView(generalGetString(R.string.settings_section_title_messages)) {
       SettingsActionItem(Icons.Outlined.Dns, stringResource(R.string.smp_servers), showModal { SMPServersView(it) })
       SectionDivider()
@@ -172,7 +168,7 @@ fun UseSocksProxySwitch(
 private fun UseOnionHosts(
   onionHosts: MutableState<OnionHosts>,
   enabled: State<Boolean>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   useOnion: (OnionHosts) -> Unit,
 ) {
   val values = remember {
@@ -184,16 +180,13 @@ private fun UseOnionHosts(
       }
     }
   }
-  val onSelected = showSettingsModal {
+  val onSelected = showModal {
+
     Column(
       Modifier.fillMaxWidth(),
       horizontalAlignment = Alignment.Start,
     ) {
-      Text(
-        stringResource(R.string.network_use_onion_hosts),
-        Modifier.padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
-        style = MaterialTheme.typography.h1
-      )
+      AppBarTitle(stringResource(R.string.network_use_onion_hosts))
       SectionViewSelectable(null, onionHosts, values, useOnion)
     }
   }
