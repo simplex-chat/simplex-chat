@@ -505,8 +505,8 @@ rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
   RGEMemberLeft -> "left"
-  RGEMemberRole _ r -> "role " <> safeDecodeUtf8 (strEncode r)
-  RGEUserRole r -> "your role " <> safeDecodeUtf8 (strEncode r)
+  RGEMemberRole _ p r -> "role of " <> profileToText p <> ": " <> safeDecodeUtf8 (strEncode r)
+  RGEUserRole r -> "your role: " <> safeDecodeUtf8 (strEncode r)
   RGEMemberDeleted _ p -> "removed " <> profileToText p
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
@@ -514,7 +514,7 @@ rcvGroupEventToText = \case
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
-  SGEMemberRole _ r -> "role " <> safeDecodeUtf8 (strEncode r)
+  SGEMemberRole _ p r -> "role of " <> profileToText p <> ": " <> safeDecodeUtf8 (strEncode r)
   SGEUserRole r -> "your role " <> safeDecodeUtf8 (strEncode r)
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
@@ -548,7 +548,7 @@ data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
   | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
   | RGEMemberLeft -- CRLeftMember
-  | RGEMemberRole {groupMemberId :: GroupMemberId, role :: GroupMemberRole}
+  | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
   | RGEUserRole {role :: GroupMemberRole}
   | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
   | RGEUserDeleted -- CRDeletedMemberUser
@@ -573,7 +573,7 @@ instance ToJSON DBRcvGroupEvent where
   toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
 
 data SndGroupEvent
-  = SGEMemberRole {groupMemberId :: GroupMemberId, role :: GroupMemberRole}
+  = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
   | SGEUserRole {role :: GroupMemberRole}
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser

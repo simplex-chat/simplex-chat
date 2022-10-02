@@ -840,8 +840,8 @@ processChatCommand = \case
     if memberId == groupMemberId' membership
       then changeMemberRole user gInfo members membership $ SGEUserRole memRole
       else case find ((== memberId) . groupMemberId') members of
-        Nothing -> throwChatError CEGroupMemberNotFound
-        Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId memRole
+        Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId (fromLocalProfile $ memberProfile m) memRole
+        _ -> throwChatError CEGroupMemberNotFound
     where
       changeMemberRole user gInfo@GroupInfo {membership} members m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus} gEvent = do
         let userRole = memberRole (membership :: GroupMember)
@@ -2385,7 +2385,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       | otherwise = do
         members <- withStore' $ \db -> getGroupMembers db user gInfo
         case find (sameMemberId memId) members of
-          Just member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) memRole
+          Just member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
           _ -> messageError "x.grp.mem.role with unknown member ID"
       where
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
