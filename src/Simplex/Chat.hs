@@ -837,8 +837,8 @@ processChatCommand = \case
         Just m -> changeMemberRole user gInfo members m $ SGEMemberRole memberId (fromLocalProfile $ memberProfile m) memRole
         _ -> throwChatError CEGroupMemberNotFound
     where
-      changeMemberRole user gInfo@GroupInfo {membership} members m gEvent = do
-        let GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, localDisplayName = cName} = m
+      changeMemberRole user@User {userId} gInfo@GroupInfo {membership} members m gEvent = do
+        let GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberContactId, localDisplayName = cName} = m
             GroupMember {memberRole = userRole} = membership
             canChangeRole = userRole >= GRAdmin && userRole >= mRole && userRole >= memRole && memberCurrent membership
         unless canChangeRole $ throwChatError CEGroupUserRole
@@ -846,8 +846,8 @@ processChatCommand = \case
           unless (mRole == memRole) $ do
             withStore' $ \db -> updateGroupMemberRole db user m memRole
             case mStatus of
-              GSMemInvited ->
-                withStore' (\db -> (,) <$> getViaGroupContact db user m <*> getMemberInvitation db user (groupMemberId' m)) >>= \case
+              GSMemInvited -> do
+                withStore (\db -> (,) <$> mapM (getContact db userId) memberContactId <*> liftIO (getMemberInvitation db user $ groupMemberId' m)) >>= \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do

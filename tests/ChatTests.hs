@@ -1106,7 +1106,11 @@ testUpdateMemberRole =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "use /a team <name> to add members"
-      addMember "team" alice bob GRMember
+      addMember "team" alice bob GRAdmin
+      alice ##> "/mr team bob member"
+      alice <## "#team: you changed the role of bob from admin to member"
+      bob <## "#team: alice invites you to join the group as member"
+      bob <## "use /j team to accept"
       bob ##> "/j team"
       concurrently_
         (alice <## "#team: bob joined the group")
