@@ -90,24 +90,25 @@ class ModalManager {
   private fun fromStartToEndTransition() =
     slideInHorizontally(
       initialOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpecFromStart()
+      animationSpec = animationSpec()
     ) with slideOutHorizontally(
       targetOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpecFromStart()
+      animationSpec = animationSpec()
     )
 
   @OptIn(ExperimentalAnimationApi::class)
   private fun fromEndToStartTransition() =
     slideInHorizontally(
       initialOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpecFromEnd()
+      animationSpec = animationSpec()
     ) with slideOutHorizontally(
       targetOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpecFromEnd()
+      animationSpec = animationSpec()
     )
 
-  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
-  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
+private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
+//  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
+//  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
   companion object {
     val shared = ModalManager()
