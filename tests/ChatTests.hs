@@ -3014,15 +3014,26 @@ testSetChatItemTTL =
       bob <# "alice> 1"
       bob #> "@alice 2"
       alice <# "bob> 2"
-      threadDelay 2000000
+      -- chat item with file
+      alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
+      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      -- above items should be deleted after we set ttl
+      threadDelay 3000000
       alice #> "@bob 3"
       bob <# "alice> 3"
       bob #> "@alice 4"
       alice <# "bob> 4"
-      alice #$> ("/_ttl 1", id, "ok")
+      alice #$> ("/_get chat @2 count=100", chatF, [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
+      checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
+        alice #$> ("/_ttl 2", id, "ok")
       alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
-      bob #$> ("/_get chat @2 count=100", chat, [(0, "1"), (1, "2"), (0, "3"), (1, "4")])
-      alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
+      bob #$> ("/_get chat @2 count=100", chat, [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
+      alice #$> ("/ttl", id, "old messages are set to be deleted after: 2 second(s)")
       alice #$> ("/ttl week", id, "ok")
       alice #$> ("/ttl", id, "old messages are set to be deleted after: one week")
       alice #$> ("/ttl none", id, "ok")
