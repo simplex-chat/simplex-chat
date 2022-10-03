@@ -166,7 +166,6 @@ struct DatabaseView: View {
                         Text(ttl.autoDeleteText).tag(ttl)
                     }
                 }
-                .disabled(stopped)
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
