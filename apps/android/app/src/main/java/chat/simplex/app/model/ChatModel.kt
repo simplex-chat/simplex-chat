@@ -40,6 +40,7 @@ class ChatModel(val controller: ChatController) {
   val terminalItems = mutableStateListOf<TerminalItem>()
   val userAddress = mutableStateOf<String?>(null)
   val userSMPServers = mutableStateOf<(List<String>)?>(null)
+  val chatItemTTL = mutableStateOf<ChatItemTTL>(ChatItemTTL.None)
 
   // set when app opened from external intent
   val clearOverlays = mutableStateOf<Boolean>(false)
@@ -1552,5 +1553,36 @@ sealed class SndGroupEvent() {
     is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)
+  }
+}
+
+sealed class ChatItemTTL: Comparable<ChatItemTTL?> {
+  object Day: ChatItemTTL()
+  object Week: ChatItemTTL()
+  object Month: ChatItemTTL()
+  data class Seconds(val secs: Long): ChatItemTTL()
+  object None: ChatItemTTL()
+
+  override fun compareTo(other: ChatItemTTL?): Int = (seconds ?: Long.MAX_VALUE).compareTo(other?.seconds ?: Long.MAX_VALUE)
+
+  val seconds: Long?
+    get() =
+      when (this) {
+        is None -> null
+        is Day -> 86400L
+        is Week -> 7 * 86400L
+        is Month -> 30 * 86400L
+        is Seconds -> secs
+      }
+
+  companion object {
+    fun fromSeconds(seconds: Long?): ChatItemTTL =
+      when (seconds) {
+        null -> None
+        86400L -> Day
+        7 * 86400L -> Week
+        30 * 86400L -> Month
+        else -> Seconds(seconds)
+      }
   }
 }

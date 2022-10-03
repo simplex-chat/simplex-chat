@@ -41,6 +41,7 @@ import kotlinx.datetime.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 @Composable
 fun DatabaseView(
@@ -67,6 +68,7 @@ fun DatabaseView(
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
+  val chatItemTTL = remember { mutableStateOf(m.chatItemTTL.value) }
   Box(
     Modifier.fillMaxSize(),
   ) {
@@ -82,11 +84,21 @@ fun DatabaseView(
       chatLastStart,
       chatDbDeleted.value,
       appFilesCountAndSize,
+      chatItemTTL,
       startChat = { startChat(m, runChat, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m, runChat, context) },
       exportArchive = { exportArchive(context, m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(context, appFilesCountAndSize) },
+      onChatItemTTLSelected = {
+        val oldValue = chatItemTTL.value
+        chatItemTTL.value = it
+        if (it < oldValue) {
+          setChatItemTTLAlert(m, chatItemTTL, progressIndicator)
+        } else if (it != oldValue) {
+          setCiTTL(m, chatItemTTL, progressIndicator)
+        }
+      },
       showSettingsModal
     )
     if (progressIndicator.value) {
@@ -119,11 +131,13 @@ fun DatabaseLayout(
   chatLastStart: MutableState<Instant?>,
   chatDbDeleted: Boolean,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  chatItemTTL: MutableState<ChatItemTTL>,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit,
   exportArchive: () -> Unit,
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
+  onChatItemTTLSelected: (ChatItemTTL) -> Unit,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
@@ -204,7 +218,8 @@ fun DatabaseLayout(
     )
     SectionSpacer()
 
-    SectionView(stringResource(R.string.files_section)) {
+    SectionView(stringResource(R.string.data_section)) {
+      SectionItemView { TtlOptions(chatItemTTL, onChatItemTTLSelected) }
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
@@ -225,6 +240,42 @@ fun DatabaseLayout(
       }
     )
   }
+}
+
+private fun setChatItemTTLAlert(m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>, progressIndicator: MutableState<Boolean>) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(R.string.enable_automatic_deletion_question),
+    text = generalGetString(R.string.enable_automatic_deletion_message),
+    confirmText = generalGetString(R.string.delete_messages),
+    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator) },
+    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value}
+  )
+}
+
+@Composable
+private fun TtlOptions(current: State<ChatItemTTL>, onSelected: (ChatItemTTL) -> Unit) {
+  val values = remember {
+    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Day, ChatItemTTL.Week, ChatItemTTL.Month)
+    if (current.value is ChatItemTTL.Seconds) {
+      all.add(current.value)
+    }
+    all.map {
+      when (it) {
+        is ChatItemTTL.None -> it to generalGetString(R.string.chat_item_ttl_none)
+        is ChatItemTTL.Day -> it to generalGetString(R.string.chat_item_ttl_day)
+        is ChatItemTTL.Week -> it to generalGetString(R.string.chat_item_ttl_week)
+        is ChatItemTTL.Month -> it to generalGetString(R.string.chat_item_ttl_month)
+        is ChatItemTTL.Seconds -> it to String.format(generalGetString(R.string.chat_item_ttl_seconds), it.secs)
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(R.string.delete_messages_after),
+    values,
+    current,
+    icon = null,
+    onSelected = onSelected
+  )
 }
 
 @Composable
@@ -533,6 +584,25 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   }
 }
 
+private fun setCiTTL(m: ChatModel, chatItemTTL: MutableState<ChatItemTTL>, progressIndicator: MutableState<Boolean>) {
+  Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
+  progressIndicator.value = true
+  withApi {
+    try {
+      m.controller.setChatItemTTL(chatItemTTL.value)
+      // Update model on success
+      m.chatItemTTL.value = chatItemTTL.value
+    } catch (e: Exception) {
+      // Rollback to model's value
+      chatItemTTL.value = m.chatItemTTL.value
+      operationEnded(m, progressIndicator) {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_changing_message_deletion), e.stackTraceToString())
+      }
+    }
+    progressIndicator.value = false
+  }
+}
+
 private fun deleteFilesAndMediaAlert(context: Context, appFilesCountAndSize: MutableState<Pair<Int, Long>>) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_files_and_media_question),
@@ -575,12 +645,14 @@ fun PreviewDatabaseLayout() {
       chatLastStart = remember { mutableStateOf(Clock.System.now()) },
       chatDbDeleted = false,
       appFilesCountAndSize = remember { mutableStateOf(0 to 0L) },
+      chatItemTTL = remember { mutableStateOf(ChatItemTTL.None) },
       startChat = {},
       stopChatAlert = {},
       exportArchive = {},
       deleteChatAlert = {},
       deleteAppFilesAndMedia = {},
-      showSettingsModal = { {} }
+      showSettingsModal = { {} },
+      onChatItemTTLSelected = {},
     )
   }
 }

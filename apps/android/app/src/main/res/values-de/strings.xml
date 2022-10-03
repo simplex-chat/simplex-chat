@@ -593,12 +593,22 @@
   <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
   <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
   <string name="stop_chat_to_enable_database_actions">Chat beenden, um Datenbankaktionen zu erlauben.</string>
-  <string name="files_section">DATEIEN</string>
+  <string name="data_section">DATA</string>
   <string name="delete_files_and_media">Dateien \&amp; Medien löschen</string>
   <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
   <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
   <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
   <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
+  <string name="chat_item_ttl_none">no</string>
+  <string name="chat_item_ttl_day">1 day</string>
+  <string name="chat_item_ttl_week">1 week</string>
+  <string name="chat_item_ttl_month">1 month</string>
+  <string name="chat_item_ttl_seconds">%s second(s)</string>
+  <string name="delete_messages_after">Delete messages after</string>
+  <string name="enable_automatic_deletion_question">Enable automatic message deletion?</string>
+  <string name="enable_automatic_deletion_message">This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting.</string>
+  <string name="delete_messages">Delete messages</string>
+  <string name="error_changing_message_deletion">Error changing automatic message deletion</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Passwort im Keystore sichern</string>
