@@ -319,10 +319,10 @@ func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
 }
 
-func getChatItemTTL() -> ChatItemTTL {
+func getChatItemTTL() throws -> ChatItemTTL {
     let r = chatSendCmdSync(.apiGetChatItemTTL)
     if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
-    return .none
+    throw r
 }
 
 func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
@@ -767,7 +767,7 @@ func startChat() throws {
     if justStarted {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
-        m.chatItemTTL = getChatItemTTL()
+        m.chatItemTTL = try getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
