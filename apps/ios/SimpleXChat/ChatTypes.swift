@@ -669,10 +669,16 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canBeRemoved(membership: GroupMember) -> Bool {
-        let userRole = membership.memberRole
+    public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
+        let userRole = groupInfo.membership.memberRole
         return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
+            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberCurrent
+    }
+
+    public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
+        if !canBeRemoved(groupInfo: groupInfo) { return nil }
+        let userRole = groupInfo.membership.memberRole
+        return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
     public var memberIncognito: Bool {

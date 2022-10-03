@@ -692,6 +692,12 @@ func apiRemoveMember(_ groupId: Int64, _ memberId: Int64) async throws -> GroupM
     throw r
 }
 
+func apiMemberRole(_ groupId: Int64, _ memberId: Int64, _ memberRole: GroupMemberRole) async throws -> GroupMember {
+    let r = await chatSendCmd(.apiMemberRole(groupId: groupId, memberId: memberId, memberRole: memberRole), bgTask: false)
+    if case let .memberRoleUser(_, member, _, _) = r { return member }
+    throw r
+}
+
 func leaveGroup(_ groupId: Int64) async {
     do {
         let groupInfo = try await apiLeaveGroup(groupId)

@@ -38,7 +38,7 @@ public enum ChatCommand {
     case newGroup(groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
-    // case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
+    case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
     case apiRemoveMember(groupId: Int64, memberId: Int64)
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
@@ -107,6 +107,7 @@ public enum ChatCommand {
             case let .newGroup(groupProfile): return "/_group \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
+            case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"
             case let .apiRemoveMember(groupId, memberId): return "/_remove #\(groupId) \(memberId)"
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
@@ -174,6 +175,7 @@ public enum ChatCommand {
             case .newGroup: return "newGroup"
             case .apiAddMember: return "apiAddMember"
             case .apiJoinGroup: return "apiJoinGroup"
+            case .apiMemberRole: return "apiMemberRole"
             case .apiRemoveMember: return "apiRemoveMember"
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
@@ -293,6 +295,8 @@ public enum ChatResponse: Decodable, Error {
     case receivedGroupInvitation(groupInfo: GroupInfo, contact: Contact, memberRole: GroupMemberRole)
     case groupDeletedUser(groupInfo: GroupInfo)
     case joinedGroupMemberConnecting(groupInfo: GroupInfo, hostMember: GroupMember, member: GroupMember)
+    case memberRole(groupInfo: GroupInfo, byMember: GroupMember, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
+    case memberRoleUser(groupInfo: GroupInfo, member: GroupMember, fromRole: GroupMemberRole, toRole: GroupMemberRole)
     case deletedMemberUser(groupInfo: GroupInfo, member: GroupMember)
     case deletedMember(groupInfo: GroupInfo, byMember: GroupMember, deletedMember: GroupMember)
     case leftMember(groupInfo: GroupInfo, member: GroupMember)
@@ -386,6 +390,8 @@ public enum ChatResponse: Decodable, Error {
             case .receivedGroupInvitation: return "receivedGroupInvitation"
             case .groupDeletedUser: return "groupDeletedUser"
             case .joinedGroupMemberConnecting: return "joinedGroupMemberConnecting"
+            case .memberRole: return "memberRole"
+            case .memberRoleUser: return "memberRoleUser"
             case .deletedMemberUser: return "deletedMemberUser"
             case .deletedMember: return "deletedMember"
             case .leftMember: return "leftMember"
@@ -480,6 +486,8 @@ public enum ChatResponse: Decodable, Error {
             case let .receivedGroupInvitation(groupInfo, contact, memberRole): return "groupInfo: \(groupInfo)\ncontact: \(contact)\nmemberRole: \(memberRole)"
             case let .groupDeletedUser(groupInfo): return String(describing: groupInfo)
             case let .joinedGroupMemberConnecting(groupInfo, hostMember, member): return "groupInfo: \(groupInfo)\nhostMember: \(hostMember)\nmember: \(member)"
+            case let .memberRole(groupInfo, byMember, member, fromRole, toRole): return "groupInfo: \(groupInfo)\nbyMember: \(byMember)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)"
+            case let .memberRoleUser(groupInfo, member, fromRole, toRole): return "groupInfo: \(groupInfo)\nmember: \(member)\nfromRole: \(fromRole)\ntoRole: \(toRole)"
             case let .deletedMemberUser(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .deletedMember(groupInfo, byMember, deletedMember): return "groupInfo: \(groupInfo)\nbyMember: \(byMember)\ndeletedMember: \(deletedMember)"
             case let .leftMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
