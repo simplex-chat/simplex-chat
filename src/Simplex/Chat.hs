@@ -1124,11 +1124,7 @@ setExpireCIs b = do
   expire <- asks expireCIs
   atomically $ writeTVar expire b
 
--- perform an action only if filesFolder is set (i.e. on mobile devices)
-withFilesFolder :: ChatMonad m => (FilePath -> m ()) -> m ()
-withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
-
-deleteFile :: ChatMonad m => User -> CIFileInfo -> m ()
+deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
 deleteFile user CIFileInfo {filePath, fileId, fileStatus = (AFS dir status)} =
   cancel' >> delete
   where
@@ -1145,6 +1141,9 @@ deleteFile user CIFileInfo {filePath, fileId, fileStatus = (AFS dir status)} =
         let fsFilePath = filesFolder <> "/" <> fPath
         removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
           removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+    -- perform an action only if filesFolder is set (i.e. on mobile devices)
+    withFilesFolder :: (FilePath -> m ()) -> m ()
+    withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
