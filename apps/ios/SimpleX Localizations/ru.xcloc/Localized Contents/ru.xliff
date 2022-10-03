@@ -1001,14 +1001,14 @@
         <target>Ошибка при добавлении членов группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing automatic message deletion" xml:space="preserve">
-        <source>Error changing automatic message deletion</source>
-        <target>Ошибка при изменении настройки автоматического удаления сообщений</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
         <source>Error changing role</source>
         <target>Ошибка при изменении роли</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error changing setting" xml:space="preserve">
+        <source>Error changing setting</source>
+        <target>Ошибка при изменении настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -2308,9 +2308,9 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting." xml:space="preserve">
-        <source>This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting.</source>
-        <target>Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем указано, будут удалены. Это может занять несколько минут.</target>
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+        <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
+        <target>Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">

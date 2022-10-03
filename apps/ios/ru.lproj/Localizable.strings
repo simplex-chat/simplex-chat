@@ -705,10 +705,10 @@
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* No comment provided by engineer. */
-"Error changing automatic message deletion" = "Ошибка при изменении настройки автоматического удаления сообщений";
+"Error changing role" = "Ошибка при изменении роли";
 
 /* No comment provided by engineer. */
-"Error changing role" = "Ошибка при изменении роли";
+"Error changing setting" = "Ошибка при изменении настройки";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Ошибка при создании адреса";
@@ -1588,7 +1588,7 @@
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting." = "Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем указано, будут удалены. Это может занять несколько минут.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";

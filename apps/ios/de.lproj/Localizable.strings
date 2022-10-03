@@ -705,10 +705,10 @@
 "Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
 
 /* No comment provided by engineer. */
-"Error changing automatic message deletion" = "*** Error changing automatic message deletion";
+"Error changing role" = "*** Error changing role";
 
 /* No comment provided by engineer. */
-"Error changing role" = "*** Error changing role";
+"Error changing setting" = "*** Error changing setting";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Fehler beim Erstellen der Adresse";
@@ -1588,7 +1588,7 @@
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting." = "*** This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "*** This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
