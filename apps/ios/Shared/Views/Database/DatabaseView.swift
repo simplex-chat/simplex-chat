@@ -54,7 +54,6 @@ struct DatabaseView: View {
 
     @State var chatItemTTL: ChatItemTTL
     @State private var currentChatItemTTL: ChatItemTTL = .none
-    @State private var resettingChatItemTTL: Bool = false
 
     var body: some View {
         ZStack {
@@ -158,7 +157,7 @@ struct DatabaseView: View {
             }
 
             Section {
-                Picker("Automatically delete messages", selection: $chatItemTTL) {
+                Picker("Delete messages after", selection: $chatItemTTL) {
                     ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
                         Text(ttl.autoDeleteText).tag(ttl)
                     }
@@ -192,11 +191,8 @@ struct DatabaseView: View {
         .onChange(of: chatItemTTL) { ttl in
             if ttl < currentChatItemTTL {
                 alert = .setChatItemTTL(ttl: ttl)
-            } else {
-                if !resettingChatItemTTL {
-                    setCiTTL(ttl)
-                }
-                resettingChatItemTTL = false
+            } else if ttl != currentChatItemTTL {
+                setCiTTL(ttl)
             }
         }
         .alert(item: $alert) { item in databaseAlert(item) }
@@ -289,7 +285,6 @@ struct DatabaseView: View {
                     setCiTTL(ttl)
                 },
                 secondaryButton: .cancel() {
-                    resettingChatItemTTL = true
                     chatItemTTL = currentChatItemTTL
                 }
             )

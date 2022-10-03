@@ -1469,10 +1469,10 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
 
     public var autoDeleteText: LocalizedStringKey {
         switch self {
-        case .day: return "older than day"
-        case .week: return "older than week"
-        case .month: return "older than month"
-        case let .seconds(seconds): return "older than \(seconds) second(s)"
+        case .day: return "1 day"
+        case .week: return "1 week"
+        case .month: return "1 month"
+        case let .seconds(seconds): return "\(seconds) second(s)"
         case .none: return "no"
         }
     }
