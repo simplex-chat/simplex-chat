@@ -434,6 +434,7 @@ struct DatabaseView: View {
             do {
                 try await setChatItemTTL(ttl)
                 await MainActor.run {
+                    currentChatItemTTL = ttl
                     progressIndicator = false
                     appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
                 }
