@@ -329,12 +329,6 @@ func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
     try await sendCommandOkResp(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
 }
 
-//func setChatItemTTL(_ chatItemTTL: ChatItemTTL) throws {
-//    let r = chatSendCmdSync(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
-//    if case .cmdOk = r { return }
-//    throw r
-//}
-
 func getNetworkConfig() async throws -> NetCfg? {
     let r = await chatSendCmd(.apiGetNetworkConfig)
     if case let .networkConfig(cfg) = r { return cfg }
