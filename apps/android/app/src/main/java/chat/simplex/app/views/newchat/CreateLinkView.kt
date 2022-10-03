@@ -10,6 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.ui.theme.HighOrLowlight
 import chat.simplex.app.views.helpers.withApi
 import chat.simplex.app.views.usersettings.UserAddressView
@@ -37,7 +38,9 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     }
   }
   Column(
-    Modifier.fillMaxHeight(),
+    Modifier
+      .fillMaxHeight()
+      .padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
     Column(Modifier.weight(1f)) {

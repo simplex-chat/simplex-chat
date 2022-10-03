@@ -20,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -338,10 +337,7 @@ fun MainPage(
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo ->
-        Box(Modifier.padding(horizontal = 20.dp)) {
-          SimpleXInfo(chatModel, onboarding = true)
-        }
+      onboarding == OnboardingStage.Step1_SimpleXInfo -> SimpleXInfo(chatModel, onboarding = true)
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel)
     }
     ModalManager.shared.showInView()

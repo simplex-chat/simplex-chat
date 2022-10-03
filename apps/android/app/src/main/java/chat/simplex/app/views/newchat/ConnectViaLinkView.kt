@@ -11,8 +11,6 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.views.helpers.withApi
-import chat.simplex.app.views.usersettings.UserAddressView
 
 enum class ConnectViaLinkTab {
   SCAN, PASTE

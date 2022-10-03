@@ -38,14 +38,12 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
   BoxWithConstraints {
     val screenHeight = maxHeight
     Column(
-      Modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp),
+      Modifier
+        .verticalScroll(rememberScrollState())
+        .padding(bottom = 16.dp),
       verticalArrangement = Arrangement.SpaceBetween,
     ) {
-      Text(
-        stringResource(R.string.add_contact),
-        Modifier.padding(bottom = 16.dp),
-        style = MaterialTheme.typography.h1,
-      )
+      AppBarTitle(stringResource(R.string.add_contact), false)
       Text(
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
       )

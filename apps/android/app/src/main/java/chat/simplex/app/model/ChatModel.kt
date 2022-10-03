@@ -999,6 +999,22 @@ data class ChatItem (
       else -> false
     }
 
+  val isMutedMemberEvent: Boolean get() =
+    when (content) {
+      is CIContent.RcvGroupEventContent ->
+        when (content.rcvGroupEvent) {
+          is RcvGroupEvent.GroupUpdated -> true
+          is RcvGroupEvent.MemberConnected -> true
+          is RcvGroupEvent.UserDeleted -> false
+          is RcvGroupEvent.GroupDeleted -> false
+          is RcvGroupEvent.MemberAdded -> false
+          is RcvGroupEvent.MemberLeft -> false
+          is RcvGroupEvent.MemberDeleted -> false
+        }
+      is CIContent.SndGroupEventContent -> true
+      else -> false
+    }
+
   fun withStatus(status: CIStatus): ChatItem = this.copy(meta = meta.copy(itemStatus = status))
 
   companion object {

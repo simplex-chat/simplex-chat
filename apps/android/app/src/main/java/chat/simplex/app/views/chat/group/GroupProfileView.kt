@@ -17,14 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.app.R
 import chat.simplex.app.model.*
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.ProfileNameField
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.isValidDisplayName
 import chat.simplex.app.views.usersettings.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -78,7 +78,7 @@ fun GroupProfileLayout(
         Column(
           Modifier
             .verticalScroll(scrollState)
-            .padding(bottom = 16.dp),
+            .padding(horizontal = DEFAULT_PADDING),
           horizontalAlignment = Alignment.Start
         ) {
           Text(
@@ -147,6 +147,7 @@ fun GroupProfileLayout(
           }
 
           LaunchedEffect(Unit) {
+            delay(300)
             focusRequester.requestFocus()
           }
         }

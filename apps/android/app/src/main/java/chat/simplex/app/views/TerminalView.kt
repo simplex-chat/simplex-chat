@@ -150,14 +150,14 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
-          .padding(horizontal = 8.dp, vertical = 4.dp)
+          .fillMaxWidth()
           .clickable {
             ModalManager.shared.showModal {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 Text(item.details)
               }
             }
-          }
+          }.padding(horizontal = 8.dp, vertical = 4.dp)
       )
     }
   }

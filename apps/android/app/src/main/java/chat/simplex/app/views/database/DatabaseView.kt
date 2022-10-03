@@ -133,12 +133,7 @@ fun DatabaseLayout(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     horizontalAlignment = Alignment.Start,
   ) {
-    Text(
-      stringResource(R.string.your_chat_database),
-      Modifier.padding(start = 16.dp, bottom = 24.dp),
-      style = MaterialTheme.typography.h1
-    )
-
+    AppBarTitle(stringResource(R.string.your_chat_database))
     SectionView(stringResource(R.string.run_chat_section)) {
       RunChatSetting(runChat, stopped, chatDbDeleted, startChat, stopChatAlert)
     }
@@ -149,7 +144,7 @@ fun DatabaseLayout(
       SettingsActionItem(
         if (unencrypted) Icons.Outlined.LockOpen else if (useKeyChain) Icons.Filled.VpnKey else Icons.Outlined.Lock,
         stringResource(R.string.database_passphrase),
-        click = showSettingsModal { DatabaseEncryptionView(it) },
+        click = showSettingsModal() { DatabaseEncryptionView(it) },
         iconColor = if (unencrypted) WarningOrange else HighOrLowlight,
         disabled = operationsDisabled
       )
@@ -165,6 +160,7 @@ fun DatabaseLayout(
           }
         },
         textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
         disabled = operationsDisabled
       )
       SectionDivider()
@@ -173,6 +169,7 @@ fun DatabaseLayout(
         stringResource(R.string.import_database),
         { importArchiveLauncher.launch("application/zip") },
         textColor = Color.Red,
+        iconColor = Color.Red,
         disabled = operationsDisabled
       )
       SectionDivider()
@@ -194,6 +191,7 @@ fun DatabaseLayout(
         stringResource(R.string.delete_database),
         deleteChatAlert,
         textColor = Color.Red,
+        iconColor = Color.Red,
         disabled = operationsDisabled
       )
     }

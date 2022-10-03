@@ -89,6 +89,7 @@ module Simplex.Chat.Store
     createNewGroupMember,
     deleteGroupMember,
     deleteGroupMemberConnection,
+    updateGroupMemberRole,
     createIntroductions,
     updateIntroStatus,
     saveIntroInvitation,
@@ -256,6 +257,7 @@ import Simplex.Chat.Migrations.M20220909_commands
 import Simplex.Chat.Migrations.M20220926_connection_alias
 import Simplex.Chat.Migrations.M20220928_settings
 import Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
+import Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_items
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -293,7 +295,8 @@ schemaMigrations =
     ("20220909_commands", m20220909_commands),
     ("20220926_connection_alias", m20220926_connection_alias),
     ("20220928_settings", m20220928_settings),
-    ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices)
+    ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices),
+    ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1412,8 +1415,15 @@ createGroupInvitation :: DB.Connection -> User -> Contact -> GroupInvitation -> 
 createGroupInvitation db user@User {userId} contact@Contact {contactId, activeConn = Connection {customUserProfileId}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
-    -- TODO treat the case that the invitation details could've changed
-    Just gId -> getGroupInfo db user gId
+    Just gId -> do
+      gInfo@GroupInfo {membership, groupProfile = p'} <- getGroupInfo db user gId
+      let GroupMember {groupMemberId, memberId, memberRole} = membership
+          MemberIdRole {memberId = memberId', memberRole = memberRole'} = invitedMember
+      liftIO . when (memberId /= memberId' || memberRole /= memberRole') $
+        DB.execute db "UPDATE group_members SET member_id = ?, member_role = ? WHERE group_member_id = ?" (memberId', memberRole', groupMemberId)
+      if p' == groupProfile
+        then pure gInfo
+        else updateGroupProfile db user gInfo groupProfile
   where
     getInvitationGroupId_ :: IO (Maybe Int64)
     getInvitationGroupId_ =
@@ -1782,6 +1792,10 @@ deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId} = do
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
   DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+
+updateGroupMemberRole :: DB.Connection -> User -> GroupMember -> GroupMemberRole -> IO ()
+updateGroupMemberRole db User {userId} GroupMember {groupMemberId} memRole =
+  DB.execute db "UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?" (memRole, userId, groupMemberId)
 
 createIntroductions :: DB.Connection -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
 createIntroductions db members toMember = do
