@@ -29,6 +29,14 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
       createInvitation(m, creatingConnReq, connReqInvitation)
     }
   }
+  LaunchedEffect(connReqInvitation.value) {
+    if (connReqInvitation.value.isNotEmpty()) {
+      m.connReqInv.value = connReqInvitation.value
+    }
+  }
+  DisposableEffect(Unit) {
+    onDispose { m.connReqInv.value = null }
+  }
   val tabTitles = CreateLinkTab.values().map {
     when {
       it == CreateLinkTab.ONE_TIME && connReqInvitation.value.isEmpty() -> stringResource(R.string.create_one_time_link)

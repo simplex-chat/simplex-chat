@@ -307,6 +307,10 @@
   <string name="icon_descr_email">E-Mail</string>
   <string name="icon_descr_more_button">Mehr</string>
 
+  <!-- Connection info - ContactConnectionInfoView.kt -->
+  <string name="show_QR_code">Show QR code</string>
+  <string name="shared_one_time_link">Shared one-time link</string>
+
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Ungültiger QR-Code</string>
   <string name="this_QR_code_is_not_a_link">Dieser QR-Code beschreibt keinen Link!</string>

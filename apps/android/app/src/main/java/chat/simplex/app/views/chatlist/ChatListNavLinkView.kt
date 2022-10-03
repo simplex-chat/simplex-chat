@@ -63,7 +63,10 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
-        click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
+        click = { chat.chatInfo.contactConnection.connReqInv.let {
+            if (it == null) contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel)
+            else ModalManager.shared.showModalCloseable { close -> ContactConnectionInfoView(chatModel, it, chat.chatInfo.contactConnection, close) }
+        } },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped
@@ -268,7 +271,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
     },
     color = Color.Red
@@ -337,7 +340,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
-          deleteContactConnectionAlert(connection, chatModel)
+          deleteContactConnectionAlert(connection, chatModel) {}
         }) {
           Text(stringResource(R.string.delete_verb))
         }
@@ -350,7 +353,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
   )
 }
 
-fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel) {
+fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_pending_connection__question),
     text = generalGetString(
@@ -363,6 +366,7 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(connection.id)
+          onSuccess()
         }
       }
     }

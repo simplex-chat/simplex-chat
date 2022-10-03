@@ -63,6 +63,9 @@ class ChatModel(val controller: ChatController) {
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 
+  // currently showing QR code
+  val connReqInv = mutableStateOf(null as String?)
+
   // working with external intents
   val sharedContent = mutableStateOf(null as SharedContent?)
 
@@ -281,6 +284,14 @@ class ChatModel(val controller: ChatController) {
   private fun popChat_(i: Int) {
     val chat = chats.removeAt(i)
     chats.add(index = 0, chat)
+  }
+
+  fun dismissConnReqView(id: String) {
+    if (connReqInv.value == null) return
+    val info = getChat(id)?.chatInfo as? ChatInfo.ContactConnection ?: return
+    if (info.contactConnection.connReqInv == connReqInv.value) {
+      ModalManager.shared.closeModals()
+    }
   }
 
   fun removeChat(id: String) {
@@ -878,6 +889,8 @@ class PendingContactConnection(
   val pccConnStatus: ConnStatus,
   val viaContactUri: Boolean,
   val customUserProfileId: Long? = null,
+  val connReqInv: String? = null,
+  override val localAlias: String,
   override val createdAt: Instant,
   override val updatedAt: Instant
 ): SomeChat, NamedChat {
@@ -902,7 +915,6 @@ class PendingContactConnection(
   }
   override val fullName get() = ""
   override val image get() = null
-  override val localAlias get() = ""
 
   val initiated get() = (pccConnStatus.initiated ?: false) && !viaContactUri
 
@@ -927,6 +939,7 @@ class PendingContactConnection(
         pccAgentConnId = "abcd",
         pccConnStatus = status,
         viaContactUri = viaContactUri,
+        localAlias = "",
         customUserProfileId = null,
         createdAt = Clock.System.now(),
         updatedAt = Clock.System.now()

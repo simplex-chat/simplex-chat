@@ -208,7 +208,7 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 }
 
 @Composable
-private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
   Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
     DefaultBasicTextField(
