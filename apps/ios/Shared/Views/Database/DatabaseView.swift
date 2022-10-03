@@ -51,7 +51,8 @@ struct DatabaseView: View {
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var appFilesCountAndSize: (Int, Int)?
-    @State private var chatItemTTL: ChatItemTTL = .none
+
+    @State var chatItemTTL: ChatItemTTL
     @State private var currentChatItemTTL: ChatItemTTL = .none
     @State private var resettingChatItemTTL: Bool = false
 
@@ -185,7 +186,6 @@ struct DatabaseView: View {
         .onAppear {
             runChat = m.chatRunning ?? true
             appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
-            chatItemTTL = getChatItemTTL()
             currentChatItemTTL = chatItemTTL
         }
         .onChange(of: chatItemTTL) { ttl in
@@ -434,6 +434,7 @@ struct DatabaseView: View {
             do {
                 try await setChatItemTTL(ttl)
                 await MainActor.run {
+                    m.chatItemTTL = ttl
                     currentChatItemTTL = ttl
                     progressIndicator = false
                     appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
@@ -457,6 +458,6 @@ struct DatabaseView: View {
 
 struct DatabaseView_Previews: PreviewProvider {
     static var previews: some View {
-        DatabaseView(showSettings: Binding.constant(false))
+        DatabaseView(showSettings: Binding.constant(false), chatItemTTL: .none)
     }
 }

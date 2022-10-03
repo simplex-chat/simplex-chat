@@ -773,6 +773,7 @@ func startChat() throws {
     if justStarted {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
+        m.chatItemTTL = getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())
