@@ -159,11 +159,11 @@ struct DatabaseView: View {
             Section {
                 Picker("Delete messages after", selection: $chatItemTTL) {
                     ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
-                        Text(ttl.autoDeleteText).tag(ttl)
+                        Text(ttl.deleteAfterText).tag(ttl)
                     }
                     if case let .seconds(seconds) = chatItemTTL {
                         let ttl: ChatItemTTL = .seconds(seconds)
-                        Text(ttl.autoDeleteText).tag(ttl)
+                        Text(ttl.deleteAfterText).tag(ttl)
                     }
                 }
                 Button("Delete files & media", role: .destructive) {

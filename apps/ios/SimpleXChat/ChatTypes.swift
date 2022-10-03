@@ -1467,7 +1467,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
         }
     }
 
-    public var autoDeleteText: LocalizedStringKey {
+    public var deleteAfterText: LocalizedStringKey {
         switch self {
         case .day: return "1 day"
         case .week: return "1 week"
