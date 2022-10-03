@@ -433,12 +433,16 @@ struct DatabaseView: View {
         Task {
             do {
                 try await setChatItemTTL(ttl)
-                await MainActor.run { progressIndicator = false }
+                await MainActor.run {
+                    progressIndicator = false
+                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+                }
             } catch {
                 await MainActor.run {
                     alert = .error(title: "Error changing automatic message deletion", error: responseError(error))
                     chatItemTTL = currentChatItemTTL
                     progressIndicator = false
+                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
                 }
             }
         }
