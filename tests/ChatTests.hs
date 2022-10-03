@@ -2505,6 +2505,7 @@ testFullAsync :: IO ()
 testFullAsync = withTmpFiles $ do
   putStrLn "testFullAsync"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
