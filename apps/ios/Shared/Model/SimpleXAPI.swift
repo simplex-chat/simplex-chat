@@ -132,7 +132,7 @@ func apiCreateActiveUser(_ p: Profile) throws -> User {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true))
+    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -317,6 +317,16 @@ func getUserSMPServers() throws -> [String] {
 
 func setUserSMPServers(smpServers: [String]) async throws {
     try await sendCommandOkResp(.setUserSMPServers(smpServers: smpServers))
+}
+
+func getChatItemTTL() throws -> ChatItemTTL {
+    let r = chatSendCmdSync(.apiGetChatItemTTL)
+    if case let .chatItemTTL(chatItemTTL) = r { return ChatItemTTL(chatItemTTL) }
+    throw r
+}
+
+func setChatItemTTL(_ chatItemTTL: ChatItemTTL) async throws {
+    try await sendCommandOkResp(.apiSetChatItemTTL(seconds: chatItemTTL.seconds))
 }
 
 func getNetworkConfig() async throws -> NetCfg? {
@@ -763,6 +773,7 @@ func startChat() throws {
     if justStarted {
         m.userAddress = try apiGetUserAddress()
         m.userSMPServers = try getUserSMPServers()
+        m.chatItemTTL = try getChatItemTTL()
         let chats = try apiGetChats()
         m.chats = chats.map { Chat.init($0) }
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCount())

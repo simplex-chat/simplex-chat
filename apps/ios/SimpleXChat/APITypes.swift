@@ -15,14 +15,14 @@ let jsonEncoder = getJSONEncoder()
 public enum ChatCommand {
     case showActiveUser
     case createActiveUser(profile: Profile)
-    case startChat(subscribe: Bool)
+    case startChat(subscribe: Bool, expire: Bool)
     case apiStopChat
     case apiActivateChat
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setFilesFolder(filesFolder: String)
     case setIncognito(incognito: Bool)
     case apiExportArchive(config: ArchiveConfig)
-    case apiImportArchive(config: ArchiveConfig) 
+    case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
     case apiStorageEncryption(config: DBEncryptionConfig)
     case apiGetChats
@@ -45,6 +45,8 @@ public enum ChatCommand {
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
+    case apiSetChatItemTTL(seconds: Int64?)
+    case apiGetChatItemTTL
     case apiSetNetworkConfig(networkConfig: NetCfg)
     case apiGetNetworkConfig
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
@@ -81,12 +83,12 @@ public enum ChatCommand {
             switch self {
             case .showActiveUser: return "/u"
             case let .createActiveUser(profile): return "/u \(profile.displayName) \(profile.fullName)"
-            case let .startChat(subscribe): return "/_start subscribe=\(subscribe ? "on" : "off") expire=off"
+            case let .startChat(subscribe, expire): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire))"
             case .apiStopChat: return "/_stop"
             case .apiActivateChat: return "/_app activate"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
-            case let .setIncognito(incognito): return "/incognito \(incognito ? "on" : "off")"
+            case let .setIncognito(incognito): return "/incognito \(onOff(incognito))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -114,6 +116,8 @@ public enum ChatCommand {
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
+            case let .apiSetChatItemTTL(seconds): return "/_ttl \(chatItemTTLStr(seconds: seconds))"
+            case .apiGetChatItemTTL: return "/ttl"
             case let .apiSetNetworkConfig(networkConfig): return "/_network \(encodeJSON(networkConfig))"
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
@@ -182,6 +186,8 @@ public enum ChatCommand {
             case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
+            case .apiSetChatItemTTL: return "apiSetChatItemTTL"
+            case .apiGetChatItemTTL: return "apiGetChatItemTTL"
             case .apiSetNetworkConfig: return "apiSetNetworkConfig"
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .apiSetChatSettings: return "apiSetChatSettings"
@@ -223,6 +229,14 @@ public enum ChatCommand {
         smpServers.isEmpty ? "default" : smpServers.joined(separator: ",")
     }
 
+    func chatItemTTLStr(seconds: Int64?) -> String {
+        if let seconds = seconds {
+            return String(seconds)
+        } else {
+            return "none"
+        }
+    }
+
     public var obfuscated: ChatCommand {
         switch self {
         case let .apiStorageEncryption(cfg):
@@ -233,6 +247,10 @@ public enum ChatCommand {
 
     private func obfuscate(_ s: String) -> String {
         s == "" ? "" : "***"
+    }
+
+    private func onOff(_ b: Bool) -> String {
+        b ? "on" : "off"
     }
 }
 
@@ -250,6 +268,7 @@ public enum ChatResponse: Decodable, Error {
     case apiChats(chats: [ChatData])
     case apiChat(chat: ChatData)
     case userSMPServers(smpServers: [String])
+    case chatItemTTL(chatItemTTL: Int64?)
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(contact: Contact, connectionStats: ConnectionStats, customUserProfile: Profile?)
     case groupMemberInfo(groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
@@ -346,6 +365,7 @@ public enum ChatResponse: Decodable, Error {
             case .apiChats: return "apiChats"
             case .apiChat: return "apiChat"
             case .userSMPServers: return "userSMPServers"
+            case .chatItemTTL: return "chatItemTTL"
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
@@ -442,6 +462,7 @@ public enum ChatResponse: Decodable, Error {
             case let .apiChats(chats): return String(describing: chats)
             case let .apiChat(chat): return String(describing: chat)
             case let .userSMPServers(smpServers): return String(describing: smpServers)
+            case let .chatItemTTL(chatItemTTL): return String(describing: chatItemTTL)
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(contact, connectionStats, customUserProfile): return "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))\ncustomUserProfile: \(String(describing: customUserProfile))"
             case let .groupMemberInfo(groupInfo, member, connectionStats_): return "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_)))"

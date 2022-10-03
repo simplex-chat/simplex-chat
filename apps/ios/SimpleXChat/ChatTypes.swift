@@ -1470,3 +1470,51 @@ public enum SndGroupEvent: Decodable {
         }
     }
 }
+
+public enum ChatItemTTL: Hashable, Identifiable, Comparable {
+    case day
+    case week
+    case month
+    case seconds(_ seconds: Int64)
+    case none
+
+    public var id: Self { self }
+
+    public init(_ seconds: Int64?) {
+        switch seconds {
+        case 86400: self = .day
+        case 7 * 86400: self = .week
+        case 30 * 86400: self = .month
+        case let .some(n): self = .seconds(n)
+        case .none: self = .none
+        }
+    }
+
+    public var deleteAfterText: LocalizedStringKey {
+        switch self {
+        case .day: return "1 day"
+        case .week: return "1 week"
+        case .month: return "1 month"
+        case let .seconds(seconds): return "\(seconds) second(s)"
+        case .none: return "no"
+        }
+    }
+
+    public var seconds: Int64? {
+        switch self {
+        case .day: return 86400
+        case .week: return 7 * 86400
+        case .month: return 30 * 86400
+        case let .seconds(seconds): return seconds
+        case .none: return nil
+        }
+    }
+
+    private var comparisonValue: Int64 {
+        self.seconds ?? Int64.max
+    }
+
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        return lhs.comparisonValue < rhs.comparisonValue
+    }
+}

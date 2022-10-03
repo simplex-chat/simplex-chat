@@ -1,5 +1,6 @@
 package chat.simplex.app.views.usersettings
 
+import SectionDivider
 import SectionItemViewSpaceBetween
 import SectionView
 import SectionViewSelectable
@@ -112,7 +113,7 @@ fun NotificationsSettingsLayout(
           color = HighOrLowlight
         )
       }
-      Spacer(Modifier.padding(horizontal = 4.dp))
+      SectionDivider()
       SectionItemViewSpaceBetween({ showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(stringResource(R.string.settings_notification_preview_mode_title))
         Spacer(Modifier.padding(horizontal = 10.dp))
