@@ -641,7 +641,7 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APISetChatItemTTL newTTL_ -> withUser $ \user -> withChatLock $ do
+  APISetChatItemTTL newTTL_ -> withUser' $ \user -> withChatLock $ do
     case newTTL_ of
       Nothing -> do
         withStore' $ \db -> setChatItemTTL db user newTTL_
@@ -652,7 +652,7 @@ processChatCommand = \case
           setExpireCIs False
           expireChatItems user newTTL True
         withStore' $ \db -> setChatItemTTL db user newTTL_
-        setExpireCIs True
+        whenM chatStarted $ setExpireCIs True
     pure CRCmdOk
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
@@ -2804,8 +2804,9 @@ withUser' action =
 withUser :: ChatMonad m => (User -> m a) -> m a
 withUser action = withUser' $ \user ->
   ifM chatStarted (action user) (throwChatError CEChatNotStarted)
-  where
-    chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
+
+chatStarted :: ChatMonad m => m Bool
+chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
 
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
