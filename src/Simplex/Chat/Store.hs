@@ -137,9 +137,12 @@ module Simplex.Chat.Store
     getFileTransferProgress,
     getSndFileTransfer,
     getContactFileInfo,
-    getContactChatItemIdsAndFileInfo,
+    getContactMaxItemTs,
+    deleteContactCIs,
     updateContactTs,
-    getGroupChatItemIdsAndFileInfo,
+    getGroupFileInfo,
+    getGroupMaxItemTs,
+    deleteGroupCIs,
     updateGroupTs,
     createNewSndMessage,
     createSndMsgDelivery,
@@ -191,6 +194,8 @@ module Simplex.Chat.Store
     getXGrpMemIntroContGroup,
     getChatItemTTL,
     setChatItemTTL,
+    getExpiredFileInfo,
+    deleteExpiredCIs,
     getChatsWithExpiredItems,
     getContactExpiredCIs,
     getGroupExpiredCIs,
@@ -2438,8 +2443,8 @@ getFileTransferMeta_ db userId fileId =
     fileTransferMeta (fileName, fileSize, chunkSize, filePath, cancelled_) =
       FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, cancelled = fromMaybe False cancelled_}
 
-getContactFileInfo :: DB.Connection -> UserId -> Contact -> IO [CIFileInfo]
-getContactFileInfo db userId Contact {contactId} =
+getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
+getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query
       db
@@ -2454,25 +2459,27 @@ getContactFileInfo db userId Contact {contactId} =
 toFileInfo :: (Int64, ACIFileStatus, Maybe FilePath) -> CIFileInfo
 toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, filePath}
 
-getContactChatItemIdsAndFileInfo :: DB.Connection -> User -> ContactId -> IO [(ChatItemId, UTCTime, Maybe CIFileInfo)]
-getContactChatItemIdsAndFileInfo db User {userId} contactId =
-  map toItemIdAndFileInfo
-    <$> DB.query
-      db
-      [sql|
-        SELECT i.chat_item_id, i.item_ts, f.file_id, f.ci_file_status, f.file_path
-        FROM chat_items i
-        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.contact_id = ?
-        ORDER BY i.item_ts ASC
-      |]
-      (userId, contactId)
+getContactMaxItemTs :: DB.Connection -> User -> Contact -> IO (Maybe UTCTime)
+getContactMaxItemTs db User {userId} Contact {contactId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT MAX(item_ts) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-toItemIdAndFileInfo :: (ChatItemId, UTCTime, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, UTCTime, Maybe CIFileInfo)
-toItemIdAndFileInfo (chatItemId, itemTs, fileId_, fileStatus_, filePath) =
-  case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, itemTs, Just CIFileInfo {fileId, fileStatus, filePath})
-    _ -> (chatItemId, itemTs, Nothing)
+deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
+deleteContactCIs db User {userId} Contact {contactId} = do
+  deleteContactCIsMessages_
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  where
+    deleteContactCIsMessages_ =
+      DB.execute
+        db
+        [sql|
+          DELETE FROM messages WHERE message_id IN (
+            SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (
+              SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ?
+            )
+          )
+        |]
+        (userId, contactId)
 
 updateContactTs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
 updateContactTs db User {userId} Contact {contactId} updatedAt =
@@ -2481,25 +2488,40 @@ updateContactTs db User {userId} Contact {contactId} updatedAt =
     "UPDATE contacts SET updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (updatedAt, userId, contactId)
 
-getGroupChatItemIdsAndFileInfo :: DB.Connection -> User -> Int64 -> IO [(ChatItemId, UTCTime, Bool, Maybe CIFileInfo)]
-getGroupChatItemIdsAndFileInfo db User {userId} groupId =
-  map toItemIdDeletedAndFileInfo
+getGroupFileInfo :: DB.Connection -> User -> GroupInfo -> IO [CIFileInfo]
+getGroupFileInfo db User {userId} GroupInfo {groupId} =
+  map toFileInfo
     <$> DB.query
       db
       [sql|
-        SELECT i.chat_item_id, i.item_ts, i.item_deleted, f.file_id, f.ci_file_status, f.file_path
+        SELECT f.file_id, f.ci_file_status, f.file_path
         FROM chat_items i
-        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+        JOIN files f ON f.chat_item_id = i.chat_item_id
         WHERE i.user_id = ? AND i.group_id = ?
-        ORDER BY i.item_ts ASC
       |]
       (userId, groupId)
 
-toItemIdDeletedAndFileInfo :: (ChatItemId, UTCTime, Bool, Maybe Int64, Maybe ACIFileStatus, Maybe FilePath) -> (ChatItemId, UTCTime, Bool, Maybe CIFileInfo)
-toItemIdDeletedAndFileInfo (chatItemId, itemTs, itemDeleted, fileId_, fileStatus_, filePath) =
-  case (fileId_, fileStatus_) of
-    (Just fileId, Just fileStatus) -> (chatItemId, itemTs, itemDeleted, Just CIFileInfo {fileId, fileStatus, filePath})
-    _ -> (chatItemId, itemTs, itemDeleted, Nothing)
+getGroupMaxItemTs :: DB.Connection -> User -> GroupInfo -> IO (Maybe UTCTime)
+getGroupMaxItemTs db User {userId} GroupInfo {groupId} =
+  fmap join . maybeFirstRow fromOnly $
+    DB.query db "SELECT MAX(item_ts) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupCIs db User {userId} GroupInfo {groupId} = do
+  deleteGroupCIsMessages_
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  where
+    deleteGroupCIsMessages_ =
+      DB.execute
+        db
+        [sql|
+          DELETE FROM messages WHERE message_id IN (
+            SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (
+              SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?
+            )
+          )
+        |]
+        (userId, groupId)
 
 updateGroupTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
 updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
@@ -4084,6 +4106,36 @@ setChatItemTTL db User {userId} chatItemTTL = do
         db
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
+
+getExpiredFileInfo :: DB.Connection -> User -> UTCTime -> IO [CIFileInfo]
+getExpiredFileInfo db User {userId} expirationDate =
+  map toFileInfo
+    <$> DB.query
+      db
+      [sql|
+        SELECT f.file_id, f.ci_file_status, f.file_path
+        FROM chat_items i
+        JOIN files f ON f.chat_item_id = i.chat_item_id
+        WHERE i.user_id = ? AND i.item_ts <= ?
+      |]
+      (userId, expirationDate)
+
+deleteExpiredCIs :: DB.Connection -> User -> UTCTime -> IO ()
+deleteExpiredCIs db User {userId} expirationDate = do
+  deleteExpiredCIsMessages_
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND item_ts <= ?" (userId, expirationDate)
+  where
+    deleteExpiredCIsMessages_ =
+      DB.execute
+        db
+        [sql|
+          DELETE FROM messages WHERE message_id IN (
+            SELECT message_id FROM chat_item_messages WHERE chat_item_id IN (
+              SELECT chat_item_id FROM chat_items WHERE user_id = ? AND item_ts <= ?
+            )
+          )
+        |]
+        (userId, expirationDate)
 
 getChatsWithExpiredItems :: DB.Connection -> User -> UTCTime -> IO [ChatRef]
 getChatsWithExpiredItems db User {userId} expirationDate =
