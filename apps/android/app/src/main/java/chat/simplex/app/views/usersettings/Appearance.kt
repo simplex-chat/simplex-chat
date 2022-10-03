@@ -1,6 +1,7 @@
 package chat.simplex.app.views.usersettings
 
 import SectionCustomFooter
+import SectionDivider
 import SectionItemViewSpaceBetween
 import SectionSpacer
 import SectionView
@@ -117,8 +118,7 @@ fun AppearanceView() {
       SectionItemViewSpaceBetween(showThemeSelector) {
         Text(generalGetString(R.string.theme))
       }
-      Spacer(Modifier.padding(horizontal = 4.dp))
-
+      SectionDivider()
       SectionItemViewSpaceBetween({ editPrimaryColor(currentTheme.first.primary) }) {
         val title = generalGetString(R.string.color_primary)
         Text(title)
