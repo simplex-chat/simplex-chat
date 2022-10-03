@@ -1129,24 +1129,22 @@ withFilesFolder :: ChatMonad m => (FilePath -> m ()) -> m ()
 withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
 deleteFile :: ChatMonad m => User -> CIFileInfo -> m ()
-deleteFile user fileInfo@CIFileInfo {filePath} = do
-  cancelFile user fileInfo `catchError` \_ -> pure ()
-  withFilesFolder $ \filesFolder ->
-    forM_ filePath $ \fPath -> do
-      let fsFilePath = filesFolder <> "/" <> fPath
-      removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-        removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
-
-cancelFile :: ChatMonad m => User -> CIFileInfo -> m ()
-cancelFile user CIFileInfo {fileId, fileStatus = (AFS dir status)} =
-  unless (ciFileEnded status) $
-    case dir of
-      SMDSnd -> do
-        (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
-        unless cancelled $ cancelSndFile user ftm fts
-      SMDRcv -> do
-        ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-        unless cancelled $ cancelRcvFileTransfer user ft
+deleteFile user CIFileInfo {filePath, fileId, fileStatus = (AFS dir status)} =
+  cancel' >> delete
+  where
+    cancel' = unless (ciFileEnded status) $
+      case dir of
+        SMDSnd -> do
+          (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
+          unless cancelled $ cancelSndFile user ftm fts
+        SMDRcv -> do
+          ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
+          unless cancelled $ cancelRcvFileTransfer user ft
+    delete = withFilesFolder $ \filesFolder ->
+      forM_ filePath $ \fPath -> do
+        let fsFilePath = filesFolder <> "/" <> fPath
+        removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+          removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
 
 updateCallItemStatus :: ChatMonad m => UserId -> Contact -> Call -> WebRTCCallStatus -> Maybe MessageId -> m ()
 updateCallItemStatus userId ct Call {chatItemId} receivedStatus msgId_ = do
