@@ -21,9 +21,16 @@ struct GroupMemberInfoView: View {
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
-        case changeMemberRoleAlert
+        case changeMemberRoleAlert(role: GroupMemberRole)
+        case error(title: LocalizedStringKey, error: String)
 
-        var id: GroupMemberInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .removeMemberAlert: return "removeMemberAlert"
+            case let .changeMemberRoleAlert(role): return "changeMemberRoleAlert \(role.rawValue)"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
     }
 
     var body: some View {
@@ -59,7 +66,7 @@ struct GroupMemberInfoView: View {
                     .onAppear { newRole = member.memberRole }
                     .onChange(of: newRole) { _ in
                         if newRole != member.memberRole {
-                            alert = .changeMemberRoleAlert
+                            alert = .changeMemberRoleAlert(role: newRole)
                         }
                     }
 
@@ -98,6 +105,7 @@ struct GroupMemberInfoView: View {
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
             case .changeMemberRoleAlert: return changeMemberRoleAlert()
+            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
     }
@@ -168,6 +176,7 @@ struct GroupMemberInfoView: View {
                         }
                     } catch let error {
                         logger.error("apiRemoveMember error: \(responseError(error))")
+                        alert = errorAlert(error, "Error removing member")
                     }
                 }
             },
@@ -190,6 +199,7 @@ struct GroupMemberInfoView: View {
                     } catch let error {
                         newRole = member.memberRole
                         logger.error("apiMemberRole error: \(responseError(error))")
+                        alert = errorAlert(error, "Error changing role")
                     }
                 }
             },
@@ -197,6 +207,17 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
             }
         )
+    }
+
+    private func errorAlert(_ error: Error, _ title: LocalizedStringKey) -> GroupMemberInfoViewAlert {
+        switch error as? ChatResponse {
+        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+            return .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
+        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+            return .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
+        default:
+            return .error(title: title, error: responseError(error))
+        }
     }
 }
 
