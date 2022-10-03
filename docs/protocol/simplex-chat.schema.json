@@ -129,6 +129,9 @@
         "directConnReq": {"ref": "connReqUri"}
       }
     },
+    "groupMemberRole": {
+      "enum": ["author", "member", "admin", "owner"]
+    },
     "callInvitation": {
       "properties": {
         "callType": {"ref": "callType"}
@@ -370,6 +373,17 @@
           "properties": {
             "memberId": {"ref": "base64url"},
             "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.role": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "role": {"ref": "groupMemberRole"}
           }
         }
       }
