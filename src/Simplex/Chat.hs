@@ -55,7 +55,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (lastMaybe, safeDecodeUtf8, uncurry3)
+import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -450,8 +450,7 @@ processChatCommand = \case
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
           let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
-          cancelFile user fileInfo `catchError` \_ -> pure ()
-          withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+          deleteFile user fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
     CTGroup -> withStore' (\db -> updateGroupChatItemsRead db chatId fromToIds) $> CRCmdOk
@@ -462,12 +461,10 @@ processChatCommand = \case
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db userId chatId
       withStore' (\db -> getContactGroupNames db userId ct) >>= \case
         [] -> do
-          filesInfo <- withStore' $ \db -> getContactFileInfo db userId ct
+          filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
           conns <- withStore $ \db -> getContactConnections db userId ct
           withChatLock . procCmd $ do
-            forM_ filesInfo $ \fileInfo -> do
-              cancelFile user fileInfo `catchError` \_ -> pure ()
-              withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
+            forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
             forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
             -- functions below are called in separate transactions to prevent crashes on android
             -- (possibly, race condition on integrity check?)
@@ -485,8 +482,9 @@ processChatCommand = \case
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db user chatId
       let canDelete = memberRole (membership :: GroupMember) == GROwner || not (memberCurrent membership)
       unless canDelete $ throwChatError CEGroupUserRole
-      void $ clearGroupContent user gInfo
+      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock . procCmd $ do
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
         forM_ members $ deleteMemberConnection user
         -- functions below are called in separate transactions to prevent crashes on android
@@ -499,22 +497,26 @@ processChatCommand = \case
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db userId chatId
-      ciIdsAndFileInfo <- withStore' $ \db -> getContactChatItemIdsAndFileInfo db user chatId
-      forM_ ciIdsAndFileInfo $ \(itemId, _, fileInfo_) -> deleteDirectChatItem user ct (itemId, fileInfo_)
-      ct' <- case ciIdsAndFileInfo of
-        [] -> pure ct
-        _ -> do
-          let (_, lastItemTs, _) = last ciIdsAndFileInfo
-          withStore' $ \db -> updateContactTs db user ct lastItemTs
-          pure (ct :: Contact) {updatedAt = lastItemTs}
+      filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteContactCIs db user ct
+      ct' <- case maxItemTs_ of
+        Just ts -> do
+          withStore' $ \db -> updateContactTs db user ct ts
+          pure (ct :: Contact) {updatedAt = ts}
+        _ -> pure ct
       pure $ CRChatCleared (AChatInfo SCTDirect (DirectChat ct'))
     CTGroup -> do
       gInfo <- withStore $ \db -> getGroupInfo db user chatId
-      lastItemTs_ <- clearGroupContent user gInfo
-      gInfo' <- case lastItemTs_ of
-        Just lastItemTs -> do
-          withStore' $ \db -> updateGroupTs db user gInfo lastItemTs
-          pure (gInfo :: GroupInfo) {updatedAt = lastItemTs}
+      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteGroupCIs db user gInfo
+      gInfo' <- case maxItemTs_ of
+        Just ts -> do
+          withStore' $ \db -> updateGroupTs db user gInfo ts
+          pure (gInfo :: GroupInfo) {updatedAt = ts}
         _ -> pure gInfo
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
@@ -1074,12 +1076,6 @@ processChatCommand = \case
     isReady ct =
       let s = connStatus $ activeConn (ct :: Contact)
        in s == ConnReady || s == ConnSndReady
-    clearGroupContent :: User -> GroupInfo -> m (Maybe UTCTime)
-    clearGroupContent user gInfo@GroupInfo {groupId} = do
-      ciIdsAndFileInfo <- withStore' $ \db -> getGroupChatItemIdsAndFileInfo db user groupId
-      forM_ ciIdsAndFileInfo $ \(itemId, _, itemDeleted, fileInfo_) ->
-        unless itemDeleted $ deleteGroupChatItem user gInfo (itemId, fileInfo_)
-      pure $ (\(_, lastItemTs, _, _) -> lastItemTs) <$> lastMaybe ciIdsAndFileInfo
     withCurrentCall :: ContactId -> (UserId -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = withUser $ \user@User {userId} -> do
       ct <- withStore $ \db -> getContact db userId ctId
@@ -1128,30 +1124,18 @@ setExpireCIs b = do
   expire <- asks expireCIs
   atomically $ writeTVar expire b
 
-deleteDirectChatItem :: ChatMonad m => User -> Contact -> (ChatItemId, Maybe CIFileInfo) -> m ()
-deleteDirectChatItem user@User {userId} ct (itemId, fileInfo_) = do
-  forM_ fileInfo_ $ \fileInfo -> do
-    cancelFile user fileInfo `catchError` \_ -> pure ()
-    withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-  void $ withStore $ \db -> deleteDirectChatItemLocal db userId ct itemId CIDMInternal
-
-deleteGroupChatItem :: ChatMonad m => User -> GroupInfo -> (ChatItemId, Maybe CIFileInfo) -> m ()
-deleteGroupChatItem user gInfo (itemId, fileInfo_) = do
-  forM_ fileInfo_ $ \fileInfo -> do
-    cancelFile user fileInfo `catchError` \_ -> pure ()
-    withFilesFolder $ \filesFolder -> deleteFile filesFolder fileInfo
-  void $ withStore $ \db -> deleteGroupChatItemLocal db user gInfo itemId CIDMInternal
-
 -- perform an action only if filesFolder is set (i.e. on mobile devices)
 withFilesFolder :: ChatMonad m => (FilePath -> m ()) -> m ()
 withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
 
-deleteFile :: ChatMonad m => FilePath -> CIFileInfo -> m ()
-deleteFile filesFolder CIFileInfo {filePath} =
-  forM_ filePath $ \fPath -> do
-    let fsFilePath = filesFolder <> "/" <> fPath
-    removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
-      removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
+deleteFile :: ChatMonad m => User -> CIFileInfo -> m ()
+deleteFile user fileInfo@CIFileInfo {filePath} = do
+  cancelFile user fileInfo `catchError` \_ -> pure ()
+  withFilesFolder $ \filesFolder ->
+    forM_ filePath $ \fPath -> do
+      let fsFilePath = filesFolder <> "/" <> fPath
+      removeFile fsFilePath `E.catch` \(_ :: E.SomeException) ->
+        removePathForcibly fsFilePath `E.catch` \(_ :: E.SomeException) -> pure ()
 
 cancelFile :: ChatMonad m => User -> CIFileInfo -> m ()
 cancelFile user CIFileInfo {fileId, fileStatus = (AFS dir status)} =
@@ -1420,33 +1404,20 @@ subscribeUserConnections agentBatchSubscribe user = do
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
-expireChatItems user@User {userId} ttl sync = do
+expireChatItems user ttl sync = do
   currentTs <- liftIO getCurrentTime
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
-  chats <- withStore' $ \db -> getChatsWithExpiredItems db user expirationDate
   expire <- asks expireCIs
-  chatsLoop chats expirationDate expire
+  filesInfo <- withStore' $ \db -> getExpiredFileInfo db user expirationDate
+  loop filesInfo expirationDate expire
   where
-    chatsLoop :: [ChatRef] -> UTCTime -> TVar Bool -> m ()
-    chatsLoop [] _ _ = pure ()
-    chatsLoop ((ChatRef cType chatId) : chats) expirationDate expire = continue $ do
-      case cType of
-        CTDirect -> do
-          ct <- withStore $ \db -> getContact db userId chatId
-          cis <- withStore' $ \db -> getContactExpiredCIs db user chatId expirationDate
-          ciLoop cis $ deleteDirectChatItem user ct
-        CTGroup -> do
-          gInfo <- withStore $ \db -> getGroupInfo db user chatId
-          cis <- withStore' $ \db -> getGroupExpiredCIs db user chatId expirationDate
-          ciLoop cis $ deleteGroupChatItem user gInfo
-        _ -> pure ()
-      chatsLoop chats expirationDate expire
-      where
-        ciLoop :: [(ChatItemId, Maybe CIFileInfo)] -> ((ChatItemId, Maybe CIFileInfo) -> m ()) -> m ()
-        ciLoop [] _ = pure ()
-        ciLoop (ci : cis) f = continue $ f ci >> ciLoop cis f
-        continue :: m () -> m ()
-        continue = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
+    loop :: [CIFileInfo] -> UTCTime -> TVar Bool -> m ()
+    loop [] expirationDate expire = continue expire $ withStore' (\db -> deleteExpiredCIs db user expirationDate)
+    loop (fileInfo : filesInfo) expirationDate expire = continue expire $ do
+      deleteFile user fileInfo
+      loop filesInfo expirationDate expire
+    continue :: TVar Bool -> m () -> m ()
+    continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
