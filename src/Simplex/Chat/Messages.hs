@@ -35,7 +35,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON, fstToLower)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
@@ -596,6 +596,15 @@ instance ToJSON DBSndGroupEvent where
   toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
   toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
 
+newtype DBMsgErrorType = DBME MsgErrorType
+
+instance FromJSON DBMsgErrorType where
+  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
+
+instance ToJSON DBMsgErrorType where
+  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
+  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
+
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
     groupMemberId :: GroupMemberId,
@@ -729,7 +738,7 @@ data DBJSONCIContent
   | DBJCIRcvDeleted {deleteMode :: CIDeleteMode}
   | DBJCISndCall {status :: CICallStatus, duration :: Int}
   | DBJCIRcvCall {status :: CICallStatus, duration :: Int}
-  | DBJCIRcvIntegrityError {msgError :: MsgErrorType}
+  | DBJCIRcvIntegrityError {msgError :: DBMsgErrorType}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
@@ -751,7 +760,7 @@ dbJsonCIContent = \case
   CIRcvDeleted cidm -> DBJCIRcvDeleted cidm
   CISndCall status duration -> DBJCISndCall {status, duration}
   CIRcvCall status duration -> DBJCIRcvCall {status, duration}
-  CIRcvIntegrityError err -> DBJCIRcvIntegrityError err
+  CIRcvIntegrityError err -> DBJCIRcvIntegrityError $ DBME err
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
@@ -765,7 +774,7 @@ aciContentDBJSON = \case
   DBJCIRcvDeleted cidm -> ACIContent SMDRcv $ CIRcvDeleted cidm
   DBJCISndCall {status, duration} -> ACIContent SMDSnd $ CISndCall status duration
   DBJCIRcvCall {status, duration} -> ACIContent SMDRcv $ CIRcvCall status duration
-  DBJCIRcvIntegrityError err -> ACIContent SMDRcv $ CIRcvIntegrityError err
+  DBJCIRcvIntegrityError (DBME err) -> ACIContent SMDRcv $ CIRcvIntegrityError err
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
