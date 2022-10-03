@@ -23,6 +23,12 @@
 "!1 colored!" = "!1 цвет!";
 
 /* No comment provided by engineer. */
+". All group members will be notified." = ". Все члены группы получат сообщение.";
+
+/* No comment provided by engineer. */
+". The member will receive a new invitation." = ". Член группы получит новое приглашение.";
+
+/* No comment provided by engineer. */
 "(" = "(";
 
 /* No comment provided by engineer. */
@@ -104,6 +110,9 @@
 "%lld members" = "Членов группы: %lld";
 
 /* No comment provided by engineer. */
+"%lld second(s)" = "%lld секунд";
+
+/* No comment provided by engineer. */
 "%lldk" = "%lldk";
 
 /* No comment provided by engineer. */
@@ -111,6 +120,15 @@
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~зачеркнуть~";
+
+/* No comment provided by engineer. */
+"1 day" = "1 день";
+
+/* No comment provided by engineer. */
+"1 month" = "1 месяц";
+
+/* No comment provided by engineer. */
+"1 week" = "1 неделя";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -152,7 +170,7 @@
 /* call status */
 "accepted call" = " принятый звонок";
 
-/* No comment provided by engineer. */
+/* member role */
 "admin" = "админ";
 
 /* No comment provided by engineer. */
@@ -237,7 +255,16 @@
 "Cannot receive file" = "Невозможно получить файл";
 
 /* No comment provided by engineer. */
+"Change" = "Поменять";
+
+/* No comment provided by engineer. */
 "Change database passphrase?" = "Поменять пароль базы данных?";
+
+/* No comment provided by engineer. */
+"Change member role?" = "Поменять роль члена группы?";
+
+/* No comment provided by engineer. */
+"Change role" = "Поменять роль";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
@@ -438,6 +465,9 @@
 "Dark" = "Тёмная";
 
 /* No comment provided by engineer. */
+"Data" = "Данные";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "База данных зашифрована!";
 
 /* No comment provided by engineer. */
@@ -537,6 +567,12 @@
 "Delete message?" = "Удалить сообщение?";
 
 /* No comment provided by engineer. */
+"Delete messages" = "Удалить сообщения";
+
+/* No comment provided by engineer. */
+"Delete messages after" = "Удалить сообщения через";
+
+/* No comment provided by engineer. */
 "Delete old database" = "Удалить предыдущую версию данных";
 
 /* No comment provided by engineer. */
@@ -603,6 +639,9 @@
 "Enable" = "Включить";
 
 /* No comment provided by engineer. */
+"Enable automatic message deletion?" = "Включить автоматическое удаление сообщений?";
+
+/* No comment provided by engineer. */
 "Enable instant notifications?" = "Включить мгновенные уведомления?";
 
 /* No comment provided by engineer. */
@@ -666,6 +705,12 @@
 "Error adding member(s)" = "Ошибка при добавлении членов группы";
 
 /* No comment provided by engineer. */
+"Error changing automatic message deletion" = "Ошибка при изменении настройки автоматического удаления сообщений";
+
+/* No comment provided by engineer. */
+"Error changing role" = "Ошибка при изменении роли";
+
+/* No comment provided by engineer. */
 "Error creating address" = "Ошибка при создании адреса";
 
 /* No comment provided by engineer. */
@@ -703,6 +748,9 @@
 
 /* No comment provided by engineer. */
 "Error receiving file" = "Ошибка при получении файла";
+
+/* No comment provided by engineer. */
+"Error removing member" = "Ошибка при удалении члена группы";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Ошибка при сохранении профиля группы";
@@ -1001,14 +1049,21 @@
 /* No comment provided by engineer. */
 "Markdown in messages" = "Форматирование сообщений";
 
-/* No comment provided by engineer. */
+/* member role */
 "member" = "член группы";
 
 /* No comment provided by engineer. */
 "Member" = "Член группы";
 
+/* rcv group event chat item
+   snd group event chat item */
+"member %@ role: %@" = "роль %1$@: %2$@";
+
 /* rcv group event chat item */
 "member connected" = "соединен(а)";
+
+/* No comment provided by engineer. */
+"Member role will be changed to " = "Роль члена группы будет изменена на ";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Член группы будет удален - это действие нельзя отменить!";
@@ -1075,6 +1130,9 @@
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Новый пароль…";
+
+/* No comment provided by engineer. */
+"no" = "нет";
 
 /* No comment provided by engineer. */
 "No" = "Нет";
@@ -1145,7 +1203,7 @@
 /* No comment provided by engineer. */
 "or chat with the developers" = "или соединитесь с разработчиками";
 
-/* No comment provided by engineer. */
+/* member role */
 "owner" = "владелец";
 
 /* No comment provided by engineer. */
@@ -1175,7 +1233,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
@@ -1302,6 +1360,9 @@
 "Revert" = "Отменить изменения";
 
 /* No comment provided by engineer. */
+"Role" = "Роль";
+
+/* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
 
 /* chat item action */
@@ -1390,6 +1451,9 @@
 
 /* No comment provided by engineer. */
 "Share one-time invitation link" = "Поделиться ссылкой-приглашением";
+
+/* No comment provided by engineer. */
+"Shared one-time link" = "Одноразовая ссылка-приглашение";
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
@@ -1522,6 +1586,9 @@
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting." = "Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем указано, будут удалены. Это может занять несколько минут.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Это действие нельзя отменить — ваш профиль, контакты, сообщения и файлы будут безвозвратно утеряны.";
@@ -1831,6 +1898,10 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ваш случайный профиль";
+
+/* rcv group event chat item
+   snd group event chat item */
+"your role: %@" = "ваша роль: %@";
 
 /* No comment provided by engineer. */
 "Your settings" = "Настройки";

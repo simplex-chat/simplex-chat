@@ -187,7 +187,7 @@ struct GroupMemberInfoView: View {
     private func changeMemberRoleAlert() -> Alert {
         Alert(
             title: Text("Change member role?"),
-            message: Text("Member role will be changed to ") + Text(newRole.text) + (member.memberCurrent ? Text(". Other members will be notified.") : Text(". Invited member will receive a new invitation.")),
+            message: Text("Member role will be changed to ") + Text(newRole.text) + (member.memberCurrent ? Text(". All group members will be notified.") : Text(". The member will receive a new invitation.")),
             primaryButton: .default(Text("Change")) {
                 Task {
                     do {
