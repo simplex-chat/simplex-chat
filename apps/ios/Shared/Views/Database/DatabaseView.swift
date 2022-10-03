@@ -161,9 +161,8 @@ struct DatabaseView: View {
                     ForEach([ChatItemTTL.none, ChatItemTTL.month, ChatItemTTL.week, ChatItemTTL.day]) { ttl in
                         Text(ttl.deleteAfterText).tag(ttl)
                     }
-                    if case let .seconds(seconds) = chatItemTTL {
-                        let ttl: ChatItemTTL = .seconds(seconds)
-                        Text(ttl.deleteAfterText).tag(ttl)
+                    if case .seconds = chatItemTTL {
+                        Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
                     }
                 }
                 Button("Delete files & media", role: .destructive) {
