@@ -2,6 +2,7 @@ package chat.simplex.app.views.chatlist
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,9 +36,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val scaffoldState = rememberScaffoldState()
-  var showChatNewDialog by remember { mutableStateOf(false) }
+  var showNewChatDialog by rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && showChatNewDialog) showChatNewDialog = false
+    if (chatModel.clearOverlays.value && showNewChatDialog) showNewChatDialog = false
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   Scaffold (
@@ -45,22 +46,24 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
     floatingActionButton = {
-      FloatingActionButton(
-        onClick = {
-          if (!stopped) {
-            showChatNewDialog = !showChatNewDialog
-          }
-        },
-        elevation = FloatingActionButtonDefaults.elevation(
-          defaultElevation = 0.dp,
-          pressedElevation = 0.dp,
-          hoveredElevation = 0.dp,
-          focusedElevation = 0.dp,
-        ),
-        backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
-        contentColor = Color.White
-      ) {
-        Icon( if (!showChatNewDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+      if (searchInList.isEmpty()) {
+        FloatingActionButton(
+          onClick = {
+            if (!stopped) {
+              showNewChatDialog = !showNewChatDialog
+            }
+          },
+          elevation = FloatingActionButtonDefaults.elevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            hoveredElevation = 0.dp,
+            focusedElevation = 0.dp,
+          ),
+          backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+          contentColor = Color.White
+        ) {
+          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+        }
       }
     }
   ) {
@@ -74,27 +77,27 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           ChatList(chatModel, search = searchInList)
         } else {
           if (!stopped) {
-            OnboardingButtons { showChatNewDialog = true }
+            OnboardingButtons { showNewChatDialog = true }
           }
         }
       }
     }
   }
-  if (showChatNewDialog) {
+  if (showNewChatDialog && searchInList.isEmpty()) {
     Surface(
       Modifier
         .fillMaxSize()
-        .clickable { showChatNewDialog = false },
+        .clickable(remember { MutableInteractionSource() }, indication = null) { showNewChatDialog = false },
       color = MaterialTheme.colors.background.copy(ContentAlpha.high),
     ) {
       Column(
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End
       ) {
-        NewChatSheet(chatModel, showChatNewDialog) { showChatNewDialog = false }
+        NewChatSheet(chatModel, showNewChatDialog) { showNewChatDialog = false }
         FloatingActionButton(
           onClick = {
-            if (!stopped) { showChatNewDialog = !showChatNewDialog }
+            if (!stopped) { showNewChatDialog = !showNewChatDialog }
           },
           Modifier.padding(end = 16.dp, bottom = 16.dp),
           elevation = FloatingActionButtonDefaults.elevation(
@@ -106,7 +109,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
           contentColor = Color.White
         ) {
-          Icon(if (!showChatNewDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
