@@ -130,9 +130,9 @@ struct AddGroupMembersView: View {
             } catch {
                 switch error as? ChatResponse {
                 case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-                    alert = .error(title: "Connection timeout", error: "Please check your network connection and try again.")
+                    alert = .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
                 case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-                    alert = .error(title: "Connection error", error: "Please check your network connection and try again.")
+                    alert = .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
                 default:
                     alert = .error(title: "Error adding member(s)", error: responseError(error))
                 }

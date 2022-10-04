@@ -669,10 +669,16 @@ public struct GroupMember: Identifiable, Decodable {
         }
     }
 
-    public func canBeRemoved(membership: GroupMember) -> Bool {
-        let userRole = membership.memberRole
+    public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
+        let userRole = groupInfo.membership.memberRole
         return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && membership.memberCurrent
+            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberCurrent
+    }
+
+    public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
+        if !canBeRemoved(groupInfo: groupInfo) { return nil }
+        let userRole = groupInfo.membership.memberRole
+        return GroupMemberRole.allCases.filter { $0 <= userRole }
     }
 
     public var memberIncognito: Bool {
@@ -702,11 +708,11 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
 
     public var id: Self { self }
 
-    public var text: LocalizedStringKey {
+    public var text: String {
         switch self {
-        case .member: return "member"
-        case .admin: return "admin"
-        case .owner: return "owner"
+        case .member: return NSLocalizedString("member", comment: "member role")
+        case .admin: return NSLocalizedString("admin", comment: "member role")
+        case .owner: return NSLocalizedString("owner", comment: "member role")
         }
     }
 
@@ -898,6 +904,8 @@ public struct ChatItem: Identifiable, Decodable {
             switch event {
             case .groupUpdated: return true
             case .memberConnected: return true
+            case .memberRole: return true
+            case .userRole: return false
             case .userDeleted: return false
             case .groupDeleted: return false
             case .memberAdded: return false
@@ -1430,6 +1438,8 @@ public enum RcvGroupEvent: Decodable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
     case memberConnected
     case memberLeft
+    case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
+    case userRole(role: GroupMemberRole)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userDeleted
     case groupDeleted
@@ -1441,6 +1451,10 @@ public enum RcvGroupEvent: Decodable {
             return String.localizedStringWithFormat(NSLocalizedString("invited %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .memberConnected: return NSLocalizedString("member connected", comment: "rcv group event chat item")
         case .memberLeft: return NSLocalizedString("left", comment: "rcv group event chat item")
+        case let .memberRole(_, profile, role):
+            return  String.localizedStringWithFormat(NSLocalizedString("member %@ role: %@", comment: "rcv group event chat item"), profile.profileViewName, role.text)
+        case let .userRole(role):
+            return String.localizedStringWithFormat(NSLocalizedString("your role: %@", comment: "rcv group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("removed %@", comment: "rcv group event chat item"), profile.profileViewName)
         case .userDeleted: return NSLocalizedString("removed you", comment: "rcv group event chat item")
@@ -1451,12 +1465,18 @@ public enum RcvGroupEvent: Decodable {
 }
 
 public enum SndGroupEvent: Decodable {
+    case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
+    case userRole(role: GroupMemberRole)
     case memberDeleted(groupMemberId: Int64, profile: Profile)
     case userLeft
     case groupUpdated(groupProfile: GroupProfile)
 
     var text: String {
         switch self {
+        case let .memberRole(_, profile, role):
+            return  String.localizedStringWithFormat(NSLocalizedString("member %@ role: %@", comment: "snd group event chat item"), profile.profileViewName, role.text)
+        case let .userRole(role):
+            return String.localizedStringWithFormat(NSLocalizedString("your role: %@", comment: "snd group event chat item"), role.text)
         case let .memberDeleted(_, profile):
             return String.localizedStringWithFormat(NSLocalizedString("you removed %@", comment: "snd group event chat item"), profile.profileViewName)
         case .userLeft: return NSLocalizedString("you left", comment: "snd group event chat item")

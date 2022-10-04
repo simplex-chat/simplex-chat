@@ -104,6 +104,9 @@
 "%lld members" = "%lld Mitglieder";
 
 /* No comment provided by engineer. */
+"%lld second(s)" = "*** %lld second(s)";
+
+/* No comment provided by engineer. */
 "%lldk" = "%lldk";
 
 /* No comment provided by engineer. */
@@ -111,6 +114,15 @@
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~durchstreichen~";
+
+/* No comment provided by engineer. */
+"1 day" = "*** 1 day";
+
+/* No comment provided by engineer. */
+"1 month" = "*** 1 month";
+
+/* No comment provided by engineer. */
+"1 week" = "*** 1 week";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -152,7 +164,7 @@
 /* call status */
 "accepted call" = "Anruf angenommen";
 
-/* No comment provided by engineer. */
+/* member role */
 "admin" = "Admin";
 
 /* No comment provided by engineer. */
@@ -237,7 +249,16 @@
 "Cannot receive file" = "Datei kann nicht empfangen werden";
 
 /* No comment provided by engineer. */
+"Change" = "*** Change";
+
+/* No comment provided by engineer. */
 "Change database passphrase?" = "Datenbank-Passwort ändern?";
+
+/* No comment provided by engineer. */
+"Change member role?" = "*** Change member role?";
+
+/* No comment provided by engineer. */
+"Change role" = "*** Change role";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Datenbank Archiv";
@@ -438,6 +459,9 @@
 "Dark" = "Dunkel";
 
 /* No comment provided by engineer. */
+"Data" = "*** Data";
+
+/* No comment provided by engineer. */
 "Database encrypted!" = "Datenbank verschlüsselt!";
 
 /* No comment provided by engineer. */
@@ -537,6 +561,12 @@
 "Delete message?" = "Nachricht löschen?";
 
 /* No comment provided by engineer. */
+"Delete messages" = "*** Delete messages";
+
+/* No comment provided by engineer. */
+"Delete messages after" = "*** Delete messages after";
+
+/* No comment provided by engineer. */
 "Delete old database" = "Alte Datenbank löschen";
 
 /* No comment provided by engineer. */
@@ -603,6 +633,9 @@
 "Enable" = "Aktivieren";
 
 /* No comment provided by engineer. */
+"Enable automatic message deletion?" = "*** Enable automatic message deletion?";
+
+/* No comment provided by engineer. */
 "Enable instant notifications?" = "Sofortige Benachrichtigungen aktivieren?";
 
 /* No comment provided by engineer. */
@@ -666,6 +699,12 @@
 "Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
 
 /* No comment provided by engineer. */
+"Error changing role" = "*** Error changing role";
+
+/* No comment provided by engineer. */
+"Error changing setting" = "*** Error changing setting";
+
+/* No comment provided by engineer. */
 "Error creating address" = "Fehler beim Erstellen der Adresse";
 
 /* No comment provided by engineer. */
@@ -703,6 +742,9 @@
 
 /* No comment provided by engineer. */
 "Error receiving file" = "Fehler beim Empfangen der Datei";
+
+/* No comment provided by engineer. */
+"Error removing member" = "*** Error removing member";
 
 /* No comment provided by engineer. */
 "Error saving group profile" = "Fehler beim Speichern des Gruppenprofils";
@@ -1001,14 +1043,24 @@
 /* No comment provided by engineer. */
 "Markdown in messages" = "Markdowns in Nachrichten";
 
-/* No comment provided by engineer. */
+/* member role */
 "member" = "Mitglied";
 
 /* No comment provided by engineer. */
 "Member" = "Mitglied";
 
+/* rcv group event chat item
+   snd group event chat item */
+"member %@ role: %@" = "*** member %1$@ role: %2$@";
+
 /* rcv group event chat item */
 "member connected" = "verbunden";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". All group members will be notified." = "*** Member role will be changed to \"%@\". All group members will be notified.";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "*** Member role will be changed to \"%@\". The member will receive a new invitation.";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt - dies kann nicht rückgängig gemacht werden!";
@@ -1075,6 +1127,9 @@
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Neues Passwort…";
+
+/* No comment provided by engineer. */
+"no" = "*** nein";
 
 /* No comment provided by engineer. */
 "No" = "Nein";
@@ -1145,7 +1200,7 @@
 /* No comment provided by engineer. */
 "or chat with the developers" = "oder chatten Sie mit den Entwicklern";
 
-/* No comment provided by engineer. */
+/* member role */
 "owner" = "Eigentümer";
 
 /* No comment provided by engineer. */
@@ -1175,7 +1230,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.";
 
 /* No comment provided by engineer. */
@@ -1302,6 +1357,9 @@
 "Revert" = "Zurückkehren";
 
 /* No comment provided by engineer. */
+"Role" = "*** Role";
+
+/* No comment provided by engineer. */
 "Run chat" = "Chat starten";
 
 /* chat item action */
@@ -1390,6 +1448,9 @@
 
 /* No comment provided by engineer. */
 "Share one-time invitation link" = "Einmal-Einladungslink teilen";
+
+/* No comment provided by engineer. */
+"Shared one-time link" = "*** Shared one-time link";
 
 /* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
@@ -1522,6 +1583,9 @@
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden - Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
+
+/* No comment provided by engineer. */
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "*** This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden - Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";
@@ -1831,6 +1895,10 @@
 
 /* No comment provided by engineer. */
 "Your random profile" = "Ihr Zufallsprofil";
+
+/* rcv group event chat item
+   snd group event chat item */
+"your role: %@" = "*** your role: %@";
 
 /* No comment provided by engineer. */
 "Your settings" = "Ihre Einstellungen";

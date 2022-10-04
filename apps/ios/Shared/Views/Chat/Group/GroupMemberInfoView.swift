@@ -13,15 +13,24 @@ struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     var groupInfo: GroupInfo
-    var member: GroupMember
+    @State var member: GroupMember
     var connectionStats: ConnectionStats?
+    @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
+        case changeMemberRoleAlert(role: GroupMemberRole)
+        case error(title: LocalizedStringKey, error: String)
 
-        var id: GroupMemberInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .removeMemberAlert: return "removeMemberAlert"
+            case let .changeMemberRoleAlert(role): return "changeMemberRoleAlert \(role.rawValue)"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
     }
 
     var body: some View {
@@ -38,8 +47,29 @@ struct GroupMemberInfoView: View {
 
                 Section("Member") {
                     infoRow("Group", groupInfo.displayName)
-                    // TODO change role
-                    // localizedInfoRow("Role", member.memberRole.text)
+
+                    HStack {
+                        if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
+                            Picker("Change role", selection: $newRole) {
+                                ForEach(roles) { role in
+                                    Text(role.text)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        } else {
+                            Text("Role")
+                            Spacer()
+                            Text(member.memberRole.text)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .onAppear { newRole = member.memberRole }
+                    .onChange(of: newRole) { _ in
+                        if newRole != member.memberRole {
+                            alert = .changeMemberRoleAlert(role: newRole)
+                        }
+                    }
+
                     // TODO invited by - need to get contact by contact id
                     if let conn = member.activeConn {
                         let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
@@ -55,7 +85,7 @@ struct GroupMemberInfoView: View {
                     }
                 }
 
-                if member.canBeRemoved(membership: groupInfo.membership) {
+                if member.canBeRemoved(groupInfo: groupInfo) {
                     Section {
                         removeMemberButton()
                     }
@@ -74,6 +104,8 @@ struct GroupMemberInfoView: View {
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .removeMemberAlert: return removeMemberAlert()
+            case .changeMemberRoleAlert: return changeMemberRoleAlert()
+            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
     }
@@ -139,16 +171,53 @@ struct GroupMemberInfoView: View {
                     do {
                         let member = try await apiRemoveMember(groupInfo.groupId, member.groupMemberId)
                         await MainActor.run {
-                            _ = ChatModel.shared.upsertGroupMember(groupInfo, member)
+                            _ = chatModel.upsertGroupMember(groupInfo, member)
                             dismiss()
                         }
                     } catch let error {
                         logger.error("apiRemoveMember error: \(responseError(error))")
+                        alert = errorAlert(error, "Error removing member")
                     }
                 }
             },
             secondaryButton: .cancel()
         )
+    }
+
+    private func changeMemberRoleAlert() -> Alert {
+        Alert(
+            title: Text("Change member role?"),
+            message: member.memberCurrent ? Text("Member role will be changed to \"\(newRole.text)\". All group members will be notified.") : Text("Member role will be changed to \"\(newRole.text)\". The member will receive a new invitation."),
+            primaryButton: .default(Text("Change")) {
+                Task {
+                    do {
+                        let mem = try await apiMemberRole(groupInfo.groupId, member.groupMemberId, newRole)
+                        await MainActor.run {
+                            member = mem
+                            _ = chatModel.upsertGroupMember(groupInfo, mem)
+                        }
+                    } catch let error {
+                        newRole = member.memberRole
+                        logger.error("apiMemberRole error: \(responseError(error))")
+                        alert = errorAlert(error, "Error changing role")
+                    }
+                }
+            },
+            secondaryButton: .cancel {
+                newRole = member.memberRole
+            }
+        )
+    }
+
+    private func errorAlert(_ error: Error, _ title: LocalizedStringKey) -> GroupMemberInfoViewAlert {
+        switch error as? ChatResponse {
+        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+            return .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
+        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+            return .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
+        default:
+            return .error(title: title, error: responseError(error))
+        }
     }
 }
 
