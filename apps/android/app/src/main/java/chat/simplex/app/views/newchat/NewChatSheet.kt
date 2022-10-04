@@ -1,9 +1,6 @@
 package chat.simplex.app.views.newchat
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,7 +11,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,45 +50,38 @@ fun NewChatSheetLayout(
   val actions = remember { listOf(addContact, connectViaLink, createGroup) }
   val titles = remember { listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group) }
   val icons = remember { listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group) }
-  AnimatedVisibility(
-    visible = true,
-    enter = slideInHorizontally(
-      initialOffsetX = { -it },
-      animationSpec = TweenSpec(2000, 0, FastOutLinearInEasing)
-    )
-  ) {
   LazyColumn {
     items(3) { index ->
       Row {
         Spacer(Modifier.weight(1f))
         Box(contentAlignment = Alignment.CenterEnd) {
-          TextButton(
+          Button(
             actions[index],
             shape = RoundedCornerShape(21.dp),
-            colors = ButtonDefaults.textButtonColors(backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.background),
+            colors = ButtonDefaults.textButtonColors(
+              backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary.copy(0.1f) else MaterialTheme.colors.background
+            ),
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
             modifier = Modifier.height(42.dp)
           ) {
             Text(
               stringResource(titles[index]),
-              Modifier.padding(start = DEFAULT_PADDING_HALF, end = 42.dp),
-              color = if (isInDarkTheme()) Color.White else MaterialTheme.colors.primary,
+              Modifier.padding(start = DEFAULT_PADDING_HALF),
+              color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
               fontWeight = FontWeight.Medium,
             )
-          }
-          FloatingActionButton(
-            actions[index],
-            Modifier.size(42.dp).padding(end = 10.dp),
-            backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.background,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
-          ) {
-            Icon(icons[index], stringResource(R.string.share_one_time_link), tint = if (isInDarkTheme()) Color.White else MaterialTheme.colors.primary)
+            Icon(
+              icons[index],
+              stringResource(titles[index]),
+              Modifier.size(42.dp),
+              tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
+            )
           }
         }
-        Spacer(Modifier.width(20.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
       }
       Spacer(Modifier.height(DEFAULT_PADDING))
     }
-  }
   }
 }
 
