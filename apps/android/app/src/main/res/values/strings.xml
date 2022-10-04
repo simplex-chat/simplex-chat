@@ -271,6 +271,7 @@
   <string name="delete_contact_menu_action">Delete</string>
   <string name="delete_group_menu_action">Delete</string>
   <string name="mark_read">Mark read</string>
+  <string name="set_contact_name">Set contact name</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>

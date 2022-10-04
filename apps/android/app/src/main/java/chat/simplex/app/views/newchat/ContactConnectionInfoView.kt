@@ -23,7 +23,13 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.usersettings.SettingsActionItem
 
 @Composable
-fun ContactConnectionInfoView(chatModel: ChatModel, connReqInvitation: String?, contactConnection: PendingContactConnection, close: () -> Unit) {
+fun ContactConnectionInfoView(
+  chatModel: ChatModel,
+  connReqInvitation: String?,
+  contactConnection: PendingContactConnection,
+  focusAlias: Boolean,
+  close: () -> Unit
+) {
   /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv]. It will be managed by [AddContactView] itself
    * Otherwise it will be called here AFTER [AddContactView] is launched and will clear the value too soon */
   val allowDispose = remember { mutableStateOf(true) }
@@ -43,6 +49,7 @@ fun ContactConnectionInfoView(chatModel: ChatModel, connReqInvitation: String?, 
     contactConnection.localAlias,
     contactConnection.initiated,
     contactConnection.viaContactUri,
+    focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     showQr = {
@@ -67,6 +74,7 @@ private fun ContactConnectionInfoLayout(
   localAlias: String,
   connectionInitiated: Boolean,
   connectionViaContactUri: Boolean,
+  focusAlias: Boolean,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   showQr: () -> Unit,
@@ -81,17 +89,16 @@ private fun ContactConnectionInfoLayout(
         else R.string.you_accepted_connection
       )
     )
+    Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
+      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+    }
     Text(
       stringResource(
         if (connectionViaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
         else R.string.you_will_be_connected_when_your_contacts_device_is_online
       ),
-      Modifier.padding(horizontal = DEFAULT_PADDING)
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
-    Row(Modifier.padding(vertical = DEFAULT_PADDING)) {
-      LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
-    }
-
     SectionView {
       if (!connReq.isNullOrEmpty() && connectionInitiated) {
         ShowQrButton(showQr)
@@ -144,6 +151,7 @@ private fun PreviewContactConnectionInfoView() {
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       connectionInitiated = true,
       connectionViaContactUri = true,
+      focusAlias = false,
       deleteConnection = {},
       onLocalAliasChanged = {},
       showQr = {},

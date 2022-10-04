@@ -66,7 +66,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
         click = {
           ModalManager.shared.showModalCloseable(true) { close ->
-            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, close)
+            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
           }
         },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
@@ -269,6 +269,16 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(R.string.set_contact_name),
+    Icons.Outlined.Edit,
+    onClick = {
+      ModalManager.shared.showModalCloseable(true) { close ->
+        ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+      }
+      showMenu.value = false
+    },
+  )
   ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,

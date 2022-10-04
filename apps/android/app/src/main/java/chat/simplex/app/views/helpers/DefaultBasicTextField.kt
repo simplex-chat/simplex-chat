@@ -45,8 +45,8 @@ fun DefaultBasicTextField(
 
   LaunchedEffect(Unit) {
     if (!focus) return@LaunchedEffect
-    focusRequester.requestFocus()
     delay(200)
+    focusRequester.requestFocus()
     keyboard?.show()
   }
   val enabled = true
