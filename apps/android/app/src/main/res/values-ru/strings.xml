@@ -309,7 +309,6 @@
 
     <!-- Connection info - ContactConnectionInfoView.kt -->
     <string name="show_QR_code">Показать QR код</string>
-    <string name="shared_one_time_link">Поделиться одноразовой ссылкой</string>
 
     <!-- Add Contact - AddContactView.kt -->
     <string name="invalid_QR_code">Неверный QR код</string>

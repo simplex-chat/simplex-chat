@@ -309,7 +309,6 @@
 
   <!-- Connection info - ContactConnectionInfoView.kt -->
   <string name="show_QR_code">Show QR code</string>
-  <string name="shared_one_time_link">Shared one-time link</string>
 
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Invalid QR code</string>

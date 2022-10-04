@@ -208,21 +208,21 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 }
 
 @Composable
-fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+fun LocalAliasEditor(initialValue: String, center: Boolean = true, updateValue: (String) -> Unit) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
-      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      Modifier.padding(horizontal = DEFAULT_PADDING).widthIn(min = 100.dp),
       value,
       {
         Text(
           generalGetString(R.string.text_field_set_contact_placeholder),
-          textAlign = TextAlign.Center,
+          textAlign = if (center) TextAlign.Center else TextAlign.Start,
           color = HighOrLowlight
         )
       },
       color = HighOrLowlight,
-      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
     ) {
       value = it

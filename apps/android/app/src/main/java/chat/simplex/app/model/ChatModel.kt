@@ -290,6 +290,7 @@ class ChatModel(val controller: ChatController) {
     if (connReqInv.value == null) return
     val info = getChat(id)?.chatInfo as? ChatInfo.ContactConnection ?: return
     if (info.contactConnection.connReqInv == connReqInv.value) {
+      connReqInv.value = null
       ModalManager.shared.closeModals()
     }
   }

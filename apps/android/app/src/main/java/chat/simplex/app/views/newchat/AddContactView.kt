@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +26,14 @@ import chat.simplex.app.views.helpers.*
 @Composable
 fun AddContactView(chatModel: ChatModel, connReqInvitation: String) {
   val cxt = LocalContext.current
+  LaunchedEffect(connReqInvitation) {
+    if (connReqInvitation.isNotEmpty()) {
+      chatModel.connReqInv.value = connReqInvitation
+    }
+  }
+  DisposableEffect(Unit) {
+    onDispose { chatModel.connReqInv.value = null }
+  }
   AddContactLayout(
     chatModelIncognito = chatModel.incognito.value,
     connReq = connReqInvitation,

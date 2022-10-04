@@ -22,6 +22,7 @@ import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.ContactConnectionInfoView
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
@@ -63,10 +64,11 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
-        click = { chat.chatInfo.contactConnection.connReqInv.let {
-            if (it == null) contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel)
-            else ModalManager.shared.showModalCloseable { close -> ContactConnectionInfoView(chatModel, it, chat.chatInfo.contactConnection, close) }
-        } },
+        click = {
+          ModalManager.shared.showModalCloseable(true) { close ->
+            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, close)
+          }
+        },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped
