@@ -1,13 +1,17 @@
 package chat.simplex.app.views.newchat
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -18,26 +22,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
-import chat.simplex.app.ui.theme.HighOrLowlight
-import chat.simplex.app.ui.theme.SimpleXTheme
-import chat.simplex.app.views.chatlist.ScaffoldController
+import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.generalGetString
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatCtrl: ScaffoldController) {
-  if (newChatCtrl.expanded.value) BackHandler { newChatCtrl.collapse() }
+fun NewChatSheet(chatModel: ChatModel, newChatDialogOpen: Boolean, closeNewChatDialog: () -> Unit) {
+  if (newChatDialogOpen) BackHandler { closeNewChatDialog() }
   NewChatSheetLayout(
     addContact = {
-      newChatCtrl.collapse()
+      closeNewChatDialog()
       ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
-      newChatCtrl.collapse()
+      closeNewChatDialog()
       ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
-      newChatCtrl.collapse()
+      closeNewChatDialog()
       ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
     }
   )
@@ -49,73 +50,40 @@ fun NewChatSheetLayout(
   connectViaLink: () -> Unit,
   createGroup: () -> Unit
 ) {
-  Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(
-      stringResource(R.string.add_contact_or_create_group),
-      modifier = Modifier.padding(horizontal = 4.dp).padding(top = 20.dp, bottom = 20.dp),
-      style = MaterialTheme.typography.body2
+  val actions = remember { listOf(addContact, connectViaLink, createGroup) }
+  val titles = remember { listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group) }
+  val icons = remember { listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group) }
+  AnimatedVisibility(
+    visible = true,
+    enter = slideInHorizontally(
+      initialOffsetX = { -it },
+      animationSpec = TweenSpec(2000, 0, FastOutLinearInEasing)
     )
-    val boxModifier = Modifier.fillMaxWidth().height(80.dp).padding(horizontal = 0.dp)
-    Divider(Modifier.padding(horizontal = 8.dp))
-    Box(boxModifier) {
-      ActionRowButton(
-        stringResource(R.string.share_one_time_link),
-        stringResource(R.string.to_share_with_your_contact),
-        Icons.Outlined.AddLink,
-        click = addContact
-      )
-    }
-    Divider(Modifier.padding(horizontal = 8.dp))
-    Box(boxModifier) {
-      ActionRowButton(
-        stringResource(R.string.connect_via_link_or_qr),
-        stringResource(R.string.connect_via_link_or_qr_from_clipboard_or_in_person),
-        Icons.Outlined.QrCode,
-        click = connectViaLink
-      )
-    }
-    Divider(Modifier.padding(horizontal = 8.dp))
-    Box(boxModifier) {
-      ActionRowButton(
-        stringResource(R.string.create_group),
-        stringResource(R.string.only_stored_on_members_devices),
-        icon = Icons.Outlined.Group,
-        click = createGroup
-      )
+  ) {
+  LazyColumn {
+    items(3) { index ->
+      Row(Modifier) {
+        Spacer(Modifier.weight(1f))
+        TextButton(
+          actions[index],
+          shape = RoundedCornerShape(20.dp),
+          colors = ButtonDefaults.textButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f))
+        ) {
+          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
+        }
+        Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+        FloatingActionButton(
+          actions[index],
+          Modifier.size(48.dp),
+          backgroundColor = if (isInDarkTheme()) LightColorPalette.onBackground else DarkColorPalette.onBackground,
+        ) {
+          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = MaterialTheme.colors.primary)
+        }
+        Spacer(Modifier.width(20.dp))
+      }
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     }
   }
-}
-
-@Composable
-fun ActionRowButton(
-  text: String, comment: String? = null, icon: ImageVector, disabled: Boolean = false,
-  click: () -> Unit = {}
-) {
-  Surface(Modifier.fillMaxSize()) {
-    Row(
-      Modifier.clickable(onClick = click).size(48.dp).padding(8.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Icon(icon, text, tint = tint, modifier = Modifier.size(48.dp).padding(start = 4.dp, end = 16.dp))
-
-      Column {
-        Text(
-          text,
-          textAlign = TextAlign.Left,
-          fontWeight = FontWeight.Bold,
-          color = tint
-        )
-
-        if (comment != null) {
-          Text(
-            comment,
-            textAlign = TextAlign.Left,
-            style = MaterialTheme.typography.body2
-          )
-        }
-      }
-    }
   }
 }
 
