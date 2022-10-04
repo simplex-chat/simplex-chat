@@ -1,5 +1,7 @@
 package chat.simplex.app.views.helpers
 
+import android.R.attr.factor
+import android.R.color
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.*
@@ -428,6 +430,9 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
   }
   return fileCount to bytes
 }
+
+fun Color.darker(factor: Float = 0.1f): Color =
+  Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)
 
 fun ByteArray.toBase64String() = Base64.encodeToString(this, Base64.DEFAULT)
 

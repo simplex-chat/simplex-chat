@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,17 +68,18 @@ fun NewChatSheetLayout(
         TextButton(
           actions[index],
           shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.textButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f))
+          colors = ButtonDefaults.textButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.4f))
         ) {
-          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING_HALF))
+          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING_HALF), color = Color.White)
         }
         Spacer(Modifier.width(DEFAULT_PADDING_HALF))
         FloatingActionButton(
           actions[index],
           Modifier.size(48.dp),
-          backgroundColor = if (isInDarkTheme()) LightColorPalette.onBackground else DarkColorPalette.onBackground,
+          backgroundColor = MaterialTheme.colors.primary,
+          elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
         ) {
-          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = MaterialTheme.colors.primary)
+          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = Color.White)
         }
         Spacer(Modifier.width(20.dp))
       }
