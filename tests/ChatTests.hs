@@ -65,7 +65,7 @@ chatTests = do
   describe "user profiles" $ do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
-  fdescribe "sending and receiving files" $ do
+  describe "sending and receiving files" $ do
     it "send and receive file" testFileTransfer
     it "send and receive a small file" testSmallFileTransfer
     it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
