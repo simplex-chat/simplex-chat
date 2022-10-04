@@ -39,7 +39,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time (addUTCTime)
+import Data.Time (NominalDiffTime, addUTCTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
@@ -449,7 +449,7 @@ processChatCommand = \case
       deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> m ()
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
-          let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
+          let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
           deleteFile user fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
@@ -1125,17 +1125,18 @@ setExpireCIs b = do
   atomically $ writeTVar expire b
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
-deleteFile user CIFileInfo {filePath, fileId, fileStatus = (AFS dir status)} =
+deleteFile user CIFileInfo {filePath, fileId, fileStatus} =
   cancel' >> delete
   where
-    cancel' = unless (ciFileEnded status) $
-      case dir of
-        SMDSnd -> do
-          (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
-          unless cancelled $ cancelSndFile user ftm fts
-        SMDRcv -> do
-          ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-          unless cancelled $ cancelRcvFileTransfer user ft
+    cancel' = forM_ fileStatus $ \(AFS dir status) ->
+      unless (ciFileEnded status) $
+        case dir of
+          SMDSnd -> do
+            (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
+            unless cancelled $ cancelSndFile user ftm fts
+          SMDRcv -> do
+            ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
+            unless cancelled $ cancelRcvFileTransfer user ft
     delete = withFilesFolder $ \filesFolder ->
       forM_ filePath $ \fPath -> do
         let fsFilePath = filesFolder <> "/" <> fPath
@@ -1401,18 +1402,66 @@ subscribeUserConnections agentBatchSubscribe user = do
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
-expireChatItems user ttl sync = do
+expireChatItems user@User {userId} ttl sync = do
   currentTs <- liftIO getCurrentTime
+  liftIO . print $ "expiration start: " <> show currentTs
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
+      -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+      createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+  chats <- withStore' $ \db -> getChatsList db user
   expire <- asks expireCIs
-  filesInfo <- withStore' $ \db -> getExpiredFileInfo db user expirationDate
-  loop filesInfo expirationDate expire
+  chatsLoop chats expirationDate createdAtCutoff expire
+  currentTs2 <- liftIO getCurrentTime
+  liftIO . print $ "expiration start: " <> show currentTs2
   where
-    loop :: [CIFileInfo] -> UTCTime -> TVar Bool -> m ()
-    loop [] expirationDate expire = continue expire $ withStore' (\db -> deleteExpiredCIs db user expirationDate)
-    loop (fileInfo : filesInfo) expirationDate expire = continue expire $ do
-      deleteFile user fileInfo
-      loop filesInfo expirationDate expire
+    chatsLoop :: [ChatRef] -> UTCTime -> UTCTime -> TVar Bool -> m ()
+    chatsLoop [] _ _ _ = pure ()
+    chatsLoop (cRef@(ChatRef cType chatId) : chats) expirationDate createdAtCutoff expire = continue expire $ do
+      currentTs3 <- liftIO getCurrentTime
+      liftIO . print $ show cRef <> ": " <> show currentTs3
+      case cType of
+        CTDirect ->
+          withStore' (\db -> runExceptT $ getContact db userId chatId) >>= \case
+            Right ct -> do
+              filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+              maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+              currentTs4 <- liftIO getCurrentTime
+              liftIO . print $ "deleting files: " <> show currentTs4
+              forM_ filesInfo $ \fileInfo -> do
+                liftIO . print $ "deleteFile" <> show (filePath (fileInfo :: CIFileInfo))
+                deleteFile user fileInfo
+              currentTs5 <- liftIO getCurrentTime
+              liftIO . print $ "deleteContactExpiredCIs: " <> show currentTs5
+              withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+              currentTs6 <- liftIO getCurrentTime
+              liftIO . print $ "after deleteContactExpiredCIs: " <> show currentTs6
+              ciCount_ <- withStore' $ \db -> getContactCICount db user ct
+              case (maxItemTs_, ciCount_) of
+                (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateContactTs db user ct ts)
+                _ -> pure ()
+            _ -> pure ()
+        CTGroup ->
+          withStore' (\db -> runExceptT $ getGroupInfo db user chatId) >>= \case
+            Right gInfo -> do
+              filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+              maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+              currentTs4 <- liftIO getCurrentTime
+              liftIO . print $ "deleting files: " <> show currentTs4
+              forM_ filesInfo $ \fileInfo -> do
+                liftIO . print $ "deleteFile" <> show (filePath (fileInfo :: CIFileInfo))
+                deleteFile user fileInfo
+              currentTs5 <- liftIO getCurrentTime
+              liftIO . print $ "deleteGroupExpiredCIs: " <> show currentTs5
+              withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+              currentTs6 <- liftIO getCurrentTime
+              liftIO . print $ "after deleteGroupExpiredCIs: " <> show currentTs6
+              ciCount_ <- withStore' $ \db -> getGroupCICount db user gInfo
+              case (maxItemTs_, ciCount_) of
+                (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateGroupTs db user gInfo ts)
+                _ -> pure ()
+            _ -> pure ()
+        _ -> pure ()
+      chatsLoop chats expirationDate createdAtCutoff expire
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
