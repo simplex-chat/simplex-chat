@@ -818,7 +818,7 @@
       </trans-unit>
       <trans-unit id="Delete messages after" xml:space="preserve">
         <source>Delete messages after</source>
-        <target>Удалить сообщения через</target>
+        <target>Удалять сообщения через</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete old database" xml:space="preserve">
