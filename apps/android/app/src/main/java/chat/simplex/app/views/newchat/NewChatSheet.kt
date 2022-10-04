@@ -67,19 +67,17 @@ fun NewChatSheetLayout(
         Spacer(Modifier.weight(1f))
         TextButton(
           actions[index],
-          shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.textButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.4f))
         ) {
-          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING_HALF), color = Color.White)
+          Text(stringResource(titles[index]), color = Color.White)
         }
         Spacer(Modifier.width(DEFAULT_PADDING))
         FloatingActionButton(
           actions[index],
           Modifier.size(48.dp),
-          backgroundColor = MaterialTheme.colors.primary,
+          backgroundColor = if (isInDarkTheme()) LightColorPalette.onBackground else DarkColorPalette.onBackground,
           elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
         ) {
-          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = Color.White)
+          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = MaterialTheme.colors.primary)
         }
         Spacer(Modifier.width(20.dp))
       }
