@@ -70,7 +70,7 @@ fun NewChatSheetLayout(
           shape = RoundedCornerShape(20.dp),
           colors = ButtonDefaults.textButtonColors(backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.4f))
         ) {
-          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING), color = Color.White)
+          Text(stringResource(titles[index]), Modifier.padding(horizontal = DEFAULT_PADDING_HALF), color = Color.White)
         }
         Spacer(Modifier.width(DEFAULT_PADDING))
         FloatingActionButton(
