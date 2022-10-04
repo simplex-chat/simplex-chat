@@ -68,7 +68,7 @@ fun NewChatSheetLayout(
         TextButton(
           actions[index],
           shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.textButtonColors(backgroundColor = Color.White)
+          colors = ButtonDefaults.textButtonColors(backgroundColor = if (isInDarkTheme()) Color.Black else Color.White)
         ) {
           Text(
             stringResource(titles[index]),
@@ -77,7 +77,7 @@ fun NewChatSheetLayout(
             fontWeight = FontWeight.Medium,
           )
         }
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(DEFAULT_PADDING_HALF))
         FloatingActionButton(
           actions[index],
           Modifier.size(48.dp),

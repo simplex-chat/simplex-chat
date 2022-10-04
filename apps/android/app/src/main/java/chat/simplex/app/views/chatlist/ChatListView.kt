@@ -88,7 +88,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       Modifier
         .fillMaxSize()
         .clickable(remember { MutableInteractionSource() }, indication = null) { showNewChatDialog = false },
-      color = MaterialTheme.colors.background.darker(if (isInDarkTheme()) 0.2f else 0.2f).copy(ContentAlpha.high),
+      color = DrawerDefaults.scrimColor,
     ) {
       Column(
         verticalArrangement = Arrangement.Bottom,
