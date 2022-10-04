@@ -61,6 +61,7 @@ fun NewChatSheetLayout(
             colors = ButtonDefaults.textButtonColors(
               backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary.copy(0.1f) else MaterialTheme.colors.background
             ),
+            elevation = ButtonDefaults.elevation(defaultElevation = 0.dp),
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
             modifier = Modifier.height(42.dp)
           ) {
