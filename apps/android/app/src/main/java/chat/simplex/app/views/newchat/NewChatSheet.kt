@@ -63,28 +63,30 @@ fun NewChatSheetLayout(
   ) {
   LazyColumn {
     items(3) { index ->
-      Row(Modifier) {
+      Row {
         Spacer(Modifier.weight(1f))
-        TextButton(
-          actions[index],
-          shape = RoundedCornerShape(20.dp),
-          colors = ButtonDefaults.textButtonColors(backgroundColor = if (isInDarkTheme()) Color.Black else Color.White)
-        ) {
-          Text(
-            stringResource(titles[index]),
-            Modifier.padding(horizontal = DEFAULT_PADDING_HALF),
-            color = MaterialTheme.colors.primary,
-            fontWeight = FontWeight.Medium,
-          )
-        }
-        Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-        FloatingActionButton(
-          actions[index],
-          Modifier.size(48.dp),
-          backgroundColor = if (isInDarkTheme()) Color.Black else Color.White,
-          elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
-        ) {
-          Icon(icons[index], stringResource(R.string.share_one_time_link), tint = MaterialTheme.colors.primary)
+        Box(contentAlignment = Alignment.CenterEnd) {
+          TextButton(
+            actions[index],
+            shape = RoundedCornerShape(21.dp),
+            colors = ButtonDefaults.textButtonColors(backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.background),
+            modifier = Modifier.height(42.dp)
+          ) {
+            Text(
+              stringResource(titles[index]),
+              Modifier.padding(start = DEFAULT_PADDING_HALF, end = 42.dp),
+              color = if (isInDarkTheme()) Color.White else MaterialTheme.colors.primary,
+              fontWeight = FontWeight.Medium,
+            )
+          }
+          FloatingActionButton(
+            actions[index],
+            Modifier.size(42.dp).padding(end = 10.dp),
+            backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.background,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp)
+          ) {
+            Icon(icons[index], stringResource(R.string.share_one_time_link), tint = if (isInDarkTheme()) Color.White else MaterialTheme.colors.primary)
+          }
         }
         Spacer(Modifier.width(20.dp))
       }
