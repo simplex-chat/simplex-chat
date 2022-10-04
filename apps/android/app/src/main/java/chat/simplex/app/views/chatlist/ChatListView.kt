@@ -76,7 +76,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
         } else {
-          if (!stopped) {
+          if (!stopped && !showNewChatDialog) {
             OnboardingButtons { showNewChatDialog = true }
           }
         }
@@ -119,15 +119,15 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 @Composable
 private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
   Box {
-    Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
+    Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
       val uriHandler = LocalUriHandler.current
       ConnectButton(generalGetString(R.string.chat_with_developers)) {
         uriHandler.openUri(simplexTeamUri)
       }
-      Spacer(Modifier.height(10.dp))
+      Spacer(Modifier.height(DEFAULT_PADDING))
       ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatDialog)
       val color = MaterialTheme.colors.primary
-      Canvas(modifier = Modifier.width(46.dp).height(10.dp), onDraw = {
+      Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
         val trianglePath = Path().apply {
           moveTo(0.dp.toPx(), 0f)
           lineTo(16.dp.toPx(), 0.dp.toPx())
@@ -139,7 +139,7 @@ private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
           path = trianglePath
         )
       })
-      Spacer(Modifier.height(80.dp))
+      Spacer(Modifier.height(62.dp))
     }
     Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
   }
@@ -147,12 +147,14 @@ private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
 
 @Composable
 private fun ConnectButton(text: String, onClick: () -> Unit) {
-  Box(
-    Modifier
-      .clip(RoundedCornerShape(16.dp))
-      .background(MaterialTheme.colors.primary)
-      .clickable { onClick() }
-      .padding(vertical = 10.dp, horizontal = 20.dp),
+  Button(onClick,
+    shape = RoundedCornerShape(21.dp),
+    colors = ButtonDefaults.textButtonColors(
+      backgroundColor = MaterialTheme.colors.primary
+    ),
+    elevation = ButtonDefaults.elevation(defaultElevation = 0.dp),
+    contentPadding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+    modifier = Modifier.height(42.dp)
   ) {
     Text(text, color = Color.White)
   }
