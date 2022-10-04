@@ -3,7 +3,6 @@ package chat.simplex.app.views.newchat
 import SectionDivider
 import SectionView
 import android.content.res.Configuration
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -55,7 +54,7 @@ fun ContactConnectionInfoView(chatModel: ChatModel, connReqInvitation: String?, 
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactView(chatModel, connReqInvitation ?: return@showModal)
+          AddContactView(chatModel, connReqInvitation ?: return@showModal, contactConnection.incognito)
         }
       }
     }
@@ -72,33 +71,31 @@ private fun ContactConnectionInfoLayout(
   onLocalAliasChanged: (String) -> Unit,
   showQr: () -> Unit,
 ) {
-  BoxWithConstraints {
-    Column(
-      Modifier
-        .verticalScroll(rememberScrollState()),
-    ) {
-      AppBarTitle(
-        stringResource(
-          if (connectionInitiated) R.string.you_invited_your_contact
-          else R.string.you_accepted_connection
-        )
+  Column(
+    Modifier
+      .verticalScroll(rememberScrollState()),
+  ) {
+    AppBarTitle(
+      stringResource(
+        if (connectionInitiated) R.string.you_invited_your_contact
+        else R.string.you_accepted_connection
       )
-      Text(
-        stringResource(
-          if (connectionViaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
-          else R.string.you_will_be_connected_when_your_contacts_device_is_online
-        ),
-        Modifier.padding(horizontal = DEFAULT_PADDING)
-      )
-      LocalAliasEditor(localAlias, center = false, updateValue = onLocalAliasChanged)
+    )
+    Text(
+      stringResource(
+        if (connectionViaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
+        else R.string.you_will_be_connected_when_your_contacts_device_is_online
+      ),
+      Modifier.padding(horizontal = DEFAULT_PADDING)
+    )
+    LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
 
-      SectionView {
-        if (!connReq.isNullOrEmpty() && connectionInitiated) {
-          ShowQrButton(showQr)
-          SectionDivider()
-        }
-        DeleteButton(deleteConnection)
+    SectionView {
+      if (!connReq.isNullOrEmpty() && connectionInitiated) {
+        ShowQrButton(showQr)
+        SectionDivider()
       }
+      DeleteButton(deleteConnection)
     }
   }
 }

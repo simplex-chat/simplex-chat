@@ -208,11 +208,11 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 }
 
 @Composable
-fun LocalAliasEditor(initialValue: String, center: Boolean = true, updateValue: (String) -> Unit) {
+fun LocalAliasEditor(initialValue: String, center: Boolean = true, leadingIcon: Boolean = false, updateValue: (String) -> Unit) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
   Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
-      Modifier.padding(horizontal = DEFAULT_PADDING).widthIn(min = 100.dp),
+      Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp),
       value,
       {
         Text(
@@ -221,6 +221,7 @@ fun LocalAliasEditor(initialValue: String, center: Boolean = true, updateValue: 
           color = HighOrLowlight
         )
       },
+      leadingIcon = if (leadingIcon) {{ Icon(Icons.Default.Edit, null) }} else null,
       color = HighOrLowlight,
       textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
