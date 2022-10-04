@@ -25,22 +25,30 @@ These permissions are not taken into account for group memberships, instead grou
 
 Protocol:
 
-Broadcast user default permissions in the same way as profile updates by adding `permissions` property to the user profile - it will be sent as part of `x.info` message.
+Broadcast user settings and preferences in the same way as profile updates by adding `preferences` property alongside `profile` property - it will be sent as part of `x.info` message.
 
 For groups these are also added to group profile and sent via `x.grp.info` message.
 
-`permissions` property is a dictionary with boolean or number values - clients must ignore unknown values.
+`preferences` property is a dictionary with boolean or number values - clients must ignore unknown values.
 
-Current schema for `permissions` member of user profile is:
+Current schema for `preferences` member:
 
 ```json
 {
+  "definitions": {
+    "enabled": {
+      "properties": {
+        "enable": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  },
   "properties": {
-    "voice": {"type": "boolean"},
-    "image": {"type": "boolean"},
-    "file": {"type": "boolean"},
-    "delete": {"type": "boolean"},
-    "edit": {"type": "boolean"}
+    "voice": { "ref": "enabled" },
+    "image": { "ref": "enabled" },
+    "file": { "ref": "enabled" },
+    "delete": { "ref": "enabled" },
+    "edit": { "ref": "enabled" }
   },
   "additionalProperties": true
 }
@@ -51,13 +59,13 @@ Every time user updates the settings and update profile should be sent to affect
 Database schema:
 
 ```sql
-ALTER TABLE contact_profiles ADD COLUMN permissions TEXT CHECK (permissions NOT NULL);
-UPDATE contact_profiles SET permissions = '{}';
+ALTER TABLE users ADD COLUMN preferences TEXT DEFAULT '{}' CHECK (preferences NOT NULL);
+UPDATE users SET preferences = '{}';
 
-ALTER TABLE group_profiles ADD COLUMN permissions TEXT CHECK (permissions NOT NULL);
-UPDATE group_profiles SET permissions = '{}';
+ALTER TABLE group_profiles ADD COLUMN preferences TEXT DEFAULT '{}'CHECK (preferences NOT NULL);
+UPDATE group_profiles SET preferences = '{}';
 
-ALTER TABLE contacts ADD COLUMN permissions TEXT NULL;
+ALTER TABLE contacts ADD COLUMN user_preferences TEXT NULL;
+ALTER TABLE contacts ADD COLUMN preferences TEXT DEFAULT '{}'CHECK (preferences NOT NULL);
+UPDATE contacts SET preferences = '{}';
 ```
-
-An alternative option is to start storing the whole profile in the existing properties field - that would better allow for forward compatibility in case some other property is added.
