@@ -45,7 +45,7 @@ fun DefaultBasicTextField(
 
   LaunchedEffect(Unit) {
     if (!focus) return@LaunchedEffect
-    delay(200)
+    delay(300)
     focusRequester.requestFocus()
     keyboard?.show()
   }
