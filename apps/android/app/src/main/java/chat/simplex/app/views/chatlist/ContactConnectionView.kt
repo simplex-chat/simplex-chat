@@ -19,16 +19,7 @@ import chat.simplex.app.views.helpers.ProfileImage
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
     Box(Modifier.size(72.dp), contentAlignment = Alignment.Center) {
-      ProfileImage(
-        size = 54.dp,
-        null,
-        if (contactConnection.initiated) Icons.Outlined.QrCode else Icons.Outlined.Link,
-        color = if (contactConnection.connReqInv == null)
-          MaterialTheme.colors.secondary
-        else if (contactConnection.incognito)
-          Indigo else
-          MaterialTheme.colors.primary
-      )
+      ProfileImage(size = 54.dp, null, if (contactConnection.initiated) Icons.Outlined.AddLink else Icons.Outlined.Link)
     }
     Column(
       modifier = Modifier

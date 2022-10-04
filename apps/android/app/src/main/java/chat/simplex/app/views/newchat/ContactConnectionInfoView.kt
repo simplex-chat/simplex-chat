@@ -27,7 +27,6 @@ fun ContactConnectionInfoView(
   chatModel: ChatModel,
   connReqInvitation: String?,
   contactConnection: PendingContactConnection,
-  focusAlias: Boolean,
   close: () -> Unit
 ) {
   /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv]. It will be managed by [AddContactView] itself
@@ -49,7 +48,7 @@ fun ContactConnectionInfoView(
     contactConnection.localAlias,
     contactConnection.initiated,
     contactConnection.viaContactUri,
-    focusAlias,
+    contactConnection.incognito,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     showQr = {
@@ -74,7 +73,7 @@ private fun ContactConnectionInfoLayout(
   localAlias: String,
   connectionInitiated: Boolean,
   connectionViaContactUri: Boolean,
-  focusAlias: Boolean,
+  connectionIncognito: Boolean,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   showQr: () -> Unit,
@@ -90,7 +89,7 @@ private fun ContactConnectionInfoLayout(
       )
     )
     Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
-      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
+      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = true, updateValue = onLocalAliasChanged)
     }
     Text(
       stringResource(
@@ -101,7 +100,7 @@ private fun ContactConnectionInfoLayout(
     )
     SectionView {
       if (!connReq.isNullOrEmpty() && connectionInitiated) {
-        ShowQrButton(showQr)
+        ShowQrButton(connectionIncognito, showQr)
         SectionDivider()
       }
       DeleteButton(deleteConnection)
@@ -110,13 +109,13 @@ private fun ContactConnectionInfoLayout(
 }
 
 @Composable
-fun ShowQrButton(onClick: () -> Unit) {
+fun ShowQrButton(incognito: Boolean, onClick: () -> Unit) {
   SettingsActionItem(
     Icons.Outlined.QrCode,
     stringResource(R.string.show_QR_code),
     click = onClick,
-    textColor = MaterialTheme.colors.primary,
-    iconColor = MaterialTheme.colors.primary,
+    textColor = if (incognito) Indigo else MaterialTheme.colors.primary,
+    iconColor = if (incognito) Indigo else MaterialTheme.colors.primary,
   )
 }
 
@@ -151,7 +150,7 @@ private fun PreviewContactConnectionInfoView() {
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       connectionInitiated = true,
       connectionViaContactUri = true,
-      focusAlias = false,
+      connectionIncognito = false,
       deleteConnection = {},
       onLocalAliasChanged = {},
       showQr = {},

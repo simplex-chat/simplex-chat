@@ -904,7 +904,8 @@ class PendingContactConnection(
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
     val initiated = pccConnStatus.initiated
-    return if (initiated == null) {
+    val aliasText = if (localAlias.isNotEmpty()) "$localAlias: " else ""
+    return aliasText + if (initiated == null) {
       // this should not be in the chat list
       generalGetString(R.string.display_name_connection_established)
     } else {
