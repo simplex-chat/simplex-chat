@@ -23,12 +23,6 @@
 "!1 colored!" = "!1 farbig!";
 
 /* No comment provided by engineer. */
-". All group members will be notified." = "*** . All group members will be notified.";
-
-/* No comment provided by engineer. */
-". The member will receive a new invitation." = "*** . The member will receive a new invitation.";
-
-/* No comment provided by engineer. */
 "(" = "(";
 
 /* No comment provided by engineer. */
@@ -1063,7 +1057,10 @@
 "member connected" = "verbunden";
 
 /* No comment provided by engineer. */
-"Member role will be changed to " = "*** Member role will be changed to ";
+"Member role will be changed to \"%@\". All group members will be notified." = "*** Member role will be changed to \"%@\". All group members will be notified.";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "*** Member role will be changed to \"%@\". The member will receive a new invitation.";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt - dies kann nicht rückgängig gemacht werden!";

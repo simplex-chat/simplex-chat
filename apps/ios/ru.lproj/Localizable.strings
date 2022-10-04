@@ -23,12 +23,6 @@
 "!1 colored!" = "!1 цвет!";
 
 /* No comment provided by engineer. */
-". All group members will be notified." = ". Все члены группы получат сообщение.";
-
-/* No comment provided by engineer. */
-". The member will receive a new invitation." = ". Член группы получит новое приглашение.";
-
-/* No comment provided by engineer. */
 "(" = "(";
 
 /* No comment provided by engineer. */
@@ -128,7 +122,7 @@
 "1 month" = "1 месяц";
 
 /* No comment provided by engineer. */
-"1 week" = "1 неделя";
+"1 week" = "1 неделю";
 
 /* No comment provided by engineer. */
 "6" = "6";
@@ -570,7 +564,7 @@
 "Delete messages" = "Удалить сообщения";
 
 /* No comment provided by engineer. */
-"Delete messages after" = "Удалить сообщения через";
+"Delete messages after" = "Удалять сообщения через";
 
 /* No comment provided by engineer. */
 "Delete old database" = "Удалить предыдущую версию данных";
@@ -1063,7 +1057,10 @@
 "member connected" = "соединен(а)";
 
 /* No comment provided by engineer. */
-"Member role will be changed to " = "Роль члена группы будет изменена на ";
+"Member role will be changed to \"%@\". All group members will be notified." = "Роль члена группы будет изменена на \"%@\". Все члены группы получат сообщение.";
+
+/* No comment provided by engineer. */
+"Member role will be changed to \"%@\". The member will receive a new invitation." = "Роль члена группы будет изменена на \"%@\". Будет отправлено новое приглашение.";
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Член группы будет удален - это действие нельзя отменить!";
