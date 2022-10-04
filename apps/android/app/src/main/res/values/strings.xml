@@ -271,6 +271,7 @@
   <string name="delete_contact_menu_action">Delete</string>
   <string name="delete_group_menu_action">Delete</string>
   <string name="mark_read">Mark read</string>
+  <string name="set_contact_name">Set contact name</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Mute</string>
@@ -307,6 +308,9 @@
   <string name="icon_descr_email">Email</string>
   <string name="icon_descr_more_button">More</string>
 
+  <!-- Connection info - ContactConnectionInfoView.kt -->
+  <string name="show_QR_code">Show QR code</string>
+
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Invalid QR code</string>
   <string name="this_QR_code_is_not_a_link">This QR code is not a link!</string>
@@ -315,7 +319,7 @@
   <string name="connection_request_sent">Connection request sent!</string>
   <string name="you_will_be_connected_when_your_connection_request_is_accepted">You will be connected when your connection request is accepted, please wait or check later!</string>
   <string name="you_will_be_connected_when_your_contacts_device_is_online">You will be connected when your contact\'s device is online, please wait or check later!</string>
-  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan it from the app.</string>
+  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Your contact can scan QR code from the app.</string>
   <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">If you can\'t meet in person, <b>show QR code in the video call</b>, or share the link.</string>
   <string name="your_chat_profile_will_be_sent_to_your_contact">Your chat profile will be sent\nto your contact</string>
   <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">If you cannot meet in person, you can <b>scan QR code in the video call</b>, or your contact can share an invitation link.</string>

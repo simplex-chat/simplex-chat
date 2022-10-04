@@ -9,7 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,17 +24,25 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun AddContactView(chatModel: ChatModel, connReqInvitation: String) {
+fun AddContactView(chatModel: ChatModel, connReqInvitation: String, connIncognito: Boolean) {
   val cxt = LocalContext.current
+  LaunchedEffect(connReqInvitation) {
+    if (connReqInvitation.isNotEmpty()) {
+      chatModel.connReqInv.value = connReqInvitation
+    }
+  }
+  DisposableEffect(Unit) {
+    onDispose { chatModel.connReqInv.value = null }
+  }
   AddContactLayout(
-    chatModelIncognito = chatModel.incognito.value,
     connReq = connReqInvitation,
+    connIncognito = connIncognito,
     share = { shareText(cxt, connReqInvitation) }
   )
 }
 
 @Composable
-fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> Unit) {
+fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit) {
   BoxWithConstraints {
     val screenHeight = maxHeight
     Column(
@@ -49,7 +57,7 @@ fun AddContactLayout(chatModelIncognito: Boolean, connReq: String, share: () -> 
       )
       Row {
         InfoAboutIncognito(
-          chatModelIncognito,
+          connIncognito,
           true,
           generalGetString(R.string.incognito_random_profile_description),
           generalGetString(R.string.your_profile_will_be_sent)
@@ -132,8 +140,8 @@ fun InfoAboutIncognito(chatModelIncognito: Boolean, supportedIncognito: Boolean 
 fun PreviewAddContactView() {
   SimpleXTheme {
     AddContactLayout(
-      chatModelIncognito = false,
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
+      connIncognito = false,
       share = {}
     )
   }

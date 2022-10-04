@@ -208,21 +208,33 @@ fun ChatInfoHeader(cInfo: ChatInfo, contact: Contact) {
 }
 
 @Composable
-private fun LocalAliasEditor(initialValue: String, updateValue: (String) -> Unit) {
+fun LocalAliasEditor(
+  initialValue: String,
+  center: Boolean = true,
+  leadingIcon: Boolean = false,
+  focus: Boolean = false,
+  updateValue: (String) -> Unit
+) {
   var value by rememberSaveable { mutableStateOf(initialValue) }
-  Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+  val modifier = if (center)
+    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).widthIn(min = 100.dp)
+  else
+    Modifier.padding(horizontal = if (!leadingIcon) DEFAULT_PADDING else 0.dp).fillMaxWidth()
+  Row(Modifier.fillMaxWidth(), horizontalArrangement = if (center) Arrangement.Center else Arrangement.Start) {
     DefaultBasicTextField(
-      Modifier.padding(horizontal = 10.dp).widthIn(min = 100.dp),
+      modifier,
       value,
       {
         Text(
           generalGetString(R.string.text_field_set_contact_placeholder),
-          textAlign = TextAlign.Center,
+          textAlign = if (center) TextAlign.Center else TextAlign.Start,
           color = HighOrLowlight
         )
       },
+      leadingIcon = if (leadingIcon) {{ Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }} else null,
       color = HighOrLowlight,
-      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty()) TextAlign.Start else TextAlign.Center),
+      focus = focus,
+      textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })
     ) {
       value = it

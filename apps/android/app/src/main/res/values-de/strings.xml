@@ -271,6 +271,7 @@
   <string name="delete_contact_menu_action">Kontakt löschen</string>
   <string name="delete_group_menu_action">Gruppe löschen</string>
   <string name="mark_read">Als gelesen markieren</string>
+  <string name="set_contact_name">Set contact name</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Stummschalten</string>
@@ -306,6 +307,9 @@
   <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> Logo</string>
   <string name="icon_descr_email">E-Mail</string>
   <string name="icon_descr_more_button">Mehr</string>
+
+  <!-- Connection info - ContactConnectionInfoView.kt -->
+  <string name="show_QR_code">Show QR code</string>
 
   <!-- Add Contact - AddContactView.kt -->
   <string name="invalid_QR_code">Ungültiger QR-Code</string>

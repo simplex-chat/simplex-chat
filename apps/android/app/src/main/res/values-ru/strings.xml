@@ -271,6 +271,7 @@
     <string name="delete_contact_menu_action">Удалить</string>
     <string name="delete_group_menu_action">Удалить</string>
     <string name="mark_read">Прочитано</string>
+    <string name="set_contact_name">Имя контакта</string>
 
     <!-- Actions - ChatListNavLinkView.kt -->
     <string name="mute_chat">Без звука</string>
@@ -306,6 +307,9 @@
     <string name="image_descr_simplex_logo"><xliff:g id="appName">SimpleX</xliff:g> логотип</string>
     <string name="icon_descr_email">Email</string>
     <string name="icon_descr_more_button">Больше</string>
+
+    <!-- Connection info - ContactConnectionInfoView.kt -->
+    <string name="show_QR_code">Показать QR код</string>
 
     <!-- Add Contact - AddContactView.kt -->
     <string name="invalid_QR_code">Неверный QR код</string>
