@@ -221,7 +221,7 @@ fun LocalAliasEditor(initialValue: String, center: Boolean = true, leadingIcon: 
           color = HighOrLowlight
         )
       },
-      leadingIcon = if (leadingIcon) {{ Icon(Icons.Default.Edit, null) }} else null,
+      leadingIcon = if (leadingIcon) {{ Icon(Icons.Default.Edit, null, Modifier.padding(start = 7.dp)) }} else null,
       color = HighOrLowlight,
       textStyle = TextStyle.Default.copy(textAlign = if (value.isEmpty() || !center) TextAlign.Start else TextAlign.Center),
       keyboardActions = KeyboardActions(onDone = { updateValue(value) })

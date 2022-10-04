@@ -88,7 +88,9 @@ private fun ContactConnectionInfoLayout(
       ),
       Modifier.padding(horizontal = DEFAULT_PADDING)
     )
-    LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
+    Row(Modifier.padding(vertical = DEFAULT_PADDING)) {
+      LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
+    }
 
     SectionView {
       if (!connReq.isNullOrEmpty() && connectionInitiated) {
