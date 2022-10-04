@@ -993,9 +993,7 @@ processChatCommand = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> pure $ CRVersionInfo versionNumber
   where
-    withChatLock action = do
-      ChatController {chatLock = l, smpAgent = a} <- ask
-      withAgentLock a . withLock l $ action
+    withChatLock action = asks chatLock >>= (`withLock` action)
     -- below code would make command responses asynchronous where they can be slow
     -- in View.hs `r'` should be defined as `id` in this case
     -- procCmd :: m ChatResponse -> m ChatResponse
@@ -1377,10 +1375,8 @@ subscribeUserConnections agentBatchSubscribe user = do
         void . forkIO $ do
           threadDelay 1000000
           l <- asks chatLock
-          a <- asks smpAgent
-          when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) $
-            withAgentLock a . withLock l $
-              sendFileChunk user ft
+          when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withLock l $
+            sendFileChunk user ft
     rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> m ()
     rcvFileSubsToView rs = mapM_ (toView . uncurry CRRcvFileSubError) . filterErrors . resultsFor rs
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> m ()
