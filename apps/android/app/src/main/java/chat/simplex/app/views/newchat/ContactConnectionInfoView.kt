@@ -86,11 +86,11 @@ private fun ContactConnectionInfoLayout(
         if (connectionViaContactUri) R.string.you_will_be_connected_when_your_connection_request_is_accepted
         else R.string.you_will_be_connected_when_your_contacts_device_is_online
       ),
-      Modifier.padding(horizontal = DEFAULT_PADDING)
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
     )
-    LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
-
     SectionView {
+      LocalAliasEditor(localAlias, center = false, leadingIcon = true, updateValue = onLocalAliasChanged)
+      SectionDivider()
       if (!connReq.isNullOrEmpty() && connectionInitiated) {
         ShowQrButton(showQr)
         SectionDivider()
