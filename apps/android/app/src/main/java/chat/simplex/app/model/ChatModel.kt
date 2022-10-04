@@ -903,9 +903,9 @@ class PendingContactConnection(
   override val ntfsEnabled get() = false
   override val localDisplayName get() = String.format(generalGetString(R.string.connection_local_display_name), pccConnId)
   override val displayName: String get() {
+    if (localAlias.isNotEmpty()) return localAlias
     val initiated = pccConnStatus.initiated
-    val aliasText = if (localAlias.isNotEmpty()) "$localAlias: " else ""
-    return aliasText + if (initiated == null) {
+    return if (initiated == null) {
       // this should not be in the chat list
       generalGetString(R.string.display_name_connection_established)
     } else {

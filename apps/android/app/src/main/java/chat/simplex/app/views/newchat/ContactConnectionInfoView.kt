@@ -27,6 +27,7 @@ fun ContactConnectionInfoView(
   chatModel: ChatModel,
   connReqInvitation: String?,
   contactConnection: PendingContactConnection,
+  focusAlias: Boolean,
   close: () -> Unit
 ) {
   /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv]. It will be managed by [AddContactView] itself
@@ -49,6 +50,7 @@ fun ContactConnectionInfoView(
     contactConnection.initiated,
     contactConnection.viaContactUri,
     contactConnection.incognito,
+    focusAlias,
     deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
     onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
     showQr = {
@@ -74,6 +76,7 @@ private fun ContactConnectionInfoLayout(
   connectionInitiated: Boolean,
   connectionViaContactUri: Boolean,
   connectionIncognito: Boolean,
+  focusAlias: Boolean,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   showQr: () -> Unit,
@@ -89,7 +92,7 @@ private fun ContactConnectionInfoLayout(
       )
     )
     Row(Modifier.padding(bottom = DEFAULT_PADDING)) {
-      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = true, updateValue = onLocalAliasChanged)
+      LocalAliasEditor(localAlias, center = false, leadingIcon = true, focus = focusAlias, updateValue = onLocalAliasChanged)
     }
     Text(
       stringResource(
@@ -151,6 +154,7 @@ private fun PreviewContactConnectionInfoView() {
       connectionInitiated = true,
       connectionViaContactUri = true,
       connectionIncognito = false,
+      focusAlias = false,
       deleteConnection = {},
       onLocalAliasChanged = {},
       showQr = {},
