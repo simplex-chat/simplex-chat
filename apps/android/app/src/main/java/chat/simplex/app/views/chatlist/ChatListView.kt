@@ -103,11 +103,9 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   }
   if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
     var startAnimate by remember { mutableStateOf(false) }
+    val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
     val animatedColor by animateColorAsState(
-      if (startAnimate && newChatSheetState == NewChatSheetState.VISIBLE)
-          (if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor)
-      else
-        Color.Transparent,
+      if (startAnimate && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
       tween(200, 0, LinearEasing)
     )
     LaunchedEffect(Unit) {
@@ -117,9 +115,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       Modifier
         .fillMaxSize()
         .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet() },
-      color = animatedColor,
+      color = Color.Transparent
     ) {
       Column(
+        Modifier.background(animatedColor),
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End
       ) {
