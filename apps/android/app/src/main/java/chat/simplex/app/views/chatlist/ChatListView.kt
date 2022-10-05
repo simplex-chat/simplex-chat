@@ -76,8 +76,11 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
         } else {
-          if (!stopped && !showNewChatDialog) {
-            OnboardingButtons { showNewChatDialog = true }
+          Box(Modifier.fillMaxSize()) {
+            if (!stopped && !showNewChatDialog) {
+              OnboardingButtons { showNewChatDialog = true }
+            }
+            Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
           }
         }
       }
@@ -118,30 +121,27 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 
 @Composable
 private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
-  Box {
-    Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
-      val uriHandler = LocalUriHandler.current
-      ConnectButton(generalGetString(R.string.chat_with_developers)) {
-        uriHandler.openUri(simplexTeamUri)
-      }
-      Spacer(Modifier.height(DEFAULT_PADDING))
-      ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatDialog)
-      val color = MaterialTheme.colors.primary
-      Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
-        val trianglePath = Path().apply {
-          moveTo(0.dp.toPx(), 0f)
-          lineTo(16.dp.toPx(), 0.dp.toPx())
-          lineTo(8.dp.toPx(), 10.dp.toPx())
-          lineTo(0.dp.toPx(), 0.dp.toPx())
-        }
-        drawPath(
-          color = color,
-          path = trianglePath
-        )
-      })
-      Spacer(Modifier.height(62.dp))
+  Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
+    val uriHandler = LocalUriHandler.current
+    ConnectButton(generalGetString(R.string.chat_with_developers)) {
+      uriHandler.openUri(simplexTeamUri)
     }
-    Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
+    Spacer(Modifier.height(DEFAULT_PADDING))
+    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatDialog)
+    val color = MaterialTheme.colors.primary
+    Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
+      val trianglePath = Path().apply {
+        moveTo(0.dp.toPx(), 0f)
+        lineTo(16.dp.toPx(), 0.dp.toPx())
+        lineTo(8.dp.toPx(), 10.dp.toPx())
+        lineTo(0.dp.toPx(), 0.dp.toPx())
+      }
+      drawPath(
+        color = color,
+        path = trianglePath
+      )
+    })
+    Spacer(Modifier.height(62.dp))
   }
 }
 
@@ -152,7 +152,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
     colors = ButtonDefaults.textButtonColors(
       backgroundColor = MaterialTheme.colors.primary
     ),
-    elevation = ButtonDefaults.elevation(defaultElevation = 0.dp),
+    elevation = null,
     contentPadding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
     modifier = Modifier.height(42.dp)
   ) {
