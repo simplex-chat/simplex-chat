@@ -1,6 +1,8 @@
 package chat.simplex.app.views.newchat
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,19 +28,20 @@ import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatDialogOpen: Boolean, closeNewChatDialog: () -> Unit) {
-  if (newChatDialogOpen) BackHandler { closeNewChatDialog() }
+fun NewChatSheet(chatModel: ChatModel, newChatSheetVisible: Boolean, closeNewChatSheet: () -> Unit) {
+  if (newChatSheetVisible) BackHandler { closeNewChatSheet() }
   NewChatSheetLayout(
+    newChatSheetVisible,
     addContact = {
-      closeNewChatDialog()
+      closeNewChatSheet()
       ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
-      closeNewChatDialog()
+      closeNewChatSheet()
       ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
-      closeNewChatDialog()
+      closeNewChatSheet()
       ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
     }
   )
@@ -46,6 +49,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatDialogOpen: Boolean, closeNewChatD
 
 @Composable
 fun NewChatSheetLayout(
+  newChatSheetOpen: Boolean,
   addContact: () -> Unit,
   connectViaLink: () -> Unit,
   createGroup: () -> Unit
@@ -55,37 +59,49 @@ fun NewChatSheetLayout(
   val icons = remember { listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group) }
   LazyColumn {
     items(3) { index ->
-      Row {
-        Spacer(Modifier.weight(1f))
-        Box(contentAlignment = Alignment.CenterEnd) {
-          Button(
-            actions[index],
-            shape = RoundedCornerShape(21.dp),
-            colors = ButtonDefaults.textButtonColors(
-              backgroundColor = if (isInDarkTheme())
-                Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.9F))
-              else
-                MaterialTheme.colors.background
-            ),
-            elevation = null,
-            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-            modifier = Modifier.height(42.dp)
-          ) {
-            Text(
-              stringResource(titles[index]),
-              Modifier.padding(start = DEFAULT_PADDING_HALF),
-              color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
-              fontWeight = FontWeight.Medium,
-            )
-            Icon(
-              icons[index],
-              stringResource(titles[index]),
-              Modifier.size(42.dp),
-              tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
-            )
+      var visible by remember { mutableStateOf(false) }
+      LaunchedEffect(Unit) {
+        visible = true
+      }
+      AnimatedVisibility(
+        visible && newChatSheetOpen,
+        enter = fadeIn(tween(30, (titles.lastIndex - index) * 20, LinearEasing)) +
+            slideInVertically(tween(60, (titles.lastIndex - index) * 20, LinearEasing), initialOffsetY = { it / 5 }),
+        exit = fadeOut(tween(100, index * 50, LinearEasing)) +
+            slideOutVertically(tween(100, index * 20, LinearEasing), targetOffsetY = { it / 5 }),
+      ) {
+        Row {
+          Spacer(Modifier.weight(1f))
+          Box(contentAlignment = Alignment.CenterEnd) {
+            Button(
+              actions[index],
+              shape = RoundedCornerShape(21.dp),
+              colors = ButtonDefaults.textButtonColors(
+                backgroundColor = if (isInDarkTheme())
+                  Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
+                else
+                  MaterialTheme.colors.background
+              ),
+              elevation = null,
+              contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
+              modifier = Modifier.height(42.dp)
+            ) {
+              Text(
+                stringResource(titles[index]),
+                Modifier.padding(start = DEFAULT_PADDING_HALF),
+                color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
+                fontWeight = FontWeight.Medium,
+              )
+              Icon(
+                icons[index],
+                stringResource(titles[index]),
+                Modifier.size(42.dp),
+                tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
+              )
+            }
           }
+          Spacer(Modifier.width(DEFAULT_PADDING))
         }
-        Spacer(Modifier.width(DEFAULT_PADDING))
       }
       Spacer(Modifier.height(DEFAULT_PADDING))
     }
@@ -138,6 +154,7 @@ fun ActionButton(
 fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
+      true,
       addContact = {},
       connectViaLink = {},
       createGroup = {}

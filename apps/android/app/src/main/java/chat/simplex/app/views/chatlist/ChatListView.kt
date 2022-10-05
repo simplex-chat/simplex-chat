@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalUriHandler
@@ -31,16 +30,30 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val scaffoldState = rememberScaffoldState()
-  var showNewChatDialog by rememberSaveable { mutableStateOf(false) }
+  var newChatSheetState by rememberSaveable { mutableStateOf(NewChatSheetState.GONE) }
+  val scope = rememberCoroutineScope()
+  val showNewChatSheet = {
+    newChatSheetState = NewChatSheetState.VISIBLE
+  }
+  val hideNewChatSheet: () -> Unit = {
+    scope.launch {
+      // Start hiding with animation
+      newChatSheetState = NewChatSheetState.HIDING
+      delay(250)
+      // Remove from the screen completely
+      newChatSheetState = NewChatSheetState.GONE
+    }
+  }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && showNewChatDialog) showNewChatDialog = false
+    if (chatModel.clearOverlays.value && newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet()
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
+  val scaffoldState = rememberScaffoldState()
   Scaffold (
     topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
@@ -50,7 +63,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatDialog = !showNewChatDialog
+              if (newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet() else showNewChatSheet()
             }
           },
           elevation = FloatingActionButtonDefaults.elevation(
@@ -62,7 +75,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
           contentColor = Color.White
         ) {
-          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (newChatSheetState != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -77,8 +90,8 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           ChatList(chatModel, search = searchInList)
         } else {
           Box(Modifier.fillMaxSize()) {
-            if (!stopped && !showNewChatDialog) {
-              OnboardingButtons { showNewChatDialog = true }
+            if (!stopped && newChatSheetState != NewChatSheetState.VISIBLE) {
+              OnboardingButtons(showNewChatSheet)
             }
             Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
           }
@@ -86,21 +99,21 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       }
     }
   }
-  if (showNewChatDialog && searchInList.isEmpty()) {
+  if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
     Surface(
       Modifier
         .fillMaxSize()
-        .clickable(remember { MutableInteractionSource() }, indication = null) { showNewChatDialog = false },
+        .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet() },
       color = if (isInDarkTheme()) Color.Black.copy(alpha = 0.64f) else DrawerDefaults.scrimColor,
     ) {
       Column(
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.End
       ) {
-        NewChatSheet(chatModel, showNewChatDialog) { showNewChatDialog = false }
+        NewChatSheet(chatModel, newChatSheetState == NewChatSheetState.VISIBLE, hideNewChatSheet)
         FloatingActionButton(
           onClick = {
-            if (!stopped) { showNewChatDialog = !showNewChatDialog }
+            if (!stopped) hideNewChatSheet()
           },
           Modifier.padding(end = 16.dp, bottom = 16.dp),
           elevation = FloatingActionButtonDefaults.elevation(
@@ -112,7 +125,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
           contentColor = Color.White
         ) {
-          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (newChatSheetState != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -120,14 +133,14 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
 }
 
 @Composable
-private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
+private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
     ConnectButton(generalGetString(R.string.chat_with_developers)) {
       uriHandler.openUri(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
-    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatDialog)
+    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primary
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
