@@ -265,7 +265,7 @@ import Simplex.Chat.Migrations.M20220926_connection_alias
 import Simplex.Chat.Migrations.M20220928_settings
 import Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
 import Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_items
-import Simplex.Chat.Migrations.M20221004_idx_chat_items_item_ts
+import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -304,8 +304,8 @@ schemaMigrations =
     ("20220926_connection_alias", m20220926_connection_alias),
     ("20220928_settings", m20220928_settings),
     ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices),
-    ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items)
-    -- ("20221004_idx_chat_items_item_ts", m20221004_idx_chat_items_item_ts)
+    ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items),
+    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id)
   ]
 
 -- | The list of migrations in ascending order by date
