@@ -3227,7 +3227,7 @@ send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cm
 (<##) :: TestCC -> String -> Expectation
 cc <## line = do
   l <- getTermLine cc
-  when (l /= line) $ print ("expexted: " <> line, ", got: " <> l)
+  when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
 getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
