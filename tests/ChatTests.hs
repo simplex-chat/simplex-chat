@@ -2459,7 +2459,6 @@ testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
   putStrLn "testAsyncInitiatingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
-    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
@@ -2482,7 +2481,6 @@ testAsyncAcceptingOffline :: IO ()
 testAsyncAcceptingOffline = withTmpFiles $ do
   putStrLn "testAsyncAcceptingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
-    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
@@ -3227,7 +3225,10 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: TestCC -> String -> Expectation
-cc <## line = getTermLine cc `shouldReturn` line
+cc <## line = do
+  l <- getTermLine cc
+  when (l /= line) $ print ("expexted: " <> line, ", got: " <> l)
+  l `shouldBe` line
 
 getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
 getInAnyOrder _ _ [] = pure ()
