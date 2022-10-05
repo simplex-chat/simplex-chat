@@ -1,6 +1,8 @@
 package chat.simplex.app.views.chatlist
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -100,11 +102,22 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     }
   }
   if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
+    var startAnimate by remember { mutableStateOf(false) }
+    val animatedColor by animateColorAsState(
+      if (startAnimate && newChatSheetState == NewChatSheetState.VISIBLE)
+          (if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor)
+      else
+        Color.Transparent,
+      tween(200, 0, LinearEasing)
+    )
+    LaunchedEffect(Unit) {
+      startAnimate = true
+    }
     Surface(
       Modifier
         .fillMaxSize()
         .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet() },
-      color = if (isInDarkTheme()) Color.Black.copy(alpha = 0.64f) else DrawerDefaults.scrimColor,
+      color = animatedColor,
     ) {
       Column(
         verticalArrangement = Arrangement.Bottom,
