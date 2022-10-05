@@ -35,7 +35,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent.Protocol (AgentErrorType, AgentMsgId, MsgErrorType (..), MsgMeta (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, singleFieldJSON, sumTypeJSON, fstToLower)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
@@ -395,7 +395,7 @@ instance StrEncoding ACIFileStatus where
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
   { fileId :: Int64,
-    fileStatus :: ACIFileStatus,
+    fileStatus :: Maybe ACIFileStatus,
     filePath :: Maybe FilePath
   }
   deriving (Show)

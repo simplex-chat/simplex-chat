@@ -278,7 +278,7 @@ struct DatabaseView: View {
         case let .setChatItemTTL(ttl):
             return Alert(
                 title: Text("Enable automatic message deletion?"),
-                message: Text("This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting."),
+                message: Text("This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes."),
                 primaryButton: .destructive(Text("Delete messages")) {
                     setCiTTL(ttl)
                 },
@@ -435,7 +435,7 @@ struct DatabaseView: View {
                 }
             } catch {
                 await MainActor.run {
-                    alert = .error(title: "Error changing automatic message deletion", error: responseError(error))
+                    alert = .error(title: "Error changing setting", error: responseError(error))
                     chatItemTTL = currentChatItemTTL
                     progressIndicator = false
                     appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())

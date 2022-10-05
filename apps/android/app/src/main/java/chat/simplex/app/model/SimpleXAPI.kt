@@ -597,6 +597,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return null
   }
 
+  suspend fun apiSetConnectionAlias(connId: Long, localAlias: String): PendingContactConnection? {
+    val r = sendCmd(CC.ApiSetConnectionAlias(connId, localAlias))
+    if (r is CR.ConnectionAliasUpdated) return r.toConnection
+    Log.e(TAG, "apiSetConnectionAlias bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiCreateUserAddress(): String? {
     val r = sendCmd(CC.CreateMyAddress())
     return when (r) {
@@ -846,12 +853,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       }
       is CR.ContactConnected -> {
         chatModel.updateContact(r.contact)
+        chatModel.dismissConnReqView(r.contact.activeConn.id)
         chatModel.removeChat(r.contact.activeConn.id)
         chatModel.updateNetworkStatus(r.contact.id, Chat.NetworkStatus.Connected())
         ntfManager.notifyContactConnected(r.contact)
       }
       is CR.ContactConnecting -> {
         chatModel.updateContact(r.contact)
+        chatModel.dismissConnReqView(r.contact.activeConn.id)
         chatModel.removeChat(r.contact.activeConn.id)
       }
       is CR.ReceivedContactRequest -> {
@@ -1340,6 +1349,7 @@ sealed class CC {
   class ApiUpdateProfile(val profile: Profile): CC()
   class ApiParseMarkdown(val text: String): CC()
   class ApiSetContactAlias(val contactId: Long, val localAlias: String): CC()
+  class ApiSetConnectionAlias(val connId: Long, val localAlias: String): CC()
   class CreateMyAddress: CC()
   class DeleteMyAddress: CC()
   class ShowMyAddress: CC()
@@ -1394,6 +1404,7 @@ sealed class CC {
     is ApiUpdateProfile -> "/_profile ${json.encodeToString(profile)}"
     is ApiParseMarkdown -> "/_parse $text"
     is ApiSetContactAlias -> "/_set alias @$contactId ${localAlias.trim()}"
+    is ApiSetConnectionAlias -> "/_set alias :$connId ${localAlias.trim()}"
     is CreateMyAddress -> "/address"
     is DeleteMyAddress -> "/delete_address"
     is ShowMyAddress -> "/show_address"
@@ -1449,6 +1460,7 @@ sealed class CC {
     is ApiUpdateProfile -> "updateProfile"
     is ApiParseMarkdown -> "apiParseMarkdown"
     is ApiSetContactAlias -> "apiSetContactAlias"
+    is ApiSetConnectionAlias -> "apiSetConnectionAlias"
     is CreateMyAddress -> "createMyAddress"
     is DeleteMyAddress -> "deleteMyAddress"
     is ShowMyAddress -> "showMyAddress"
@@ -1637,6 +1649,7 @@ sealed class CR {
   @Serializable @SerialName("userProfileNoChange") class UserProfileNoChange: CR()
   @Serializable @SerialName("userProfileUpdated") class UserProfileUpdated(val fromProfile: Profile, val toProfile: Profile): CR()
   @Serializable @SerialName("contactAliasUpdated") class ContactAliasUpdated(val toContact: Contact): CR()
+  @Serializable @SerialName("connectionAliasUpdated") class ConnectionAliasUpdated(val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("apiParsedMarkdown") class ParsedMarkdown(val formattedText: List<FormattedText>? = null): CR()
   @Serializable @SerialName("userContactLink") class UserContactLink(val connReqContact: String): CR()
   @Serializable @SerialName("userContactLinkCreated") class UserContactLinkCreated(val connReqContact: String): CR()
@@ -1725,6 +1738,7 @@ sealed class CR {
     is UserProfileNoChange -> "userProfileNoChange"
     is UserProfileUpdated -> "userProfileUpdated"
     is ContactAliasUpdated -> "contactAliasUpdated"
+    is ConnectionAliasUpdated -> "connectionAliasUpdated"
     is ParsedMarkdown -> "apiParsedMarkdown"
     is UserContactLink -> "userContactLink"
     is UserContactLinkCreated -> "userContactLinkCreated"
@@ -1811,6 +1825,7 @@ sealed class CR {
     is UserProfileNoChange -> noDetails()
     is UserProfileUpdated -> json.encodeToString(toProfile)
     is ContactAliasUpdated -> json.encodeToString(toContact)
+    is ConnectionAliasUpdated -> json.encodeToString(toConnection)
     is ParsedMarkdown -> json.encodeToString(formattedText)
     is UserContactLink -> connReqContact
     is UserContactLinkCreated -> connReqContact

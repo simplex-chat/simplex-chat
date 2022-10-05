@@ -22,6 +22,7 @@ import chat.simplex.app.views.chat.group.deleteGroupDialog
 import chat.simplex.app.views.chat.group.leaveGroupDialog
 import chat.simplex.app.views.chat.item.ItemAction
 import chat.simplex.app.views.helpers.*
+import chat.simplex.app.views.newchat.ContactConnectionInfoView
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
@@ -63,7 +64,11 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactConnectionView(chat.chatInfo.contactConnection) },
-        click = { contactConnectionAlertDialog(chat.chatInfo.contactConnection, chatModel) },
+        click = {
+          ModalManager.shared.showModalCloseable(true) { close ->
+            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
+          }
+        },
         dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped
@@ -265,10 +270,20 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 @Composable
 fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
+    stringResource(R.string.set_contact_name),
+    Icons.Outlined.Edit,
+    onClick = {
+      ModalManager.shared.showModalCloseable(true) { close ->
+        ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+      }
+      showMenu.value = false
+    },
+  )
+  ItemAction(
     stringResource(R.string.delete_verb),
     Icons.Outlined.Delete,
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel)
+      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {}
       showMenu.value = false
     },
     color = Color.Red
@@ -337,7 +352,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
       ) {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
-          deleteContactConnectionAlert(connection, chatModel)
+          deleteContactConnectionAlert(connection, chatModel) {}
         }) {
           Text(stringResource(R.string.delete_verb))
         }
@@ -350,7 +365,7 @@ fun contactConnectionAlertDialog(connection: PendingContactConnection, chatModel
   )
 }
 
-fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel) {
+fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.delete_pending_connection__question),
     text = generalGetString(
@@ -363,6 +378,7 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(connection.id)
+          onSuccess()
         }
       }
     }

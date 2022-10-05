@@ -46,7 +46,7 @@ fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         CreateLinkTab.ONE_TIME -> {
-          AddContactView(m, connReqInvitation.value)
+          AddContactView(m, connReqInvitation.value, m.incognito.value)
         }
         CreateLinkTab.LONG_TERM -> {
           UserAddressView(m)
