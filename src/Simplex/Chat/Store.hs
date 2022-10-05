@@ -194,7 +194,6 @@ module Simplex.Chat.Store
     getXGrpMemIntroContGroup,
     getChatItemTTL,
     setChatItemTTL,
-    getChatsList,
     getContactExpiredFileInfo,
     deleteContactExpiredCIs,
     getContactCICount,
@@ -4094,15 +4093,6 @@ setChatItemTTL db User {userId} chatItemTTL = do
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
 
-getChatsList :: DB.Connection -> User -> IO [ChatRef]
-getChatsList db User {userId} = do
-  cts <- getContacts
-  groups <- getGroups
-  pure $ cts <> groups
-  where
-    getContacts = map (\(Only contactId) -> ChatRef CTDirect contactId) <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
-    getGroups = map (\(Only groupId) -> ChatRef CTGroup groupId) <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-
 getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
 getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
   map toFileInfo
@@ -4143,7 +4133,7 @@ getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate crea
 
 deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO ()
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
-  DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, expirationDate)
+  DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
 
 getGroupCICount :: DB.Connection -> User -> GroupInfo -> IO (Maybe Int64)

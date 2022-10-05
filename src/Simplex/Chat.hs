@@ -1402,45 +1402,43 @@ subscribeUserConnections agentBatchSubscribe user = do
               _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
-expireChatItems user@User {userId} ttl sync = do
+expireChatItems user ttl sync = do
   currentTs <- liftIO getCurrentTime
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
-  chats <- withStore' $ \db -> getChatsList db user
   expire <- asks expireCIs
-  chatsLoop chats expirationDate createdAtCutoff expire
+  contacts <- withStore' (`getUserContacts` user)
+  contactsLoop contacts expirationDate expire
+  groups <- withStore' (`getUserGroupDetails` user)
+  groupsLoop groups expirationDate createdAtCutoff expire
   where
-    chatsLoop :: [ChatRef] -> UTCTime -> UTCTime -> TVar Bool -> m ()
-    chatsLoop [] _ _ _ = pure ()
-    chatsLoop ((ChatRef cType chatId) : chats) expirationDate createdAtCutoff expire = continue expire $ do
-      case cType of
-        CTDirect ->
-          withStore' (\db -> runExceptT $ getContact db userId chatId) >>= \case
-            Right ct -> do
-              filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-              maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
-              forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-              withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-              ciCount_ <- withStore' $ \db -> getContactCICount db user ct
-              case (maxItemTs_, ciCount_) of
-                (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateContactTs db user ct ts)
-                _ -> pure ()
-            _ -> pure ()
-        CTGroup ->
-          withStore' (\db -> runExceptT $ getGroupInfo db user chatId) >>= \case
-            Right gInfo -> do
-              filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-              maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
-              forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-              withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-              ciCount_ <- withStore' $ \db -> getGroupCICount db user gInfo
-              case (maxItemTs_, ciCount_) of
-                (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateGroupTs db user gInfo ts)
-                _ -> pure ()
-            _ -> pure ()
-        _ -> pure ()
-      chatsLoop chats expirationDate createdAtCutoff expire
+    contactsLoop :: [Contact] -> UTCTime -> TVar Bool -> m ()
+    contactsLoop [] _ _ = pure ()
+    contactsLoop (ct : cts) expirationDate expire = continue expire $ do
+      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+      withStore' $ \db -> do
+        ciCount_ <- getContactCICount db user ct
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
+          _ -> pure ()
+      contactsLoop cts expirationDate expire
+    groupsLoop :: [GroupInfo] -> UTCTime -> UTCTime -> TVar Bool -> m ()
+    groupsLoop [] _ _ _ = pure ()
+    groupsLoop (gInfo : gInfos) expirationDate createdAtCutoff expire = continue expire $ do
+      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+      withStore' $ \db -> do
+        ciCount_ <- getGroupCICount db user gInfo
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
+          _ -> pure ()
+      groupsLoop gInfos expirationDate createdAtCutoff expire
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
