@@ -327,13 +327,13 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            AnimateScreensNullable(chatModel.chatId) { current ->
-              if (current == null) {
+            AnimateScreensNullable(chatModel.chatId) { currentChatId ->
+              if (currentChatId == null) {
                 if (chatModel.sharedContent.value == null)
                   ChatListView(chatModel, setPerformLA, stopped)
                 else
                   ShareListView(chatModel, stopped)
-              } else ChatView(chatModel)
+              } else ChatView(currentChatId, chatModel)
             }
           }
         }

@@ -45,8 +45,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatView(chatModel: ChatModel) {
-  var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
+fun ChatView(chatId: String, chatModel: ChatModel) {
+  var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -57,22 +57,6 @@ fun ChatView(chatModel: ChatModel) {
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
 
-  LaunchedEffect(Unit) {
-    // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
-    // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
-    snapshotFlow { chatModel.chatId.value }
-      .distinctUntilChanged()
-      .collect {
-        activeChat = if (chatModel.chatId.value == null) {
-          null
-        } else {
-          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-          // Also for situation when chatId changes after clicking in notification, etc
-          chatModel.getChat(chatModel.chatId.value!!)
-        }
-      }
-  }
-
   if (activeChat == null || user == null) {
     chatModel.chatId.value = null
   } else {
@@ -82,7 +66,7 @@ fun ChatView(chatModel: ChatModel) {
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }?.chatStats?.unreadCount ?: 0
       }
     }
 
