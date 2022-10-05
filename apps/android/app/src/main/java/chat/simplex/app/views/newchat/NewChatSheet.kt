@@ -12,12 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.ColorUtils
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
@@ -60,7 +62,10 @@ fun NewChatSheetLayout(
             actions[index],
             shape = RoundedCornerShape(21.dp),
             colors = ButtonDefaults.textButtonColors(
-              backgroundColor = if (isInDarkTheme()) DarkGray else MaterialTheme.colors.background
+              backgroundColor = if (isInDarkTheme())
+                Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.9F))
+              else
+                MaterialTheme.colors.background
             ),
             elevation = null,
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
