@@ -3225,7 +3225,10 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: TestCC -> String -> Expectation
-cc <## line = getTermLine cc `shouldReturn` line
+cc <## line = do
+  l <- getTermLine cc
+  when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
+  l `shouldBe` line
 
 getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
 getInAnyOrder _ _ [] = pure ()

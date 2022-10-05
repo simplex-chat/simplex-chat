@@ -395,7 +395,7 @@ instance StrEncoding ACIFileStatus where
 -- to conveniently read file data from db
 data CIFileInfo = CIFileInfo
   { fileId :: Int64,
-    fileStatus :: ACIFileStatus,
+    fileStatus :: Maybe ACIFileStatus,
     filePath :: Maybe FilePath
   }
   deriving (Show)
