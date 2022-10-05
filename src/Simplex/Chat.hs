@@ -1404,37 +1404,24 @@ subscribeUserConnections agentBatchSubscribe user = do
 expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
 expireChatItems user@User {userId} ttl sync = do
   currentTs <- liftIO getCurrentTime
-  liftIO . print $ "expiration start: " <> show currentTs
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   chats <- withStore' $ \db -> getChatsList db user
   expire <- asks expireCIs
   chatsLoop chats expirationDate createdAtCutoff expire
-  currentTs2 <- liftIO getCurrentTime
-  liftIO . print $ "expiration start: " <> show currentTs2
   where
     chatsLoop :: [ChatRef] -> UTCTime -> UTCTime -> TVar Bool -> m ()
     chatsLoop [] _ _ _ = pure ()
-    chatsLoop (cRef@(ChatRef cType chatId) : chats) expirationDate createdAtCutoff expire = continue expire $ do
-      currentTs3 <- liftIO getCurrentTime
-      liftIO . print $ show cRef <> ": " <> show currentTs3
+    chatsLoop ((ChatRef cType chatId) : chats) expirationDate createdAtCutoff expire = continue expire $ do
       case cType of
         CTDirect ->
           withStore' (\db -> runExceptT $ getContact db userId chatId) >>= \case
             Right ct -> do
               filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
               maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
-              currentTs4 <- liftIO getCurrentTime
-              liftIO . print $ "deleting files: " <> show currentTs4
-              forM_ filesInfo $ \fileInfo -> do
-                liftIO . print $ "deleteFile" <> show (filePath (fileInfo :: CIFileInfo))
-                deleteFile user fileInfo
-              currentTs5 <- liftIO getCurrentTime
-              liftIO . print $ "deleteContactExpiredCIs: " <> show currentTs5
+              forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
               withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-              currentTs6 <- liftIO getCurrentTime
-              liftIO . print $ "after deleteContactExpiredCIs: " <> show currentTs6
               ciCount_ <- withStore' $ \db -> getContactCICount db user ct
               case (maxItemTs_, ciCount_) of
                 (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateContactTs db user ct ts)
@@ -1445,16 +1432,8 @@ expireChatItems user@User {userId} ttl sync = do
             Right gInfo -> do
               filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
               maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
-              currentTs4 <- liftIO getCurrentTime
-              liftIO . print $ "deleting files: " <> show currentTs4
-              forM_ filesInfo $ \fileInfo -> do
-                liftIO . print $ "deleteFile" <> show (filePath (fileInfo :: CIFileInfo))
-                deleteFile user fileInfo
-              currentTs5 <- liftIO getCurrentTime
-              liftIO . print $ "deleteGroupExpiredCIs: " <> show currentTs5
+              forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
               withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-              currentTs6 <- liftIO getCurrentTime
-              liftIO . print $ "after deleteGroupExpiredCIs: " <> show currentTs6
               ciCount_ <- withStore' $ \db -> getGroupCICount db user gInfo
               case (maxItemTs_, ciCount_) of
                 (Just ts, Just count) -> when (count == 0) $ withStore' (\db -> updateGroupTs db user gInfo ts)

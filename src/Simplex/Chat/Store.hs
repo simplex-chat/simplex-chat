@@ -4125,10 +4125,8 @@ getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
 deleteContactExpiredCIs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
 deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationDate = do
   connIds <- getContactConnIds_ db user ct
-  forM_ connIds $ \connId -> do
-    liftIO . print $ "DELETE FROM messages"
+  forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
-  liftIO . print $ "DELETE FROM chat_items"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
 
 getContactCICount :: DB.Connection -> User -> Contact -> IO (Maybe Int64)
@@ -4151,9 +4149,7 @@ getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate crea
 
 deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO ()
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
-  liftIO . print $ "DELETE FROM messages"
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, expirationDate)
-  liftIO . print $ "DELETE FROM chat_items"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
 
 getGroupCICount :: DB.Connection -> User -> GroupInfo -> IO (Maybe Int64)
