@@ -69,15 +69,7 @@ class ModalManager {
   @OptIn(ExperimentalAnimationApi::class)
   @Composable
   fun showInView() {
-    AnimatedContent(targetState = modalCount.value,
-      transitionSpec = {
-        if (targetState > initialState) {
-          fromEndToStartTransition()
-        } else {
-          fromStartToEndTransition()
-        }.using(SizeTransform(clip = false))
-      }
-    ) {
+    AnimateScreens(modalCount) {
       modalViews.getOrNull(it - 1)?.invoke(::closeModal)
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
@@ -85,30 +77,6 @@ class ModalManager {
       }
     }
   }
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromStartToEndTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    )
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromEndToStartTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    )
-
-private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
-//  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
-//  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
   companion object {
     val shared = ModalManager()
