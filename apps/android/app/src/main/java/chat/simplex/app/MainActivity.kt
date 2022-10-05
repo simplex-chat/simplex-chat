@@ -7,10 +7,8 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.os.SystemClock.elapsedRealtime
 import android.util.Log
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -22,7 +20,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.*
 import chat.simplex.app.model.ChatModel
@@ -39,7 +36,6 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.connectViaUri
 import chat.simplex.app.views.newchat.withUriAction
 import chat.simplex.app.views.onboarding.*
-import chat.simplex.app.views.usersettings.SettingsView
 import kotlinx.coroutines.delay
 
 class MainActivity: FragmentActivity() {
@@ -331,24 +327,13 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            BoxWithConstraints {
-              val offset1 by animateDpAsState(if (chatModel.chatId.value != null) -maxWidth else 0.dp,
-                //tween(durationMillis = 250, easing = FastOutSlowInEasing)
-              )
-              val offset2 by animateDpAsState(if (chatModel.chatId.value != null) 0.dp else maxWidth,
-                //tween(durationMillis = 250, easing = FastOutSlowInEasing)
-              )
-              Column(Modifier.offset(x = offset1)) {
-                if (chatModel.chatId.value == null) {
-                  if (chatModel.sharedContent.value == null)
-                    ChatListView(chatModel, setPerformLA, stopped)
-                  else
-                    ShareListView(chatModel, stopped)
-                }
-              }
-              Column(Modifier.offset(x = offset2)) {
-                if (chatModel.chatId.value != null) ChatView(chatModel.chatId.value!!, chatModel)
-              }
+            AnimateScreensNullable(chatModel.chatId) { currentChatId ->
+              if (currentChatId == null) {
+                if (chatModel.sharedContent.value == null)
+                  ChatListView(chatModel, setPerformLA, stopped)
+                else
+                  ShareListView(chatModel, stopped)
+              } else ChatView(currentChatId, chatModel)
             }
           }
         }
