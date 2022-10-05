@@ -2459,6 +2459,7 @@ testAsyncInitiatingOffline :: IO ()
 testAsyncInitiatingOffline = withTmpFiles $ do
   putStrLn "testAsyncInitiatingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
@@ -2481,6 +2482,7 @@ testAsyncAcceptingOffline :: IO ()
 testAsyncAcceptingOffline = withTmpFiles $ do
   putStrLn "testAsyncAcceptingOffline"
   inv <- withNewTestChat "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
     putStrLn "1"
     alice ##> "/c"
     putStrLn "2"
