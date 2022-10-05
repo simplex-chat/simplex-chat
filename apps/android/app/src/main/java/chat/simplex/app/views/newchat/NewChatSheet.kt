@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,9 +60,9 @@ fun NewChatSheetLayout(
             actions[index],
             shape = RoundedCornerShape(21.dp),
             colors = ButtonDefaults.textButtonColors(
-              backgroundColor = if (isInDarkTheme()) MaterialTheme.colors.primary.copy(0.1f) else MaterialTheme.colors.background
+              backgroundColor = if (isInDarkTheme()) DarkGray else MaterialTheme.colors.background
             ),
-            elevation = ButtonDefaults.elevation(defaultElevation = 0.dp),
+            elevation = null,
             contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
             modifier = Modifier.height(42.dp)
           ) {
