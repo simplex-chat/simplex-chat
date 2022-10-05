@@ -38,12 +38,12 @@ Current schema for `preferences` member:
   "definitions": {
     "enabled": {
       "properties": {
-        "enable": { "type": "boolean" }
+        "enable": { "enum": ["on", "off"] }
       },
       "additionalProperties": true
     }
   },
-  "properties": {
+  "optionalProperties": {
     "voice": { "ref": "enabled" },
     "image": { "ref": "enabled" },
     "file": { "ref": "enabled" },
