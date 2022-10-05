@@ -4100,14 +4100,8 @@ getChatsList db User {userId} = do
   groups <- getGroups
   pure $ cts <> groups
   where
-    getContacts :: IO [ChatRef]
-    getContacts = map toContactRef <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
-    toContactRef :: (Only ContactId) -> ChatRef
-    toContactRef (Only contactId) = ChatRef CTDirect contactId
-    getGroups :: IO [ChatRef]
-    getGroups = map toGroupRef <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-    toGroupRef :: (Only GroupId) -> ChatRef
-    toGroupRef (Only groupId) = ChatRef CTGroup groupId
+    getContacts = map (\(Only contactId) -> ChatRef CTDirect contactId) <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ?" (Only userId)
+    getGroups = map (\(Only groupId) -> ChatRef CTGroup groupId) <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
 
 getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
 getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
