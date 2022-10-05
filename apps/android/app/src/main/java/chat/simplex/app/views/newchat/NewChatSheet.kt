@@ -67,8 +67,8 @@ fun NewChatSheetLayout(
         visible && newChatSheetOpen,
         enter = fadeIn(tween(30, (titles.lastIndex - index) * 20, LinearEasing)) +
             slideInVertically(tween(60, (titles.lastIndex - index) * 20, LinearEasing), initialOffsetY = { it / 5 }),
-        exit = fadeOut(tween(100, index * 50, LinearEasing)) +
-            slideOutVertically(tween(100, index * 20, LinearEasing), targetOffsetY = { it / 5 }),
+        exit = fadeOut(tween(70, index * 50, LinearEasing)) +
+            slideOutVertically(tween(70, index * 20, LinearEasing), targetOffsetY = { it / 5 }),
       ) {
         Row {
           Spacer(Modifier.weight(1f))
