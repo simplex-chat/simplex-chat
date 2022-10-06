@@ -220,7 +220,9 @@ struct ChatListNavLink: View {
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .sheet(isPresented: $showContactConnectionInfo) {
-            ContactConnectionInfo(contactConnection: contactConnection)
+            if case let .contactConnection(contactConnection) = chat.chatInfo {
+                ContactConnectionInfo(contactConnection: contactConnection)
+            }
         }
         .onTapGesture {
             showContactConnectionInfo = true
