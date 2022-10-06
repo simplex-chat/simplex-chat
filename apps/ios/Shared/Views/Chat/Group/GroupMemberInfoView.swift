@@ -22,7 +22,7 @@ struct GroupMemberInfoView: View {
     enum GroupMemberInfoViewAlert: Identifiable {
         case removeMemberAlert
         case changeMemberRoleAlert(role: GroupMemberRole)
-        case error(title: LocalizedStringKey, error: String)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
             switch self {
@@ -176,7 +176,8 @@ struct GroupMemberInfoView: View {
                         }
                     } catch let error {
                         logger.error("apiRemoveMember error: \(responseError(error))")
-                        alert = errorAlert(error, "Error removing member")
+                        let a = getErrorAlert(error, "Error removing member")
+                        alert = .error(title: a.title, error: a.message)
                     }
                 }
             },
@@ -199,7 +200,8 @@ struct GroupMemberInfoView: View {
                     } catch let error {
                         newRole = member.memberRole
                         logger.error("apiMemberRole error: \(responseError(error))")
-                        alert = errorAlert(error, "Error changing role")
+                        let a = getErrorAlert(error, "Error changing role")
+                        alert = .error(title: a.title, error: a.message)
                     }
                 }
             },
@@ -207,17 +209,6 @@ struct GroupMemberInfoView: View {
                 newRole = member.memberRole
             }
         )
-    }
-
-    private func errorAlert(_ error: Error, _ title: LocalizedStringKey) -> GroupMemberInfoViewAlert {
-        switch error as? ChatResponse {
-        case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-            return .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-        case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-            return .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-        default:
-            return .error(title: title, error: responseError(error))
-        }
     }
 }
 

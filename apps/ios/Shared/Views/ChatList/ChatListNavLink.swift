@@ -30,6 +30,7 @@ struct ChatListNavLink: View {
     @State var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
+    @State private var showContactConnectionInfo = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -199,24 +200,32 @@ struct ChatListNavLink: View {
     }
 
     private func contactConnectionNavLink(_ contactConnection: PendingContactConnection) -> some View {
-        ContactConnectionView(contactConnection: contactConnection)
+        ContactConnectionView(chat: chat)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection))
+                AlertManager.shared.showAlert(deleteContactConnectionAlert(contactConnection) { a in
+                    AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
+                })
             } label: {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
+
+            Button {
+                showContactConnectionInfo = true
+            } label: {
+                Label("Name", systemImage: "pencil")
+            }
+            .tint(.accentColor)
         }
         .frame(height: rowHeights[dynamicTypeSize])
+        .sheet(isPresented: $showContactConnectionInfo) {
+            if case let .contactConnection(contactConnection) = chat.chatInfo {
+                ContactConnectionInfo(contactConnection: contactConnection)
+            }
+        }
         .onTapGesture {
-            AlertManager.shared.showAlertMsg(
-                title: contactConnection.initiated
-                ? "You invited your contact"
-                : "You accepted connection",
-                // below are the same messages that are shown in alert
-                message: contactConnectionText(contactConnection)
-            )
+            showContactConnectionInfo = true
         }
     }
 
@@ -279,29 +288,6 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection) -> Alert {
-        Alert(
-            title: Text("Delete pending connection?"),
-            message:
-                contactConnection.initiated
-                ? Text("The contact you shared this link with will NOT be able to connect!")
-                : Text("The connection you accepted will be cancelled!"),
-            primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: .contactConnection, id: contactConnection.apiId)
-                        DispatchQueue.main.async {
-                            chatModel.removeChat(contactConnection.id)
-                        }
-                    } catch let error {
-                        logger.error("ChatListNavLink.deleteContactConnectionAlert apiDeleteChat error: \(responseError(error))")
-                    }
-                }
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
     private func pendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
         Alert(
             title: Text("Contact is not connected yet!"),
@@ -345,6 +331,32 @@ struct ChatListNavLink: View {
     }
 }
 
+func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
+    Alert(
+        title: Text("Delete pending connection?"),
+        message:
+            contactConnection.initiated
+            ? Text("The contact you shared this link with will NOT be able to connect!")
+            : Text("The connection you accepted will be cancelled!"),
+        primaryButton: .destructive(Text("Delete")) {
+            Task {
+                do {
+                    try await apiDeleteChat(type: .contactConnection, id: contactConnection.apiId)
+                    await MainActor.run {
+                        ChatModel.shared.removeChat(contactConnection.id)
+                        success()
+                    }
+                } catch let error {
+                    await MainActor.run {
+                        showError(getErrorAlert(error, "Error deleting connection"))
+                    }
+                }
+            }
+        },
+        secondaryButton: .cancel()
+    )
+}
+
 func joinGroup(_ groupId: Int64) {
     Task {
         logger.debug("joinGroup")
@@ -361,15 +373,8 @@ func joinGroup(_ groupId: Int64) {
                 await deleteGroup()
             }
         } catch let error {
-            switch error as? ChatResponse {
-            case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-                AlertManager.shared.showAlertMsg(title: "Connection timeout", message: "Please check your network connection and try again.")
-            case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-                AlertManager.shared.showAlertMsg(title: "Connection error", message: "Please check your network connection and try again.")
-            default:
-                logger.error("apiJoinGroup error: \(responseError(error))")
-                AlertManager.shared.showAlertMsg(title: "Error joining group", message: "\(responseError(error))")
-            }
+            let a = getErrorAlert(error, "Error joining group")
+            AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
         }
 
         func deleteGroup() async {
@@ -384,10 +389,20 @@ func joinGroup(_ groupId: Int64) {
     }
 }
 
-func contactConnectionText(_ contactConnection: PendingContactConnection) -> LocalizedStringKey {
-    contactConnection.viaContactUri
-    ? "You will be connected when your connection request is accepted, please wait or check later!"
-    : "You will be connected when your contact's device is online, please wait or check later!"
+struct ErrorAlert {
+    var title: LocalizedStringKey
+    var message: LocalizedStringKey
+}
+
+func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
+    switch error as? ChatResponse {
+    case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
+        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection and try again.")
+    case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
+        return ErrorAlert(title: "Connection error", message: "Please check your network connection and try again.")
+    default:
+        return ErrorAlert(title: title, message: "Error: \(responseError(error))")
+    }
 }
 
 struct ChatListNavLink_Previews: PreviewProvider {

@@ -525,6 +525,9 @@
 "Delete chat profile?" = "Удалить профиль?";
 
 /* No comment provided by engineer. */
+"Delete connection" = "Удалить соединение";
+
+/* No comment provided by engineer. */
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
@@ -715,6 +718,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting chat!" = "Ошибка при удалении чата!";
+
+/* No comment provided by engineer. */
+"Error deleting connection" = "Ошибка при удалении соединения";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
@@ -1099,6 +1105,9 @@
 "Mute" = "Без звука";
 
 /* No comment provided by engineer. */
+"Name" = "Имя";
+
+/* No comment provided by engineer. */
 "Network & servers" = "Сеть & серверы";
 
 /* No comment provided by engineer. */
@@ -1230,7 +1239,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Пожалуйста, проверьте, что вы использовали правильную ссылку или попросите, чтобы ваш контакт отправил вам другую ссылку.";
 
-/* alert message */
+/* No comment provided by engineer. */
 "Please check your network connection and try again." = "Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.";
 
 /* No comment provided by engineer. */
@@ -1454,6 +1463,9 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
+
+/* No comment provided by engineer. */
+"Show QR code" = "Показать QR код";
 
 /* notification */
 "SimpleX encrypted message or connection event" = "SimpleX: зашифрованное сообщение или соединение контакта";
