@@ -26,24 +26,26 @@ import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.ModalManager
+import chat.simplex.app.views.helpers.newChatSheetAnimSpec
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatSheetVisible: Boolean, closeNewChatSheet: () -> Unit) {
-  if (newChatSheetVisible) BackHandler { closeNewChatSheet() }
+fun NewChatSheet(chatModel: ChatModel, newChatSheetVisible: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
+  if (newChatSheetVisible) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetVisible,
     addContact = {
-      closeNewChatSheet()
+      closeNewChatSheet(false)
       ModalManager.shared.showModal { CreateLinkView(chatModel, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
-      closeNewChatSheet()
+      closeNewChatSheet(false)
       ModalManager.shared.showModalCloseable { close -> ConnectViaLinkView(chatModel, close) }
     },
     createGroup = {
-      closeNewChatSheet()
+      closeNewChatSheet(false)
       ModalManager.shared.showCustomModal { close -> AddGroupView(chatModel, close) }
-    }
+    },
+    closeNewChatSheet,
   )
 }
 
@@ -52,36 +54,37 @@ fun NewChatSheetLayout(
   newChatSheetOpen: Boolean,
   addContact: () -> Unit,
   connectViaLink: () -> Unit,
-  createGroup: () -> Unit
+  createGroup: () -> Unit,
+  closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
   val actions = remember { listOf(addContact, connectViaLink, createGroup) }
   val titles = remember { listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group) }
   val icons = remember { listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group) }
+  val backgroundColor = if (isInDarkTheme())
+    Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
+  else
+    MaterialTheme.colors.background
   LazyColumn {
-    items(3) { index ->
-      var visible by remember { mutableStateOf(false) }
-      LaunchedEffect(Unit) {
-        visible = true
-      }
-      AnimatedVisibility(
-        visible && newChatSheetOpen,
-        enter = fadeIn(tween(200, (titles.lastIndex - index) * 20, LinearEasing)) +
-            slideInVertically(tween(200, (titles.lastIndex - index) * 20, LinearEasing), initialOffsetY = { it / 5 }),
-        exit = fadeOut(tween(200, index * 50, LinearEasing)) +
-            slideOutVertically(tween(200, index * 20, LinearEasing), targetOffsetY = { it / 5 }),
-      ) {
-        Row {
-          Spacer(Modifier.weight(1f))
-          Box(contentAlignment = Alignment.CenterEnd) {
+    items(actions.size) { index ->
+      Row {
+        Spacer(Modifier.weight(1f))
+        Box(contentAlignment = Alignment.CenterEnd) {
+          val visibilityState = remember { MutableTransitionState(false) }.apply { targetState = true }
+          val newChatOpen = rememberUpdatedState(newChatSheetOpen)
+          if (!newChatOpen.value) {
+            visibilityState.targetState = false
+          }
+          this@Row.AnimatedVisibility(
+            visibilityState,
+            enter = fadeIn(newChatSheetAnimSpec((titles.lastIndex - index) * 20)) +
+                slideInVertically(newChatSheetAnimSpec((titles.lastIndex - index) * 20), initialOffsetY = { it / 5 }),
+            exit = fadeOut(newChatSheetAnimSpec(index * 20)) +
+                slideOutVertically(newChatSheetAnimSpec(index * 20), targetOffsetY = { it / 5 }),
+          ) {
             Button(
               actions[index],
               shape = RoundedCornerShape(21.dp),
-              colors = ButtonDefaults.textButtonColors(
-                backgroundColor = if (isInDarkTheme())
-                  Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
-                else
-                  MaterialTheme.colors.background
-              ),
+              colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
               elevation = null,
               contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
               modifier = Modifier.height(42.dp)
@@ -100,8 +103,11 @@ fun NewChatSheetLayout(
               )
             }
           }
-          Spacer(Modifier.width(DEFAULT_PADDING))
+          if (!visibilityState.currentState && !newChatSheetOpen) {
+            closeNewChatSheet(false)
+          }
         }
+        Spacer(Modifier.width(DEFAULT_PADDING))
       }
       Spacer(Modifier.height(DEFAULT_PADDING))
     }
@@ -124,11 +130,13 @@ fun ActionButton(
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       val tint = if (disabled) HighOrLowlight else MaterialTheme.colors.primary
-      Icon(icon, text,
+      Icon(
+        icon, text,
         tint = tint,
         modifier = Modifier
           .size(40.dp)
-          .padding(bottom = 8.dp))
+          .padding(bottom = 8.dp)
+      )
       if (text != null) {
         Text(
           text,
@@ -157,7 +165,8 @@ fun PreviewNewChatSheet() {
       true,
       addContact = {},
       connectViaLink = {},
-      createGroup = {}
+      createGroup = {},
+      closeNewChatSheet = {},
     )
   }
 }

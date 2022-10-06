@@ -1,7 +1,7 @@
 package chat.simplex.app.views.chatlist
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalUriHandler
@@ -32,9 +33,9 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   var newChatSheetState by rememberSaveable { mutableStateOf(NewChatSheetState.GONE) }
@@ -42,17 +43,14 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
   val showNewChatSheet = {
     newChatSheetState = NewChatSheetState.VISIBLE
   }
-  val hideNewChatSheet: () -> Unit = {
+  val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
     scope.launch {
-      // Start hiding with animation
-      newChatSheetState = NewChatSheetState.HIDING
-      delay(250)
-      // Remove from the screen completely
-      newChatSheetState = NewChatSheetState.GONE
+      if (animated) newChatSheetState = NewChatSheetState.HIDING
+      else newChatSheetState = NewChatSheetState.GONE
     }
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet()
+    if (chatModel.clearOverlays.value && newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet(true)
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
@@ -65,7 +63,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              if (newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet() else showNewChatSheet()
+              if (newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
           elevation = FloatingActionButtonDefaults.elevation(
@@ -102,42 +100,38 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     }
   }
   if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
-    var startAnimate by remember { mutableStateOf(false) }
+    val startAnimate = remember { MutableTransitionState(false) }.apply { targetState = true }
     val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
     val animatedColor by animateColorAsState(
-      if (startAnimate && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
-      tween(200, 0, LinearEasing)
+      if (startAnimate.targetState && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
+      newChatSheetAnimSpec()
     )
-    LaunchedEffect(Unit) {
-      startAnimate = true
-    }
-    Surface(
+    Column(
       Modifier
         .fillMaxSize()
-        .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet() },
-      color = Color.Transparent
+        .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet(true) }
+        .drawBehind { drawRect(animatedColor) },
+      verticalArrangement = Arrangement.Bottom,
+      horizontalAlignment = Alignment.End
     ) {
-      Column(
-        Modifier.background(animatedColor),
-        verticalArrangement = Arrangement.Bottom,
-        horizontalAlignment = Alignment.End
+      NewChatSheet(chatModel, newChatSheetState == NewChatSheetState.VISIBLE, hideNewChatSheet)
+      FloatingActionButton(
+        onClick = { if (!stopped) hideNewChatSheet(true) },
+        Modifier.padding(end = 16.dp, bottom = 16.dp),
+        elevation = FloatingActionButtonDefaults.elevation(
+          defaultElevation = 0.dp,
+          pressedElevation = 0.dp,
+          hoveredElevation = 0.dp,
+          focusedElevation = 0.dp,
+        ),
+        backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
+        contentColor = Color.White
       ) {
-        NewChatSheet(chatModel, newChatSheetState == NewChatSheetState.VISIBLE, hideNewChatSheet)
-        FloatingActionButton(
-          onClick = {
-            if (!stopped) hideNewChatSheet()
-          },
-          Modifier.padding(end = 16.dp, bottom = 16.dp),
-          elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            focusedElevation = 0.dp,
-          ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
-          contentColor = Color.White
-        ) {
-          Icon(if (newChatSheetState != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+        AnimatedContent(newChatSheetState, transitionSpec = {
+          (fadeIn(newChatSheetAnimSpec()) with fadeOut(newChatSheetAnimSpec()))
+            .using(SizeTransform(clip = false))
+        }) {
+          Icon(if (it != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
