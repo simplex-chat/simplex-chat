@@ -1,7 +1,6 @@
 package chat.simplex.app.views.newchat
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -13,20 +12,20 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
-import chat.simplex.app.views.helpers.ModalManager
-import chat.simplex.app.views.helpers.newChatSheetAnimSpec
+import chat.simplex.app.views.helpers.*
+import kotlin.math.roundToInt
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatSheetVisible: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
@@ -69,42 +68,46 @@ fun NewChatSheetLayout(
       Row {
         Spacer(Modifier.weight(1f))
         Box(contentAlignment = Alignment.CenterEnd) {
-          val visibilityState = remember { MutableTransitionState(false) }.apply { targetState = true }
-          val newChatOpen = rememberUpdatedState(newChatSheetOpen)
-          if (!newChatOpen.value) {
-            visibilityState.targetState = false
+          var visible by remember { mutableStateOf(false) }
+          LaunchedEffect(Unit) {
+            visible = true
           }
-          this@Row.AnimatedVisibility(
-            visibilityState,
-            enter = fadeIn(newChatSheetAnimSpec((titles.lastIndex - index) * 20)) +
-                slideInVertically(newChatSheetAnimSpec((titles.lastIndex - index) * 20), initialOffsetY = { it / 5 }),
-            exit = fadeOut(newChatSheetAnimSpec(index * 20)) +
-                slideOutVertically(newChatSheetAnimSpec(index * 20), targetOffsetY = { it / 5 }),
+          if (!rememberUpdatedState(newChatSheetOpen).value) {
+            visible = false
+          }
+          val animatedFloat by animateFloatAsState(
+            if (visible) 1f else 0f,
+            if (visible)
+              newChatSheetAnimSpec((titles.lastIndex - index) * 20)
+            else
+              newChatSheetAnimSpec(index * 20),
           ) {
-            Button(
-              actions[index],
-              shape = RoundedCornerShape(21.dp),
-              colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
-              elevation = null,
-              contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-              modifier = Modifier.height(42.dp)
-            ) {
-              Text(
-                stringResource(titles[index]),
-                Modifier.padding(start = DEFAULT_PADDING_HALF),
-                color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
-                fontWeight = FontWeight.Medium,
-              )
-              Icon(
-                icons[index],
-                stringResource(titles[index]),
-                Modifier.size(42.dp),
-                tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
-              )
+            if (!visible && !newChatSheetOpen) {
+              closeNewChatSheet(false)
             }
           }
-          if (!visibilityState.currentState && !newChatSheetOpen) {
-            closeNewChatSheet(false)
+          Button(
+            actions[index],
+            shape = RoundedCornerShape(21.dp),
+            colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
+            elevation = null,
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
+            modifier = Modifier
+              .graphicsLayer { alpha = animatedFloat; translationY = (1 - animatedFloat) * 20.dp.toPx() / 2 }
+              .height(42.dp)
+          ) {
+            Text(
+              stringResource(titles[index]),
+              Modifier.padding(start = DEFAULT_PADDING_HALF),
+              color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
+              fontWeight = FontWeight.Medium,
+            )
+            Icon(
+              icons[index],
+              stringResource(titles[index]),
+              Modifier.size(42.dp),
+              tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
+            )
           }
         }
         Spacer(Modifier.width(DEFAULT_PADDING))
