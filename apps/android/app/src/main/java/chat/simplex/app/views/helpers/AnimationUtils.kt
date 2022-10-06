@@ -58,28 +58,28 @@ fun ExperimentalAnimationNav(chatModel: ChatModel, setPerformLA: (Boolean) -> Un
       enterTransition = {
         when (initialState.destination.route) {
           "RIGHT" ->
-            slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(250))
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
           else -> null
         }
       },
       exitTransition = {
         when (targetState.destination.route) {
           "RIGHT" ->
-            slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(250))
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
           else -> null
         }
       },
       popEnterTransition = {
         when (initialState.destination.route) {
           "RIGHT" ->
-            slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(250))
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
           else -> null
         }
       },
       popExitTransition = {
         when (targetState.destination.route) {
           "RIGHT" ->
-            slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(250))
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
           else -> null
         }
       }
@@ -94,28 +94,28 @@ fun ExperimentalAnimationNav(chatModel: ChatModel, setPerformLA: (Boolean) -> Un
       enterTransition = {
         when (initialState.destination.route) {
           "LEFT" ->
-            slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(250))
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
           else -> null
         }
       },
       exitTransition = {
         when (targetState.destination.route) {
           "LEFT" ->
-            slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(250))
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Left, animationSpec = tween(700))
           else -> null
         }
       },
       popEnterTransition = {
         when (initialState.destination.route) {
           "LEFT" ->
-            slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(250))
+            slideIntoContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
           else -> null
         }
       },
       popExitTransition = {
         when (targetState.destination.route) {
           "LEFT" ->
-            slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(250))
+            slideOutOfContainer(AnimatedContentScope.SlideDirection.Right, animationSpec = tween(700))
           else -> null
         }
       }
