@@ -36,7 +36,6 @@ import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   var newChatSheetState by rememberSaveable { mutableStateOf(NewChatSheetState.GONE) }
@@ -245,7 +244,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
+  Divider(Modifier.padding(top = AppBarHeight))
 }
 
 @Composable
