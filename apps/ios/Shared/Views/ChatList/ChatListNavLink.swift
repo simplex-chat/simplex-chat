@@ -210,6 +210,13 @@ struct ChatListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
+
+            Button {
+                showContactConnectionInfo = true
+            } label: {
+                Label("Name", systemImage: "pencil")
+            }
+            .tint(.accentColor)
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .sheet(isPresented: $showContactConnectionInfo) {
