@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    compileSdk 33
+    compileSdk 32
 
     defaultConfig {
         applicationId "chat.simplex.app"
@@ -112,8 +112,6 @@ dependencies {
 
     //Camera Permission
     implementation "com.google.accompanist:accompanist-permissions:0.23.0"
-
-    implementation "com.google.accompanist:accompanist-navigation-animation:0.26.4-beta"
 
     // Link Previews
     implementation 'org.jsoup:jsoup:1.13.1'

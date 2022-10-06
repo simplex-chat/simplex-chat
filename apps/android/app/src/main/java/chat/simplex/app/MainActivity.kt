@@ -29,6 +29,7 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.SplashView
 import chat.simplex.app.views.call.ActiveCallView
 import chat.simplex.app.views.call.IncomingCallAlertView
+import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.database.DatabaseErrorView
 import chat.simplex.app.views.helpers.*
@@ -326,12 +327,13 @@ fun MainPage(
           else {
             showAdvertiseLAAlert = true
             val stopped = chatModel.chatRunning.value == false
-            val nav = ExperimentalAnimationNav(chatModel, setPerformLA, stopped)
-            val currentChatId = chatModel.chatId.value
-            LaunchedEffect(currentChatId) {
-              if (currentChatId == null && nav.backQueue.size == 2) nav.navigate("LEFT")
-              else if (currentChatId == null) nav.popBackStack()
-              else nav.navigate("RIGHT")
+            AnimateScreensNullable(chatModel.chatId) { currentChatId ->
+              if (currentChatId == null) {
+                if (chatModel.sharedContent.value == null)
+                  ChatListView(chatModel, setPerformLA, stopped)
+                else
+                  ShareListView(chatModel, stopped)
+              } else ChatView(currentChatId, chatModel)
             }
           }
         }
