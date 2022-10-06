@@ -192,10 +192,13 @@ startChatController user subConns enableExpireCIs = do
     runExpireCIs = do
       let interval = 1800 * 1000000 -- 30 minutes
       forever $ do
-        expire <- asks expireCIs
-        atomically $ readTVar expire >>= \b -> unless b retry
-        ttl <- withStore' (`getChatItemTTL` user)
-        forM_ ttl $ \t -> expireChatItems user t False
+        ( do
+            expire <- asks expireCIs
+            atomically $ readTVar expire >>= \b -> unless b retry
+            ttl <- withStore' (`getChatItemTTL` user)
+            forM_ ttl $ \t -> expireChatItems user t False
+          )
+          `catchError` (toView . CRChatError)
         threadDelay interval
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
@@ -1124,7 +1127,7 @@ setExpireCIs b = do
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
 deleteFile user CIFileInfo {filePath, fileId, fileStatus} =
-  cancel' >> delete
+  (cancel' >> delete) `catchError` (toView . CRChatError)
   where
     cancel' = forM_ fileStatus $ \(AFS dir status) ->
       unless (ciFileEnded status) $
@@ -1412,29 +1415,35 @@ expireChatItems user ttl sync = do
     contactsLoop :: [Contact] -> UTCTime -> TVar Bool -> m ()
     contactsLoop [] _ _ = pure ()
     contactsLoop (ct : cts) expirationDate expire = continue expire $ do
-      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
-      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-      withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
-      withStore' $ \db -> do
-        ciCount_ <- getContactCICount db user ct
-        case (maxItemTs_, ciCount_) of
-          (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
-          _ -> pure ()
+      processContact `catchError` (toView . CRChatError)
       contactsLoop cts expirationDate expire
+      where
+        processContact = do
+          filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+          maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+          forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+          withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+          withStore' $ \db -> do
+            ciCount_ <- getContactCICount db user ct
+            case (maxItemTs_, ciCount_) of
+              (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
+              _ -> pure ()
     groupsLoop :: [GroupInfo] -> UTCTime -> UTCTime -> TVar Bool -> m ()
     groupsLoop [] _ _ _ = pure ()
     groupsLoop (gInfo : gInfos) expirationDate createdAtCutoff expire = continue expire $ do
-      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
-      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
-      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-      withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
-      withStore' $ \db -> do
-        ciCount_ <- getGroupCICount db user gInfo
-        case (maxItemTs_, ciCount_) of
-          (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
-          _ -> pure ()
+      processGroup `catchError` (toView . CRChatError)
       groupsLoop gInfos expirationDate createdAtCutoff expire
+      where
+        processGroup = do
+          filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+          maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+          forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+          withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+          withStore' $ \db -> do
+            ciCount_ <- getGroupCICount db user gInfo
+            case (maxItemTs_, ciCount_) of
+              (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
+              _ -> pure ()
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
