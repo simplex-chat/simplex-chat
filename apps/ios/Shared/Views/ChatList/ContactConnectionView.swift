@@ -42,7 +42,7 @@ struct ContactConnectionView: View {
                         .bold()
                         .allowsTightening(false)
                         .foregroundColor(.secondary)
-                        .padding(.trailing, 8)
+                        .padding(.horizontal, 8)
                         .padding(.top, 1)
                         .padding(.bottom, 0.5)
                         .frame(alignment: .topLeading)
