@@ -189,14 +189,13 @@ startChatController user subConns enableExpireCIs = do
           atomically $ writeTVar expireAsync a
           setExpireCIs True
         _ -> setExpireCIs True
-    runExpireCIs = do
-      let interval = 1800 * 1000000 -- 30 minutes
-      forever $ do
+    runExpireCIs = forever $ do
+      flip catchError (toView . CRChatError) $ do
         expire <- asks expireCIs
         atomically $ readTVar expire >>= \b -> unless b retry
         ttl <- withStore' (`getChatItemTTL` user)
         forM_ ttl $ \t -> expireChatItems user t False
-        threadDelay interval
+      threadDelay $ 1800 * 1000000 -- 30 minutes
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
@@ -1124,7 +1123,7 @@ setExpireCIs b = do
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
 deleteFile user CIFileInfo {filePath, fileId, fileStatus} =
-  cancel' >> delete
+  (cancel' >> delete) `catchError` (toView . CRChatError)
   where
     cancel' = forM_ fileStatus $ \(AFS dir status) ->
       unless (ciFileEnded status) $
@@ -1405,13 +1404,19 @@ expireChatItems user ttl sync = do
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   expire <- asks expireCIs
   contacts <- withStore' (`getUserContacts` user)
-  contactsLoop contacts expirationDate expire
+  loop expire contacts $ processContact expirationDate
   groups <- withStore' (`getUserGroupDetails` user)
-  groupsLoop groups expirationDate createdAtCutoff expire
+  loop expire groups $ processGroup expirationDate createdAtCutoff
   where
-    contactsLoop :: [Contact] -> UTCTime -> TVar Bool -> m ()
-    contactsLoop [] _ _ = pure ()
-    contactsLoop (ct : cts) expirationDate expire = continue expire $ do
+    loop :: TVar Bool -> [a] -> (a -> m ()) -> m ()
+    loop _ [] _ = pure ()
+    loop expire (a : as) process = continue expire $ do
+      process a `catchError` (toView . CRChatError)
+      loop expire as process
+    continue :: TVar Bool -> m () -> m ()
+    continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
+    processContact :: UTCTime -> Contact -> m ()
+    processContact expirationDate ct = do
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
       maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
@@ -1421,10 +1426,8 @@ expireChatItems user ttl sync = do
         case (maxItemTs_, ciCount_) of
           (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
           _ -> pure ()
-      contactsLoop cts expirationDate expire
-    groupsLoop :: [GroupInfo] -> UTCTime -> UTCTime -> TVar Bool -> m ()
-    groupsLoop [] _ _ _ = pure ()
-    groupsLoop (gInfo : gInfos) expirationDate createdAtCutoff expire = continue expire $ do
+    processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
+    processGroup expirationDate createdAtCutoff gInfo = do
       filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
       maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
@@ -1434,9 +1437,6 @@ expireChatItems user ttl sync = do
         case (maxItemTs_, ciCount_) of
           (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
           _ -> pure ()
-      groupsLoop gInfos expirationDate createdAtCutoff expire
-    continue :: TVar Bool -> m () -> m ()
-    continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser
