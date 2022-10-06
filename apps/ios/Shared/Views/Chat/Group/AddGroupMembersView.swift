@@ -23,7 +23,7 @@ struct AddGroupMembersView: View {
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
-        case error(title: LocalizedStringKey, error: String = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
@@ -101,7 +101,7 @@ struct AddGroupMembersView: View {
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text("\(error)"))
+                return Alert(title: Text(title), message: Text(error))
             }
         }
     }
@@ -128,14 +128,8 @@ struct AddGroupMembersView: View {
                 await MainActor.run { dismiss() }
                 if let cb = addedMembersCb { cb(selectedContacts) }
             } catch {
-                switch error as? ChatResponse {
-                case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-                    alert = .error(title: "Connection timeout", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-                case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-                    alert = .error(title: "Connection error", error: NSLocalizedString("Please check your network connection and try again.", comment: "alert message"))
-                default:
-                    alert = .error(title: "Error adding member(s)", error: responseError(error))
-                }
+                let a = getErrorAlert(error, "Error adding member(s)")
+                alert = .error(title: a.title, error: a.message)
             }
         }
     }

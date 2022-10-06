@@ -61,14 +61,8 @@ struct UserAddress: View {
                                 }
                             } catch let error {
                                 logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
-                                switch error as? ChatResponse {
-                                case .chatCmdError(.errorAgent(.BROKER(.TIMEOUT))):
-                                    alert = .error(title: "Connection timeout", error: "Please check your network connection and try again.")
-                                case .chatCmdError(.errorAgent(.BROKER(.NETWORK))):
-                                    alert = .error(title: "Connection error", error: "Please check your network connection and try again.")
-                                default:
-                                    alert = .error(title: "Error creating address", error: "Error: \(responseError(error))")
-                                }
+                                let a = getErrorAlert(error, "Error creating address")
+                                alert = .error(title: a.title, error: "\(a.message)")
                             }
                         }
                     } label: { Label("Create address", systemImage: "qrcode") }
