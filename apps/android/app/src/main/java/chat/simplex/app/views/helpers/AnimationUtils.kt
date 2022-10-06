@@ -3,14 +3,14 @@ package chat.simplex.app.views.helpers
 import androidx.compose.animation.*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.navigation.NavHostController
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.views.chat.ChatView
 import chat.simplex.app.views.chatlist.ChatListView
 import chat.simplex.app.views.chatlist.ShareListView
 import com.google.accompanist.navigation.animation.*
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -119,17 +119,7 @@ fun ExperimentalAnimationNav(chatModel: ChatModel, setPerformLA: (Boolean) -> Un
           else -> null
         }
       }
-    ) {
-      var currentChatId by remember { mutableStateOf(null as String?) }
-      LaunchedEffect(chatModel.chatId.value) {
-        if (currentChatId == null) currentChatId = chatModel.chatId.value
-        else if (chatModel.chatId.value == null) {
-          delay(800)
-          currentChatId = chatModel.chatId.value
-        }
-      }
-      ChatView(currentChatId ?: chatModel.chatId.value ?: return@composable, chatModel)
-    }
+    ) { ChatView("@2", chatModel) }
   }
 
   return navController
