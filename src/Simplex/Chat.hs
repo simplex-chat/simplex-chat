@@ -185,21 +185,19 @@ startChatController user subConns enableExpireCIs = do
       expireAsync <- asks expireCIsAsync
       readTVarIO expireAsync >>= \case
         Nothing -> do
-          a <- Just <$> async (void $ runExceptT runExpireCIs)
+          a <- Just <$> async (void $ runExceptT runExpireCIsLoop)
           atomically $ writeTVar expireAsync a
           setExpireCIs True
         _ -> setExpireCIs True
-    runExpireCIs = do
-      let interval = 1800 * 1000000 -- 30 minutes
-      forever $ do
-        ( do
-            expire <- asks expireCIs
-            atomically $ readTVar expire >>= \b -> unless b retry
-            ttl <- withStore' (`getChatItemTTL` user)
-            forM_ ttl $ \t -> expireChatItems user t False
-          )
-          `catchError` (toView . CRChatError)
-        threadDelay interval
+    runExpireCIsLoop = forever $ do
+      runExpireCIs `catchError` (toView . CRChatError)
+      threadDelay $ 1800 * 1000000 -- 30 minutes
+      where
+        runExpireCIs = do
+          expire <- asks expireCIs
+          atomically $ readTVar expire >>= \b -> unless b retry
+          ttl <- withStore' (`getChatItemTTL` user)
+          forM_ ttl $ \t -> expireChatItems user t False
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
