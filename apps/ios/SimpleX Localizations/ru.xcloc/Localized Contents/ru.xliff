@@ -746,6 +746,11 @@
         <target>Удалить профиль?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete connection" xml:space="preserve">
+        <source>Delete connection</source>
+        <target>Удалить соединение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete contact" xml:space="preserve">
         <source>Delete contact</source>
         <target>Удалить контакт</target>
@@ -1019,6 +1024,11 @@
       <trans-unit id="Error deleting chat!" xml:space="preserve">
         <source>Error deleting chat!</source>
         <target>Ошибка при удалении чата!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting connection" xml:space="preserve">
+        <source>Error deleting connection</source>
+        <target>Ошибка при удалении соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -1573,6 +1583,11 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Без звука</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Name" xml:space="preserve">
+        <source>Name</source>
+        <target>Имя</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Сеть &amp; серверы</target>
@@ -1766,7 +1781,7 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Please check your network connection and try again." xml:space="preserve">
         <source>Please check your network connection and try again.</source>
         <target>Пожалуйста, проверьте ваше соединение с сетью и попробуйте еще раз.</target>
-        <note>alert message</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
         <source>Please enter correct current passphrase.</source>
@@ -2101,6 +2116,11 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Shared one-time link" xml:space="preserve">
         <source>Shared one-time link</source>
         <target>Одноразовая ссылка-приглашение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show QR code" xml:space="preserve">
+        <source>Show QR code</source>
+        <target>Показать QR код</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
