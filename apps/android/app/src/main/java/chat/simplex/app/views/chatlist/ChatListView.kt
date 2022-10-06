@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -100,7 +101,10 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     }
   }
   if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
-    val startAnimate = remember { MutableTransitionState(false) }.apply { targetState = true }
+    val startAnimate = remember { MutableTransitionState(false) }
+    LaunchedEffect(Unit) {
+      startAnimate.targetState = true
+    }
     val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
     val animatedColor by animateColorAsState(
       if (startAnimate.targetState && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
@@ -127,12 +131,14 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
         contentColor = Color.White
       ) {
-        AnimatedContent(newChatSheetState, transitionSpec = {
-          (fadeIn(newChatSheetAnimSpec()) with fadeOut(newChatSheetAnimSpec()))
-            .using(SizeTransform(clip = false))
-        }) {
-          Icon(if (it != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
-        }
+        val animatedAlpha by animateFloatAsState(
+          if (startAnimate.targetState && newChatSheetState == NewChatSheetState.VISIBLE) 1f else 0f,
+          newChatSheetAnimSpec()
+        )
+        Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
+          Modifier.alpha(1 - animatedAlpha))
+        Icon(Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
+          Modifier.alpha(animatedAlpha))
       }
     }
   }

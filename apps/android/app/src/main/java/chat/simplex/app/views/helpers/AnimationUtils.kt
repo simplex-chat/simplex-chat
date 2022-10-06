@@ -1,6 +1,6 @@
 package chat.simplex.app.views.helpers
 
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 
-fun <T> newChatSheetAnimSpec(delayMillis: Int = 0) = tween<T>(100, delayMillis, LinearEasing)
+fun <T> newChatSheetAnimSpec(delayMillis: Int = 0) = tween<T>(256, delayMillis, FastOutSlowInEasing)
