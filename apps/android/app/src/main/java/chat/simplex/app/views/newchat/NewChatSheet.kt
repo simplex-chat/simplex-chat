@@ -18,14 +18,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
-import kotlin.math.roundToInt
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatSheetVisible: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
