@@ -165,7 +165,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
           pure ss {smp = fromMaybe defaultSMPServers $ nonEmpty userSmpServers}
         _ -> pure ss
 
-startChatController :: forall m. (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
+startChatController :: (MonadUnliftIO m, MonadReader ChatController m) => User -> Bool -> Bool -> m (Async ())
 startChatController user subConns enableExpireCIs = do
   asks smpAgent >>= resumeAgentClient
   restoreCalls user
