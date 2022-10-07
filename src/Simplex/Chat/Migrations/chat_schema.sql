@@ -191,6 +191,7 @@ CREATE TABLE snd_files(
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  file_inline TEXT,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -200,7 +201,8 @@ CREATE TABLE rcv_files(
   file_queue_info BLOB
   ,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,

@@ -19,6 +19,7 @@
 
 module Simplex.Chat.Types where
 
+import Control.Monad ((>=>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -607,7 +608,8 @@ data SndFileTransfer = SndFileTransfer
     recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: AgentConnId,
-    fileStatus :: FileStatus
+    fileStatus :: FileStatus,
+    fileInline :: Maybe FileInlineMode
   }
   deriving (Eq, Show, Generic)
 
@@ -621,11 +623,37 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: Maybe ConnReqInvitation
+    fileConnReq :: Maybe ConnReqInvitation,
+    fileInline :: Maybe FileInlineMode
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON FileInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+
+data FileInlineMode
+  = FIInvitation -- recepient must accept
+  | FIChunks -- file chunks are sent after the message without acceptance
+  deriving (Eq, Show)
+
+instance FromField FileInlineMode where fromField = fromTextField_ textDecode
+
+instance ToField FileInlineMode where toField = toField . textEncode
+
+instance ToJSON FileInlineMode where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance FromJSON FileInlineMode where
+  parseJSON = J.parseJSON >=> maybe (fail "bad FileInlineMode") pure . textDecode
+
+instance TextEncoding FileInlineMode where
+  textDecode = \case
+    "invitation" -> Just FIInvitation
+    "chunks" -> Just FIChunks
+    _ -> Nothing
+  textEncode = \case
+    FIInvitation -> "invitation"
+    FIChunks -> "chunks"
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,

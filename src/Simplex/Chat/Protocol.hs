@@ -121,6 +121,7 @@ data ChatMsgEvent
   | XFile FileInvitation -- TODO discontinue
   | XFileAcpt String -- direct file protocol
   | XFileAcptInv SharedMsgId ConnReqInvitation String -- group file protocol
+  | XFileAcptInline SharedMsgId String
   | XFileCancel SharedMsgId
   | XInfo Profile
   | XContact Profile (Maybe XContactId)
@@ -303,6 +304,7 @@ data CMEventTag
   | XFile_
   | XFileAcpt_
   | XFileAcptInv_
+  | XFileAcptInline_
   | XFileCancel_
   | XInfo_
   | XContact_
@@ -341,6 +343,7 @@ instance StrEncoding CMEventTag where
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
+    XFileAcptInline_ -> "x.file.acpt.inline"
     XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
@@ -414,6 +417,7 @@ toCMEventTag = \case
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
+  XFileAcptInline _ _ -> XFileAcptInline_
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
@@ -481,6 +485,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
       XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
+      XFileAcptInline_ -> XFileAcptInline <$> p "msgId" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
@@ -524,6 +529,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, p
       XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
+      XFileAcptInline sharedMsgId fileName -> o ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]

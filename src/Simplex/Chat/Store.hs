@@ -107,7 +107,6 @@ module Simplex.Chat.Store
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
-    createSndFileTransfer,
     createSndDirectFileTransfer,
     createSndDirectFTConnection,
     createSndGroupFileTransfer,
@@ -135,6 +134,7 @@ module Simplex.Chat.Store
     updateFileTransferChatItemId,
     getFileTransfer,
     getFileTransferProgress,
+    getFileTransferMeta,
     getSndFileTransfer,
     getContactFileInfo,
     getContactMaxItemTs,
@@ -265,6 +265,7 @@ import Simplex.Chat.Migrations.M20220928_settings
 import Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
 import Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_items
 import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
+import Simplex.Chat.Migrations.M20221007_inline_files
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -304,7 +305,8 @@ schemaMigrations =
     ("20220928_settings", m20220928_settings),
     ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices),
     ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items),
-    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id)
+    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
+    ("20221007_inline_files", m20221007_inline_files)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -1288,7 +1290,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           DB.query
             db
             [sql|
-              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, cs.local_display_name, m.local_display_name
+              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, cs.local_display_name, m.local_display_name
               FROM snd_files s
               JOIN files f USING (file_id)
               LEFT JOIN contacts cs USING (contact_id)
@@ -1296,10 +1298,10 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, contactName_, memberName_) =
+    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe FileInlineMode, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
@@ -2033,30 +2035,31 @@ getViaGroupContact db User {userId} GroupMember {groupMemberId} =
           activeConn = toConnection connRow
        in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, chatSettings, createdAt, updatedAt}
 
-createSndFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> ConnId -> Integer -> IO Int64
-createSndFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} acId chunkSize = do
+createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Maybe ConnId -> Integer -> IO Int64
+createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} acId_ chunkSize = do
   currentTs <- getCurrentTime
   DB.execute
     db
     "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
     (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
   fileId <- insertedRowId db
-  Connection {connId} <- createSndFileConnection_ db userId fileId acId
-  let fileStatus = FSNew
-  DB.execute
-    db
-    "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-    (fileId, fileStatus, connId, currentTs, currentTs)
+  forM_ acId_ $ \acId -> do
+    Connection {connId} <- createSndFileConnection_ db userId fileId acId
+    let fileStatus = FSNew
+    DB.execute
+      db
+      "INSERT INTO snd_files (file_id, file_status, connection_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+      (fileId, fileStatus, connId, currentTs, currentTs)
   pure fileId
 
-createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> IO Int64
-createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-    (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
-  insertedRowId db
+-- createSndDirectFileTransfer :: DB.Connection -> UserId -> Contact -> FilePath -> FileInvitation -> Integer -> IO Int64
+-- createSndDirectFileTransfer db userId Contact {contactId} filePath FileInvitation {fileName, fileSize} chunkSize = do
+--   currentTs <- getCurrentTime
+--   DB.execute
+--     db
+--     "INSERT INTO files (user_id, contact_id, file_name, file_path, file_size, chunk_size, ci_file_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+--     (userId, contactId, fileName, filePath, fileSize, chunkSize, CIFSSndStored, currentTs, currentTs)
+--   insertedRowId db
 
 createSndDirectFTConnection :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> IO ()
 createSndDirectFTConnection db user@User {userId} fileId (cmdId, acId) = do
@@ -2259,7 +2262,7 @@ getRcvFileTransfer db User {userId} fileId =
       [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
-            f.file_path, c.connection_id, c.agent_conn_id
+            f.file_path, r.file_inline, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN connections c ON r.file_id = c.rcv_file_id
@@ -2270,10 +2273,10 @@ getRcvFileTransfer db User {userId} fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe FileInlineMode) :. (Maybe Int64, Maybe AgentConnId) ->
       Either StoreError RcvFileTransfer
-    rcvFileTransfer (fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, connId_, agentConnId_) =
-      let fileInv = FileInvitation {fileName, fileSize, fileConnReq}
+    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, fileInline) :. (connId_, agentConnId_)) =
+      let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
           fileInfo = (filePath_, connId_, agentConnId_)
        in case contactName_ <|> memberName_ of
             Nothing -> Left $ SERcvFileInvalid fileId
@@ -2400,8 +2403,8 @@ getFileTransfer db user@User {userId} fileId =
         (userId, fileId)
 
 getSndFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
-getSndFileTransfer db User {userId} fileId = do
-  fileTransferMeta <- ExceptT $ getFileTransferMeta_ db userId fileId
+getSndFileTransfer db user@User {userId} fileId = do
+  fileTransferMeta <- getFileTransferMeta db user fileId
   sndFileTransfers <- ExceptT $ getSndFileTransfers_ db userId fileId
   pure (fileTransferMeta, sndFileTransfers)
 
@@ -2411,7 +2414,7 @@ getSndFileTransfers_ db userId fileId =
     <$> DB.query
       db
       [sql|
-        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.connection_id, c.agent_conn_id,
+        SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, s.connection_id, c.agent_conn_id,
           cs.local_display_name, m.local_display_name
         FROM snd_files s
         JOIN files f USING (file_id)
@@ -2422,17 +2425,17 @@ getSndFileTransfers_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
+    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Maybe FileInlineMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
     sndFileTransfers [] = Right []
     sndFileTransfers fts = mapM sndFileTransfer fts
-    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, connId, agentConnId, contactName_, memberName_) =
+    sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, recipientDisplayName, connId, agentConnId}
+        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
         Nothing -> Left $ SESndFileInvalid fileId
 
-getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> IO (Either StoreError FileTransferMeta)
-getFileTransferMeta_ db userId fileId =
-  firstRow fileTransferMeta (SEFileNotFound fileId) $
+getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
+getFileTransferMeta db User {userId} fileId =
+  ExceptT . firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query
       db
       [sql|

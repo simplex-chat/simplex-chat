@@ -67,6 +67,8 @@ data ChatConfig = ChatConfig
     defaultServers :: InitialAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
+    offerInlineChunks :: Integer,
+    sendInlineChunks :: Integer,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
