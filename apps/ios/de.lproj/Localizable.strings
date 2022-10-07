@@ -1116,6 +1116,9 @@
 /* No comment provided by engineer. */
 "Network status" = "Netzwerkstatus";
 
+/* No comment provided by engineer. */
+"never" = "*** 1 never";
+
 /* notification */
 "New contact request" = "Neue Kontaktanfrage";
 
@@ -1136,9 +1139,6 @@
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Neues Passwort…";
-
-/* No comment provided by engineer. */
-"no" = "*** nein";
 
 /* No comment provided by engineer. */
 "No" = "Nein";

@@ -1512,7 +1512,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
         case .week: return "1 week"
         case .month: return "1 month"
         case let .seconds(seconds): return "\(seconds) second(s)"
-        case .none: return "no"
+        case .none: return "never"
         }
     }
 

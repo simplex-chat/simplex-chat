@@ -599,7 +599,7 @@
   <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
   <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
   <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
-  <string name="chat_item_ttl_none">no</string>
+  <string name="chat_item_ttl_none">never</string>
   <string name="chat_item_ttl_day">1 day</string>
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
