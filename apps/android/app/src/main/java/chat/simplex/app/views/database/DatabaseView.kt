@@ -94,9 +94,9 @@ fun DatabaseView(
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
-          setChatItemTTLAlert(m, chatItemTTL, progressIndicator)
+          setChatItemTTLAlert(m, chatItemTTL, progressIndicator, appFilesCountAndSize, context)
         } else if (it != oldValue) {
-          setCiTTL(m, chatItemTTL, progressIndicator)
+          setCiTTL(m, chatItemTTL, progressIndicator, appFilesCountAndSize, context)
         }
       },
       showSettingsModal
@@ -243,13 +243,18 @@ fun DatabaseLayout(
   }
 }
 
-private fun setChatItemTTLAlert(m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>, progressIndicator: MutableState<Boolean>) {
+private fun setChatItemTTLAlert(
+  m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>,
+  progressIndicator: MutableState<Boolean>,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  context: Context
+) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.enable_automatic_deletion_question),
     text = generalGetString(R.string.enable_automatic_deletion_message),
     confirmText = generalGetString(R.string.delete_messages),
-    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator) },
-    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value}
+    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize, context) },
+    onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value }
   )
 }
 
@@ -303,7 +308,7 @@ fun RunChatSetting(
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
       Switch(
-        enabled= !chatDbDeleted,
+        enabled = !chatDbDeleted,
         checked = runChat,
         onCheckedChange = { runChatSwitch ->
           if (runChatSwitch) {
@@ -586,7 +591,13 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   }
 }
 
-private fun setCiTTL(m: ChatModel, chatItemTTL: MutableState<ChatItemTTL>, progressIndicator: MutableState<Boolean>) {
+private fun setCiTTL(
+  m: ChatModel,
+  chatItemTTL: MutableState<ChatItemTTL>,
+  progressIndicator: MutableState<Boolean>,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  context: Context
+) {
   Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
   progressIndicator.value = true
   withApi {
@@ -594,14 +605,31 @@ private fun setCiTTL(m: ChatModel, chatItemTTL: MutableState<ChatItemTTL>, progr
       m.controller.setChatItemTTL(chatItemTTL.value)
       // Update model on success
       m.chatItemTTL.value = chatItemTTL.value
+      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize, context)
     } catch (e: Exception) {
       // Rollback to model's value
       chatItemTTL.value = m.chatItemTTL.value
-      operationEnded(m, progressIndicator) {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_changing_message_deletion), e.stackTraceToString())
-      }
+      afterSetCiTTL(m, progressIndicator, appFilesCountAndSize, context)
+      AlertManager.shared.showAlertMsg(generalGetString(R.string.error_changing_message_deletion), e.stackTraceToString())
     }
-    progressIndicator.value = false
+  }
+}
+
+private fun afterSetCiTTL(
+  m: ChatModel,
+  progressIndicator: MutableState<Boolean>,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  context: Context
+) {
+  progressIndicator.value = false
+  appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
+  withApi {
+    try {
+      val chats = m.controller.apiGetChats()
+      m.updateChats(chats)
+    } catch (e: Exception) {
+      Log.e(TAG, "apiGetChats error: ${e.message}")
+    }
   }
 }
 
