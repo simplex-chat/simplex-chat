@@ -606,9 +606,9 @@
   <string name="chat_item_ttl_seconds">%s second(s)</string>
   <string name="delete_messages_after">Delete messages after</string>
   <string name="enable_automatic_deletion_question">Enable automatic message deletion?</string>
-  <string name="enable_automatic_deletion_message">This action cannot be undone - once you confirm, messages older than specified age will start to get deleted. It may take up to several minutes to delete old messages initially after changing this setting.</string>
+  <string name="enable_automatic_deletion_message">This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</string>
   <string name="delete_messages">Delete messages</string>
-  <string name="error_changing_message_deletion">Error changing automatic message deletion</string>
+  <string name="error_changing_message_deletion">Error changing setting</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>

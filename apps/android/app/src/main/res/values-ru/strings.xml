@@ -601,14 +601,14 @@
     <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
     <string name="chat_item_ttl_none">нет</string>
     <string name="chat_item_ttl_day">1 день</string>
-    <string name="chat_item_ttl_week">1 неделя</string>
+    <string name="chat_item_ttl_week">1 неделю</string>
     <string name="chat_item_ttl_month">1 месяц</string>
-    <string name="chat_item_ttl_seconds">%s секунд(а)</string>
-    <string name="delete_messages_after">Удалять сообщения после</string>
-    <string name="enable_automatic_deletion_question">Включить автоматическое удаление?</string>
-    <string name="enable_automatic_deletion_message">Это действие нельзя отменить - как только вы подтвердите, сообщения старше выбранного периода начнут удаляться. Это может занять несколько минут сразу после изменения этой настройки.</string>
+    <string name="chat_item_ttl_seconds">%s секунд</string>
+    <string name="delete_messages_after">Удалять сообщения через</string>
+    <string name="enable_automatic_deletion_question">Включить автоматическое удаление сообщений?</string>
+    <string name="enable_automatic_deletion_message">Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.</string>
     <string name="delete_messages">Удалить сообщения</string>
-    <string name="error_changing_message_deletion">Ошибка при включении автоматического удаления сообщений</string>
+    <string name="error_changing_message_deletion">Ошибка при изменении настройки</string>
 
     <!-- DatabaseEncryptionView.kt -->
     <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>
