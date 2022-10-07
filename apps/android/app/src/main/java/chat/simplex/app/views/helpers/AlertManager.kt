@@ -92,6 +92,13 @@ class AlertManager {
     }
   }
 
+  fun showAlertMsg(
+    title: Int,
+    text: Int? = null,
+    confirmText: Int = R.string.ok,
+    onConfirm: (() -> Unit)? = null
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm)
+
   @Composable
   fun showInView() {
     if (presentAlert.value) alertView.value?.invoke()
