@@ -43,6 +43,7 @@ struct NetworkAndServers: View {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
+                    .frame(height: 36)
 
                     if developerTools {
                         NavigationLink {

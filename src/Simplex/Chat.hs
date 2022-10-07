@@ -642,19 +642,21 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APISetChatItemTTL newTTL_ -> withUser' $ \user -> withChatLock $ do
-    case newTTL_ of
-      Nothing -> do
-        withStore' $ \db -> setChatItemTTL db user newTTL_
-        setExpireCIs False
-      Just newTTL -> do
-        oldTTL <- withStore' (`getChatItemTTL` user)
-        when (maybe True (newTTL <) oldTTL) $ do
-          setExpireCIs False
-          expireChatItems user newTTL True
-        withStore' $ \db -> setChatItemTTL db user newTTL_
-        whenM chatStarted $ setExpireCIs True
-    pure CRCmdOk
+  APISetChatItemTTL newTTL_ -> withUser' $ \user ->
+    checkStoreNotChanged $
+      withChatLock $ do
+        case newTTL_ of
+          Nothing -> do
+            withStore' $ \db -> setChatItemTTL db user newTTL_
+            setExpireCIs False
+          Just newTTL -> do
+            oldTTL <- withStore' (`getChatItemTTL` user)
+            when (maybe True (newTTL <) oldTTL) $ do
+              setExpireCIs False
+              expireChatItems user newTTL True
+            withStore' $ \db -> setChatItemTTL db user newTTL_
+            whenM chatStarted $ setExpireCIs True
+        pure CRCmdOk
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)

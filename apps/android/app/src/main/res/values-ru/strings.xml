@@ -593,12 +593,22 @@
     <string name="restart_the_app_to_create_a_new_chat_profile">Перезапустите приложение, чтобы создать новый профиль.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Используйте самую последнюю версию архива чата и ТОЛЬКО на одном устройстве, иначе вы можете перестать получать сообщения от некоторых контактов.</string>
     <string name="stop_chat_to_enable_database_actions">Остановите чат, чтобы разблокировать операции с архивом чата.</string>
-    <string name="files_section">ФАЙЛЫ</string>
+    <string name="data_section">ДАННЫЕ</string>
     <string name="delete_files_and_media">Удалить файлы и медиа</string>
     <string name="delete_files_and_media_question">Удалить файлы и медиа?</string>
     <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
     <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
+    <string name="chat_item_ttl_none">нет</string>
+    <string name="chat_item_ttl_day">1 день</string>
+    <string name="chat_item_ttl_week">1 неделю</string>
+    <string name="chat_item_ttl_month">1 месяц</string>
+    <string name="chat_item_ttl_seconds">%s секунд</string>
+    <string name="delete_messages_after">Удалять сообщения через</string>
+    <string name="enable_automatic_deletion_question">Включить автоматическое удаление сообщений?</string>
+    <string name="enable_automatic_deletion_message">Это действие нельзя отменить — все сообщения, отправленные или полученные раньше чем выбрано, будут удалены. Это может занять несколько минут.</string>
+    <string name="delete_messages">Удалить сообщения</string>
+    <string name="error_changing_message_deletion">Ошибка при изменении настройки</string>
 
     <!-- DatabaseEncryptionView.kt -->
     <string name="save_passphrase_in_keychain">Сохранить пароль в Keystore</string>

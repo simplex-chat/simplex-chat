@@ -234,6 +234,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         apiSetIncognito(chatModel.incognito.value)
         chatModel.userAddress.value = apiGetUserAddress()
         chatModel.userSMPServers.value = getUserSMPServers()
+        chatModel.chatItemTTL.value = getChatItemTTL()
         val chats = apiGetChats()
         chatModel.updateChats(chats)
         chatModel.currentUser.value = user
@@ -320,7 +321,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   }
 
   suspend fun apiStartChat(): Boolean {
-    val r = sendCmd(CC.StartChat())
+    val r = sendCmd(CC.StartChat(expire = true))
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -373,7 +374,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     throw Exception("failed to set storage encryption: ${r.responseType} ${r.details}")
   }
 
-  private suspend fun apiGetChats(): List<Chat> {
+  suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
     if (r is CR.ApiChats ) return r.chats
     throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
@@ -434,6 +435,18 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         false
       }
     }
+  }
+
+  suspend fun getChatItemTTL(): ChatItemTTL {
+    val r = sendCmd(CC.APIGetChatItemTTL())
+    if (r is CR.ChatItemTTL) return ChatItemTTL.fromSeconds(r.chatItemTTL)
+    throw Exception("failed to get chat item TTL: ${r.responseType} ${r.details}")
+  }
+
+  suspend fun setChatItemTTL(chatItemTTL: ChatItemTTL) {
+    val r = sendCmd(CC.APISetChatItemTTL(chatItemTTL.seconds))
+    if (r is CR.CmdOk) return
+    throw Exception("failed to set chat item TTL: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetNetworkConfig(): NetCfg? {
@@ -1313,7 +1326,7 @@ sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
   class CreateActiveUser(val profile: Profile): CC()
-  class StartChat: CC()
+  class StartChat(val expire: Boolean): CC()
   class ApiStopChat: CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class SetIncognito(val incognito: Boolean): CC()
@@ -1336,6 +1349,8 @@ sealed class CC {
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
   class GetUserSMPServers: CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
+  class APISetChatItemTTL(val seconds: Long?): CC()
+  class APIGetChatItemTTL: CC()
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
@@ -1369,10 +1384,10 @@ sealed class CC {
     is Console -> cmd
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> "/u ${profile.displayName} ${profile.fullName}"
-    is StartChat -> "/_start"
+    is StartChat -> "/_start subscribe=on expire=${onOff(expire)}"
     is ApiStopChat -> "/_stop"
     is SetFilesFolder -> "/_files_folder $filesFolder"
-    is SetIncognito -> "/incognito ${if (incognito) "on" else "off"}"
+    is SetIncognito -> "/incognito ${onOff(incognito)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -1391,6 +1406,8 @@ sealed class CC {
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
+    is APISetChatItemTTL -> "/_ttl ${chatItemTTLStr(seconds)}"
+    is APIGetChatItemTTL -> "/ttl"
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
@@ -1447,6 +1464,8 @@ sealed class CC {
     is ApiUpdateGroupProfile -> "apiUpdateGroupProfile"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
+    is APISetChatItemTTL -> "apiSetChatItemTTL"
+    is APIGetChatItemTTL -> "apiGetChatItemTTL"
     is APISetNetworkConfig -> "/apiSetNetworkConfig"
     is APIGetNetworkConfig -> "/apiGetNetworkConfig"
     is APISetChatSettings -> "/apiSetChatSettings"
@@ -1479,6 +1498,11 @@ sealed class CC {
 
   class ItemRange(val from: Long, val to: Long)
 
+  fun chatItemTTLStr(seconds: Long?): String {
+    if (seconds == null) return "none"
+    return seconds.toString()
+  }
+
   val obfuscated: CC
     get() = when (this) {
       is ApiStorageEncryption -> ApiStorageEncryption(DBEncryptionConfig(obfuscate(config.currentKey), obfuscate(config.newKey)))
@@ -1486,6 +1510,8 @@ sealed class CC {
     }
 
   private fun obfuscate(s: String): String = if (s.isEmpty()) "" else "***"
+
+  private fun onOff(b: Boolean): String = if (b) "on" else "off"
 
   companion object {
     fun chatRef(chatType: ChatType, id: Long) = "${chatType.type}${id}"
@@ -1637,6 +1663,7 @@ sealed class CR {
   @Serializable @SerialName("apiChats") class ApiChats(val chats: List<Chat>): CR()
   @Serializable @SerialName("apiChat") class ApiChat(val chat: Chat): CR()
   @Serializable @SerialName("userSMPServers") class UserSMPServers(val smpServers: List<String>): CR()
+  @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats?): CR()
@@ -1726,6 +1753,7 @@ sealed class CR {
     is ApiChats -> "apiChats"
     is ApiChat -> "apiChat"
     is UserSMPServers -> "userSMPServers"
+    is ChatItemTTL -> "chatItemTTL"
     is NetworkConfig -> "networkConfig"
     is ContactInfo -> "contactInfo"
     is GroupMemberInfo -> "groupMemberInfo"
@@ -1813,6 +1841,7 @@ sealed class CR {
     is ApiChats -> json.encodeToString(chats)
     is ApiChat -> json.encodeToString(chat)
     is UserSMPServers -> json.encodeToString(smpServers)
+    is ChatItemTTL -> json.encodeToString(chatItemTTL)
     is NetworkConfig -> json.encodeToString(networkConfig)
     is ContactInfo -> "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}"
     is GroupMemberInfo -> "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}"
