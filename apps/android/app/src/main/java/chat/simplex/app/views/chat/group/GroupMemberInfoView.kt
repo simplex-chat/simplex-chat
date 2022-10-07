@@ -66,6 +66,7 @@ fun GroupMemberInfoView(
       },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
       onRoleSelected = {
+        if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
         newRole.value = it
         updateMemberRoleDialog(it, member, onDismiss = {
