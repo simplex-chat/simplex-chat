@@ -11,18 +11,20 @@ import SimpleXChat
 
 struct ComposeImageView: View {
     @Environment(\.colorScheme) var colorScheme
-    let image: String
+    let images: [String]
     let cancelImage: (() -> Void)
     let cancelEnabled: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            if let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
+            ForEach(images, id: \.self) { image in
+                if let data = Data(base64Encoded: dropImagePrefix(image)),
+                   let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
+                }
             }
             Spacer()
             if cancelEnabled {

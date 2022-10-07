@@ -12,7 +12,7 @@ import SimpleXChat
 enum ComposePreview {
     case noPreview
     case linkPreview(linkPreview: LinkPreview?)
-    case imagePreview(imagePreview: String)
+    case imagePreviews(imagePreviews: [String])
     case filePreview(fileName: String)
 }
 
@@ -66,7 +66,7 @@ struct ComposeState {
 
     func sendEnabled() -> Bool {
         switch preview {
-        case .imagePreview:
+        case .imagePreviews:
             return true
         case .filePreview:
             return true
@@ -77,7 +77,7 @@ struct ComposeState {
 
     func linkPreviewAllowed() -> Bool {
         switch preview {
-        case .imagePreview:
+        case .imagePreviews:
             return false
         case .filePreview:
             return false
@@ -104,7 +104,7 @@ func chatItemPreview(chatItem: ChatItem) -> ComposePreview {
     case let .link(_, preview: preview):
         chatItemPreview = .linkPreview(linkPreview: preview)
     case let .image(_, image: image):
-        chatItemPreview = .imagePreview(imagePreview: image)
+        chatItemPreview = .imagePreviews(imagePreviews: [image])
     case .file:
         chatItemPreview = .filePreview(fileName: chatItem.file?.fileName ?? "")
     default:
@@ -198,9 +198,9 @@ struct ComposeView: View {
             }
         }
         .onChange(of: chosenImages) { images in
-            if let image = images.first,
-               let imagePreview = resizeImageToStrSize(image, maxDataSize: 14000) {
-                composeState = composeState.copy(preview: .imagePreview(imagePreview: imagePreview))
+            if images.count > 0 {
+                let imgs = images.compactMap { resizeImageToStrSize($0, maxDataSize: 14000) }
+                composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
             } else {
                 composeState = composeState.copy(preview: .noPreview)
             }
@@ -242,9 +242,9 @@ struct ComposeView: View {
             EmptyView()
         case let .linkPreview(linkPreview: preview):
             ComposeLinkView(linkPreview: preview, cancelPreview: cancelLinkPreview)
-        case let .imagePreview(imagePreview: img):
+        case let .imagePreviews(imagePreviews: images):
             ComposeImageView(
-                image: img,
+                images: images,
                 cancelImage: {
                     composeState = composeState.copy(preview: .noPreview)
                     chosenImages = []
@@ -307,24 +307,27 @@ struct ComposeView: View {
                     await MainActor.run { clearState() }
                 }
             default:
-                var mc: MsgContent? = nil
-                var file: String? = nil
+                var emc: [(MsgContent, String?)] = []
                 switch (composeState.preview) {
                 case .noPreview:
-                    mc = .text(composeState.message)
+                    emc = [(.text(composeState.message), nil)]
                 case .linkPreview:
-                    mc = checkLinkPreview()
-                case let .imagePreview(imagePreview: image):
-                    if let uiImage = chosenImages.first,
-                       let savedFile = saveImage(uiImage) {
-                        mc = .image(text: composeState.message, image: image)
-                        file = savedFile
+                    emc = [(checkLinkPreview(), nil)]
+                case let .imagePreviews(imagePreviews: images):
+                    var text = composeState.message
+                    for i in 0..<min(chosenImages.count, images.count) {
+                        if let savedFile = saveImage(chosenImages[i]) {
+                            emc.append((.image(text: text, image: images[i]), savedFile))
+                            text = ""
+                        }
+                    }
+                    if emc.count == 0 {
+                        emc = [(.text(composeState.message), nil)]
                     }
                 case .filePreview:
                     if let fileURL = chosenFile,
                        let savedFile = saveFileFromURL(fileURL) {
-                        mc = .file(composeState.message)
-                        file = savedFile
+                        emc = [(.file(composeState.message), savedFile)]
                     }
                 }
                 
@@ -336,15 +339,17 @@ struct ComposeView: View {
                     quotedItemId = nil
                 }
                 await MainActor.run { clearState() }
-                if let mc = mc,
-                   let chatItem = await apiSendMessage(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    file: file,
-                    quotedItemId: quotedItemId,
-                    msg: mc
-                   ) {
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                for (mc, file) in emc {
+                    let chatItem = await apiSendMessage(
+                        type: chat.chatInfo.chatType,
+                        id: chat.chatInfo.apiId,
+                        file: file,
+                        quotedItemId: quotedItemId,
+                        msg: mc
+                    )
+                    if let ci = chatItem {
+                        await MainActor.run { chatModel.addChatItem(chat.chatInfo, ci) }
+                    }
                 }
             }
         }

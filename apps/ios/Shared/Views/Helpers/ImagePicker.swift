@@ -39,9 +39,11 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
                 return
             }
 
-            if let chosenImageProvider = results.first?.itemProvider {
-                if chosenImageProvider.canLoadObject(ofClass: UIImage.self) {
-                    chosenImageProvider.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
+            parent.images = []
+            for result in results {
+                let p = result.itemProvider
+                if p.canLoadObject(ofClass: UIImage.self) {
+                    p.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
                         DispatchQueue.main.async {
                             self?.loadImage(object: image, error: error)
                         }
@@ -53,8 +55,9 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
         func loadImage(object: Any?, error: Error? = nil) {
             if let error = error {
                 logger.error("Couldn't load image with error: \(error.localizedDescription)")
+            } else if let image = object as? UIImage {
+                parent.images.append(image)
             }
-            parent.images = imageList(object as? UIImage)
         }
     }
 
