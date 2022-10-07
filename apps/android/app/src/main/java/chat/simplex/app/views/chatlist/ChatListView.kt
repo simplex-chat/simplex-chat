@@ -1,10 +1,7 @@
 package chat.simplex.app.views.chatlist
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,8 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalUriHandler
@@ -100,46 +95,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
     }
   }
   if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
-    val startAnimate = remember { MutableTransitionState(false) }
-    LaunchedEffect(Unit) {
-      startAnimate.targetState = true
-    }
-    val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
-    val animatedColor by animateColorAsState(
-      if (startAnimate.targetState && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
-      newChatSheetAnimSpec()
-    )
-    Column(
-      Modifier
-        .fillMaxSize()
-        .clickable(remember { MutableInteractionSource() }, indication = null) { hideNewChatSheet(true) }
-        .drawBehind { drawRect(animatedColor) },
-      verticalArrangement = Arrangement.Bottom,
-      horizontalAlignment = Alignment.End
-    ) {
-      NewChatSheet(chatModel, newChatSheetState == NewChatSheetState.VISIBLE, hideNewChatSheet)
-      FloatingActionButton(
-        onClick = { if (!stopped) hideNewChatSheet(true) },
-        Modifier.padding(end = 16.dp, bottom = 16.dp),
-        elevation = FloatingActionButtonDefaults.elevation(
-          defaultElevation = 0.dp,
-          pressedElevation = 0.dp,
-          hoveredElevation = 0.dp,
-          focusedElevation = 0.dp,
-        ),
-        backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
-        contentColor = Color.White
-      ) {
-        val animatedAlpha by animateFloatAsState(
-          if (startAnimate.targetState && newChatSheetState == NewChatSheetState.VISIBLE) 1f else 0f,
-          newChatSheetAnimSpec()
-        )
-        Icon(Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
-          Modifier.alpha(1 - animatedAlpha))
-        Icon(Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
-          Modifier.alpha(animatedAlpha))
-      }
-    }
+    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
 }
 
