@@ -61,29 +61,26 @@ fun NewChatSheetLayout(
     Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
   else
     MaterialTheme.colors.background
+  var visible by remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    visible = true
+  }
+  if (!rememberUpdatedState(newChatSheetOpen).value) {
+    visible = false
+  }
+  val animatedFloat by animateFloatAsState(
+    if (visible) 1f else 0f,
+    newChatSheetAnimSpec()
+  ) {
+    if (!visible && !newChatSheetOpen) {
+      closeNewChatSheet(false)
+    }
+  }
   LazyColumn {
     items(actions.size) { index ->
       Row {
         Spacer(Modifier.weight(1f))
         Box(contentAlignment = Alignment.CenterEnd) {
-          var visible by remember { mutableStateOf(false) }
-          LaunchedEffect(Unit) {
-            visible = true
-          }
-          if (!rememberUpdatedState(newChatSheetOpen).value) {
-            visible = false
-          }
-          val animatedFloat by animateFloatAsState(
-            if (visible) 1f else 0f,
-            if (visible)
-              newChatSheetAnimSpec((titles.lastIndex - index) * 20)
-            else
-              newChatSheetAnimSpec(index * 20),
-          ) {
-            if (!visible && !newChatSheetOpen) {
-              closeNewChatSheet(false)
-            }
-          }
           Button(
             actions[index],
             shape = RoundedCornerShape(21.dp),
