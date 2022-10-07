@@ -9,15 +9,27 @@
 import SwiftUI
 import PhotosUI
 
-struct LibraryImagePicker: UIViewControllerRepresentable {
-    typealias UIViewControllerType = PHPickerViewController
+struct LibraryImagePicker: View {
     @Binding var image: UIImage?
+    var didFinishPicking: (_ didSelectItems: Bool) -> Void
+    @State var images: [UIImage] = []
+
+    var body: some View {
+        LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
+            .onChange(of: images) { image = $0.first }
+    }
+}
+
+struct LibraryImageListPicker: UIViewControllerRepresentable {
+    typealias UIViewControllerType = PHPickerViewController
+    @Binding var images: [UIImage]
+    var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
-        let parent: LibraryImagePicker
+        let parent: LibraryImageListPicker
 
-        init(_ parent: LibraryImagePicker) {
+        init(_ parent: LibraryImageListPicker) {
             self.parent = parent
         }
 
@@ -42,7 +54,7 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
             if let error = error {
                 logger.error("Couldn't load image with error: \(error.localizedDescription)")
             }
-            parent.image = object as? UIImage
+            parent.images = imageList(object as? UIImage)
         }
     }
 
@@ -53,7 +65,7 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images
-        config.selectionLimit = 1
+        config.selectionLimit = selectionLimit
         let controller = PHPickerViewController(configuration: config)
         controller.delegate = context.coordinator
         return controller
@@ -64,6 +76,23 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
     }
 }
 
+struct CameraImageListPicker: View {
+    @Binding var images: [UIImage]
+    @State var image: UIImage?
+
+    var body: some View {
+        CameraImagePicker(image: $image)
+            .onChange(of: image) { images = imageList($0) }
+    }
+}
+
+func imageList(_ img: UIImage?) -> [UIImage] {
+    if let img = img {
+        return [img]
+    } else {
+        return []
+    }
+}
 
 struct CameraImagePicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode

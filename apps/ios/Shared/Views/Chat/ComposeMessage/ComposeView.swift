@@ -127,7 +127,7 @@ struct ComposeView: View {
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
-    @State var chosenImage: UIImage? = nil
+    @State var chosenImages: [UIImage] = []
     @State private var showFileImporter = false
     @State var chosenFile: URL? = nil
     
@@ -179,7 +179,7 @@ struct ComposeView: View {
             }
             if UIPasteboard.general.hasImages {
                 Button("Paste image") {
-                    chosenImage = UIPasteboard.general.image
+                    chosenImages = imageList(UIPasteboard.general.image)
                 }
             }
             Button("Choose file") {
@@ -189,16 +189,16 @@ struct ComposeView: View {
         .fullScreenCover(isPresented: $showTakePhoto) {
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
-                CameraImagePicker(image: $chosenImage)
+                CameraImageListPicker(images: $chosenImages)
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
+            LibraryImageListPicker(images: $chosenImages, selectionLimit: 4) {
                 didSelectItem in showImagePicker = false
             }
         }
-        .onChange(of: chosenImage) { image in
-            if let image = image,
+        .onChange(of: chosenImages) { images in
+            if let image = images.first,
                let imagePreview = resizeImageToStrSize(image, maxDataSize: 14000) {
                 composeState = composeState.copy(preview: .imagePreview(imagePreview: imagePreview))
             } else {
@@ -247,7 +247,7 @@ struct ComposeView: View {
                 image: img,
                 cancelImage: {
                     composeState = composeState.copy(preview: .noPreview)
-                    chosenImage = nil
+                    chosenImages = []
                 },
                 cancelEnabled: !composeState.editing())
         case let .filePreview(fileName: fileName):
@@ -315,7 +315,7 @@ struct ComposeView: View {
                 case .linkPreview:
                     mc = checkLinkPreview()
                 case let .imagePreview(imagePreview: image):
-                    if let uiImage = chosenImage,
+                    if let uiImage = chosenImages.first,
                        let savedFile = saveImage(uiImage) {
                         mc = .image(text: composeState.message, image: image)
                         file = savedFile
@@ -356,7 +356,7 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
-        chosenImage = nil
+        chosenImages = []
         chosenFile = nil
     }
 
