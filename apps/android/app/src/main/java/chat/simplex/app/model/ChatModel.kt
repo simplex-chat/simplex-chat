@@ -733,11 +733,17 @@ class GroupMember (
     GroupMemberStatus.MemCreator -> true
   }
 
-  fun canBeRemoved(membership: GroupMember): Boolean {
-    val userRole = membership.memberRole
+  fun canBeRemoved(groupInfo: GroupInfo): Boolean {
+    val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && membership.memberCurrent
+        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberCurrent
   }
+
+  fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
+    if (!canBeRemoved(groupInfo)) null
+    else groupInfo.membership.memberRole.let { userRole ->
+      GroupMemberRole.values().filter { it <= userRole }
+    }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
 
@@ -1025,6 +1031,8 @@ data class ChatItem (
           is RcvGroupEvent.GroupDeleted -> false
           is RcvGroupEvent.MemberAdded -> false
           is RcvGroupEvent.MemberLeft -> false
+          is RcvGroupEvent.MemberRole -> true
+          is RcvGroupEvent.UserRole -> false
           is RcvGroupEvent.MemberDeleted -> false
         }
       is CIContent.SndGroupEventContent -> true
@@ -1527,6 +1535,8 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("memberAdded") class MemberAdded(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("memberConnected") class MemberConnected(): RcvGroupEvent()
   @Serializable @SerialName("memberLeft") class MemberLeft(): RcvGroupEvent()
+  @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): RcvGroupEvent()
+  @Serializable @SerialName("userRole") class UserRole(val role: GroupMemberRole): RcvGroupEvent()
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): RcvGroupEvent()
   @Serializable @SerialName("userDeleted") class UserDeleted(): RcvGroupEvent()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(): RcvGroupEvent()
@@ -1536,6 +1546,8 @@ sealed class RcvGroupEvent() {
     is MemberAdded -> String.format(generalGetString(R.string.rcv_group_event_member_added), profile.profileViewName)
     is MemberConnected -> generalGetString(R.string.rcv_group_event_member_connected)
     is MemberLeft -> generalGetString(R.string.rcv_group_event_member_left)
+    is MemberRole -> String.format(generalGetString(R.string.member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(R.string.your_member_role), role.text)
     is MemberDeleted -> String.format(generalGetString(R.string.rcv_group_event_member_deleted), profile.profileViewName)
     is UserDeleted -> generalGetString(R.string.rcv_group_event_user_deleted)
     is GroupDeleted -> generalGetString(R.string.rcv_group_event_group_deleted)
@@ -1545,11 +1557,15 @@ sealed class RcvGroupEvent() {
 
 @Serializable
 sealed class SndGroupEvent() {
+  @Serializable @SerialName("memberRole") class MemberRole(val groupMemberId: Long, val profile: Profile, val role: GroupMemberRole): SndGroupEvent()
+  @Serializable @SerialName("userRole") class UserRole(val role: GroupMemberRole): SndGroupEvent()
   @Serializable @SerialName("memberDeleted") class MemberDeleted(val groupMemberId: Long, val profile: Profile): SndGroupEvent()
   @Serializable @SerialName("userLeft") class UserLeft(): SndGroupEvent()
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): SndGroupEvent()
 
   val text: String get() = when (this) {
+    is MemberRole -> String.format(generalGetString(R.string.member_role), profile.profileViewName, role.text)
+    is UserRole -> String.format(generalGetString(R.string.your_member_role), role.text)
     is MemberDeleted -> String.format(generalGetString(R.string.snd_group_event_member_deleted), profile.profileViewName)
     is UserLeft -> generalGetString(R.string.snd_group_event_user_left)
     is GroupUpdated -> generalGetString(R.string.snd_group_event_group_profile_updated)
