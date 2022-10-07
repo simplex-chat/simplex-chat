@@ -165,6 +165,7 @@ struct DatabaseView: View {
                         Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
                     }
                 }
+                .frame(height: 36)
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
