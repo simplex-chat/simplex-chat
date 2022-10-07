@@ -3062,15 +3062,15 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Anruf verpasst</target>
         <note>call status</note>
       </trans-unit>
+      <trans-unit id="never" xml:space="preserve">
+        <source>never</source>
+        <target>*** never</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="new message" xml:space="preserve">
         <source>new message</source>
         <target>Neue Nachricht</target>
         <note>notification</note>
-      </trans-unit>
-      <trans-unit id="no" xml:space="preserve">
-        <source>no</source>
-        <target>*** nein</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no e2e encryption" xml:space="preserve">
         <source>no e2e encryption</source>

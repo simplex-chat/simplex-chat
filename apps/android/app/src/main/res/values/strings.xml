@@ -599,7 +599,7 @@
   <string name="delete_files_and_media_desc">This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</string>
   <string name="no_received_app_files">No received or sent files</string>
   <string name="total_files_count_and_size">%d file(s) with total size of %s</string>
-  <string name="chat_item_ttl_none">no</string>
+  <string name="chat_item_ttl_none">never</string>
   <string name="chat_item_ttl_day">1 day</string>
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
