@@ -220,6 +220,7 @@ fun DatabaseLayout(
 
     SectionView(stringResource(R.string.data_section)) {
       SectionItemView { TtlOptions(chatItemTTL, rememberUpdatedState(!progressIndicator), onChatItemTTLSelected) }
+      SectionDivider()
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
         deleteAppFilesAndMedia,
@@ -255,7 +256,7 @@ private fun setChatItemTTLAlert(m: ChatModel, selectedChatItemTTL: MutableState<
 @Composable
 private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onSelected: (ChatItemTTL) -> Unit) {
   val values = remember {
-    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Day, ChatItemTTL.Week, ChatItemTTL.Month)
+    val all: ArrayList<ChatItemTTL> = arrayListOf(ChatItemTTL.None, ChatItemTTL.Month, ChatItemTTL.Week, ChatItemTTL.Day)
     if (current.value is ChatItemTTL.Seconds) {
       all.add(current.value)
     }
