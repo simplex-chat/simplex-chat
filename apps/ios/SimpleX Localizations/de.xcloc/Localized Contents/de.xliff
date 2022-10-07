@@ -3064,7 +3064,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
         <source>never</source>
-        <target>*** 1 never</target>
+        <target>*** never</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="new message" xml:space="preserve">
