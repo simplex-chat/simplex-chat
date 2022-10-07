@@ -525,6 +525,9 @@
 "Delete chat profile?" = "Chat-Profil löschen?";
 
 /* No comment provided by engineer. */
+"Delete connection" = "*** Delete connection";
+
+/* No comment provided by engineer. */
 "Delete contact" = "Kontakt löschen";
 
 /* No comment provided by engineer. */
@@ -715,6 +718,9 @@
 
 /* No comment provided by engineer. */
 "Error deleting chat!" = "Fehler beim Löschen des Chats!";
+
+/* No comment provided by engineer. */
+"Error deleting connection" = "*** Error deleting connection";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Fehler beim Löschen der Datenbank";
@@ -1099,6 +1105,9 @@
 "Mute" = "Stummschalten";
 
 /* No comment provided by engineer. */
+"Name" = "*** Name";
+
+/* No comment provided by engineer. */
 "Network & servers" = "Netzwerk & Server";
 
 /* No comment provided by engineer. */
@@ -1106,6 +1115,9 @@
 
 /* No comment provided by engineer. */
 "Network status" = "Netzwerkstatus";
+
+/* No comment provided by engineer. */
+"never" = "*** never";
 
 /* notification */
 "New contact request" = "Neue Kontaktanfrage";
@@ -1127,9 +1139,6 @@
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Neues Passwort…";
-
-/* No comment provided by engineer. */
-"no" = "*** nein";
 
 /* No comment provided by engineer. */
 "No" = "Nein";
@@ -1230,7 +1239,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Überprüfen Sie bitte, ob Sie den richtigen Link genutzt haben oder bitten Sie Ihren Kontakt nochmal darum, Ihnen einen Link zuzusenden.";
 
-/* alert message */
+/* No comment provided by engineer. */
 "Please check your network connection and try again." = "Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.";
 
 /* No comment provided by engineer. */
@@ -1454,6 +1463,9 @@
 
 /* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
+
+/* No comment provided by engineer. */
+"Show QR code" = "*** Show QR code";
 
 /* notification */
 "SimpleX encrypted message or connection event" = "SimpleX verschlüsselte Nachricht oder Verbindungs-Ereignis";

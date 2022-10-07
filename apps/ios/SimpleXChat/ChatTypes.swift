@@ -283,12 +283,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         public var direct: ChatInfo
         public var group: ChatInfo
         public var contactRequest: ChatInfo
+        public var contactConnection: ChatInfo
     }
 
     public static var sampleData: ChatInfo.SampleData = SampleData(
         direct: ChatInfo.direct(contact: Contact.sampleData),
         group: ChatInfo.group(groupInfo: GroupInfo.sampleData),
-        contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData)
+        contactRequest: ChatInfo.contactRequest(contactRequest: UserContactRequest.sampleData),
+        contactConnection: ChatInfo.contactConnection(contactConnection: PendingContactConnection.getSampleData())
     )
 }
 
@@ -1510,7 +1512,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
         case .week: return "1 week"
         case .month: return "1 month"
         case let .seconds(seconds): return "\(seconds) second(s)"
-        case .none: return "no"
+        case .none: return "never"
         }
     }
 

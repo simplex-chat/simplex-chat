@@ -39,7 +39,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time (addUTCTime)
+import Data.Time (NominalDiffTime, addUTCTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
 import Data.Time.LocalTime (getCurrentTimeZone, getZonedTime)
@@ -189,14 +189,13 @@ startChatController user subConns enableExpireCIs = do
           atomically $ writeTVar expireAsync a
           setExpireCIs True
         _ -> setExpireCIs True
-    runExpireCIs = do
-      let interval = 1800 * 1000000 -- 30 minutes
-      forever $ do
+    runExpireCIs = forever $ do
+      flip catchError (toView . CRChatError) $ do
         expire <- asks expireCIs
         atomically $ readTVar expire >>= \b -> unless b retry
         ttl <- withStore' (`getChatItemTTL` user)
         forM_ ttl $ \t -> expireChatItems user t False
-        threadDelay interval
+      threadDelay $ 1800 * 1000000 -- 30 minutes
 
 restoreCalls :: (MonadUnliftIO m, MonadReader ChatController m) => User -> m ()
 restoreCalls user = do
@@ -273,7 +272,7 @@ processChatCommand = \case
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
-  APIGetChats withPCC -> CRApiChats <$> withUser (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
+  APIGetChats withPCC -> CRApiChats <$> withUser' (\user -> withStore' $ \db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     CTDirect -> CRApiChat . AChat SCTDirect <$> withStore (\db -> getDirectChat db user cId pagination search)
     CTGroup -> CRApiChat . AChat SCTGroup <$> withStore (\db -> getGroupChat db user cId pagination search)
@@ -449,7 +448,7 @@ processChatCommand = \case
       deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> m ()
       deleteCIFile user file =
         forM_ file $ \CIFile {fileId, filePath, fileStatus} -> do
-          let fileInfo = CIFileInfo {fileId, fileStatus = AFS msgDirection fileStatus, filePath}
+          let fileInfo = CIFileInfo {fileId, fileStatus = Just $ AFS msgDirection fileStatus, filePath}
           deleteFile user fileInfo
   APIChatRead (ChatRef cType chatId) fromToIds -> withChatLock $ case cType of
     CTDirect -> withStore' (\db -> updateDirectChatItemsRead db chatId fromToIds) $> CRCmdOk
@@ -643,19 +642,21 @@ processChatCommand = \case
     ChatConfig {defaultServers = InitialAgentServers {smp = defaultSMPServers}} <- asks config
     withAgent $ \a -> setSMPServers a (fromMaybe defaultSMPServers (nonEmpty smpServers))
     pure CRCmdOk
-  APISetChatItemTTL newTTL_ -> withUser' $ \user -> withChatLock $ do
-    case newTTL_ of
-      Nothing -> do
-        withStore' $ \db -> setChatItemTTL db user newTTL_
-        setExpireCIs False
-      Just newTTL -> do
-        oldTTL <- withStore' (`getChatItemTTL` user)
-        when (maybe True (newTTL <) oldTTL) $ do
-          setExpireCIs False
-          expireChatItems user newTTL True
-        withStore' $ \db -> setChatItemTTL db user newTTL_
-        whenM chatStarted $ setExpireCIs True
-    pure CRCmdOk
+  APISetChatItemTTL newTTL_ -> withUser' $ \user ->
+    checkStoreNotChanged $
+      withChatLock $ do
+        case newTTL_ of
+          Nothing -> do
+            withStore' $ \db -> setChatItemTTL db user newTTL_
+            setExpireCIs False
+          Just newTTL -> do
+            oldTTL <- withStore' (`getChatItemTTL` user)
+            when (maybe True (newTTL <) oldTTL) $ do
+              setExpireCIs False
+              expireChatItems user newTTL True
+            withStore' $ \db -> setChatItemTTL db user newTTL_
+            whenM chatStarted $ setExpireCIs True
+        pure CRCmdOk
   APIGetChatItemTTL -> CRChatItemTTL <$> withUser (\user -> withStore' (`getChatItemTTL` user))
   APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent (`setNetworkConfig` cfg) $> CRCmdOk
   APIGetNetworkConfig -> CRNetworkConfig <$> withUser' (\_ -> withAgent getNetworkConfig)
@@ -1123,17 +1124,18 @@ setExpireCIs b = do
   atomically $ writeTVar expire b
 
 deleteFile :: forall m. ChatMonad m => User -> CIFileInfo -> m ()
-deleteFile user CIFileInfo {filePath, fileId, fileStatus = (AFS dir status)} =
-  cancel' >> delete
+deleteFile user CIFileInfo {filePath, fileId, fileStatus} =
+  (cancel' >> delete) `catchError` (toView . CRChatError)
   where
-    cancel' = unless (ciFileEnded status) $
-      case dir of
-        SMDSnd -> do
-          (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
-          unless cancelled $ cancelSndFile user ftm fts
-        SMDRcv -> do
-          ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
-          unless cancelled $ cancelRcvFileTransfer user ft
+    cancel' = forM_ fileStatus $ \(AFS dir status) ->
+      unless (ciFileEnded status) $
+        case dir of
+          SMDSnd -> do
+            (ftm@FileTransferMeta {cancelled}, fts) <- withStore (\db -> getSndFileTransfer db user fileId)
+            unless cancelled $ cancelSndFile user ftm fts
+          SMDRcv -> do
+            ft@RcvFileTransfer {cancelled} <- withStore (\db -> getRcvFileTransfer db user fileId)
+            unless cancelled $ cancelRcvFileTransfer user ft
     delete = withFilesFolder $ \filesFolder ->
       forM_ filePath $ \fPath -> do
         let fsFilePath = filesFolder <> "/" <> fPath
@@ -1400,17 +1402,43 @@ expireChatItems :: forall m. ChatMonad m => User -> Int64 -> Bool -> m ()
 expireChatItems user ttl sync = do
   currentTs <- liftIO getCurrentTime
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
+      -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
+      createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   expire <- asks expireCIs
-  filesInfo <- withStore' $ \db -> getExpiredFileInfo db user expirationDate
-  loop filesInfo expirationDate expire
+  contacts <- withStore' (`getUserContacts` user)
+  loop expire contacts $ processContact expirationDate
+  groups <- withStore' (`getUserGroupDetails` user)
+  loop expire groups $ processGroup expirationDate createdAtCutoff
   where
-    loop :: [CIFileInfo] -> UTCTime -> TVar Bool -> m ()
-    loop [] expirationDate expire = continue expire $ withStore' (\db -> deleteExpiredCIs db user expirationDate)
-    loop (fileInfo : filesInfo) expirationDate expire = continue expire $ do
-      deleteFile user fileInfo
-      loop filesInfo expirationDate expire
+    loop :: TVar Bool -> [a] -> (a -> m ()) -> m ()
+    loop _ [] _ = pure ()
+    loop expire (a : as) process = continue expire $ do
+      process a `catchError` (toView . CRChatError)
+      loop expire as process
     continue :: TVar Bool -> m () -> m ()
     continue expire = if sync then id else \a -> whenM (readTVarIO expire) $ threadDelay 100000 >> a
+    processContact :: UTCTime -> Contact -> m ()
+    processContact expirationDate ct = do
+      filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
+      maxItemTs_ <- withStore' $ \db -> getContactMaxItemTs db user ct
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteContactExpiredCIs db user ct expirationDate
+      withStore' $ \db -> do
+        ciCount_ <- getContactCICount db user ct
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateContactTs db user ct ts
+          _ -> pure ()
+    processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
+    processGroup expirationDate createdAtCutoff gInfo = do
+      filesInfo <- withStore' $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
+      maxItemTs_ <- withStore' $ \db -> getGroupMaxItemTs db user gInfo
+      forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+      withStore' $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
+      withStore' $ \db -> do
+        ciCount_ <- getGroupCICount db user gInfo
+        case (maxItemTs_, ciCount_) of
+          (Just ts, Just count) -> when (count == 0) $ updateGroupTs db user gInfo ts
+          _ -> pure ()
 
 processAgentMessage :: forall m. ChatMonad m => Maybe User -> ConnId -> ACorrId -> ACommand 'Agent -> m ()
 processAgentMessage Nothing _ _ _ = throwChatError CENoActiveUser

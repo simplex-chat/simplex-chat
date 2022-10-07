@@ -165,6 +165,8 @@ struct DatabaseView: View {
                         Text(chatItemTTL.deleteAfterText).tag(chatItemTTL)
                     }
                 }
+                .frame(height: 36)
+                .disabled(m.chatDbChanged || progressIndicator)
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
@@ -430,17 +432,26 @@ struct DatabaseView: View {
                 await MainActor.run {
                     m.chatItemTTL = ttl
                     currentChatItemTTL = ttl
-                    progressIndicator = false
-                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+                    afterSetCiTTL()
                 }
             } catch {
                 await MainActor.run {
                     alert = .error(title: "Error changing setting", error: responseError(error))
                     chatItemTTL = currentChatItemTTL
-                    progressIndicator = false
-                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+                    afterSetCiTTL()
                 }
             }
+        }
+    }
+
+    private func afterSetCiTTL() {
+        progressIndicator = false
+        appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        do {
+            let chats = try apiGetChats()
+            m.updateChats(with: chats)
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
     }
 
