@@ -75,6 +75,7 @@ fun DatabaseView(
     DatabaseLayout(
       progressIndicator.value,
       runChat.value,
+      m.chatDbChanged.value,
       useKeychain.value,
       m.chatDbEncrypted.value,
       m.controller.appPrefs.initialRandomDBPassphrase,
@@ -122,6 +123,7 @@ fun DatabaseView(
 fun DatabaseLayout(
   progressIndicator: Boolean,
   runChat: Boolean,
+  chatDbChanged: Boolean,
   useKeyChain: Boolean,
   chatDbEncrypted: Boolean?,
   initialRandomDBPassphrase: Preference<Boolean>,
@@ -219,7 +221,7 @@ fun DatabaseLayout(
     SectionSpacer()
 
     SectionView(stringResource(R.string.data_section)) {
-      SectionItemView { TtlOptions(chatItemTTL, rememberUpdatedState(!progressIndicator), onChatItemTTLSelected) }
+      SectionItemView { TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!progressIndicator && !chatDbChanged), onChatItemTTLSelected) }
       SectionDivider()
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
       SectionItemView(
@@ -666,6 +668,7 @@ fun PreviewDatabaseLayout() {
     DatabaseLayout(
       progressIndicator = false,
       runChat = true,
+      chatDbChanged = false,
       useKeyChain = false,
       chatDbEncrypted = false,
       initialRandomDBPassphrase = Preference({ true }, {}),
