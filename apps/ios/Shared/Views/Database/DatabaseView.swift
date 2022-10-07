@@ -166,6 +166,7 @@ struct DatabaseView: View {
                     }
                 }
                 .frame(height: 36)
+                .disabled(m.chatDbChanged || progressIndicator)
                 Button("Delete files & media", role: .destructive) {
                     alert = .deleteFilesAndMedia
                 }
