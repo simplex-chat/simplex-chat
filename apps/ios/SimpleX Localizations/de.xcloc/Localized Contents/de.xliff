@@ -746,6 +746,11 @@
         <target>Chat-Profil löschen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Delete connection" xml:space="preserve">
+        <source>Delete connection</source>
+        <target>*** Delete connection</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Delete contact" xml:space="preserve">
         <source>Delete contact</source>
         <target>Kontakt löschen</target>
@@ -1019,6 +1024,11 @@
       <trans-unit id="Error deleting chat!" xml:space="preserve">
         <source>Error deleting chat!</source>
         <target>Fehler beim Löschen des Chats!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error deleting connection" xml:space="preserve">
+        <source>Error deleting connection</source>
+        <target>*** Error deleting connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error deleting database" xml:space="preserve">
@@ -1573,6 +1583,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
         <target>Stummschalten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Name" xml:space="preserve">
+        <source>Name</source>
+        <target>*** Name</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
         <target>Netzwerk &amp; Server</target>
@@ -1766,7 +1781,7 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Please check your network connection and try again." xml:space="preserve">
         <source>Please check your network connection and try again.</source>
         <target>Bitte überprüfen Sie Ihre Netzwerkverbindung und versuchen Sie es erneut.</target>
-        <note>alert message</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
         <source>Please enter correct current passphrase.</source>
@@ -2101,6 +2116,11 @@ Wir werden Serverredundanzen hinzufügen, um verloren gegangene Nachrichten zu v
       <trans-unit id="Shared one-time link" xml:space="preserve">
         <source>Shared one-time link</source>
         <target>*** Shared one-time link</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show QR code" xml:space="preserve">
+        <source>Show QR code</source>
+        <target>*** Show QR code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">

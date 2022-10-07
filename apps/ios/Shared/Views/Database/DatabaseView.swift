@@ -430,17 +430,26 @@ struct DatabaseView: View {
                 await MainActor.run {
                     m.chatItemTTL = ttl
                     currentChatItemTTL = ttl
-                    progressIndicator = false
-                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+                    afterSetCiTTL()
                 }
             } catch {
                 await MainActor.run {
                     alert = .error(title: "Error changing setting", error: responseError(error))
                     chatItemTTL = currentChatItemTTL
-                    progressIndicator = false
-                    appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+                    afterSetCiTTL()
                 }
             }
+        }
+    }
+
+    private func afterSetCiTTL() {
+        progressIndicator = false
+        appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+        do {
+            let chats = try apiGetChats()
+            m.updateChats(with: chats)
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
         }
     }
 
