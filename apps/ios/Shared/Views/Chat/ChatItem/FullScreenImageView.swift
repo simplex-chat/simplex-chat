@@ -15,18 +15,19 @@ struct FullScreenImageView: View {
     @State var image: UIImage
     @Binding var showView: Bool
     @State var scrollProxy: ScrollViewProxy?
+    @State private var showNext = false
+    @State private var nextImage: UIImage?
+    @State private var nextEdge = Edge.leading
 
     var body: some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
             ZoomableScrollView {
-                ZStack {
-                    Color.black.edgesIgnoringSafeArea(.all)
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .animation(.linear(duration: 0.15), value: image)
-                }
+                imageView(image)
+            }
+            if showNext, let nextImage = nextImage {
+                imageView(nextImage)
+                    .transition(.move(edge: nextEdge))
             }
         }
         .onTapGesture { showView = false }
@@ -45,12 +46,32 @@ struct FullScreenImageView: View {
                 let t = gesture.translation
                 let w = abs(t.width)
                 if w > 80 && w > abs(t.height) * 2 {
-                    if let item = m.nextChatItemData(chatItem.id, previous: t.width > 0, map: chatItemImage) {
-                        (chatItem, image) = item
+                    let previous = t.width > 0
+                    if let item = m.nextChatItemData(chatItem.id, previous: previous, map: chatItemImage) {
+                        var img: UIImage
+                        (chatItem, img) = item
+                        nextImage = img
+                        nextEdge = previous ? .leading : .trailing
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            showNext = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            image = img
+                            showNext = false
+                        }
                     }
                 }
             }
         )
+    }
+
+    private func imageView(_ img: UIImage) -> some View {
+        ZStack {
+            Color.black
+            Image(uiImage: img)
+                .resizable()
+                .scaledToFit()
+        }
     }
 
     private func chatItemImage(_ ci: ChatItem) -> (ChatItem, UIImage)? {
