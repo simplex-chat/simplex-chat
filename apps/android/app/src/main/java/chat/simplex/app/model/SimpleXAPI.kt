@@ -964,6 +964,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
         chatModel.upsertGroupMember(r.groupInfo, r.deletedMember)
       is CR.LeftMember ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.MemberRole ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.MemberRoleUser ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.GroupDeleted -> // TODO update user member
         chatModel.updateGroup(r.groupInfo)
       is CR.UserJoinedGroup ->
