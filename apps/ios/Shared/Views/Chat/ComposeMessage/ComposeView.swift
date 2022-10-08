@@ -193,16 +193,31 @@ struct ComposeView: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImageListPicker(images: $chosenImages, selectionLimit: 4) {
-                didSelectItem in showImagePicker = false
+            LibraryImageListPicker(images: $chosenImages, selectionLimit: 10) { itemsSelected in
+                showImagePicker = false
+                if itemsSelected {
+                    DispatchQueue.main.async {
+                        composeState = composeState.copy(preview: .imagePreviews(imagePreviews: []))
+                    }
+                }
             }
         }
         .onChange(of: chosenImages) { images in
-            if images.count > 0 {
-                let imgs = images.compactMap { resizeImageToStrSize($0, maxDataSize: 14000) }
-                composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
-            } else {
-                composeState = composeState.copy(preview: .noPreview)
+            Task {
+                var imgs: [String] = []
+                for image in images {
+                    if let img = resizeImageToStrSize(image, maxDataSize: 14000) {
+                        imgs.append(img)
+                        await MainActor.run {
+                            composeState = composeState.copy(preview: .imagePreviews(imagePreviews: imgs))
+                        }
+                    }
+                }
+                if imgs.count == 0 {
+                    await MainActor.run {
+                        composeState = composeState.copy(preview: .noPreview)
+                    }
+                }
             }
         }
         .fileImporter(
@@ -288,69 +303,72 @@ struct ComposeView: View {
             case let .editingItem(chatItem: ei):
                 if let oldMsgContent = ei.content.msgContent {
                     do {
+                        await MainActor.run { composeState.inProgress = true }
                         let mc = updateMsgContent(oldMsgContent)
-                        await MainActor.run { clearState() }
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
                             id: chat.chatInfo.apiId,
                             itemId: ei.id,
                             msg: mc
                         )
-                        DispatchQueue.main.async {
+                        await MainActor.run {
+                            clearState()
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                         }
                     } catch {
                         logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
+                        await MainActor.run { composeState.inProgress = false }
                         AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
                     }
                 } else {
                     await MainActor.run { clearState() }
                 }
             default:
-                var emc: [(MsgContent, String?)] = []
+                await MainActor.run { composeState.inProgress = true }
+                var quoted: Int64? = nil
+                if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
+                    quoted = quotedItem.id
+                }
+
                 switch (composeState.preview) {
                 case .noPreview:
-                    emc = [(.text(composeState.message), nil)]
+                    await send(.text(composeState.message), quoted: quoted)
                 case .linkPreview:
-                    emc = [(checkLinkPreview(), nil)]
+                    await send(checkLinkPreview(), quoted: quoted)
                 case let .imagePreviews(imagePreviews: images):
                     var text = composeState.message
+                    var sent: Int = 0
                     for i in 0..<min(chosenImages.count, images.count) {
                         if let savedFile = saveImage(chosenImages[i]) {
-                            emc.append((.image(text: text, image: images[i]), savedFile))
+                            await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
                             text = ""
+                            quoted = nil
+                            sent += 1
                         }
                     }
-                    if emc.count == 0 {
-                        emc = [(.text(composeState.message), nil)]
+                    if sent == 0 {
+                        await send(.text(composeState.message), quoted: quoted)
                     }
                 case .filePreview:
                     if let fileURL = chosenFile,
                        let savedFile = saveFileFromURL(fileURL) {
-                        emc = [(.file(composeState.message), savedFile)]
+                        await send(.file(composeState.message), quoted: quoted, file: savedFile)
                     }
-                }
-                
-                var quotedItemId: Int64? = nil
-                switch (composeState.contextItem) {
-                case let .quotedItem(chatItem: quotedItem):
-                    quotedItemId = quotedItem.id
-                default:
-                    quotedItemId = nil
                 }
                 await MainActor.run { clearState() }
-                for (mc, file) in emc {
-                    let chatItem = await apiSendMessage(
-                        type: chat.chatInfo.chatType,
-                        id: chat.chatInfo.apiId,
-                        file: file,
-                        quotedItemId: quotedItemId,
-                        msg: mc
-                    )
-                    if let ci = chatItem {
-                        await MainActor.run { chatModel.addChatItem(chat.chatInfo, ci) }
-                    }
-                }
+            }
+        }
+
+        func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil) async {
+            let chatItem = await apiSendMessage(
+                type: chat.chatInfo.chatType,
+                id: chat.chatInfo.apiId,
+                file: file,
+                quotedItemId: quoted,
+                msg: mc
+            )
+            if let ci = chatItem {
+                await MainActor.run { chatModel.addChatItem(chat.chatInfo, ci) }
             }
         }
     }

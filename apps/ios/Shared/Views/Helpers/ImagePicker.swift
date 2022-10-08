@@ -28,6 +28,9 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 
     class Coordinator: PHPickerViewControllerDelegate {
         let parent: LibraryImageListPicker
+        let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryImageListPicker")
+        var images: [UIImage] = []
+        var imageCount: Int = 0
 
         init(_ parent: LibraryImageListPicker) {
             self.parent = parent
@@ -40,13 +43,26 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
             }
 
             parent.images = []
+            images = []
+            imageCount = results.count
             for result in results {
+                logger.log("LibraryImageListPicker result")
                 let p = result.itemProvider
                 if p.canLoadObject(ofClass: UIImage.self) {
-                    p.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
+                    p.loadObject(ofClass: UIImage.self)  { image, error in
                         DispatchQueue.main.async {
-                            self?.loadImage(object: image, error: error)
+                            self.loadImage(object: image, error: error)
                         }
+                    }
+                } else {
+                    dispatchQueue.sync { self.imageCount -= 1}
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                self.dispatchQueue.sync {
+                    if self.parent.images.count == 0 {
+                        logger.log("LibraryImageListPicker: added \(self.images.count) images out of \(results.count)")
+                        self.parent.images = self.images
                     }
                 }
             }
@@ -54,9 +70,17 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
 
         func loadImage(object: Any?, error: Error? = nil) {
             if let error = error {
-                logger.error("Couldn't load image with error: \(error.localizedDescription)")
+                logger.error("LibraryImageListPicker: couldn't load image with error: \(error.localizedDescription)")
             } else if let image = object as? UIImage {
-                parent.images.append(image)
+                images.append(image)
+                logger.log("LibraryImageListPicker: added image")
+            }
+            dispatchQueue.sync {
+                self.imageCount -= 1
+                if self.imageCount == 0 && self.parent.images.count == 0 {
+                    logger.log("LibraryImageListPicker: added all images")
+                    self.parent.images = self.images
+                }
             }
         }
     }
