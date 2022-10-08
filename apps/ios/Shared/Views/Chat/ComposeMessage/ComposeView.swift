@@ -341,16 +341,16 @@ struct ComposeView: View {
                     await send(checkLinkPreview(), quoted: quoted)
                 case let .imagePreviews(imagePreviews: images):
                     var text = composeState.message
-                    var sent: Int = 0
+                    var sent = false
                     for i in 0..<min(chosenImages.count, images.count) {
                         if let savedFile = saveImage(chosenImages[i]) {
                             await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
                             text = ""
                             quoted = nil
-                            sent += 1
+                            sent = true
                         }
                     }
-                    if sent == 0 {
+                    if !sent {
                         await send(.text(composeState.message), quoted: quoted)
                     }
                 case .filePreview:
@@ -360,6 +360,7 @@ struct ComposeView: View {
                     }
                 }
             }
+            await MainActor.run { clearState() }
         }
 
         func sending() async {
@@ -370,18 +371,16 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: String? = nil) async {
-            let chatItem = await apiSendMessage(
+            if let chatItem = await apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
                 file: file,
                 quotedItemId: quoted,
                 msg: mc
-            )
-            DispatchQueue.main.async {
-                if let chatItem = chatItem {
+            ) {
+                DispatchQueue.main.async {
                     _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                 }
-                clearState()
             }
         }
     }
