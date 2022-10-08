@@ -186,7 +186,11 @@ final class ChatModel: ObservableObject {
         // update previews
         var res: Bool
         if let chat = getChat(cInfo.id) {
-            if let pItem = chat.chatItems.last, pItem.id == cItem.id {
+            if let pItem = chat.chatItems.last {
+                if pItem.id == cItem.id || (chatId == cInfo.id && reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                    chat.chatItems = [cItem]
+                }
+            } else {
                 chat.chatItems = [cItem]
             }
             res = false
@@ -197,9 +201,13 @@ final class ChatModel: ObservableObject {
         // update current chat
         if chatId == cInfo.id {
             if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+                let ci = reversedChatItems[i]
                 withAnimation(.default) {
                     self.reversedChatItems[i] = cItem
                     self.reversedChatItems[i].viewTimestamp = .now
+                    if case .sndNew = cItem.meta.itemStatus {
+                        self.reversedChatItems[i].meta = ci.meta
+                    }
                 }
                 return false
             } else {

@@ -26,7 +26,8 @@ struct ComposeState {
     var message: String
     var preview: ComposePreview
     var contextItem: ComposeContextItem
-    var inProgress: Bool = false
+    var inProgress = false
+    var disabled = false
     var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
 
     init(
@@ -303,7 +304,7 @@ struct ComposeView: View {
             case let .editingItem(chatItem: ei):
                 if let oldMsgContent = ei.content.msgContent {
                     do {
-                        await MainActor.run { composeState.inProgress = true }
+                        await sending()
                         let mc = updateMsgContent(oldMsgContent)
                         let chatItem = try await apiUpdateChatItem(
                             type: chat.chatInfo.chatType,
@@ -311,20 +312,23 @@ struct ComposeView: View {
                             itemId: ei.id,
                             msg: mc
                         )
-                        await MainActor.run {
+                        DispatchQueue.main.async {
                             clearState()
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                         }
                     } catch {
                         logger.error("ChatView.sendMessage error: \(error.localizedDescription)")
-                        await MainActor.run { composeState.inProgress = false }
+                        await MainActor.run {
+                            composeState.disabled = false
+                            composeState.inProgress = false
+                        }
                         AlertManager.shared.showAlertMsg(title: "Error updating message", message: "Error: \(responseError(error))")
                     }
                 } else {
                     await MainActor.run { clearState() }
                 }
             default:
-                await MainActor.run { composeState.inProgress = true }
+                await sending()
                 var quoted: Int64? = nil
                 if case let .quotedItem(chatItem: quotedItem) = composeState.contextItem {
                     quoted = quotedItem.id
@@ -355,7 +359,13 @@ struct ComposeView: View {
                         await send(.file(composeState.message), quoted: quoted, file: savedFile)
                     }
                 }
-                await MainActor.run { clearState() }
+            }
+        }
+
+        func sending() async {
+            await MainActor.run { composeState.disabled = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if composeState.disabled { composeState.inProgress = true }
             }
         }
 
@@ -367,8 +377,11 @@ struct ComposeView: View {
                 quotedItemId: quoted,
                 msg: mc
             )
-            if let ci = chatItem {
-                await MainActor.run { chatModel.addChatItem(chat.chatInfo, ci) }
+            DispatchQueue.main.async {
+                if let chatItem = chatItem {
+                    _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
+                }
+                clearState()
             }
         }
     }
