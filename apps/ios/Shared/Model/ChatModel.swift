@@ -231,6 +231,22 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
+        guard var i = reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
+        if previous {
+            while i < reversedChatItems.count - 1 {
+                i += 1
+                if let res = map(reversedChatItems[i]) { return res }
+            }
+        } else {
+            while i > 0 {
+                i -= 1
+                if let res = map(reversedChatItems[i]) { return res }
+            }
+        }
+        return nil
+    }
+
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
         if let chat = getChat(cInfo.id) {

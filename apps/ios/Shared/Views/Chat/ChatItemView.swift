@@ -14,6 +14,7 @@ struct ChatItemView: View {
     var chatItem: ChatItem
     var showMember = false
     var maxWidth: CGFloat = .infinity
+    @State var scrollProxy: ScrollViewProxy? = nil
 
     var body: some View {
         switch chatItem.content {
@@ -35,7 +36,7 @@ struct ChatItemView: View {
         if (chatItem.quotedItem == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text)) {
             EmojiItemView(chatItem: chatItem)
         } else {
-            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth)
+            FramedItemView(chatInfo: chatInfo, chatItem: chatItem, showMember: showMember, maxWidth: maxWidth, scrollProxy: scrollProxy)
         }
     }
 
