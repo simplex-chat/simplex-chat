@@ -312,7 +312,7 @@ struct ComposeView: View {
                             itemId: ei.id,
                             msg: mc
                         )
-                        DispatchQueue.main.async {
+                        await MainActor.run {
                             clearState()
                             let _ = self.chatModel.upsertChatItem(self.chat.chatInfo, chatItem)
                         }
@@ -378,7 +378,7 @@ struct ComposeView: View {
                 quotedItemId: quoted,
                 msg: mc
             ) {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
                 }
             }
