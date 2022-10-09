@@ -17,18 +17,24 @@ struct FullScreenImageView: View {
     @State var scrollProxy: ScrollViewProxy?
     @State private var showNext = false
     @State private var nextImage: UIImage?
-    @State private var nextEdge = Edge.leading
     @State private var scrolling = false
+    @State private var offset: CGFloat = 0
+    @State private var nextOffset: CGFloat = 0
 
     var body: some View {
+        GeometryReader(content: imageScrollView)
+    }
+
+    func imageScrollView(_ g: GeometryProxy) -> some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
-            ZoomableScrollView {
-                imageView(image)
-            }
             if showNext, let nextImage = nextImage {
-                imageView(nextImage)
-                    .transition(.move(edge: nextEdge))
+                imageView(image).offset(x: offset)
+                imageView(nextImage).offset(x: offset + nextOffset)
+            } else {
+                ZoomableScrollView {
+                    imageView(image)
+                }
             }
         }
         .onTapGesture { showView = false }
@@ -49,13 +55,17 @@ struct FullScreenImageView: View {
                         var img: UIImage
                         (chatItem, img) = item
                         nextImage = img
-                        nextEdge = previous ? .leading : .trailing
-                        withAnimation(.easeIn(duration: 0.175)) {
-                            showNext = true
+                        let s = g.size.width
+                        var toOffset: CGFloat
+                        (toOffset, nextOffset) = previous ? (s, -s) : (-s, s)
+                        showNext = true
+                        withAnimation(.easeIn(duration: 0.2)) {
+                            offset = toOffset
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.175) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                             image = img
                             showNext = false
+                            offset = 0
                         }
                     }
                 }
