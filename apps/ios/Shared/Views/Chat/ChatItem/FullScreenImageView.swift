@@ -18,6 +18,7 @@ struct FullScreenImageView: View {
     @State private var showNext = false
     @State private var nextImage: UIImage?
     @State private var nextEdge = Edge.leading
+    @State private var scrolling = false
 
     var body: some View {
         ZStack {
@@ -35,18 +36,15 @@ struct FullScreenImageView: View {
             DragGesture(minimumDistance: 80)
             .onChanged { gesture in
                 let t = gesture.translation
-                if t.height > 60 && t.height > abs(t.width) * 2  {
+                let w = abs(t.width)
+                if t.height > 60 && t.height > w * 2  {
                     showView = false
                     if let proxy = scrollProxy {
                         proxy.scrollTo(chatItem.viewId)
                     }
-                }
-            }
-            .onEnded { gesture in
-                let t = gesture.translation
-                let w = abs(t.width)
-                if w > 80 && w > abs(t.height) * 2 {
+                } else if w > 60 && w > abs(t.height) * 2 && !scrolling {
                     let previous = t.width > 0
+                    scrolling = true
                     if let item = m.nextChatItemData(chatItem.id, previous: previous, map: chatItemImage) {
                         var img: UIImage
                         (chatItem, img) = item
@@ -62,6 +60,7 @@ struct FullScreenImageView: View {
                     }
                 }
             }
+            .onEnded { _ in scrolling = false }
         )
     }
 
