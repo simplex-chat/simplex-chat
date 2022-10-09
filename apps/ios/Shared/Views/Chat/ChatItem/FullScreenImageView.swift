@@ -50,10 +50,10 @@ struct FullScreenImageView: View {
                         (chatItem, img) = item
                         nextImage = img
                         nextEdge = previous ? .leading : .trailing
-                        withAnimation(.easeIn(duration: 0.2)) {
+                        withAnimation(.easeIn(duration: 0.175)) {
                             showNext = true
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.175) {
                             image = img
                             showNext = false
                         }
