@@ -343,6 +343,7 @@ struct ComposeView: View {
                     var text = composeState.message
                     var sent = false
                     for i in 0..<min(chosenImages.count, images.count) {
+                        if i > 0 { _ = try? await Task.sleep(nanoseconds: 100_000000) }
                         if let savedFile = saveImage(chosenImages[i]) {
                             await send(.image(text: text, image: images[i]), quoted: quoted, file: savedFile)
                             text = ""
@@ -379,7 +380,7 @@ struct ComposeView: View {
                 msg: mc
             ) {
                 await MainActor.run {
-                    _ = chatModel.upsertChatItem(chat.chatInfo, chatItem)
+                    chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
             }
         }

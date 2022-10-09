@@ -178,7 +178,7 @@ final class ChatModel: ObservableObject {
         }
         // add to current chat
         if chatId == cInfo.id {
-            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            _ = _upsertChatItem(cInfo, cItem)
         }
     }
 
@@ -199,23 +199,23 @@ final class ChatModel: ObservableObject {
             res = true
         }
         // update current chat
-        if chatId == cInfo.id {
-            if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
-                let ci = reversedChatItems[i]
-                withAnimation(.default) {
-                    self.reversedChatItems[i] = cItem
-                    self.reversedChatItems[i].viewTimestamp = .now
-                    if case .sndNew = cItem.meta.itemStatus {
-                        self.reversedChatItems[i].meta = ci.meta
-                    }
+        return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
+    }
+
+    private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+        if let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
+            let ci = reversedChatItems[i]
+            withAnimation(.default) {
+                self.reversedChatItems[i] = cItem
+                self.reversedChatItems[i].viewTimestamp = .now
+                if case .sndNew = cItem.meta.itemStatus {
+                    self.reversedChatItems[i].meta = ci.meta
                 }
-                return false
-            } else {
-                withAnimation { reversedChatItems.insert(cItem, at: 0) }
-                return true
             }
+            return false
         } else {
-            return res
+            withAnimation { reversedChatItems.insert(cItem, at: 0) }
+            return true
         }
     }
     

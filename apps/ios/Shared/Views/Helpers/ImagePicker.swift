@@ -80,6 +80,7 @@ struct LibraryImageListPicker: UIViewControllerRepresentable {
                 if self.imageCount == 0 && self.parent.images.count == 0 {
                     logger.log("LibraryImageListPicker: added all images")
                     self.parent.images = self.images
+                    self.images = []
                 }
             }
         }
