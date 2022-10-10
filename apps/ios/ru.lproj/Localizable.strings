@@ -1116,6 +1116,9 @@
 /* No comment provided by engineer. */
 "Network status" = "Состояние сети";
 
+/* No comment provided by engineer. */
+"never" = "никогда";
+
 /* notification */
 "New contact request" = "Новый запрос на соединение";
 
@@ -1136,9 +1139,6 @@
 
 /* No comment provided by engineer. */
 "New passphrase…" = "Новый пароль…";
-
-/* No comment provided by engineer. */
-"no" = "нет";
 
 /* No comment provided by engineer. */
 "No" = "Нет";

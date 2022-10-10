@@ -599,7 +599,7 @@
     <string name="delete_files_and_media_desc">Это действие нельзя отменить — все полученные и отправленные файлы будут удалены. Изображения останутся в низком разрешении.</string>
     <string name="no_received_app_files">Нет полученных или отправленных файлов</string>
     <string name="total_files_count_and_size">%d файл(ов) общим размером %s</string>
-    <string name="chat_item_ttl_none">нет</string>
+    <string name="chat_item_ttl_none">никогда</string>
     <string name="chat_item_ttl_day">1 день</string>
     <string name="chat_item_ttl_week">1 неделю</string>
     <string name="chat_item_ttl_month">1 месяц</string>
@@ -770,6 +770,16 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
+    <string name="role_in_group">Роль</string>
+    <string name="change_role">Поменять роль</string>
+    <string name="change_verb">Поменять</string>
+    <string name="change_member_role_question">Поменять роль в группе?</string>
+    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на \"%s\". Все в группе получат сообщение.</string>
+    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на \"%s\". Будет отправлено новое приглашение.</string>
+    <string name="error_removing_member">Ошибка при удалении члена группы</string>
+    <string name="error_changing_role">Ошибка при изменении роли</string>
+    <string name="member_role">роль %s: %s</string>
+    <string name="your_member_role">ваша роль: %s</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
     <string name="conn_level_desc_direct">прямое</string>

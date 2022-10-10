@@ -16,7 +16,7 @@ struct NavLinkPlain<V: Hashable, Label: View>: View {
 
     var body: some View {
         ZStack {
-            Button("") { selection = tag }
+            Button("") { DispatchQueue.main.async { selection = tag } }
                 .disabled(disabled)
             label()
         }

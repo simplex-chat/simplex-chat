@@ -9,15 +9,30 @@
 import SwiftUI
 import PhotosUI
 
-struct LibraryImagePicker: UIViewControllerRepresentable {
-    typealias UIViewControllerType = PHPickerViewController
+struct LibraryImagePicker: View {
     @Binding var image: UIImage?
+    var didFinishPicking: (_ didSelectItems: Bool) -> Void
+    @State var images: [UIImage] = []
+
+    var body: some View {
+        LibraryImageListPicker(images: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
+            .onChange(of: images) { image = $0.first }
+    }
+}
+
+struct LibraryImageListPicker: UIViewControllerRepresentable {
+    typealias UIViewControllerType = PHPickerViewController
+    @Binding var images: [UIImage]
+    var selectionLimit: Int
     var didFinishPicking: (_ didSelectItems: Bool) -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
-        let parent: LibraryImagePicker
+        let parent: LibraryImageListPicker
+        let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryImageListPicker")
+        var images: [UIImage] = []
+        var imageCount: Int = 0
 
-        init(_ parent: LibraryImagePicker) {
+        init(_ parent: LibraryImageListPicker) {
             self.parent = parent
         }
 
@@ -27,12 +42,27 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
                 return
             }
 
-            if let chosenImageProvider = results.first?.itemProvider {
-                if chosenImageProvider.canLoadObject(ofClass: UIImage.self) {
-                    chosenImageProvider.loadObject(ofClass: UIImage.self)  { [weak self] image, error in
+            parent.images = []
+            images = []
+            imageCount = results.count
+            for result in results {
+                logger.log("LibraryImageListPicker result")
+                let p = result.itemProvider
+                if p.canLoadObject(ofClass: UIImage.self) {
+                    p.loadObject(ofClass: UIImage.self)  { image, error in
                         DispatchQueue.main.async {
-                            self?.loadImage(object: image, error: error)
+                            self.loadImage(object: image, error: error)
                         }
+                    }
+                } else {
+                    dispatchQueue.sync { self.imageCount -= 1}
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                self.dispatchQueue.sync {
+                    if self.parent.images.count == 0 {
+                        logger.log("LibraryImageListPicker: added \(self.images.count) images out of \(results.count)")
+                        self.parent.images = self.images
                     }
                 }
             }
@@ -40,9 +70,19 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
 
         func loadImage(object: Any?, error: Error? = nil) {
             if let error = error {
-                logger.error("Couldn't load image with error: \(error.localizedDescription)")
+                logger.error("LibraryImageListPicker: couldn't load image with error: \(error.localizedDescription)")
+            } else if let image = object as? UIImage {
+                images.append(image)
+                logger.log("LibraryImageListPicker: added image")
             }
-            parent.image = object as? UIImage
+            dispatchQueue.sync {
+                self.imageCount -= 1
+                if self.imageCount == 0 && self.parent.images.count == 0 {
+                    logger.log("LibraryImageListPicker: added all images")
+                    self.parent.images = self.images
+                    self.images = []
+                }
+            }
         }
     }
 
@@ -53,7 +93,7 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images
-        config.selectionLimit = 1
+        config.selectionLimit = selectionLimit
         let controller = PHPickerViewController(configuration: config)
         controller.delegate = context.coordinator
         return controller
@@ -64,6 +104,23 @@ struct LibraryImagePicker: UIViewControllerRepresentable {
     }
 }
 
+struct CameraImageListPicker: View {
+    @Binding var images: [UIImage]
+    @State var image: UIImage?
+
+    var body: some View {
+        CameraImagePicker(image: $image)
+            .onChange(of: image) { images = imageList($0) }
+    }
+}
+
+func imageList(_ img: UIImage?) -> [UIImage] {
+    if let img = img {
+        return [img]
+    } else {
+        return []
+    }
+}
 
 struct CameraImagePicker: UIViewControllerRepresentable {
     @Environment(\.presentationMode) var presentationMode

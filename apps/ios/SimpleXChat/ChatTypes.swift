@@ -1119,7 +1119,7 @@ public enum CIContent: Decodable, ItemContent {
 
 public struct CIQuote: Decodable, ItemContent {
     var chatDir: CIDirection?
-    var itemId: Int64?
+    public var itemId: Int64?
     var sharedMsgId: String? = nil
     var sentAt: Date
     public var content: MsgContent
@@ -1512,7 +1512,7 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
         case .week: return "1 week"
         case .month: return "1 month"
         case let .seconds(seconds): return "\(seconds) second(s)"
-        case .none: return "no"
+        case .none: return "never"
         }
     }
 

@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.app.TAG
 import chat.simplex.app.ui.theme.SettingsBackgroundLight
 import chat.simplex.app.ui.theme.isInDarkTheme
-import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Composable
 fun ModalView(
@@ -35,6 +35,7 @@ class ModalManager {
   private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
   private val modalCount = mutableStateOf(0)
   private val toRemove = mutableSetOf<Int>()
+  private var oldViewChanging = AtomicBoolean(false)
 
   fun showModal(settings: Boolean = false, content: @Composable () -> Unit) {
     showCustomModal { close ->
@@ -50,6 +51,11 @@ class ModalManager {
 
   fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showModal")
+    // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
+    // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
+    if (toRemove.isNotEmpty()) {
+      runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
+    }
     modalViews.add(modal)
     modalCount.value = modalViews.size - toRemove.size
   }
@@ -57,7 +63,7 @@ class ModalManager {
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       //modalViews.removeAt(modalViews.lastIndex)
-      toRemove.add(modalViews.lastIndex - toRemove.size)
+      runAtomically { toRemove.add(modalViews.lastIndex - toRemove.size) }
     }
     modalCount.value = modalViews.size - toRemove.size
   }
@@ -81,9 +87,20 @@ class ModalManager {
       modalViews.getOrNull(it - 1)?.invoke(::closeModal)
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
-        toRemove.removeIf { elem -> modalViews.removeAt(elem); true }
+        runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
       }
     }
+  }
+
+  /**
+  * Allows to modify a list without getting [ConcurrentModificationException]
+  * */
+  private fun runAtomically(atomicBoolean: AtomicBoolean = oldViewChanging, block: () -> Unit) {
+    while (!atomicBoolean.compareAndSet(false, true)) {
+      Thread.sleep(10)
+    }
+    block()
+    atomicBoolean.set(false)
   }
 
   @OptIn(ExperimentalAnimationApi::class)

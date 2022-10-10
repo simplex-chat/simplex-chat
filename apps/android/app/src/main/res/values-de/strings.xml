@@ -599,7 +599,7 @@
   <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
   <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
   <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
-  <string name="chat_item_ttl_none">no</string>
+  <string name="chat_item_ttl_none">never</string>
   <string name="chat_item_ttl_day">1 day</string>
   <string name="chat_item_ttl_week">1 week</string>
   <string name="chat_item_ttl_month">1 month</string>
@@ -770,6 +770,16 @@
   <string name="member_will_be_removed_from_group_cannot_be_undone">Das Mitglied wird aus der Gruppe entfernt - dies kann nicht rückgängig gemacht werden!</string>
   <string name="remove_member_confirmation">Entfernen</string>
   <string name="member_info_section_title_member">MITGLIED</string>
+  <string name="role_in_group">Role</string>
+  <string name="change_role">Change role</string>
+  <string name="change_verb">Change</string>
+  <string name="change_member_role_question">Change group role?</string>
+  <string name="member_role_will_be_changed_with_notification">The role will be changed to \"%s\". Everyone in the group will be notified.</string>
+  <string name="member_role_will_be_changed_with_invitation">The role will be changed to \"%s\". The member will receive a new invitation.</string>
+  <string name="error_removing_member">Error removing member</string>
+  <string name="error_changing_role">Error changing role</string>
+  <string name="member_role">member %s role: %s</string>
+  <string name="your_member_role">your role: %s</string>
   <string name="info_row_group">Gruppe</string>
   <string name="info_row_connection">Verbindung</string>
   <string name="conn_level_desc_direct">direkt</string>

@@ -223,8 +223,8 @@ fun AddMembersButton(tint: Color = MaterialTheme.colors.primary) {
 fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Unit) {
   Column {
     members.forEachIndexed { index, member ->
-      SectionItemView(minHeight = 50.dp) {
-        MemberRow(member, showMemberInfo)
+      SectionItemView({ showMemberInfo(member) }, minHeight = 50.dp) {
+        MemberRow(member)
       }
       if (index < members.lastIndex) {
         SectionDivider()
@@ -234,10 +234,9 @@ fun MembersList(members: List<GroupMember>, showMemberInfo: (GroupMember) -> Uni
 }
 
 @Composable
-fun MemberRow(member: GroupMember, showMemberInfo: ((GroupMember) -> Unit)? = null, user: Boolean = false) {
-  val modifier = if (showMemberInfo != null) Modifier.clickable { showMemberInfo(member) } else Modifier
+fun MemberRow(member: GroupMember, user: Boolean = false) {
   Row(
-    modifier.fillMaxSize(),
+    Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {

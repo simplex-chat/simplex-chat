@@ -11,18 +11,33 @@ import SimpleXChat
 
 struct ComposeImageView: View {
     @Environment(\.colorScheme) var colorScheme
-    let image: String
+    let images: [String]
     let cancelImage: (() -> Void)
     let cancelEnabled: Bool
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            if let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
+            let imgs: [UIImage] = images.compactMap { image in
+                if let data = Data(base64Encoded: dropImagePrefix(image)) {
+                    return UIImage(data: data)
+                }
+                return nil
+            }
+            if imgs.count == 0 {
+                ProgressView()
+                    .padding(.leading, 12)
+                    .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60, alignment: .leading)
+            } else {
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(imgs, id: \.hash) { img in
+                            Image(uiImage: img)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: 80, minHeight: 40, maxHeight: 60)
+                        }
+                    }
+                }
             }
             Spacer()
             if cancelEnabled {
