@@ -29,23 +29,25 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  var newChatSheetState by rememberSaveable { mutableStateOf(NewChatSheetState.GONE) }
+  val newChatSheetState by rememberSaveable(stateSaver = NewChatSheetState.saver()) { mutableStateOf(MutableStateFlow(NewChatSheetState.GONE)) }
   val scope = rememberCoroutineScope()
   val showNewChatSheet = {
-    newChatSheetState = NewChatSheetState.VISIBLE
+    newChatSheetState.value = NewChatSheetState.VISIBLE
+    println("LALAL CLICKED")
   }
   val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
     scope.launch {
-      if (animated) newChatSheetState = NewChatSheetState.HIDING
-      else newChatSheetState = NewChatSheetState.GONE
+      if (animated) newChatSheetState.value = NewChatSheetState.HIDING
+      else newChatSheetState.value = NewChatSheetState.GONE
     }
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet(true)
+    if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(true)
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
@@ -58,7 +60,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              if (newChatSheetState == NewChatSheetState.VISIBLE) hideNewChatSheet(true) else showNewChatSheet()
+              if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
           elevation = FloatingActionButtonDefaults.elevation(
@@ -70,7 +72,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
           contentColor = Color.White
         ) {
-          Icon(if (newChatSheetState != NewChatSheetState.VISIBLE) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -85,7 +87,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           ChatList(chatModel, search = searchInList)
         } else {
           Box(Modifier.fillMaxSize()) {
-            if (!stopped && newChatSheetState != NewChatSheetState.VISIBLE) {
+            if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
             }
             Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
@@ -94,7 +96,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       }
     }
   }
-  if (newChatSheetState != NewChatSheetState.GONE && searchInList.isEmpty()) {
+  if (searchInList.isEmpty()) {
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
 }

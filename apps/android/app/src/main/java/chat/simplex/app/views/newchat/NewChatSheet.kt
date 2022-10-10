@@ -1,7 +1,7 @@
 package chat.simplex.app.views.newchat
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,24 +16,30 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import chat.simplex.app.R
 import chat.simplex.app.model.ChatModel
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.helpers.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, newChatSheetState: NewChatSheetState, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
-  if (newChatSheetState == NewChatSheetState.VISIBLE) BackHandler { closeNewChatSheet(true) }
+fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<NewChatSheetState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
+  println("LALAL RELOAD OMG")
+  if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetState,
     stopped,
@@ -53,55 +59,70 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: NewChatSheetState, sto
   )
 }
 
+private val titles = listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group)
+private val icons = listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group)
+
 @Composable
-fun NewChatSheetLayout(
-  newChatSheetState: NewChatSheetState,
+private fun NewChatSheetLayout(
+  newChatSheetState: StateFlow<NewChatSheetState>,
   stopped: Boolean,
   addContact: () -> Unit,
   connectViaLink: () -> Unit,
   createGroup: () -> Unit,
   closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
-  val newChatSheetOpen = newChatSheetState == NewChatSheetState.VISIBLE
-  var visible by remember { mutableStateOf(false) }
-  LaunchedEffect(Unit) {
-    visible = true
-  }
+  var newChat by remember { mutableStateOf(newChatSheetState.value) }
+  println("LALAL RELOAD OMG2 $newChat")
   val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
-  val animatedColor by animateColorAsState(
-    if (visible && newChatSheetState == NewChatSheetState.VISIBLE) resultingColor else Color.Transparent,
-    newChatSheetAnimSpec()
-  )
+  val animatedColor = remember {
+    Animatable(
+      if (newChat.isVisible()) Color.Transparent else resultingColor,
+      Color.VectorConverter(resultingColor.colorSpace)
+    )
+  }
+  val animatedFloat = remember { println("LALAL RELOAD alpha $newChat");Animatable(if (newChat.isVisible()) 0f else 1f) }
+  LaunchedEffect(Unit) {
+    println("LALAL LAUNCHED")
+    launch {
+      newChatSheetState.collect {
+        println("LALAL COLLECT $it")
+        newChat = it
+        launch {
+          animatedColor.animateTo(if (newChat.isVisible()) resultingColor else Color.Transparent, newChatSheetAnimSpec())
+        }
+        launch {
+          println("LALAL ANIM float $newChat ${if (newChat.isVisible()) 1f else 0f}")
+          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
+          if (newChat.isHiding()) {
+            closeNewChatSheet(false)
+          }
+        }
+      }
+    }
+  }
+  //if (newChat.isGone()) return
+  val maxWidth =  with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp * density }
   Column(
     Modifier
       .fillMaxSize()
-      .clickable(remember { MutableInteractionSource() }, indication = null) { closeNewChatSheet(true) }
-      .drawBehind { drawRect(animatedColor) },
+      .offset { IntOffset(if (newChat.isGone()) -maxWidth.roundToInt() else 0, 0) }
+      .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { closeNewChatSheet(true) }
+      .drawBehind { drawRect(animatedColor.value) },
     verticalArrangement = Arrangement.Bottom,
     horizontalAlignment = Alignment.End
   ) {
+    println("LALAL START1")
     val actions = remember { listOf(addContact, connectViaLink, createGroup) }
-    val titles = remember { listOf(R.string.share_one_time_link, R.string.connect_via_link_or_qr, R.string.create_group) }
-    val icons = remember { listOf(Icons.Outlined.AddLink, Icons.Outlined.QrCode, Icons.Outlined.Group) }
     val backgroundColor = if (isInDarkTheme())
       Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
     else
       MaterialTheme.colors.background
-    if (!rememberUpdatedState(newChatSheetOpen).value) {
-      visible = false
-    }
-    val animatedFloat by animateFloatAsState(
-      if (visible) 1f else 0f,
-      newChatSheetAnimSpec()
-    ) {
-      if (!visible && !newChatSheetOpen) {
-        closeNewChatSheet(false)
-      }
-    }
+    println("LALAL START2")
     LazyColumn(
       Modifier
-        .graphicsLayer { alpha = animatedFloat; translationY = (1 - animatedFloat) * 20.dp.toPx() / 2; println("LALAL DRAW alpha $alpha transX $translationY");  }
+        .graphicsLayer { alpha = animatedFloat.value; translationY = (1 - animatedFloat.value) * 20.dp.toPx(); println("LALAL DRAW alpha $alpha transX $translationY"); }
     ) {
+      println("LALAL START3")
       items(actions.size) { index ->
         Row {
           Spacer(Modifier.weight(1f))
@@ -133,6 +154,7 @@ fun NewChatSheetLayout(
         }
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
+      println("LALAL START4")
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
@@ -146,18 +168,16 @@ fun NewChatSheetLayout(
       backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
       contentColor = Color.White
     ) {
-      val animatedAlpha by animateFloatAsState(
-        if (visible && newChatSheetState == NewChatSheetState.VISIBLE) 1f else 0f,
-        newChatSheetAnimSpec()
-      )
+      println("LALAL START5")
       Icon(
         Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
-        Modifier.alpha(1 - animatedAlpha)
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value; println("LALAL FLOAT alpha $alpha") }
       )
       Icon(
         Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
-        Modifier.alpha(animatedAlpha)
+        Modifier.graphicsLayer { alpha = animatedFloat.value }
       )
+      println("LALAL START6")
     }
   }
 }
@@ -207,10 +227,10 @@ fun ActionButton(
 
 @Preview
 @Composable
-fun PreviewNewChatSheet() {
+private fun PreviewNewChatSheet() {
   SimpleXTheme {
     NewChatSheetLayout(
-      NewChatSheetState.VISIBLE,
+      MutableStateFlow(NewChatSheetState.VISIBLE),
       stopped = false,
       addContact = {},
       connectViaLink = {},
