@@ -785,12 +785,27 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiRemoveMember(groupId: Long, memberId: Long): GroupMember? {
-    val r = sendCmd(CC.ApiRemoveMember(groupId, memberId))
-    if (r is CR.UserDeletedMember) return r.member
-    Log.e(TAG, "apiRemoveMember bad response: ${r.responseType} ${r.details}")
-    return null
-  }
+  suspend fun apiRemoveMember(groupId: Long, memberId: Long): GroupMember? =
+    when (val r = sendCmd(CC.ApiRemoveMember(groupId, memberId))) {
+      is CR.UserDeletedMember -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiRemoveMember", generalGetString(R.string.error_removing_member), r)
+        }
+        null
+      }
+    }
+
+  suspend fun apiMemberRole(groupId: Long, memberId: Long, memberRole: GroupMemberRole): GroupMember =
+    when (val r = sendCmd(CC.ApiMemberRole(groupId, memberId, memberRole))) {
+      is CR.MemberRoleUser -> r.member
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiMemberRole", generalGetString(R.string.error_changing_role), r)
+        }
+        throw Exception("failed to change member role: ${r.responseType} ${r.details}")
+      }
+    }
 
   suspend fun apiLeaveGroup(groupId: Long): GroupInfo? {
     val r = sendCmd(CC.ApiLeaveGroup(groupId))
@@ -948,6 +963,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       is CR.DeletedMember ->
         chatModel.upsertGroupMember(r.groupInfo, r.deletedMember)
       is CR.LeftMember ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.MemberRole ->
+        chatModel.upsertGroupMember(r.groupInfo, r.member)
+      is CR.MemberRoleUser ->
         chatModel.upsertGroupMember(r.groupInfo, r.member)
       is CR.GroupDeleted -> // TODO update user member
         chatModel.updateGroup(r.groupInfo)
@@ -1342,7 +1361,7 @@ sealed class CC {
   class NewGroup(val groupProfile: GroupProfile): CC()
   class ApiAddMember(val groupId: Long, val contactId: Long, val memberRole: GroupMemberRole): CC()
   class ApiJoinGroup(val groupId: Long): CC()
-  // class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
+  class ApiMemberRole(val groupId: Long, val memberId: Long, val memberRole: GroupMemberRole): CC()
   class ApiRemoveMember(val groupId: Long, val memberId: Long): CC()
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
@@ -1400,6 +1419,7 @@ sealed class CC {
     is NewGroup -> "/_group ${json.encodeToString(groupProfile)}"
     is ApiAddMember -> "/_add #$groupId $contactId ${memberRole.memberRole}"
     is ApiJoinGroup -> "/_join #$groupId"
+    is ApiMemberRole -> "/_member role #$groupId $memberId ${memberRole.memberRole}"
     is ApiRemoveMember -> "/_remove #$groupId $memberId"
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
@@ -1458,6 +1478,7 @@ sealed class CC {
     is NewGroup -> "newGroup"
     is ApiAddMember -> "apiAddMember"
     is ApiJoinGroup -> "apiJoinGroup"
+    is ApiMemberRole -> "apiMemberRole"
     is ApiRemoveMember -> "apiRemoveMember"
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
@@ -1710,6 +1731,8 @@ sealed class CR {
   @Serializable @SerialName("receivedGroupInvitation") class ReceivedGroupInvitation(val groupInfo: GroupInfo, val contact: Contact, val memberRole: GroupMemberRole): CR()
   @Serializable @SerialName("groupDeletedUser") class GroupDeletedUser(val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMemberConnecting") class JoinedGroupMemberConnecting(val groupInfo: GroupInfo, val hostMember: GroupMember, val member: GroupMember): CR()
+  @Serializable @SerialName("memberRole") class MemberRole(val groupInfo: GroupInfo, val byMember: GroupMember, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
+  @Serializable @SerialName("memberRoleUser") class MemberRoleUser(val groupInfo: GroupInfo, val member: GroupMember, val fromRole: GroupMemberRole, val toRole: GroupMemberRole): CR()
   @Serializable @SerialName("deletedMemberUser") class DeletedMemberUser(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("deletedMember") class DeletedMember(val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
@@ -1799,6 +1822,8 @@ sealed class CR {
     is ReceivedGroupInvitation -> "receivedGroupInvitation"
     is GroupDeletedUser -> "groupDeletedUser"
     is JoinedGroupMemberConnecting -> "joinedGroupMemberConnecting"
+    is MemberRole -> "memberRole"
+    is MemberRoleUser -> "memberRoleUser"
     is DeletedMemberUser -> "deletedMemberUser"
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
@@ -1887,6 +1912,8 @@ sealed class CR {
     is ReceivedGroupInvitation -> "groupInfo: $groupInfo\ncontact: $contact\nmemberRole: $memberRole"
     is GroupDeletedUser -> json.encodeToString(groupInfo)
     is JoinedGroupMemberConnecting -> "groupInfo: $groupInfo\nhostMember: $hostMember\nmember: $member"
+    is MemberRole -> "groupInfo: $groupInfo\nbyMember: $byMember\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole"
+    is MemberRoleUser -> "groupInfo: $groupInfo\nmember: $member\nfromRole: $fromRole\ntoRole: $toRole"
     is DeletedMemberUser -> "groupInfo: $groupInfo\nmember: $member"
     is DeletedMember -> "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember"
     is LeftMember -> "groupInfo: $groupInfo\nmember: $member"

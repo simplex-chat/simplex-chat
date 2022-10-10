@@ -2452,7 +2452,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             withStore' $ \db -> updateGroupMemberRole db user member memRole
             ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent gEvent) Nothing
             groupMsgToView gInfo m ci msgMeta
-            toView CRMemberRole {groupInfo = gInfo', byMember = m, member, fromRole, toRole = memRole}
+            toView CRMemberRole {groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
 
     checkHostRole :: GroupMember -> GroupMemberRole -> m ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
