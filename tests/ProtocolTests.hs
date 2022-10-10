@@ -52,28 +52,28 @@ testE2ERatchetParams = E2ERatchetParamsUri e2eEncryptVRange testDhPubKey testDhP
 testConnReq :: ConnectionRequestUri 'CMInvitation
 testConnReq = CRInvitationUri connReqData testE2ERatchetParams
 
-(==##) :: ByteString -> ChatMessage -> Expectation
+(==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ==## msg = do
   strDecode s `shouldBe` Right msg
   parseAll strP s `shouldBe` Right msg
 
-(##==) :: ByteString -> ChatMessage -> Expectation
+(##==) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ##== msg =
   J.eitherDecodeStrict' (strEncode msg)
     `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
 
-(##==##) :: ByteString -> ChatMessage -> Expectation
+(##==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ##==## msg = do
   s ##== msg
   s ==## msg
 
-(==#) :: ByteString -> ChatMsgEvent -> Expectation
+(==#) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
 s ==# msg = s ==## ChatMessage Nothing msg
 
-(#==) :: ByteString -> ChatMsgEvent -> Expectation
+(#==) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
 s #== msg = s ##== ChatMessage Nothing msg
 
-(#==#) :: ByteString -> ChatMsgEvent -> Expectation
+(#==#) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
 s #==# msg = do
   s #== msg
   s ==# msg

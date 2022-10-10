@@ -9,11 +9,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Protocol where
 
-import Control.Applicative ((<|>))
+import Control.Applicative (optional, (<|>))
 import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
@@ -22,19 +24,24 @@ import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime)
+import Data.Type.Equality
+import Data.Typeable (Typeable)
+import Data.Word (Word32)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Util (safeDecodeUtf8)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (fromTextField_, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Parsers (fromTextField_, fstToLower, parseAll, sumTypeJSON)
 import Simplex.Messaging.Util (eitherToMaybe, (<$?>))
 
 data ConnectionEntity
@@ -59,17 +66,65 @@ updateEntityConnStatus connEntity connStatus = case connEntity of
   where
     st c = c {connStatus}
 
+data MsgEncoding = Binary | Json
+
+data SMsgEncoding (e :: MsgEncoding) where
+  SBinary :: SMsgEncoding 'Binary
+  SJson :: SMsgEncoding 'Json
+
+deriving instance Show (SMsgEncoding e)
+
+class MsgEncodingI (e :: MsgEncoding) where
+  encoding :: SMsgEncoding e
+
+instance MsgEncodingI 'Binary where encoding = SBinary
+
+instance MsgEncodingI 'Json where encoding = SJson
+
+data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
+
+instance TestEquality SMsgEncoding where
+  testEquality SBinary SBinary = Just Refl
+  testEquality SJson SJson = Just Refl
+  testEquality _ _ = Nothing
+
+checkEncoding :: forall t e e'. (MsgEncodingI e, MsgEncodingI e') => t e' -> Either String (t e)
+checkEncoding x = case testEquality (encoding @e) (encoding @e') of
+  Just Refl -> Right x
+  Nothing -> Left "bad encoding"
+
+data AppMessage (e :: MsgEncoding) where
+  AMJson :: AppMessageJson -> AppMessage 'Json
+  AMBinary :: AppMessageBinary -> AppMessage 'Binary
+
 -- chat message is sent as JSON with these properties
-data AppMessage = AppMessage
+data AppMessageJson = AppMessageJson
   { msgId :: Maybe SharedMsgId,
     event :: Text,
     params :: J.Object
   }
   deriving (Generic, FromJSON)
 
-instance ToJSON AppMessage where
+data AppMessageBinary = AppMessageBinary
+  { msgId :: Maybe SharedMsgId,
+    tag :: ByteString,
+    body :: ByteString
+  }
+
+instance ToJSON AppMessageJson where
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance StrEncoding AppMessageBinary where
+  strEncode AppMessageBinary {msgId = Just (SharedMsgId msgId), tag, body} =
+    B.unwords ["X" <> msgId, tag, body]
+  strEncode AppMessageBinary {tag, body} =
+    B.unwords ["X", tag, body]
+  strP = do
+    msgId <- A.char 'X' *> optional (SharedMsgId <$> A.takeTill (== ' ')) <* A.space
+    tag <- A.takeTill (== ' ') <* A.space
+    body <- A.takeByteString
+    pure AppMessageBinary {msgId, tag, body}
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
@@ -105,51 +160,95 @@ instance ToJSON MsgRef where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data ChatMessage = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent}
+data ChatMessage e = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent e}
   deriving (Eq, Show)
 
-instance StrEncoding ChatMessage where
-  strEncode = LB.toStrict . J.encode . chatToAppMessage
-  strDecode = appToChatMessage <=< J.eitherDecodeStrict'
-  strP = strDecode <$?> A.takeByteString
+data AChatMessage = forall e. MsgEncodingI e => ACM (SMsgEncoding e) (ChatMessage e)
 
-data ChatMsgEvent
-  = XMsgNew MsgContainer
-  | XMsgUpdate SharedMsgId MsgContent
-  | XMsgDel SharedMsgId
-  | XMsgDeleted
-  | XFile FileInvitation -- TODO discontinue
-  | XFileAcpt String -- direct file protocol
-  | XFileAcptInv SharedMsgId ConnReqInvitation String -- group file protocol
-  | XFileAcptInline SharedMsgId String
-  | XFileCancel SharedMsgId
-  | XInfo Profile
-  | XContact Profile (Maybe XContactId)
-  | XGrpInv GroupInvitation
-  | XGrpAcpt MemberId
-  | XGrpMemNew MemberInfo
-  | XGrpMemIntro MemberInfo
-  | XGrpMemInv MemberId IntroInvitation
-  | XGrpMemFwd MemberInfo IntroInvitation
-  | XGrpMemInfo MemberId Profile
-  | XGrpMemRole MemberId GroupMemberRole
-  | XGrpMemCon MemberId -- TODO not implemented
-  | XGrpMemConAll MemberId -- TODO not implemented
-  | XGrpMemDel MemberId
-  | XGrpLeave
-  | XGrpDel
-  | XGrpInfo GroupProfile
-  | XInfoProbe Probe
-  | XInfoProbeCheck ProbeHash
-  | XInfoProbeOk Probe
-  | XCallInv CallId CallInvitation
-  | XCallOffer CallId CallOffer
-  | XCallAnswer CallId CallAnswer
-  | XCallExtra CallId CallExtraInfo
-  | XCallEnd CallId
-  | XOk
-  | XUnknown {event :: Text, params :: J.Object}
+instance MsgEncodingI e => StrEncoding (ChatMessage e) where
+  strEncode msg = case chatToAppMessage msg of
+    AMJson m -> LB.toStrict $ J.encode m
+    AMBinary m -> strEncode m
+  strP = (\(ACM _ m) -> checkEncoding m) <$?> strP
+
+instance StrEncoding AChatMessage where
+  strEncode (ACM _ m) = strEncode m
+  strP =
+    A.peekChar' >>= \case
+      '{' -> ACM SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      'X' -> ACM SBinary <$> (appBinaryToCM <$?> strP)
+      _ -> fail "bad ChatMessage"
+
+data ChatMsgEvent (e :: MsgEncoding) where
+  XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
+  XMsgUpdate :: SharedMsgId -> MsgContent -> ChatMsgEvent 'Json
+  XMsgDel :: SharedMsgId -> ChatMsgEvent 'Json
+  XMsgDeleted :: ChatMsgEvent 'Json
+  XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
+  XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
+  XFileAcptInv :: SharedMsgId -> ConnReqInvitation -> String -> ChatMsgEvent 'Json -- group file protocol
+  XFileAcptInline :: SharedMsgId -> String -> ChatMsgEvent 'Json
+  XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
+  XInfo :: Profile -> ChatMsgEvent 'Json
+  XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
+  XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
+  XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
+  XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
+  XGrpMemIntro :: MemberInfo -> ChatMsgEvent 'Json
+  XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
+  XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
+  XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
+  XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
+  XGrpMemCon :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
+  XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
+  XGrpMemDel :: MemberId -> ChatMsgEvent 'Json
+  XGrpLeave :: ChatMsgEvent 'Json
+  XGrpDel :: ChatMsgEvent 'Json
+  XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
+  XInfoProbe :: Probe -> ChatMsgEvent 'Json
+  XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
+  XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
+  XCallInv :: CallId -> CallInvitation -> ChatMsgEvent 'Json
+  XCallOffer :: CallId -> CallOffer -> ChatMsgEvent 'Json
+  XCallAnswer :: CallId -> CallAnswer -> ChatMsgEvent 'Json
+  XCallExtra :: CallId -> CallExtraInfo -> ChatMsgEvent 'Json
+  XCallEnd :: CallId -> ChatMsgEvent 'Json
+  XOk :: ChatMsgEvent 'Json
+  XUnknown :: {event :: Text, params :: J.Object} -> ChatMsgEvent 'Json
+  BFileChunk :: SharedMsgId -> FileChunk -> ChatMsgEvent 'Binary
+
+deriving instance Eq (ChatMsgEvent e)
+
+deriving instance Show (ChatMsgEvent e)
+
+data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgEvent e)
+
+deriving instance Show AChatMsgEvent
+
+data FileChunk = FileChunk {chunkNo :: Integer, chunkBytes :: ByteString} | FileChunkCancel
   deriving (Eq, Show)
+
+instance Encoding FileChunk where
+  smpEncode = \case
+    FileChunk {chunkNo, chunkBytes} -> smpEncode ('F', fromIntegral chunkNo :: Word32, Tail chunkBytes)
+    FileChunkCancel -> smpEncode 'C'
+  smpP =
+    smpP >>= \case
+      'F' -> do
+        chunkNo <- fromIntegral <$> smpP @Word32
+        Tail chunkBytes <- smpP
+        pure FileChunk {chunkNo, chunkBytes}
+      'C' -> pure FileChunkCancel
+      _ -> fail "bad FileChunk"
+
+data InlineFileChunk = InlineFileChunk SharedMsgId FileChunk
+  deriving (Eq, Show)
+
+instance Encoding InlineFileChunk where
+  smpEncode (InlineFileChunk (SharedMsgId msgId) chunk) = smpEncode ('B', 'F', 'M', msgId, ' ', chunk)
+  smpP = do
+    ('B', 'F', 'M', msgId, ' ', chunk) <- smpP
+    pure $ InlineFileChunk (SharedMsgId msgId) chunk
 
 data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
@@ -158,9 +257,9 @@ instance ToJSON QuotedMsg where
   toEncoding = J.genericToEncoding J.defaultOptions
   toJSON = J.genericToJSON J.defaultOptions
 
-cmToQuotedMsg :: ChatMsgEvent -> Maybe QuotedMsg
+cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
-  XMsgNew (MCQuote quotedMsg _) -> Just quotedMsg
+  ACME _ (XMsgNew (MCQuote quotedMsg _)) -> Just quotedMsg
   _ -> Nothing
 
 data MsgContentTag = MCText_ | MCLink_ | MCImage_ | MCFile_ | MCUnknown_ Text
@@ -296,45 +395,49 @@ instance ToField MsgContent where
 instance FromField MsgContent where
   fromField = fromTextField_ $ J.decode . LB.fromStrict . encodeUtf8
 
-data CMEventTag
-  = XMsgNew_
-  | XMsgUpdate_
-  | XMsgDel_
-  | XMsgDeleted_
-  | XFile_
-  | XFileAcpt_
-  | XFileAcptInv_
-  | XFileAcptInline_
-  | XFileCancel_
-  | XInfo_
-  | XContact_
-  | XGrpInv_
-  | XGrpAcpt_
-  | XGrpMemNew_
-  | XGrpMemIntro_
-  | XGrpMemInv_
-  | XGrpMemFwd_
-  | XGrpMemInfo_
-  | XGrpMemRole_
-  | XGrpMemCon_
-  | XGrpMemConAll_
-  | XGrpMemDel_
-  | XGrpLeave_
-  | XGrpDel_
-  | XGrpInfo_
-  | XInfoProbe_
-  | XInfoProbeCheck_
-  | XInfoProbeOk_
-  | XCallInv_
-  | XCallOffer_
-  | XCallAnswer_
-  | XCallExtra_
-  | XCallEnd_
-  | XOk_
-  | XUnknown_ Text
-  deriving (Eq, Show)
+data CMEventTag (e :: MsgEncoding) where
+  XMsgNew_ :: CMEventTag 'Json
+  XMsgUpdate_ :: CMEventTag 'Json
+  XMsgDel_ :: CMEventTag 'Json
+  XMsgDeleted_ :: CMEventTag 'Json
+  XFile_ :: CMEventTag 'Json
+  XFileAcpt_ :: CMEventTag 'Json
+  XFileAcptInv_ :: CMEventTag 'Json
+  XFileAcptInline_ :: CMEventTag 'Json
+  XFileCancel_ :: CMEventTag 'Json
+  XInfo_ :: CMEventTag 'Json
+  XContact_ :: CMEventTag 'Json
+  XGrpInv_ :: CMEventTag 'Json
+  XGrpAcpt_ :: CMEventTag 'Json
+  XGrpMemNew_ :: CMEventTag 'Json
+  XGrpMemIntro_ :: CMEventTag 'Json
+  XGrpMemInv_ :: CMEventTag 'Json
+  XGrpMemFwd_ :: CMEventTag 'Json
+  XGrpMemInfo_ :: CMEventTag 'Json
+  XGrpMemRole_ :: CMEventTag 'Json
+  XGrpMemCon_ :: CMEventTag 'Json
+  XGrpMemConAll_ :: CMEventTag 'Json
+  XGrpMemDel_ :: CMEventTag 'Json
+  XGrpLeave_ :: CMEventTag 'Json
+  XGrpDel_ :: CMEventTag 'Json
+  XGrpInfo_ :: CMEventTag 'Json
+  XInfoProbe_ :: CMEventTag 'Json
+  XInfoProbeCheck_ :: CMEventTag 'Json
+  XInfoProbeOk_ :: CMEventTag 'Json
+  XCallInv_ :: CMEventTag 'Json
+  XCallOffer_ :: CMEventTag 'Json
+  XCallAnswer_ :: CMEventTag 'Json
+  XCallExtra_ :: CMEventTag 'Json
+  XCallEnd_ :: CMEventTag 'Json
+  XOk_ :: CMEventTag 'Json
+  XUnknown_ :: Text -> CMEventTag 'Json
+  BFileChunk_ :: CMEventTag 'Binary
 
-instance StrEncoding CMEventTag where
+deriving instance Show (CMEventTag e)
+
+deriving instance Eq (CMEventTag e)
+
+instance MsgEncodingI e => StrEncoding (CMEventTag e) where
   strEncode = \case
     XMsgNew_ -> "x.msg.new"
     XMsgUpdate_ -> "x.msg.update"
@@ -371,45 +474,54 @@ instance StrEncoding CMEventTag where
     XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
-  strDecode = \case
-    "x.msg.new" -> Right XMsgNew_
-    "x.msg.update" -> Right XMsgUpdate_
-    "x.msg.del" -> Right XMsgDel_
-    "x.msg.deleted" -> Right XMsgDeleted_
-    "x.file" -> Right XFile_
-    "x.file.acpt" -> Right XFileAcpt_
-    "x.file.acpt.inv" -> Right XFileAcptInv_
-    "x.file.cancel" -> Right XFileCancel_
-    "x.info" -> Right XInfo_
-    "x.contact" -> Right XContact_
-    "x.grp.inv" -> Right XGrpInv_
-    "x.grp.acpt" -> Right XGrpAcpt_
-    "x.grp.mem.new" -> Right XGrpMemNew_
-    "x.grp.mem.intro" -> Right XGrpMemIntro_
-    "x.grp.mem.inv" -> Right XGrpMemInv_
-    "x.grp.mem.fwd" -> Right XGrpMemFwd_
-    "x.grp.mem.info" -> Right XGrpMemInfo_
-    "x.grp.mem.role" -> Right XGrpMemRole_
-    "x.grp.mem.con" -> Right XGrpMemCon_
-    "x.grp.mem.con.all" -> Right XGrpMemConAll_
-    "x.grp.mem.del" -> Right XGrpMemDel_
-    "x.grp.leave" -> Right XGrpLeave_
-    "x.grp.del" -> Right XGrpDel_
-    "x.grp.info" -> Right XGrpInfo_
-    "x.info.probe" -> Right XInfoProbe_
-    "x.info.probe.check" -> Right XInfoProbeCheck_
-    "x.info.probe.ok" -> Right XInfoProbeOk_
-    "x.call.inv" -> Right XCallInv_
-    "x.call.offer" -> Right XCallOffer_
-    "x.call.answer" -> Right XCallAnswer_
-    "x.call.extra" -> Right XCallExtra_
-    "x.call.end" -> Right XCallEnd_
-    "x.ok" -> Right XOk_
-    t -> Right . XUnknown_ $ safeDecodeUtf8 t
+    BFileChunk_ -> "b.chunk"
+  strDecode = (\(ACMEventTag _ t) -> checkEncoding t) <=< strDecode
   strP = strDecode <$?> A.takeTill (== ' ')
 
-toCMEventTag :: ChatMsgEvent -> CMEventTag
-toCMEventTag = \case
+instance StrEncoding ACMEventTag where
+  strEncode (ACMEventTag _ t) = strEncode t
+  strP =
+    ((,) <$> A.peekChar' <*> A.takeTill (== ' ')) >>= \case
+      ('x', t) -> pure . ACMEventTag SJson $ case t of
+        "x.msg.new" -> XMsgNew_
+        "x.msg.update" -> XMsgUpdate_
+        "x.msg.del" -> XMsgDel_
+        "x.msg.deleted" -> XMsgDeleted_
+        "x.file" -> XFile_
+        "x.file.acpt" -> XFileAcpt_
+        "x.file.acpt.inv" -> XFileAcptInv_
+        "x.file.cancel" -> XFileCancel_
+        "x.info" -> XInfo_
+        "x.contact" -> XContact_
+        "x.grp.inv" -> XGrpInv_
+        "x.grp.acpt" -> XGrpAcpt_
+        "x.grp.mem.new" -> XGrpMemNew_
+        "x.grp.mem.intro" -> XGrpMemIntro_
+        "x.grp.mem.inv" -> XGrpMemInv_
+        "x.grp.mem.fwd" -> XGrpMemFwd_
+        "x.grp.mem.info" -> XGrpMemInfo_
+        "x.grp.mem.role" -> XGrpMemRole_
+        "x.grp.mem.con" -> XGrpMemCon_
+        "x.grp.mem.con.all" -> XGrpMemConAll_
+        "x.grp.mem.del" -> XGrpMemDel_
+        "x.grp.leave" -> XGrpLeave_
+        "x.grp.del" -> XGrpDel_
+        "x.grp.info" -> XGrpInfo_
+        "x.info.probe" -> XInfoProbe_
+        "x.info.probe.check" -> XInfoProbeCheck_
+        "x.info.probe.ok" -> XInfoProbeOk_
+        "x.call.inv" -> XCallInv_
+        "x.call.offer" -> XCallOffer_
+        "x.call.answer" -> XCallAnswer_
+        "x.call.extra" -> XCallExtra_
+        "x.call.end" -> XCallEnd_
+        "x.ok" -> XOk_
+        _ -> XUnknown_ $ safeDecodeUtf8 t
+      ('b', "b.chunk") -> pure $ ACMEventTag SBinary BFileChunk_
+      _ -> fail "bad ACMEventTag"
+
+toCMEventTag :: ChatMsgEvent e -> CMEventTag e
+toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
   XMsgUpdate _ _ -> XMsgUpdate_
   XMsgDel _ -> XMsgDel_
@@ -445,18 +557,25 @@ toCMEventTag = \case
   XCallEnd _ -> XCallEnd_
   XOk -> XOk_
   XUnknown t _ -> XUnknown_ t
+  BFileChunk _ _ -> BFileChunk_
 
-cmEventTagT :: Text -> Maybe CMEventTag
-cmEventTagT = eitherToMaybe . strDecode . encodeUtf8
+instance MsgEncodingI e => TextEncoding (CMEventTag e) where
+  textEncode = decodeLatin1 . strEncode
+  textDecode = eitherToMaybe . strDecode . encodeUtf8
 
-serializeCMEventTag :: CMEventTag -> Text
-serializeCMEventTag = decodeLatin1 . strEncode
+instance TextEncoding ACMEventTag where
+  textEncode (ACMEventTag _ t) = textEncode t
+  textDecode = eitherToMaybe . strDecode . encodeUtf8
 
-instance FromField CMEventTag where fromField = fromTextField_ cmEventTagT
+instance (MsgEncodingI e, Typeable e) => FromField (CMEventTag e) where fromField = fromTextField_ textDecode
 
-instance ToField CMEventTag where toField = toField . serializeCMEventTag
+instance MsgEncodingI e => ToField (CMEventTag e) where toField = toField . textEncode
 
-hasNotification :: CMEventTag -> Bool
+instance FromField ACMEventTag where fromField = fromTextField_ textDecode
+
+instance ToField ACMEventTag where toField = toField . textEncode
+
+hasNotification :: CMEventTag e -> Bool
 hasNotification = \case
   XMsgNew_ -> True
   XFile_ -> True
@@ -467,8 +586,18 @@ hasNotification = \case
   XCallInv_ -> True
   _ -> False
 
-appToChatMessage :: AppMessage -> Either String ChatMessage
-appToChatMessage AppMessage {msgId, event, params} = do
+appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
+appBinaryToCM AppMessageBinary {msgId, tag, body} = do
+  eventTag <- strDecode tag
+  chatMsgEvent <- parseAll (msg eventTag) body
+  pure ChatMessage {msgId, chatMsgEvent}
+  where
+    msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
+    msg = \case
+      BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> smpP
+
+appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
+appJsonToCM AppMessageJson {msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
   pure ChatMessage {msgId, chatMsgEvent}
@@ -477,6 +606,7 @@ appToChatMessage AppMessage {msgId, event, params} = do
     p key = JT.parseEither (.: key) params
     opt :: FromJSON a => J.Key -> Either String (Maybe a)
     opt key = JT.parseEither (.:? key) params
+    msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content"
@@ -514,14 +644,20 @@ appToChatMessage AppMessage {msgId, event, params} = do
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
 
-chatToAppMessage :: ChatMessage -> AppMessage
-chatToAppMessage ChatMessage {msgId, chatMsgEvent} = AppMessage {msgId, event, params}
+chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
+chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
+  SBinary -> AMBinary AppMessageBinary {msgId, tag = strEncode tag, body = body chatMsgEvent}
+  SJson -> AMJson AppMessageJson {msgId, event = textEncode tag, params = params chatMsgEvent}
   where
-    event = serializeCMEventTag . toCMEventTag $ chatMsgEvent
+    tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
     key .=? value = maybe id ((:) . (key .=)) value
-    params = case chatMsgEvent of
+    body :: ChatMsgEvent 'Binary -> ByteString
+    body = \case
+      BFileChunk (SharedMsgId msgId') chunk -> smpEncode (msgId', chunk)
+    params :: ChatMsgEvent 'Json -> J.Object
+    params = \case
       XMsgNew container -> msgContainerJSON container
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']

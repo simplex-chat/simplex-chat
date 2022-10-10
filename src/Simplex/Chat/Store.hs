@@ -1298,7 +1298,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
             |]
             (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe FileInlineMode, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Bool, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
     sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName, connId, agentConnId}
@@ -2273,10 +2273,10 @@ getRcvFileTransfer db User {userId} fileId =
       (userId, fileId)
   where
     rcvFileTransfer ::
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe FileInlineMode) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Bool) :. (Maybe Int64, Maybe AgentConnId) ->
       Either StoreError RcvFileTransfer
     rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, fileInline) :. (connId_, agentConnId_)) =
-      let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
+      let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline = Just fileInline}
           fileInfo = (filePath_, connId_, agentConnId_)
        in case contactName_ <|> memberName_ of
             Nothing -> Left $ SERcvFileInvalid fileId
@@ -2425,7 +2425,7 @@ getSndFileTransfers_ db userId fileId =
       |]
       (userId, fileId)
   where
-    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Maybe FileInlineMode, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
+    sndFileTransfers :: [(FileStatus, String, Integer, Integer, FilePath, Bool, Int64, AgentConnId, Maybe ContactName, Maybe ContactName)] -> Either StoreError [SndFileTransfer]
     sndFileTransfers [] = Right []
     sndFileTransfers fts = mapM sndFileTransfer fts
     sndFileTransfer (fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, connId, agentConnId, contactName_, memberName_) =
@@ -2519,7 +2519,7 @@ updateGroupTs db User {userId} GroupInfo {groupId} updatedAt =
     "UPDATE groups SET updated_at = ? WHERE user_id = ? AND group_id = ?"
     (updatedAt, userId, groupId)
 
-createNewSndMessage :: DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage) -> ExceptT StoreError IO SndMessage
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId mkMessage =
   createWithRandomId gVar $ \sharedMsgId -> do
     let NewMessage {chatMsgEvent, msgBody} = mkMessage $ SharedMsgId sharedMsgId
@@ -2546,7 +2546,7 @@ createSndMsgDelivery db sndMsgDelivery messageId = do
   msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
   createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
 
-createNewMessageAndRcvMsgDelivery :: DB.Connection -> ConnOrGroupId -> NewMessage -> Maybe SharedMsgId -> RcvMsgDelivery -> IO RcvMessage
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do
   currentTs <- getCurrentTime
   DB.execute
@@ -2560,7 +2560,7 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msg
     (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs)
   msgDeliveryId <- insertedRowId db
   createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
-  pure RcvMessage {msgId, chatMsgEvent, sharedMsgId_, msgBody}
+  pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId' -> (Just connId', Nothing)

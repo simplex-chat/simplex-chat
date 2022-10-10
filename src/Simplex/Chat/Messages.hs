@@ -836,8 +836,8 @@ instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
 instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
-data NewMessage = NewMessage
-  { chatMsgEvent :: ChatMsgEvent,
+data NewMessage e = NewMessage
+  { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: MsgBody
   }
   deriving (Show)
@@ -850,14 +850,14 @@ data SndMessage = SndMessage
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
-    chatMsgEvent :: ChatMsgEvent,
+    chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody
   }
 
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
-    cmEventTag :: CMEventTag,
+    cmEventTag :: ACMEventTag,
     msgBody :: MsgBody,
     introId_ :: Maybe Int64
   }
