@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.app.R
+import chat.simplex.app.ui.theme.DEFAULT_PADDING
 import chat.simplex.app.views.chat.item.SentColorLight
 import chat.simplex.app.views.helpers.ImageType
 import chat.simplex.app.views.helpers.base64ToBitmap
@@ -33,7 +34,7 @@ fun ComposeImageView(images: List<Pair<String, ImageType>>, cancelImage: (Int) -
         Image(
           imageBitmap,
           "preview image",
-          modifier = Modifier.widthIn(max = 80.dp).height(60.dp)
+          modifier = Modifier.padding(start = DEFAULT_PADDING).widthIn(max = 80.dp).height(60.dp)
         )
         if (cancelEnabled && images.size > 1) {
           IconButton(
