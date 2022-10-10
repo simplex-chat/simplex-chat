@@ -78,26 +78,17 @@ private fun NewChatSheetLayout(
       Color.VectorConverter(resultingColor.colorSpace)
     )
   }
-  val animatedFloat0 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-  val animatedFloat1 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
-  val animatedFloat2 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+  val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
   LaunchedEffect(Unit) {
     launch {
       newChatSheetState.collect {
         newChat = it
-        val delay = if (newChat.isVisible()) listOf(0, 30, 60) else listOf(60, 30, 0)
         launch {
           animatedColor.animateTo(if (newChat.isVisible()) resultingColor else Color.Transparent, newChatSheetAnimSpec())
         }
         launch {
-          animatedFloat0.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[0]))
+          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
           if (newChat.isHiding()) closeNewChatSheet(false)
-        }
-        launch {
-          animatedFloat1.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[1]))
-        }
-        launch {
-          animatedFloat2.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[2]))
         }
       }
     }
@@ -117,18 +108,13 @@ private fun NewChatSheetLayout(
       Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
     else
       MaterialTheme.colors.background
-    LazyColumn {
+    LazyColumn(Modifier
+      .graphicsLayer {
+        alpha = animatedFloat.value
+        translationY = (1 - animatedFloat.value) * 20.dp.toPx()
+      }) {
       items(actions.size) { index ->
-        Row(Modifier
-          .graphicsLayer {
-            val animatedFloat = when (index) {
-              0 -> animatedFloat0.value
-              1 -> animatedFloat1.value
-              else -> animatedFloat2.value
-            }
-            alpha = animatedFloat
-            translationY = (1 - animatedFloat) * 20.dp.toPx()
-          }) {
+        Row {
           Spacer(Modifier.weight(1f))
           Box(contentAlignment = Alignment.CenterEnd) {
             Button(
@@ -172,11 +158,11 @@ private fun NewChatSheetLayout(
     ) {
       Icon(
         Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = 1 - animatedFloat0.value }
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
       )
       Icon(
         Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = animatedFloat0.value }
+        Modifier.graphicsLayer { alpha = animatedFloat.value }
       )
     }
   }
