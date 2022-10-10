@@ -128,7 +128,6 @@ private fun NewChatSheetLayout(
             }
             alpha = animatedFloat
             translationY = (1 - animatedFloat) * 20.dp.toPx()
-            if (index == 0) println("LALAL DRAW alpha $alpha transX $translationY")
           }) {
           Spacer(Modifier.weight(1f))
           Box(contentAlignment = Alignment.CenterEnd) {
