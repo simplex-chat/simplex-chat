@@ -915,7 +915,7 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberDeleted: return false
             }
         case .sndGroupEvent: return true
-        default: return true
+        default: return false
         }
     }
 
