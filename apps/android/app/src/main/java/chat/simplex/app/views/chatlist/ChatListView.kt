@@ -2,7 +2,6 @@ package chat.simplex.app.views.chatlist
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,7 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalUriHandler
@@ -31,17 +29,25 @@ import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.newchat.NewChatSheet
 import chat.simplex.app.views.usersettings.SettingsView
 import chat.simplex.app.views.usersettings.simplexTeamUri
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val scaffoldState = rememberScaffoldState()
-  var showNewChatDialog by rememberSaveable { mutableStateOf(false) }
+  val newChatSheetState by rememberSaveable(stateSaver = NewChatSheetState.saver()) { mutableStateOf(MutableStateFlow(NewChatSheetState.GONE)) }
+  val showNewChatSheet = {
+    newChatSheetState.value = NewChatSheetState.VISIBLE
+  }
+  val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
+    if (animated) newChatSheetState.value = NewChatSheetState.HIDING
+    else newChatSheetState.value = NewChatSheetState.GONE
+  }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && showNewChatDialog) showNewChatDialog = false
+    if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
-  Scaffold (
+  val scaffoldState = rememberScaffoldState()
+  Scaffold(
     topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
@@ -50,7 +56,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatDialog = !showNewChatDialog
+              if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
           elevation = FloatingActionButtonDefaults.elevation(
@@ -62,7 +68,7 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
           contentColor = Color.White
         ) {
-          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
         }
       }
     }
@@ -77,8 +83,8 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
           ChatList(chatModel, search = searchInList)
         } else {
           Box(Modifier.fillMaxSize()) {
-            if (!stopped && !showNewChatDialog) {
-              OnboardingButtons { showNewChatDialog = true }
+            if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
+              OnboardingButtons(showNewChatSheet)
             }
             Text(stringResource(R.string.you_have_no_chats), Modifier.align(Alignment.Center), color = HighOrLowlight)
           }
@@ -86,48 +92,20 @@ fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped:
       }
     }
   }
-  if (showNewChatDialog && searchInList.isEmpty()) {
-    Surface(
-      Modifier
-        .fillMaxSize()
-        .clickable(remember { MutableInteractionSource() }, indication = null) { showNewChatDialog = false },
-      color = if (isInDarkTheme()) Color.Black.copy(alpha = 0.64f) else DrawerDefaults.scrimColor,
-    ) {
-      Column(
-        verticalArrangement = Arrangement.Bottom,
-        horizontalAlignment = Alignment.End
-      ) {
-        NewChatSheet(chatModel, showNewChatDialog) { showNewChatDialog = false }
-        FloatingActionButton(
-          onClick = {
-            if (!stopped) { showNewChatDialog = !showNewChatDialog }
-          },
-          Modifier.padding(end = 16.dp, bottom = 16.dp),
-          elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp,
-            hoveredElevation = 0.dp,
-            focusedElevation = 0.dp,
-          ),
-          backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
-          contentColor = Color.White
-        ) {
-          Icon(if (!showNewChatDialog) Icons.Default.Edit else Icons.Default.Close, stringResource(R.string.add_contact_or_create_group))
-        }
-      }
-    }
+  if (searchInList.isEmpty()) {
+    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
 }
 
 @Composable
-private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
+private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
     val uriHandler = LocalUriHandler.current
     ConnectButton(generalGetString(R.string.chat_with_developers)) {
       uriHandler.openUri(simplexTeamUri)
     }
     Spacer(Modifier.height(DEFAULT_PADDING))
-    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatDialog)
+    ConnectButton(generalGetString(R.string.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primary
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
@@ -147,7 +125,8 @@ private fun OnboardingButtons(openNewChatDialog: () -> Unit) {
 
 @Composable
 private fun ConnectButton(text: String, onClick: () -> Unit) {
-  Button(onClick,
+  Button(
+    onClick,
     shape = RoundedCornerShape(21.dp),
     colors = ButtonDefaults.textButtonColors(
       backgroundColor = MaterialTheme.colors.primary
@@ -191,13 +170,14 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
       }
     }
   }
-
   val scope = rememberCoroutineScope()
   DefaultTopAppBar(
-    navigationButton = { if (showSearch)
-      NavigationButtonBack(hideSearchOnBack)
-    else
-      NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } } },
+    navigationButton = {
+      if (showSearch)
+        NavigationButtonBack(hideSearchOnBack)
+      else
+        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+    },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -220,7 +200,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
+  Divider(Modifier.padding(top = AppBarHeight))
 }
 
 @Composable
