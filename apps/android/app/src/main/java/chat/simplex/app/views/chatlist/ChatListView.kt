@@ -35,23 +35,19 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatListView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val newChatSheetState by rememberSaveable(stateSaver = NewChatSheetState.saver()) { mutableStateOf(MutableStateFlow(NewChatSheetState.GONE)) }
-  val scope = rememberCoroutineScope()
   val showNewChatSheet = {
     newChatSheetState.value = NewChatSheetState.VISIBLE
-    println("LALAL CLICKED")
   }
   val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
-    scope.launch {
-      if (animated) newChatSheetState.value = NewChatSheetState.HIDING
-      else newChatSheetState.value = NewChatSheetState.GONE
-    }
+    if (animated) newChatSheetState.value = NewChatSheetState.HIDING
+    else newChatSheetState.value = NewChatSheetState.GONE
   }
   LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(true)
+    if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
   }
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scaffoldState = rememberScaffoldState()
-  Scaffold (
+  Scaffold(
     topBar = { ChatListToolbar(chatModel, scaffoldState.drawerState, stopped) { searchInList = it.trim() } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA) },
@@ -129,7 +125,8 @@ private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
 
 @Composable
 private fun ConnectButton(text: String, onClick: () -> Unit) {
-  Button(onClick,
+  Button(
+    onClick,
     shape = RoundedCornerShape(21.dp),
     colors = ButtonDefaults.textButtonColors(
       backgroundColor = MaterialTheme.colors.primary
@@ -173,13 +170,14 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
       }
     }
   }
-
   val scope = rememberCoroutineScope()
   DefaultTopAppBar(
-    navigationButton = { if (showSearch)
-      NavigationButtonBack(hideSearchOnBack)
-    else
-      NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } } },
+    navigationButton = {
+      if (showSearch)
+        NavigationButtonBack(hideSearchOnBack)
+      else
+        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+    },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically) {
         Text(

@@ -38,7 +38,6 @@ import kotlin.math.roundToInt
 
 @Composable
 fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<NewChatSheetState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
-  println("LALAL RELOAD OMG")
   if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetState,
@@ -72,7 +71,6 @@ private fun NewChatSheetLayout(
   closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
   var newChat by remember { mutableStateOf(newChatSheetState.value) }
-  println("LALAL RELOAD OMG2 $newChat")
   val resultingColor = if (isInDarkTheme()) Color.Black.copy(0.64f) else DrawerDefaults.scrimColor
   val animatedColor = remember {
     Animatable(
@@ -80,28 +78,31 @@ private fun NewChatSheetLayout(
       Color.VectorConverter(resultingColor.colorSpace)
     )
   }
-  val animatedFloat = remember { println("LALAL RELOAD alpha $newChat");Animatable(if (newChat.isVisible()) 0f else 1f) }
+  val animatedFloat0 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+  val animatedFloat1 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
+  val animatedFloat2 = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
   LaunchedEffect(Unit) {
-    println("LALAL LAUNCHED")
     launch {
       newChatSheetState.collect {
-        println("LALAL COLLECT $it")
         newChat = it
+        val delay = if (newChat.isVisible()) listOf(0, 30, 60) else listOf(60, 30, 0)
         launch {
           animatedColor.animateTo(if (newChat.isVisible()) resultingColor else Color.Transparent, newChatSheetAnimSpec())
         }
         launch {
-          println("LALAL ANIM float $newChat ${if (newChat.isVisible()) 1f else 0f}")
-          animatedFloat.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec())
-          if (newChat.isHiding()) {
-            closeNewChatSheet(false)
-          }
+          animatedFloat0.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[0]))
+          if (newChat.isHiding()) closeNewChatSheet(false)
+        }
+        launch {
+          animatedFloat1.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[1]))
+        }
+        launch {
+          animatedFloat2.animateTo(if (newChat.isVisible()) 1f else 0f, newChatSheetAnimSpec(delay[2]))
         }
       }
     }
   }
-  //if (newChat.isGone()) return
-  val maxWidth =  with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp * density }
+  val maxWidth = with(LocalDensity.current) { LocalConfiguration.current.screenWidthDp * density }
   Column(
     Modifier
       .fillMaxSize()
@@ -111,20 +112,24 @@ private fun NewChatSheetLayout(
     verticalArrangement = Arrangement.Bottom,
     horizontalAlignment = Alignment.End
   ) {
-    println("LALAL START1")
     val actions = remember { listOf(addContact, connectViaLink, createGroup) }
     val backgroundColor = if (isInDarkTheme())
       Color(ColorUtils.blendARGB(MaterialTheme.colors.primary.toArgb(), Color.Black.toArgb(), 0.7F))
     else
       MaterialTheme.colors.background
-    println("LALAL START2")
-    LazyColumn(
-      Modifier
-        .graphicsLayer { alpha = animatedFloat.value; translationY = (1 - animatedFloat.value) * 20.dp.toPx(); println("LALAL DRAW alpha $alpha transX $translationY"); }
-    ) {
-      println("LALAL START3")
+    LazyColumn {
       items(actions.size) { index ->
-        Row {
+        Row(Modifier
+          .graphicsLayer {
+            val animatedFloat = when (index) {
+              0 -> animatedFloat0.value
+              1 -> animatedFloat1.value
+              else -> animatedFloat2.value
+            }
+            alpha = animatedFloat
+            translationY = (1 - animatedFloat) * 20.dp.toPx()
+            if (index == 0) println("LALAL DRAW alpha $alpha transX $translationY")
+          }) {
           Spacer(Modifier.weight(1f))
           Box(contentAlignment = Alignment.CenterEnd) {
             Button(
@@ -133,8 +138,7 @@ private fun NewChatSheetLayout(
               colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
               elevation = null,
               contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-              modifier = Modifier
-                .height(42.dp)
+              modifier = Modifier.height(42.dp)
             ) {
               Text(
                 stringResource(titles[index]),
@@ -154,7 +158,6 @@ private fun NewChatSheetLayout(
         }
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
-      println("LALAL START4")
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
@@ -168,16 +171,14 @@ private fun NewChatSheetLayout(
       backgroundColor = if (!stopped) MaterialTheme.colors.primary else HighOrLowlight,
       contentColor = Color.White
     ) {
-      println("LALAL START5")
       Icon(
         Icons.Default.Edit, stringResource(R.string.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value; println("LALAL FLOAT alpha $alpha") }
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat0.value }
       )
       Icon(
         Icons.Default.Close, stringResource(R.string.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = animatedFloat.value }
+        Modifier.graphicsLayer { alpha = animatedFloat0.value }
       )
-      println("LALAL START6")
     }
   }
 }
