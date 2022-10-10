@@ -1119,7 +1119,7 @@ public enum CIContent: Decodable, ItemContent {
 
 public struct CIQuote: Decodable, ItemContent {
     var chatDir: CIDirection?
-    var itemId: Int64?
+    public var itemId: Int64?
     var sharedMsgId: String? = nil
     var sentAt: Date
     public var content: MsgContent

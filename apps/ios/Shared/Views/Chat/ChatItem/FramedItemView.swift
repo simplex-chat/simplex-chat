@@ -15,11 +15,13 @@ private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, 
 private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
 
 struct FramedItemView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var chatInfo: ChatInfo
     var chatItem: ChatItem
     var showMember = false
     var maxWidth: CGFloat = .infinity
+    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
@@ -30,6 +32,14 @@ struct FramedItemView: View {
             VStack(alignment: .leading, spacing: 0) {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
+                        .onTapGesture {
+                            if let proxy = scrollProxy,
+                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                                   withAnimation {
+                                       proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                   }
+                            }
+                        }
                 }
 
                 if chatItem.formattedText == nil && chatItem.file == nil && isShortEmoji(chatItem.content.text) {
@@ -45,7 +55,7 @@ struct FramedItemView: View {
                 } else {
                     switch (chatItem.content.msgContent) {
                     case let .image(text, image):
-                        CIImageView(image: image, file: chatItem.file, maxWidth: maxWidth, imgWidth: $imgWidth)
+                        CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
                             .overlay(DetermineWidth())
                         if text == "" {
                             Color.clear
