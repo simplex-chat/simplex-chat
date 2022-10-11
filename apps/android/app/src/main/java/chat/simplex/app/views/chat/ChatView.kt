@@ -501,9 +501,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
           if (cItem.content.msgContent is MsgContent.MCImage) {
             val itemsWithImages by lazy { chatItems.filter { it.content.msgContent is MsgContent.MCImage && it.file?.loaded == true } }
             ImageGalleryProvider.from(cItem.id, { itemsWithImages }) { dismissedIndex ->
+              val indexInReversed = reversedChatItems.indexOfFirst { it.id == itemsWithImages[dismissedIndex].id }
+              // Do not scroll to this item, just to different items
+              if (indexInReversed == i) return@from
               scope.launch {
                 listState.scrollToItem(
-                  kotlin.math.min(reversedChatItems.lastIndex, reversedChatItems.indexOfFirst { it.id == itemsWithImages[dismissedIndex].id } + 1),
+                  kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
                   -maxHeightRounded / 2
                 )
               }
