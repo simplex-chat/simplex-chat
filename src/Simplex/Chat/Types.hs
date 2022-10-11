@@ -110,7 +110,8 @@ instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptio
 
 data UserContact = UserContact
   { userContactLinkId :: Int64,
-    connReqContact :: ConnReqContact
+    connReqContact :: ConnReqContact,
+    groupId :: Maybe GroupId
   }
   deriving (Eq, Show, Generic)
 

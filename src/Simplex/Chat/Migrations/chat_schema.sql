@@ -259,6 +259,7 @@ CREATE TABLE user_contact_links(
   updated_at TEXT CHECK(updated_at NOT NULL),
   auto_accept INTEGER DEFAULT 0,
   auto_reply_msg_content TEXT DEFAULT NULL,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(

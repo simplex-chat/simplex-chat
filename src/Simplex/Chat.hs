@@ -737,15 +737,15 @@ processChatCommand = \case
     withStore $ \db -> createUserContactLink db userId connId cReq
     pure $ CRUserContactLinkCreated cReq
   DeleteMyAddress -> withUser $ \user -> withChatLock $ do
-    conns <- withStore (`getUserContactLinkConnections` user)
+    conns <- withStore (`getUserAddressConnections` user)
     procCmd $ do
       forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
-      withStore' (`deleteUserContactLink` user)
+      withStore' (`deleteUserAddress` user)
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
-    uncurry3 CRUserContactLink <$> withStore (`getUserContactLink` userId)
+    uncurry3 CRUserContactLink <$> withStore (`getUserAddress` userId)
   AddressAutoAccept onOff msgContent -> withUser $ \User {userId} -> do
-    uncurry3 CRUserContactLinkUpdated <$> withStore (\db -> updateUserContactLinkAutoAccept db userId onOff msgContent)
+    uncurry3 CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId onOff msgContent)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -929,6 +929,18 @@ processChatCommand = \case
   UpdateGroupProfile gName profile -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIUpdateGroupProfile groupId profile
+  APICreateGroupLink _groupId -> pure $ chatCmdError "not implemented"
+  APIDeleteGroupLink _groupId -> pure $ chatCmdError "not implemented"
+  APIShowGroupLink _groupId -> pure $ chatCmdError "not implemented"
+  CreateGroupLink gName -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APICreateGroupLink groupId
+  DeleteGroupLink gName -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIDeleteGroupLink groupId
+  ShowGroupLink gName -> withUser $ \user -> do
+    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    processChatCommand $ APIShowGroupLink groupId
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName (safeDecodeUtf8 quotedMsg)
@@ -1341,6 +1353,7 @@ subscribeUserConnections agentBatchSubscribe user = do
     contactSubsToView rs = toView . CRContactSubSummary . map (uncurry ContactSubStatus) . resultsFor rs
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs ucs = case resultsFor rs ucs of
+      -- TODO multiple links
       [] -> pure ()
       ((_, Just e) : _) -> toView $ CRUserContactLinkSubError e
       _ -> toView CRUserContactLinkSubscribed
@@ -1864,7 +1877,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           withStore (\db -> createOrUpdateContactRequest db userId userContactLinkId invId p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
-              (_, autoAccept, _) <- withStore $ \db -> getUserContactLink db userId
+              (_, autoAccept, _) <- withStore $ \db -> getUserAddress db userId
               if autoAccept
                 then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
                 else do
@@ -2914,6 +2927,12 @@ chatCommandP =
       ("/groups" <|> "/gs") $> ListGroups,
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
+      "/_group_link #" *> (APICreateGroupLink <$> A.decimal),
+      ("/group_link #" <|> "/gl #" <|> "/group_link " <|> "/gl ") *> (CreateGroupLink <$> displayName),
+      "/_delete_group_link #" *> (APIDeleteGroupLink <$> A.decimal),
+      ("/delete_group_link #" <|> "/dgl #" <|> "/delete_group_link " <|> "/dgl ") *> (DeleteGroupLink <$> displayName),
+      "/_show_group_link #" *> (APIShowGroupLink <$> A.decimal),
+      ("/show_group_link #" <|> "/sgl #" <|> "/show_group_link " <|> "/sgl ") *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
       ("/contacts" <|> "/cs") $> ListContacts,
