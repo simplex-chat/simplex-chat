@@ -180,6 +180,8 @@
   <string name="icon_descr_context">Kontextsymbol</string>
   <string name="icon_descr_cancel_image_preview">Bildervorschau abbrechen</string>
   <string name="icon_descr_cancel_file_preview">Dateivorschau abbrechen</string>
+  <string name="images_limit_title">Too many images!</string>
+  <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
 
   <!-- Images - CIImageView.kt -->
   <string name="image_descr">Bild</string>
