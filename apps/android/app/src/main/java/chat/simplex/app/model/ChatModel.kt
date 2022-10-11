@@ -114,6 +114,12 @@ class ChatModel(val controller: ChatController) {
     }
     chats.clear()
     chats.addAll(mergedChats)
+
+    val cId = chatId.value
+    // If chat is null, it was deleted in background after apiGetChats call
+    if (cId != null && getChat(cId) == null) {
+      chatId.value = null
+    }
   }
 
   fun updateNetworkStatus(id: ChatId, status: Chat.NetworkStatus) {
