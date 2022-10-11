@@ -7,7 +7,6 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.runtime.Composable
@@ -27,6 +26,8 @@ import chat.simplex.app.BuildConfig
 import chat.simplex.app.R
 import chat.simplex.app.model.CIFile
 import chat.simplex.app.model.CIFileStatus
+import chat.simplex.app.views.chat.item.ImageFullScreenView
+import chat.simplex.app.views.chat.item.ImageGalleryProvider
 import chat.simplex.app.views.helpers.*
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -39,6 +40,7 @@ import java.io.File
 fun CIImageView(
   image: String,
   file: CIFile?,
+  provider: ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
 ) {
@@ -154,7 +156,9 @@ fun CIImageView(
       )
       imageView(imagePainter, onClick = {
         if (getLoadedFilePath(context, file) != null) {
-          ModalManager.shared.showCustomModal { close -> ImageFullScreenView(imageBitmap, uri, close) }
+          ModalManager.shared.showCustomModal(animated = false) { close ->
+            ImageFullScreenView(provider, close)
+          }
         }
       })
     } else {

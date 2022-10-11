@@ -37,6 +37,7 @@ fun FramedItemView(
   chatInfo: ChatInfo,
   ci: ChatItem,
   uriHandler: UriHandler? = null,
+  imageProvider: ImageGalleryProvider? = null,
   showMember: Boolean = false,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
@@ -126,7 +127,7 @@ fun FramedItemView(
           Column(Modifier.fillMaxWidth()) {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@Box, showMenu, receiveFile)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {

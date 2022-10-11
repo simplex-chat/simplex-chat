@@ -33,8 +33,7 @@ import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.*
-import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.chat.item.ItemAction
+import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.AppBarHeight
@@ -470,6 +469,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
+  val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
       CompositionLocalProvider(
@@ -497,7 +497,19 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
-
+        val provider = remember(chatItems) {
+          if (cItem.content.msgContent is MsgContent.MCImage) {
+            val itemsWithImages by lazy { chatItems.filter { it.content.msgContent is MsgContent.MCImage && it.file?.loaded == true } }
+            ImageGalleryProvider.from(cItem.id, { itemsWithImages }) { dismissedIndex ->
+              scope.launch {
+                listState.scrollToItem(
+                  kotlin.math.min(reversedChatItems.lastIndex, reversedChatItems.indexOfFirst { it.id == itemsWithImages[dismissedIndex].id } + 1),
+                  -maxHeightRounded / 2
+                )
+              }
+            }
+          } else null
+        }
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
@@ -523,11 +535,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           } else {
             Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
             }
           }
         } else { // direct message
@@ -538,7 +550,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
           }
         }
 
