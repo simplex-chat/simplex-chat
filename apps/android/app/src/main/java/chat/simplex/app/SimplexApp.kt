@@ -94,6 +94,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     Log.d(TAG, "onStateChanged: $event")
     withApi {
       when (event) {
+        Lifecycle.Event.ON_START -> {
+          if (chatModel.chatRunning.value == true) {
+            kotlin.runCatching {
+              val chats = chatController.apiGetChats()
+              chatModel.updateChats(chats)
+            }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+          }
+        }
         Lifecycle.Event.ON_RESUME -> {
           if (chatModel.onboardingStage.value == OnboardingStage.OnboardingComplete) {
             chatController.showBackgroundServiceNoticeIfNeeded()

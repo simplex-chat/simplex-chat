@@ -377,7 +377,7 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiGetChats(): List<Chat> {
     val r = sendCmd(CC.ApiGetChats())
     if (r is CR.ApiChats ) return r.chats
-    throw Error("failed getting the list of chats: ${r.responseType} ${r.details}")
+    throw Exception("failed getting the list of chats: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiGetChat(type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
