@@ -163,20 +163,20 @@ instance ToJSON MsgRef where
 data ChatMessage e = ChatMessage {msgId :: Maybe SharedMsgId, chatMsgEvent :: ChatMsgEvent e}
   deriving (Eq, Show)
 
-data AChatMessage = forall e. MsgEncodingI e => ACM (SMsgEncoding e) (ChatMessage e)
+data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
 instance MsgEncodingI e => StrEncoding (ChatMessage e) where
   strEncode msg = case chatToAppMessage msg of
     AMJson m -> LB.toStrict $ J.encode m
     AMBinary m -> strEncode m
-  strP = (\(ACM _ m) -> checkEncoding m) <$?> strP
+  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
 
 instance StrEncoding AChatMessage where
-  strEncode (ACM _ m) = strEncode m
+  strEncode (ACMsg _ m) = strEncode m
   strP =
     A.peekChar' >>= \case
-      '{' -> ACM SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      'X' -> ACM SBinary <$> (appBinaryToCM <$?> strP)
+      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      'X' -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
       _ -> fail "bad ChatMessage"
 
 data ChatMsgEvent (e :: MsgEncoding) where
@@ -240,15 +240,6 @@ instance Encoding FileChunk where
         pure FileChunk {chunkNo, chunkBytes}
       'C' -> pure FileChunkCancel
       _ -> fail "bad FileChunk"
-
-data InlineFileChunk = InlineFileChunk SharedMsgId FileChunk
-  deriving (Eq, Show)
-
-instance Encoding InlineFileChunk where
-  smpEncode (InlineFileChunk (SharedMsgId msgId) chunk) = smpEncode ('B', 'F', 'M', msgId, ' ', chunk)
-  smpP = do
-    ('B', 'F', 'M', msgId, ' ', chunk) <- smpP
-    pure $ InlineFileChunk (SharedMsgId msgId) chunk
 
 data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
