@@ -1368,11 +1368,6 @@ subscribeUserConnections agentBatchSubscribe user = do
     contactSubsToView rs = toView . CRContactSubSummary . map (uncurry ContactSubStatus) . resultsFor rs
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary . map (uncurry UserContactSubStatus) . resultsFor rs
-    -- case resultsFor rs ucs of
-    -- -- TODO multiple links
-    -- [] -> pure ()
-    -- ((_, Just e) : _) -> toView $ CRUserContactLinkSubError e
-    -- _ -> toView CRUserContactLinkSubscribed
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
