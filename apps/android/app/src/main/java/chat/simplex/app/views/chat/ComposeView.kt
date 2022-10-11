@@ -387,21 +387,13 @@ fun ComposeView(
           is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
           is ComposePreview.ImagePreview -> {
             chosenContent.value.forEachIndexed { index, it ->
-              when (it) {
-                is UploadContent.SimpleImage -> {
-                  val file = saveImage(context, it.bitmap)
-                  if (file != null) {
-                    files.add(file)
-                    msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
-                  }
-                }
-                is UploadContent.AnimatedImage -> {
-                  val file = saveAnimImage(context, it.uri)
-                  if (file != null) {
-                    files.add(file)
-                    msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
-                  }
-                }
+              val file = when (it) {
+                is UploadContent.SimpleImage -> saveImage(context, it.bitmap)
+                is UploadContent.AnimatedImage -> saveAnimImage(context, it.uri)
+              }
+              if (file != null) {
+                files.add(file)
+                msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
               }
             }
           }
