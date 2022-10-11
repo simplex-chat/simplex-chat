@@ -608,7 +608,7 @@ data SndFileTransfer = SndFileTransfer
     connId :: Int64,
     agentConnId :: AgentConnId,
     fileStatus :: FileStatus,
-    fileInline :: Bool
+    fileInline :: Maybe Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -625,9 +625,14 @@ data FileInvitation = FileInvitation
     fileConnReq :: Maybe ConnReqInvitation,
     fileInline :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
-instance ToJSON FileInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON FileInvitation where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance FromJSON FileInvitation where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,

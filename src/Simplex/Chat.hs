@@ -98,7 +98,9 @@ defaultChatConfig =
           },
       tbqSize = 64,
       fileChunkSize = 15780, -- do not change
-      sendInlineChunks = 5,
+      offerInlineChunks = 5,
+      sendInlineChunks = 0,
+      rcvInlineChunks = 5,
       maxInlineChunks = 15,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
@@ -290,18 +292,10 @@ processChatCommand = \case
       setActive $ ActiveC c
       pure . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
       where
-        -- This method creates file invitation without connection request - it has to be accepted with x.acpt.file.inv message sent back to the contact
-        -- setupSndFileTransfer' :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
-        -- setupSndFileTransfer' ct = forM file_ $ \file -> do
-        --   (fileSize, chSize, offerInline) <- checkSndFile file
-        --   let fileName = takeFileName file
-        --       fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing}
-        --   fileId <- withStore' $ \db -> createSndDirectFileTransfer db userId ct file fileInvitation Nothing chSize
-        --   let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
-        --   pure (fileInvitation, ciFile)
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer ct = forM file_ $ \file -> do
           (fileSize, chSize, fileInline) <- checkSndFile file
+          liftIO $ print $ "setupSndFileTransfer inline: " <> show fileInline
           (agentConnId_, fileConnReq) <-
             if fileInline
               then pure (Nothing, Nothing)
@@ -1059,10 +1053,9 @@ processChatCommand = \case
     checkSndFile f = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
-      ChatConfig {fileChunkSize, sendInlineChunks} <- asks config
+      ChatConfig {fileChunkSize, offerInlineChunks} <- asks config
       fileSize <- getFileSize fsFilePath
-      let chunks = - (- fileSize `div` fileChunkSize)
-      pure (fileSize, fileChunkSize, chunks <= sendInlineChunks)
+      pure (fileSize, fileChunkSize, fileSize <= fileChunkSize * offerInlineChunks)
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
@@ -1199,7 +1192,7 @@ toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
 acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq}, fileStatus, grpMemberId} filePath_ = do
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -1231,10 +1224,22 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     acceptFile :: m (ChatMsgEvent 'Json, AChatItem)
     acceptFile = do
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-      (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
       filePath <- getRcvFilePath filePath_ fName
-      ci <- withStore (\db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath)
-      pure (XFileAcptInv sharedMsgId fileInvConnReq fName, ci)
+      ChatConfig {fileChunkSize, rcvInlineChunks} <- asks config
+      let acceptInline = fileInline == Just True && fileSize <= fileChunkSize * rcvInlineChunks
+      liftIO $ print $ "fileInline = " <> show fileInline
+      liftIO $ print $ "fileSize = " <> show fileSize
+      liftIO $ print $ "fileChunkSize * rcvInlineChunks = " <> show (fileChunkSize * rcvInlineChunks)
+      if acceptInline
+        then do
+          liftIO $ print "accepting inline"
+          ci <- withStore $ \db -> acceptInlineRcvFT db user fileId filePath
+          pure (XFileAcptInline sharedMsgId fName, ci)
+        else do
+          liftIO $ print "accepting via connection"
+          (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+          ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
+          pure (XFileAcptInv sharedMsgId fileInvConnReq fName, ci)
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing ->
@@ -1716,25 +1721,25 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
         withAckMessage agentConnId cmdId msgMeta $
           case event of
-              XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
-              XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta
-              XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
-              -- TODO discontinue XFile
-              XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
-              XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
-              XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
-              XFileAcptInline sharedMsgId fName -> xFileAcptInlineGroup gInfo m sharedMsgId fName msgMeta
-              XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo msg msgMeta
-              XGrpMemIntro memInfo -> xGrpMemIntro gInfo m memInfo
-              XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
-              XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m memInfo introInv
-              XGrpMemRole memId memRole -> xGrpMemRole gInfo m memId memRole msg msgMeta
-              XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
-              XGrpLeave -> xGrpLeave gInfo m msg msgMeta
-              XGrpDel -> xGrpDel gInfo m msg msgMeta
-              XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
-              BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
-              _ -> messageError $ "unsupported message: " <> T.pack (show event)
+            XMsgNew mc -> newGroupContentMessage gInfo m mc msg msgMeta
+            XMsgUpdate sharedMsgId mContent -> groupMessageUpdate gInfo m sharedMsgId mContent msg msgMeta
+            XMsgDel sharedMsgId -> groupMessageDelete gInfo m sharedMsgId msg
+            -- TODO discontinue XFile
+            XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
+            XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
+            XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
+            XFileAcptInline sharedMsgId fName -> xFileAcptInlineGroup gInfo m sharedMsgId fName msgMeta
+            XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo msg msgMeta
+            XGrpMemIntro memInfo -> xGrpMemIntro gInfo m memInfo
+            XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
+            XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m memInfo introInv
+            XGrpMemRole memId memRole -> xGrpMemRole gInfo m memId memRole msg msgMeta
+            XGrpMemDel memId -> xGrpMemDel gInfo m memId msg msgMeta
+            XGrpLeave -> xGrpLeave gInfo m msg msgMeta
+            XGrpDel -> xGrpDel gInfo m msg msgMeta
+            XGrpInfo p' -> xGrpInfo gInfo m p' msg msgMeta
+            BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
+            _ -> messageError $ "unsupported message: " <> T.pack (show event)
       SENT msgId ->
         sentMsgDeliveryEvent conn msgId
       OK ->
@@ -1982,10 +1987,11 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       setActive $ ActiveC c
 
     processFileInvitation :: Maybe FileInvitation -> (FileInvitation -> Integer -> m RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
-    processFileInvitation fileInvitation_ createRcvFileTransferF =
+    processFileInvitation fileInvitation_ createRcvFT =
       forM fileInvitation_ $ \fileInvitation@FileInvitation {fileName, fileSize} -> do
         chSize <- asks $ fileChunkSize . config
-        RcvFileTransfer {fileId} <- createRcvFileTransferF fileInvitation chSize
+        liftIO $ print $ "processFileInvitation " <> show fileInvitation
+        RcvFileTransfer {fileId} <- createRcvFT fileInvitation chSize
         let ciFile = CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
         pure ciFile
 
@@ -2143,7 +2149,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           void . sendMsg $ BFileChunk sharedMsgId $ FileChunk chunkNo chunk
           unless (B.null rest) $ sendChunks (chunkNo + 1) rest
         chSize = fromIntegral chunkSize
-    
+
     maxInlineFileSize :: m Integer
     maxInlineFileSize = do
       ChatConfig {fileChunkSize, maxInlineChunks} <- asks config

@@ -17,7 +17,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import qualified Data.Text as T
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatController (..), ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Encoding.String
@@ -66,8 +66,12 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
-    it "send and receive file" testFileTransfer
-    it "send and receive a small file" testSmallFileTransfer
+    fdescribe "send and receive file" $ do
+      it "via new connection" $ testFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
+      it "inline" $ testFileTransfer testCfg {offerInlineChunks = 10, rcvInlineChunks = 10}
+    fdescribe "send and receive a small file" $ do
+      it "via new connection" $ testSmallFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
+      it "inline" $ testSmallFileTransfer testCfg {offerInlineChunks = 1, rcvInlineChunks = 1}
     it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
@@ -119,7 +123,7 @@ chatTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-    it "encrypt/decrypt database" testDatabaseEncryption
+    xit "encrypt/decrypt database" testDatabaseEncryption
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
@@ -1348,9 +1352,9 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
-testFileTransfer :: IO ()
-testFileTransfer =
-  testChat2 aliceProfile bobProfile $
+testFileTransfer :: ChatConfig -> IO ()
+testFileTransfer cfg =
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       startFileTransfer alice bob
@@ -1366,9 +1370,9 @@ testFileTransfer =
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
 
-testSmallFileTransfer :: IO ()
-testSmallFileTransfer =
-  testChat2 aliceProfile bobProfile $
+testSmallFileTransfer :: ChatConfig -> IO ()
+testSmallFileTransfer cfg =
+  testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
       alice #> "/f @bob ./tests/fixtures/test.txt"

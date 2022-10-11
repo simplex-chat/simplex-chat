@@ -15,7 +15,7 @@
 
 module Simplex.Chat.Protocol where
 
-import Control.Applicative (optional, (<|>))
+import Control.Applicative ((<|>))
 import Control.Monad ((<=<))
 import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
 import qualified Data.Aeson as J
@@ -116,15 +116,15 @@ instance ToJSON AppMessageJson where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance StrEncoding AppMessageBinary where
-  strEncode AppMessageBinary {msgId = Just (SharedMsgId msgId), tag, body} =
-    B.unwords ["X" <> msgId, tag, body]
-  strEncode AppMessageBinary {tag, body} =
-    B.unwords ["X", tag, body]
+  strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, body)
+  -- strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, msgId', body)
+    where
+      msgId' = maybe B.empty (\(SharedMsgId mId') -> mId') msgId
   strP = do
-    msgId <- A.char 'X' *> optional (SharedMsgId <$> A.takeTill (== ' ')) <* A.space
-    tag <- A.takeTill (== ' ') <* A.space
-    body <- A.takeByteString
-    pure AppMessageBinary {msgId, tag, body}
+    (tag, body) <- smpP
+    -- (tag, msgId', body) <- smpP
+    -- let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
+    pure AppMessageBinary {tag, msgId = Nothing, body}
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
@@ -364,7 +364,7 @@ msgContainerJSON = \case
   where
     withFile l = \case
       Nothing -> l
-      Just f -> l <> ["file" .= fileInvitationJSON f]
+      Just f -> l <> ["file" .= f]
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -465,7 +465,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
-    BFileChunk_ -> "b.chunk"
+    BFileChunk_ -> "b.ch"
   strDecode = (\(ACMEventTag _ t) -> checkEncoding t) <=< strDecode
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -481,6 +481,7 @@ instance StrEncoding ACMEventTag where
         "x.file" -> XFile_
         "x.file.acpt" -> XFileAcpt_
         "x.file.acpt.inv" -> XFileAcptInv_
+        "x.file.acpt.inline" -> XFileAcptInline_
         "x.file.cancel" -> XFileCancel_
         "x.info" -> XInfo_
         "x.contact" -> XContact_
@@ -508,7 +509,7 @@ instance StrEncoding ACMEventTag where
         "x.call.end" -> XCallEnd_
         "x.ok" -> XOk_
         _ -> XUnknown_ $ safeDecodeUtf8 t
-      ('b', "b.chunk") -> pure $ ACMEventTag SBinary BFileChunk_
+      ('b', "b.ch") -> pure $ ACMEventTag SBinary BFileChunk_
       _ -> fail "bad ACMEventTag"
 
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
@@ -653,7 +654,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XMsgUpdate msgId' content -> o ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' -> o ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
-      XFile fileInv -> o ["file" .= fileInvitationJSON fileInv]
+      XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
       XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
       XFileAcptInline sharedMsgId fileName -> o ["msgId" .= sharedMsgId, "fileName" .= fileName]
@@ -684,8 +685,3 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
-
-fileInvitationJSON :: FileInvitation -> J.Object
-fileInvitationJSON FileInvitation {fileName, fileSize, fileConnReq} = case fileConnReq of
-  Nothing -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize]
-  Just fConnReq -> JM.fromList ["fileName" .= fileName, "fileSize" .= fileSize, "fileConnReq" .= fConnReq]
