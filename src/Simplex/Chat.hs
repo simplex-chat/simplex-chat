@@ -929,9 +929,18 @@ processChatCommand = \case
   UpdateGroupProfile gName profile -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIUpdateGroupProfile groupId profile
-  APICreateGroupLink _groupId -> pure $ chatCmdError "not implemented"
-  APIDeleteGroupLink _groupId -> pure $ chatCmdError "not implemented"
-  APIShowGroupLink _groupId -> pure $ chatCmdError "not implemented"
+  APICreateGroupLink groupId -> withUser $ \user -> withChatLock $ do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact
+    withStore $ \db -> createGroupLink db user gInfo connId cReq
+    pure $ CRGroupLinkCreated gInfo cReq
+  APIDeleteGroupLink groupId -> withUser $ \user -> withChatLock $ do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    deleteGroupLink' user gInfo
+    pure $ CRGroupLinkDeleted gInfo
+  APIShowGroupLink groupId -> withUser $ \user -> do
+    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    CRGroupLink gInfo <$> withStore (\db -> getGroupLink db user gInfo)
   CreateGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId
@@ -1286,6 +1295,12 @@ acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationI
   let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
   connId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId incognitoProfile
+
+deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
+deleteGroupLink' user gInfo = do
+  conn <- withStore $ \db -> getGroupLinkConnection db user gInfo
+  deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+  withStore' $ \db -> deleteGroupLink db user gInfo
 
 agentSubscriber :: (MonadUnliftIO m, MonadReader ChatController m) => m ()
 agentSubscriber = do

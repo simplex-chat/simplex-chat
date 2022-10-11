@@ -1015,6 +1015,7 @@ viewChatError = \case
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
+    SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/sgl " <> groupName' g)]
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/gl " <> groupName' g)]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of

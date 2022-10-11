@@ -428,3 +428,6 @@ CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
   shared_msg_id
 );
 CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
+CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
+  group_id
+);
