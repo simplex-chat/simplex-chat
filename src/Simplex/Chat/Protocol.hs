@@ -176,8 +176,7 @@ instance StrEncoding AChatMessage where
   strP =
     A.peekChar' >>= \case
       '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      'X' -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
-      _ -> fail "bad ChatMessage"
+      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json

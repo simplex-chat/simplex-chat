@@ -66,7 +66,7 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
-    fdescribe "send and receive file" $ do
+    describe "send and receive file" $ do
       it "via new connection" $ testFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
       it "inline" $ testFileTransfer testCfg {offerInlineChunks = 10, rcvInlineChunks = 10}
     fdescribe "send and receive a small file" $ do
