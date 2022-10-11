@@ -1,5 +1,6 @@
 package chat.simplex.app.views.helpers
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.runtime.saveable.Saver
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,7 @@ enum class NewChatSheetState {
   }
 }
 
-enum class ImageType {
-  SIMPLE, ANIMATED
+sealed class UploadContent {
+  data class SimpleImage(val bitmap: Bitmap): UploadContent()
+  data class AnimatedImage(val uri: Uri): UploadContent()
 }

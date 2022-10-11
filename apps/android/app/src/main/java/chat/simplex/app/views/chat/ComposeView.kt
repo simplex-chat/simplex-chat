@@ -1,7 +1,6 @@
 package chat.simplex.app.views.chat
 
 import ComposeFileView
-import ComposeImageView
 import android.Manifest
 import android.app.Activity
 import android.content.*
@@ -51,7 +50,7 @@ import java.io.File
 sealed class ComposePreview {
   @Serializable object NoPreview: ComposePreview()
   @Serializable class CLinkPreview(val linkPreview: LinkPreview?): ComposePreview()
-  @Serializable class ImagePreview(val images: List<Pair<String, ImageType>>): ComposePreview()
+  @Serializable class ImagePreview(val images: List<String>): ComposePreview()
   @Serializable class FilePreview(val fileName: String): ComposePreview()
 }
 
@@ -120,7 +119,7 @@ fun chatItemPreview(chatItem: ChatItem): ComposePreview {
   return when (val mc = chatItem.content.msgContent) {
     is MsgContent.MCText -> ComposePreview.NoPreview
     is MsgContent.MCLink -> ComposePreview.CLinkPreview(linkPreview = mc.preview)
-    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image to ImageType.SIMPLE))
+    is MsgContent.MCImage -> ComposePreview.ImagePreview(images = listOf(mc.image))
     is MsgContent.MCFile -> {
       val fileName = chatItem.file?.fileName ?: ""
       ComposePreview.FilePreview(fileName)
@@ -146,8 +145,7 @@ fun ComposeView(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
   // attachments
-  val chosenImages = remember { mutableStateOf<List<Bitmap>>(emptyList()) }
-  val chosenAnimImages = remember { mutableStateOf<List<Uri>>(emptyList()) }
+  val chosenContent = remember { mutableStateOf<List<UploadContent>>(emptyList()) }
   val chosenFile = remember { mutableStateOf<Uri?>(null) }
   val photoUri = remember { mutableStateOf<Uri?>(null) }
   val photoTmpFile = remember { mutableStateOf<File?>(null) }
@@ -184,9 +182,9 @@ fun ComposeView(
 
   val cameraLauncher = rememberLauncherForActivityResult(contract = ComposeTakePicturePreview()) { bitmap: Bitmap? ->
     if (bitmap != null) {
-      chosenImages.value = listOf(bitmap)
       val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview to ImageType.SIMPLE)))
+      chosenContent.value = listOf(UploadContent.SimpleImage(bitmap))
+      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(listOf(imagePreview)))
     }
   }
   val cameraPermissionLauncher = rememberPermissionLauncher { isGranted: Boolean ->
@@ -197,9 +195,8 @@ fun ComposeView(
     }
   }
   val processPickedImage = { uris: List<Uri> ->
-    val images = ArrayList<Bitmap>()
-    val animImages = ArrayList<Uri>()
-    val imagesPreview = ArrayList<Pair<String, ImageType>>()
+    val content = ArrayList<UploadContent>()
+    val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
       val source = ImageDecoder.createSource(context.contentResolver, uri)
       val drawable = ImageDecoder.decodeDrawable(source)
@@ -208,7 +205,7 @@ fun ComposeView(
         // It's a gif or webp
         val fileSize = getFileSize(context, uri)
         if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
-          animImages.add(uri)
+          content.add(UploadContent.AnimatedImage(uri))
         } else {
           bitmap = null
           AlertManager.shared.showAlertMsg(
@@ -217,17 +214,15 @@ fun ComposeView(
           )
         }
       } else {
-        if (bitmap != null) images.add(bitmap)
+        if (bitmap != null) content.add(UploadContent.SimpleImage(bitmap))
       }
       if (bitmap != null) {
-        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000) to
-            if (drawable is AnimatedImageDrawable) ImageType.ANIMATED else ImageType.SIMPLE)
+        imagesPreview.add(resizeImageToStrSize(bitmap, maxDataSize = 14000))
       }
     }
 
     if (imagesPreview.isNotEmpty()) {
-      chosenImages.value = images
-      chosenAnimImages.value = animImages
+      chosenContent.value = content
       composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagesPreview))
     }
   }
@@ -355,8 +350,7 @@ fun ComposeView(
   fun clearState() {
     composeState.value = ComposeState(useLinkPreviews = useLinkPreviews)
     textStyle.value = smallFont
-    chosenImages.value = emptyList()
-    chosenAnimImages.value = emptyList()
+    chosenContent.value = emptyList()
     chosenFile.value = null
     linkUrl.value = null
     prevLinkUrl.value = null
@@ -392,26 +386,22 @@ fun ComposeView(
           ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(cs.message))
           is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
           is ComposePreview.ImagePreview -> {
-            val chosenImagesVal = ArrayList(chosenImages.value)
-            val chosenAnimImagesVal = ArrayList(chosenAnimImages.value)
-            // Preserving ordering simple vs animated
-            preview.images.forEach {
-              if (it.second == ImageType.SIMPLE) {
-                // Simple
-                val file = saveImage(context, chosenImagesVal.first())
-                if (file != null) {
-                  files.add(file)
-                  msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", it.first))
+            chosenContent.value.forEachIndexed { index, it ->
+              when (it) {
+                is UploadContent.SimpleImage -> {
+                  val file = saveImage(context, it.bitmap)
+                  if (file != null) {
+                    files.add(file)
+                    msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
+                  }
                 }
-                chosenImagesVal.removeAt(0)
-              } else {
-                // Animated
-                val file = saveAnimImage(context, chosenAnimImagesVal.first())
-                if (file != null) {
-                  files.add(file)
-                  msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", it.first))
+                is UploadContent.AnimatedImage -> {
+                  val file = saveAnimImage(context, it.uri)
+                  if (file != null) {
+                    files.add(file)
+                    msgs.add(MsgContent.MCImage(if (msgs.isEmpty()) cs.message else "", preview.images[index]))
+                  }
                 }
-                chosenAnimImagesVal.removeAt(0)
               }
             }
           }
@@ -474,16 +464,9 @@ fun ComposeView(
     composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
   }
 
-  fun cancelImage(index: Int) {
-    val images = ArrayList((composeState.value.preview as ComposePreview.ImagePreview).images)
-    if (images.removeAt(index).second == ImageType.SIMPLE) {
-      val indexToRemove = images.subList(0, index).count { it.second == ImageType.SIMPLE }
-      chosenImages.value = ArrayList(chosenImages.value).also { it.removeAt(indexToRemove) }
-    } else {
-      val indexToRemove = images.subList(0, index).count { it.second == ImageType.ANIMATED }
-      chosenAnimImages.value = ArrayList(chosenAnimImages.value).also { it.removeAt(indexToRemove) }
-    }
-    composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(images))
+  fun cancelImages() {
+    composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+    chosenContent.value = emptyList()
   }
 
   fun cancelFile() {
@@ -498,7 +481,7 @@ fun ComposeView(
       is ComposePreview.CLinkPreview -> ComposeLinkView(preview.linkPreview, ::cancelLinkPreview)
       is ComposePreview.ImagePreview -> ComposeImageView(
         preview.images,
-        ::cancelImage,
+        ::cancelImages,
         cancelEnabled = !composeState.value.editing
       )
       is ComposePreview.FilePreview -> ComposeFileView(
@@ -574,14 +557,17 @@ fun ComposeView(
 
 class PickFromGallery: ActivityResultContract<Int, List<Uri>>() {
   override fun createIntent(context: Context, input: Int) =
-    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply { putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) }
+    Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI).apply {
+      putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+      type = "image/*"
+    }
 
   override fun parseResult(resultCode: Int, intent: Intent?): List<Uri> =
     if (intent?.data != null)
       listOf(intent.data!!)
     else if (intent?.clipData != null)
       with(intent.clipData!!) {
-        val uris = LinkedHashSet<Uri>()
+        val uris = ArrayList<Uri>()
         for (i in 0 until kotlin.math.min(itemCount, 10)) {
           val uri = getItemAt(i).uri
           if (uri != null) uris.add(uri)
@@ -589,7 +575,7 @@ class PickFromGallery: ActivityResultContract<Int, List<Uri>>() {
         if (itemCount > 10) {
           AlertManager.shared.showAlertMsg(R.string.images_limit_title, R.string.images_limit_desc)
         }
-        ArrayList(uris)
+        uris
       }
     else
       emptyList()
