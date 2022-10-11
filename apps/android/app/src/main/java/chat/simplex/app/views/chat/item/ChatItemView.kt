@@ -40,7 +40,8 @@ fun ChatItemView(
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  scrollToItem: (Long) -> Unit,
 ) {
   val context = LocalContext.current
   val sent = cItem.chatDir.sent
@@ -56,7 +57,10 @@ fun ChatItemView(
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
-        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
+        .combinedClickable(
+          onLongClick = { showMenu.value = true },
+          onClick = { if (cItem.quotedItem?.itemId != null) scrollToItem(cItem.quotedItem.itemId) }
+        )
     ) {
       @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
@@ -218,7 +222,8 @@ fun PreviewChatItemView() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }
@@ -238,7 +243,8 @@ fun PreviewChatItemViewDeletedContent() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }
