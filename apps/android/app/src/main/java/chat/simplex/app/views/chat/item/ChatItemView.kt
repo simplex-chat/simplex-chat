@@ -57,17 +57,14 @@ fun ChatItemView(
     Column(
       Modifier
         .clip(RoundedCornerShape(18.dp))
-        .combinedClickable(
-          onLongClick = { showMenu.value = true },
-          onClick = { if (cItem.quotedItem?.itemId != null) scrollToItem(cItem.quotedItem.itemId) }
-        )
+        .combinedClickable(onLongClick = { showMenu.value = true }, onClick = {})
     ) {
       @Composable fun ContentItem() {
         if (cItem.file == null && cItem.quotedItem == null && isShortEmoji(cItem.content.text)) {
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
+          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
           expanded = showMenu.value,
