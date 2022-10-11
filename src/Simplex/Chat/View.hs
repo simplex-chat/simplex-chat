@@ -141,6 +141,13 @@ responseToView testView = \case
     [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
     where
       (errors, subscribed) = partition (isJust . contactError) summary
+  CRUserContactSubSummary summary ->
+    map addressSS addresses
+      <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary groupLinkErrors " group link errors")
+    where
+      (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
+      addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
+      (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRGroupInvitation g -> [groupInvitation' g]
   CRReceivedGroupInvitation g c role -> viewReceivedGroupInvitation g c role
   CRUserJoinedGroup g _ -> viewUserJoinedGroup g
@@ -158,8 +165,9 @@ responseToView testView = \case
   CRGroupRemoved g -> [ttyFullGroup g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted g m -> [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> groupName' g) <> " to delete the local copy of the group"]
   CRGroupUpdated g g' m -> viewGroupUpdated g g' m
-  CRGroupLinkCreated _g -> []
-  CRGroupLink _g -> []
+  CRGroupLinkCreated g cReq -> groupLink_ "Group link is created!" g cReq
+  CRGroupLink g cReq -> groupLink_ "Group link:" g cReq
+  CRGroupLinkDeleted g -> viewGroupLinkDeleted g
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> viewGroupSubscribed g
@@ -425,6 +433,23 @@ autoAcceptStatus_ :: Bool -> Maybe MsgContent -> [StyledString]
 autoAcceptStatus_ autoAccept autoReply =
   ("auto_accept " <> if autoAccept then "on" else "off") :
   maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+
+groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> [StyledString]
+groupLink_ intro g cReq =
+  [ intro,
+    "",
+    (plain . strEncode) cReq,
+    "",
+    "Anybody can connect to you and join group with: " <> highlight' "/c <contact_link_above>",
+    "to show it again: " <> highlight ("/sgl " <> groupName' g),
+    "to delete it: " <> highlight ("/dgl " <> groupName' g) <> " (joined members will remain connected to you)"
+  ]
+
+viewGroupLinkDeleted :: GroupInfo -> [StyledString]
+viewGroupLinkDeleted g =
+  [ "Group link is deleted - joined members will remain connected.",
+    "To create a new group link use " <> highlight ("/gl " <> groupName' g)
+  ]
 
 viewSentInvitation :: Maybe Profile -> Bool -> [StyledString]
 viewSentInvitation incognitoProfile testView =
@@ -990,6 +1015,7 @@ viewChatError = \case
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
+    SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/gl " <> groupName' g)]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

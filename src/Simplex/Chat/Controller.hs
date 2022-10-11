@@ -301,6 +301,7 @@ data ChatResponse
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
+  | CRUserContactSubSummary {userContactSubscriptions :: [UserContactSubStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
@@ -318,8 +319,9 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
-  | CRGroupLinkCreated {connReqContact :: ConnReqContact}
-  | CRGroupLink {connReqContact :: ConnReqContact}
+  | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLinkDeleted {groupInfo :: GroupInfo}
   | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
@@ -384,6 +386,16 @@ data MemberSubStatus = MemberSubStatus
   deriving (Show, Generic)
 
 instance ToJSON MemberSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data UserContactSubStatus = UserContactSubStatus
+  { userContact :: UserContact,
+    userContactError :: Maybe ChatError
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 

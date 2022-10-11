@@ -115,6 +115,9 @@ data UserContact = UserContact
   }
   deriving (Eq, Show, Generic)
 
+userContactGroupId :: UserContact -> Maybe GroupId
+userContactGroupId UserContact {groupId} = groupId
+
 instance ToJSON UserContact where
   toJSON = J.genericToJSON J.defaultOptions
   toEncoding = J.genericToEncoding J.defaultOptions

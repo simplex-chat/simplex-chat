@@ -2,7 +2,7 @@
 
 ## Problem
 
-Friction in group discovery and invitation/joining. Currently each group member has to be invited manually, and has first to be first connected to an existing group member, even if group is considered as open/public by its owners.
+Friction in group discovery and invitation/joining. Currently each group member has to be invited manually, and has first to be connected to an existing group member, even if group is considered as open/public by its owners.
 
 ## Solution
 

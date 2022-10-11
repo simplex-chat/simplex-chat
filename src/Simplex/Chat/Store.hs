@@ -2958,11 +2958,12 @@ getContactRequestChatPreviews_ db User {userId} =
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.xcontact_id, cr.created_at, cr.updated_at
         FROM contact_requests cr
-        JOIN connections c USING (user_contact_link_id)
-        JOIN contact_profiles p USING (contact_profile_id)
-        WHERE cr.user_id = ?
+        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
+        JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
+        JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
+        WHERE cr.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       |]
-      (Only userId)
+      (userId, userId)
   where
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
@@ -4251,6 +4252,7 @@ data StoreError
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
   | SEChatItemNotFoundByGroupId {groupId :: GroupId}
   | SEProfileNotFound {profileId :: Int64}
+  | SEGroupLinkNotFound {groupInfo :: GroupInfo}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
