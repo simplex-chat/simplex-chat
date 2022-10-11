@@ -116,12 +116,12 @@ instance ToJSON AppMessageJson where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance StrEncoding AppMessageBinary where
-  strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, body)
+  strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, Tail body)
   -- strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, msgId', body)
     where
       msgId' = maybe B.empty (\(SharedMsgId mId') -> mId') msgId
   strP = do
-    (tag, body) <- smpP
+    (tag, Tail body) <- smpP
     -- (tag, msgId', body) <- smpP
     -- let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId = Nothing, body}

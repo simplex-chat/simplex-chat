@@ -10,4 +10,5 @@ m20221007_inline_files =
   [sql|
 ALTER TABLE rcv_files ADD COLUMN file_inline INTEGER;
 ALTER TABLE snd_files ADD COLUMN file_inline INTEGER;
+ALTER TABLE snd_files ADD COLUMN last_inline_msg_delivery_id INTEGER;
 |]

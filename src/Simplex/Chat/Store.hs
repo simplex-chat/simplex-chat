@@ -111,6 +111,10 @@ module Simplex.Chat.Store
     createSndDirectFTConnection,
     createSndGroupFileTransfer,
     createSndGroupFileTransferConnection,
+    createSndDirectInlineFT,
+    createSndGroupInlineFT,
+    updateSndInlineFTDelivery,
+    getSndInlineFTViaMsgDelivery,
     updateFileCancelled,
     updateCIFileStatus,
     getSharedMsgIdByFileId,
@@ -976,6 +980,7 @@ getLiveSndFileTransfers db User {userId} = do
           FROM files f
           JOIN snd_files s
           WHERE f.user_id = ? AND s.file_status IN (?, ?, ?)
+            AND (s.file_inline = 0 OR s.file_inline IS NULL)
         |]
         (userId, FSNew, FSAccepted, FSConnected)
   concatMap (filter liveTransfer) . rights <$> mapM (getSndFileTransfers_ db userId) fileIds
@@ -994,6 +999,7 @@ getLiveRcvFileTransfers db user@User {userId} = do
           FROM files f
           JOIN rcv_files r
           WHERE f.user_id = ? AND r.file_status IN (?, ?)
+            AND (r.file_inline = 0 OR r.file_inline IS NULL)
         |]
         (userId, FSAccepted, FSConnected)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
@@ -2082,6 +2088,55 @@ createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) 
     "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
+createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> IO SndFileTransfer
+createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize} = do
+  currentTs <- getCurrentTime
+  let fileStatus = FSConnected
+  DB.execute
+    db
+    "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+    (fileId, fileStatus, True, connId, currentTs, currentTs)
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = Just True}
+
+createSndGroupInlineFT :: DB.Connection -> GroupMember -> Connection -> FileTransferMeta -> IO SndFileTransfer
+createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Connection {connId, agentConnId} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize} = do
+  currentTs <- getCurrentTime
+  let fileStatus = FSConnected
+  DB.execute
+    db
+    "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+    (fileId, fileStatus, True, connId, groupMemberId, currentTs, currentTs)
+  pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, fileStatus, fileInline = Just True}
+
+updateSndInlineFTDelivery :: DB.Connection -> FileTransferId -> Int64 -> IO ()
+updateSndInlineFTDelivery db fileId msgDeliveryId =
+  DB.execute
+    db
+    "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE file_id = ? AND file_inline = ?"
+    (msgDeliveryId, fileId, True)
+
+getSndInlineFTViaMsgDelivery :: DB.Connection -> User -> Connection -> AgentMsgId -> IO (Maybe SndFileTransfer)
+getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMsgId = do
+  (sndFileTransfer_ <=< listToMaybe) <$>
+    DB.query
+      db
+      [sql|
+        SELECT s.file_id, s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, cs.local_display_name, m.local_display_name
+        FROM snd_files s
+        JOIN msg_deliveries d ON d.connection_id = s.connection_id AND d.msg_delivery_id = s.last_inline_msg_delivery_id
+        JOIN files f USING (file_id)
+        LEFT JOIN contacts cs USING (contact_id)
+        LEFT JOIN group_members m USING (group_member_id)
+        WHERE f.user_id = ? AND s.connection_id = ? AND s.file_inline = ? AND d.agent_msg_id = ?
+      |]
+      (userId, connId, True, agentMsgId)
+  where
+    sndFileTransfer_ :: (Int64, FileStatus, String, Integer, Integer, FilePath, Maybe Bool, Maybe ContactName, Maybe ContactName) -> Maybe SndFileTransfer
+    sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
+      (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
+        <$> (contactName_ <|> memberName_)
+
+
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
   currentTs <- getCurrentTime
@@ -2247,13 +2302,13 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
   pure RcvFileTransfer {fileId, fileInvitation = f, fileStatus = RFSNew, senderDisplayName = c, chunkSize, cancelled = False, grpMemberId = Just groupMemberId}
 
 getRcvFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db User {userId} fileId =
-  ExceptT . firstRow' rcvFileTransfer (SERcvFileNotFound fileId) $
+getRcvFileTransfer db user@User {userId} fileId = do
+  rftRow <- ExceptT . firstRow id (SERcvFileNotFound fileId) $
     DB.query
       db
       [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
-            f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
+            f.file_size, f.chunk_size, f.cancelled, cs.contact_id, cs.local_display_name, m.group_id, m.group_member_id, m.local_display_name,
             f.file_path, r.file_inline, c.connection_id, c.agent_conn_id
           FROM rcv_files r
           JOIN files f USING (file_id)
@@ -2263,29 +2318,38 @@ getRcvFileTransfer db User {userId} fileId =
           WHERE f.user_id = ? AND f.file_id = ?
         |]
       (userId, fileId)
+  rcvFileTransfer rftRow
   where
     rcvFileTransfer ::
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool, Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe Bool) :. (Maybe Int64, Maybe AgentConnId) ->
-      Either StoreError RcvFileTransfer
-    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_, contactName_, memberName_, filePath_, fileInline) :. (connId_, agentConnId_)) =
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe Bool) :. (Maybe Int64, Maybe ContactName, Maybe Int64, Maybe Int64, Maybe ContactName, Maybe FilePath, Maybe Bool) :. (Maybe Int64, Maybe AgentConnId) ->
+      ExceptT StoreError IO RcvFileTransfer
+    rcvFileTransfer ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactId_, contactName_, groupId_, groupMemberId_, memberName_, filePath_, fileInline) :. (connId_, agentConnId_)) = do
       let fileInv = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
-          fileInfo = (filePath_, connId_, agentConnId_)
-       in case contactName_ <|> memberName_ of
-            Nothing -> Left $ SERcvFileInvalid fileId
-            Just name ->
-              case fileStatus' of
-                FSNew -> ft name fileInv RFSNew
-                FSAccepted -> ft name fileInv . RFSAccepted =<< rfi fileInfo
-                FSConnected -> ft name fileInv . RFSConnected =<< rfi fileInfo
-                FSComplete -> ft name fileInv . RFSComplete =<< rfi fileInfo
-                FSCancelled -> ft name fileInv . RFSCancelled $ rfi_ fileInfo
+          fileInfo = (filePath_, connId_, agentConnId_, contactId_, groupId_, groupMemberId_, fromMaybe False fileInline)
+      case contactName_ <|> memberName_ of
+        Nothing -> throwError $ SERcvFileInvalid fileId
+        Just name -> do
+          case fileStatus' of
+            FSNew -> pure $ ft name fileInv RFSNew
+            FSAccepted -> ft name fileInv . RFSAccepted <$> rfi fileInfo
+            FSConnected -> ft name fileInv . RFSConnected <$> rfi fileInfo
+            FSComplete -> ft name fileInv . RFSComplete <$> rfi fileInfo
+            FSCancelled -> ft name fileInv . RFSCancelled <$> rfi_ fileInfo
       where
         ft senderDisplayName fileInvitation fileStatus =
-          Right RcvFileTransfer {fileId, fileInvitation, fileStatus, senderDisplayName, chunkSize, cancelled, grpMemberId}
-        rfi fileInfo = maybe (Left $ SERcvFileInvalid fileId) Right $ rfi_ fileInfo
+          RcvFileTransfer {fileId, fileInvitation, fileStatus, senderDisplayName, chunkSize, cancelled, grpMemberId}
+        rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
-          (Just filePath, Just connId, Just agentConnId) -> Just RcvFileInfo {filePath, connId, agentConnId}
-          _ -> Nothing
+          (Just filePath, Just connId, Just agentConnId, _, _, _, False) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
+          (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
+            Contact {activeConn = Connection {connId, agentConnId}} <- getContact db userId contactId
+            pure $ Just RcvFileInfo {filePath, connId, agentConnId}
+          (Just filePath, Nothing, Nothing, _, Just groupId, Just groupMemberId, True) -> do
+            getGroupMember db user groupId groupMemberId >>= \case
+              GroupMember {activeConn = Just Connection {connId, agentConnId}} ->
+                pure $ Just RcvFileInfo {filePath, connId, agentConnId}
+              _ -> pure Nothing
+          _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
 acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> ConnId -> ConnStatus -> FilePath -> ExceptT StoreError IO AChatItem
@@ -2540,11 +2604,12 @@ createNewSndMessage db gVar connOrGroupId mkMessage =
       ConnectionId connId -> (Just connId, Nothing)
       GroupId groupId -> (Nothing, Just groupId)
 
-createSndMsgDelivery :: DB.Connection -> SndMsgDelivery -> MessageId -> IO ()
+createSndMsgDelivery :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery db sndMsgDelivery messageId = do
   currentTs <- getCurrentTime
   msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
   createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
+  pure msgDeliveryId
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do

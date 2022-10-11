@@ -192,6 +192,7 @@ CREATE TABLE snd_files(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   file_inline INTEGER,
+  last_inline_msg_delivery_id INTEGER,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(

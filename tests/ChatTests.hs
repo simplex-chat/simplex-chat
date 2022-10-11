@@ -69,7 +69,7 @@ chatTests = do
     describe "send and receive file" $ do
       it "via new connection" $ testFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
       it "inline" $ testFileTransfer testCfg {offerInlineChunks = 10, rcvInlineChunks = 10}
-    fdescribe "send and receive a small file" $ do
+    describe "send and receive a small file" $ do
       it "via new connection" $ testSmallFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
       it "inline" $ testSmallFileTransfer testCfg {offerInlineChunks = 1, rcvInlineChunks = 1}
     it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
