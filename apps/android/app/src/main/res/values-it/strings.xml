@@ -1,0 +1,813 @@
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+  <string name="app_name"><xliff:g id="appName">SimpleX</xliff:g></string>
+
+  <string name="thousand_abbreviation">k</string>
+
+  <!-- Connect via Link - MainActivity.kt -->
+  <string name="connect_via_contact_link">Connettere via link del contatto?</string>
+  <string name="connect_via_invitation_link">Connettere via link di invito?</string>
+  <string name="profile_will_be_sent_to_contact_sending_link">Il tuo profilo verrà inviato al contatto da cui hai ricevuto questo link.</string>
+  <string name="connect_via_link_verb">Connetti</string>
+
+  <!-- Server info - ChatModel.kt -->
+  <string name="server_connected">connesso</string>
+  <string name="server_error">errore</string>
+  <string name="server_connecting">connessione in corso</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso al server usato per ricevere messaggi da questo contatto.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tentativo di connessione al server usato per ricevere messaggi da questo contatto (errore: <xliff:g id="errorMsg">%1$s</xliff:g>).</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questo contatto.</string>
+
+  <!-- Item Content - ChatModel.kt -->
+  <string name="deleted_description">eliminato</string>
+  <string name="sending_files_not_yet_supported">l\'invio di file non è ancora supportato</string>
+  <string name="receiving_files_not_yet_supported">la ricezione di file non è ancora supportata</string>
+  <string name="sender_you_pronoun">tu</string>
+  <string name="unknown_message_format">formato messaggio sconosciuto</string>
+  <string name="invalid_message_format">formato messaggio non valido</string>
+
+  <!-- PendingContactConnection - ChatModel.kt -->
+  <string name="connection_local_display_name">connessione <xliff:g id="connection ID" example="1">%1$d</xliff:g></string>
+  <string name="display_name_connection_established">connessione stabilita</string>
+  <string name="display_name_invited_to_connect">invitato a connettersi</string>
+  <string name="display_name_connecting">connessione…</string>
+  <string name="description_you_shared_one_time_link">hai condiviso un link una tantum</string>
+  <string name="description_you_shared_one_time_link_incognito">hai condiviso un link incognito una tantum</string>
+  <string name="description_via_contact_address_link">via link indirizzo del contatto</string>
+  <string name="description_via_contact_address_link_incognito">incognito via link indirizzo del contatto</string>
+  <string name="description_via_one_time_link">via link una tantum</string>
+  <string name="description_via_one_time_link_incognito">incognito via link una tantum</string>
+
+  <!-- SimpleXAPI.kt -->
+  <string name="error_saving_smp_servers">Errore di salvataggio server SMP</string>
+  <string name="ensure_smp_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi dei server SMP siano nel formato giusto, uno per riga e non doppi.</string>
+  <string name="error_setting_network_config">Errore di aggiornamento della configurazione di rete</string>
+
+  <!-- API Error Responses - SimpleXAPI.kt -->
+  <string name="connection_timeout">Timeout di connessione</string>
+  <string name="connection_error">Errore di connessione</string>
+  <string name="network_error_desc">Controlla la tua connessione di rete e riprova.</string>
+  <string name="error_sending_message">Errore di invio del messaggio</string>
+  <string name="error_adding_members">Errore di aggiunta membro/i</string>
+  <string name="error_joining_group">Errore di entrata nel gruppo</string>
+  <string name="cannot_receive_file">Impossibile ricevere il file</string>
+  <string name="sender_cancelled_file_transfer">Il mittente ha annullato il trasferimento di file.</string>
+  <string name="error_receiving_file">Errore di ricezione del file</string>
+  <string name="error_creating_address">Errore di creazione dell\'indirizzo</string>
+  <string name="contact_already_exists">Il contatto esiste già</string>
+  <string name="you_are_already_connected_to_vName_via_this_link">Sei già connesso a <xliff:g id="contactName" example="Alice">%1$s!</xliff:g> attraverso questo link.</string>
+  <string name="invalid_connection_link">Link di connessione non valido</string>
+  <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Controlla di aver usato il link giusto o chiedi al tuo contatto di inviartene un altro.</string>
+  <string name="connection_error_auth">Errore di connessione (AUTH)</string>
+  <string name="connection_error_auth_desc">A meno che il tuo contatto non abbia eliminato la connessione o che questo link non sia già stato usato, potrebbe essere un errore - per favore segnalalo.\nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
+  <string name="error_accepting_contact_request">Errore di accettazione della richiesta del contatto</string>
+  <string name="sender_may_have_deleted_the_connection_request">Il mittente potrebbe aver eliminato la richiesta di connessione.</string>
+  <string name="cannot_delete_contact">Impossibile eliminare il contatto!</string>
+  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Il contatto <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> non può essere eliminato, è un membro del/i gruppo/i <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
+  <string name="error_deleting_contact">Errore di eliminazione contatto</string>
+  <string name="error_deleting_group">Errore di eliminazione gruppo</string>
+  <string name="error_deleting_contact_request">Errore eliminazione richiesta del contatto</string>
+  <string name="error_deleting_pending_contact_connection">Errore eliminazione connessione del contatto in attesa</string>
+
+  <!-- background service notice - SimpleXAPI.kt -->
+  <string name="icon_descr_instant_notifications">Notifiche immediate</string>
+  <string name="service_notifications">Notifiche immediate!</string>
+  <string name="service_notifications_disabled">Le notifiche immediate sono disattivate!</string>
+  <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Per rispettare la tua privacy, invece delle notifiche push l\'app ha un servizio <b><xliff:g id="appName">SimpleX</xliff:g> in secondo piano</b> – usa una piccola percentuale di batteria al giorno.</string>
+  <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Può essere disattivato nelle impostazioni</b> – le notifiche verranno comunque mostrate mentre l\'app è in uso.</string>
+  <string name="turn_off_battery_optimization">Per usarlo, <b>disattiva l\'ottimizzazione della batteria</b> per <xliff:g id="appName">SimpleX</xliff:g> nella prossima schermata. Altrimenti le notifiche saranno disattivate.</string>
+  <string name="turning_off_service_and_periodic">L\'ottimizzazione della batteria è attiva, spegnimento del servizio in secondo piano e delle richieste periodiche di messaggi nuovi. Puoi riattivarli nelle impostazioni.</string>
+  <string name="periodic_notifications">Notifiche periodiche</string>
+  <string name="periodic_notifications_disabled">Le notifiche periodiche sono disattivate!</string>
+  <string name="periodic_notifications_desc">L\'app cerca nuovi messaggi periodicamente — utilizza una piccola percentuale di batteria al giorno. L\'app non usa notifiche push — non vengono inviati dati dal tuo dispositivo ai server.</string>
+  <string name="enter_passphrase_notification_title">Password necessaria</string>
+  <string name="enter_passphrase_notification_desc">Per ricevere notifiche, inserisci la password del database</string>
+  <string name="database_initialization_error_title">Impossibile inizializzare il database</string>
+  <string name="database_initialization_error_desc">Il database non funziona bene. Tocca per maggiori informazioni</string>
+
+  <!-- SimpleX Chat foreground Service -->
+  <string name="simplex_service_notification_title">Servizio di <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+  <string name="simplex_service_notification_text">Ricezione di messaggi…</string>
+  <string name="hide_notification">Nascondi</string>
+
+  <!-- Notification channels -->
+  <string name="ntf_channel_messages">Messaggi di SimpleX Chat</string>
+  <string name="ntf_channel_calls">Chiamate di SimpleX Chat</string>
+  <string name="ntf_channel_calls_lockscreen">Chiamate di SimpleX Chat (schermo bloccato)</string>
+
+  <!-- Notifications -->
+  <string name="settings_notifications_mode_title">Servizio di notifica</string>
+  <string name="settings_notification_preview_mode_title">Mostra anteprima</string>
+  <string name="settings_notification_preview_title">Anteprima della notifica</string>
+  <string name="notifications_mode_off">Attivo quando l\'app è aperta</string>
+  <string name="notifications_mode_periodic">Si attiva periodicamente</string>
+  <string name="notifications_mode_service">Sempre attivo</string>
+  <string name="notifications_mode_off_desc">L\'app può ricevere notifiche solo quando è aperta, non verrà avviato il servizio in secondo piano</string>
+  <string name="notifications_mode_periodic_desc">Controlla nuovi messaggi ogni 10 minuti per 1 minuto</string>
+  <string name="notifications_mode_service_desc">Servizio in secondo piano sempre attivo – le notifiche verranno mostrate appena saranno disponibili i messaggi.</string>
+  <string name="notification_preview_mode_message">Testo del messaggio</string>
+  <string name="notification_preview_mode_contact">Nome del contatto</string>
+  <string name="notification_preview_mode_hidden">Nascosti</string>
+  <string name="notification_preview_mode_message_desc">Mostra contatto e messaggio</string>
+  <string name="notification_preview_mode_contact_desc">Mostra solo il contatto</string>
+  <string name="notification_display_mode_hidden_desc">Nascondi contatto e messaggio</string>
+  <string name="notification_preview_somebody">Contatto nascosto:</string>
+  <string name="notification_preview_new_message">nuovo messaggio</string>
+  <string name="notification_new_contact_request">Nuova richiesta di contatto</string>
+  <string name="notification_contact_connected">Connesso</string>
+
+  <!-- local authentication notice - SimpleXAPI.kt -->
+  <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
+  <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Per proteggere le tue informazioni, attiva SimpleX Lock.\nTi verrà chiesto di completare l\'autenticazione prima di attivare questa funzionalità.</string>
+  <string name="la_notice_turn_on">Attiva</string>
+
+  <!-- LocalAuthentication.kt -->
+  <string name="auth_simplex_lock_turned_on">SimpleX Lock attivato</string>
+  <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Dovrai autenticarti quando avvii o riapri l\'app dopo 30 secondi in secondo piano.</string>
+  <string name="auth_unlock">Sblocca</string>
+  <string name="auth_log_in_using_credential">Accedi usando le tue credenziali</string>
+  <string name="auth_enable_simplex_lock">Attiva SimpleX Lock</string>
+  <string name="auth_disable_simplex_lock">Disattiva SimpleX Lock</string>
+  <string name="auth_confirm_credential">Conferma le tue credenziali</string>
+  <string name="auth_error">Errore di autenticazione</string>
+  <string name="auth_error_w_desc">Errore di autenticazione: <xliff:g id="desc">%1$s</xliff:g></string>
+  <string name="auth_failed">Autenticazione fallita</string>
+  <string name="auth_unavailable">Autenticazione non disponibile</string>
+  <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">L\'autenticazione del dispositivo non è attiva. Potrai attivare SimpleX Lock nelle impostazioni, quando avrai attivato l\'autenticazione del dispositivo.</string>
+  <string name="auth_device_authentication_is_disabled_turning_off">L\'autenticazione del dispositivo è disattivata. Disattivazione di SimpleX Lock.</string>
+  <string name="auth_retry">Riprova</string>
+  <string name="auth_stop_chat">Ferma la chat</string>
+  <string name="auth_open_chat_console">Apri la console della chat</string>
+
+  <!-- Chat Actions - ChatItemView.kt (and general) -->
+  <string name="reply_verb">Rispondi</string>
+  <string name="share_verb">Condividi</string>
+  <string name="copy_verb">Copia</string>
+  <string name="save_verb">Salva</string>
+  <string name="edit_verb">Modifica</string>
+  <string name="delete_verb">Elimina</string>
+  <string name="delete_message__question">Eliminare il messaggio?</string>
+  <string name="delete_message_cannot_be_undone_warning">Il messaggio verrà eliminato - non è reversibile!</string>
+  <string name="for_me_only">Solo per me</string>
+  <string name="for_everybody">Per tutti</string>
+
+  <!-- CIMetaView.kt -->
+  <string name="icon_descr_edited">modificato</string>
+  <string name="icon_descr_sent_msg_status_sent">inviato</string>
+  <string name="icon_descr_sent_msg_status_unauthorized_send">invio non autorizzato</string>
+  <string name="icon_descr_sent_msg_status_send_failed">invio fallito</string>
+  <string name="icon_descr_received_msg_status_unread">non letto</string>
+
+  <!-- ChatListView.kt -->
+  <string name="personal_welcome">Benvenuto/a <xliff:g>%1$s</xliff:g>!</string>
+  <string name="welcome">Benvenuto/a!</string>
+  <string name="this_text_is_available_in_settings">Questo testo è disponibile nelle impostazioni</string>
+  <string name="your_chats">Le tue conversazioni</string>
+  <string name="contact_connection_pending">connessione…</string>
+  <string name="group_preview_you_are_invited">sei invitato/a nel gruppo</string>
+  <string name="group_preview_join_as">entra come %s</string>
+  <string name="group_connection_pending">connessione…</string>
+  <string name="tap_to_start_new_chat">Tocca per iniziare una conversazione</string>
+  <string name="chat_with_developers">Scrivi agli sviluppatori</string>
+  <string name="you_have_no_chats">Non hai conversazioni</string>
+
+  <!-- ComposeView.kt, helpers -->
+  <string name="attach">Allega</string>
+  <string name="icon_descr_context">Icona contestuale</string>
+  <string name="icon_descr_cancel_image_preview">Annulla anteprima immagine</string>
+  <string name="icon_descr_cancel_file_preview">Annulla anteprima file</string>
+
+  <!-- Images - CIImageView.kt -->
+  <string name="image_descr">Immagine</string>
+  <string name="icon_descr_waiting_for_image">In attesa di un\'immagine</string>
+  <string name="icon_descr_asked_to_receive">Ha chiesto di ricevere l\'immagine</string>
+  <string name="icon_descr_image_snd_complete">Immagine inviata</string>
+  <string name="waiting_for_image">In attesa di un\'immagine</string>
+  <string name="image_will_be_received_when_contact_is_online">L\'immagine verrà ricevuta quando il tuo contatto sarà in linea, aspetta o controlla più tardi!</string>
+  <string name="image_saved">Immagine salvata nella galleria</string>
+
+  <!-- Files - CIFileView.kt -->
+  <string name="icon_descr_file">File</string>
+  <string name="large_file">File grande!</string>
+  <string name="contact_sent_large_file">Il tuo contatto ha inviato un file più grande della dimensione massima supportata (<xliff:g id="maxFileSize">%1$s</xliff:g>).</string>
+  <string name="maximum_supported_file_size">La dimensione massima supportata attualmente è di <xliff:g id="maxFileSize">%1$s</xliff:g>.</string>
+  <string name="waiting_for_file">In attesa di un file</string>
+  <string name="file_will_be_received_when_contact_is_online">Il file verrà ricevuto quando il tuo contatto sarà in linea, aspetta o controlla più tardi!</string>
+  <string name="file_saved">File salvato</string>
+  <string name="file_not_found">File non trovato</string>
+  <string name="error_saving_file">Errore di salvataggio del file</string>
+
+  <!-- Chat Info Settings - ChatInfoView.kt -->
+  <string name="notifications">Notifiche</string>
+
+  <!-- Chat Info Actions - ChatInfoView.kt -->
+  <string name="delete_contact_question">Eliminare il contatto?</string>
+  <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Il contatto e tutti i messaggi verranno eliminati - non è reversibile!</string>
+  <string name="button_delete_contact">Elimina contatto</string>
+  <string name="text_field_set_contact_placeholder">Imposta il nome del contatto…</string>
+  <string name="icon_descr_server_status_connected">Connesso</string>
+  <string name="icon_descr_server_status_disconnected">Disconnesso</string>
+  <string name="icon_descr_server_status_error">Errore</string>
+  <string name="icon_descr_server_status_pending">In attesa</string>
+
+  <!-- Message Actions - SendMsgView.kt -->
+  <string name="icon_descr_send_message">Invia messaggio</string>
+
+  <!-- General Actions / Responses -->
+  <string name="back">Indietro</string>
+  <string name="cancel_verb">Annulla</string>
+  <string name="confirm_verb">Conferma</string>
+  <string name="ok">OK</string>
+  <string name="no_details">nessun dettaglio</string>
+  <string name="add_contact">Link di invito una tantum</string>
+  <string name="copied">Copiato negli appunti</string>
+
+  <!-- NewChatSheet -->
+  <string name="add_contact_or_create_group">Inizia una nuova conversazione</string>
+  <string name="share_one_time_link">Crea un link di invito una tantum</string>
+  <string name="connect_via_link_or_qr">Connetti via link / codice QR</string>
+  <string name="scan_QR_code">Scansione codice QR</string>
+  <string name="create_group">Crea un gruppo segreto</string>
+  <string name="to_share_with_your_contact">(da condividere con il tuo contatto)</string>
+  <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scansiona o incolla dagli appunti)</string>
+  <string name="only_stored_on_members_devices">(conservato solo dai membri del gruppo)</string>
+
+  <!-- GetImageView -->
+  <string name="toast_permission_denied">Autorizzazione negata!</string>
+  <string name="use_camera_button">Usa fotocamera</string>
+  <string name="from_gallery_button">Dalla galleria</string>
+  <string name="choose_file">Scegli file</string>
+
+  <!-- help - ChatHelpView.kt -->
+  <string name="thank_you_for_installing_simplex">Grazie per avere installato <xliff:g id="appNameFull">SimpleX Chat</xliff:g>!</string>
+  <string name="you_can_connect_to_simplex_chat_founder">Puoi <font color="#0088ff">connetterti con gli sviluppatori di <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per porre qualsiasi domanda e per ricevere aggiornamenti</font>.</string>
+  <string name="to_start_a_new_chat_help_header">Per iniziare una conversazione</string>
+  <string name="chat_help_tap_button">Tocca il pulsante</string>
+  <string name="above_then_preposition_continuation">sopra, poi:</string>
+  <string name="add_new_contact_to_create_one_time_QR_code"><b>Aggiungi un contatto</b>: per creare il tuo codice QR una tantum per il tuo contatto.</string>
+  <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Scansiona un codice QR</b>: per connetterti al tuo contatto che ti mostrerà un codice QR.</string>
+  <string name="to_connect_via_link_title">Per connettersi via link</string>
+  <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Se hai ricevuto un link di invito a <xliff:g id="appName">SimpleX Chat</xliff:g>, puoi aprirlo nel tuo browser:</string>
+  <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 desktop: scansiona il codice QR mostrato dall\'app, usando <b>Scansiona codice QR</b>.</string>
+  <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobile: tocca <b>Apri in app mobile</b>, poi tocca <b>Connetti</b> nell\'app.</string>
+
+  <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
+  <string name="accept_connection_request__question">Accettare la richiesta di connessione?</string>
+  <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se scegli di rifiutare, il mittente NON verrà informato.</string>
+  <string name="accept_contact_button">Accetta</string>
+  <string name="accept_contact_incognito_button">Accetta in incognito</string>
+  <string name="reject_contact_button">Rifiuta</string>
+
+  <!-- Clear Chat - ChatListNavLinkView.kt -->
+  <string name="clear_chat_question">Svuotare la conversazione?</string>
+  <string name="clear_chat_warning">Tutti i messaggi verranno eliminati - non è reversibile! I messaggi verranno eliminati SOLO per te.</string>
+  <string name="clear_verb">Svuota</string>
+  <string name="clear_chat_button">Svuota conversazione</string>
+  <string name="clear_chat_menu_action">Svuota</string>
+  <string name="delete_contact_menu_action">Elimina</string>
+  <string name="delete_group_menu_action">Elimina</string>
+  <string name="mark_read">Segna come letto</string>
+
+  <!-- Actions - ChatListNavLinkView.kt -->
+  <string name="mute_chat">Silenzia</string>
+  <string name="unmute_chat">Riattiva notifiche</string>
+
+  <!-- Pending contact connection alert dialogues -->
+  <string name="you_invited_your_contact">Hai invitato il contatto</string>
+  <string name="you_accepted_connection">Hai accettato la connessione</string>
+  <string name="delete_pending_connection__question">Eliminare la connessione in attesa?</string>
+  <string name="contact_you_shared_link_with_wont_be_able_to_connect">Il contatto con cui hai condiviso questo link NON potrà connettersi!</string>
+  <string name="connection_you_accepted_will_be_cancelled">La connessione che hai accettato verrà annullata!</string>
+
+  <!-- Contact Pending Alert Dialogue - ChatListNavLinkView.kt -->
+  <string name="alert_title_contact_connection_pending">Il contatto non è ancora connesso!</string>
+  <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Il contatto deve essere in linea per completare la connessione.\nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).</string>
+
+  <!-- Contact Request Information - ContactRequestView.kt -->
+  <string name="contact_wants_to_connect_with_you">vuole connettersi con te!</string>
+
+  <!-- Image Placeholder - ChatInfoImage.kt -->
+  <string name="icon_descr_profile_image_placeholder">segnaposto immagine profilo</string>
+  <string name="image_descr_profile_image">immagine profilo</string>
+
+  <!-- Content Descriptions -->
+  <string name="icon_descr_close_button">Pulsante Chiudi</string>
+  <string name="image_descr_link_preview">immagine anteprima link</string>
+  <string name="icon_descr_cancel_link_preview">annulla anteprima link</string>
+  <string name="icon_descr_settings">Impostazioni</string>
+  <string name="image_descr_qr_code">Codice QR</string>
+  <string name="icon_descr_address">Indirizzo di <xliff:g id="appName">SimpleX</xliff:g></string>
+  <string name="icon_descr_help">aiuto</string>
+  <string name="icon_descr_simplex_team">Team di <xliff:g id="appName">SimpleX</xliff:g></string>
+  <string name="image_descr_simplex_logo">Logo di <xliff:g id="appName">SimpleX</xliff:g></string>
+  <string name="icon_descr_email">Email</string>
+  <string name="icon_descr_more_button">Altro</string>
+
+  <!-- Add Contact - AddContactView.kt -->
+  <string name="invalid_QR_code">Codice QR non valido</string>
+  <string name="this_QR_code_is_not_a_link">Questo codice QR non è un link!</string>
+  <string name="invalid_contact_link">Link non valido!</string>
+  <string name="this_link_is_not_a_valid_connection_link">Questo non è un link di connessione valido!</string>
+  <string name="connection_request_sent">Richiesta di connessione inviata!</string>
+  <string name="you_will_be_connected_when_your_connection_request_is_accepted">Sarete connessi quando verrà accettata la tua richiesta di connessione, aspetta o controlla più tardi!</string>
+  <string name="you_will_be_connected_when_your_contacts_device_is_online">Sarete connessi quando il dispositivo del tuo contatto sarà in linea, aspetta o controlla più tardi!</string>
+  <string name="show_QR_code_for_your_contact_to_scan_from_the_app__multiline">Il tuo contatto può scansionarlo dall\'app.</string>
+  <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Se non potete incontrarvi di persona, <b>mostra il codice QR in una videochiamata</b> o condividi il link.</string>
+  <string name="your_chat_profile_will_be_sent_to_your_contact">Il tuo profilo di chat verrà inviato\nal tuo contatto</string>
+  <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Se non potete incontrarvi di persona, puoi <b>scansionare il codice QR in una videochiamata</b> o il tuo contatto può condividere un link di invito.</string>
+  <string name="share_invitation_link">Condividi link di invito</string>
+  <string name="paste_connection_link_below_to_connect">Incolla il link ricevuto nella casella sottostante per connetterti con il contatto.</string>
+  <string name="your_profile_will_be_sent">Il tuo profilo di chat verrà inviato al tuo contatto</string>
+
+  <!-- PasteToConnect.kt -->
+  <string name="connect_via_link">Connetti via link</string>
+  <string name="connect_button">Connetti</string>
+  <string name="paste_button">Incolla</string>
+  <string name="this_string_is_not_a_connection_link">Questo non è un link di connessione!</string>
+  <string name="you_can_also_connect_by_clicking_the_link">Puoi anche connetterti cliccando il link. Se si apre nel browser, clicca il pulsante <b>Apri in app mobile</b>.</string>
+
+  <!-- CreateLinkView.kt -->
+  <string name="create_one_time_link">Crea un link di invito una tantum</string>
+  <string name="one_time_link">Link di invito una tantum</string>
+  <string name="your_contact_address">L\'indirizzo del contatto</string>
+
+  <!-- settings - SettingsView.kt -->
+  <string name="your_settings">Le tue impostazioni</string>
+  <string name="your_simplex_contact_address">Il tuo indirizzo di contatto <xliff:g id="appName">SimpleX</xliff:g></string>
+  <string name="database_passphrase_and_export">Password database &amp; esportazione</string>
+  <string name="about_simplex_chat">Riguardo <xliff:g id="appNameFull">SimpleX Chat</xliff:g></string>
+  <string name="how_to_use_simplex_chat">Come usarlo</string>
+  <string name="markdown_help">Aiuto markdown</string>
+  <string name="markdown_in_messages">Markdown nei messaggi</string>
+  <string name="chat_with_the_founder">Connetti con gli sviluppatori</string>
+  <string name="send_us_an_email">Inviaci un\'email</string>
+  <string name="chat_lock">SimpleX Lock</string>
+  <string name="chat_console">Console della chat</string>
+  <string name="smp_servers">Server SMP</string>
+  <string name="install_simplex_chat_for_terminal">Installa <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per terminale</string>
+  <string name="use_simplex_chat_servers__question">Usare i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>?</string>
+  <string name="saved_SMP_servers_will_be_removed">I server SMP salvati verranno rimossi.</string>
+  <string name="your_SMP_servers">I tuoi server SMP</string>
+  <string name="configure_SMP_servers">Configura i server SMP</string>
+  <string name="using_simplex_chat_servers">Stai usando i server di <xliff:g id="appNameFull">SimpleX Chat</xliff:g>.</string>
+  <string name="enter_one_SMP_server_per_line">Server SMP (uno per riga)</string>
+  <string name="how_to">Come fare</string>
+  <string name="saved_ICE_servers_will_be_removed">I server ICE WebRTC verranno rimossi.</string>
+  <string name="your_ICE_servers">I tuoi server ICE</string>
+  <string name="configure_ICE_servers">Configura i server ICE</string>
+  <string name="enter_one_ICE_server_per_line">Server ICE (uno per riga)</string>
+  <string name="error_saving_ICE_servers">Errore di salvataggio dei server ICE</string>
+  <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi dei server ICE WebRTC siano nel formato giusto, uno per riga e non doppi.</string>
+  <string name="save_servers_button">Salva</string>
+  <string name="network_and_servers">Rete &amp; server</string>
+  <string name="network_settings">Impostazioni di rete avanzate</string>
+  <string name="network_settings_title">Impostazioni di rete</string>
+  <string name="network_socks_toggle">Usa proxy SOCKS (porta 9050)</string>
+  <string name="network_enable_socks">Usare un proxy SOCKS?</string>
+  <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta 9050? Il proxy deve essere avviato prima di attivare questa opzione.</string>
+  <string name="network_disable_socks">Usare una connessione a internet diretta?</string>
+  <string name="network_disable_socks_info">Se confermi, i server di messaggistica potranno vedere il tuo indirizzo IP, mentre il tuo fornitore di internet a quali server ti connetti.</string>
+  <string name="update_onion_hosts_settings_question">Aggiornare le impostazioni degli host .onion?</string>
+  <string name="network_use_onion_hosts">Usa gli host .onion</string>
+  <string name="network_use_onion_hosts_prefer">Quando disponibili</string>
+  <string name="network_use_onion_hosts_no">No</string>
+  <string name="network_use_onion_hosts_required">Sempre</string>
+  <string name="network_use_onion_hosts_prefer_desc">Gli host .onion verranno usati quando disponibili.</string>
+  <string name="network_use_onion_hosts_no_desc">Gli host .onion non verranno usati.</string>
+  <string name="network_use_onion_hosts_required_desc">Gli host .onion saranno necessari per la connessione.</string>
+  <string name="network_use_onion_hosts_prefer_desc_in_alert">Gli host .onion verranno usati quando disponibili.</string>
+  <string name="network_use_onion_hosts_no_desc_in_alert">Gli host .onion non verranno usati.</string>
+  <string name="network_use_onion_hosts_required_desc_in_alert">Gli host .onion saranno necessari per la connessione.</string>
+  <string name="appearance_settings">Aspetto</string>
+
+  <!-- Address Items - UserAddressView.kt -->
+  <string name="create_address">Crea indirizzo</string>
+  <string name="delete_address__question">Eliminare l\'indirizzo?</string>
+  <string name="all_your_contacts_will_remain_connected">Tutti i tuoi contatti restareanno connessi.</string>
+  <string name="you_can_share_your_address_anybody_will_be_able_to_connect">Puoi condividere il tuo indirizzo come link o come codice QR - chiunque potrà connettersi a te.</string>
+  <string name="if_you_later_delete_address_you_wont_lose_contacts">Se più tardi lo eliminerai - non perderai i contatti trovati tramite l\'indirizzo.</string>
+  <string name="if_you_delete_address_you_wont_lose_contacts">Se lo elimini - non perderai i contatti trovati tramite questo indirizzo.</string>
+  <string name="share_link">Condividi link</string>
+  <string name="delete_address">Elimina indirizzo</string>
+
+  <!-- User profile details - UserProfileView.kt -->
+  <string name="display_name__field">Nome mostrato:</string>
+  <string name="full_name__field">"Nome completo:</string>
+  <string name="your_chat_profile">Il tuo profilo di chat</string>
+  <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è conservato nel tuo dispositivo e condiviso solo con i tuoi contatti.\n\nI server di <xliff:g id="appName">SimpleX</xliff:g> non possono vederlo.</string>
+  <string name="edit_image">Modifica immagine</string>
+  <string name="delete_image">Elimina immagine</string>
+  <string name="save_and_notify_contacts">Salva (e avvisa i contatti)</string>
+
+  <!-- Welcome Prompts - WelcomeView.kt -->
+  <string name="you_control_your_chat">Sei tu a controllare la tua chat!</string>
+  <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">L\'applicazione di messaggistica che protegge la tua privacy e sicurezza.</string>
+  <string name="we_do_not_store_contacts_or_messages_on_servers">Non conserviamo alcun contatto o messaggio (una volta consegnato) sui server.</string>
+  <string name="create_profile">Crea profilo</string>
+  <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi consegnati sono memorizzati nel tuo dispositivo.</string>
+  <string name="profile_is_only_shared_with_your_contacts">Il profilo viene condiviso solo con i tuoi contatti.</string>
+  <string name="display_name_cannot_contain_whitespace">Il nome mostrato non può contenere spazi.</string>
+  <string name="display_name">Nome mostrato</string>
+  <string name="full_name_optional__prompt">Nome completo (facoltativo)</string>
+  <string name="create_profile_button">Crea</string>
+  <string name="about_simplex">Riguardo SimpleX</string>
+
+  <!-- markdown demo - MarkdownHelpView.kt -->
+  <string name="how_to_use_markdown">Come usare il markdown</string>
+  <string name="you_can_use_markdown_to_format_messages__prompt">Puoi usare il markdown per formattare i messaggi:</string>
+  <string name="bold">grassetto</string>
+  <string name="italic">corsivo</string>
+  <string name="strikethrough">barrato</string>
+  <string name="a_plus_b">a + b</string>
+  <string name="colored">colorato</string>
+  <string name="secret">segreto</string>
+
+  <!-- CICallStatus - in chat items -->
+  <string name="callstatus_calling">chiamando…</string>
+  <string name="callstatus_missed">chiamata persa</string>
+  <string name="callstatus_rejected">chiamata rifiutata</string>
+  <string name="callstatus_accepted">chiamata accettata</string>
+  <string name="callstatus_connecting">connessione alla chiamata…</string>
+  <string name="callstatus_in_progress">chiamata in corso</string>
+  <string name="callstatus_ended">chiamata terminata <xliff:g id="duration" example="01:15">%1$s</xliff:g></string>
+  <string name="callstatus_error">errore di chiamata</string>
+
+  <!-- CallState -->
+  <string name="callstate_starting">avvio…</string>
+  <string name="callstate_waiting_for_answer">in attesa di risposta…</string>
+  <string name="callstate_waiting_for_confirmation">in attesa di conferma…</string>
+  <string name="callstate_received_answer">risposta ricevuta…</string>
+  <string name="callstate_received_confirmation">conferma ricevuta…</string>
+  <string name="callstate_connecting">connessione…</string>
+  <string name="callstate_connected">connesso</string>
+  <string name="callstate_ended">terminato</string>
+
+  <!-- SimpleXInfo -->
+  <string name="next_generation_of_private_messaging">La nuova generazione di messaggi privati</string>
+  <string name="privacy_redefined">Privacy ridefinita</string>
+  <string name="first_platform_without_user_ids">La prima piattaforma senza identificatori utente – privata by design.</string>
+  <string name="immune_to_spam_and_abuse">Immune a spam e abusi</string>
+  <string name="people_can_connect_only_via_links_you_share">Le persone possono connettersi a te solo attraverso i link che condividi.</string>
+  <string name="decentralized">Decentralizzato</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocollo e codice open-source – chiunque può installare i server.</string>
+  <string name="create_your_profile">Crea il tuo profilo</string>
+  <string name="make_private_connection">Avvia una connessione privata</string>
+  <string name="how_it_works">Come funziona</string>
+
+  <!-- How SimpleX Works -->
+  <string name="how_simplex_works">Come funziona <xliff:g id="appName">SimpleX</xliff:g></string>
+  <string name="many_people_asked_how_can_it_deliver">Molte persone chiedono: <i>se <xliff:g id="appName">SimpleX</xliff:g> non ha identificatori utente, come può consegnare i messaggi?</i></string>
+  <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la privacy, invece degli ID utente usati da tutte le altre piattaforme, <xliff:g id="appName">SimpleX</xliff:g> ha identificatori per le code di messaggi, diversi per ognuno dei tuoi contatti.</string>
+  <string name="you_control_servers_to_receive_your_contacts_to_send">Tu scegli attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti quali server usi per inviare loro messaggi.</string>
+  <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Solo i dispositivi conservano i profili utente, i contatti, i gruppi e i messaggi inviati con <b>2 layer di crittografia end-to-end</b>.</string>
+  <string name="read_more_in_github">Maggiori informazioni nel nostro repository GitHub.</string>
+  <string name="read_more_in_github_with_link">Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.</string>
+
+  <!-- MakeConnection -->
+  <string name="paste_the_link_you_received">Incolla il link ricevuto</string>
+
+  <!-- Call -->
+  <string name="incoming_video_call">Videochiamata in arrivo</string>
+  <string name="incoming_audio_call">Chiamata in arrivo</string>
+  <string name="contact_wants_to_connect_via_call"><xliff:g id="contactName" example="Alice">%1$s</xliff:g> vuole connettersi con te via</string>
+  <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
+  <string name="encrypted_video_call">videochiamata crittografata e2e</string>
+  <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
+  <string name="encrypted_audio_call">chiamata audio crittografata e2e</string>
+  <string name="accept">Accetta</string>
+  <string name="reject">Rifiuta</string>
+  <string name="ignore">Ignora</string>
+  <string name="call_already_ended">Chiamata già terminata!</string>
+  <string name="icon_descr_video_call">videochiamata</string>
+  <string name="icon_descr_audio_call">chiamata audio</string>
+
+  <!-- Call settings -->
+  <string name="settings_audio_video_calls">Chiamate audio e video</string>
+  <string name="your_calls">Le tue chiamate</string>
+  <string name="connect_calls_via_relay">Connetti via relay</string>
+  <string name="call_on_lock_screen">Chiamate da schermo bloccato:</string>
+  <string name="accept_call_on_lock_screen">Accetta</string>
+  <string name="show_call_on_lock_screen">Mostra</string>
+  <string name="no_call_on_lock_screen">Disattiva</string>
+  <string name="your_ice_servers">I tuoi server ICE</string>
+  <string name="webrtc_ice_servers">Server ICE WebRTC</string>
+
+  <!-- Call Lock Screen -->
+  <string name="open_simplex_chat_to_accept_call">Apri <xliff:g id="appNameFull">SimpleX Chat</xliff:g> per accettare la chiamata</string>
+  <string name="allow_accepting_calls_from_lock_screen">Attiva le chiamate da schermo bloccato nelle impostazioni.</string>
+  <string name="open_verb">Apri</string>
+
+  <!-- Call overlay -->
+  <string name="status_e2e_encrypted">crittografata e2e</string>
+  <string name="status_no_e2e_encryption">non crittografata e2e</string>
+  <string name="status_contact_has_e2e_encryption">il contatto ha la crittografia e2e</string>
+  <string name="status_contact_has_no_e2e_encryption">il contatto non ha la crittografia e2e</string>
+  <string name="call_connection_peer_to_peer">peer-to-peer</string>
+  <string name="call_connection_via_relay">via relay</string>
+  <string name="icon_descr_hang_up">Riaggancia</string>
+  <string name="icon_descr_video_off">Video off</string>
+  <string name="icon_descr_video_on">Video on</string>
+  <string name="icon_descr_audio_off">Audio off</string>
+  <string name="icon_descr_audio_on">Audio on</string>
+  <string name="icon_descr_speaker_off">Altoparlante off</string>
+  <string name="icon_descr_speaker_on">Altoparlante on</string>
+  <string name="icon_descr_flip_camera">Cambia fotocamera</string>
+
+  <!-- Call items -->
+  <string name="icon_descr_call_pending_sent">Chiamata in attesa</string>
+  <string name="icon_descr_call_missed">Chiamata persa</string>
+  <string name="icon_descr_call_rejected">Chiamata rifiutata</string>
+  <string name="icon_descr_call_connecting">Chiamata in connessione</string>
+  <string name="icon_descr_call_progress">Chiamata in corso</string>
+  <string name="icon_descr_call_ended">Chiamata terminata</string>
+  <string name="answer_call">Rispondi alla chiamata</string>
+
+  <!-- Message integrity -->
+  <string name="integrity_msg_skipped"><xliff:g id="connection ID" example="1">%1$d</xliff:g> messaggio/i saltato/i</string>
+  <string name="integrity_msg_bad_hash">hash messaggio errato</string>
+  <string name="integrity_msg_bad_id">ID messaggio errato</string>
+  <string name="integrity_msg_duplicate">messaggio doppio</string>
+  <string name="alert_title_skipped_messages">Messaggi saltati</string>
+  <string name="alert_text_skipped_messages_it_can_happen_when">Può succedere quando:\n1. I messaggi scadono sul server se non vengono ricevuti per 30 giorni.\n2. Il server che usi per ricevere i messaggi da questo contatto è stato aggiornato e riavviato.\n3. La connessione è stata compromessa.\nConnettiti agli sviluppatori attraverso le impostazioni per ricevere aggiornamenti riguardo i server.\nAggiungeremo ridondanza dei server per evitare perdite di messaggi.</string>
+
+  <!-- Privacy settings -->
+  <string name="privacy_and_security">Privacy e sicurezza</string>
+  <string name="your_privacy">La tua privacy</string>
+  <string name="auto_accept_images">Auto-accetta le immagini</string>
+  <string name="send_link_previews">Invia anteprime dei link</string>
+
+  <!-- Settings sections -->
+  <string name="settings_section_title_you">TU</string>
+  <string name="settings_section_title_settings">IMPOSTAZIONI</string>
+  <string name="settings_section_title_help">AIUTO</string>
+  <string name="settings_section_title_develop">SVILUPPA</string>
+  <string name="settings_section_title_device">DISPOSITIVO</string>
+  <string name="settings_section_title_chats">CONVERSAZIONI</string>
+  <string name="settings_developer_tools">Strumenti sviluppatore</string>
+  <string name="settings_experimental_features">Funzioni sperimentali</string>
+  <string name="settings_section_title_socks">PROXY SOCKS</string>
+  <string name="settings_section_title_icon">ICONA APP</string>
+  <string name="settings_section_title_themes">TEMI</string>
+  <string name="settings_section_title_messages">MESSAGGI</string>
+  <string name="settings_section_title_calls">CHIAMATE</string>
+  <string name="settings_section_title_incognito">Modalità incognito</string>
+
+  <!-- DatabaseView.kt -->
+  <string name="your_chat_database">Il tuo database della chat</string>
+  <string name="run_chat_section">AVVIA CHAT</string>
+  <string name="chat_is_running">Chat in esecuzione</string>
+  <string name="chat_is_stopped">Chat fermata</string>
+  <string name="chat_database_section">DATABASE CHAT</string>
+  <string name="database_passphrase">Password del database</string>
+  <string name="export_database">Esporta database</string>
+  <string name="import_database">Importa database</string>
+  <string name="new_database_archive">Nuovo archivio del database</string>
+  <string name="old_database_archive">Vecchio archivio del database</string>
+  <string name="delete_database">Elimina database</string>
+  <string name="error_starting_chat">Errore di avvio della chat</string>
+  <string name="stop_chat_question">Fermare la chat?</string>
+  <string name="stop_chat_to_export_import_or_delete_chat_database">Ferma la chat per esportare, importare o eliminare il database della chat. Non potrai ricevere e inviare messaggi mentre la chat è ferma.</string>
+  <string name="stop_chat_confirmation">Ferma</string>
+  <string name="set_password_to_export">Imposta password per l\'esportazione</string>
+  <string name="set_password_to_export_desc">Il database è crittografato usando una password casuale. Cambiala prima di esportare.</string>
+  <string name="error_stopping_chat">Errore nel fermare la chat</string>
+  <string name="error_exporting_chat_database">Errore di esportazione del database</string>
+  <string name="import_database_question">Importare il database della chat?</string>
+  <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Il tuo attuale database della chat verrà ELIMINATO e SOSTITUITO con quello importato.\nQuest\'azione è irreversibile - il tuo profilo, i contatti, i messaggi e i file verranno persi per sempre.</string>
+  <string name="import_database_confirmation">Importa</string>
+  <string name="error_deleting_database">Errore di eliminazione del database</string>
+  <string name="error_importing_database">Errore di importazione del database</string>
+  <string name="chat_database_imported">Database della chat importato</string>
+  <string name="restart_the_app_to_use_imported_chat_database">Riavvia l\'app per usare il database importato.</string>
+  <string name="delete_chat_profile_question">Eliminare il profilo di chat?</string>
+  <string name="delete_chat_profile_action_cannot_be_undone_warning">Quest\'azione è irreversibile - il tuo profilo, i contatti, i messaggi e i file verranno persi per sempre.</string>
+  <string name="chat_database_deleted">Database della chat eliminato</string>
+  <string name="restart_the_app_to_create_a_new_chat_profile">Riavvia l\'app per creare un nuovo profilo di chat.</string>
+  <string name="you_must_use_the_most_recent_version_of_database">Devi usare la versione più recente del tuo database della chat su SOLO un dispositivo, altrimenti potresti non ricevere più messaggi da alcuni contatti.</string>
+  <string name="stop_chat_to_enable_database_actions">Ferma la chat per attivare le azioni del database.</string>
+  <string name="files_section">FILE</string>
+  <string name="delete_files_and_media">Elimina file e multimediali</string>
+  <string name="delete_files_and_media_question">Eliminare i file e i multimediali?</string>
+  <string name="delete_files_and_media_desc">Quest\'azione è irreversibile - tutti i file e i multimediali ricevuti e inviati verranno eliminati. Le immagini a bassa risoluzione resteranno.</string>
+  <string name="no_received_app_files">Nessun file ricevuto o inviato</string>
+  <string name="total_files_count_and_size">%d file con dimensione totale di %s</string>
+
+  <!-- DatabaseEncryptionView.kt -->
+  <string name="save_passphrase_in_keychain">Salva la password nel Keystore</string>
+  <string name="database_encrypted">Database crittografato!</string>
+  <string name="error_encrypting_database">Errore di cifratura del database</string>
+  <string name="remove_passphrase_from_keychain">Rimuovere la password dal Keystore?</string>
+  <string name="notifications_will_be_hidden">Le notifiche verranno consegnate solo fino a quando non si chiude l\'app!</string>
+  <string name="remove_passphrase">Rimuovi</string>
+  <string name="encrypt_database">Cripta</string>
+  <string name="update_database">Aggiorna</string>
+  <string name="current_passphrase">Password attuale…</string>
+  <string name="new_passphrase">Nuova password…</string>
+  <string name="confirm_new_passphrase">Conferma nuova password…</string>
+  <string name="update_database_passphrase">Aggiorna password del database</string>
+  <string name="enter_correct_current_passphrase">Inserisci la password attuale giusta.</string>
+  <string name="database_is_not_encrypted">Il database della chat non è crittografato - imposta una password per proteggerlo.</string>
+  <string name="keychain_is_storing_securely">Il Keystore di Android viene usato per conservare in modo sicuro la password - permette al servizio di notifica di funzionare.</string>
+  <string name="encrypted_with_random_passphrase">Il database è crittografato usando una password casuale, puoi modificarla.</string>
+  <string name="impossible_to_recover_passphrase"><b>Nota bene</b>: NON potrai recuperare o cambiare la password se la perdi.</string>
+  <string name="keychain_allows_to_receive_ntfs">Il Keystore di Android verrà usato per conservare in modo sicuro la password dopo che riavvii l\'app o cambi la password - permetterà di ricevere le notifiche.</string>
+  <string name="you_have_to_enter_passphrase_every_time">Dovrai inserire la password ogni volta che si avvia l\'app - non è memorizzata nel dispositivo.</string>
+  <string name="encrypt_database_question">Criptare il database?</string>
+  <string name="change_database_passphrase_question">Cambiare la password del database?</string>
+  <string name="database_will_be_encrypted">Il database verrà crittografato.</string>
+  <string name="database_will_be_encrypted_and_passphrase_stored">Il database verrà crittografato e la password conservata nel Keystore.</string>
+  <string name="database_encryption_will_be_updated">La password di crittografia del database verrà aggiornata e conservata nel Keystore.</string>
+  <string name="database_passphrase_will_be_updated">La password di crittografia del database verrà aggiornata.</string>
+  <string name="store_passphrase_securely">Conserva la password in modo sicuro, NON potrai cambiarla se la perdi.</string>
+  <string name="store_passphrase_securely_without_recover">Conserva la password in modo sicuro, NON potrai accedere alle conversazioni se la perdi.</string>
+
+  <!-- DatabaseErrorView.kt -->
+  <string name="wrong_passphrase">Password del database sbagliata</string>
+  <string name="encrypted_database">Database crittografato</string>
+  <string name="database_error">Errore del database</string>
+  <string name="keychain_error">Errore del Keychain</string>
+  <string name="passphrase_is_different">La password del database è diversa da quella salvata nel Keystore.</string>
+  <string name="file_with_path">File: %s</string>
+  <string name="database_passphrase_is_required">La password del database è necessaria per aprire la chat.</string>
+  <string name="error_with_info">Errore: %s</string>
+  <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
+  <string name="unknown_database_error_with_info">Errore database sconosciuto: %s</string>
+  <string name="wrong_passphrase_title">Password sbagliata!</string>
+  <string name="enter_correct_passphrase">Inserisci la password giusta.</string>
+  <string name="unknown_error">Errore sconosciuto</string>
+  <string name="enter_passphrase">Inserisci password…</string>
+  <string name="save_passphrase_and_open_chat">Salva la password e apri la chat</string>
+  <string name="open_chat">Apri chat</string>
+  <string name="database_backup_can_be_restored">Tentativo di cambiare la password del database non riuscito.</string>
+  <string name="restore_database">Ripristina backup del database</string>
+  <string name="restore_database_alert_title">Ripristinare un backup del database?</string>
+  <string name="restore_database_alert_desc">Inserisci la password precedente dopo avere ripristinato il backup del database. Quest\'azione è irreversibile.</string>
+  <string name="restore_database_alert_confirm">Ripristina</string>
+  <string name="database_restore_error">Errore di ripristino database</string>
+
+  <!-- ChatModel.chatRunning interactions -->
+  <string name="chat_is_stopped_indication">La chat è stata fermata</string>
+  <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Puoi avviare la chat nelle impostazioni / database o riavviando l\'app.</string>
+
+  <!-- ChatArchiveView.kt -->
+  <string name="chat_archive_header">Archivio chat</string>
+  <string name="chat_archive_section">ARCHIVIO CHAT</string>
+  <string name="save_archive">Salva archivio</string>
+  <string name="delete_archive">Elimina archivio</string>
+  <string name="archive_created_on_ts">Creato il <xliff:g id="archive_ts">%1$s</xliff:g></string>
+  <string name="delete_chat_archive_question">Eliminare l\'archivio della chat?</string>
+
+  <!-- Groups -->
+  <string name="group_invitation_item_description">invito al gruppo <xliff:g id="group_name">%1$s</xliff:g></string>
+  <string name="join_group_question">Entrare nel gruppo?</string>
+  <string name="you_are_invited_to_group_join_to_connect_with_group_members">Hai un invito al gruppo. Entra per connetterti con gli altri membri.</string>
+  <string name="join_group_button">Entra</string>
+  <string name="join_group_incognito_button">Entra in incognito</string>
+  <string name="joining_group">Entrata nel gruppo</string>
+  <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Fai parte di questo gruppo. Connessione al membro che ti ha invitato/a.</string>
+  <string name="leave_group_button">Esci</string>
+  <string name="leave_group_question">Uscire dal gruppo?</string>
+  <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Non riceverai più messaggi da questo gruppo. La cronologia della chat verrà conservata.</string>
+  <string name="icon_descr_add_members">Invita membri</string>
+  <string name="icon_descr_group_inactive">Gruppo inattivo</string>
+  <string name="alert_title_group_invitation_expired">Invito scaduto!</string>
+  <string name="alert_message_group_invitation_expired">L\'invito al gruppo non è più valido, è stato rimosso dal mittente.</string>
+  <string name="alert_title_no_group">Gruppo non trovato!</string>
+  <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
+  <string name="alert_title_cant_invite_contacts">Impossibile invitare contatti!</string>
+  <string name="alert_title_cant_invite_contacts_descr">Stai usando un profilo in incognito per questo gruppo - per evitare di condividere il tuo profilo principale, non è permesso invitare contatti</string>
+
+  <!-- CIGroupInvitationView.kt -->
+  <string name="you_sent_group_invitation">Hai spedito un invito al gruppo</string>
+  <string name="you_are_invited_to_group">Hai un invito al gruppo</string>
+  <string name="group_invitation_tap_to_join">Tocca per entrare</string>
+  <string name="group_invitation_tap_to_join_incognito">Tocca per entrare in incognito</string>
+  <string name="you_joined_this_group">Fai parte di questo gruppo</string>
+  <string name="you_rejected_group_invitation">Hai rifiutato l\'invito al gruppo</string>
+  <string name="group_invitation_expired">Invito al gruppo scaduto</string>
+
+  <!-- Group event chat items -->
+  <string name="rcv_group_event_member_added">invitato/a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_member_connected">connesso/a</string>
+  <string name="rcv_group_event_member_left">uscito/a</string>
+  <string name="rcv_group_event_member_deleted">rimosso/a <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="rcv_group_event_user_deleted">ti ha rimosso/a</string>
+  <string name="rcv_group_event_group_deleted">gruppo eliminato</string>
+  <string name="rcv_group_event_updated_group_profile">aggiornato profilo del gruppo</string>
+  <string name="snd_group_event_member_deleted">hai rimosso <xliff:g id="member profile" example="alice (Alice)">%1$s</xliff:g></string>
+  <string name="snd_group_event_user_left">sei uscito/a</string>
+  <string name="snd_group_event_group_profile_updated">profilo del gruppo aggiornato</string>
+
+  <!-- GroupMemberRole -->
+  <string name="group_member_role_member">membro</string>
+  <string name="group_member_role_admin">amministratore</string>
+  <string name="group_member_role_owner">proprietario/a</string>
+
+  <!-- GroupMemberStatus -->
+  <string name="group_member_status_removed">rimosso/a</string>
+  <string name="group_member_status_left">uscito/a</string>
+  <string name="group_member_status_group_deleted">gruppo eliminato</string>
+  <string name="group_member_status_invited">invitato/a</string>
+  <string name="group_member_status_introduced">in connessione (presentato/a)</string>
+  <string name="group_member_status_intro_invitation">in connessione (invito di presentarsi)</string>
+  <string name="group_member_status_accepted">in connessione (accettato/a)</string>
+  <string name="group_member_status_announced">in connessione (annunciato/a)</string>
+  <string name="group_member_status_connected">connesso/a</string>
+  <string name="group_member_status_complete">completato</string>
+  <string name="group_member_status_creator">autore</string>
+
+  <string name="group_member_status_connecting">in connessione</string>
+
+  <!-- AddGroupMembersView.kt -->
+  <string name="no_contacts_to_add">Nessun contatto da aggiungere</string>
+  <string name="new_member_role">Nuovo ruolo del membro</string>
+  <string name="icon_descr_expand_role">Espandi selezione ruolo</string>
+  <string name="invite_to_group_button">Invita al gruppo</string>
+  <string name="icon_descr_contact_checked">Contatto selezionato</string>
+  <string name="clear_contacts_selection_button">Annulla</string>
+  <string name="num_contacts_selected"><xliff:g id="num_contacts">%1$s</xliff:g> contatto/i selezionato/i</string>
+  <string name="no_contacts_selected">Nessun contatto selezionato</string>
+  <string name="invite_prohibited">Impossibile invitare il contatto!</string>
+  <string name="invite_prohibited_description">Stai tentando di invitare un contatto con cui hai condiviso un profilo in incognito, in un gruppo in cui stai usando il profilo principale</string>
+
+  <!-- GroupChatInfoView.kt -->
+  <string name="button_add_members">Invita membri</string>
+  <string name="group_info_section_title_num_members"><xliff:g id="num_members">%1$s</xliff:g> MEMBRI</string>
+  <string name="group_info_member_you">tu: <xliff:g id="group_info_you">%1$s</xliff:g></string>
+  <string name="button_delete_group">Elimina gruppo</string>
+  <string name="delete_group_question">Eliminare il gruppo?</string>
+  <string name="delete_group_for_all_members_cannot_undo_warning">Il gruppo verrà eliminato per tutti i membri - non è reversibile!</string>
+  <string name="delete_group_for_self_cannot_undo_warning">Il gruppo verrà eliminato solo per te - non è reversibile!</string>
+  <string name="button_leave_group">Esci dal gruppo</string>
+  <string name="button_edit_group_profile">Modifica profilo del gruppo</string>
+
+  <!-- For Console chat info section -->
+  <string name="section_title_for_console">PER CONSOLE</string>
+  <string name="info_row_local_name">Nome locale</string>
+  <string name="info_row_database_id">ID database</string>
+
+  <!-- GroupMemberInfoView.kt -->
+  <string name="button_remove_member">Rimuovi membro</string>
+  <string name="button_send_direct_message">Invia messaggio diretto</string>
+  <string name="member_will_be_removed_from_group_cannot_be_undone">Il membro verrà rimosso dal gruppo - non è reversibile!</string>
+  <string name="remove_member_confirmation">Rimuovi</string>
+  <string name="member_info_section_title_member">MEMBRO</string>
+  <string name="info_row_group">Gruppo</string>
+  <string name="info_row_connection">Connessione</string>
+  <string name="conn_level_desc_direct">diretta</string>
+  <string name="conn_level_desc_indirect">indiretta (<xliff:g id="conn_level">%1$s</xliff:g>)</string>
+
+  <!-- ConnectionStats -->
+  <string name="conn_stats_section_title_servers">SERVER</string>
+  <string name="receiving_via">Ricezione via</string>
+  <string name="sending_via">Spedizione via</string>
+  <string name="network_status">Stato della rete</string>
+
+  <!-- AddGroupView.kt -->
+  <string name="create_secret_group_title">Crea gruppo segreto</string>
+  <string name="group_is_decentralized">Il gruppo è totalmente decentralizzato – è visibile solo ai membri.</string>
+  <string name="group_display_name_field">Nome mostrato del gruppo:</string>
+  <string name="group_full_name_field">Nome completo del gruppo:</string>
+  <string name="group_unsupported_incognito_main_profile_sent">La modalità incognito non è supportata qui - il tuo profilo principale verrà inviato ai membri del gruppo</string>
+  <string name="group_main_profile_sent">Il tuo profilo di chat verrà inviato ai membri del gruppo</string>
+
+
+  <!-- GroupProfileView.kt -->
+  <string name="group_profile_is_stored_on_members_devices">Il profilo del gruppo è conservato nei dispositivi dei membri, non sui server.</string>
+  <string name="save_group_profile">Salva profilo del gruppo</string>
+  <string name="error_saving_group_profile">Errore di salvataggio del profilo del gruppo</string>
+
+  <!-- AdvancedNetworkSettings.kt -->
+  <string name="network_options_reset_to_defaults">Ripristina predefinite</string>
+  <string name="network_option_seconds_label">sec</string>
+  <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
+  <string name="network_option_protocol_timeout">Scadenza protocollo</string>
+  <string name="network_option_ping_interval">Intervallo di PING</string>
+  <string name="network_option_enable_tcp_keep_alive">Attiva il keep-alive TCP</string>
+  <string name="network_options_revert">Ripristina</string>
+  <string name="network_options_save">Salva</string>
+  <string name="update_network_settings_question">Aggiornare le impostazioni di rete?</string>
+  <string name="updating_settings_will_reconnect_client_to_all_servers">Aggiornare le impostazioni riconnetterà il client a tutti i server.</string>
+  <string name="update_network_settings_confirmation">Aggiorna</string>
+
+  <!-- Incognito mode -->
+  <string name="incognito">Incognito</string>
+  <string name="incognito_random_profile">Il tuo profilo casuale</string>
+  <string name="incognito_random_profile_description">Verrà inviato un profilo casuale al tuo contatto</string>
+  <string name="incognito_random_profile_from_contact_description">Verrà inviato un profilo casuale al contatto da cui hai ricevuto questo link</string>
+
+  <string name="incognito_info_protects">La modalità incognito protegge la privacy del nome e dell\'immagine del tuo profilo principale — viene creato un nuovo profilo casuale per ogni contatto.</string>
+  <string name="incognito_info_allows">Permette di avere molte connessioni anonime senza alcun dato condiviso tra le parti in un singolo profilo di chat.</string>
+  <string name="incognito_info_share">Quando condividi un profilo in incognito con qualcuno, verrà usato questo profilo per i gruppi in cui lui ti invita.</string>
+  <string name="incognito_info_find">Per trovare il profilo usato per una connessione in incognito, tocca il nome del contatto o del gruppo in cima alla conversazione.</string>
+
+  <!-- Default themes -->
+  <string name="theme_system">Sistema</string>
+  <string name="theme_light">Chiaro</string>
+  <string name="theme_dark">Scuro</string>
+
+  <!-- Appearance.kt -->
+  <string name="theme">Tema</string>
+  <string name="save_color">Salva colore</string>
+  <string name="reset_color">Ripristina colori</string>
+  <string name="color_primary">Colore principale</string>
+</resources>
