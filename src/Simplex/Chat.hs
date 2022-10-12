@@ -1129,15 +1129,16 @@ processChatCommand = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-    sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
-    sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
-      let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-          groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-      msg <- sendDirectContactMessage ct $ XGrpInv groupInv
-      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-      ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
-      toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
-      setActive $ ActiveG localDisplayName
+
+sendGrpInvitation :: ChatMonad m => User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
+sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+  let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+      groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+  msg <- sendDirectContactMessage ct $ XGrpInv groupInv
+  let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+  ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
+  toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+  setActive $ ActiveG localDisplayName
 
 setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
@@ -1605,12 +1606,21 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               toView $ CRContactConnected ct (fmap fromLocalProfile incognitoProfile)
               setActive $ ActiveC c
               showToast (c <> "> ") "connected"
-              forM_ viaUserContactLink $ \userContactLinkId -> do
+              forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (_, True, Just mc) -> do
-                    msg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
-                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
-                    toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+                  Just (_, autoAccept, mc_, groupId_) ->
+                    when autoAccept $ do
+                      forM_ mc_ $ \mc -> do
+                        msg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
+                        ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
+                        toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+                      forM_ groupId_ $ \groupId -> do
+                        gInfo <- withStore $ \db -> getGroupInfo db user groupId
+                        gVar <- asks idsDrg
+                        (grpAgentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+                        member <- withStore $ \db -> createNewContactMember db gVar user groupId ct GRMember grpAgentConnId cReq
+                        sendGrpInvitation user ct gInfo member cReq
+                        toView $ CRSentGroupInvitation gInfo ct member
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -1888,12 +1898,14 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           withStore (\db -> createOrUpdateContactRequest db userId userContactLinkId invId p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
-              (_, autoAccept, _) <- withStore $ \db -> getUserAddress db userId
-              if autoAccept
-                then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
-                else do
-                  toView $ CRReceivedContactRequest cReq
-                  showToast (localDisplayName <> "> ") "wants to connect to you"
+              withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
+                Just (_, autoAccept, _, _groupId_) ->
+                  if autoAccept
+                    then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
+                    else do
+                      toView $ CRReceivedContactRequest cReq
+                      showToast (localDisplayName <> "> ") "wants to connect to you"
+                _ -> pure ()
 
     withCompletedCommand :: Connection -> ACommand 'Agent -> (CommandData -> m ()) -> m ()
     withCompletedCommand Connection {connId} agentMsg action = do

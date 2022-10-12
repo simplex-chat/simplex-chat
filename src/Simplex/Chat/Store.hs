@@ -778,13 +778,13 @@ getUserAddress db userId =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
   maybeFirstRow id $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, auto_reply_msg_content, group_id
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
