@@ -1615,20 +1615,19 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (_, autoAccept, mc_, groupId_) ->
-                    when autoAccept $ do
-                      forM_ mc_ $ \mc -> do
-                        msg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
-                        ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
-                        toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
-                      forM_ groupId_ $ \groupId -> do
-                        gInfo <- withStore $ \db -> getGroupInfo db user groupId
-                        gVar <- asks idsDrg
-                        -- TODO async and continuation?
-                        (grpAgentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-                        member <- withStore $ \db -> createNewContactMember db gVar user groupId ct GRMember grpAgentConnId cReq
-                        sendGrpInvitation user ct gInfo member cReq
-                        toView $ CRSentGroupInvitation gInfo ct member
+                  Just (_, True, mc_, groupId_) -> do
+                    forM_ mc_ $ \mc -> do
+                      msg <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
+                      ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
+                      toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+                    forM_ groupId_ $ \groupId -> do
+                      gInfo <- withStore $ \db -> getGroupInfo db user groupId
+                      gVar <- asks idsDrg
+                      -- TODO async and continuation?
+                      (grpAgentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+                      member <- withStore $ \db -> createNewContactMember db gVar user groupId ct GRMember grpAgentConnId cReq
+                      sendGrpInvitation user ct gInfo member cReq
+                      toView $ CRSentGroupInvitation gInfo ct member
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
