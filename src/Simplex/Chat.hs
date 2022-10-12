@@ -485,6 +485,7 @@ processChatCommand = \case
       withChatLock . procCmd $ do
         forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
+        deleteGroupLink' user gInfo
         forM_ members $ deleteMemberConnection user
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
@@ -522,7 +523,11 @@ processChatCommand = \case
     CTContactRequest -> pure $ chatCmdError "not supported"
   APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
     cReq <- withStore $ \db -> getContactRequest db userId connReqId
-    procCmd $ CRAcceptingContactRequest <$> acceptContactRequest user cReq
+    -- [incognito] generate profile to send, create connection with incognito profile
+    incognito <- readTVarIO =<< asks incognitoMode
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    ct <- acceptContactRequest user cReq incognitoProfile
+    pure $ CRAcceptingContactRequest ct
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
       withStore $ \db ->
@@ -885,6 +890,7 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft) Nothing Nothing
       toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       -- TODO delete direct connections that were unused
+      deleteGroupLink' user gInfo
       forM_ members $ deleteMemberConnection user
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo {membership = membership {memberStatus = GSMemLeft}}
@@ -1288,12 +1294,10 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
                   f = filePath `combine` (name <> suffix <> ext)
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
-acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
-acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
-  -- [incognito] generate profile to send, create connection with incognito profile
-  incognito <- readTVarIO =<< asks incognitoMode
-  incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe Profile -> m Contact
+acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+  -- TODO acceptContactAsync
   connId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
   withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId incognitoProfile
 
@@ -1899,9 +1903,21 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (_, autoAccept, _, _groupId_) ->
+                Just (_, autoAccept, _, groupId_) ->
                   if autoAccept
-                    then acceptContactRequest user cReq >>= toView . CRAcceptingContactRequest
+                    then case groupId_ of
+                      Nothing -> do
+                        -- [incognito] generate profile to send, create connection with incognito profile
+                        -- TODO allow to configure incognito setting on auto accept instead of checking incognito mode
+                        incognito <- readTVarIO =<< asks incognitoMode
+                        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+                        ct <- acceptContactRequest user cReq incognitoProfile
+                        toView $ CRAcceptingContactRequest ct
+                      Just groupId -> do
+                        gInfo@GroupInfo {membership} <- withStore $ \db -> getGroupInfo db user groupId
+                        let incognitoProfile = if memberIncognito membership then Just . fromLocalProfile $ memberProfile membership else Nothing
+                        ct <- acceptContactRequest user cReq incognitoProfile
+                        toView $ CRAcceptingGroupJoinRequest gInfo ct
                     else do
                       toView $ CRReceivedContactRequest cReq
                       showToast (localDisplayName <> "> ") "wants to connect to you"
@@ -2442,6 +2458,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       if memberId (membership :: GroupMember) == memId
         then checkRole membership $ do
+          deleteGroupLink' user gInfo
           forM_ members $ deleteMemberConnection user
           deleteMember membership RGEUserDeleted
           toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m

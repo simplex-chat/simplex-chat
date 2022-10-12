@@ -322,6 +322,7 @@ data ChatResponse
   | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
   | CRGroupLinkDeleted {groupInfo :: GroupInfo}
+  | CRAcceptingGroupJoinRequest {groupInfo :: GroupInfo, contact :: Contact}
   | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}

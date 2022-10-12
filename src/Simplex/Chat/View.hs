@@ -168,6 +168,7 @@ responseToView testView = \case
   CRGroupLinkCreated g cReq -> groupLink_ "Group link is created!" g cReq
   CRGroupLink g cReq -> groupLink_ "Group link:" g cReq
   CRGroupLinkDeleted g -> viewGroupLinkDeleted g
+  CRAcceptingGroupJoinRequest g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRMemberSubError g m e -> [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary summary -> viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed g -> viewGroupSubscribed g
