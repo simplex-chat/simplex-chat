@@ -1624,6 +1624,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                       forM_ groupId_ $ \groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db user groupId
                         gVar <- asks idsDrg
+                        -- TODO async and continuation?
                         (grpAgentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
                         member <- withStore $ \db -> createNewContactMember db gVar user groupId ct GRMember grpAgentConnId cReq
                         sendGrpInvitation user ct gInfo member cReq
