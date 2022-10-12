@@ -171,9 +171,9 @@
   <string name="you_have_no_chats">Sie haben keine Chats</string>
 
   <!-- ShareListView.kt -->
-  <string name="share_message">Share message…</string>
-  <string name="share_image">Share image…</string>
-  <string name="share_file">Share file…</string>
+  <string name="share_message">Nachricht teilen…</string>
+  <string name="share_image">Bild teilen…</string>
+  <string name="share_file">Datei teilen…</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Anhängen</string>
@@ -273,7 +273,7 @@
   <string name="delete_contact_menu_action">Kontakt löschen</string>
   <string name="delete_group_menu_action">Gruppe löschen</string>
   <string name="mark_read">Als gelesen markieren</string>
-  <string name="set_contact_name">Set contact name</string>
+  <string name="set_contact_name">Kontaktname festlegen</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
   <string name="mute_chat">Stummschalten</string>
