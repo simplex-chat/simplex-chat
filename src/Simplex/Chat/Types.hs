@@ -608,7 +608,7 @@ data SndFileTransfer = SndFileTransfer
     connId :: Int64,
     agentConnId :: AgentConnId,
     fileStatus :: FileStatus,
-    fileInline :: Maybe Bool
+    fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
 
@@ -623,7 +623,7 @@ data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
     fileConnReq :: Maybe ConnReqInvitation,
-    fileInline :: Maybe Bool
+    fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
 
@@ -633,6 +633,31 @@ instance ToJSON FileInvitation where
 
 instance FromJSON FileInvitation where
   parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data InlineFileMode
+  = IFMOffer -- file will be sent inline once accepted
+  | IFMSent -- file is sent inline without acceptance
+  deriving (Eq, Show, Generic)
+
+instance TextEncoding InlineFileMode where
+  textEncode = \case
+    IFMOffer -> "offer"
+    IFMSent -> "sent"
+  textDecode = \case
+    "offer" -> Just IFMOffer
+    "sent" -> Just IFMSent
+    _ -> Nothing
+
+instance FromField InlineFileMode where fromField = fromTextField_ textDecode
+
+instance ToField InlineFileMode where toField = toField . textEncode
+
+instance FromJSON InlineFileMode where
+  parseJSON = J.withText "InlineFileMode" $ maybe (fail "bad InlineFileMode") pure . textDecode
+
+instance ToJSON InlineFileMode where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
@@ -725,6 +750,7 @@ data FileTransferMeta = FileTransferMeta
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
+    fileInline :: Maybe InlineFileMode,
     chunkSize :: Integer,
     cancelled :: Bool
   }

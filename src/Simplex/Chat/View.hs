@@ -686,9 +686,9 @@ viewContactUpdated
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
-        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
-      ]
+        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+          "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+        ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
@@ -950,7 +950,7 @@ viewChatError = \case
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
-    CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileAlreadyReceiving f -> ["file is already being received: " <> plain f]
     CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]

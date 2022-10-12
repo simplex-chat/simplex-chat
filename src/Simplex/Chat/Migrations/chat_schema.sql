@@ -182,7 +182,8 @@ CREATE TABLE files(
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
-  ci_file_status TEXT
+  ci_file_status TEXT,
+  file_inline TEXT
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -191,7 +192,7 @@ CREATE TABLE snd_files(
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  file_inline INTEGER,
+  file_inline TEXT,
   last_inline_msg_delivery_id INTEGER,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
@@ -203,7 +204,7 @@ CREATE TABLE rcv_files(
   ,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  file_inline INTEGER
+  file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,

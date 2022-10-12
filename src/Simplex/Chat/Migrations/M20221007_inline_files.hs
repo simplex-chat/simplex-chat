@@ -10,8 +10,9 @@ m20221007_inline_files =
   [sql|
 DROP INDEX idx_messages_direct_shared_msg_id;
 
-ALTER TABLE rcv_files ADD COLUMN file_inline INTEGER;
-ALTER TABLE snd_files ADD COLUMN file_inline INTEGER;
+ALTER TABLE files ADD COLUMN file_inline TEXT;
+ALTER TABLE rcv_files ADD COLUMN file_inline TEXT;
+ALTER TABLE snd_files ADD COLUMN file_inline TEXT;
 ALTER TABLE snd_files ADD COLUMN last_inline_msg_delivery_id INTEGER;
 
 CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(last_inline_msg_delivery_id);

@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -291,13 +292,13 @@ processChatCommand = \case
       where
         setupSndFileTransfer :: Contact -> m (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer ct = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile file
+          (fileSize, chSize, fileInline) <- checkSndFile file 1
           (agentConnId_, fileConnReq) <-
-            if fileInline
-              then pure (Nothing, Nothing)
-              else bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation)
+            case fileInline of
+              Just _ -> pure (Nothing, Nothing)
+              _ -> bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation)
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline = Just fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
           fileId <- withStore' $ \db -> createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
           let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
           pure (fileInvitation, ciFile)
@@ -320,18 +321,18 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {membership, localDisplayName = gName} ms <- withStore $ \db -> getGroup db user chatId
       unless (memberActive membership) $ throwChatError CEGroupMemberUserRemoved
-      (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer gInfo
+      (fileInvitation_, ciFile_) <- unzipMaybe <$> setupSndFileTransfer gInfo (length ms)
       (msgContainer, quotedItem_) <- prepareMsg fileInvitation_ membership
       msg <- sendGroupMessage gInfo ms (XMsgNew msgContainer)
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_
       setActive $ ActiveG gName
       pure . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       where
-        setupSndFileTransfer :: GroupInfo -> m (Maybe (FileInvitation, CIFile 'MDSnd))
-        setupSndFileTransfer gInfo = forM file_ $ \file -> do
-          (fileSize, chSize, fileInline) <- checkSndFile file
+        setupSndFileTransfer :: GroupInfo -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd))
+        setupSndFileTransfer gInfo n = forM file_ $ \file -> do
+          (fileSize, chSize, fileInline) <- checkSndFile file $ fromIntegral n
           let fileName = takeFileName file
-              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing, fileInline = Just fileInline}
+              fileInvitation = FileInvitation {fileName, fileSize, fileConnReq = Nothing, fileInline}
           fileId <- withStore' $ \db -> createSndGroupFileTransfer db userId gInfo file fileInvitation chSize
           let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus = CIFSSndStored}
           pure (fileInvitation, ciFile)
@@ -1044,13 +1045,18 @@ processChatCommand = \case
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
         cId == Just contactId && s /= GSMemRemoved && s /= GSMemLeft
-    checkSndFile :: FilePath -> m (Integer, Integer, Bool)
-    checkSndFile f = do
+    checkSndFile :: FilePath -> Integer -> m (Integer, Integer, Maybe InlineFileMode)
+    checkSndFile f n = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       fileSize <- getFileSize fsFilePath
-      pure (fileSize, fileChunkSize, fileSize <= fileChunkSize * offerChunks inlineFiles)
+      let chunks = -((-fileSize) `div` fileChunkSize)
+      pure (fileSize, fileChunkSize, inlineFileMode inlineFiles chunks n)
+    inlineFileMode InlineFilesConfig {offerChunks, sendChunks, totalSendChunks} chunks n
+      | chunks > offerChunks = Nothing
+      | chunks > sendChunks || chunks * n > totalSendChunks = Just IFMOffer
+      | otherwise = Just IFMSent
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
@@ -1221,16 +1227,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
       filePath <- getRcvFilePath filePath_ fName
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
-      if fileInline == Just True && fileSize <= fileChunkSize * receiveChunks inlineFiles
-        then do
-          -- accepting inline
-          ci <- withStore $ \db -> acceptInlineRcvFT db user fileId filePath
-          pure (XFileAcptInv sharedMsgId Nothing fName, ci)
-        else do
-          -- accepting via a new connection
-          (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-          ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
-          pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
+      if
+          | fileInline == Just IFMOffer && fileSize <= fileChunkSize * receiveChunks inlineFiles -> do
+              -- accepting inline
+              ci <- withStore $ \db -> acceptInlineRcvFT db user fileId filePath
+              pure (XFileAcptInv sharedMsgId Nothing fName, ci)
+          | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
+          | otherwise -> do
+              -- accepting via a new connection
+              (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
+              ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
+              pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing ->
