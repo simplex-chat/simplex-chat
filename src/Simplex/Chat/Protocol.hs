@@ -184,8 +184,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMsgDeleted :: ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
-  XFileAcptInv :: SharedMsgId -> ConnReqInvitation -> String -> ChatMsgEvent 'Json
-  XFileAcptInline :: SharedMsgId -> String -> ChatMsgEvent 'Json
+  XFileAcptInv :: SharedMsgId -> Maybe ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: Profile -> Maybe XContactId -> ChatMsgEvent 'Json
@@ -406,7 +405,6 @@ data CMEventTag (e :: MsgEncoding) where
   XFile_ :: CMEventTag 'Json
   XFileAcpt_ :: CMEventTag 'Json
   XFileAcptInv_ :: CMEventTag 'Json
-  XFileAcptInline_ :: CMEventTag 'Json
   XFileCancel_ :: CMEventTag 'Json
   XInfo_ :: CMEventTag 'Json
   XContact_ :: CMEventTag 'Json
@@ -449,7 +447,6 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XFile_ -> "x.file"
     XFileAcpt_ -> "x.file.acpt"
     XFileAcptInv_ -> "x.file.acpt.inv"
-    XFileAcptInline_ -> "x.file.acpt.inline"
     XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
@@ -493,7 +490,6 @@ instance StrEncoding ACMEventTag where
         "x.file" -> XFile_
         "x.file.acpt" -> XFileAcpt_
         "x.file.acpt.inv" -> XFileAcptInv_
-        "x.file.acpt.inline" -> XFileAcptInline_
         "x.file.cancel" -> XFileCancel_
         "x.info" -> XInfo_
         "x.contact" -> XContact_
@@ -533,7 +529,6 @@ toCMEventTag msg = case msg of
   XFile _ -> XFile_
   XFileAcpt _ -> XFileAcpt_
   XFileAcptInv {} -> XFileAcptInv_
-  XFileAcptInline _ _ -> XFileAcptInline_
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact _ _ -> XContact_
@@ -618,8 +613,7 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
       XMsgDeleted_ -> pure XMsgDeleted
       XFile_ -> XFile <$> p "file"
       XFileAcpt_ -> XFileAcpt <$> p "fileName"
-      XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> p "fileConnReq" <*> p "fileName"
-      XFileAcptInline_ -> XFileAcptInline <$> p "msgId" <*> p "fileName"
+      XFileAcptInv_ -> XFileAcptInv <$> p "msgId" <*> opt "fileConnReq" <*> p "fileName"
       XFileCancel_ -> XFileCancel <$> p "msgId"
       XInfo_ -> XInfo <$> p "profile"
       XContact_ -> XContact <$> p "profile" <*> opt "contactReqId"
@@ -670,8 +664,7 @@ chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
       XMsgDeleted -> JM.empty
       XFile fileInv -> o ["file" .= fileInv]
       XFileAcpt fileName -> o ["fileName" .= fileName]
-      XFileAcptInv sharedMsgId fileConnReq fileName -> o ["msgId" .= sharedMsgId, "fileConnReq" .= fileConnReq, "fileName" .= fileName]
-      XFileAcptInline sharedMsgId fileName -> o ["msgId" .= sharedMsgId, "fileName" .= fileName]
+      XFileAcptInv sharedMsgId fileConnReq fileName -> o $ ("fileConnReq" .=? fileConnReq) ["msgId" .= sharedMsgId, "fileName" .= fileName]
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact profile xContactId -> o $ ("contactReqId" .=? xContactId) ["profile" .= profile]

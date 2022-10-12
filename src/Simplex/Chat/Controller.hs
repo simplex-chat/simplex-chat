@@ -67,16 +67,28 @@ data ChatConfig = ChatConfig
     defaultServers :: InitialAgentServers,
     tbqSize :: Natural,
     fileChunkSize :: Integer,
-    offerInlineChunks :: Integer,
-    sendInlineChunks :: Integer,
-    totalSendInlineChunks :: Integer,
-    rcvInlineChunks :: Integer,
-    maxInlineChunks :: Integer,
+    inlineFiles :: InlineFilesConfig,
     subscriptionConcurrency :: Int,
     subscriptionEvents :: Bool,
     hostEvents :: Bool,
     testView :: Bool
   }
+
+data InlineFilesConfig = InlineFilesConfig
+  { offerChunks :: Integer,
+    sendChunks :: Integer,
+    totalSendChunks :: Integer,
+    receiveChunks :: Integer
+  }
+
+defaultInlineFilesConfig :: InlineFilesConfig
+defaultInlineFilesConfig =
+  InlineFilesConfig
+    { offerChunks = 15, -- max when chunks are offered - limited to 255 on the encoding level
+      sendChunks = 0, -- max per file when chunks will be sent inline without acceptance
+      totalSendChunks = 0, -- max per conversation when chunks will be sent inline without acceptance
+      receiveChunks = 5 -- max when chunks are accepted
+    }
 
 data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
   deriving (Eq)

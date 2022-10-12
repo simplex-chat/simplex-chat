@@ -98,11 +98,7 @@ defaultChatConfig =
           },
       tbqSize = 64,
       fileChunkSize = 15780, -- do not change
-      offerInlineChunks = 15,
-      sendInlineChunks = 0, -- max size when chunks will be sent inline without acceptance
-      totalSendInlineChunks = 0, -- max total size per conversation when chunks will be sent inline without acceptance
-      rcvInlineChunks = 5,
-      maxInlineChunks = 15, -- it is limited to 255 on the encoding level
+      inlineFiles = defaultInlineFilesConfig,
       subscriptionConcurrency = 16,
       subscriptionEvents = False,
       hostEvents = False,
@@ -1052,9 +1048,9 @@ processChatCommand = \case
     checkSndFile f = do
       fsFilePath <- toFSFilePath f
       unlessM (doesFileExist fsFilePath) . throwChatError $ CEFileNotFound f
-      ChatConfig {fileChunkSize, offerInlineChunks} <- asks config
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
       fileSize <- getFileSize fsFilePath
-      pure (fileSize, fileChunkSize, fileSize <= fileChunkSize * offerInlineChunks)
+      pure (fileSize, fileChunkSize, fileSize <= fileChunkSize * offerChunks inlineFiles)
     updateProfile :: User -> Profile -> m ChatResponse
     updateProfile user@User {profile = p@LocalProfile {profileId, localAlias}} p'@Profile {displayName}
       | p' == fromLocalProfile p = pure CRUserProfileNoChange
@@ -1224,17 +1220,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     acceptFile = do
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
       filePath <- getRcvFilePath filePath_ fName
-      ChatConfig {fileChunkSize, rcvInlineChunks} <- asks config
-      if fileInline == Just True && fileSize <= fileChunkSize * rcvInlineChunks
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      if fileInline == Just True && fileSize <= fileChunkSize * receiveChunks inlineFiles
         then do
           -- accepting inline
           ci <- withStore $ \db -> acceptInlineRcvFT db user fileId filePath
-          pure (XFileAcptInline sharedMsgId fName, ci)
+          pure (XFileAcptInv sharedMsgId Nothing fName, ci)
         else do
           -- accepting via a new connection
           (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
           ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
-          pure (XFileAcptInv sharedMsgId fileInvConnReq fName, ci)
+          pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
     getRcvFilePath :: Maybe FilePath -> String -> m FilePath
     getRcvFilePath fPath_ fn = case fPath_ of
       Nothing ->
@@ -1546,8 +1542,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct fInv msg msgMeta
               XFileCancel sharedMsgId -> xFileCancel ct sharedMsgId msgMeta
-              XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta
-              XFileAcptInline sharedMsgId fName -> xFileAcptInline ct sharedMsgId fName msgMeta
+              XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta
               XInfo p -> xInfo ct p
               XGrpInv gInv -> processGroupInvitation ct gInv msg msgMeta
               XInfoProbe probe -> xInfoProbe ct probe
@@ -1723,8 +1718,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             -- TODO discontinue XFile
             XFile fInv -> processGroupFileInvitation' gInfo m fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m sharedMsgId msgMeta
-            XFileAcptInv sharedMsgId fileConnReq fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq fName msgMeta
-            XFileAcptInline sharedMsgId fName -> xFileAcptInlineGroup gInfo m sharedMsgId fName msgMeta
+            XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m sharedMsgId fileConnReq_ fName msgMeta
             XGrpMemNew memInfo -> xGrpMemNew gInfo m memInfo msg msgMeta
             XGrpMemIntro memInfo -> xGrpMemIntro gInfo m memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m memId introInv
@@ -2111,46 +2105,31 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         cancelRcvFileTransfer user ft
         toView $ CRRcvFileSndCancelled ft
 
-    xFileAcptInv :: Contact -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
-    xFileAcptInv ct sharedMsgId fileConnReq fName msgMeta = do
+    xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
+    xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId
-      FileTransferMeta {fileName, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
+      ft@FileTransferMeta {fileName, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       -- [async agent commands] no continuation needed, but command should be asynchronous for stability
       if fName == fileName
-        then unless cancelled $ do
-          connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
-          withStore' $ \db -> createSndDirectFTConnection db user fileId connIds
+        then unless cancelled $ case fileConnReq_ of
+          -- receiving via a separate connection
+          Just fileConnReq -> do
+            connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
+            withStore' $ \db -> createSndDirectFTConnection db user fileId connIds
+          -- receiving inline
+          _ -> do
+            event <- withStore $ \db -> do
+              ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
+              sft <- liftIO $ createSndDirectInlineFT db ct ft
+              pure $ CRSndFileStart ci sft
+            toView event
+            maxInlineFileSize >>= sendFileInline ft sharedMsgId (sendDirectContactMessage ct)
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
-    xFileAcptInline :: Contact -> SharedMsgId -> String -> MsgMeta -> m ()
-    xFileAcptInline ct sharedMsgId fName msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      ft@FileTransferMeta {fileId} <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getFileTransferMeta db user
-      event <- withStore $ \db -> do
-        ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
-        sft <- liftIO $ createSndDirectInlineFT db ct ft
-        pure $ CRSndFileStart ci sft
-      toView event
-      maxInlineFileSize >>= sendFileInline ft sharedMsgId fName (sendDirectContactMessage ct)
-
-    xFileAcptInlineGroup :: GroupInfo -> GroupMember -> SharedMsgId -> String -> MsgMeta -> m ()
-    xFileAcptInlineGroup _ GroupMember {activeConn = Nothing} _ _ _ = messageError "x.file.acpt.inline: member connection not active"
-    xFileAcptInlineGroup g@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} sharedMsgId fName msgMeta = do
-      checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
-      ft@FileTransferMeta {fileId} <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId >>= getFileTransferMeta db user
-      event <- withStore $ \db -> do
-        ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
-        sft <- liftIO $ createSndGroupInlineFT db m conn ft
-        pure $ CRSndFileStart ci sft
-      toView event
-      maxInlineFileSize >>= sendFileInline ft sharedMsgId fName (\msg -> sendDirectMessage conn msg $ GroupId groupId)
-
-    sendFileInline :: FileTransferMeta -> SharedMsgId -> String -> (ChatMsgEvent 'Binary -> m (SndMessage, Int64)) -> Integer -> m ()
-    sendFileInline FileTransferMeta {fileId, fileName, filePath, cancelled, fileSize, chunkSize} sharedMsgId fName sendMsg maxSize
-      | fName /= fileName = messageError "x.file.acpt.inline: fileName is different from expected"
+    sendFileInline :: FileTransferMeta -> SharedMsgId -> (ChatMsgEvent 'Binary -> m (SndMessage, Int64)) -> Integer -> m ()
+    sendFileInline FileTransferMeta {fileId, filePath, fileSize, chunkSize} sharedMsgId sendMsg maxSize
       | fileSize > maxSize = messageError "x.file.acpt.inline: fileSize is bigger than allowed to send inline"
-      | cancelled = pure ()
       | otherwise = void . forkIO $ do
           msgDeliveryId <- sendChunks 1 =<< liftIO . B.readFile =<< toFSFilePath filePath
           withStore' $ \db -> updateSndInlineFTDelivery db fileId msgDeliveryId
@@ -2175,20 +2154,21 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
 
     maxInlineFileSize :: m Integer
     maxInlineFileSize = do
-      ChatConfig {fileChunkSize, maxInlineChunks} <- asks config
-      pure $ fileChunkSize * maxInlineChunks
+      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      pure $ fileChunkSize * offerChunks inlineFiles
 
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunk ct sharedMsgId chunk meta = do
       ft <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId >>= getRcvFileTransfer db user
-      case chunk of
-        FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft
-        _ -> pure ()
-      receiveFileChunk ft Nothing meta chunk
+      receiveInlineChunk ft chunk meta
 
     bFileChunkGroup :: GroupInfo -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunkGroup GroupInfo {groupId} sharedMsgId chunk meta = do
       ft <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId >>= getRcvFileTransfer db user
+      receiveInlineChunk ft chunk meta
+
+    receiveInlineChunk :: RcvFileTransfer -> FileChunk -> MsgMeta -> m ()
+    receiveInlineChunk ft chunk meta = do
       case chunk of
         FileChunk {chunkNo} -> when (chunkNo == 1) $ startReceivingFile ft
         _ -> pure ()
@@ -2210,16 +2190,27 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             else messageError "x.file.cancel: group member attempted to cancel file of another member" -- shouldn't happen now that query includes group member id
         (SMDSnd, _) -> messageError "x.file.cancel: group member attempted invalid file cancel"
 
-    xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> ConnReqInvitation -> String -> MsgMeta -> m ()
-    xFileAcptInvGroup g@GroupInfo {groupId} m sharedMsgId fileConnReq fName msgMeta = do
+    xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
+    xFileAcptInvGroup g@GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      (FileTransferMeta {fileName, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
+      (ft@FileTransferMeta {fileName, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
       if fName == fileName
-        then unless cancelled $ do
-          -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-          connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
-          withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m
+        then unless cancelled $ case (fileConnReq_, activeConn) of
+          (Just fileConnReq, _) -> do
+            -- receiving via a separate connection
+            -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+            connIds <- joinAgentConnectionAsync user True fileConnReq $ directMessage XOk
+            withStore' $ \db -> createSndGroupFileTransferConnection db user fileId connIds m
+          (_, Just conn) -> do
+            -- receiving inline
+            event <- withStore $ \db -> do
+              ci <- updateDirectCIFileStatus db user fileId CIFSSndTransfer
+              sft <- liftIO $ createSndGroupInlineFT db m conn ft
+              pure $ CRSndFileStart ci sft
+            toView event
+            maxInlineFileSize >>= sendFileInline ft sharedMsgId (\msg -> sendDirectMessage conn msg $ GroupId groupId)
+          _ -> messageError "x.file.acpt.inv: member connection is not active"
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
     groupMsgToView :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> MsgMeta -> m ()

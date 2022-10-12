@@ -21,7 +21,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Encoding.String
@@ -150,7 +150,7 @@ versionTestMatrix3 runTest = do
   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
 
 inlineCfg :: Integer -> ChatConfig
-inlineCfg n = testCfg {offerInlineChunks = n, rcvInlineChunks = n, maxInlineChunks = n}
+inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = n, receiveChunks = n}}
 
 fileTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 fileTestMatrix2 runTest = do
