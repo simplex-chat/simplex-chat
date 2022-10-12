@@ -136,14 +136,14 @@ fun GroupMemberInfoLayout(
     SectionView(title = stringResource(R.string.member_info_section_title_member)) {
       InfoRow(stringResource(R.string.info_row_group), groupInfo.displayName)
       SectionDivider()
-      val roles = remember { member.canChangeRoleTo(groupInfo) }
+      /*val roles = remember { member.canChangeRoleTo(groupInfo) }
       if (roles != null) {
         SectionItemView {
           RoleSelectionRow(roles, newRole, onRoleSelected)
         }
-      } else {
+      } else {*/
         InfoRow(stringResource(R.string.role_in_group), member.memberRole.text)
-      }
+      //}
       val conn = member.activeConn
       if (conn != null) {
         SectionDivider()
