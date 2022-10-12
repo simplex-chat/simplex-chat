@@ -572,28 +572,28 @@ deleteContactProfile_ db userId contactId =
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
 updateUserProfile db User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
-    liftIO $ updateContactProfile_ db userId profileId p'
+      liftIO $ updateContactProfile_ db userId profileId p'
   | otherwise =
-    checkConstraint SEDuplicateName . liftIO $ do
-      currentTs <- getCurrentTime
-      DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-      DB.execute
-        db
-        "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-        (newName, newName, userId, currentTs, currentTs)
-      updateContactProfile_' db userId profileId p' currentTs
-      updateContact_ db userId userContactId localDisplayName newName currentTs
+      checkConstraint SEDuplicateName . liftIO $ do
+        currentTs <- getCurrentTime
+        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        DB.execute
+          db
+          "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+          (newName, newName, userId, currentTs, currentTs)
+        updateContactProfile_' db userId profileId p' currentTs
+        updateContact_ db userId userContactId localDisplayName newName currentTs
 
 updateContactProfile :: DB.Connection -> UserId -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} p'@Profile {displayName = newName}
   | displayName == newName =
-    liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
+      liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
   | otherwise =
-    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-      currentTs <- getCurrentTime
-      updateContactProfile_' db userId profileId p' currentTs
-      updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
+      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+        currentTs <- getCurrentTime
+        updateContactProfile_' db userId profileId p' currentTs
+        updateContact_ db userId contactId localDisplayName ldn currentTs
+        pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
@@ -2117,25 +2117,24 @@ updateSndInlineFTDelivery db fileId msgDeliveryId =
 
 getSndInlineFTViaMsgDelivery :: DB.Connection -> User -> Connection -> AgentMsgId -> IO (Maybe SndFileTransfer)
 getSndInlineFTViaMsgDelivery db User {userId} Connection {connId, agentConnId} agentMsgId = do
-  (sndFileTransfer_ <=< listToMaybe) <$>
-    DB.query
+  (sndFileTransfer_ <=< listToMaybe)
+    <$> DB.query
       db
       [sql|
-        SELECT s.file_id, s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, cs.local_display_name, m.local_display_name
-        FROM snd_files s
-        JOIN msg_deliveries d ON d.connection_id = s.connection_id AND d.msg_delivery_id = s.last_inline_msg_delivery_id
-        JOIN files f USING (file_id)
-        LEFT JOIN contacts cs USING (contact_id)
+        SELECT s.file_id, s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_inline, c.local_display_name, m.local_display_name
+        FROM msg_deliveries d
+        JOIN snd_files s ON s.connection_id = d.connection_id AND s.last_inline_msg_delivery_id = d.msg_delivery_id
+        JOIN files f ON f.file_id = s.file_id
+        LEFT JOIN contacts c USING (contact_id)
         LEFT JOIN group_members m USING (group_member_id)
-        WHERE f.user_id = ? AND s.connection_id = ? AND s.file_inline = ? AND d.agent_msg_id = ?
+        WHERE d.connection_id = ? AND d.agent_msg_id = ? AND f.user_id = ? AND s.file_inline = ? 
       |]
-      (userId, connId, True, agentMsgId)
+      (connId, agentMsgId, userId, True)
   where
     sndFileTransfer_ :: (Int64, FileStatus, String, Integer, Integer, FilePath, Maybe Bool, Maybe ContactName, Maybe ContactName) -> Maybe SndFileTransfer
     sndFileTransfer_ (fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, contactName_, memberName_) =
       (\n -> SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileInline, recipientDisplayName = n, connId, agentConnId})
         <$> (contactName_ <|> memberName_)
-
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
 updateFileCancelled db User {userId} fileId ciFileStatus = do
@@ -2303,10 +2302,11 @@ createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localD
 
 getRcvFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO RcvFileTransfer
 getRcvFileTransfer db user@User {userId} fileId = do
-  rftRow <- ExceptT . firstRow id (SERcvFileNotFound fileId) $
-    DB.query
-      db
-      [sql|
+  rftRow <-
+    ExceptT . firstRow id (SERcvFileNotFound fileId) $
+      DB.query
+        db
+        [sql|
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.contact_id, cs.local_display_name, m.group_id, m.group_member_id, m.local_display_name,
             f.file_path, r.file_inline, c.connection_id, c.agent_conn_id
@@ -2317,7 +2317,7 @@ getRcvFileTransfer db user@User {userId} fileId = do
           LEFT JOIN group_members m USING (group_member_id)
           WHERE f.user_id = ? AND f.file_id = ?
         |]
-      (userId, fileId)
+        (userId, fileId)
   rcvFileTransfer rftRow
   where
     rcvFileTransfer ::
@@ -2340,7 +2340,7 @@ getRcvFileTransfer db user@User {userId} fileId = do
           RcvFileTransfer {fileId, fileInvitation, fileStatus, senderDisplayName, chunkSize, cancelled, grpMemberId}
         rfi fileInfo = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_ fileInfo
         rfi_ = \case
-          (Just filePath, Just connId, Just agentConnId, _, _, _, False) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
+          (Just filePath, Just connId, Just agentConnId, _, _, _, _) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
           (Just filePath, Nothing, Nothing, Just contactId, _, _, True) -> do
             Contact {activeConn = Connection {connId, agentConnId}} <- getContact db userId contactId
             pure $ Just RcvFileInfo {filePath, connId, agentConnId}
@@ -2400,20 +2400,20 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
       pure $ case map fromOnly ns of
         []
           | chunkNo == 1 ->
-            if chunkSize >= fileSize
-              then RcvChunkFinal
-              else RcvChunkOk
+              if chunkSize >= fileSize
+                then RcvChunkFinal
+                else RcvChunkOk
           | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
-            let prevSize = n * chunkSize
-             in if prevSize >= fileSize
-                  then RcvChunkError
-                  else
-                    if prevSize + chunkSize >= fileSize
-                      then RcvChunkFinal
-                      else RcvChunkOk
+              let prevSize = n * chunkSize
+               in if prevSize >= fileSize
+                    then RcvChunkError
+                    else
+                      if prevSize + chunkSize >= fileSize
+                        then RcvChunkFinal
+                        else RcvChunkOk
           | otherwise -> RcvChunkError
 
 updatedRcvFileChunkStored :: DB.Connection -> RcvFileTransfer -> Integer -> IO ()
@@ -3364,14 +3364,14 @@ getGroupInfo db User {userId, userContactId} groupId =
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
 updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
   | displayName == newName = liftIO $ do
-    currentTs <- getCurrentTime
-    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
-  | otherwise =
-    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
       currentTs <- getCurrentTime
-      updateGroupProfile_ currentTs
-      updateGroup_ ldn currentTs
-      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+      updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+  | otherwise =
+      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+        currentTs <- getCurrentTime
+        updateGroupProfile_ currentTs
+        updateGroup_ ldn currentTs
+        pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
   where
     updateGroupProfile_ currentTs =
       DB.execute

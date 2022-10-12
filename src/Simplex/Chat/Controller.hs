@@ -69,6 +69,7 @@ data ChatConfig = ChatConfig
     fileChunkSize :: Integer,
     offerInlineChunks :: Integer,
     sendInlineChunks :: Integer,
+    totalSendInlineChunks :: Integer,
     rcvInlineChunks :: Integer,
     maxInlineChunks :: Integer,
     subscriptionConcurrency :: Int,

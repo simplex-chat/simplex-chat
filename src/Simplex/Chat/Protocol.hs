@@ -25,6 +25,7 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -107,7 +108,7 @@ data AppMessageJson = AppMessageJson
 
 data AppMessageBinary = AppMessageBinary
   { msgId :: Maybe SharedMsgId,
-    tag :: ByteString,
+    tag :: Char,
     body :: ByteString
   }
 
@@ -116,15 +117,13 @@ instance ToJSON AppMessageJson where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance StrEncoding AppMessageBinary where
-  strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, Tail body)
-  -- strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, msgId', body)
+  strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, msgId', Tail body)
     where
       msgId' = maybe B.empty (\(SharedMsgId mId') -> mId') msgId
   strP = do
-    (tag, Tail body) <- smpP
-    -- (tag, msgId', body) <- smpP
-    -- let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
-    pure AppMessageBinary {tag, msgId = Nothing, body}
+    (tag, msgId', Tail body) <- smpP
+    let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
+    pure AppMessageBinary {tag, msgId, body}
 
 newtype SharedMsgId = SharedMsgId ByteString
   deriving (Eq, Show)
@@ -185,7 +184,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XMsgDeleted :: ChatMsgEvent 'Json
   XFile :: FileInvitation -> ChatMsgEvent 'Json -- TODO discontinue
   XFileAcpt :: String -> ChatMsgEvent 'Json -- direct file protocol
-  XFileAcptInv :: SharedMsgId -> ConnReqInvitation -> String -> ChatMsgEvent 'Json -- group file protocol
+  XFileAcptInv :: SharedMsgId -> ConnReqInvitation -> String -> ChatMsgEvent 'Json
   XFileAcptInline :: SharedMsgId -> String -> ChatMsgEvent 'Json
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
@@ -239,6 +238,20 @@ instance Encoding FileChunk where
         pure FileChunk {chunkNo, chunkBytes}
       'C' -> pure FileChunkCancel
       _ -> fail "bad FileChunk"
+
+newtype InlineFileChunk = IFC {unIFC :: FileChunk}
+
+instance Encoding InlineFileChunk where
+  smpEncode (IFC chunk) = case chunk of
+    FileChunk {chunkNo, chunkBytes} -> smpEncode (w2c $ fromIntegral chunkNo, Tail chunkBytes)
+    FileChunkCancel -> smpEncode '\NUL'
+  smpP = do
+    c <- A.anyChar
+    IFC <$> case c of
+      '\NUL' -> pure FileChunkCancel
+      _ -> do
+        Tail chunkBytes <- smpP
+        pure FileChunk {chunkNo = fromIntegral $ c2w c, chunkBytes}
 
 data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
   deriving (Eq, Show, Generic, FromJSON)
@@ -464,7 +477,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
     XUnknown_ t -> encodeUtf8 t
-    BFileChunk_ -> "b.ch"
+    BFileChunk_ -> "F"
   strDecode = (\(ACMEventTag _ t) -> checkEncoding t) <=< strDecode
   strP = strDecode <$?> A.takeTill (== ' ')
 
@@ -508,7 +521,7 @@ instance StrEncoding ACMEventTag where
         "x.call.end" -> XCallEnd_
         "x.ok" -> XOk_
         _ -> XUnknown_ $ safeDecodeUtf8 t
-      ('b', "b.ch") -> pure $ ACMEventTag SBinary BFileChunk_
+      (_, "F") -> pure $ ACMEventTag SBinary BFileChunk_
       _ -> fail "bad ACMEventTag"
 
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
@@ -579,13 +592,13 @@ hasNotification = \case
 
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
-  eventTag <- strDecode tag
+  eventTag <- strDecode $ B.singleton tag
   chatMsgEvent <- parseAll (msg eventTag) body
   pure ChatMessage {msgId, chatMsgEvent}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
-      BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> smpP
+      BFileChunk_ -> BFileChunk <$> (SharedMsgId <$> smpP) <*> (unIFC <$> smpP)
 
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {msgId, event, params} = do
@@ -637,16 +650,18 @@ appJsonToCM AppMessageJson {msgId, event, params} = do
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage ChatMessage {msgId, chatMsgEvent} = case encoding @e of
-  SBinary -> AMBinary AppMessageBinary {msgId, tag = strEncode tag, body = body chatMsgEvent}
+  SBinary ->
+    let (binaryMsgId, body) = toBody chatMsgEvent
+     in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
   SJson -> AMJson AppMessageJson {msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
     key .=? value = maybe id ((:) . (key .=)) value
-    body :: ChatMsgEvent 'Binary -> ByteString
-    body = \case
-      BFileChunk (SharedMsgId msgId') chunk -> smpEncode (msgId', chunk)
+    toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
+    toBody = \case
+      BFileChunk (SharedMsgId msgId') chunk -> (Nothing, smpEncode (msgId', IFC chunk))
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container

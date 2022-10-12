@@ -372,11 +372,6 @@ CREATE TABLE smp_servers(
   UNIQUE(host, port)
 );
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE UNIQUE INDEX idx_messages_direct_shared_msg_id ON messages(
-  connection_id,
-  shared_msg_id_user,
-  shared_msg_id
-);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
@@ -430,3 +425,6 @@ CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
   shared_msg_id
 );
 CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
+CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
+  last_inline_msg_delivery_id
+);

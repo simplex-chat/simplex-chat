@@ -1,7 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests where
 
@@ -15,9 +17,11 @@ import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
+import Data.Maybe (fromMaybe)
+import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatController (..), ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Encoding.String
@@ -66,12 +70,10 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
-    describe "send and receive file" $ do
-      it "via new connection" $ testFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
-      it "inline" $ testFileTransfer testCfg {offerInlineChunks = 10, rcvInlineChunks = 10}
-    describe "send and receive a small file" $ do
-      it "via new connection" $ testSmallFileTransfer testCfg {offerInlineChunks = 0, rcvInlineChunks = 0}
-      it "inline" $ testSmallFileTransfer testCfg {offerInlineChunks = 1, rcvInlineChunks = 1}
+    describe "send and receive file" $
+      fileTestMatrix2 runTestFileTransfer
+    describe "send and receive a small file" $
+      fileTestMatrix2 runTestSmallFileTransfer
     it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
@@ -146,6 +148,23 @@ versionTestMatrix2 runTest = do
 versionTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix3 runTest = do
   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
+
+inlineCfg :: Integer -> ChatConfig
+inlineCfg n = testCfg {offerInlineChunks = n, rcvInlineChunks = n, maxInlineChunks = n}
+
+fileTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix2 runTest = do
+  it "via connection" $ runTestCfg2 (inlineCfg 0) (inlineCfg 0) runTest
+  it "inline" $ runTestCfg2 (inlineCfg 100) (inlineCfg 100) runTest
+  it "via connection (inline offered)" $ runTestCfg2 (inlineCfg 100) (inlineCfg 0) runTest
+  it "via connection (inline supported)" $ runTestCfg2 (inlineCfg 0) (inlineCfg 100) runTest
+
+runTestCfg2 :: ChatConfig -> ChatConfig -> (TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg2 aliceCfg bobCfg runTest =
+  withTmpFiles $
+    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+        runTest alice bob
 
 -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
 -- it "v1 to v2" . withTmpFiles $
@@ -1352,46 +1371,43 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
-testFileTransfer :: ChatConfig -> IO ()
-testFileTransfer cfg =
-  testChatCfg2 cfg aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      startFileTransfer alice bob
-      concurrentlyN_
-        [ do
-            bob #> "@alice receiving here..."
-            bob <## "completed receiving file 1 (test.jpg) from alice",
-          do
-            alice <# "bob> receiving here..."
-            alice <## "completed sending file 1 (test.jpg) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
+runTestFileTransfer :: TestCC -> TestCC -> IO ()
+runTestFileTransfer alice bob = do
+  connectUsers alice bob
+  startFileTransfer' alice bob "test.pdf" "266.0 KiB / 272376 bytes"
+  concurrentlyN_
+    [ do
+        bob #> "@alice receiving here..."
+        bob <## "completed receiving file 1 (test.pdf) from alice",
+      alice
+        <### [ WithTime "bob> receiving here...",
+               "completed sending file 1 (test.pdf) to bob"
+             ]
+    ]
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  dest <- B.readFile "./tests/tmp/test.pdf"
+  dest `shouldBe` src
 
-testSmallFileTransfer :: ChatConfig -> IO ()
-testSmallFileTransfer cfg =
-  testChatCfg2 cfg aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "/f @bob ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
-      concurrentlyN_
-        [ do
-            bob <## "started receiving file 1 (test.txt) from alice"
-            bob <## "completed receiving file 1 (test.txt) from alice",
-          do
-            alice <## "started sending file 1 (test.txt) to bob"
-            alice <## "completed sending file 1 (test.txt) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.txt"
-      dest <- B.readFile "./tests/tmp/test.txt"
-      dest `shouldBe` src
+runTestSmallFileTransfer :: TestCC -> TestCC -> IO ()
+runTestSmallFileTransfer alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
+  concurrentlyN_
+    [ do
+        bob <## "started receiving file 1 (test.txt) from alice"
+        bob <## "completed receiving file 1 (test.txt) from alice",
+      do
+        alice <## "started sending file 1 (test.txt) to bob"
+        alice <## "completed sending file 1 (test.txt) to bob"
+    ]
+  src <- B.readFile "./tests/fixtures/test.txt"
+  dest <- B.readFile "./tests/tmp/test.txt"
+  dest `shouldBe` src
 
 testFileSndCancelBeforeTransfer :: IO ()
 testFileSndCancelBeforeTransfer =
@@ -2278,7 +2294,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
         do
           dan <## "#secret_club: you joined the group"
           dan
-            <### [ "#secret_club: member " <> cathIncognito <> " is connected",
+            <### [ ConsoleString $ "#secret_club: member " <> cathIncognito <> " is connected",
                    "#secret_club: member bob_1 (Bob) is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
@@ -2338,28 +2354,28 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     alice
       <### [ "alice (Alice): owner, you, created group",
              "bob (Bob): admin, invited, connected",
-             cathIncognito <> ": admin, invited, connected",
+             ConsoleString $ cathIncognito <> ": admin, invited, connected",
              "dan (Daniel): admin, invited, connected"
            ]
     bob ##> "/ms secret_club"
     bob
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, you, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, connected"
            ]
     cath ##> "/ms secret_club"
     cath
       <### [ "alice (Alice): owner, host, connected",
              "bob_1 (Bob): admin, connected",
-             "i " <> cathIncognito <> ": admin, you, connected",
+             ConsoleString $ "i " <> cathIncognito <> ": admin, you, connected",
              "dan_1 (Daniel): admin, connected"
            ]
     dan ##> "/ms secret_club"
     dan
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, you, connected"
            ]
     -- remove member
@@ -3233,18 +3249,30 @@ cc <## line = do
   when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
-getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
+data ConsoleResponse = ConsoleString String | WithTime String
+  deriving (Show)
+
+instance IsString ConsoleResponse where fromString = ConsoleString
+
+-- this assumes that the string can only match one option
+getInAnyOrder :: (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  if line `elem` ls
-    then getInAnyOrder f cc $ filter (/= line) ls
+  let rest = filter (not . expected line) ls
+  if length rest < length ls
+    then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
+  where
+    expected :: String -> ConsoleResponse -> Bool
+    expected l = \case
+      ConsoleString s -> l == s
+      WithTime s -> dropTime_ l == Just s
 
-(<###) :: TestCC -> [String] -> Expectation
+(<###) :: TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
 
-(<##?) :: TestCC -> [String] -> Expectation
+(<##?) :: TestCC -> [ConsoleResponse] -> Expectation
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: TestCC -> String -> Expectation
@@ -3266,12 +3294,15 @@ cc1 <#? cc2 = do
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
 
 dropTime :: String -> String
-dropTime msg = case splitAt 6 msg of
-  ([m, m', ':', s, s', ' '], text) ->
-    if all isDigit [m, m', s, s'] then text else err
-  _ -> err
+dropTime msg = fromMaybe err $ dropTime_ msg
   where
     err = error $ "invalid time: " <> msg
+
+dropTime_ :: String -> Maybe String
+dropTime_ msg = case splitAt 6 msg of
+  ([m, m', ':', s, s', ' '], text) ->
+    if all isDigit [m, m', s, s'] then Just text else Nothing
+  _ -> Nothing
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
