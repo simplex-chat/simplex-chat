@@ -34,13 +34,15 @@ fun ChatItemView(
   composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   receiveFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
-  acceptCall: (Contact) -> Unit
+  acceptCall: (Contact) -> Unit,
+  scrollToItem: (Long) -> Unit,
 ) {
   val context = LocalContext.current
   val sent = cItem.chatDir.sent
@@ -63,7 +65,7 @@ fun ChatItemView(
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
           expanded = showMenu.value,
@@ -218,7 +220,8 @@ fun PreviewChatItemView() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }
@@ -238,7 +241,8 @@ fun PreviewChatItemViewDeletedContent() {
       deleteMessage = { _, _ -> },
       receiveFile = {},
       joinGroup = {},
-      acceptCall = { _ -> }
+      acceptCall = { _ -> },
+      scrollToItem = {},
     )
   }
 }

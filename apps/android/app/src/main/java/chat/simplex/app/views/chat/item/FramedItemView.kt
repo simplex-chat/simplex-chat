@@ -37,10 +37,12 @@ fun FramedItemView(
   chatInfo: ChatInfo,
   ci: ChatItem,
   uriHandler: UriHandler? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
-  onLinkLongClick: (link: String) -> Unit = {}
+  onLinkLongClick: (link: String) -> Unit = {},
+  scrollToItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
 
@@ -67,6 +69,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
+        .clickable { scrollToItem(qi.itemId?: return@clickable) }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -126,7 +129,7 @@ fun FramedItemView(
           Column(Modifier.fillMaxWidth()) {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@Box, showMenu, receiveFile)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {

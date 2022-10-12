@@ -10,7 +10,7 @@ module.exports = function (ty) {
   ty.addPassthroughCopy("src/img")
   ty.addPassthroughCopy("src/css")
   ty.addPassthroughCopy("src/js")
-  ty.addPassthroughCopy("src/contact")
+  ty.addPassthroughCopy("src/contact/*.js")
   ty.addPassthroughCopy("src/call")
   ty.addPassthroughCopy("src/blog/images")
   ty.addPassthroughCopy("src/images")

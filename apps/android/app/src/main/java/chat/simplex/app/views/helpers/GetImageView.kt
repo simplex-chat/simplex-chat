@@ -158,6 +158,10 @@ fun rememberGetContentLauncher(cb: (Uri?) -> Unit): ManagedActivityResultLaunche
   rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent(), cb)
 
 @Composable
+fun rememberGetMultipleContentsLauncher(cb: (List<Uri>) -> Unit): ManagedActivityResultLauncher<String, List<Uri>> =
+  rememberLauncherForActivityResult(contract = ActivityResultContracts.GetMultipleContents(), cb)
+
+@Composable
 fun GetImageBottomSheet(
   imageBitmap: MutableState<Bitmap?>,
   onImageChange: (Bitmap) -> Unit,
