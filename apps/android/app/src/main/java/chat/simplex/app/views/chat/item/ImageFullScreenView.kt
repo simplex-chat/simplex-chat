@@ -42,6 +42,14 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val pagerState = rememberPagerState(provider.initialIndex)
   val goBack = { provider.onDismiss(pagerState.currentPage); close() }
   BackHandler(onBack = goBack)
+  // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
+  // which makes this blank page visible for a moment. Prevent it by doing the check ourselves
+  LaunchedEffect(Unit) {
+    if (provider.getImage(provider.initialIndex - 1) == null) {
+      provider.scrollToStart()
+      pagerState.scrollToPage(0)
+    }
+  }
   val scope = rememberCoroutineScope()
   HorizontalPager(count = remember { provider.totalImagesSize }.value, state = pagerState) { index ->
     Column(
@@ -59,10 +67,12 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
       if (image == null) {
         // No such image. Let's shrink total pages size or scroll to start of the list of pages to remove blank page automatically
         scope.launch {
-          if (currentPage == index - 1) provider.totalImagesSize.value = currentPage + 1
-          else if (currentPage == index + 1) {
-            provider.scrollToStart()
-            pagerState.scrollToPage(0)
+          when (currentPage) {
+            index - 1 -> provider.totalImagesSize.value = currentPage + 1
+            index + 1 -> {
+              provider.scrollToStart()
+              pagerState.scrollToPage(0)
+            }
           }
         }
       } else {
