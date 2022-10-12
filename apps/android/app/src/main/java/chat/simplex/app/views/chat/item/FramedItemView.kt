@@ -41,7 +41,8 @@ fun FramedItemView(
   showMember: Boolean = false,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
-  onLinkLongClick: (link: String) -> Unit = {}
+  onLinkLongClick: (link: String) -> Unit = {},
+  scrollToItem: (Long) -> Unit = {},
 ) {
   val sent = ci.chatDir.sent
 
@@ -68,6 +69,7 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
+        .clickable { scrollToItem(qi.itemId?: return@clickable) }
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {

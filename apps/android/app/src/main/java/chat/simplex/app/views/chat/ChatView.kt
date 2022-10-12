@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import java.io.File
 import kotlin.math.sign
+import kotlin.math.roundToInt
 
 @Composable
 fun ChatView(chatModel: ChatModel) {
@@ -476,6 +477,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed() } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
+  val scrollToItem: (Long) -> Unit = { itemId: Long ->
+    val index = reversedChatItems.indexOfFirst { it.id == itemId }
+    if (index != -1) {
+      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded / 2) }
+    }
+  }
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
     itemsIndexed(reversedChatItems) { i, cItem ->
       CompositionLocalProvider(
@@ -538,11 +545,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -553,7 +560,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
           }
         }
 
