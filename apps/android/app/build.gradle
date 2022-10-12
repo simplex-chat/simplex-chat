@@ -112,6 +112,7 @@ dependencies {
 
     //Camera Permission
     implementation "com.google.accompanist:accompanist-permissions:0.23.0"
+    implementation "com.google.accompanist:accompanist-pager:0.25.1"
 
     // Link Previews
     implementation 'org.jsoup:jsoup:1.13.1'

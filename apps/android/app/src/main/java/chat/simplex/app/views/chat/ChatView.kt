@@ -1,6 +1,8 @@
 package chat.simplex.app.views.chat
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -28,13 +30,14 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
+import androidx.core.content.FileProvider
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
 import chat.simplex.app.views.call.*
 import chat.simplex.app.views.chat.group.*
-import chat.simplex.app.views.chat.item.ChatItemView
-import chat.simplex.app.views.chat.item.ItemAction
+import chat.simplex.app.views.chat.item.*
 import chat.simplex.app.views.chatlist.*
 import chat.simplex.app.views.helpers.*
 import chat.simplex.app.views.helpers.AppBarHeight
@@ -43,6 +46,8 @@ import com.google.accompanist.insets.navigationBarsWithImePadding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
+import java.io.File
+import kotlin.math.sign
 import kotlin.math.roundToInt
 
 @Composable
@@ -475,7 +480,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
     if (index != -1) {
-      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded / 2) }
+      scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
     }
   }
   LazyColumn(Modifier.align(Alignment.BottomCenter), state = listState, reverseLayout = true) {
@@ -505,7 +510,16 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
-
+        val provider = {
+          providerForGallery(i, chatItems, cItem.id) { indexInReversed ->
+            scope.launch {
+              listState.scrollToItem(
+                kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
+                -maxHeightRounded
+              )
+            }
+          }
+        }
         if (chat.chatInfo is ChatInfo.Group) {
           if (cItem.chatDir is CIDirection.GroupRcv) {
             val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
@@ -531,11 +545,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
               } else {
                 Spacer(Modifier.size(42.dp))
               }
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           } else {
             Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
-              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
+              ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           }
         } else { // direct message
@@ -546,7 +560,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               end = if (sent) 12.dp else 76.dp,
             ).then(swipeableModifier)
           ) {
-            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
+            ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = joinGroup, acceptCall = acceptCall, scrollToItem = scrollToItem)
           }
         }
 
@@ -767,6 +781,69 @@ private fun bottomEndFloatingButton(
   }
   else -> {
     {}
+  }
+}
+
+private fun providerForGallery(
+  listStateIndex: Int,
+  chatItems: List<ChatItem>,
+  cItemId: Long,
+  scrollTo: (Int) -> Unit
+): ImageGalleryProvider {
+  fun canShowImage(item: ChatItem): Boolean =
+    item.content.msgContent is MsgContent.MCImage && item.file?.loaded == true && getLoadedFilePath(SimplexApp.context, item.file) != null
+
+  fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
+    var processedInternalIndex = -skipInternalIndex.sign
+    val indexOfFirst = chatItems.indexOfFirst { it.id == initialChatId }
+    for (chatItemsIndex in if (skipInternalIndex >= 0) indexOfFirst downTo 0 else indexOfFirst..chatItems.lastIndex) {
+      val item = chatItems[chatItemsIndex]
+      if (canShowImage(item)) {
+        processedInternalIndex += skipInternalIndex.sign
+      }
+      if (processedInternalIndex == skipInternalIndex) {
+        return chatItemsIndex to item
+      }
+    }
+    return null
+  }
+
+  var initialIndex = Int.MAX_VALUE / 2
+  var initialChatId = cItemId
+  return object: ImageGalleryProvider {
+    override val initialIndex: Int = initialIndex
+    override val totalImagesSize = mutableStateOf(Int.MAX_VALUE)
+    override fun getImage(index: Int): Pair<Bitmap, Uri>? {
+      val internalIndex = initialIndex - index
+      val file = item(internalIndex, initialChatId)?.second?.file
+      val imageBitmap: Bitmap? = getLoadedImage(SimplexApp.context, file)
+      val filePath = getLoadedFilePath(SimplexApp.context, file)
+      return if (imageBitmap != null && filePath != null) {
+        val uri = FileProvider.getUriForFile(SimplexApp.context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))
+        imageBitmap to uri
+      } else null
+    }
+
+    override fun currentPageChanged(index: Int) {
+      val internalIndex = initialIndex - index
+      val item = item(internalIndex, initialChatId) ?: return
+      initialIndex = index
+      initialChatId = item.second.id
+    }
+
+    override fun scrollToStart() {
+      initialIndex = 0
+      initialChatId = chatItems.first { canShowImage(it) }.id
+    }
+
+    override fun onDismiss(index: Int) {
+      val internalIndex = initialIndex - index
+      val indexInChatItems = item(internalIndex, initialChatId)?.first ?: return
+      val indexInReversed = chatItems.lastIndex - indexInChatItems
+      // Do not scroll to active item, just to different items
+      if (indexInReversed == listStateIndex) return
+      scrollTo(indexInReversed)
+    }
   }
 }
 

@@ -34,6 +34,7 @@ fun ChatItemView(
   composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,
@@ -64,7 +65,7 @@ fun ChatItemView(
           EmojiItemView(cItem)
         } else {
           val onLinkLongClick = { _: String -> showMenu.value = true }
-          FramedItemView(cInfo, cItem, uriHandler, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, showMember = showMember, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
         DropdownMenu(
           expanded = showMenu.value,

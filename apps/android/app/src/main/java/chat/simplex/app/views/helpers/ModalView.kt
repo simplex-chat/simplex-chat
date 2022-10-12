@@ -32,7 +32,7 @@ fun ModalView(
 }
 
 class ModalManager {
-  private val modalViews = arrayListOf<(@Composable (close: () -> Unit) -> Unit)?>()
+  private val modalViews = arrayListOf<Pair<Boolean, (@Composable (close: () -> Unit) -> Unit)>>()
   private val modalCount = mutableStateOf(0)
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
@@ -49,21 +49,21 @@ class ModalManager {
     }
   }
 
-  fun showCustomModal(modal: @Composable (close: () -> Unit) -> Unit) {
+  fun showCustomModal(animated: Boolean = true, modal: @Composable (close: () -> Unit) -> Unit) {
     Log.d(TAG, "ModalManager.showModal")
     // Means, animation is in progress or not started yet. Do not wait until animation finishes, just remove all from screen.
     // This is useful when invoking close() and ShowCustomModal one after another without delay. Otherwise, screen will hold prev view
     if (toRemove.isNotEmpty()) {
       runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
     }
-    modalViews.add(modal)
+    modalViews.add(animated to modal)
     modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
-      //modalViews.removeAt(modalViews.lastIndex)
-      runAtomically { toRemove.add(modalViews.lastIndex - toRemove.size) }
+      if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
+      else runAtomically { toRemove.add(modalViews.lastIndex - toRemove.size) }
     }
     modalCount.value = modalViews.size - toRemove.size
   }
@@ -75,6 +75,11 @@ class ModalManager {
   @OptIn(ExperimentalAnimationApi::class)
   @Composable
   fun showInView() {
+    // Without animation
+    if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
+      modalViews.lastOrNull()?.second?.invoke(::closeModal)
+      return
+    }
     AnimatedContent(targetState = modalCount.value,
       transitionSpec = {
         if (targetState > initialState) {
@@ -84,7 +89,7 @@ class ModalManager {
         }.using(SizeTransform(clip = false))
       }
     ) {
-      modalViews.getOrNull(it - 1)?.invoke(::closeModal)
+      modalViews.getOrNull(it - 1)?.second?.invoke(::closeModal)
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }
