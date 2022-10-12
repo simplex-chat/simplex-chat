@@ -102,7 +102,6 @@ fun CIImageView(
       // if text is short and take all available width if text is long
       modifier = Modifier
         .width(1000.dp)
-        .heightIn(max = 300.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -120,7 +119,6 @@ fun CIImageView(
       // if text is short and take all available width if text is long
       modifier = Modifier
         .width(1000.dp)
-        .heightIn(max = 300.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
