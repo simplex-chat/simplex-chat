@@ -936,7 +936,10 @@ processChatCommand = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIUpdateGroupProfile groupId profile
   APICreateGroupLink groupId -> withUser $ \user -> withChatLock $ do
-    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+    gInfo@GroupInfo {membership = membership@GroupMember {memberRole = userRole}} <- withStore $ \db -> getGroupInfo db user groupId
+    when (userRole < GRAdmin) $ throwChatError CEGroupUserRole
+    when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined gInfo)
+    unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
     (connId, cReq) <- withAgent $ \a -> createConnection a True SCMContact
     withStore $ \db -> createGroupLink db user gInfo connId cReq
     pure $ CRGroupLinkCreated gInfo cReq
