@@ -485,7 +485,7 @@ processChatCommand = \case
       withChatLock . procCmd $ do
         forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
         when (memberActive membership) . void $ sendGroupMessage gInfo members XGrpDel
-        deleteGroupLink' user gInfo
+        deleteGroupLink' user gInfo `catchError` \_ -> pure ()
         forM_ members $ deleteMemberConnection user
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
@@ -890,7 +890,7 @@ processChatCommand = \case
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft) Nothing Nothing
       toView . CRNewChatItem $ AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci
       -- TODO delete direct connections that were unused
-      deleteGroupLink' user gInfo
+      deleteGroupLink' user gInfo `catchError` \_ -> pure ()
       forM_ members $ deleteMemberConnection user
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser gInfo {membership = membership {memberStatus = GSMemLeft}}
@@ -2462,7 +2462,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       if memberId (membership :: GroupMember) == memId
         then checkRole membership $ do
-          deleteGroupLink' user gInfo
+          deleteGroupLink' user gInfo `catchError` \_ -> pure ()
           forM_ members $ deleteMemberConnection user
           deleteMember membership RGEUserDeleted
           toView $ CRDeletedMemberUser gInfo {membership = membership {memberStatus = GSMemRemoved}} m
