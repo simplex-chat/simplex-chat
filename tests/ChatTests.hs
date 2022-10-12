@@ -125,6 +125,8 @@ chatTests = do
     it "mute/unmute group" testMuteGroup
   describe "chat item expiration" $ do
     it "set chat item TTL" testSetChatItemTTL
+  describe "group links" $ do
+    it "create group link, join via group link" testGroupLink
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -3039,6 +3041,97 @@ testSetChatItemTTL =
       alice #$> ("/ttl none", id, "ok")
       alice #$> ("/ttl", id, "old messages are not being deleted")
 
+testGroupLink :: IO ()
+testGroupLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/sgl team"
+      alice <## "no group link, to create: /gl team"
+      alice ##> "/gl team"
+      gLink <- getGroupLink alice "team" True
+      alice ##> "/sgl team"
+      _ <- getGroupLink alice "team" False
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "bob (Bob): contact is connected"
+            alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "alice (Alice): contact is connected"
+            bob <## "#team: alice invites you to join the group as member"
+            bob <## "use /j team to accept"
+        ]
+      alice <##> bob
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+
+      -- user address doesn't interfere
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      cath ##> ("/c " <> cLink)
+      alice <#? cath
+      alice ##> "/ac cath"
+      alice <## "cath (Catherine): accepting contact request..."
+      concurrently_
+        (cath <## "alice (Alice): contact is connected")
+        (alice <## "cath (Catherine): contact is connected")
+      alice <##> cath
+
+      -- third member
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath_1 (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "cath_1 (Catherine): contact is connected"
+            alice <## "invitation to join the group #team sent to cath_1",
+          do
+            cath <## "alice_1 (Alice): contact is connected"
+            cath <## "#team: alice_1 invites you to join the group as member"
+            cath <## "use /j team to accept"
+        ]
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath_1 joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice_1> hello")
+      bob #> "#team hi there"
+      concurrently_
+        (alice <# "#team bob> hi there")
+        (cath <# "#team bob> hi there")
+      cath #> "#team hey team"
+      concurrently_
+        (alice <# "#team cath_1> hey team")
+        (bob <# "#team cath> hey team")
+
+      -- leaving team removes link
+      alice ##> "/l team"
+      concurrentlyN_
+        [ do
+            alice <## "#team: you left the group"
+            alice <## "use /d #team to delete the group",
+          bob <## "#team: alice left the group",
+          cath <## "#team: alice_1 left the group"
+        ]
+      alice ##> "/sgl team"
+      alice <## "no group link, to create: /gl team"
+
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
   withTestChat dbPrefix $ \cc -> do
@@ -3288,4 +3381,15 @@ getContactLink cc created = do
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
   cc <## "to delete it: /da (accepted contacts will remain connected)"
+  pure link
+
+getGroupLink :: TestCC -> String -> Bool -> IO String
+getGroupLink cc gName created = do
+  cc <## if created then "Group link is created!" else "Group link:"
+  cc <## ""
+  link <- getTermLine cc
+  cc <## ""
+  cc <## "Anybody can connect to you and join group with: /c <group_link_above>"
+  cc <## ("to show it again: /sgl " <> gName)
+  cc <## ("to delete it: /dgl " <> gName <> " (joined members will remain connected to you)")
   pure link

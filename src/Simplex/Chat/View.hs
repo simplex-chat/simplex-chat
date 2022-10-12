@@ -441,7 +441,7 @@ groupLink_ intro g cReq =
     "",
     (plain . strEncode) cReq,
     "",
-    "Anybody can connect to you and join group with: " <> highlight' "/c <contact_link_above>",
+    "Anybody can connect to you and join group with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/sgl " <> groupName' g),
     "to delete it: " <> highlight ("/dgl " <> groupName' g) <> " (joined members will remain connected to you)"
   ]
