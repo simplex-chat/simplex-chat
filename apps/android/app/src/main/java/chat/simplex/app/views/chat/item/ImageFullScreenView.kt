@@ -58,17 +58,25 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         .background(Color.Black)
         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = goBack)
     ) {
-      LaunchedEffect(currentPage) {
+      var settledCurrentPage by remember { mutableStateOf(pagerState.currentPage) }
+      LaunchedEffect(pagerState) {
+        snapshotFlow {
+          if (!pagerState.isScrollInProgress) pagerState.currentPage else settledCurrentPage
+        }.collect {
+          settledCurrentPage = it
+        }
+      }
+      LaunchedEffect(settledCurrentPage) {
         // Make this pager with infinity scrolling with only 3 pages at a time when left and right pages constructs in real time
-        if (currentPage != provider.initialIndex)
+        if (settledCurrentPage != provider.initialIndex)
           provider.currentPageChanged(index)
       }
       val image = provider.getImage(index)
       if (image == null) {
         // No such image. Let's shrink total pages size or scroll to start of the list of pages to remove blank page automatically
         scope.launch {
-          when (currentPage) {
-            index - 1 -> provider.totalImagesSize.value = currentPage + 1
+          when (settledCurrentPage) {
+            index - 1 -> provider.totalImagesSize.value = settledCurrentPage + 1
             index + 1 -> {
               provider.scrollToStart()
               pagerState.scrollToPage(0)
@@ -80,7 +88,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
         var scale by remember { mutableStateOf(1f) }
         var translationX by remember { mutableStateOf(0f) }
         var translationY by remember { mutableStateOf(0f) }
-        LaunchedEffect(pagerState.currentPage) {
+        LaunchedEffect(settledCurrentPage) {
           scale = 1f
           translationX = 0f
           translationY = 0f
