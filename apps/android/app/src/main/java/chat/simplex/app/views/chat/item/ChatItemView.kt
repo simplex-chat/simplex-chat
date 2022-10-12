@@ -34,7 +34,7 @@ fun ChatItemView(
   composeState: MutableState<ComposeState>,
   cxt: Context,
   uriHandler: UriHandler? = null,
-  imageProvider: ImageGalleryProvider? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   chatModelIncognito: Boolean,
   useLinkPreviews: Boolean,

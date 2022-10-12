@@ -40,7 +40,7 @@ import java.io.File
 fun CIImageView(
   image: String,
   file: CIFile?,
-  provider: ImageGalleryProvider,
+  imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit
 ) {
@@ -157,7 +157,7 @@ fun CIImageView(
       imageView(imagePainter, onClick = {
         if (getLoadedFilePath(context, file) != null) {
           ModalManager.shared.showCustomModal(animated = false) { close ->
-            ImageFullScreenView(provider, close)
+            ImageFullScreenView(imageProvider, close)
           }
         }
       })

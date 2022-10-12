@@ -37,7 +37,7 @@ fun FramedItemView(
   chatInfo: ChatInfo,
   ci: ChatItem,
   uriHandler: UriHandler? = null,
-  imageProvider: ImageGalleryProvider? = null,
+  imageProvider: (() -> ImageGalleryProvider)? = null,
   showMember: Boolean = false,
   showMenu: MutableState<Boolean>,
   receiveFile: (Long) -> Unit,
