@@ -3054,6 +3054,8 @@ testGroupLink =
       gLink <- getGroupLink alice "team" True
       alice ##> "/sgl team"
       _ <- getGroupLink alice "team" False
+      alice ##> "/gl team"
+      alice <## "you already have link for this group, to show: /sgl team"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
