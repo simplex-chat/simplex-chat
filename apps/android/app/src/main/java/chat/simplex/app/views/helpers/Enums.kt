@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 sealed class SharedContent {
   data class Text(val text: String): SharedContent()
-  data class Image(val uri: Uri): SharedContent()
+  data class Images(val uris: List<Uri>): SharedContent()
   data class File(val uri: Uri): SharedContent()
 }
 

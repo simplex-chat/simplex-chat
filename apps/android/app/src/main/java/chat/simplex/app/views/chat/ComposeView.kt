@@ -503,7 +503,7 @@ fun ComposeView(
   LaunchedEffect(chatModel.sharedContent.value) {
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Image -> processPickedImage(listOf(shared.uri))
+      is SharedContent.Images -> processPickedImage(shared.uris)
       is SharedContent.File -> processPickedFile(shared.uri)
       null -> {}
     }
