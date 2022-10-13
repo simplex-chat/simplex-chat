@@ -2149,7 +2149,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       fileId <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId
-      ft@FileTransferMeta {fileName, fileSize, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
+      ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       -- [async agent commands] no continuation needed, but command should be asynchronous for stability
       if fName == fileName
         then unless cancelled $ case fileConnReq_ of
@@ -2165,7 +2165,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               pure $ CRSndFileStart ci sft
             toView event
             ifM
-              (allowedInlineSize fileSize)
+              (allowSendInline fileSize fileInline)
               (sendDirectFileInline ct ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
         else messageError "x.file.acpt.inv: fileName is different from expected"
@@ -2180,10 +2180,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           updateDirectCIFileStatus db user fileId CIFSSndComplete
         toView $ CRSndFileComplete ci ft
 
-    allowedInlineSize :: Integer -> m Bool
-    allowedInlineSize fileSize = do
-      ChatConfig {fileChunkSize, inlineFiles} <- asks config
-      pure $ fileSize <= fileChunkSize * offerChunks inlineFiles
+    allowSendInline :: Integer -> Maybe InlineFileMode -> m Bool
+    allowSendInline fileSize = \case
+      Just IFMOffer -> do
+        ChatConfig {fileChunkSize, inlineFiles} <- asks config
+        pure $ fileSize <= fileChunkSize * offerChunks inlineFiles
+      _ -> pure False
 
     bFileChunk :: Contact -> SharedMsgId -> FileChunk -> MsgMeta -> m ()
     bFileChunk ct sharedMsgId chunk meta = do
@@ -2222,9 +2224,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     xFileAcptInvGroup g@GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName msgMeta = do
       checkIntegrityCreateItem (CDGroupRcv g m) msgMeta
       fileId <- withStore $ \db -> getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-      -- TODO *** only load meta?
-      -- check that it's not already accpeted?
-      (ft@FileTransferMeta {fileName, fileSize, cancelled}, _) <- withStore (\db -> getSndFileTransfer db user fileId)
+      -- TODO check that it's not already accpeted
+      ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       if fName == fileName
         then unless cancelled $ case (fileConnReq_, activeConn) of
           (Just fileConnReq, _) -> do
@@ -2239,8 +2240,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               sft <- liftIO $ createSndGroupInlineFT db m conn ft
               pure $ CRSndFileStart ci sft
             toView event
-            ifM -- TODO *** check that file was offered inline instead via FileTransferMeta
-              (allowedInlineSize fileSize)
+            ifM
+              (allowSendInline fileSize fileInline)
               (sendMemberFileInline m conn ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
           _ -> messageError "x.file.acpt.inv: member connection is not active"
