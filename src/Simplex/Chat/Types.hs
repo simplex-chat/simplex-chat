@@ -663,6 +663,7 @@ data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    rcvFileInline :: Maybe InlineFileMode,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,

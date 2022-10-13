@@ -204,6 +204,7 @@ CREATE TABLE rcv_files(
   ,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  rcv_file_inline TEXT,
   file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(

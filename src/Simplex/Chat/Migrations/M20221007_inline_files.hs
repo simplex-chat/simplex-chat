@@ -11,6 +11,7 @@ m20221007_inline_files =
 DROP INDEX idx_messages_direct_shared_msg_id;
 
 ALTER TABLE files ADD COLUMN file_inline TEXT;
+ALTER TABLE rcv_files ADD COLUMN rcv_file_inline TEXT;
 ALTER TABLE rcv_files ADD COLUMN file_inline TEXT;
 ALTER TABLE snd_files ADD COLUMN file_inline TEXT;
 ALTER TABLE snd_files ADD COLUMN last_inline_msg_delivery_id INTEGER;

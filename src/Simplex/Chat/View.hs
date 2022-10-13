@@ -821,9 +821,8 @@ fileTransferStr fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath
 
 viewFileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
 viewFileTransferStatus (FTSnd FileTransferMeta {fileId, fileName, cancelled} [], _) =
-  [ "sending " <> fileTransferStr fileId fileName <> ": no file transfers"
-      <> if cancelled then ", file transfer cancelled" else ""
-  ]
+  ["sending " <> fileTransferStr fileId fileName <> ": no file transfers"]
+    <> ["file transfer cancelled" | cancelled]
 viewFileTransferStatus (FTSnd FileTransferMeta {cancelled} fts@(ft : _), chunksNum) =
   recipientStatuses <> ["file transfer cancelled" | cancelled]
   where
