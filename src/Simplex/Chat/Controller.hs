@@ -178,6 +178,9 @@ data ChatCommand
   | APILeaveGroup GroupId
   | APIListMembers GroupId
   | APIUpdateGroupProfile GroupId GroupProfile
+  | APICreateGroupLink GroupId
+  | APIDeleteGroupLink GroupId
+  | APIGetGroupLink GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | APISetChatItemTTL (Maybe Int64)
@@ -220,6 +223,9 @@ data ChatCommand
   | ListMembers GroupName
   | ListGroups
   | UpdateGroupProfile GroupName GroupProfile
+  | CreateGroupLink GroupName
+  | DeleteGroupLink GroupName
+  | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: ByteString, message :: ByteString}
   | LastMessages (Maybe ChatName) Int
   | SendFile ChatName FilePath
@@ -312,6 +318,7 @@ data ChatResponse
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {contactSubscriptions :: [ContactSubStatus]}
+  | CRUserContactSubSummary {userContactSubscriptions :: [UserContactSubStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {groupInfo :: GroupInfo}
@@ -329,6 +336,10 @@ data ChatResponse
   | CRGroupRemoved {groupInfo :: GroupInfo}
   | CRGroupDeleted {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupUpdated {fromGroup :: GroupInfo, toGroup :: GroupInfo, member_ :: Maybe GroupMember}
+  | CRGroupLinkCreated {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLink {groupInfo :: GroupInfo, connReqContact :: ConnReqContact}
+  | CRGroupLinkDeleted {groupInfo :: GroupInfo}
+  | CRAcceptingGroupJoinRequest {groupInfo :: GroupInfo, contact :: Contact}
   | CRMemberSubError {groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
   | CRMemberSubSummary {memberSubscriptions :: [MemberSubStatus]}
   | CRGroupSubscribed {groupInfo :: GroupInfo}
@@ -393,6 +404,16 @@ data MemberSubStatus = MemberSubStatus
   deriving (Show, Generic)
 
 instance ToJSON MemberSubStatus where
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data UserContactSubStatus = UserContactSubStatus
+  { userContact :: UserContact,
+    userContactError :: Maybe ChatError
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserContactSubStatus where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 

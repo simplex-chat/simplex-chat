@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20221007_inline_files where
+module Simplex.Chat.Migrations.M20221012_inline_files where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20221007_inline_files :: Query
-m20221007_inline_files =
+m20221012_inline_files :: Query
+m20221012_inline_files =
   [sql|
 DROP INDEX idx_messages_direct_shared_msg_id;
 

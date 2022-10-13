@@ -264,6 +264,7 @@ CREATE TABLE user_contact_links(
   updated_at TEXT CHECK(updated_at NOT NULL),
   auto_accept INTEGER DEFAULT 0,
   auto_reply_msg_content TEXT DEFAULT NULL,
+  group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
@@ -427,6 +428,11 @@ CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
   shared_msg_id
 );
 CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
+<<<<<<< HEAD
 CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
   last_inline_msg_delivery_id
+=======
+CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
+  group_id
+>>>>>>> master
 );
