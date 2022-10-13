@@ -127,6 +127,7 @@ chatTests = do
     it "set chat item TTL" testSetChatItemTTL
   describe "group links" $ do
     it "create group link, join via group link" testGroupLink
+    it "create group link, join via group link - incognito membership" testGroupLinkIncognitoMembership
 
 versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
@@ -3133,6 +3134,136 @@ testGroupLink =
         ]
       alice ##> "/show link #team"
       alice <## "no group link, to create: /create link #team"
+
+testGroupLinkIncognitoMembership :: IO ()
+testGroupLinkIncognitoMembership =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      -- bob connected incognito to alice
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob #$> ("/incognito on", id, "ok")
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      bobIncognito <- getTermLine bob
+      concurrentlyN_
+        [ do
+            bob <## ("alice (Alice): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## "use /info alice to print out this incognito profile again",
+          alice <## (bobIncognito <> ": contact is connected")
+        ]
+      bob #$> ("/incognito off", id, "ok")
+      -- alice creates group
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      -- alice invites bob
+      alice ##> ("/a team " <> bobIncognito)
+      concurrentlyN_
+        [ alice <## ("invitation to join the group #team sent to " <> bobIncognito),
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## ("use /j team to join incognito as " <> bobIncognito)
+        ]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## ("#team: " <> bobIncognito <> " joined the group"))
+        (bob <## ("#team: you joined the group incognito as " <> bobIncognito))
+      -- bob creates group link, cath joins
+      bob ##> "/create link #team"
+      gLink <- getGroupLink bob "team" True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      bob <## "cath (Catherine): accepting request to join group #team..."
+      _ <- getTermLine bob
+      concurrentlyN_
+        [ do
+            bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## "use /info cath to print out this incognito profile again",
+          bob <## "invitation to join the group #team sent to cath",
+          do
+            cath <## (bobIncognito <> ": contact is connected")
+            cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
+            cath <## "use /j team to accept"
+        ]
+      bob ?#> "@cath hi, I'm incognito"
+      cath <# (bobIncognito <> "> hi, I'm incognito")
+      cath #> ("@" <> bobIncognito <> " hey, I'm cath")
+      bob ?<# "cath> hey, I'm cath"
+      cath ##> "/j team"
+      concurrentlyN_
+        [ bob <## "#team: cath joined the group",
+          do
+            cath <## "#team: you joined the group"
+            cath <## "#team: member alice (Alice) is connected",
+          do
+            alice <## ("#team: " <> bobIncognito <> " added cath (Catherine) to the group (connecting...)")
+            alice <## "#team: new member cath is connected"
+        ]
+      -- dan joins incognito
+      dan #$> ("/incognito on", id, "ok")
+      dan ##> ("/c " <> gLink)
+      danIncognito <- getTermLine dan
+      dan <## "connection request sent incognito!"
+      bob <## (danIncognito <> ": accepting request to join group #team...")
+      _ <- getTermLine bob
+      _ <- getTermLine dan
+      concurrentlyN_
+        [ do
+            bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again"),
+          bob <## ("invitation to join the group #team sent to " <> danIncognito),
+          do
+            dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
+            dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
+            dan <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
+            dan <## ("use /j team to join incognito as " <> danIncognito)
+        ]
+      dan #$> ("/incognito off", id, "ok")
+      bob ?#> ("@" <> danIncognito <> " hi, I'm incognito")
+      dan ?<# (bobIncognito <> "> hi, I'm incognito")
+      dan ?#> ("@" <> bobIncognito <> " hey, me too")
+      bob ?<# (danIncognito <> "> hey, me too")
+      dan ##> "/j team"
+      concurrentlyN_
+        [ bob <## ("#team: " <> danIncognito <> " joined the group"),
+          do
+            dan <## ("#team: you joined the group incognito as " <> danIncognito)
+            dan
+              <### [ "#team: member alice (Alice) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          do
+            alice <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
+            alice <## ("#team: new member " <> danIncognito <> " is connected"),
+          do
+            cath <## ("#team: " <> bobIncognito <> " added " <> danIncognito <> " to the group (connecting...)")
+            cath <## ("#team: new member " <> danIncognito <> " is connected")
+        ]
+      alice #> "#team hello"
+      concurrentlyN_
+        [ bob ?<# "#team alice> hello",
+          cath <# "#team alice> hello",
+          dan ?<# "#team alice> hello"
+        ]
+      bob ?#> "#team hi there"
+      concurrentlyN_
+        [ alice <# ("#team " <> bobIncognito <> "> hi there"),
+          cath <# ("#team " <> bobIncognito <> "> hi there"),
+          dan ?<# ("#team " <> bobIncognito <> "> hi there")
+        ]
+      cath #> "#team hey"
+      concurrentlyN_
+        [ alice <# "#team cath> hey",
+          bob ?<# "#team cath> hey",
+          dan ?<# "#team cath> hey"
+        ]
+      dan ?#> "#team how is it going?"
+      concurrentlyN_
+        [ alice <# ("#team " <> danIncognito <> "> how is it going?"),
+          bob ?<# ("#team " <> danIncognito <> "> how is it going?"),
+          cath <# ("#team " <> danIncognito <> "> how is it going?")
+        ]
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
