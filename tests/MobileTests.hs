@@ -57,6 +57,13 @@ memberSubSummary = "{\"resp\":{\"memberSubSummary\":{\"memberSubscriptions\":[]}
 memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\",\"memberSubscriptions\":[]}}"
 #endif
 
+userContactSubSummary :: String
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{\"userContactSubscriptions\":[]}}}"
+#else
+userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\",\"userContactSubscriptions\":[]}}"
+#endif
+
 pendingSubSummary :: String
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
 pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{\"pendingSubscriptions\":[]}}}"
@@ -93,6 +100,7 @@ testChatApi = withTmpFiles $ do
   chatSendCmd cc "/u alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
   chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` ""

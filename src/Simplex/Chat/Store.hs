@@ -43,12 +43,16 @@ module Simplex.Chat.Store
     updateContactConnectionAlias,
     getUserContacts,
     createUserContactLink,
-    getUserContactLinkConnections,
+    getUserAddressConnections,
     getUserContactLinks,
-    deleteUserContactLink,
-    getUserContactLink,
+    deleteUserAddress,
+    getUserAddress,
     getUserContactLinkById,
-    updateUserContactLinkAutoAccept,
+    updateUserAddressAutoAccept,
+    createGroupLink,
+    getGroupLinkConnection,
+    deleteGroupLink,
+    getGroupLink,
     createOrUpdateContactRequest,
     getContactRequest,
     getContactRequestIdByName,
@@ -265,6 +269,7 @@ import Simplex.Chat.Migrations.M20220928_settings
 import Simplex.Chat.Migrations.M20221001_shared_msg_id_indices
 import Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_items
 import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
+import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -304,7 +309,8 @@ schemaMigrations =
     ("20220928_settings", m20220928_settings),
     ("20221001_shared_msg_id_indices", m20221001_shared_msg_id_indices),
     ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items),
-    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id)
+    ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
+    ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -683,33 +689,45 @@ createUserContactLink db userId agentConnId cReq =
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
 
-getUserContactLinkConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
-getUserContactLinkConnections db user = do
-  cs <- liftIO $ getUserContactLinks db user
-  if null cs then throwError SEUserContactLinkNotFound else pure $ map fst cs
+getUserAddressConnections :: DB.Connection -> User -> ExceptT StoreError IO [Connection]
+getUserAddressConnections db User {userId} = do
+  cs <- liftIO getUserAddressConnections_
+  if null cs then throwError SEUserContactLinkNotFound else pure cs
+  where
+    getUserAddressConnections_ :: IO [Connection]
+    getUserAddressConnections_ =
+      map toConnection
+        <$> DB.query
+          db
+          [sql|
+            SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
+              c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+            FROM connections c
+            JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+            WHERE c.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
+          |]
+          (userId, userId)
 
 getUserContactLinks :: DB.Connection -> User -> IO [(Connection, UserContact)]
 getUserContactLinks db User {userId} =
-  map toResult
-    <$> DB.queryNamed
+  map toUserContactConnection
+    <$> DB.query
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
-          uc.user_contact_link_id, uc.conn_req_contact
+          uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
         FROM connections c
         JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-        WHERE c.user_id = :user_id
-          AND uc.user_id = :user_id
-          AND uc.local_display_name = ''
+        WHERE c.user_id = ? AND uc.user_id = ?
       |]
-      [":user_id" := userId]
+      (userId, userId)
   where
-    toResult :: (ConnectionRow :. (Int64, ConnReqContact)) -> (Connection, UserContact)
-    toResult (connRow :. (userContactLinkId, connReqContact)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact})
+    toUserContactConnection :: (ConnectionRow :. (Int64, ConnReqContact, Maybe GroupId)) -> (Connection, UserContact)
+    toUserContactConnection (connRow :. (userContactLinkId, connReqContact, groupId)) = (toConnection connRow, UserContact {userContactLinkId, connReqContact, groupId})
 
-deleteUserContactLink :: DB.Connection -> User -> IO ()
-deleteUserContactLink db User {userId} = do
+deleteUserAddress :: DB.Connection -> User -> IO ()
+deleteUserAddress db User {userId} = do
   DB.execute
     db
     [sql|
@@ -717,7 +735,7 @@ deleteUserContactLink db User {userId} = do
         SELECT connection_id
         FROM connections c
         JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = ? AND uc.local_display_name = ''
+        WHERE uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       )
     |]
     (Only userId)
@@ -730,8 +748,7 @@ deleteUserContactLink db User {userId} = do
           SELECT cr.local_display_name
           FROM contact_requests cr
           JOIN user_contact_links uc USING (user_contact_link_id)
-          WHERE uc.user_id = :user_id
-            AND uc.local_display_name = ''
+          WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
         )
     |]
     [":user_id" := userId]
@@ -743,56 +760,123 @@ deleteUserContactLink db User {userId} = do
         SELECT cr.contact_profile_id
         FROM contact_requests cr
         JOIN user_contact_links uc USING (user_contact_link_id)
-        WHERE uc.user_id = :user_id
-          AND uc.local_display_name = ''
+        WHERE uc.user_id = :user_id AND uc.local_display_name = '' AND uc.group_id IS NULL
       )
     |]
     [":user_id" := userId]
-  DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = ''" (Only userId)
+  DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
-getUserContactLink :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
-getUserContactLink db userId =
+getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
+getUserAddress db userId =
   ExceptT . firstRow id SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
         SELECT conn_req_contact, auto_accept, auto_reply_msg_content
         FROM user_contact_links
-        WHERE user_id = ?
-          AND local_display_name = ''
+        WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
   maybeFirstRow id $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, auto_reply_msg_content, group_id
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
 
-updateUserContactLinkAutoAccept :: DB.Connection -> UserId -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
-updateUserContactLinkAutoAccept db userId autoAccept msgContent = do
-  (cReqUri, _, _) <- getUserContactLink db userId
-  liftIO updateUserContactLinkAutoAccept_
+updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
+updateUserAddressAutoAccept db userId autoAccept msgContent = do
+  (cReqUri, _, _) <- getUserAddress db userId
+  liftIO updateUserAddressAutoAccept_
   pure (cReqUri, autoAccept, msgContent)
   where
-    updateUserContactLinkAutoAccept_ :: IO ()
-    updateUserContactLinkAutoAccept_ =
+    updateUserAddressAutoAccept_ :: IO ()
+    updateUserAddressAutoAccept_ =
       DB.execute
         db
         [sql|
           UPDATE user_contact_links
           SET auto_accept = ?, auto_reply_msg_content = ?
-          WHERE user_id = ?
-            AND local_display_name = ''
+          WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
         (autoAccept, msgContent, userId)
+
+createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
+createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =
+  checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      "INSERT INTO user_contact_links (user_id, group_id, local_display_name, conn_req_contact, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+      (userId, groupId, "group_link_" <> localDisplayName, cReq, True, currentTs, currentTs)
+    groupLinkId <- insertedRowId db
+    void $ createConnection_ db userId ConnUserContact (Just groupLinkId) agentConnId Nothing Nothing Nothing 0 currentTs
+
+getGroupLinkConnection :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO Connection
+getGroupLinkConnection db User {userId} groupInfo@GroupInfo {groupId} =
+  ExceptT . firstRow toConnection (SEGroupLinkNotFound groupInfo) $
+    DB.query
+      db
+      [sql|
+        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id,
+          c.conn_status, c.conn_type, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM connections c
+        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
+        WHERE c.user_id = ? AND uc.user_id = ? AND uc.group_id = ?
+      |]
+      (userId, userId, groupId)
+
+deleteGroupLink :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupLink db User {userId} GroupInfo {groupId} = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM connections WHERE connection_id IN (
+        SELECT connection_id
+        FROM connections c
+        JOIN user_contact_links uc USING (user_contact_link_id)
+        WHERE uc.user_id = ? AND uc.group_id = ?
+      )
+    |]
+    (userId, groupId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM display_names
+      WHERE user_id = ?
+        AND local_display_name in (
+          SELECT cr.local_display_name
+          FROM contact_requests cr
+          JOIN user_contact_links uc USING (user_contact_link_id)
+          WHERE uc.user_id = ? AND uc.group_id = ?
+        )
+    |]
+    (userId, userId, groupId)
+  DB.execute
+    db
+    [sql|
+      DELETE FROM contact_profiles
+      WHERE contact_profile_id in (
+        SELECT cr.contact_profile_id
+        FROM contact_requests cr
+        JOIN user_contact_links uc USING (user_contact_link_id)
+        WHERE uc.user_id = ? AND uc.group_id = ?
+      )
+    |]
+    (userId, groupId)
+  DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
+
+getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO ConnReqContact
+getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
+  ExceptT . firstRow fromOnly (SEGroupLinkNotFound gInfo) $
+    DB.query db "SELECT conn_req_contact FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 createOrUpdateContactRequest :: DB.Connection -> UserId -> Int64 -> InvitationId -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db userId userContactLinkId invId Profile {displayName, fullName, image} xContactId_ =
@@ -1307,14 +1391,14 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         <$> DB.query
           db
           [sql|
-            SELECT conn_req_contact
+            SELECT conn_req_contact, group_id
             FROM user_contact_links
             WHERE user_id = ? AND user_contact_link_id = ?
           |]
           (userId, userContactLinkId)
       where
-        userContact_ :: [Only ConnReqContact] -> Either StoreError UserContact
-        userContact_ [Only cReq] = Right UserContact {userContactLinkId, connReqContact = cReq}
+        userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
+        userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
 getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection
@@ -2947,11 +3031,12 @@ getContactRequestChatPreviews_ db User {userId} =
           cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id, cr.user_contact_link_id,
           c.agent_conn_id, cr.contact_profile_id, p.display_name, p.full_name, p.image, cr.xcontact_id, cr.created_at, cr.updated_at
         FROM contact_requests cr
-        JOIN connections c USING (user_contact_link_id)
-        JOIN contact_profiles p USING (contact_profile_id)
-        WHERE cr.user_id = ?
+        JOIN connections c ON c.user_contact_link_id = cr.user_contact_link_id
+        JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
+        JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
+        WHERE cr.user_id = ? AND uc.user_id = ? AND uc.local_display_name = '' AND uc.group_id IS NULL
       |]
-      (Only userId)
+      (userId, userId)
   where
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
@@ -4240,6 +4325,8 @@ data StoreError
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
   | SEChatItemNotFoundByGroupId {groupId :: GroupId}
   | SEProfileNotFound {profileId :: Int64}
+  | SEDuplicateGroupLink {groupInfo :: GroupInfo}
+  | SEGroupLinkNotFound {groupInfo :: GroupInfo}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
