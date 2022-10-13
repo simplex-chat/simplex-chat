@@ -294,6 +294,9 @@ fun ComposeView(
         if (lp != null && pendingLinkUrl.value == url) {
           composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
           pendingLinkUrl.value = null
+        } else if (pendingLinkUrl.value == url) {
+          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+          pendingLinkUrl.value = null
         }
       }
     }
