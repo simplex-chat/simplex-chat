@@ -3048,14 +3048,14 @@ testGroupLink =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "use /a team <name> to add members"
-      alice ##> "/sgl team"
-      alice <## "no group link, to create: /gl team"
-      alice ##> "/gl team"
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
+      alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" True
-      alice ##> "/sgl team"
+      alice ##> "/show link #team"
       _ <- getGroupLink alice "team" False
-      alice ##> "/gl team"
-      alice <## "you already have link for this group, to show: /sgl team"
+      alice ##> "/create link #team"
+      alice <## "you already have link for this group, to show: /show link #team"
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob): accepting request to join group #team..."
@@ -3131,8 +3131,8 @@ testGroupLink =
           bob <## "#team: alice left the group",
           cath <## "#team: alice_1 left the group"
         ]
-      alice ##> "/sgl team"
-      alice <## "no group link, to create: /gl team"
+      alice ##> "/show link #team"
+      alice <## "no group link, to create: /create link #team"
 
 withTestChatContactConnected :: String -> (TestCC -> IO a) -> IO a
 withTestChatContactConnected dbPrefix action =
@@ -3392,6 +3392,6 @@ getGroupLink cc gName created = do
   link <- getTermLine cc
   cc <## ""
   cc <## "Anybody can connect to you and join group with: /c <group_link_above>"
-  cc <## ("to show it again: /sgl " <> gName)
-  cc <## ("to delete it: /dgl " <> gName <> " (joined members will remain connected to you)")
+  cc <## ("to show it again: /show link #" <> gName)
+  cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link

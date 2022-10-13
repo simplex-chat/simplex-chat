@@ -442,14 +442,14 @@ groupLink_ intro g cReq =
     (plain . strEncode) cReq,
     "",
     "Anybody can connect to you and join group with: " <> highlight' "/c <group_link_above>",
-    "to show it again: " <> highlight ("/sgl " <> groupName' g),
-    "to delete it: " <> highlight ("/dgl " <> groupName' g) <> " (joined members will remain connected to you)"
+    "to show it again: " <> highlight ("/show link #" <> groupName' g),
+    "to delete it: " <> highlight ("/delete link #" <> groupName' g) <> " (joined members will remain connected to you)"
   ]
 
 viewGroupLinkDeleted :: GroupInfo -> [StyledString]
 viewGroupLinkDeleted g =
   [ "Group link is deleted - joined members will remain connected.",
-    "To create a new group link use " <> highlight ("/gl " <> groupName' g)
+    "To create a new group link use " <> highlight ("/create link #" <> groupName' g)
   ]
 
 viewSentInvitation :: Maybe Profile -> Bool -> [StyledString]
@@ -1016,8 +1016,8 @@ viewChatError = \case
     SEFileIdNotFoundBySharedMsgId _ -> [] -- recipient tried to accept cancelled file
     SEConnectionNotFound _ -> [] -- TODO mutes delete group error, but also mutes any error from getConnectionEntity
     SEQuotedChatItemNotFound -> ["message not found - reply is not sent"]
-    SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/sgl " <> groupName' g)]
-    SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/gl " <> groupName' g)]
+    SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> groupName' g)]
+    SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> groupName' g)]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

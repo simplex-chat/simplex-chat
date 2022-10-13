@@ -947,7 +947,7 @@ processChatCommand = \case
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted gInfo
-  APIShowGroupLink groupId -> withUser $ \user -> do
+  APIGetGroupLink groupId -> withUser $ \user -> do
     gInfo <- withStore $ \db -> getGroupInfo db user groupId
     CRGroupLink gInfo <$> withStore (\db -> getGroupLink db user gInfo)
   CreateGroupLink gName -> withUser $ \user -> do
@@ -958,7 +958,7 @@ processChatCommand = \case
     processChatCommand $ APIDeleteGroupLink groupId
   ShowGroupLink gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
-    processChatCommand $ APIShowGroupLink groupId
+    processChatCommand $ APIGetGroupLink groupId
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName (safeDecodeUtf8 quotedMsg)
@@ -2970,12 +2970,12 @@ chatCommandP =
       ("/groups" <|> "/gs") $> ListGroups,
       "/_group_profile #" *> (APIUpdateGroupProfile <$> A.decimal <* A.space <*> jsonP),
       ("/group_profile #" <|> "/gp #" <|> "/group_profile " <|> "/gp ") *> (UpdateGroupProfile <$> displayName <* A.space <*> groupProfile),
-      "/_group_link #" *> (APICreateGroupLink <$> A.decimal),
-      ("/group_link #" <|> "/gl #" <|> "/group_link " <|> "/gl ") *> (CreateGroupLink <$> displayName),
-      "/_delete_group_link #" *> (APIDeleteGroupLink <$> A.decimal),
-      ("/delete_group_link #" <|> "/dgl #" <|> "/delete_group_link " <|> "/dgl ") *> (DeleteGroupLink <$> displayName),
-      "/_show_group_link #" *> (APIShowGroupLink <$> A.decimal),
-      ("/show_group_link #" <|> "/sgl #" <|> "/show_group_link " <|> "/sgl ") *> (ShowGroupLink <$> displayName),
+      "/_create link #" *> (APICreateGroupLink <$> A.decimal),
+      "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
+      "/_get link #" *> (APIGetGroupLink <$> A.decimal),
+      "/create link #" *> (CreateGroupLink <$> displayName),
+      "/delete link #" *> (DeleteGroupLink <$> displayName),
+      "/show link #" *> (ShowGroupLink <$> displayName),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> A.takeByteString),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* optional (A.char '@') <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> A.takeByteString),
       ("/contacts" <|> "/cs") $> ListContacts,

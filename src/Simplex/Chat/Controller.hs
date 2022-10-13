@@ -163,7 +163,7 @@ data ChatCommand
   | APIUpdateGroupProfile GroupId GroupProfile
   | APICreateGroupLink GroupId
   | APIDeleteGroupLink GroupId
-  | APIShowGroupLink GroupId
+  | APIGetGroupLink GroupId
   | GetUserSMPServers
   | SetUserSMPServers [SMPServer]
   | APISetChatItemTTL (Maybe Int64)
