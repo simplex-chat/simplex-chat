@@ -50,7 +50,7 @@ fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 fun withUriAction(uri: Uri, run: suspend (String) -> Unit) {
-  val action = uri.path?.drop(1)
+  val action = uri.path?.drop(1)?.replace("/", "")
   if (action == "contact" || action == "invitation") {
     withApi { run(action) }
   } else {
