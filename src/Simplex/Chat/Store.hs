@@ -132,7 +132,8 @@ module Simplex.Chat.Store
     createRcvGroupFileTransfer,
     getRcvFileTransfer,
     acceptRcvFileTransfer,
-    acceptInlineRcvFT,
+    acceptRcvInlineFT,
+    startRcvInlineFT,
     updateRcvFileStatus,
     createRcvFileChunk,
     updatedRcvFileChunkStored,
@@ -2371,11 +2372,14 @@ acceptRcvFileTransfer db user@User {userId} fileId agentConnId connStatus filePa
     (agentConnId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs)
   runExceptT $ getChatItemByFileId db user fileId
 
-acceptInlineRcvFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
-acceptInlineRcvFT db user fileId filePath = ExceptT $ do
-  currentTs <- getCurrentTime
-  acceptRcvFT_ db user fileId filePath currentTs
-  runExceptT $ getChatItemByFileId db user fileId
+acceptRcvInlineFT :: DB.Connection -> User -> Int64 -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT db user fileId filePath = do
+  liftIO $ acceptRcvFT_ db user fileId filePath =<< getCurrentTime
+  getChatItemByFileId db user fileId
+
+startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> IO ()
+startRcvInlineFT db user RcvFileTransfer {fileId} filePath =
+  acceptRcvFT_ db user fileId filePath =<< getCurrentTime
 
 acceptRcvFT_ :: DB.Connection -> User -> Int64 -> FilePath -> UTCTime -> IO ()
 acceptRcvFT_ db User {userId} fileId filePath currentTs = do

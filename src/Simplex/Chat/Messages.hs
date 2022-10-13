@@ -338,6 +338,8 @@ data CIFileStatus (d :: MsgDirection) where
   CIFSRcvComplete :: CIFileStatus 'MDRcv
   CIFSRcvCancelled :: CIFileStatus 'MDRcv
 
+deriving instance Eq (CIFileStatus d)
+
 deriving instance Show (CIFileStatus d)
 
 ciFileEnded :: CIFileStatus d -> Bool

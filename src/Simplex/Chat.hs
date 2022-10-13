@@ -303,10 +303,11 @@ processChatCommand = \case
               else bimap Just Just <$> withAgent (\a -> createConnection a True SCMInvitation)
           let fileName = takeFileName file
               fileInvitation = FileInvitation {fileName, fileSize, fileConnReq, fileInline}
-              fileStatus = if fileInline == Just IFMSent then CIFSSndTransfer else CIFSSndStored
           withStore' $ \db -> do
             ft@FileTransferMeta {fileId} <- createSndDirectFileTransfer db userId ct file fileInvitation agentConnId_ chSize
-            when (fileInline == Just IFMSent) . void $ createSndDirectInlineFT db ct ft
+            fileStatus <- case fileInline of
+              Just IFMSent -> createSndDirectInlineFT db ct ft $> CIFSSndTransfer
+              _ -> pure CIFSSndStored
             let ciFile = CIFile {fileId, fileName, fileSize, filePath = Just file, fileStatus}
             pure (fileInvitation, ciFile, ft)
         prepareMsg :: Maybe FileInvitation -> m (MsgContainer, Maybe (CIQuote 'CTDirect))
@@ -1220,7 +1221,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     -- direct file protocol
     Just connReq -> do
       agentConnId <- withAgent $ \a -> joinConnection a True connReq . directMessage $ XFileAcpt fName
-      filePath <- getRcvFilePath filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName
       withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnJoined filePath
     -- group & direct file protocol
     Nothing -> do
@@ -1244,12 +1245,12 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     acceptFile :: m (ChatMsgEvent 'Json, AChatItem)
     acceptFile = do
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-      filePath <- getRcvFilePath filePath_ fName
+      filePath <- getRcvFilePath fileId filePath_ fName
       ChatConfig {fileChunkSize, inlineFiles} <- asks config
       if
           | fileInline == Just IFMOffer && fileSize <= fileChunkSize * receiveChunks inlineFiles -> do
               -- accepting inline
-              ci <- withStore $ \db -> acceptInlineRcvFT db user fileId filePath
+              ci <- withStore $ \db -> acceptRcvInlineFT db user fileId filePath
               pure (XFileAcptInv sharedMsgId Nothing fName, ci)
           | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
           | otherwise -> do
@@ -1257,43 +1258,44 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
               (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
               ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
               pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
-    getRcvFilePath :: Maybe FilePath -> String -> m FilePath
-    getRcvFilePath fPath_ fn = case fPath_ of
-      Nothing ->
-        asks filesFolder >>= readTVarIO >>= \case
-          Nothing -> do
-            dir <- (`combine` "Downloads") <$> getHomeDirectory
-            ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
-              >>= (`uniqueCombine` fn)
-              >>= createEmptyFile
-          Just filesFolder ->
-            filesFolder `uniqueCombine` fn
-              >>= createEmptyFile
-              >>= pure <$> takeFileName
-      Just fPath ->
-        ifM
-          (doesDirectoryExist fPath)
-          (fPath `uniqueCombine` fn >>= createEmptyFile)
-          $ ifM
-            (doesFileExist fPath)
-            (throwChatError $ CEFileAlreadyExists fPath)
-            (createEmptyFile fPath)
+
+getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
+getRcvFilePath fileId fPath_ fn = case fPath_ of
+  Nothing ->
+    asks filesFolder >>= readTVarIO >>= \case
+      Nothing -> do
+        dir <- (`combine` "Downloads") <$> getHomeDirectory
+        ifM (doesDirectoryExist dir) (pure dir) getTemporaryDirectory
+          >>= (`uniqueCombine` fn)
+          >>= createEmptyFile
+      Just filesFolder ->
+        filesFolder `uniqueCombine` fn
+          >>= createEmptyFile
+          >>= pure <$> takeFileName
+  Just fPath ->
+    ifM
+      (doesDirectoryExist fPath)
+      (fPath `uniqueCombine` fn >>= createEmptyFile)
+      $ ifM
+        (doesFileExist fPath)
+        (throwChatError $ CEFileAlreadyExists fPath)
+        (createEmptyFile fPath)
+  where
+    createEmptyFile :: FilePath -> m FilePath
+    createEmptyFile fPath = emptyFile fPath `E.catch` (throwChatError . CEFileWrite fPath . (show :: E.SomeException -> String))
+    emptyFile :: FilePath -> m FilePath
+    emptyFile fPath = do
+      h <- getFileHandle fileId fPath rcvFiles AppendMode
+      liftIO $ B.hPut h "" >> hFlush h
+      pure fPath
+    uniqueCombine :: FilePath -> String -> m FilePath
+    uniqueCombine filePath fileName = tryCombine (0 :: Int)
       where
-        createEmptyFile :: FilePath -> m FilePath
-        createEmptyFile fPath = emptyFile fPath `E.catch` (throwChatError . CEFileWrite fPath . (show :: E.SomeException -> String))
-        emptyFile :: FilePath -> m FilePath
-        emptyFile fPath = do
-          h <- getFileHandle fileId fPath rcvFiles AppendMode
-          liftIO $ B.hPut h "" >> hFlush h
-          pure fPath
-        uniqueCombine :: FilePath -> String -> m FilePath
-        uniqueCombine filePath fileName = tryCombine (0 :: Int)
-          where
-            tryCombine n =
-              let (name, ext) = splitExtensions fileName
-                  suffix = if n == 0 then "" else "_" <> show n
-                  f = filePath `combine` (name <> suffix <> ext)
-               in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
+        tryCombine n =
+          let (name, ext) = splitExtensions fileName
+              suffix = if n == 0 then "" else "_" <> show n
+              f = filePath `combine` (name <> suffix <> ext)
+           in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} = do
@@ -1999,20 +2001,24 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     newContentMessage ct@Contact {localDisplayName = c, chatSettings} mc msg msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
-      ciFile_ <- processFileInvitation fileInvitation_ $
-        \fi inline chSize -> withStore' $ \db -> createRcvFileTransfer db userId ct fi inline chSize
+      ciFile_ <- processFileInvitation fileInvitation_ $ \db -> createRcvFileTransfer db userId ct
       ci@ChatItem {formattedText} <- saveRcvChatItem user (CDDirectRcv ct) msg msgMeta (CIRcvMsgContent content) ciFile_
       toView . CRNewChatItem $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
       when (enableNtfs chatSettings) $ showMsgToast (c <> "> ") content formattedText
       setActive $ ActiveC c
 
-    processFileInvitation :: Maybe FileInvitation -> (FileInvitation -> Maybe InlineFileMode -> Integer -> m RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
+    processFileInvitation :: Maybe FileInvitation -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> IO RcvFileTransfer) -> m (Maybe (CIFile 'MDRcv))
     processFileInvitation fInv_ createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
       chSize <- asks $ fileChunkSize . config
       inline <- receiveInlineMode fInv chSize
-      RcvFileTransfer {fileId} <- createRcvFT fInv inline chSize
-      let ciFile = CIFile {fileId, fileName, fileSize, filePath = Nothing, fileStatus = CIFSRcvInvitation}
-      pure ciFile
+      ft@RcvFileTransfer {fileId} <- withStore' $ \db -> createRcvFT db fInv inline chSize
+      (filePath, fileStatus) <- case inline of
+        Just IFMSent -> do
+          fPath <- getRcvFilePath fileId Nothing fileName
+          withStore' $ \db -> startRcvInlineFT db user ft fPath
+          pure (Just fPath, CIFSRcvAccepted)
+        _ -> pure (Nothing, CIFSRcvInvitation)
+      pure CIFile {fileId, fileName, fileSize, filePath, fileStatus}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> m ()
     messageUpdate ct@Contact {contactId, localDisplayName = c} sharedMsgId mc msg@RcvMessage {msgId} msgMeta = do
@@ -2052,9 +2058,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newGroupContentMessage gInfo@GroupInfo {chatSettings} m@GroupMember {localDisplayName = c} mc msg msgMeta = do
-      let (ExtMsgContent content fileInvitation_) = mcExtMsgContent mc
-      ciFile_ <- processFileInvitation fileInvitation_ $
-        \fi inline chSize -> withStore' $ \db -> createRcvGroupFileTransfer db userId m fi inline chSize
+      let (ExtMsgContent content fInv_) = mcExtMsgContent mc
+      ciFile_ <- processFileInvitation fInv_ $ \db -> createRcvGroupFileTransfer db userId m
       ci@ChatItem {formattedText} <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvMsgContent content) ciFile_
       groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
