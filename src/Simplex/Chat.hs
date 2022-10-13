@@ -1300,9 +1300,17 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe Profile -> m Contact
 acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
   let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
-  -- TODO acceptContactAsync
-  connId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
-  withStore' $ \db -> createAcceptedContact db userId connId cName profileId p userContactLinkId xContactId incognitoProfile
+  acId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
+  withStore' $ \db -> createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile Nothing
+
+acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe Profile -> Maybe ProfileId -> m Contact
+acceptContactRequestAsync user@User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile existingIncognitoProfileId = do
+  let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+  (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
+  withStore' $ \db -> do
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile existingIncognitoProfileId
+    setCommandConnId db user cmdId connId
+    pure ct
 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
@@ -1914,12 +1922,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                         -- TODO allow to configure incognito setting on auto accept instead of checking incognito mode
                         incognito <- readTVarIO =<< asks incognitoMode
                         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-                        ct <- acceptContactRequest user cReq incognitoProfile
+                        ct <- acceptContactRequestAsync user cReq incognitoProfile Nothing
                         toView $ CRAcceptingContactRequest ct
                       Just groupId -> do
-                        gInfo@GroupInfo {membership} <- withStore $ \db -> getGroupInfo db user groupId
-                        let incognitoProfile = if memberIncognito membership then Just . fromLocalProfile $ memberProfile membership else Nothing
-                        ct <- acceptContactRequest user cReq incognitoProfile
+                        gInfo@GroupInfo {membership = membership@GroupMember {memberProfile = mp@LocalProfile {profileId}}} <- withStore $ \db -> getGroupInfo db user groupId
+                        let (incognitoProfile, existingIncognitoProfileId) = if memberIncognito membership then (Just $ fromLocalProfile mp, Just profileId) else (Nothing, Nothing)
+                        ct <- acceptContactRequestAsync user cReq incognitoProfile existingIncognitoProfileId
                         toView $ CRAcceptingGroupJoinRequest gInfo ct
                     else do
                       toView $ CRReceivedContactRequest cReq
@@ -2760,6 +2768,12 @@ allowAgentConnectionAsync user conn@Connection {connId} confId msg = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFAllowConn
   withAgent $ \a -> allowConnectionAsync a (aCorrId cmdId) (aConnId conn) confId $ directMessage msg
   withStore' $ \db -> updateConnectionStatus db conn ConnAccepted
+
+agentAcceptContactAsync :: ChatMonad m => User -> Bool -> InvitationId -> ChatMsgEvent -> m (CommandId, ConnId)
+agentAcceptContactAsync user enableNtfs invId msg = do
+  cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
+  connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId $ directMessage msg
+  pure (cmdId, connId)
 
 deleteAgentConnectionAsync :: ChatMonad m => User -> Connection -> m ()
 deleteAgentConnectionAsync user Connection {agentConnId, connId} =
