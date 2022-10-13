@@ -3179,8 +3179,8 @@ testGroupLinkIncognitoMembership =
       concurrentlyN_
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## "use /info cath to print out this incognito profile again",
-          bob <## "invitation to join the group #team sent to cath",
+            bob <## "use /info cath to print out this incognito profile again"
+            bob <## "invitation to join the group #team sent to cath",
           do
             cath <## (bobIncognito <> ": contact is connected")
             cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
@@ -3211,8 +3211,8 @@ testGroupLinkIncognitoMembership =
       concurrentlyN_
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
-            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again"),
-          bob <## ("invitation to join the group #team sent to " <> danIncognito),
+            bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
+            bob <## ("invitation to join the group #team sent to " <> danIncognito),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
             dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
