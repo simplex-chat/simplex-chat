@@ -1083,7 +1083,7 @@ getLiveRcvFileTransfers db user@User {userId} = do
           SELECT f.file_id
           FROM files f
           JOIN rcv_files r
-          WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.file_inline IS NULL
+          WHERE f.user_id = ? AND r.file_status IN (?, ?) AND r.rcv_file_inline IS NULL
         |]
         (userId, FSAccepted, FSConnected)
   rights <$> mapM (runExceptT . getRcvFileTransfer db user) fileIds
