@@ -1313,12 +1313,10 @@ acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitation
     pure ct
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
-profileToSendOnAccept User {profile} incognitoProfile =
-  case incognitoProfile of
-    Nothing -> fromLocalProfile profile
-    Just ip -> case ip of
-      NewIncognito p -> p
-      ExistingIncognito lp -> fromLocalProfile lp
+profileToSendOnAccept User {profile} = \case
+  Just (NewIncognito p) -> p
+  Just (ExistingIncognito lp) -> fromLocalProfile lp
+  Nothing -> fromLocalProfile profile
 
 deleteGroupLink' :: ChatMonad m => User -> GroupInfo -> m ()
 deleteGroupLink' user gInfo = do
