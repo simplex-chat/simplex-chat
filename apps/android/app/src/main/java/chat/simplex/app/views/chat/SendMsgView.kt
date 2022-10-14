@@ -104,7 +104,7 @@ fun SendMsgView(
         it.setTextColor(textColor.toArgb())
         it.textSize = textStyle.value.fontSize.value
         DrawableCompat.setTint(it.background, tintColor.toArgb())
-        if (cs.message.isBlank()) {
+        if (cs.message.isEmpty()) {
           it.setText(cs.message)
         }
       }
