@@ -48,7 +48,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import java.io.File
 import kotlin.math.sign
-import kotlin.math.roundToInt
 
 @Composable
 fun ChatView(chatModel: ChatModel) {
@@ -447,7 +446,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
-  AutoScrollLogic(chat.id, listState)
+  ScrollToBottom(chat.id, listState)
   var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
@@ -570,7 +569,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 }
 
 @Composable
-private fun AutoScrollLogic(chatId: ChatId, listState: LazyListState) {
+private fun ScrollToBottom(chatId: ChatId, listState: LazyListState) {
   val scope = rememberCoroutineScope()
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
