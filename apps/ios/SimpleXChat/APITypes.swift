@@ -43,6 +43,9 @@ public enum ChatCommand {
     case apiLeaveGroup(groupId: Int64)
     case apiListMembers(groupId: Int64)
     case apiUpdateGroupProfile(groupId: Int64, groupProfile: GroupProfile)
+    case apiCreateGroupLink(groupId: Int64)
+    case apiDeleteGroupLink(groupId: Int64)
+    case apiGetGroupLink(groupId: Int64)
     case getUserSMPServers
     case setUserSMPServers(smpServers: [String])
     case apiSetChatItemTTL(seconds: Int64?)
@@ -114,6 +117,9 @@ public enum ChatCommand {
             case let .apiLeaveGroup(groupId): return "/_leave #\(groupId)"
             case let .apiListMembers(groupId): return "/_members #\(groupId)"
             case let .apiUpdateGroupProfile(groupId, groupProfile): return "/_group_profile #\(groupId) \(encodeJSON(groupProfile))"
+            case let .apiCreateGroupLink(groupId): return "/_create link #\(groupId)"
+            case let .apiDeleteGroupLink(groupId): return "/_delete link #\(groupId)"
+            case let .apiGetGroupLink(groupId): return "/_get link #\(groupId)"
             case .getUserSMPServers: return "/smp_servers"
             case let .setUserSMPServers(smpServers): return "/smp_servers \(smpServersStr(smpServers: smpServers))"
             case let .apiSetChatItemTTL(seconds): return "/_ttl \(chatItemTTLStr(seconds: seconds))"
@@ -184,6 +190,9 @@ public enum ChatCommand {
             case .apiLeaveGroup: return "apiLeaveGroup"
             case .apiListMembers: return "apiListMembers"
             case .apiUpdateGroupProfile: return "apiUpdateGroupProfile"
+            case .apiCreateGroupLink: return "apiCreateGroupLink"
+            case .apiDeleteGroupLink: return "apiDeleteGroupLink"
+            case .apiGetGroupLink: return "apiGetGroupLink"
             case .getUserSMPServers: return "getUserSMPServers"
             case .setUserSMPServers: return "setUserSMPServers"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
@@ -327,6 +336,9 @@ public enum ChatResponse: Decodable, Error {
     case connectedToGroupMember(groupInfo: GroupInfo, member: GroupMember)
     case groupRemoved(groupInfo: GroupInfo) // unused
     case groupUpdated(toGroup: GroupInfo)
+    case groupLinkCreated(groupInfo: GroupInfo, connReqContact: String)
+    case groupLink(groupInfo: GroupInfo, connReqContact: String)
+    case groupLinkDeleted(groupInfo: GroupInfo)
     // receiving file events
     case rcvFileAccepted(chatItem: AChatItem)
     case rcvFileAcceptedSndCancelled(rcvFileTransfer: RcvFileTransfer)
@@ -423,6 +435,9 @@ public enum ChatResponse: Decodable, Error {
             case .connectedToGroupMember: return "connectedToGroupMember"
             case .groupRemoved: return "groupRemoved"
             case .groupUpdated: return "groupUpdated"
+            case .groupLinkCreated: return "groupLinkCreated"
+            case .groupLink: return "groupLink"
+            case .groupLinkDeleted: return "groupLinkDeleted"
             case .rcvFileAccepted: return "rcvFileAccepted"
             case .rcvFileAcceptedSndCancelled: return "rcvFileAcceptedSndCancelled"
             case .rcvFileStart: return "rcvFileStart"
@@ -520,6 +535,9 @@ public enum ChatResponse: Decodable, Error {
             case let .connectedToGroupMember(groupInfo, member): return "groupInfo: \(groupInfo)\nmember: \(member)"
             case let .groupRemoved(groupInfo): return String(describing: groupInfo)
             case let .groupUpdated(toGroup): return String(describing: toGroup)
+            case let .groupLinkCreated(groupInfo, connReqContact): return "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)"
+            case let .groupLink(groupInfo, connReqContact): return "groupInfo: \(groupInfo)\nconnReqContact: \(connReqContact)"
+            case let .groupLinkDeleted(groupInfo): return String(describing: groupInfo)
             case let .rcvFileAccepted(chatItem): return String(describing: chatItem)
             case .rcvFileAcceptedSndCancelled: return noDetails
             case let .rcvFileStart(chatItem): return String(describing: chatItem)
@@ -841,6 +859,8 @@ public enum StoreError: Decodable {
     case quotedChatItemNotFound
     case chatItemSharedMsgIdNotFound(sharedMsgId: String)
     case chatItemNotFoundByFileId(fileId: Int64)
+    case duplicateGroupLink(groupInfo: GroupInfo)
+    case groupLinkNotFound(groupInfo: GroupInfo)
 }
 
 public enum DatabaseError: Decodable {
