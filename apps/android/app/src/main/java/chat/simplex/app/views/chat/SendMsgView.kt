@@ -1,11 +1,11 @@
 package chat.simplex.app.views.chat
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.res.Configuration
 import android.text.InputType
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputConnection
+import android.view.inputmethod.*
 import android.widget.EditText
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -17,7 +17,6 @@ import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
@@ -37,7 +36,6 @@ import chat.simplex.app.ui.theme.SimpleXTheme
 import chat.simplex.app.views.helpers.SharedContent
 import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SendMsgView(
   composeState: MutableState<ComposeState>,
@@ -46,14 +44,11 @@ fun SendMsgView(
   textStyle: MutableState<TextStyle>
 ) {
   val cs = composeState.value
-  val focusRequester = remember { FocusRequester() }
-  val keyboard = LocalSoftwareKeyboardController.current
+  var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
-    // In replying state
-    focusRequester.requestFocus()
     delay(50)
-    keyboard?.show()
+    showKeyboard = true
   }
   val textColor = MaterialTheme.colors.onBackground
   val tintColor = MaterialTheme.colors.secondary
@@ -106,6 +101,12 @@ fun SendMsgView(
         DrawableCompat.setTint(it.background, tintColor.toArgb())
         if (cs.message.isEmpty()) {
           it.setText(cs.message)
+        }
+        if (showKeyboard) {
+          it.requestFocus()
+          val imm: InputMethodManager = SimplexApp.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+          imm.showSoftInput(it, InputMethodManager.SHOW_IMPLICIT)
+          showKeyboard = false
         }
       }
       Box(Modifier.align(Alignment.BottomEnd)) {
