@@ -241,6 +241,8 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
+
 type LocalAlias = Text
 
 data LocalProfile = LocalProfile
@@ -966,6 +968,7 @@ data CommandFunction
   = CFCreateConn
   | CFJoinConn
   | CFAllowConn
+  | CFAcceptContact
   | CFAckMessage
   | CFDeleteConn
   deriving (Eq, Show, Generic)
@@ -979,6 +982,7 @@ instance TextEncoding CommandFunction where
     "create_conn" -> Just CFCreateConn
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
+    "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
     _ -> Nothing
@@ -986,6 +990,7 @@ instance TextEncoding CommandFunction where
     CFCreateConn -> "create_conn"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
+    CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
@@ -994,6 +999,7 @@ commandExpectedResponse = \case
   CFCreateConn -> INV_
   CFJoinConn -> OK_
   CFAllowConn -> OK_
+  CFAcceptContact -> OK_
   CFAckMessage -> OK_
   CFDeleteConn -> OK_
 
