@@ -25,14 +25,14 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
   var groupLink by remember { mutableStateOf(connReqContact) }
   val cxt = LocalContext.current
   GroupLinkLayout(
-    userAddress = groupLink,
+    groupLink = groupLink,
     createLink = {
       withApi {
         groupLink = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
       }
     },
     share = { shareText(cxt, groupLink ?: return@GroupLinkLayout) },
-    deleteAddress = {
+    deleteLink = {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(R.string.delete_link_question),
         text = generalGetString(R.string.all_group_members_will_remain_connected),
@@ -52,10 +52,10 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
 
 @Composable
 fun GroupLinkLayout(
-  userAddress: String?,
+  groupLink: String?,
   createLink: () -> Unit,
   share: () -> Unit,
-  deleteAddress: () -> Unit
+  deleteLink: () -> Unit
 ) {
   Column(
     Modifier.padding(horizontal = DEFAULT_PADDING),
@@ -73,7 +73,7 @@ fun GroupLinkLayout(
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
-      if (userAddress == null) {
+      if (groupLink == null) {
         Text(
           stringResource(R.string.if_you_later_delete_link_you_wont_lose_members),
           Modifier.padding(bottom = 12.dp),
@@ -86,7 +86,7 @@ fun GroupLinkLayout(
           Modifier.padding(bottom = 12.dp),
           lineHeight = 22.sp
         )
-        QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
+        QRCode(groupLink, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -101,7 +101,7 @@ fun GroupLinkLayout(
             stringResource(R.string.delete_link),
             icon = Icons.Outlined.Delete,
             color = Color.Red,
-            click = deleteAddress
+            click = deleteLink
           )
         }
       }
