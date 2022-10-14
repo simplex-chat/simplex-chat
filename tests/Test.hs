@@ -15,7 +15,7 @@ main = do
   withSmpServer . hspec $ do
     describe "SimpleX chat markdown" markdownTests
     describe "SimpleX chat protocol" protocolTests
-    xdescribe "Mobile API Tests" mobileTests
+    describe "Mobile API Tests" mobileTests
     -- Workaround for SQLite IO error in first test after mobile tests on Mac
     it "Delay after Mobile API Tests" $ threadDelay 100000
     describe "SimpleX chat client" chatTests

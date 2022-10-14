@@ -126,7 +126,7 @@ chatTests = do
   describe "maintenance mode" $ do
     it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-    xit "encrypt/decrypt database" testDatabaseEncryption
+    it "encrypt/decrypt database" testDatabaseEncryption
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
     it "mute/unmute group" testMuteGroup
