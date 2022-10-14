@@ -87,6 +87,7 @@ module Simplex.Chat.Store
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
+    getContactViaMember,
     setNewContactMemberConnRequest,
     getMemberInvitation,
     createMemberConnection,
@@ -1824,6 +1825,30 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
         ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
             :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
         )
+
+getContactViaMember :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
+getContactViaMember db User {userId} GroupMember {groupMemberId} =
+  maybeFirstRow toContact $
+    DB.query
+      db
+      [sql|
+        SELECT
+          -- Contact
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.local_alias, ct.enable_ntfs, ct.created_at, ct.updated_at,
+          -- Connection
+          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at
+        FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        JOIN connections c ON c.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          where cc.contact_id = ct.contact_id
+        )
+        JOIN group_members m ON m.contact_id = ct.contact_id
+        WHERE ct.user_id = ? AND m.group_member_id = ?
+      |]
+      (userId, groupMemberId)
 
 setNewContactMemberConnRequest :: DB.Connection -> User -> GroupMember -> ConnReqInvitation -> IO ()
 setNewContactMemberConnRequest db User {userId} GroupMember {groupMemberId} connRequest = do

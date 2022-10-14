@@ -1686,9 +1686,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   let GroupMember {groupMemberId, memberId} = m
                   sendXGrpMemIntro hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               -- [async agent commands] group link auto-accept continuation on receiving INV
-              CFAcceptGroupLinkCreateConn -> do
-                threadDelay 1000000
-                withStore' (\db -> getViaGroupContact db user m) >>= \case
+              CFAcceptGroupLinkCreateConn ->
+                withStore' (\db -> getContactViaMember db user m) >>= \case
                   Nothing -> messageError "implementation error: invitee does not have contact"
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
