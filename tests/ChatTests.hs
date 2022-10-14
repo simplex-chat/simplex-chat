@@ -78,7 +78,7 @@ chatTests = do
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
     describe "send and receive file to group" $ fileTestMatrix3 runTestGroupFileTransfer
-    it "send and receive file to group (without accepting)" testInlineGroupFileTransfer
+    it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
     describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
     describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
