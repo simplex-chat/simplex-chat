@@ -867,7 +867,9 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return when (val r = sendCmd(CC.APIGetGroupLink(groupId))) {
       is CR.GroupLink -> r.connReqContact
       else -> {
-        Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
+        if (!(networkErrorAlert(r))) {
+          Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
+        }
         null
       }
     }
