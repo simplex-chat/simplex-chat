@@ -30,13 +30,7 @@ import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, close: () -> Unit) {
-  var groupLink by remember { mutableStateOf(connReqContact) }
-  if (groupInfo.canAddMembers) {
-    LaunchedEffect(Unit) {
-      groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
-    }
-  }
+fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -49,7 +43,6 @@ fun GroupChatInfoView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedBy { it.displayName.lowercase() },
       developerTools,
-      groupLink,
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
@@ -72,7 +65,12 @@ fun GroupChatInfoView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
-      manageGroupLink = { ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) } }
+      manageGroupLink = {
+        withApi {
+          val groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) }
+        }
+      }
     )
   }
 }
@@ -119,7 +117,6 @@ fun GroupChatInfoLayout(
   groupInfo: GroupInfo,
   members: List<GroupMember>,
   developerTools: Boolean,
-  connReqContact: String?,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
@@ -144,6 +141,7 @@ fun GroupChatInfoLayout(
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
+        SectionItemView(manageGroupLink) { GroupLinkButton() }
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
         SectionItemView(onAddMembersClick) {
           val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
@@ -160,14 +158,6 @@ fun GroupChatInfoLayout(
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()
-
-    if (groupInfo.canAddMembers) {
-      SectionView(stringResource(R.string.section_title_group_link)) {
-        SectionItemView(manageGroupLink) { EditGroupLinkButton(connReqContact != null) }
-      }
-      SectionSpacer()
-    }
-
     SectionView {
       if (groupInfo.canEdit) {
         SectionItemView(editGroupProfile) { EditGroupProfileButton() }
@@ -286,20 +276,19 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
 }
 
 @Composable
-fun EditGroupLinkButton(exists: Boolean) {
-  val text = if (!exists) stringResource(R.string.button_create_group_link) else stringResource(R.string.button_manage_group_link)
+fun GroupLinkButton() {
   Row(
     Modifier
       .fillMaxSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     Icon(
-      if (!exists) Icons.Outlined.AddLink else Icons.Outlined.Link,
-      text,
+      Icons.Outlined.Link,
+      stringResource(R.string.group_link),
       tint = MaterialTheme.colors.primary
     )
     Spacer(Modifier.size(8.dp))
-    Text(text, color = MaterialTheme.colors.primary)
+    Text(stringResource(R.string.group_link), color = MaterialTheme.colors.primary)
   }
 }
 
@@ -365,7 +354,6 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      connReqContact = "",
       addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }

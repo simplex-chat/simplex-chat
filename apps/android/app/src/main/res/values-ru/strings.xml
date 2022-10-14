@@ -760,10 +760,8 @@
     <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
-    <string name="section_title_group_link">ССЫЛКА</string>
     <string name="group_link">Ссылка группы</string>
     <string name="button_create_group_link">Создать ссылку</string>
-    <string name="button_manage_group_link">Управлять ссылкой</string>
     <string name="delete_link_question">Удалить ссылку?</string>
     <string name="delete_link">Удалить ссылку</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе.</string>

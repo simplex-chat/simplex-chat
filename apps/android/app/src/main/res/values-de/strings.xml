@@ -760,10 +760,8 @@
   <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht - dies kann nicht rückgängig gemacht werden!</string>
   <string name="button_leave_group">Gruppe verlassen</string>
   <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
-  <string name="section_title_group_link">LINK</string>
   <string name="group_link">Group link</string>
   <string name="button_create_group_link">Create link</string>
-  <string name="button_manage_group_link">Manage link</string>
   <string name="delete_link_question">Delete link?</string>
   <string name="delete_link">Delete link</string>
   <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group.</string>
