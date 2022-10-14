@@ -851,14 +851,14 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
-  suspend fun apiDeleteGroupLink(groupId: Long): GroupInfo? {
+  suspend fun apiDeleteGroupLink(groupId: Long): Boolean {
     return when (val r = sendCmd(CC.APIDeleteGroupLink(groupId))) {
-      is CR.GroupLinkDeleted -> r.groupInfo
+      is CR.GroupLinkDeleted -> true
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiDeleteGroupLink", generalGetString(R.string.error_deleting_link_for_group), r)
         }
-        null
+        false
       }
     }
   }
