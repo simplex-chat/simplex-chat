@@ -768,8 +768,8 @@
     <string name="if_you_later_delete_link_you_wont_lose_members">Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
     <string name="if_you_delete_group_link_you_wont_lose_members">Вы можете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
     <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
-    <string name="error_creating_link_for_group">Ошибка при создании ссылки для группы</string>
-    <string name="error_deleting_link_for_group">Ошибка при удалении ссылки для группы</string>
+    <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
+    <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>
