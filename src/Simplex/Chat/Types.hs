@@ -241,13 +241,7 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data AcceptRequestProfileMode = MainProfile LocalProfile | NewIncognito Profile | ExistingIncognito LocalProfile
-
-profileModeToProfile :: AcceptRequestProfileMode -> Profile
-profileModeToProfile = \case
-  MainProfile lp -> fromLocalProfile lp
-  NewIncognito p -> p
-  ExistingIncognito lp -> fromLocalProfile lp
+data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
 
