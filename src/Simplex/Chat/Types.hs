@@ -965,7 +965,8 @@ instance TextEncoding CommandStatus where
     CSError -> "error"
 
 data CommandFunction
-  = CFCreateConn
+  = CFXGrpMemIntroCreateConn -- continuation is to send XGrpMemInv
+  | CFAcceptGroupLinkCreateConn -- continuation is to send group invitation
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
@@ -979,7 +980,8 @@ instance ToField CommandFunction where toField = toField . textEncode
 
 instance TextEncoding CommandFunction where
   textDecode = \case
-    "create_conn" -> Just CFCreateConn
+    "create_conn" -> Just CFXGrpMemIntroCreateConn
+    "accept_group_link_create_conn" -> Just CFAcceptGroupLinkCreateConn
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "accept_contact" -> Just CFAcceptContact
@@ -987,7 +989,8 @@ instance TextEncoding CommandFunction where
     "delete_conn" -> Just CFDeleteConn
     _ -> Nothing
   textEncode = \case
-    CFCreateConn -> "create_conn"
+    CFXGrpMemIntroCreateConn -> "create_conn"
+    CFAcceptGroupLinkCreateConn -> "accept_group_link_create_conn"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAcceptContact -> "accept_contact"
@@ -996,7 +999,8 @@ instance TextEncoding CommandFunction where
 
 commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
-  CFCreateConn -> INV_
+  CFXGrpMemIntroCreateConn -> INV_
+  CFAcceptGroupLinkCreateConn -> INV_
   CFJoinConn -> OK_
   CFAllowConn -> OK_
   CFAcceptContact -> OK_

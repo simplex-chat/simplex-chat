@@ -86,6 +86,8 @@ module Simplex.Chat.Store
     getUserGroupDetails,
     getGroupInvitation,
     createNewContactMember,
+    createNewContactMemberAsync,
+    setNewContactMemberConnRequest,
     getMemberInvitation,
     createMemberConnection,
     updateGroupMemberStatus,
@@ -1800,6 +1802,33 @@ createNewContactMember db gVar User {userId, userContactId} groupId Contact {con
             ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
                 :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
             )
+
+createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupId -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> ExceptT StoreError IO ()
+createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) =
+  createWithRandomId gVar $ \memId -> do
+    createdAt <- liftIO getCurrentTime
+    insertMember_ (MemberId memId) createdAt
+    groupMemberId <- liftIO $ insertedRowId db
+    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId Nothing 0 createdAt
+    setCommandConnId db user cmdId connId
+  where
+    insertMember_ memberId createdAt =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO group_members
+            ( group_id, member_id, member_role, member_category, member_status, invited_by,
+              user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        |]
+        ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser)
+            :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
+        )
+
+setNewContactMemberConnRequest :: DB.Connection -> User -> GroupMember -> ConnReqInvitation -> IO ()
+setNewContactMemberConnRequest db User {userId} GroupMember {groupMemberId} connRequest = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE group_members SET sent_inv_queue_info = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?" (connRequest, currentTs, userId, groupMemberId)
 
 getMemberInvitation :: DB.Connection -> User -> Int64 -> IO (Maybe ConnReqInvitation)
 getMemberInvitation db User {userId} groupMemberId =

@@ -1635,13 +1635,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
                       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
                     forM_ groupId_ $ \groupId -> do
-                      gInfo <- withStore $ \db -> getGroupInfo db user groupId
                       gVar <- asks idsDrg
-                      -- TODO async and continuation?
-                      (grpAgentConnId, cReq) <- withAgent $ \a -> createConnection a True SCMInvitation
-                      member <- withStore $ \db -> createNewContactMember db gVar user groupId ct GRMember grpAgentConnId cReq
-                      sendGrpInvitation user ct gInfo member cReq
-                      toView $ CRSentGroupInvitation gInfo ct member
+                      groupConnIds <- createAgentConnectionAsync user CFAcceptGroupLinkCreateConn True SCMInvitation
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -1678,16 +1674,27 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
     processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
-        -- [async agent commands] XGrpMemIntro continuation on receiving INV
-        withCompletedCommand conn agentMsg $ \_ ->
+        withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
-            groupConnReq@(CRInvitationUri _ _) -> do
-              contData <- withStore' $ \db -> do
-                setConnConnReqInv db user connId cReq
-                getXGrpMemIntroContGroup db user m
-              forM_ contData $ \(hostConnId, directConnReq) -> do
-                let GroupMember {groupMemberId, memberId} = m
-                sendXGrpMemIntro hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+            groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
+              -- [async agent commands] XGrpMemIntro continuation on receiving INV
+              CFXGrpMemIntroCreateConn -> do
+                contData <- withStore' $ \db -> do
+                  setConnConnReqInv db user connId cReq
+                  getXGrpMemIntroContGroup db user m
+                forM_ contData $ \(hostConnId, directConnReq) -> do
+                  let GroupMember {groupMemberId, memberId} = m
+                  sendXGrpMemIntro hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
+              -- [async agent commands] group link auto-accept continuation on receiving INV
+              CFAcceptGroupLinkCreateConn -> do
+                threadDelay 1000000
+                withStore' (\db -> getViaGroupContact db user m) >>= \case
+                  Nothing -> messageError "implementation error: invitee does not have contact"
+                  Just ct -> do
+                    withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
+                    sendGrpInvitation user ct gInfo m cReq
+                    toView $ CRSentGroupInvitation gInfo ct m
+              _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
         ChatMessage {chatMsgEvent} <- liftEither $ parseChatMessage connInfo
@@ -2401,8 +2408,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             else do
               when (memberRole < GRMember) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              groupConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
-              directConnIds <- createAgentConnectionAsync user enableNtfs SCMInvitation
+              groupConnIds <- createAgentConnectionAsync user CFXGrpMemIntroCreateConn enableNtfs SCMInvitation
+              directConnIds <- createAgentConnectionAsync user CFXGrpMemIntroCreateConn enableNtfs SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
@@ -2757,9 +2764,9 @@ mkChatItem cd ciId content file quotedItem sharedMsgId itemTs currentTs = do
       meta = mkCIMeta ciId content itemText ciStatusNew sharedMsgId False False tz currentTs itemTs currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, file}
 
-createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
-createAgentConnectionAsync user enableNtfs cMode = do
-  cmdId <- withStore' $ \db -> createCommand db user Nothing CFCreateConn
+createAgentConnectionAsync :: forall m c. (ChatMonad m, ConnectionModeI c) => User -> CommandFunction -> Bool -> SConnectionMode c -> m (CommandId, ConnId)
+createAgentConnectionAsync user cmdFunction enableNtfs cMode = do
+  cmdId <- withStore' $ \db -> createCommand db user Nothing cmdFunction
   connId <- withAgent $ \a -> createConnectionAsync a (aCorrId cmdId) enableNtfs cMode
   pure (cmdId, connId)
 
