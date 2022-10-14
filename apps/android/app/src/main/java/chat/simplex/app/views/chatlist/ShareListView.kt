@@ -93,7 +93,7 @@ private fun ShareListToolbar(chatModel: ChatModel, stopped: Boolean, onSearchVal
         Text(
           when (chatModel.sharedContent.value) {
             is SharedContent.Text -> stringResource(R.string.share_message)
-            is SharedContent.Image -> stringResource(R.string.share_image)
+            is SharedContent.Images -> stringResource(R.string.share_image)
             is SharedContent.File -> stringResource(R.string.share_file)
             else -> stringResource(R.string.share_message)
           },

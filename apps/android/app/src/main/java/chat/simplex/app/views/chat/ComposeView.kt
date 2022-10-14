@@ -294,6 +294,9 @@ fun ComposeView(
         if (lp != null && pendingLinkUrl.value == url) {
           composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
           pendingLinkUrl.value = null
+        } else if (pendingLinkUrl.value == url) {
+          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
+          pendingLinkUrl.value = null
         }
       }
     }
@@ -500,7 +503,7 @@ fun ComposeView(
   LaunchedEffect(chatModel.sharedContent.value) {
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Image -> processPickedImage(listOf(shared.uri))
+      is SharedContent.Images -> processPickedImage(shared.uris)
       is SharedContent.File -> processPickedFile(shared.uri)
       null -> {}
     }
