@@ -447,16 +447,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   val scope = rememberCoroutineScope()
   val uriHandler = LocalUriHandler.current
   val cxt = LocalContext.current
-  // Helps to scroll to bottom after moving from Group to Direct chat
-  // and prevents scrolling to bottom on orientation change
-  var shouldAutoScroll by rememberSaveable { mutableStateOf(true) }
-  LaunchedEffect(chat.chatInfo.apiId, chat.chatInfo.chatType, shouldAutoScroll) {
-    if (shouldAutoScroll && listState.firstVisibleItemIndex != 0) {
-      scope.launch { listState.scrollToItem(0) }
-    }
-    // Don't autoscroll next time until it will be needed
-    shouldAutoScroll = false
-  }
+  AutoScrollLogic(chat.id, listState)
   var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
@@ -576,6 +567,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+}
+
+@Composable
+private fun AutoScrollLogic(chatId: ChatId, listState: LazyListState) {
+  val scope = rememberCoroutineScope()
+  // Helps to scroll to bottom after moving from Group to Direct chat
+  // and prevents scrolling to bottom on orientation change
+  var shouldAutoScroll by rememberSaveable { mutableStateOf(true to chatId) }
+  LaunchedEffect(chatId, shouldAutoScroll) {
+    if ((shouldAutoScroll.first || shouldAutoScroll.second != chatId) && listState.firstVisibleItemIndex != 0) {
+      scope.launch { listState.scrollToItem(0) }
+    }
+    // Don't autoscroll next time until it will be needed
+    shouldAutoScroll = false to chatId
+  }
 }
 
 @Composable
