@@ -1037,11 +1037,9 @@ createAcceptedContact :: DB.Connection -> UserId -> ConnId -> ContactName -> Pro
 createAcceptedContact db userId agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
-  customUserProfileId <- case incognitoProfile of
-    Nothing -> pure Nothing
-    Just ip -> case ip of
-      NewIncognito p -> createIncognitoProfile_ db userId createdAt $ Just p
-      ExistingIncognito LocalProfile {profileId = pId} -> pure $ Just pId
+  customUserProfileId <- forM incognitoProfile  $ \case
+    NewIncognito p -> createIncognitoProfile_ db userId createdAt $ Just p
+    ExistingIncognito LocalProfile {profileId = pId} -> pure $ Just pId
   DB.execute
     db
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?)"
