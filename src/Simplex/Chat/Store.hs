@@ -390,7 +390,7 @@ setActiveUser db userId = do
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile = do
   createdAt <- getCurrentTime
-  customUserProfileId <- createIncognitoProfile_ db userId createdAt incognitoProfile
+  customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   let pccConnStatus = ConnJoined
   DB.execute
     db
@@ -441,7 +441,7 @@ getConnReqContactXContactId db userId cReqHash = do
 createDirectConnection :: DB.Connection -> UserId -> ConnId -> ConnReqInvitation -> ConnStatus -> Maybe Profile -> IO PendingContactConnection
 createDirectConnection db userId acId cReq pccConnStatus incognitoProfile = do
   createdAt <- getCurrentTime
-  customUserProfileId <- createIncognitoProfile_ db userId createdAt incognitoProfile
+  customUserProfileId <- mapM (createIncognitoProfile_ db userId createdAt) incognitoProfile
   DB.execute
     db
     [sql|
@@ -452,17 +452,16 @@ createDirectConnection db userId acId cReq pccConnStatus incognitoProfile = do
   pccConnId <- insertedRowId db
   pure PendingContactConnection {pccConnId, pccAgentConnId = AgentConnId acId, pccConnStatus, viaContactUri = False, viaUserContactLink = Nothing, customUserProfileId, connReqInv = Just cReq, localAlias = "", createdAt, updatedAt = createdAt}
 
-createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Maybe Profile -> IO (Maybe Int64)
-createIncognitoProfile_ db userId createdAt incognitoProfile =
-  forM incognitoProfile $ \Profile {displayName, fullName, image} -> do
-    DB.execute
-      db
-      [sql|
-        INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
-        VALUES (?,?,?,?,?,?,?)
-      |]
-      (displayName, fullName, image, userId, Just True, createdAt, createdAt)
-    insertedRowId db
+createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
+createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+  insertedRowId db
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =
@@ -1037,9 +1036,9 @@ createAcceptedContact :: DB.Connection -> UserId -> ConnId -> ContactName -> Pro
 createAcceptedContact db userId agentConnId localDisplayName profileId profile userContactLinkId xContactId incognitoProfile = do
   DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   createdAt <- getCurrentTime
-  customUserProfileId <- forM incognitoProfile  $ \case
-    NewIncognito p -> createIncognitoProfile_ db userId createdAt $ Just p
-    ExistingIncognito LocalProfile {profileId = pId} -> pure $ Just pId
+  customUserProfileId <- forM incognitoProfile $ \case
+    NewIncognito p -> createIncognitoProfile_ db userId createdAt p
+    ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   DB.execute
     db
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?)"
