@@ -40,8 +40,7 @@ fun rememberSaveFileLauncher(cxt: Context, ciFile: CIFile?): ManagedActivityResu
           val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
-            val file = File(filePath)
-            outputStream.write(file.readBytes())
+            File(filePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
             Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
@@ -74,8 +73,7 @@ fun saveImage(cxt: Context, ciFile: CIFile?) {
     uri?.let {
       cxt.contentResolver.openOutputStream(uri)?.let { stream ->
         val outputStream = BufferedOutputStream(stream)
-        val file = File(filePath)
-        outputStream.write(file.readBytes())
+        File(filePath).inputStream().use { it.copyTo(outputStream) }
         outputStream.close()
         Toast.makeText(cxt, generalGetString(R.string.image_saved), Toast.LENGTH_SHORT).show()
       }

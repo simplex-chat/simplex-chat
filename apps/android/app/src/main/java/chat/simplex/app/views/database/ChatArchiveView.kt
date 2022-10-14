@@ -94,8 +94,7 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchivePath: String): 
           val contentResolver = cxt.contentResolver
           contentResolver.openOutputStream(destination)?.let { stream ->
             val outputStream = BufferedOutputStream(stream)
-            val file = File(chatArchivePath)
-            outputStream.write(file.readBytes())
+            File(chatArchivePath).inputStream().use { it.copyTo(outputStream) }
             outputStream.close()
             Toast.makeText(cxt, generalGetString(R.string.file_saved), Toast.LENGTH_SHORT).show()
           }
