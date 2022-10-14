@@ -398,11 +398,22 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
           chatModel.sharedContent.value = SharedContent.Text(it)
         }
         intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.Image(it)
+          chatModel.sharedContent.value = SharedContent.Images(listOf(it))
         } // All other mime types
         else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
           chatModel.sharedContent.value = SharedContent.File(it)
         }
+      }
+    }
+    Intent.ACTION_SEND_MULTIPLE -> {
+      // Close active chat and show a list of chats
+      chatModel.chatId.value = null
+      chatModel.clearOverlays.value = true
+      when {
+        intent.type?.startsWith("image/") == true -> (intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>)?.let {
+          chatModel.sharedContent.value = SharedContent.Images(it)
+        } // All other mime types
+        else -> {}
       }
     }
   }
