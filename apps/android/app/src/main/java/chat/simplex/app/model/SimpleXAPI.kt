@@ -842,16 +842,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiCreateGroupLink(groupId: Long): String? {
     return when (val r = sendCmd(CC.APICreateGroupLink(groupId))) {
       is CR.GroupLinkCreated -> r.connReqContact
-      is CR.ChatCmdError -> {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_creating_link_for_group), "$r.chatError")
-        null
-      }
       else -> {
-        Log.e(TAG, "apiCreateGroupLink bad response: ${r.responseType} ${r.details}")
-        AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_creating_link_for_group),
-          "${r.responseType}: ${r.details}"
-        )
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiCreateGroupLink", generalGetString(R.string.error_creating_link_for_group), r)
+        }
         null
       }
     }
@@ -860,16 +854,10 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
   suspend fun apiDeleteGroupLink(groupId: Long): GroupInfo? {
     return when (val r = sendCmd(CC.APIDeleteGroupLink(groupId))) {
       is CR.GroupLinkDeleted -> r.groupInfo
-      is CR.ChatCmdError -> {
-        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_link_for_group), "$r.chatError")
-        null
-      }
       else -> {
-        Log.e(TAG, "apiDeleteGroupLink bad response: ${r.responseType} ${r.details}")
-        AlertManager.shared.showAlertMsg(
-          generalGetString(R.string.error_deleting_link_for_group),
-          "${r.responseType}: ${r.details}"
-        )
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiDeleteGroupLink", generalGetString(R.string.error_deleting_link_for_group), r)
+        }
         null
       }
     }
