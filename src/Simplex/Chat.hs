@@ -521,12 +521,12 @@ processChatCommand = \case
       pure $ CRChatCleared (AChatInfo SCTGroup (GroupChat gInfo'))
     CTContactConnection -> pure $ chatCmdError "not supported"
     CTContactRequest -> pure $ chatCmdError "not supported"
-  APIAcceptContact connReqId -> withUser $ \user@User {userId} -> withChatLock $ do
+  APIAcceptContact connReqId -> withUser $ \user@User {userId, profile} -> withChatLock $ do
     cReq <- withStore $ \db -> getContactRequest db userId connReqId
     -- [incognito] generate profile to send, create connection with incognito profile
     incognito <- readTVarIO =<< asks incognitoMode
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    ct <- acceptContactRequest user cReq incognitoProfile
+    profileMode <- if incognito then NewIncognito <$> liftIO generateRandomProfile else pure $ MainProfile profile
+    ct <- acceptContactRequest user cReq profileMode
     pure $ CRAcceptingContactRequest ct
   APIRejectContact connReqId -> withUser $ \User {userId} -> withChatLock $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
@@ -1297,18 +1297,18 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
                   f = filePath `combine` (name <> suffix <> ext)
                in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
 
-acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe Profile -> m Contact
-acceptContactRequest User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
-  let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> AcceptRequestProfileMode -> m Contact
+acceptContactRequest User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} profileMode = do
+  let profileToSend = profileModeToProfile profileMode
   acId <- withAgent $ \a -> acceptContact a True invId . directMessage $ XInfo profileToSend
-  withStore' $ \db -> createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile Nothing
+  withStore' $ \db -> createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId profileMode
 
-acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe Profile -> Maybe ProfileId -> m Contact
-acceptContactRequestAsync user@User {userId, profile} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile existingIncognitoProfileId = do
-  let profileToSend = fromMaybe (fromLocalProfile profile) incognitoProfile
+acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> AcceptRequestProfileMode -> m Contact
+acceptContactRequestAsync user@User {userId} UserContactRequest {agentInvitationId = AgentInvId invId, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} profileMode = do
+  let profileToSend = profileModeToProfile profileMode
   (cmdId, acId) <- agentAcceptContactAsync user True invId $ XInfo profileToSend
   withStore' $ \db -> do
-    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId incognitoProfile existingIncognitoProfileId
+    ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db userId acId cName profileId p userContactLinkId xContactId profileMode
     setCommandConnId db user cmdId connId
     pure ct
 
@@ -1921,13 +1921,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                         -- [incognito] generate profile to send, create connection with incognito profile
                         -- TODO allow to configure incognito setting on auto accept instead of checking incognito mode
                         incognito <- readTVarIO =<< asks incognitoMode
-                        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-                        ct <- acceptContactRequestAsync user cReq incognitoProfile Nothing
+                        profileMode <- if incognito then NewIncognito <$> liftIO generateRandomProfile else pure $ MainProfile profile
+                        ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingContactRequest ct
                       Just groupId -> do
-                        gInfo@GroupInfo {membership = membership@GroupMember {memberProfile = mp@LocalProfile {profileId}}} <- withStore $ \db -> getGroupInfo db user groupId
-                        let (incognitoProfile, existingIncognitoProfileId) = if memberIncognito membership then (Just $ fromLocalProfile mp, Just profileId) else (Nothing, Nothing)
-                        ct <- acceptContactRequestAsync user cReq incognitoProfile existingIncognitoProfileId
+                        gInfo@GroupInfo {membership = membership@GroupMember {memberProfile}} <- withStore $ \db -> getGroupInfo db user groupId
+                        let profileMode = if memberIncognito membership then ExistingIncognito memberProfile else MainProfile profile
+                        ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingGroupJoinRequest gInfo ct
                     else do
                       toView $ CRReceivedContactRequest cReq
