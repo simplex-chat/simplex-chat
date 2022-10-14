@@ -62,7 +62,7 @@ fun SendMsgView(
   val paddingEnd = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
 
-  Column(Modifier.padding(bottom = 8.dp)) {
+  Column(Modifier.padding(vertical = 8.dp)) {
     Box {
       AndroidView(modifier = Modifier, factory = {
         val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
