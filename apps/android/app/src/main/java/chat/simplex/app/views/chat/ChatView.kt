@@ -125,8 +125,9 @@ fun ChatView(chatModel: ChatModel) {
             }
           } else if (cInfo is ChatInfo.Group) {
             setGroupMembers(cInfo.groupInfo, chatModel)
+            val connReqContact = if (cInfo.groupInfo.canAddMembers) chatModel.controller.apiGetGroupLink(cInfo.apiId) else null
             ModalManager.shared.showModalCloseable(true) { close ->
-              GroupChatInfoView(chatModel, close)
+              GroupChatInfoView(chatModel, cInfo.groupInfo, connReqContact, close)
             }
           }
         }

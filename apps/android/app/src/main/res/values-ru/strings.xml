@@ -760,6 +760,18 @@
     <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
+    <string name="section_title_group_link">ССЫЛКА</string>
+    <string name="group_link">Ссылка группы</string>
+    <string name="button_create_group_link">Создать ссылку</string>
+    <string name="button_manage_group_link">Управлять ссылкой</string>
+    <string name="delete_link_question">Удалить ссылку?</string>
+    <string name="delete_link">Удалить ссылку</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе.</string>
+    <string name="if_you_later_delete_link_you_wont_lose_members">Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
+    <string name="if_you_delete_group_link_you_wont_lose_members">Вы можете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
+    <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через этот адрес, останутся в группе.</string>
+    <string name="error_creating_link_for_group">Ошибка при создании ссылки для группы</string>
+    <string name="error_deleting_link_for_group">Ошибка при удалении ссылки для группы</string>
 
     <!-- For Console chat info section -->
     <string name="section_title_for_console">ДЛЯ КОНСОЛИ</string>

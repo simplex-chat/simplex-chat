@@ -760,6 +760,18 @@
   <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht - dies kann nicht rückgängig gemacht werden!</string>
   <string name="button_leave_group">Gruppe verlassen</string>
   <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
+  <string name="section_title_group_link">LINK</string>
+  <string name="group_link">Group link</string>
+  <string name="button_create_group_link">Create link</string>
+  <string name="button_manage_group_link">Manage link</string>
+  <string name="delete_link_question">Delete link?</string>
+  <string name="delete_link">Delete link</string>
+  <string name="you_can_share_group_link_anybody_will_be_able_to_connect">You can share a link or a QR code - anybody will be able to join the group.</string>
+  <string name="if_you_later_delete_link_you_wont_lose_members">If you later delete it - you won\'t lose members of the group connected via the link.</string>
+  <string name="if_you_delete_group_link_you_wont_lose_members">If you delete it - you won\'t lose members of the group connected via this link.</string>
+  <string name="all_group_members_will_remain_connected">All group members will remain connected.</string>
+  <string name="error_creating_link_for_group">Error creating a link for group</string>
+  <string name="error_deleting_link_for_group">Error deleting the link for group</string>
 
   <!-- For Console chat info section -->
   <string name="section_title_for_console">FÜR KONSOLE</string>

@@ -839,6 +839,52 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     }
   }
 
+  suspend fun apiCreateGroupLink(groupId: Long): String? {
+    return when (val r = sendCmd(CC.APICreateGroupLink(groupId))) {
+      is CR.GroupLinkCreated -> r.connReqContact
+      is CR.ChatCmdError -> {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_creating_link_for_group), "$r.chatError")
+        null
+      }
+      else -> {
+        Log.e(TAG, "apiCreateGroupLink bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.error_creating_link_for_group),
+          "${r.responseType}: ${r.details}"
+        )
+        null
+      }
+    }
+  }
+
+  suspend fun apiDeleteGroupLink(groupId: Long): GroupInfo? {
+    return when (val r = sendCmd(CC.APIDeleteGroupLink(groupId))) {
+      is CR.GroupLinkDeleted -> r.groupInfo
+      is CR.ChatCmdError -> {
+        AlertManager.shared.showAlertMsg(generalGetString(R.string.error_deleting_link_for_group), "$r.chatError")
+        null
+      }
+      else -> {
+        Log.e(TAG, "apiDeleteGroupLink bad response: ${r.responseType} ${r.details}")
+        AlertManager.shared.showAlertMsg(
+          generalGetString(R.string.error_deleting_link_for_group),
+          "${r.responseType}: ${r.details}"
+        )
+        null
+      }
+    }
+  }
+
+  suspend fun apiGetGroupLink(groupId: Long): String? {
+    return when (val r = sendCmd(CC.APIGetGroupLink(groupId))) {
+      is CR.GroupLink -> r.connReqContact
+      else -> {
+        Log.e(TAG, "apiGetGroupLink bad response: ${r.responseType} ${r.details}")
+        null
+      }
+    }
+  }
+
   private fun networkErrorAlert(r: CR): Boolean {
     return when {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
@@ -1366,6 +1412,9 @@ sealed class CC {
   class ApiLeaveGroup(val groupId: Long): CC()
   class ApiListMembers(val groupId: Long): CC()
   class ApiUpdateGroupProfile(val groupId: Long, val groupProfile: GroupProfile): CC()
+  class APICreateGroupLink(val groupId: Long): CC()
+  class APIDeleteGroupLink(val groupId: Long): CC()
+  class APIGetGroupLink(val groupId: Long): CC()
   class GetUserSMPServers: CC()
   class SetUserSMPServers(val smpServers: List<String>): CC()
   class APISetChatItemTTL(val seconds: Long?): CC()
@@ -1424,6 +1473,9 @@ sealed class CC {
     is ApiLeaveGroup -> "/_leave #$groupId"
     is ApiListMembers -> "/_members #$groupId"
     is ApiUpdateGroupProfile -> "/_group_profile #$groupId ${json.encodeToString(groupProfile)}"
+    is APICreateGroupLink -> "/_create link #$groupId"
+    is APIDeleteGroupLink -> "/_delete link #$groupId"
+    is APIGetGroupLink -> "/_get link #$groupId"
     is GetUserSMPServers -> "/smp_servers"
     is SetUserSMPServers -> "/smp_servers ${smpServersStr(smpServers)}"
     is APISetChatItemTTL -> "/_ttl ${chatItemTTLStr(seconds)}"
@@ -1483,6 +1535,9 @@ sealed class CC {
     is ApiLeaveGroup -> "apiLeaveGroup"
     is ApiListMembers -> "apiListMembers"
     is ApiUpdateGroupProfile -> "apiUpdateGroupProfile"
+    is APICreateGroupLink -> "apiCreateGroupLink"
+    is APIDeleteGroupLink -> "apiDeleteGroupLink"
+    is APIGetGroupLink -> "apiGetGroupLink"
     is GetUserSMPServers -> "getUserSMPServers"
     is SetUserSMPServers -> "setUserSMPServers"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
@@ -1744,6 +1799,9 @@ sealed class CR {
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupRemoved") class GroupRemoved(val groupInfo: GroupInfo): CR() // unused
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val toGroup: GroupInfo): CR()
+  @Serializable @SerialName("groupLinkCreated") class GroupLinkCreated(val groupInfo: GroupInfo, val connReqContact: String): CR()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupInfo: GroupInfo, val connReqContact: String): CR()
+  @Serializable @SerialName("groupLinkDeleted") class GroupLinkDeleted(val groupInfo: GroupInfo): CR()
   // receiving file events
   @Serializable @SerialName("rcvFileAccepted") class RcvFileAccepted(val chatItem: AChatItem): CR()
   @Serializable @SerialName("rcvFileAcceptedSndCancelled") class RcvFileAcceptedSndCancelled(val rcvFileTransfer: RcvFileTransfer): CR()
@@ -1835,6 +1893,9 @@ sealed class CR {
     is ConnectedToGroupMember -> "connectedToGroupMember"
     is GroupRemoved -> "groupRemoved"
     is GroupUpdated -> "groupUpdated"
+    is GroupLinkCreated -> "groupLinkCreated"
+    is GroupLink -> "groupLink"
+    is GroupLinkDeleted -> "groupLinkDeleted"
     is RcvFileAcceptedSndCancelled -> "rcvFileAcceptedSndCancelled"
     is RcvFileAccepted -> "rcvFileAccepted"
     is RcvFileStart -> "rcvFileStart"
@@ -1925,6 +1986,9 @@ sealed class CR {
     is ConnectedToGroupMember -> "groupInfo: $groupInfo\nmember: $member"
     is GroupRemoved -> json.encodeToString(groupInfo)
     is GroupUpdated -> json.encodeToString(toGroup)
+    is GroupLinkCreated -> "groupInfo: $groupInfo\nconnReqContact: $connReqContact"
+    is GroupLink -> "groupInfo: $groupInfo\nconnReqContact: $connReqContact"
+    is GroupLinkDeleted -> json.encodeToString(groupInfo)
     is RcvFileAcceptedSndCancelled -> noDetails()
     is RcvFileAccepted -> json.encodeToString(chatItem)
     is RcvFileStart -> json.encodeToString(chatItem)

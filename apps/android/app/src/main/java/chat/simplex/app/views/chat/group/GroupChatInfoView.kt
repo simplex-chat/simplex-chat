@@ -30,7 +30,13 @@ import chat.simplex.app.views.chatlist.setGroupMembers
 import chat.simplex.app.views.helpers.*
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, close: () -> Unit) {
+  var groupLink by remember { mutableStateOf(connReqContact) }
+  if (groupInfo.canAddMembers) {
+    LaunchedEffect(Unit) {
+      groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+    }
+  }
   BackHandler(onBack = close)
   val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -43,6 +49,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
         .sortedBy { it.displayName.lowercase() },
       developerTools,
+      groupLink,
       addMembers = {
         withApi {
           setGroupMembers(groupInfo, chatModel)
@@ -65,6 +72,7 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      manageGroupLink = { ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) } }
     )
   }
 }
@@ -111,12 +119,14 @@ fun GroupChatInfoLayout(
   groupInfo: GroupInfo,
   members: List<GroupMember>,
   developerTools: Boolean,
+  connReqContact: String?,
   addMembers: () -> Unit,
   showMemberInfo: (GroupMember) -> Unit,
   editGroupProfile: () -> Unit,
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
+  manageGroupLink: () -> Unit,
 ) {
   Column(
     Modifier
@@ -150,6 +160,13 @@ fun GroupChatInfoLayout(
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()
+
+    if (groupInfo.canAddMembers) {
+      SectionView(stringResource(R.string.section_title_group_link)) {
+        SectionItemView(manageGroupLink) { EditGroupLinkButton(connReqContact != null) }
+      }
+      SectionSpacer()
+    }
 
     SectionView {
       if (groupInfo.canEdit) {
@@ -269,6 +286,24 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
 }
 
 @Composable
+fun EditGroupLinkButton(exists: Boolean) {
+  val text = if (!exists) stringResource(R.string.button_create_group_link) else stringResource(R.string.button_manage_group_link)
+  Row(
+    Modifier
+      .fillMaxSize(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      if (!exists) Icons.Outlined.AddLink else Icons.Outlined.Link,
+      text,
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(text, color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 fun EditGroupProfileButton() {
   Row(
     Modifier
@@ -330,7 +365,8 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
+      connReqContact = "",
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
 }
