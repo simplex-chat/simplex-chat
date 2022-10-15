@@ -171,6 +171,9 @@
 "Advanced network settings" = "Erweiterte Netzwerkeinstellungen";
 
 /* No comment provided by engineer. */
+"All group members will remain connected." = "***All group members will remain connected.";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
 
 /* No comment provided by engineer. */
@@ -432,6 +435,9 @@
 "Create address" = "Adresse erstellen";
 
 /* No comment provided by engineer. */
+"Create link" = "***Create link";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Erstellen Sie einen einmaligen Einladungslink";
 
 /* No comment provided by engineer. */
@@ -556,6 +562,12 @@
 
 /* No comment provided by engineer. */
 "Delete invitation" = "Einladung löschen";
+
+/* No comment provided by engineer. */
+"Delete link" = "***Delete link";
+
+/* No comment provided by engineer. */
+"Delete link?" = "***Delete link?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Die Nachricht löschen?";
@@ -711,6 +723,9 @@
 "Error creating group" = "Fehler beim Erzeugen der Gruppe";
 
 /* No comment provided by engineer. */
+"Error creating group link" = "***Error creating group link";
+
+/* No comment provided by engineer. */
 "Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
 
 /* No comment provided by engineer. */
@@ -801,9 +816,6 @@
 "File: %@" = "Datei: %@";
 
 /* No comment provided by engineer. */
-"Files" = "Dateien";
-
-/* No comment provided by engineer. */
 "For console" = "Für Konsole";
 
 /* No comment provided by engineer. */
@@ -835,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Die Gruppeneinladung ist nicht mehr gültig, sie wurde vom Absender entfernt.";
+
+/* No comment provided by engineer. */
+"Group link" = "***Group link";
 
 /* notification */
 "Group message:" = "Grppennachricht:";
@@ -1453,9 +1468,6 @@
 "Share one-time invitation link" = "Einmal-Einladungslink teilen";
 
 /* No comment provided by engineer. */
-"Shared one-time link" = "Geteilter Einmal-Link";
-
-/* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
 
 /* No comment provided by engineer. */
@@ -1775,6 +1787,9 @@
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Über die Geräte-Einstellungen können Sie die Benachrichtigungsvorschau im Sperrbildschirm erlauben.";
+
+/* No comment provided by engineer. */
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "***You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.";
 
 /* No comment provided by engineer. */
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Sie können Ihre Adresse als Link oder als QR-Code teilen – Jeder kann sich darüber mit Ihnen verbinden. Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.";

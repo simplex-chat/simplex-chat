@@ -60,7 +60,7 @@ struct UserAddress: View {
                                     chatModel.userAddress = userAddress
                                 }
                             } catch let error {
-                                logger.error("UserAddress apiCreateUserAddress: \(error.localizedDescription)")
+                                logger.error("UserAddress apiCreateUserAddress: \(responseError(error))")
                                 let a = getErrorAlert(error, "Error creating address")
                                 alert = .error(title: a.title, error: "\(a.message)")
                             }
@@ -85,7 +85,7 @@ struct UserAddress: View {
                                         chatModel.userAddress = nil
                                     }
                                 } catch let error {
-                                    logger.error("UserAddress apiDeleteUserAddress: \(error.localizedDescription)")
+                                    logger.error("UserAddress apiDeleteUserAddress: \(responseError(error))")
                                 }
                             }
                         }, secondaryButton: .cancel()
