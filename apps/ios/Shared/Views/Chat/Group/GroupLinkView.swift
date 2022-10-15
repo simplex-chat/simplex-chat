@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct GroupLinkView: View {
     var groupId: Int64
-    @State var groupLink: String?
+    @Binding var groupLink: String?
     @State private var alert: GroupLinkAlert?
 
     private enum GroupLinkAlert: Identifiable {
@@ -32,7 +32,7 @@ struct GroupLinkView: View {
                 Text("Group link")
                     .font(.largeTitle)
                     .bold()
-                    .padding(.vertical)
+                    .padding(.bottom)
                 Text("You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.")
                     .padding(.bottom)
                 if let groupLink = groupLink {
@@ -97,9 +97,12 @@ struct GroupLinkView: View {
 
 struct GroupLinkView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var groupLink: String? = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+        @State var noGroupLink: String? = nil
+
         return Group {
-            GroupLinkView(groupId: 1, groupLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D")
-            GroupLinkView(groupId: 1, groupLink: nil)
+            GroupLinkView(groupId: 1, groupLink: $groupLink)
+            GroupLinkView(groupId: 1, groupLink: $noGroupLink)
         }
     }
 }

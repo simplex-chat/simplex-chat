@@ -16,7 +16,6 @@ struct GroupChatInfoView: View {
     var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
-    @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
@@ -78,9 +77,6 @@ struct GroupChatInfoView: View {
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
                 }
-                .sheet(isPresented: $showGroupLinkSheet) {
-                    GroupLinkView(groupId: groupInfo.groupId, groupLink: groupLink)
-                }
 
                 Section {
                     if groupInfo.canEdit {
@@ -111,7 +107,13 @@ struct GroupChatInfoView: View {
             case .clearChatAlert: return clearChatAlert()
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
-
+            }
+        }
+        .onAppear {
+            do {
+                groupLink = try apiGetGroupLink(groupInfo.groupId)
+            } catch let error {
+                logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
             }
         }
     }
@@ -182,19 +184,12 @@ struct GroupChatInfoView: View {
     }
 
     private func groupLinkButton() -> some View {
-        Button {
-            Task {
-                do {
-                    groupLink = try apiGetGroupLink(groupInfo.groupId)
-                    await MainActor.run {
-                        showGroupLinkSheet = true
-                    }
-                } catch let error {
-                    logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
-                }
-            }
+        NavigationLink {
+            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink)
+                .navigationBarTitleDisplayMode(.inline)
         } label: {
             Label("Group link", systemImage: "link")
+                .foregroundColor(.accentColor)
         }
     }
 
