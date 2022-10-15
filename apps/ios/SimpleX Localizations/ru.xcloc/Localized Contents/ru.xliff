@@ -258,6 +258,11 @@
         <target>Настройки сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="All group members will remain connected." xml:space="preserve">
+        <source>All group members will remain connected.</source>
+        <target>Все члены группы, которые соединились через эту ссылку, останутся в группе.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
         <target>Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.</target>
@@ -366,11 +371,6 @@
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
         <target>Поменять роль члена группы?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Change role" xml:space="preserve">
-        <source>Change role</source>
-        <target>Поменять роль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat archive" xml:space="preserve">
@@ -588,6 +588,11 @@
         <target>Создать адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create link" xml:space="preserve">
+        <source>Create link</source>
+        <target>Создать ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
         <source>Create one-time invitation link</source>
         <target>Создать ссылку-приглашение</target>
@@ -799,6 +804,16 @@
       <trans-unit id="Delete invitation" xml:space="preserve">
         <source>Delete invitation</source>
         <target>Удалить приглашение</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete link" xml:space="preserve">
+        <source>Delete link</source>
+        <target>Удалить ссылку</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Delete link?" xml:space="preserve">
+        <source>Delete link?</source>
+        <target>Удалить ссылку?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -1016,6 +1031,11 @@
         <target>Ошибка при создании группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating group link" xml:space="preserve">
+        <source>Error creating group link</source>
+        <target>Ошибка при создании ссылки группы</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Ошибка при удалении данных чата</target>
@@ -1166,11 +1186,6 @@
         <target>Файл: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files" xml:space="preserve">
-        <source>Files</source>
-        <target>Файлы</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>Для консоли</target>
@@ -1219,6 +1234,11 @@
       <trans-unit id="Group invitation is no longer valid, it was removed by sender." xml:space="preserve">
         <source>Group invitation is no longer valid, it was removed by sender.</source>
         <target>Приглашение в группу больше не действительно, оно было удалено отправителем.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group link" xml:space="preserve">
+        <source>Group link</source>
+        <target>Ссылка группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -1958,11 +1978,6 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target>Отменить изменения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve">
-        <source>Role</source>
-        <target>Роль</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
         <target>Запустить chat</target>
@@ -2111,11 +2126,6 @@ We will be adding server redundancy to prevent lost messages.</source>
       <trans-unit id="Share one-time invitation link" xml:space="preserve">
         <source>Share one-time invitation link</source>
         <target>Поделиться ссылкой-приглашением</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Shared one-time link" xml:space="preserve">
-        <source>Shared one-time link</source>
-        <target>Одноразовая ссылка-приглашение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -2575,6 +2585,11 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
         <target>Вы можете установить просмотр уведомлений на экране блокировки в настройках.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
+        <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
+        <target>Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." xml:space="preserve">
