@@ -1015,7 +1015,7 @@ instance ToField CommandFunction where toField = toField . textEncode
 instance TextEncoding CommandFunction where
   textDecode = \case
     "create_conn" -> Just CFCreateConnGrpMemInv
-    "create_conn_send_x_grp_inv" -> Just CFCreateConnGrpInv
+    "create_conn_grp_inv" -> Just CFCreateConnGrpInv
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
     "accept_contact" -> Just CFAcceptContact
@@ -1024,7 +1024,7 @@ instance TextEncoding CommandFunction where
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
-    CFCreateConnGrpInv -> "create_conn_send_x_grp_inv"
+    CFCreateConnGrpInv -> "create_conn_grp_inv"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
     CFAcceptContact -> "accept_contact"
