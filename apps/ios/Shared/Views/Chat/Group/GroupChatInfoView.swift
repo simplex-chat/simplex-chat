@@ -16,6 +16,8 @@ struct GroupChatInfoView: View {
     var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
+    @State private var showGroupLinkSheet: Bool = false
+    @State private var groupLink: String?
     @State private var showAddMembersSheet: Bool = false
     @State private var selectedMember: GroupMember? = nil
     @State private var showGroupProfile: Bool = false
@@ -43,6 +45,7 @@ struct GroupChatInfoView: View {
 
                 Section("\(members.count + 1) members") {
                     if groupInfo.canAddMembers {
+                        groupLinkButton()
                         if (chat.chatInfo.incognito) {
                             Label("Invite members", systemImage: "plus")
                                 .foregroundColor(Color(uiColor: .tertiaryLabel))
@@ -74,6 +77,9 @@ struct GroupChatInfoView: View {
                 }
                 .sheet(isPresented: $showGroupProfile) {
                     GroupProfileView(groupId: groupInfo.apiId, groupProfile: groupInfo.groupProfile)
+                }
+                .sheet(isPresented: $showGroupLinkSheet) {
+                    GroupLinkView(groupId: groupInfo.groupId, groupLink: groupLink)
                 }
 
                 Section {
@@ -172,6 +178,23 @@ struct GroupChatInfoView: View {
                 Text(member.memberRole.text)
                     .foregroundColor(.secondary)
             }
+        }
+    }
+
+    private func groupLinkButton() -> some View {
+        Button {
+            Task {
+                do {
+                    groupLink = try apiGetGroupLink(groupInfo.groupId)
+                    await MainActor.run {
+                        showGroupLinkSheet = true
+                    }
+                } catch let error {
+                    logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
+                }
+            }
+        } label: {
+            Label("Group link", systemImage: "link")
         }
     }
 
