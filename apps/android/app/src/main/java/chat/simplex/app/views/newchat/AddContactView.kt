@@ -55,7 +55,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
       Text(
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
       )
-      Row(Modifier.padding(vertical = 16.dp)) {
+      Row(Modifier.padding(top = 8.dp, bottom = 16.dp)) {
         InfoAboutIncognito(
           connIncognito,
           true,
