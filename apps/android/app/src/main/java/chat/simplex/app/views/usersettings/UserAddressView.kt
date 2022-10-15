@@ -73,21 +73,21 @@ fun UserAddressLayout(
       if (userAddress == null) {
         Text(
           stringResource(R.string.if_you_later_delete_address_you_wont_lose_contacts),
-          Modifier.padding(bottom = 12.dp),
+          Modifier.padding(bottom = 24.dp),
           lineHeight = 22.sp
         )
         SimpleButton(stringResource(R.string.create_address), icon = Icons.Outlined.QrCode, click = createAddress)
       } else {
         Text(
           stringResource(R.string.if_you_delete_address_you_wont_lose_contacts),
-          Modifier.padding(bottom = 12.dp),
+          Modifier.padding(bottom = 24.dp),
           lineHeight = 22.sp
         )
         QRCode(userAddress, Modifier.weight(1f, fill = false).aspectRatio(1f))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.padding(vertical = 10.dp)
+          modifier = Modifier.padding(vertical = 16.dp)
         ) {
           SimpleButton(
             stringResource(R.string.share_link),
