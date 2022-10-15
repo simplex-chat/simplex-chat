@@ -55,7 +55,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
       Text(
         stringResource(R.string.show_QR_code_for_your_contact_to_scan_from_the_app__multiline),
       )
-      Row {
+      Row(Modifier.padding(vertical = 16.dp)) {
         InfoAboutIncognito(
           connIncognito,
           true,
@@ -83,7 +83,7 @@ fun AddContactLayout(connReq: String, connIncognito: Boolean, share: () -> Unit)
         annotatedStringResource(R.string.if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel),
         lineHeight = 22.sp,
         modifier = Modifier
-          .padding(bottom = if (screenHeight > 600.dp) 8.dp else 0.dp)
+          .padding(top = 16.dp, bottom = if (screenHeight > 600.dp) 16.dp else 0.dp)
       )
       Row(
         Modifier.fillMaxWidth(),
