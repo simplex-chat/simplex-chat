@@ -1636,7 +1636,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                       toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
                     forM_ groupId_ $ \groupId -> do
                       gVar <- asks idsDrg
-                      groupConnIds <- createAgentConnectionAsync user CFCreateConnSendXGrpInv True SCMInvitation
+                      groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation
                       withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct GRMember groupConnIds
                   _ -> pure ()
             Just (gInfo@GroupInfo {membership}, m@GroupMember {activeConn}) -> do
@@ -1678,7 +1678,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
               -- [async agent commands] XGrpMemIntro continuation on receiving INV
-              CFCreateConnSendXGrpMemInv -> do
+              CFCreateConnGrpMemInv -> do
                 contData <- withStore' $ \db -> do
                   setConnConnReqInv db user connId cReq
                   getXGrpMemIntroContGroup db user m
@@ -1686,7 +1686,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   let GroupMember {groupMemberId, memberId} = m
                   sendXGrpMemInv hostConnId directConnReq XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq}
               -- [async agent commands] group link auto-accept continuation on receiving INV
-              CFCreateConnSendXGrpInv ->
+              CFCreateConnGrpInv ->
                 withStore' (\db -> getContactViaMember db user m) >>= \case
                   Nothing -> messageError "implementation error: invitee does not have contact"
                   Just ct -> do
@@ -2407,8 +2407,8 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             else do
               when (memberRole < GRMember) $ throwChatError (CEGroupContactRole c)
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-              groupConnIds <- createAgentConnectionAsync user CFCreateConnSendXGrpMemInv enableNtfs SCMInvitation
-              directConnIds <- createAgentConnectionAsync user CFCreateConnSendXGrpMemInv enableNtfs SCMInvitation
+              groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
+              directConnIds <- createAgentConnectionAsync user CFCreateConnGrpMemInv enableNtfs SCMInvitation
               -- [incognito] direct connection with member has to be established using the same incognito profile [that was known to host and used for group membership]
               let customUserProfileId = if memberIncognito membership then Just (localProfileId $ memberProfile membership) else Nothing
               void $ withStore $ \db -> createIntroReMember db user gInfo m memInfo groupConnIds directConnIds customUserProfileId
@@ -2422,7 +2422,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
-    xGrpMemInv gInfo@GroupInfo{groupId} m memId introInv = do
+    xGrpMemInv gInfo@GroupInfo {groupId} m memId introInv = do
       case memberCategory m of
         GCInviteeMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -2430,8 +2430,9 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Just reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              void $ sendGroupMessage' [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
-                withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
+              void $
+                sendGroupMessage' [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+                  withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
