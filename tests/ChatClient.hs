@@ -13,6 +13,7 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad.Except
+import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
@@ -145,7 +146,11 @@ withNewTestChatOpts :: ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
 withNewTestChatOpts = withNewTestChatCfgOpts testCfg
 
 withNewTestChatCfgOpts :: ChatConfig -> ChatOpts -> String -> Profile -> (TestCC -> IO a) -> IO a
-withNewTestChatCfgOpts cfg opts dbPrefix profile = bracket (createTestChat cfg opts dbPrefix profile) (\cc -> cc <// 100000 >> stopTestChat cc)
+withNewTestChatCfgOpts cfg opts dbPrefix profile runTest =
+  bracket
+    (createTestChat cfg opts dbPrefix profile)
+    stopTestChat
+    (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
 withTestChatV1 :: String -> (TestCC -> IO a) -> IO a
 withTestChatV1 = withTestChatCfg testCfgV1
