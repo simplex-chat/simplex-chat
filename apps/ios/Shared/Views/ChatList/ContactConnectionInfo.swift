@@ -14,7 +14,6 @@ struct ContactConnectionInfo: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var contactConnection: PendingContactConnection
     @State private var alert: CCInfoAlert?
-    @State private var showQRCodeView = false
     @State private var localAlias = ""
     @FocusState private var aliasTextFieldFocused: Bool
 
@@ -60,9 +59,11 @@ struct ContactConnectionInfo: View {
                             .onSubmit(setConnectionAlias)
                     }
 
-                    if contactConnection.initiated && contactConnection.connReqInv != nil {
-                        Button {
-                            showQRCodeView = true
+                    if contactConnection.initiated,
+                       let connReqInv = contactConnection.connReqInv {
+                        NavigationLink {
+                            AddContactView(contactConnection: contactConnection, connReqInvitation: connReqInv, viaNavLink: true)
+                                .navigationBarTitleDisplayMode(.inline)
                         } label: {
                             Label("Show QR code", systemImage: "qrcode")
                                 .foregroundColor(contactConnection.incognito ? .indigo : .accentColor)
@@ -78,11 +79,6 @@ struct ContactConnectionInfo: View {
                 }
             }
             .listStyle(.insetGrouped)
-        }
-        .sheet(isPresented: $showQRCodeView) {
-            if let connReqInv = contactConnection.connReqInv {
-                AddContactView(contactConnection: contactConnection, connReqInvitation: connReqInv)
-            }
         }
         .alert(item: $alert) { _alert in
             switch _alert {

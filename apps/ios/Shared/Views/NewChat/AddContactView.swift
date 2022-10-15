@@ -14,7 +14,7 @@ struct AddContactView: View {
     @EnvironmentObject private var chatModel: ChatModel
     var contactConnection: PendingContactConnection? = nil
     var connReqInvitation: String
-    var viaSettings = false
+    var viaNavLink = false
 
     var body: some View {
         ScrollView {
@@ -22,7 +22,7 @@ struct AddContactView: View {
                 Text("One-time invitation link")
                     .font(.largeTitle)
                     .bold()
-                    .padding(viaSettings ? .bottom : .vertical)
+                    .padding(viaNavLink ? .bottom : .vertical)
                 Text("Your contact can scan it from the app.")
                     .padding(.bottom, 4)
                 if (contactConnection?.incognito ?? chatModel.incognito) {
