@@ -12,7 +12,7 @@ import SimpleXChat
 struct UserAddress: View {
     @EnvironmentObject private var chatModel: ChatModel
     @State private var alert: UserAddressAlert?
-    var viaSettings = false
+    var viaNavLink = false
 
     private enum UserAddressAlert: Identifiable {
         case deleteAddress
@@ -32,7 +32,7 @@ struct UserAddress: View {
                 Text("Your contact address")
                     .font(.largeTitle)
                     .bold()
-                    .padding(viaSettings ? .bottom : .vertical)
+                    .padding(viaNavLink ? .bottom : .vertical)
                 Text("You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it.")
                     .padding(.bottom)
                 if let userAdress = chatModel.userAddress {
