@@ -241,7 +241,7 @@ showSMPServer = B.unpack . strEncode . host
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
 
-viewChatItem :: MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
+viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> [StyledString]
 viewChatItem chat ChatItem {chatDir, meta, content, quotedItem, file} doShow = case chat of
   DirectChat c -> case chatDir of
     CIDirectSnd -> case content of
@@ -714,9 +714,9 @@ viewContactUpdated
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
-        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
-      ]
+        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+          "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+        ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
@@ -748,9 +748,14 @@ viewSentBroadcast :: MsgContent -> Int -> ZonedTime -> [StyledString]
 viewSentBroadcast mc n ts = prependFirst (highlight' "/feed" <> " (" <> sShow n <> ") " <> ttyMsgTime ts <> " ") (ttyMsgContent mc)
 
 viewSentFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledString]
-viewSentFileInvitation to CIFile {fileId, filePath} = case filePath of
-  Just fPath -> sentWithTime_ $ ttySentFile to fileId fPath
+viewSentFileInvitation to CIFile {fileId, filePath, fileStatus} = case filePath of
+  Just fPath -> sentWithTime_ $ ttySentFile fPath
   _ -> const []
+  where
+    ttySentFile fPath = ["/f " <> to <> ttyFilePath fPath] <> cancelSending
+    cancelSending = case fileStatus of
+      CIFSSndTransfer -> []
+      _ -> ["use " <> highlight ("/fc " <> show fileId) <> " to cancel sending"]
 
 sentWithTime_ :: [StyledString] -> CIMeta d -> [StyledString]
 sentWithTime_ styledMsg CIMeta {localItemTs} =
@@ -761,9 +766,6 @@ ttyMsgTime = styleTime . formatTime defaultTimeLocale "%H:%M"
 
 ttyMsgContent :: MsgContent -> [StyledString]
 ttyMsgContent = msgPlain . msgContentText
-
-ttySentFile :: StyledString -> FileTransferId -> FilePath -> [StyledString]
-ttySentFile to fId fPath = ["/f " <> to <> ttyFilePath fPath, "use " <> highlight ("/fc " <> show fId) <> " to cancel sending"]
 
 prependFirst :: StyledString -> [StyledString] -> [StyledString]
 prependFirst s [] = [s]
@@ -793,21 +795,11 @@ viewReceivedFileInvitation :: StyledString -> CIFile d -> CIMeta d -> [StyledStr
 viewReceivedFileInvitation from file meta = receivedWithTime_ from [] meta (receivedFileInvitation_ file)
 
 receivedFileInvitation_ :: CIFile d -> [StyledString]
-receivedFileInvitation_ CIFile {fileId, fileName, fileSize} =
-  [ "sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
-    -- below is printed for auto-accepted files as well; auto-accept is disabled in terminal though so in reality it never happens
-    "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
-  ]
-
--- TODO remove
-viewReceivedFileInvitation' :: StyledString -> RcvFileTransfer -> CIMeta d -> [StyledString]
-viewReceivedFileInvitation' from RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName, fileSize}} meta = receivedWithTime_ from [] meta (receivedFileInvitation_' fileId fileName fileSize)
-
-receivedFileInvitation_' :: Int64 -> String -> Integer -> [StyledString]
-receivedFileInvitation_' fileId fileName fileSize =
-  [ "sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)",
-    "use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"
-  ]
+receivedFileInvitation_ CIFile {fileId, fileName, fileSize, fileStatus} =
+  ["sends file " <> ttyFilePath fileName <> " (" <> humanReadableSize fileSize <> " / " <> sShow fileSize <> " bytes)"]
+    <> case fileStatus of
+      CIFSRcvAccepted -> []
+      _ -> ["use " <> highlight ("/fr " <> show fileId <> " [<dir>/ | <path>]") <> " to receive it"]
 
 humanReadableSize :: Integer -> StyledString
 humanReadableSize size
@@ -849,9 +841,8 @@ fileTransferStr fileId fileName = "file " <> sShow fileId <> " (" <> ttyFilePath
 
 viewFileTransferStatus :: (FileTransfer, [Integer]) -> [StyledString]
 viewFileTransferStatus (FTSnd FileTransferMeta {fileId, fileName, cancelled} [], _) =
-  [ "sending " <> fileTransferStr fileId fileName <> ": no file transfers"
-      <> if cancelled then ", file transfer cancelled" else ""
-  ]
+  ["sending " <> fileTransferStr fileId fileName <> ": no file transfers"]
+    <> ["file transfer cancelled" | cancelled]
 viewFileTransferStatus (FTSnd FileTransferMeta {cancelled} fts@(ft : _), chunksNum) =
   recipientStatuses <> ["file transfer cancelled" | cancelled]
   where
@@ -978,7 +969,7 @@ viewChatError = \case
     CEGroupCantResendInvitation g c -> viewCannotResendInvitation g c
     CEGroupInternal s -> ["chat group bug: " <> plain s]
     CEFileNotFound f -> ["file not found: " <> plain f]
-    CEFileAlreadyReceiving f -> ["file is already accepted: " <> plain f]
+    CEFileAlreadyReceiving f -> ["file is already being received: " <> plain f]
     CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
     CEFileRead f e -> ["cannot read file " <> plain f, sShow e]

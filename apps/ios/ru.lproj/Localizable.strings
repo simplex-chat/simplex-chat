@@ -171,6 +171,9 @@
 "Advanced network settings" = "Настройки сети";
 
 /* No comment provided by engineer. */
+"All group members will remain connected." = "Все члены группы, которые соединились через эту ссылку, останутся в группе.";
+
+/* No comment provided by engineer. */
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Все сообщения будут удалены - это действие нельзя отменить! Сообщения будут удалены только для вас.";
 
 /* No comment provided by engineer. */
@@ -256,9 +259,6 @@
 
 /* No comment provided by engineer. */
 "Change member role?" = "Поменять роль члена группы?";
-
-/* No comment provided by engineer. */
-"Change role" = "Поменять роль";
 
 /* No comment provided by engineer. */
 "Chat archive" = "Архив чата";
@@ -435,6 +435,9 @@
 "Create address" = "Создать адрес";
 
 /* No comment provided by engineer. */
+"Create link" = "Создать ссылку";
+
+/* No comment provided by engineer. */
 "Create one-time invitation link" = "Создать ссылку-приглашение";
 
 /* No comment provided by engineer. */
@@ -559,6 +562,12 @@
 
 /* No comment provided by engineer. */
 "Delete invitation" = "Удалить приглашение";
+
+/* No comment provided by engineer. */
+"Delete link" = "Удалить ссылку";
+
+/* No comment provided by engineer. */
+"Delete link?" = "Удалить ссылку?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Удалить сообщение?";
@@ -714,6 +723,9 @@
 "Error creating group" = "Ошибка при создании группы";
 
 /* No comment provided by engineer. */
+"Error creating group link" = "Ошибка при создании ссылки группы";
+
+/* No comment provided by engineer. */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
 
 /* No comment provided by engineer. */
@@ -804,9 +816,6 @@
 "File: %@" = "Файл: %@";
 
 /* No comment provided by engineer. */
-"Files" = "Файлы";
-
-/* No comment provided by engineer. */
 "For console" = "Для консоли";
 
 /* No comment provided by engineer. */
@@ -838,6 +847,9 @@
 
 /* No comment provided by engineer. */
 "Group invitation is no longer valid, it was removed by sender." = "Приглашение в группу больше не действительно, оно было удалено отправителем.";
+
+/* No comment provided by engineer. */
+"Group link" = "Ссылка группы";
 
 /* notification */
 "Group message:" = "Групповое сообщение:";
@@ -1366,9 +1378,6 @@
 "Revert" = "Отменить изменения";
 
 /* No comment provided by engineer. */
-"Role" = "Роль";
-
-/* No comment provided by engineer. */
 "Run chat" = "Запустить chat";
 
 /* chat item action */
@@ -1457,9 +1466,6 @@
 
 /* No comment provided by engineer. */
 "Share one-time invitation link" = "Поделиться ссылкой-приглашением";
-
-/* No comment provided by engineer. */
-"Shared one-time link" = "Одноразовая ссылка-приглашение";
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
@@ -1781,6 +1787,9 @@
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Вы можете установить просмотр уведомлений на экране блокировки в настройках.";
+
+/* No comment provided by engineer. */
+"You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." = "Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.";
 
 /* No comment provided by engineer. */
 "You can share your address as a link or as a QR code - anybody will be able to connect to you. You won't lose your contacts if you later delete it." = "Вы можете использовать ваш адрес как ссылку или как QR код - кто угодно сможет соединиться с вами. Вы сможете удалить адрес, сохранив контакты, которые через него соединились.";

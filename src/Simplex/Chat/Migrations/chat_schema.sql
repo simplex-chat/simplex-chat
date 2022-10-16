@@ -182,7 +182,8 @@ CREATE TABLE files(
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE,
   updated_at TEXT CHECK(updated_at NOT NULL),
   cancelled INTEGER,
-  ci_file_status TEXT
+  ci_file_status TEXT,
+  file_inline TEXT
 );
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -191,6 +192,8 @@ CREATE TABLE snd_files(
   group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
+  file_inline TEXT,
+  last_inline_msg_delivery_id INTEGER,
   PRIMARY KEY(file_id, connection_id)
 ) WITHOUT ROWID;
 CREATE TABLE rcv_files(
@@ -200,7 +203,9 @@ CREATE TABLE rcv_files(
   file_queue_info BLOB
   ,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL)
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  rcv_file_inline TEXT,
+  file_inline TEXT
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -370,11 +375,6 @@ CREATE TABLE smp_servers(
   UNIQUE(host, port)
 );
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE UNIQUE INDEX idx_messages_direct_shared_msg_id ON messages(
-  connection_id,
-  shared_msg_id_user,
-  shared_msg_id
-);
 CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
@@ -430,4 +430,7 @@ CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON chat_items(
 CREATE INDEX idx_msg_deliveries_message_id ON msg_deliveries(message_id);
 CREATE UNIQUE INDEX idx_user_contact_links_group_id ON user_contact_links(
   group_id
+);
+CREATE UNIQUE INDEX idx_snd_files_last_inline_msg_delivery_id ON snd_files(
+  last_inline_msg_delivery_id
 );

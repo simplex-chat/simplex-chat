@@ -241,6 +241,8 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
+
 type LocalAlias = Text
 
 data LocalProfile = LocalProfile
@@ -611,7 +613,8 @@ data SndFileTransfer = SndFileTransfer
     recipientDisplayName :: ContactName,
     connId :: Int64,
     agentConnId :: AgentConnId,
-    fileStatus :: FileStatus
+    fileStatus :: FileStatus,
+    fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show, Generic)
 
@@ -625,16 +628,48 @@ type FileTransferId = Int64
 data FileInvitation = FileInvitation
   { fileName :: String,
     fileSize :: Integer,
-    fileConnReq :: Maybe ConnReqInvitation
+    fileConnReq :: Maybe ConnReqInvitation,
+    fileInline :: Maybe InlineFileMode
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic)
 
-instance ToJSON FileInvitation where toEncoding = J.genericToEncoding J.defaultOptions
+instance ToJSON FileInvitation where
+  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
+
+instance FromJSON FileInvitation where
+  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+
+data InlineFileMode
+  = IFMOffer -- file will be sent inline once accepted
+  | IFMSent -- file is sent inline without acceptance
+  deriving (Eq, Show, Generic)
+
+instance TextEncoding InlineFileMode where
+  textEncode = \case
+    IFMOffer -> "offer"
+    IFMSent -> "sent"
+  textDecode = \case
+    "offer" -> Just IFMOffer
+    "sent" -> Just IFMSent
+    _ -> Nothing
+
+instance FromField InlineFileMode where fromField = fromTextField_ textDecode
+
+instance ToField InlineFileMode where toField = toField . textEncode
+
+instance FromJSON InlineFileMode where
+  parseJSON = J.withText "InlineFileMode" $ maybe (fail "bad InlineFileMode") pure . textDecode
+
+instance ToJSON InlineFileMode where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
 
 data RcvFileTransfer = RcvFileTransfer
   { fileId :: FileTransferId,
     fileInvitation :: FileInvitation,
     fileStatus :: RcvFileStatus,
+    rcvFileInline :: Maybe InlineFileMode,
     senderDisplayName :: ContactName,
     chunkSize :: Integer,
     cancelled :: Bool,
@@ -722,6 +757,7 @@ data FileTransferMeta = FileTransferMeta
     fileName :: String,
     filePath :: String,
     fileSize :: Integer,
+    fileInline :: Maybe InlineFileMode,
     chunkSize :: Integer,
     cancelled :: Bool
   }
@@ -963,9 +999,11 @@ instance TextEncoding CommandStatus where
     CSError -> "error"
 
 data CommandFunction
-  = CFCreateConn
+  = CFCreateConnGrpMemInv
+  | CFCreateConnGrpInv
   | CFJoinConn
   | CFAllowConn
+  | CFAcceptContact
   | CFAckMessage
   | CFDeleteConn
   deriving (Eq, Show, Generic)
@@ -976,24 +1014,30 @@ instance ToField CommandFunction where toField = toField . textEncode
 
 instance TextEncoding CommandFunction where
   textDecode = \case
-    "create_conn" -> Just CFCreateConn
+    "create_conn" -> Just CFCreateConnGrpMemInv
+    "create_conn_grp_inv" -> Just CFCreateConnGrpInv
     "join_conn" -> Just CFJoinConn
     "allow_conn" -> Just CFAllowConn
+    "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
     _ -> Nothing
   textEncode = \case
-    CFCreateConn -> "create_conn"
+    CFCreateConnGrpMemInv -> "create_conn"
+    CFCreateConnGrpInv -> "create_conn_grp_inv"
     CFJoinConn -> "join_conn"
     CFAllowConn -> "allow_conn"
+    CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
 commandExpectedResponse :: CommandFunction -> ACommandTag 'Agent
 commandExpectedResponse = \case
-  CFCreateConn -> INV_
+  CFCreateConnGrpMemInv -> INV_
+  CFCreateConnGrpInv -> INV_
   CFJoinConn -> OK_
   CFAllowConn -> OK_
+  CFAcceptContact -> OK_
   CFAckMessage -> OK_
   CFDeleteConn -> OK_
 

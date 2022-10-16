@@ -1,7 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module ChatTests where
 
@@ -9,15 +11,18 @@ import ChatClient
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless, when)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
+import Data.List (isPrefixOf)
+import Data.Maybe (fromMaybe)
+import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Call
-import Simplex.Chat.Controller (ChatController (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), ImageData (..), LocalProfile (..), Profile (..), User (..))
 import Simplex.Messaging.Encoding.String
@@ -66,15 +71,17 @@ chatTests = do
     it "update user profiles and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
   describe "sending and receiving files" $ do
-    it "send and receive file" testFileTransfer
-    it "send and receive a small file" testSmallFileTransfer
-    it "sender cancelled file transfer before transfer" testFileSndCancelBeforeTransfer
+    describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
+    it "send and receive file inline (without accepting)" testInlineFileTransfer
+    describe "send and receive a small file" $ fileTestMatrix2 runTestSmallFileTransfer
+    describe "sender cancelled file transfer before transfer" $ fileTestMatrix2 runTestFileSndCancelBeforeTransfer
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
     it "recipient cancelled file transfer" testFileRcvCancel
-    it "send and receive file to group" testGroupFileTransfer
-    it "sender cancelled group file transfer before transfer" testGroupFileSndCancelBeforeTransfer
+    describe "send and receive file to group" $ fileTestMatrix3 runTestGroupFileTransfer
+    it "send and receive file inline to group (without accepting)" testInlineGroupFileTransfer
+    describe "sender cancelled group file transfer before transfer" $ fileTestMatrix3 runTestGroupFileSndCancelBeforeTransfer
   describe "messages with files" $ do
-    it "send and receive message with file" testMessageWithFile
+    describe "send and receive message with file" $ fileTestMatrix2 runTestMessageWithFile
     it "send and receive image" testSendImage
     it "files folder: send and receive image" testFilesFoldersSendImage
     it "files folder: sender deleted file during transfer" testFilesFoldersImageSndDelete
@@ -133,40 +140,56 @@ versionTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix2 runTest = do
   it "v2" $ testChat2 aliceProfile bobProfile runTest
   it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
-  it "v1 to v2" . withTmpFiles $
-    withNewTestChat "alice" aliceProfile $ \alice ->
-      withNewTestChatV1 "bob" bobProfile $ \bob ->
-        runTest alice bob
-  it "v2 to v1" . withTmpFiles $
-    withNewTestChatV1 "alice" aliceProfile $ \alice ->
-      withNewTestChat "bob" bobProfile $ \bob ->
-        runTest alice bob
+  it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
+  it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
 versionTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
 versionTestMatrix3 runTest = do
   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
 
 -- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
--- it "v1 to v2" . withTmpFiles $
---   withNewTestChat "alice" aliceProfile $ \alice ->
---     withNewTestChatV1 "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2+v1 to v2" . withTmpFiles $
---   withNewTestChat "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2 to v1" . withTmpFiles $
---   withNewTestChatV1 "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChat "cath" cathProfile $ \cath ->
---         runTest alice bob cath
--- it "v2+v1 to v1" . withTmpFiles $
---   withNewTestChatV1 "alice" aliceProfile $ \alice ->
---     withNewTestChat "bob" bobProfile $ \bob ->
---       withNewTestChatV1 "cath" cathProfile $ \cath ->
---         runTest alice bob cath
+-- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
+-- it "v2+v1 to v2" $ runTestCfg3 testCfg testCfg testCfgV1 runTest
+-- it "v2 to v1" $ runTestCfg3 testCfgV1 testCfg testCfg runTest
+-- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
+
+inlineCfg :: Integer -> ChatConfig
+inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = n, receiveChunks = n}}
+
+fileTestMatrix2 :: (TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix2 runTest = do
+  it "via connection" $ runTestCfg2 viaConn viaConn runTest
+  it "inline (accepting)" $ runTestCfg2 inline inline runTest
+  it "via connection (inline offered)" $ runTestCfg2 inline viaConn runTest
+  it "via connection (inline supported)" $ runTestCfg2 viaConn inline runTest
+  where
+    inline = inlineCfg 100
+    viaConn = inlineCfg 0
+
+fileTestMatrix3 :: (TestCC -> TestCC -> TestCC -> IO ()) -> Spec
+fileTestMatrix3 runTest = do
+  it "via connection" $ runTestCfg3 viaConn viaConn viaConn runTest
+  it "inline" $ runTestCfg3 inline inline inline runTest
+  it "via connection (inline offered)" $ runTestCfg3 inline viaConn viaConn runTest
+  it "via connection (inline supported)" $ runTestCfg3 viaConn inline inline runTest
+  where
+    inline = inlineCfg 100
+    viaConn = inlineCfg 0
+
+runTestCfg2 :: ChatConfig -> ChatConfig -> (TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg2 aliceCfg bobCfg runTest =
+  withTmpFiles $
+    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+        runTest alice bob
+
+runTestCfg3 :: ChatConfig -> ChatConfig -> ChatConfig -> (TestCC -> TestCC -> TestCC -> IO ()) -> IO ()
+runTestCfg3 aliceCfg bobCfg cathCfg runTest =
+  withTmpFiles $
+    withNewTestChatCfg aliceCfg "alice" aliceProfile $ \alice ->
+      withNewTestChatCfg bobCfg "bob" bobProfile $ \bob ->
+        withNewTestChatCfg cathCfg "cath" cathProfile $ \cath ->
+          runTest alice bob cath
 
 testAddContact :: Spec
 testAddContact = versionTestMatrix2 runTestAddContact
@@ -1351,68 +1374,88 @@ testUpdateProfileImage =
       bob <## "use @alice2 <message> to send messages"
       (bob </)
 
-testFileTransfer :: IO ()
-testFileTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      startFileTransfer alice bob
-      concurrentlyN_
-        [ do
-            bob #> "@alice receiving here..."
-            bob <## "completed receiving file 1 (test.jpg) from alice",
-          do
-            alice <# "bob> receiving here..."
-            alice <## "completed sending file 1 (test.jpg) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
+runTestFileTransfer :: TestCC -> TestCC -> IO ()
+runTestFileTransfer alice bob = do
+  connectUsers alice bob
+  startFileTransfer' alice bob "test.pdf" "266.0 KiB / 272376 bytes"
+  concurrentlyN_
+    [ do
+        bob #> "@alice receiving here..."
+        bob <## "completed receiving file 1 (test.pdf) from alice",
+      alice
+        <### [ WithTime "bob> receiving here...",
+               "completed sending file 1 (test.pdf) to bob"
+             ]
+    ]
+  src <- B.readFile "./tests/fixtures/test.pdf"
+  dest <- B.readFile "./tests/tmp/test.pdf"
+  dest `shouldBe` src
 
-testSmallFileTransfer :: IO ()
-testSmallFileTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "/f @bob ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
-      concurrentlyN_
-        [ do
-            bob <## "started receiving file 1 (test.txt) from alice"
-            bob <## "completed receiving file 1 (test.txt) from alice",
-          do
-            alice <## "started sending file 1 (test.txt) to bob"
-            alice <## "completed sending file 1 (test.txt) to bob"
-        ]
-      src <- B.readFile "./tests/fixtures/test.txt"
-      dest <- B.readFile "./tests/tmp/test.txt"
-      dest `shouldBe` src
+testInlineFileTransfer :: IO ()
+testInlineFileTransfer =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    -- below is not shown in "sent" mode
+    -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    -- below is not shown in "sent" mode
+    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    concurrently_
+      (alice <## "completed sending file 1 (test.jpg) to bob")
+      (bob <## "completed receiving file 1 (test.jpg) from alice")
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    dest <- B.readFile "./tests/tmp/test.jpg"
+    dest `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
 
-testFileSndCancelBeforeTransfer :: IO ()
-testFileSndCancelBeforeTransfer =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice #> "/f @bob ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      alice ##> "/fc 1"
-      concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.txt) to bob",
-          bob <## "alice cancelled sending file 1 (test.txt)"
-        ]
-      alice ##> "/fs 1"
-      alice <## "sending file 1 (test.txt) cancelled: bob"
-      alice <## "file transfer cancelled"
-      bob ##> "/fs 1"
-      bob <## "receiving file 1 (test.txt) cancelled"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file cancelled: test.txt"
+runTestSmallFileTransfer :: TestCC -> TestCC -> IO ()
+runTestSmallFileTransfer alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.txt"
+  concurrentlyN_
+    [ do
+        bob <## "started receiving file 1 (test.txt) from alice"
+        bob <## "completed receiving file 1 (test.txt) from alice",
+      do
+        alice <## "started sending file 1 (test.txt) to bob"
+        alice <## "completed sending file 1 (test.txt) to bob"
+    ]
+  src <- B.readFile "./tests/fixtures/test.txt"
+  dest <- B.readFile "./tests/tmp/test.txt"
+  dest `shouldBe` src
+
+runTestFileSndCancelBeforeTransfer :: TestCC -> TestCC -> IO ()
+runTestFileSndCancelBeforeTransfer alice bob = do
+  connectUsers alice bob
+  alice #> "/f @bob ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> sends file test.txt (11 bytes / 11 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  alice ##> "/fc 1"
+  concurrentlyN_
+    [ alice <##. "cancelled sending file 1 (test.txt)",
+      bob <## "alice cancelled sending file 1 (test.txt)"
+    ]
+  alice ##> "/fs 1"
+  alice
+    <##.. [ "sending file 1 (test.txt): no file transfers",
+            "sending file 1 (test.txt) cancelled: bob"
+          ]
+  alice <## "file transfer cancelled"
+  bob ##> "/fs 1"
+  bob <## "receiving file 1 (test.txt) cancelled"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "file cancelled: test.txt"
 
 testFileSndCancelDuringTransfer :: IO ()
 testFileSndCancelDuringTransfer =
@@ -1456,101 +1499,138 @@ testFileRcvCancel =
         ]
       checkPartialTransfer "test.jpg"
 
-testGroupFileTransfer :: IO ()
-testGroupFileTransfer =
-  testChat3 aliceProfile bobProfile cathProfile $
+runTestGroupFileTransfer :: TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileTransfer alice bob cath = do
+  createGroup3 "team" alice bob cath
+  alice #> "/f #team ./tests/fixtures/test.jpg"
+  alice <## "use /fc 1 to cancel sending"
+  concurrentlyN_
+    [ do
+        bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+      do
+        cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+        cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    ]
+  alice ##> "/fs 1"
+  getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
+  bob ##> "/fr 1 ./tests/tmp/"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  concurrentlyN_
+    [ do
+        alice <## "started sending file 1 (test.jpg) to bob"
+        alice <## "completed sending file 1 (test.jpg) to bob"
+        alice ##> "/fs 1"
+        alice <## "sending file 1 (test.jpg) complete: bob",
+      do
+        bob <## "started receiving file 1 (test.jpg) from alice"
+        bob <## "completed receiving file 1 (test.jpg) from alice"
+    ]
+  cath ##> "/fr 1 ./tests/tmp/"
+  cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
+  concurrentlyN_
+    [ do
+        alice <## "started sending file 1 (test.jpg) to cath"
+        alice <## "completed sending file 1 (test.jpg) to cath"
+        alice ##> "/fs 1"
+        getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
+      do
+        cath <## "started receiving file 1 (test.jpg) from alice"
+        cath <## "completed receiving file 1 (test.jpg) from alice"
+    ]
+  src <- B.readFile "./tests/fixtures/test.jpg"
+  dest1 <- B.readFile "./tests/tmp/test.jpg"
+  dest2 <- B.readFile "./tests/tmp/test_1.jpg"
+  dest1 `shouldBe` src
+  dest2 `shouldBe` src
+
+testInlineGroupFileTransfer :: IO ()
+testInlineGroupFileTransfer =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
+      bob ##> "/_files_folder ./tests/tmp/bob/"
+      bob <## "ok"
+      cath ##> "/_files_folder ./tests/tmp/cath/"
+      cath <## "ok"
       alice #> "/f #team ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
+      -- below is not shown in "sent" mode
+      -- alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
+            alice
+              <### [ "completed sending file 1 (test.jpg) to bob",
+                     "completed sending file 1 (test.jpg) to cath"
+                   ]
+            alice ##> "/fs 1"
+            alice <##. "sending file 1 (test.jpg) complete",
+          do
             bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+            bob <## "started receiving file 1 (test.jpg) from alice"
+            bob <## "completed receiving file 1 (test.jpg) from alice",
           do
             cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
-        ]
-      alice ##> "/fs 1"
-      getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg): no file transfers")
-      bob ##> "/fr 1 ./tests/tmp/"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrentlyN_
-        [ do
-            alice <## "started sending file 1 (test.jpg) to bob"
-            alice <## "completed sending file 1 (test.jpg) to bob"
-            alice ##> "/fs 1"
-            alice <## "sending file 1 (test.jpg) complete: bob",
-          do
-            bob <## "started receiving file 1 (test.jpg) from alice"
-            bob <## "completed receiving file 1 (test.jpg) from alice"
-        ]
-      cath ##> "/fr 1 ./tests/tmp/"
-      cath <## "saving file 1 from alice to ./tests/tmp/test_1.jpg"
-      concurrentlyN_
-        [ do
-            alice <## "started sending file 1 (test.jpg) to cath"
-            alice <## "completed sending file 1 (test.jpg) to cath"
-            alice ##> "/fs 1"
-            getTermLine alice >>= (`shouldStartWith` "sending file 1 (test.jpg) complete"),
-          do
             cath <## "started receiving file 1 (test.jpg) from alice"
             cath <## "completed receiving file 1 (test.jpg) from alice"
         ]
-
-testGroupFileSndCancelBeforeTransfer :: IO ()
-testGroupFileSndCancelBeforeTransfer =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-      alice #> "/f #team ./tests/fixtures/test.txt"
-      alice <## "use /fc 1 to cancel sending"
-      concurrentlyN_
-        [ do
-            bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
-          do
-            cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
-            cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
-        ]
-      alice ##> "/fc 1"
-      concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.txt)",
-          bob <## "alice cancelled sending file 1 (test.txt)",
-          cath <## "alice cancelled sending file 1 (test.txt)"
-        ]
-      alice ##> "/fs 1"
-      alice <## "sending file 1 (test.txt): no file transfers, file transfer cancelled"
-      bob ##> "/fs 1"
-      bob <## "receiving file 1 (test.txt) cancelled"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "file cancelled: test.txt"
-
-testMessageWithFile :: IO ()
-testMessageWithFile =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
-      alice <# "@bob hi, sending a file"
-      alice <# "/f @bob ./tests/fixtures/test.jpg"
-      alice <## "use /fc 1 to cancel sending"
-      bob <# "alice> hi, sending a file"
-      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1 ./tests/tmp"
-      bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
-      concurrently_
-        (bob <## "started receiving file 1 (test.jpg) from alice")
-        (alice <## "started sending file 1 (test.jpg) to bob")
-      concurrently_
-        (bob <## "completed receiving file 1 (test.jpg) from alice")
-        (alice <## "completed sending file 1 (test.jpg) to bob")
       src <- B.readFile "./tests/fixtures/test.jpg"
-      dest <- B.readFile "./tests/tmp/test.jpg"
-      dest `shouldBe` src
-      alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+      dest1 <- B.readFile "./tests/tmp/bob/test.jpg"
+      dest2 <- B.readFile "./tests/tmp/cath/test.jpg"
+      dest1 `shouldBe` src
+      dest2 `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, totalSendChunks = 100, receiveChunks = 100}}
+
+runTestGroupFileSndCancelBeforeTransfer :: TestCC -> TestCC -> TestCC -> IO ()
+runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
+  createGroup3 "team" alice bob cath
+  alice #> "/f #team ./tests/fixtures/test.txt"
+  alice <## "use /fc 1 to cancel sending"
+  concurrentlyN_
+    [ do
+        bob <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
+      do
+        cath <# "#team alice> sends file test.txt (11 bytes / 11 bytes)"
+        cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    ]
+  alice ##> "/fc 1"
+  concurrentlyN_
+    [ alice <## "cancelled sending file 1 (test.txt)",
+      bob <## "alice cancelled sending file 1 (test.txt)",
+      cath <## "alice cancelled sending file 1 (test.txt)"
+    ]
+  alice ##> "/fs 1"
+  alice <## "sending file 1 (test.txt): no file transfers"
+  alice <## "file transfer cancelled"
+  bob ##> "/fs 1"
+  bob <## "receiving file 1 (test.txt) cancelled"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "file cancelled: test.txt"
+
+runTestMessageWithFile :: TestCC -> TestCC -> IO ()
+runTestMessageWithFile alice bob = do
+  connectUsers alice bob
+  alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+  alice <# "@bob hi, sending a file"
+  alice <# "/f @bob ./tests/fixtures/test.jpg"
+  alice <## "use /fc 1 to cancel sending"
+  bob <# "alice> hi, sending a file"
+  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+  bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+  bob ##> "/fr 1 ./tests/tmp"
+  bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+  concurrently_
+    (bob <## "started receiving file 1 (test.jpg) from alice")
+    (alice <## "started sending file 1 (test.jpg) to bob")
+  concurrently_
+    (bob <## "completed receiving file 1 (test.jpg) from alice")
+    (alice <## "completed sending file 1 (test.jpg) to bob")
+  src <- B.readFile "./tests/fixtures/test.jpg"
+  dest <- B.readFile "./tests/tmp/test.jpg"
+  dest `shouldBe` src
+  alice #$> ("/_get chat @2 count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+  bob #$> ("/_get chat @2 count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
 testSendImage :: IO ()
 testSendImage =
@@ -2278,7 +2358,7 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
         do
           dan <## "#secret_club: you joined the group"
           dan
-            <### [ "#secret_club: member " <> cathIncognito <> " is connected",
+            <### [ ConsoleString $ "#secret_club: member " <> cathIncognito <> " is connected",
                    "#secret_club: member bob_1 (Bob) is connected",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
@@ -2338,28 +2418,28 @@ testJoinGroupIncognito = testChat4 aliceProfile bobProfile cathProfile danProfil
     alice
       <### [ "alice (Alice): owner, you, created group",
              "bob (Bob): admin, invited, connected",
-             cathIncognito <> ": admin, invited, connected",
+             ConsoleString $ cathIncognito <> ": admin, invited, connected",
              "dan (Daniel): admin, invited, connected"
            ]
     bob ##> "/ms secret_club"
     bob
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, you, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, connected"
            ]
     cath ##> "/ms secret_club"
     cath
       <### [ "alice (Alice): owner, host, connected",
              "bob_1 (Bob): admin, connected",
-             "i " <> cathIncognito <> ": admin, you, connected",
+             ConsoleString $ "i " <> cathIncognito <> ": admin, you, connected",
              "dan_1 (Daniel): admin, connected"
            ]
     dan ##> "/ms secret_club"
     dan
       <### [ "alice (Alice): owner, host, connected",
              "bob (Bob): admin, connected",
-             cathIncognito <> ": admin, connected",
+             ConsoleString $ cathIncognito <> ": admin, connected",
              "dan (Daniel): admin, you, connected"
            ]
     -- remove member
@@ -3456,18 +3536,44 @@ cc <## line = do
   when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
-getInAnyOrder :: (String -> String) -> TestCC -> [String] -> Expectation
+(<##.) :: TestCC -> String -> Expectation
+cc <##. line = do
+  l <- getTermLine cc
+  let prefix = line `isPrefixOf` l
+  unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
+  prefix `shouldBe` True
+
+(<##..) :: TestCC -> [String] -> Expectation
+cc <##.. ls = do
+  l <- getTermLine cc
+  let prefix = any (`isPrefixOf` l) ls
+  unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
+  prefix `shouldBe` True
+
+data ConsoleResponse = ConsoleString String | WithTime String
+  deriving (Show)
+
+instance IsString ConsoleResponse where fromString = ConsoleString
+
+-- this assumes that the string can only match one option
+getInAnyOrder :: (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  if line `elem` ls
-    then getInAnyOrder f cc $ filter (/= line) ls
+  let rest = filter (not . expected line) ls
+  if length rest < length ls
+    then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
+  where
+    expected :: String -> ConsoleResponse -> Bool
+    expected l = \case
+      ConsoleString s -> l == s
+      WithTime s -> dropTime_ l == Just s
 
-(<###) :: TestCC -> [String] -> Expectation
+(<###) :: TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
 
-(<##?) :: TestCC -> [String] -> Expectation
+(<##?) :: TestCC -> [ConsoleResponse] -> Expectation
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: TestCC -> String -> Expectation
@@ -3489,12 +3595,15 @@ cc1 <#? cc2 = do
   cc1 <## ("to reject: /rc " <> name <> " (the sender will NOT be notified)")
 
 dropTime :: String -> String
-dropTime msg = case splitAt 6 msg of
-  ([m, m', ':', s, s', ' '], text) ->
-    if all isDigit [m, m', s, s'] then text else err
-  _ -> err
+dropTime msg = fromMaybe err $ dropTime_ msg
   where
     err = error $ "invalid time: " <> msg
+
+dropTime_ :: String -> Maybe String
+dropTime_ msg = case splitAt 6 msg of
+  ([m, m', ':', s, s', ' '], text) ->
+    if all isDigit [m, m', s, s'] then Just text else Nothing
+  _ -> Nothing
 
 getInvitation :: TestCC -> IO String
 getInvitation cc = do
