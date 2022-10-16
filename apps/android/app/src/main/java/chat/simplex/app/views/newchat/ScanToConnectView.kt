@@ -91,6 +91,7 @@ fun ConnectContactLayout(chatModelIncognito: Boolean, qrCodeScanner: @Composable
       Modifier
         .fillMaxWidth()
         .aspectRatio(ratio = 1F)
+        .padding(bottom = 12.dp)
     ) { qrCodeScanner() }
     Text(
       annotatedStringResource(R.string.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link),

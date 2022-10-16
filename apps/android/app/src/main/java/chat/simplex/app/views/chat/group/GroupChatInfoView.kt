@@ -65,6 +65,12 @@ fun GroupChatInfoView(chatModel: ChatModel, close: () -> Unit) {
       deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
       clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
       leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      manageGroupLink = {
+        withApi {
+          val groupLink = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+          ModalManager.shared.showModal { GroupLinkView(chatModel, groupInfo, groupLink) }
+        }
+      }
     )
   }
 }
@@ -117,6 +123,7 @@ fun GroupChatInfoLayout(
   deleteGroup: () -> Unit,
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
+  manageGroupLink: () -> Unit,
 ) {
   Column(
     Modifier
@@ -134,6 +141,8 @@ fun GroupChatInfoLayout(
 
     SectionView(title = String.format(generalGetString(R.string.group_info_section_title_num_members), members.count() + 1)) {
       if (groupInfo.canAddMembers) {
+        SectionItemView(manageGroupLink) { GroupLinkButton() }
+        SectionDivider()
         val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
         SectionItemView(onAddMembersClick) {
           val tint = if (chat.chatInfo.incognito) HighOrLowlight else MaterialTheme.colors.primary
@@ -150,7 +159,6 @@ fun GroupChatInfoLayout(
       MembersList(members, showMemberInfo)
     }
     SectionSpacer()
-
     SectionView {
       if (groupInfo.canEdit) {
         SectionItemView(editGroupProfile) { EditGroupProfileButton() }
@@ -269,6 +277,23 @@ fun MemberRow(member: GroupMember, user: Boolean = false) {
 }
 
 @Composable
+fun GroupLinkButton() {
+  Row(
+    Modifier
+      .fillMaxSize(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Icon(
+      Icons.Outlined.Link,
+      stringResource(R.string.group_link),
+      tint = MaterialTheme.colors.primary
+    )
+    Spacer(Modifier.size(8.dp))
+    Text(stringResource(R.string.group_link), color = MaterialTheme.colors.primary)
+  }
+}
+
+@Composable
 fun EditGroupProfileButton() {
   Row(
     Modifier
@@ -330,7 +355,7 @@ fun PreviewGroupChatInfoLayout() {
       groupInfo = GroupInfo.sampleData,
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
     )
   }
 }
