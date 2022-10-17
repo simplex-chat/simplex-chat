@@ -65,7 +65,9 @@ fun resizeImageToStrSize(image: Bitmap, maxDataSize: Long): String {
 }
 
 private fun compressImageStr(bitmap: Bitmap): String {
-  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap, false).toByteArray(), Base64.NO_WRAP)
+  val usePng = bitmap.hasAlpha()
+  val ext = if (usePng) "png" else "jpg"
+  return "data:image/$ext;base64," + Base64.encodeToString(compressImageData(bitmap, usePng).toByteArray(), Base64.NO_WRAP)
 }
 
 fun resizeImageToDataSize(image: Bitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
