@@ -1532,6 +1532,13 @@ processAgentMessage (Just User {userId}) _ "" agentMessage = case agentMessage o
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
+processAgentMessage (Just user) _ agentConnId END =
+  withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
+    RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
+      toView $ CRContactAnotherClient ct
+      showToast (c <> "> ") "connected to another client"
+      unsetActive $ ActiveC c
+    entity -> toView $ CRSubscriptionEnd entity
 processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
   (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
     RcvDirectMsgConnection conn contact_ ->
@@ -1688,11 +1695,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        END -> do
-          toView $ CRContactAnotherClient ct
-          showToast (c <> "> ") "connected to another client"
-          unsetActive $ ActiveC c
-        -- TODO print errors
         MERR msgId err -> do
           chatItemId_ <- withStore' $ \db -> getChatItemIdByAgentMsgId db connId msgId
           forM_ chatItemId_ $ \chatItemId -> do

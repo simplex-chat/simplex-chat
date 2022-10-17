@@ -134,6 +134,7 @@ responseToView testView = \case
   CRContactConnecting _ -> []
   CRContactConnected ct userCustomProfile -> viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient c -> [ttyContact' c <> ": contact is connected to another client"]
+  CRSubscriptionEnd acEntity -> [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError c e -> [ttyContact' c <> ": contact error " <> sShow e]
@@ -714,9 +715,9 @@ viewContactUpdated
     | n == n' && fullName == fullName' = []
     | n == n' = ["contact " <> ttyContact n <> fullNameUpdate]
     | otherwise =
-        [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
-          "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
-        ]
+      [ "contact " <> ttyContact n <> " changed to " <> ttyFullName n' fullName',
+        "use " <> ttyToContact n' <> highlight' "<message>" <> " to send messages"
+      ]
     where
       fullNameUpdate = if T.null fullName' || fullName' == n' then " removed full name" else " updated full name: " <> plain fullName'
 
