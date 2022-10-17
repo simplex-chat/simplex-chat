@@ -11,6 +11,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -139,9 +140,14 @@ fun TerminalLayout(
   }
 }
 
+private var lazyListState = 0 to 0
+
 @Composable
 fun TerminalLog(terminalItems: List<TerminalItem>) {
-  val listState = rememberLazyListState()
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  DisposableEffect(Unit) {
+    onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+  }
   val reversedTerminalItems by remember { derivedStateOf { terminalItems.reversed() } }
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
