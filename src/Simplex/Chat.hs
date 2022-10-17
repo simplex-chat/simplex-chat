@@ -1532,20 +1532,25 @@ processAgentMessage (Just User {userId}) _ "" agentMessage = case agentMessage o
       cs <- withStore' $ \db -> getConnectionsContacts db userId conns
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
+processAgentMessage (Just user) _ agentConnId END =
+  withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
+    RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
+      toView $ CRContactAnotherClient ct
+      showToast (c <> "> ") "connected to another client"
+      unsetActive $ ActiveC c
+    entity -> toView $ CRSubscriptionEnd entity
 processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
-  (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \connEntity -> do
-    subscriptionEnd connEntity
-    case connEntity of
-      RcvDirectMsgConnection conn contact_ ->
-        processDirectMessage agentMessage conn contact_
-      RcvGroupMsgConnection conn gInfo m ->
-        processGroupMessage agentMessage conn gInfo m
-      RcvFileConnection conn ft ->
-        processRcvFileConn agentMessage conn ft
-      SndFileConnection conn ft ->
-        processSndFileConn agentMessage conn ft
-      UserContactConnection conn uc ->
-        processUserContactRequest agentMessage conn uc
+  (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
+    RcvDirectMsgConnection conn contact_ ->
+      processDirectMessage agentMessage conn contact_
+    RcvGroupMsgConnection conn gInfo m ->
+      processGroupMessage agentMessage conn gInfo m
+    RcvFileConnection conn ft ->
+      processRcvFileConn agentMessage conn ft
+    SndFileConnection conn ft ->
+      processSndFileConn agentMessage conn ft
+    UserContactConnection conn uc ->
+      processUserContactRequest agentMessage conn uc
   where
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
@@ -1554,13 +1559,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         withStore' $ \db -> updateConnectionStatus db conn connStatus
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
-
-    subscriptionEnd :: ConnectionEntity -> m ()
-    subscriptionEnd acEntity = do
-      case (acEntity, agentMessage) of
-        (RcvDirectMsgConnection _ (Just _), _) -> pure () -- CRContactAnotherClient is sent instead
-        (_, END) -> toView $ CRSubscriptionEnd acEntity
-        _ -> pure ()
 
     isMember :: MemberId -> GroupInfo -> [GroupMember] -> Bool
     isMember memId GroupInfo {membership} members =
@@ -1697,11 +1695,6 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
           -- [async agent commands] continuation on receiving OK
           withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
             when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
-        END -> do
-          toView $ CRContactAnotherClient ct
-          showToast (c <> "> ") "connected to another client"
-          unsetActive $ ActiveC c
-        -- TODO print errors
         MERR msgId err -> do
           chatItemId_ <- withStore' $ \db -> getChatItemIdByAgentMsgId db connId msgId
           forM_ chatItemId_ $ \chatItemId -> do
