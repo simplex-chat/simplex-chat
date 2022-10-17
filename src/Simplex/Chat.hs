@@ -1533,17 +1533,19 @@ processAgentMessage (Just User {userId}) _ "" agentMessage = case agentMessage o
       toView $ event srv cs
       showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentMessage =
-  (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \case
-    RcvDirectMsgConnection conn contact_ ->
-      processDirectMessage agentMessage conn contact_
-    RcvGroupMsgConnection conn gInfo m ->
-      processGroupMessage agentMessage conn gInfo m
-    RcvFileConnection conn ft ->
-      processRcvFileConn agentMessage conn ft
-    SndFileConnection conn ft ->
-      processSndFileConn agentMessage conn ft
-    UserContactConnection conn uc ->
-      processUserContactRequest agentMessage conn uc
+  (withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus) >>= \connEntity -> do
+    subscriptionEnd connEntity
+    case connEntity of
+      RcvDirectMsgConnection conn contact_ ->
+        processDirectMessage agentMessage conn contact_
+      RcvGroupMsgConnection conn gInfo m ->
+        processGroupMessage agentMessage conn gInfo m
+      RcvFileConnection conn ft ->
+        processRcvFileConn agentMessage conn ft
+      SndFileConnection conn ft ->
+        processSndFileConn agentMessage conn ft
+      UserContactConnection conn uc ->
+        processUserContactRequest agentMessage conn uc
   where
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
@@ -1552,6 +1554,13 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         withStore' $ \db -> updateConnectionStatus db conn connStatus
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
+
+    subscriptionEnd :: ConnectionEntity -> m ()
+    subscriptionEnd acEntity = do
+      case (acEntity, agentMessage) of
+        (RcvDirectMsgConnection _ (Just _), _) -> pure () -- CRContactAnotherClient is sent instead
+        (_, END) -> toView $ CRSubscriptionEnd acEntity
+        _ -> pure ()
 
     isMember :: MemberId -> GroupInfo -> [GroupMember] -> Bool
     isMember memId GroupInfo {membership} members =
