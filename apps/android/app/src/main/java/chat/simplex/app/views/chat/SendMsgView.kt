@@ -46,15 +46,23 @@ fun SendMsgView(
   val cs = composeState.value
   var showKeyboard by remember { mutableStateOf(false) }
   LaunchedEffect(cs.contextItem) {
-    if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
-    delay(50)
-    showKeyboard = true
+    when (cs.contextItem) {
+      is ComposeContextItem.QuotedItem -> {
+        delay(100)
+        showKeyboard = true
+      }
+      is ComposeContextItem.EditingItem -> {
+        // Keyboard will not show up if we try to show it too fast
+        delay(300)
+        showKeyboard = true
+      }
+    }
   }
   val textColor = MaterialTheme.colors.onBackground
   val tintColor = MaterialTheme.colors.secondary
   val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
-  val paddingEnd = with(LocalDensity.current) { 12.dp.roundToPx() }
+  val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
 
   Column(Modifier.padding(vertical = 8.dp)) {
@@ -99,8 +107,10 @@ fun SendMsgView(
         it.setTextColor(textColor.toArgb())
         it.textSize = textStyle.value.fontSize.value
         DrawableCompat.setTint(it.background, tintColor.toArgb())
-        if (cs.message.isEmpty()) {
+        if (cs.message != it.text.toString()) {
           it.setText(cs.message)
+          // Set cursor to the end of the text
+          it.setSelection(it.text.length)
         }
         if (showKeyboard) {
           it.requestFocus()
