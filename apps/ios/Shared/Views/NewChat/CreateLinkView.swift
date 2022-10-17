@@ -18,11 +18,11 @@ struct CreateLinkView: View {
     @State var selection: CreateLinkTab
     @State var connReqInvitation: String = ""
     @State private var creatingConnReq = false
-    var viaSettings = false
+    var viaNavLink = false
 
     var body: some View {
         TabView(selection: $selection) {
-            AddContactView(connReqInvitation: connReqInvitation, viaSettings: viaSettings)
+            AddContactView(connReqInvitation: connReqInvitation, viaNavLink: viaNavLink)
                 .tabItem {
                     Label(
                         connReqInvitation == ""
@@ -32,7 +32,7 @@ struct CreateLinkView: View {
                     )
                 }
                 .tag(CreateLinkTab.oneTime)
-            UserAddress(viaSettings: viaSettings)
+            UserAddress(viaNavLink: viaNavLink)
                 .tabItem {
                     Label("Your contact address", systemImage: "infinity.circle")
                 }

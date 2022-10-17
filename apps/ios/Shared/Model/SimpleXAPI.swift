@@ -743,6 +743,29 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
     throw r
 }
 
+func apiCreateGroupLink(_ groupId: Int64) async throws -> String {
+    let r = await chatSendCmd(.apiCreateGroupLink(groupId: groupId))
+    if case let .groupLinkCreated(_, connReq) = r { return connReq }
+    throw r
+}
+
+func apiDeleteGroupLink(_ groupId: Int64) async throws {
+    let r = await chatSendCmd(.apiDeleteGroupLink(groupId: groupId))
+    if case .groupLinkDeleted = r { return }
+    throw r
+}
+
+func apiGetGroupLink(_ groupId: Int64) throws -> String? {
+    let r = chatSendCmdSync(.apiGetGroupLink(groupId: groupId))
+    switch r {
+    case let .groupLink(_, connReq):
+        return connReq
+    case .chatCmdError(chatError: .errorStore(storeError: .groupLinkNotFound)):
+        return nil
+    default: throw r
+    }
+}
+
 func initializeChat(start: Bool, dbKey: String? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared

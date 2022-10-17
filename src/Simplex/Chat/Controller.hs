@@ -314,6 +314,7 @@ data ChatResponse
   | CRContactConnecting {contact :: Contact}
   | CRContactConnected {contact :: Contact, userCustomProfile :: Maybe Profile}
   | CRContactAnotherClient {contact :: Contact}
+  | CRSubscriptionEnd {connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactSubError {contact :: Contact, chatError :: ChatError}
