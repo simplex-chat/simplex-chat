@@ -65,26 +65,26 @@ fun resizeImageToStrSize(image: Bitmap, maxDataSize: Long): String {
 }
 
 private fun compressImageStr(bitmap: Bitmap): String {
-  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap).toByteArray(), Base64.NO_WRAP)
+  return "data:image/jpg;base64," + Base64.encodeToString(compressImageData(bitmap, false).toByteArray(), Base64.NO_WRAP)
 }
 
-fun resizeImageToDataSize(image: Bitmap, maxDataSize: Long): ByteArrayOutputStream {
+fun resizeImageToDataSize(image: Bitmap, usePng: Boolean, maxDataSize: Long): ByteArrayOutputStream {
   var img = image
-  var stream = compressImageData(img)
+  var stream = compressImageData(img, usePng)
   while (stream.size() > maxDataSize) {
     val ratio = sqrt(stream.size().toDouble() / maxDataSize.toDouble())
     val clippedRatio = min(ratio, 2.0)
     val width = (img.width.toDouble() / clippedRatio).toInt()
     val height = img.height * width / img.width
     img = Bitmap.createScaledBitmap(img, width, height, true)
-    stream = compressImageData(img)
+    stream = compressImageData(img, usePng)
   }
   return stream
 }
 
-private fun compressImageData(bitmap: Bitmap): ByteArrayOutputStream {
+private fun compressImageData(bitmap: Bitmap, usePng: Boolean): ByteArrayOutputStream {
   val stream = ByteArrayOutputStream()
-  bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+  bitmap.compress(if (!usePng) Bitmap.CompressFormat.JPEG else Bitmap.CompressFormat.PNG, 85, stream)
   return stream
 }
 
