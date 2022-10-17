@@ -398,10 +398,10 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
           chatModel.sharedContent.value = SharedContent.Text(it)
         }
         intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.Image(it)
+          chatModel.sharedContent.value = SharedContent.Image(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
         } // All other mime types
         else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.File(it)
+          chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
         }
       }
     }
