@@ -2,6 +2,7 @@ package chat.simplex.app.views
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,7 +12,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,18 +32,28 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 
+private var lastSuccessfulAuth: MutableState<Long?> = mutableStateOf(null)
+
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   val composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) }
-  BackHandler(onBack = close)
-  val authorized = remember { mutableStateOf(!chatModel.controller.appPrefs.performLA.get()) }
+  val lastSuccessfulAuth = remember { lastSuccessfulAuth }
+  BackHandler(onBack = {
+    lastSuccessfulAuth.value = null
+    close()
+  })
+  val authorized = remember { !chatModel.controller.appPrefs.performLA.get() }
   val context = LocalContext.current
-  LaunchedEffect(authorized.value) {
-    if (!authorized.value) {
-      runAuth(authorized = authorized, context)
+  LaunchedEffect(lastSuccessfulAuth) {
+    if (!authorized && !authorizedPreviously(lastSuccessfulAuth)) {
+      runAuth(lastSuccessfulAuth, context)
     }
   }
-  if (authorized.value) {
+  if (authorized || authorizedPreviously(lastSuccessfulAuth)) {
+    LaunchedEffect(Unit) {
+      // Update auth each time user visits this screen in authenticated state just to prolong authorized time
+      lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
+    }
     TerminalLayout(
       chatModel.terminalItems,
       composeState,
@@ -62,7 +72,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
             stringResource(R.string.auth_unlock),
             icon = Icons.Outlined.Lock,
             click = {
-              runAuth(authorized = authorized, context)
+              runAuth(lastSuccessfulAuth, context)
             }
           )
         }
@@ -71,15 +81,18 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
-private fun runAuth(authorized: MutableState<Boolean>, context: Context) {
+private fun authorizedPreviously(lastSuccessfulAuth: State<Long?>): Boolean =
+  lastSuccessfulAuth.value != null && SystemClock.elapsedRealtime() - lastSuccessfulAuth.value!! < 30 * 1e+3
+
+private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
   authenticate(
     generalGetString(R.string.auth_open_chat_console),
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
       when (laResult) {
-        LAResult.Success, LAResult.Unavailable -> authorized.value = true
-        is LAResult.Error, LAResult.Failed -> authorized.value = false
+        LAResult.Success, LAResult.Unavailable -> lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
+        is LAResult.Error, LAResult.Failed -> lastSuccessfulAuth.value = null
       }
     }
   )
