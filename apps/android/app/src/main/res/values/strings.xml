@@ -183,7 +183,7 @@
   <string name="images_limit_title">Too many images!</string>
   <string name="images_limit_desc">Only 10 images can be sent at the same time</string>
 
-  <!-- Images - CIImageView.kt -->
+  <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
   <string name="icon_descr_waiting_for_image">Waiting for image</string>
   <string name="icon_descr_asked_to_receive">Asked to receive the image</string>
