@@ -106,7 +106,7 @@ fun FramedItemView(
     }
   }
 
-  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty()
+  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
