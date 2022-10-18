@@ -141,7 +141,7 @@ fun FramedItemView(
               is MsgContent.MCImage -> {
                 CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@Box, showMenu, receiveFile)
                 if (mc.text == "") {
-                  metaColor = HighOrLowlight
+                  metaColor = Color.White
                 } else {
                   CIMarkdownText(ci, showMember, uriHandler)
                 }
