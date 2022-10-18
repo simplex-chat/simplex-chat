@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -68,7 +69,10 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
-        .clickable { scrollToItem(qi.itemId?: return@clickable) }
+        .combinedClickable(
+          onLongClick = { showMenu.value = true },
+          onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
+        )
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -101,10 +105,16 @@ fun FramedItemView(
     }
   }
 
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight
-  ) {
+  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
+  Box(Modifier
+    .clip(RoundedCornerShape(18.dp))
+    .background(
+      when {
+        transparentBackground -> Color.Transparent
+        sent -> SentColorLight
+        else -> ReceivedColorLight
+      }
+    )) {
     var metaColor = HighOrLowlight
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {

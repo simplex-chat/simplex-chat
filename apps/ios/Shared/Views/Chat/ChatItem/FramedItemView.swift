@@ -207,8 +207,17 @@ private struct MetaColorPreferenceKey: PreferenceKey {
     }
 }
 
+func onlyImage(_ ci: ChatItem) -> Bool {
+    if case let .image(text, _) = ci.content.msgContent {
+        return ci.quotedItem == nil && text == ""
+    }
+    return false
+}
+
 func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
-    ci.chatDir.sent
+    onlyImage(ci)
+    ? Color.clear
+    : ci.chatDir.sent
     ? (colorScheme == .light ? sentColorLight : sentColorDark)
     : Color(uiColor: .tertiarySystemGroupedBackground)
 }

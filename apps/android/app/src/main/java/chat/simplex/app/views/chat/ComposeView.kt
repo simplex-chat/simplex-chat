@@ -194,7 +194,7 @@ fun ComposeView(
       Toast.makeText(context, generalGetString(R.string.toast_permission_denied), Toast.LENGTH_SHORT).show()
     }
   }
-  val processPickedImage = { uris: List<Uri> ->
+  val processPickedImage = { uris: List<Uri>, text: String? ->
     val content = ArrayList<UploadContent>()
     val imagesPreview = ArrayList<String>()
     uris.forEach { uri ->
@@ -223,17 +223,17 @@ fun ComposeView(
 
     if (imagesPreview.isNotEmpty()) {
       chosenContent.value = content
-      composeState.value = composeState.value.copy(preview = ComposePreview.ImagePreview(imagesPreview))
+      composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.ImagePreview(imagesPreview))
     }
   }
-  val processPickedFile = { uri: Uri? ->
+  val processPickedFile = { uri: Uri?, text: String? ->
     if (uri != null) {
       val fileSize = getFileSize(context, uri)
       if (fileSize != null && fileSize <= MAX_FILE_SIZE) {
         val fileName = getFileName(SimplexApp.context, uri)
         if (fileName != null) {
           chosenFile.value = uri
-          composeState.value = composeState.value.copy(preview = ComposePreview.FilePreview(fileName))
+          composeState.value = composeState.value.copy(message = text ?: composeState.value.message, preview = ComposePreview.FilePreview(fileName))
         }
       } else {
         AlertManager.shared.showAlertMsg(
@@ -243,9 +243,9 @@ fun ComposeView(
       }
     }
   }
-  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery(), processPickedImage)
-  val galleryLauncherFallback = rememberGetMultipleContentsLauncher(processPickedImage)
-  val filesLauncher = rememberGetContentLauncher(processPickedFile)
+  val galleryLauncher = rememberLauncherForActivityResult(contract = PickFromGallery()) { processPickedImage(it, null) }
+  val galleryLauncherFallback = rememberGetMultipleContentsLauncher { processPickedImage(it, null) }
+  val filesLauncher = rememberGetContentLauncher { processPickedFile(it, null) }
 
   LaunchedEffect(attachmentOption.value) {
     when (attachmentOption.value) {
@@ -503,8 +503,8 @@ fun ComposeView(
   LaunchedEffect(chatModel.sharedContent.value) {
     when (val shared = chatModel.sharedContent.value) {
       is SharedContent.Text -> onMessageChange(shared.text)
-      is SharedContent.Images -> processPickedImage(shared.uris)
-      is SharedContent.File -> processPickedFile(shared.uri)
+      is SharedContent.Images -> processPickedImage(shared.uris, shared.text)
+      is SharedContent.File -> processPickedFile(shared.uri, shared.text)
       null -> {}
     }
     chatModel.sharedContent.value = null
