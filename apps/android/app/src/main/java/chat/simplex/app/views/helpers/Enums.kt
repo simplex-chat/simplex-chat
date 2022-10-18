@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 sealed class SharedContent {
   data class Text(val text: String): SharedContent()
-  data class Image(val uri: Uri): SharedContent()
-  data class File(val uri: Uri): SharedContent()
+  data class Image(val text: String, val uri: Uri): SharedContent()
+  data class File(val text: String, val uri: Uri): SharedContent()
 }
 
 enum class NewChatSheetState {
