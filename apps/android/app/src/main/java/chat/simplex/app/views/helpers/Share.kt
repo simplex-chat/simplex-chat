@@ -32,9 +32,9 @@ fun shareFile(cxt: Context, text: String, filePath: String) {
   val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: return
   val sendIntent: Intent = Intent().apply {
     action = Intent.ACTION_SEND
-    if (text.isNotEmpty()) {
+    /*if (text.isNotEmpty()) {
       putExtra(Intent.EXTRA_TEXT, text)
-    }
+    }*/
     putExtra(Intent.EXTRA_STREAM, uri)
     type = mimeType
   }
