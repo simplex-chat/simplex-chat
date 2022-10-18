@@ -582,28 +582,28 @@ deleteContactProfile_ db userId contactId =
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
 updateUserProfile db User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName}} p'@Profile {displayName = newName}
   | displayName == newName =
-      liftIO $ updateContactProfile_ db userId profileId p'
+    liftIO $ updateContactProfile_ db userId profileId p'
   | otherwise =
-      checkConstraint SEDuplicateName . liftIO $ do
-        currentTs <- getCurrentTime
-        DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        DB.execute
-          db
-          "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
-          (newName, newName, userId, currentTs, currentTs)
-        updateContactProfile_' db userId profileId p' currentTs
-        updateContact_ db userId userContactId localDisplayName newName currentTs
+    checkConstraint SEDuplicateName . liftIO $ do
+      currentTs <- getCurrentTime
+      DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+      DB.execute
+        db
+        "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
+        (newName, newName, userId, currentTs, currentTs)
+      updateContactProfile_' db userId profileId p' currentTs
+      updateContact_ db userId userContactId localDisplayName newName currentTs
 
 updateContactProfile :: DB.Connection -> UserId -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db userId c@Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} p'@Profile {displayName = newName}
   | displayName == newName =
-      liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
+    liftIO $ updateContactProfile_ db userId profileId p' $> (c :: Contact) {profile = toLocalProfile profileId p' localAlias}
   | otherwise =
-      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-        currentTs <- getCurrentTime
-        updateContactProfile_' db userId profileId p' currentTs
-        updateContact_ db userId contactId localDisplayName ldn currentTs
-        pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateContactProfile_' db userId profileId p' currentTs
+      updateContact_ db userId contactId localDisplayName ldn currentTs
+      pure . Right $ (c :: Contact) {localDisplayName = ldn, profile = toLocalProfile profileId p' localAlias}
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
 updateContactAlias db userId c@Contact {profile = lp@LocalProfile {profileId}} localAlias = do
@@ -2552,20 +2552,20 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
       pure $ case map fromOnly ns of
         []
           | chunkNo == 1 ->
-              if chunkSize >= fileSize
-                then RcvChunkFinal
-                else RcvChunkOk
+            if chunkSize >= fileSize
+              then RcvChunkFinal
+              else RcvChunkOk
           | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
-              let prevSize = n * chunkSize
-               in if prevSize >= fileSize
-                    then RcvChunkError
-                    else
-                      if prevSize + chunkSize >= fileSize
-                        then RcvChunkFinal
-                        else RcvChunkOk
+            let prevSize = n * chunkSize
+             in if prevSize >= fileSize
+                  then RcvChunkError
+                  else
+                    if prevSize + chunkSize >= fileSize
+                      then RcvChunkFinal
+                      else RcvChunkOk
           | otherwise -> RcvChunkError
 
 updatedRcvFileChunkStored :: DB.Connection -> RcvFileTransfer -> Integer -> IO ()
@@ -3254,7 +3254,8 @@ getDirectChat db user contactId pagination search_ = do
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
-  stats <- liftIO $ getDirectChatStats_ db userId contactId
+  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -3285,7 +3286,8 @@ getDirectChatLast_ db User {userId} contactId count search = do
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
-  stats <- liftIO $ getDirectChatStats_ db userId contactId
+  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
   where
@@ -3317,7 +3319,8 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
-  stats <- liftIO $ getDirectChatStats_ db userId contactId
+  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -3346,8 +3349,8 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = 
           |]
           (userId, contactId, search, beforeChatItemId, count)
 
-getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
-getDirectChatStats_ db userId contactId =
+_getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
+_getDirectChatStats_ db userId contactId =
   toChatStats'
     <$> DB.query
       db
@@ -3409,7 +3412,8 @@ getGroupChat db user groupId pagination search_ = do
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
-  stats <- liftIO $ getGroupChatStats_ db userId groupId
+  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   chatItemIds <- liftIO getGroupChatItemIdsLast_
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
@@ -3431,7 +3435,8 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
-  stats <- liftIO $ getGroupChatStats_ db userId groupId
+  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
@@ -3455,7 +3460,8 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
-  stats <- liftIO $ getGroupChatStats_ db userId groupId
+  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
@@ -3476,8 +3482,8 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search 
           |]
           (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
 
-getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
-getGroupChatStats_ db userId groupId =
+_getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
+_getGroupChatStats_ db userId groupId =
   toChatStats'
     <$> DB.query
       db
@@ -3517,14 +3523,14 @@ getGroupInfo db User {userId, userContactId} groupId =
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
 updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, image}
   | displayName == newName = liftIO $ do
-      currentTs <- getCurrentTime
-      updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
+    currentTs <- getCurrentTime
+    updateGroupProfile_ currentTs $> (g :: GroupInfo) {groupProfile = p'}
   | otherwise =
-      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-        currentTs <- getCurrentTime
-        updateGroupProfile_ currentTs
-        updateGroup_ ldn currentTs
-        pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateGroupProfile_ currentTs
+      updateGroup_ ldn currentTs
+      pure . Right $ (g :: GroupInfo) {localDisplayName = ldn, groupProfile = p'}
   where
     updateGroupProfile_ currentTs =
       DB.execute
