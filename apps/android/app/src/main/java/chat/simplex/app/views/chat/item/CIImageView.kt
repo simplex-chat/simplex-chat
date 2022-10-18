@@ -18,9 +18,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import chat.simplex.app.BuildConfig
@@ -95,21 +94,14 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageViewFullWidth(): Dp {
-    val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(1000.dp, LocalView.current.width.toDp() - approximatePadding) }
-  }
-
-  @Composable
   fun imageView(imageBitmap: Bitmap, onClick: () -> Unit) {
-    val fullWidth = imageViewFullWidth()
     Image(
       imageBitmap.asImageBitmap(),
       contentDescription = stringResource(R.string.image_descr),
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (imageBitmap.width < imageBitmap.height) fullWidth * 0.75f else fullWidth)
+        .width(1000.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
@@ -120,14 +112,13 @@ fun CIImageView(
 
   @Composable
   fun imageView(painter: Painter, onClick: () -> Unit) {
-    val fullWidth = imageViewFullWidth()
     Image(
       painter,
       contentDescription = stringResource(R.string.image_descr),
       // .width(1000.dp) is a hack for image to increase IntrinsicSize of FramedItemView
       // if text is short and take all available width if text is long
       modifier = Modifier
-        .width(if (painter.intrinsicSize.width < painter.intrinsicSize.height) fullWidth * 0.75f else fullWidth)
+        .width(1000.dp)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = onClick
