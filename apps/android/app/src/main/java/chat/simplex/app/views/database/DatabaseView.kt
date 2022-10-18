@@ -58,13 +58,13 @@ fun DatabaseView(
   val chatLastStart = remember { mutableStateOf(prefs.chatLastStart.get()) }
   val chatArchiveFile = remember { mutableStateOf<String?>(null) }
   val saveArchiveLauncher = rememberSaveArchiveLauncher(cxt = context, chatArchiveFile)
+  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory(context))) }
   val importArchiveLauncher = rememberGetContentLauncher { uri: Uri? ->
     if (uri != null) {
-      importArchiveAlert(m, context, uri, progressIndicator)
+      importArchiveAlert(m, context, uri, appFilesCountAndSize, progressIndicator)
     }
   }
   val chatDbDeleted = remember { m.chatDbDeleted }
-  val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(getAppFilesDirectory(context))) }
   LaunchedEffect(m.chatRunning) {
     runChat.value = m.chatRunning.value ?: true
   }
@@ -506,16 +506,28 @@ private fun rememberSaveArchiveLauncher(cxt: Context, chatArchiveFile: MutableSt
     }
   )
 
-private fun importArchiveAlert(m: ChatModel, context: Context, importedArchiveUri: Uri, progressIndicator: MutableState<Boolean>) {
+private fun importArchiveAlert(
+  m: ChatModel,
+  context: Context,
+  importedArchiveUri: Uri,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  progressIndicator: MutableState<Boolean>
+) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(R.string.import_database_question),
     text = generalGetString(R.string.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(R.string.import_database_confirmation),
-    onConfirm = { importArchive(m, context, importedArchiveUri, progressIndicator) }
+    onConfirm = { importArchive(m, context, importedArchiveUri, appFilesCountAndSize, progressIndicator) }
   )
 }
 
-private fun importArchive(m: ChatModel, context: Context, importedArchiveUri: Uri, progressIndicator: MutableState<Boolean>) {
+private fun importArchive(
+  m: ChatModel,
+  context: Context,
+  importedArchiveUri: Uri,
+  appFilesCountAndSize: MutableState<Pair<Int, Long>>,
+  progressIndicator: MutableState<Boolean>
+) {
   progressIndicator.value = true
   val archivePath = saveArchiveFromUri(context, importedArchiveUri)
   if (archivePath != null) {
@@ -526,6 +538,7 @@ private fun importArchive(m: ChatModel, context: Context, importedArchiveUri: Ur
           val config = ArchiveConfig(archivePath, parentTempDirectory = context.cacheDir.toString())
           m.controller.apiImportArchive(config)
           DatabaseUtils.removeDatabaseKey()
+          appFilesCountAndSize.value = directoryFileCountAndSize(getAppFilesDirectory(context))
           operationEnded(m, progressIndicator) {
             AlertManager.shared.showAlertMsg(generalGetString(R.string.chat_database_imported), generalGetString(R.string.restart_the_app_to_use_imported_chat_database))
           }

@@ -5,6 +5,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -22,8 +23,8 @@ enum class CreateLinkTab {
 @Composable
 fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   val selection = remember { mutableStateOf(initialSelection) }
-  val connReqInvitation = remember { mutableStateOf("") }
-  val creatingConnReq = remember { mutableStateOf(false) }
+  val connReqInvitation = rememberSaveable { mutableStateOf("") }
+  val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(selection.value) {
     if (selection.value == CreateLinkTab.ONE_TIME && connReqInvitation.value.isEmpty() && !creatingConnReq.value) {
       createInvitation(m, creatingConnReq, connReqInvitation)

@@ -1,6 +1,7 @@
 package chat.simplex.app.views.chat.item
 
 import android.content.*
+import android.net.Uri
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import chat.simplex.app.*
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.SimpleXTheme
@@ -81,7 +83,11 @@ fun ChatItemView(
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.share_verb), Icons.Outlined.Share, onClick = {
-            shareText(cxt, cItem.content.text)
+            val filePath = getLoadedFilePath(SimplexApp.context, cItem.file)
+            when {
+              filePath != null -> shareFile(cxt, cItem.text, filePath)
+              else -> shareText(cxt, cItem.content.text)
+            }
             showMenu.value = false
           })
           ItemAction(stringResource(R.string.copy_verb), Icons.Outlined.ContentCopy, onClick = {

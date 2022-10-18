@@ -398,10 +398,10 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
           chatModel.sharedContent.value = SharedContent.Text(it)
         }
         intent.type?.startsWith("image/") == true -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(listOf(it))
+          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(it))
         } // All other mime types
         else -> (intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri)?.let {
-          chatModel.sharedContent.value = SharedContent.File(it)
+          chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
         }
       }
     }
@@ -411,7 +411,7 @@ fun processExternalIntent(intent: Intent?, chatModel: ChatModel) {
       chatModel.clearOverlays.value = true
       when {
         intent.type?.startsWith("image/") == true -> (intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>)?.let {
-          chatModel.sharedContent.value = SharedContent.Images(it)
+          chatModel.sharedContent.value = SharedContent.Images(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", it)
         } // All other mime types
         else -> {}
       }
