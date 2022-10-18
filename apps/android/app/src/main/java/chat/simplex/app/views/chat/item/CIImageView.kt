@@ -152,7 +152,7 @@ fun CIImageView(
     contentAlignment = Alignment.TopEnd
   ) {
     val context = LocalContext.current
-    val (imageBitmap, filePath) = remember { imageAndFilePath(file) }
+    val (imageBitmap, filePath) = remember(file) { imageAndFilePath(file) }
     if (imageBitmap != null && filePath != null) {
       val uri = remember(filePath) { FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.provider", File(filePath))  }
       val imagePainter = rememberAsyncImagePainter(
