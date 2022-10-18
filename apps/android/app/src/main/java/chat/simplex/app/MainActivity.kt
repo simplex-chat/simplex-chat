@@ -98,7 +98,7 @@ class MainActivity: FragmentActivity() {
   override fun onStart() {
     super.onStart()
     val enteredBackgroundVal = enteredBackground.value
-    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30 * 1e+3) {
+    if (enteredBackgroundVal == null || elapsedRealtime() - enteredBackgroundVal >= 30_000) {
       runAuthenticate()
     }
   }

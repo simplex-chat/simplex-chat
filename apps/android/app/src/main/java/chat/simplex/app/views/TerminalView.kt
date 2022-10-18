@@ -32,7 +32,7 @@ import chat.simplex.app.views.helpers.*
 import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.insets.navigationBarsWithImePadding
 
-private var lastSuccessfulAuth: MutableState<Long?> = mutableStateOf(null)
+private val lastSuccessfulAuth: MutableState<Long?> = mutableStateOf(null)
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
@@ -44,7 +44,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
   })
   val authorized = remember { !chatModel.controller.appPrefs.performLA.get() }
   val context = LocalContext.current
-  LaunchedEffect(lastSuccessfulAuth) {
+  LaunchedEffect(lastSuccessfulAuth.value) {
     if (!authorized && !authorizedPreviously(lastSuccessfulAuth)) {
       runAuth(lastSuccessfulAuth, context)
     }
@@ -82,7 +82,7 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
 }
 
 private fun authorizedPreviously(lastSuccessfulAuth: State<Long?>): Boolean =
-  lastSuccessfulAuth.value != null && SystemClock.elapsedRealtime() - lastSuccessfulAuth.value!! < 30 * 1e+3
+  lastSuccessfulAuth.value?.let { SystemClock.elapsedRealtime() - it < 30_000 } ?: false
 
 private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
   authenticate(
@@ -90,9 +90,9 @@ private fun runAuth(lastSuccessfulAuth: MutableState<Long?>, context: Context) {
     generalGetString(R.string.auth_log_in_using_credential),
     context as FragmentActivity,
     completed = { laResult ->
-      when (laResult) {
-        LAResult.Success, LAResult.Unavailable -> lastSuccessfulAuth.value = SystemClock.elapsedRealtime()
-        is LAResult.Error, LAResult.Failed -> lastSuccessfulAuth.value = null
+      lastSuccessfulAuth.value = when (laResult) {
+        LAResult.Success, LAResult.Unavailable -> SystemClock.elapsedRealtime()
+        is LAResult.Error, LAResult.Failed -> null
       }
     }
   )
