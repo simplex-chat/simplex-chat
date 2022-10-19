@@ -56,6 +56,7 @@ is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
   enable_ntfs INTEGER,
+  unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -123,7 +124,8 @@ CREATE TABLE groups(
   updated_at TEXT CHECK(updated_at NOT NULL),
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
   enable_ntfs INTEGER,
-  host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL, -- received
+  host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL), -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
