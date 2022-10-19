@@ -214,8 +214,7 @@ groupName' GroupInfo {localDisplayName = g} = g
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
-  { enableNtfs :: Bool,
-    chatUnread:: Bool
+  { enableNtfs :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
 

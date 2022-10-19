@@ -646,6 +646,18 @@ processChatCommand = \case
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated conn'
+  APISetUnreadChat (ChatRef cType chatId) unreadChat -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
+      _ <- withStore $ \db -> do
+        Contact {contactId} <- getContact db userId chatId
+        liftIO $ updateContactUnreadChat db user contactId unreadChat
+      pure CRCmdOk
+    CTGroup -> do
+      _ <- withStore $ \db -> do
+        Group GroupInfo {groupId} _ <- getGroup db user chatId
+        liftIO $ updateGroupUnreadChat db user groupId unreadChat
+      pure CRCmdOk
+    _ -> pure $ chatCmdError "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
   APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> CRNtfTokenStatus <$> withUser (\_ -> withAgent $ \a -> registerNtfToken a token mode)
@@ -3073,6 +3085,7 @@ chatCommandP =
       "/_profile " *> (APIUpdateProfile <$> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
+      "/_set unread_chat " *> (APISetUnreadChat <$> chatRefP <* A.space <*> onOffP),
       "/_parse " *> (APIParseMarkdown . safeDecodeUtf8 <$> A.takeByteString),
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),

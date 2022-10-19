@@ -41,6 +41,8 @@ module Simplex.Chat.Store
     updateContactProfile,
     updateContactAlias,
     updateContactConnectionAlias,
+    updateContactUnreadChat,
+    updateGroupUnreadChat,
     getUserContacts,
     createUserContactLink,
     getUserAddressConnections,
@@ -281,6 +283,7 @@ import Simplex.Chat.Migrations.M20221003_delete_broken_integrity_error_chat_item
 import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Migrations.M20221012_inline_files
+import Simplex.Chat.Migrations.M20221019_unread_chat
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -292,7 +295,6 @@ import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPSe
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
-import Simplex.Chat.Migrations.M20221019_chat_unread_status (m20221019_chat_unread_status)
 
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
@@ -324,7 +326,7 @@ schemaMigrations =
     ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
     ("20221012_inline_files", m20221012_inline_files),
-    ("20221019_chat_unread_status", m20221019_chat_unread_status)
+    ("20221019_unread_chat", m20221019_unread_chat)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -373,8 +375,8 @@ createUser db Profile {displayName, fullName, image} activeUser =
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+      (profileId, displayName, userId, True, False, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser (userId, contactId, profileId, activeUser, displayName, fullName, image)
@@ -526,8 +528,8 @@ createContact_ db userId connId Profile {displayName, fullName, image} localAlia
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+      (profileId, ldn, userId, viaGroup, False, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure . Right $ (ldn, contactId, profileId)
@@ -632,6 +634,14 @@ updateContactConnectionAlias db userId conn localAlias = do
     |]
     (localAlias, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {localAlias}
+
+updateContactUnreadChat :: DB.Connection -> User -> Int64 -> Bool -> IO ()
+updateContactUnreadChat db User {userId} contactId unreadChat =
+  DB.execute db "UPDATE contacts SET unread_chat = ? WHERE user_id = ? AND contact_id = ?" (unreadChat, userId, contactId)
+
+updateGroupUnreadChat :: DB.Connection -> User -> Int64 -> Bool -> IO ()
+updateGroupUnreadChat db User {userId} groupId unreadChat =
+  DB.execute db "UPDATE groups SET unread_chat = ? WHERE user_id = ? AND group_id = ?" (unreadChat, userId, groupId)
 
 updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateContactProfile_ db userId profileId profile = do
@@ -1055,8 +1065,8 @@ createAcceptedContact db userId agentConnId localDisplayName profileId profile u
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   DB.execute
     db
-    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, True, createdAt, createdAt, xContactId)
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, unread_chat, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, True, False, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt = createdAt, updatedAt = createdAt}
@@ -1509,8 +1519,8 @@ createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
       profileId <- insertedRowId db
       DB.execute
         db
-        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-        (ldn, userId, profileId, True, currentTs, currentTs)
+        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+        (ldn, userId, profileId, True, False, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
@@ -1550,8 +1560,8 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
             profileId <- insertedRowId db
             DB.execute
               db
-              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs)
+              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
+              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, False, currentTs, currentTs)
             insertedRowId db
           _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs
@@ -2089,12 +2099,12 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
       DB.execute
         db
         [sql|
-          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at)
-          SELECT contact_profile_id, group_id, ?, ?, ?, ?
+          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, unread_chat, created_at, updated_at)
+          SELECT contact_profile_id, group_id, ?, ?, ?, ?, ?
           FROM group_members
           WHERE group_member_id = ?
         |]
-        (localDisplayName, userId, ts, ts, groupMemberId)
+        (localDisplayName, userId, False, ts, ts, groupMemberId)
       contactId <- insertedRowId db
       DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, ts, connId)
       pure contactId
@@ -3042,7 +3052,7 @@ getDirectChatPreviews_ db User {userId} = do
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.custom_user_profile_id, c.conn_status, c.conn_type, c.local_alias,
           c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at,
           -- ChatStats
-          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
+          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat,
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
           -- CIFile
@@ -3108,7 +3118,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
           mu.member_status, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
           pu.display_name, pu.full_name, pu.image, pu.local_alias,
           -- ChatStats
-          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0),
+          COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat,
           -- ChatItem
           i.chat_item_id, i.item_ts, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_edited, i.created_at, i.updated_at,
           -- CIFile
@@ -3179,7 +3189,7 @@ getContactRequestChatPreviews_ db User {userId} =
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
       let cReq = toContactRequest cReqRow
-          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
 getContactConnectionChatPreviews_ :: DB.Connection -> User -> Bool -> IO [AChat]
@@ -3198,7 +3208,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChat
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
-          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
        in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
 
 getPendingContactConnection :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO PendingContactConnection
@@ -3257,7 +3267,7 @@ getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT
 getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
   -- stats <- liftIO $ getDirectChatStats_ db userId contactId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -3289,7 +3299,7 @@ getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> St
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
   -- stats <- liftIO $ getDirectChatStats_ db userId contactId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
   where
@@ -3322,7 +3332,7 @@ getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> S
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
   -- stats <- liftIO $ getDirectChatStats_ db userId contactId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
   where
@@ -3357,16 +3367,19 @@ _getDirectChatStats_ db userId contactId =
     <$> DB.query
       db
       [sql|
-        SELECT COUNT(1), MIN(chat_item_id)
+        SELECT COUNT(1), MIN(chat_item_id), Contacts.unread_chat
         FROM chat_items
+        CROSS JOIN (
+          SELECT unread_chat FROM contacts WHERE contact_id = ?
+        ) Contacts
         WHERE user_id = ? AND contact_id = ? AND item_status = ? AND item_deleted != 1
         GROUP BY contact_id
       |]
-      (userId, contactId, CISRcvNew)
+      (contactId, userId, contactId, CISRcvNew)
   where
     toChatStats' :: [ChatStatsRow] -> ChatStats
     toChatStats' [statsRow] = toChatStats statsRow
-    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -3415,7 +3428,7 @@ getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT 
 getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
   -- stats <- liftIO $ getGroupChatStats_ db userId groupId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- liftIO getGroupChatItemIdsLast_
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
   pure $ Chat (GroupChat groupInfo) (reverse chatItems) stats
@@ -3438,7 +3451,7 @@ getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> Str
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   -- stats <- liftIO $ getGroupChatStats_ db userId groupId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
@@ -3463,7 +3476,7 @@ getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> St
 getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
   -- stats <- liftIO $ getGroupChatStats_ db userId groupId
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
@@ -3490,16 +3503,19 @@ _getGroupChatStats_ db userId groupId =
     <$> DB.query
       db
       [sql|
-        SELECT COUNT(1), MIN(chat_item_id)
+        SELECT COUNT(1), MIN(chat_item_id), Groups.unread_chat
         FROM chat_items
+        CROSS JOIN (
+          SELECT unread_chat FROM groups WHERE group_id = ?
+        ) Groups
         WHERE user_id = ? AND group_id = ? AND item_status = ? AND item_deleted != 1
         GROUP BY group_id
       |]
-      (userId, groupId, CISRcvNew)
+      (groupId, userId, groupId, CISRcvNew)
   where
     toChatStats' :: [ChatStatsRow] -> ChatStats
     toChatStats' [statsRow] = toChatStats statsRow
-    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0}
+    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
 
 getGroupInfo :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db User {userId, userContactId} groupId =
@@ -4015,10 +4031,10 @@ updateGroupChatItemsRead db groupId itemsRange_ = do
         |]
         (CISRcvRead, currentTs, groupId, CISRcvNew)
 
-type ChatStatsRow = (Int, ChatItemId)
+type ChatStatsRow = (Int, ChatItemId, Bool)
 
 toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, minUnreadItemId) = ChatStats {unreadCount, minUnreadItemId}
+toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
 
 type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe ACIFileStatus)
 
