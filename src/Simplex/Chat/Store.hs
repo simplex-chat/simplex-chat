@@ -375,8 +375,8 @@ createUser db Profile {displayName, fullName, image} activeUser =
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, False, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (profileId, displayName, userId, True, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser (userId, contactId, profileId, activeUser, displayName, fullName, image)
@@ -528,8 +528,8 @@ createContact_ db userId connId Profile {displayName, fullName, image} localAlia
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, False, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+      (profileId, ldn, userId, viaGroup, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure . Right $ (ldn, contactId, profileId)
@@ -1065,8 +1065,8 @@ createAcceptedContact db userId agentConnId localDisplayName profileId profile u
     ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   DB.execute
     db
-    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, unread_chat, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, True, False, createdAt, createdAt, xContactId)
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, created_at, updated_at, xcontact_id) VALUES (?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, True, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
   activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId Nothing (Just userContactLinkId) customUserProfileId 0 createdAt
   pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, chatSettings = defaultChatSettings, createdAt = createdAt, updatedAt = createdAt}
@@ -1519,8 +1519,8 @@ createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
       profileId <- insertedRowId db
       DB.execute
         db
-        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
-        (ldn, userId, profileId, True, False, currentTs, currentTs)
+        "INSERT INTO groups (local_display_name, user_id, group_profile_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?)"
+        (ldn, userId, profileId, True, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
@@ -1560,8 +1560,8 @@ createGroupInvitation db user@User {userId} contact@Contact {contactId, activeCo
             profileId <- insertedRowId db
             DB.execute
               db
-              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, unread_chat, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
-              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, False, currentTs, currentTs)
+              "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+              (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs)
             insertedRowId db
           _ <- createContactMemberInv_ db user groupId contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs
           membership <- createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs
@@ -2099,12 +2099,12 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
       DB.execute
         db
         [sql|
-          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, unread_chat, created_at, updated_at)
-          SELECT contact_profile_id, group_id, ?, ?, ?, ?, ?
+          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at)
+          SELECT contact_profile_id, group_id, ?, ?, ?, ?
           FROM group_members
           WHERE group_member_id = ?
         |]
-        (localDisplayName, userId, False, ts, ts, groupMemberId)
+        (localDisplayName, userId, ts, ts, groupMemberId)
       contactId <- insertedRowId db
       DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, ts, connId)
       pure contactId

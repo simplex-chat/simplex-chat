@@ -149,6 +149,7 @@ data ChatCommand
   | APIUpdateChatItem ChatRef ChatItemId MsgContent
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
+  | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef
   | APIClearChat ChatRef
   | APIAcceptContact Int64
@@ -165,7 +166,6 @@ data ChatCommand
   | APIUpdateProfile Profile
   | APISetContactAlias ContactId LocalAlias
   | APISetConnectionAlias Int64 LocalAlias
-  | APISetUnreadChat ChatRef Bool
   | APIParseMarkdown Text
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
