@@ -292,6 +292,7 @@ import Simplex.Messaging.Protocol (ProtocolServer (..), SMPServer, pattern SMPSe
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
+import Simplex.Chat.Migrations.M20221019_chat_unread_status (m20221019_chat_unread_status)
 
 schemaMigrations :: [(String, Query)]
 schemaMigrations =
@@ -322,7 +323,8 @@ schemaMigrations =
     ("20221003_delete_broken_integrity_error_chat_items", m20221003_delete_broken_integrity_error_chat_items),
     ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
-    ("20221012_inline_files", m20221012_inline_files)
+    ("20221012_inline_files", m20221012_inline_files),
+    ("20221019_chat_unread_status", m20221019_chat_unread_status)
   ]
 
 -- | The list of migrations in ascending order by date
