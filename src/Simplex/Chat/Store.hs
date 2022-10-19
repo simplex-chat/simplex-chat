@@ -3266,7 +3266,6 @@ getDirectChat db user contactId pagination search_ = do
 getDirectChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatLast_ db User {userId} contactId count search = do
   contact <- getContact db userId contactId
-  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsLast_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3298,7 +3297,6 @@ getDirectChatLast_ db User {userId} contactId count search = do
 getDirectChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
   contact <- getContact db userId contactId
-  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsAfter_
   pure $ Chat (DirectChat contact) chatItems stats
@@ -3331,7 +3329,6 @@ getDirectChatAfter_ db User {userId} contactId afterChatItemId count search = do
 getDirectChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = do
   contact <- getContact db userId contactId
-  -- stats <- liftIO $ getDirectChatStats_ db userId contactId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsBefore_
   pure $ Chat (DirectChat contact) (reverse chatItems) stats
@@ -3360,26 +3357,6 @@ getDirectChatBefore_ db User {userId} contactId beforeChatItemId count search = 
             LIMIT ?
           |]
           (userId, contactId, search, beforeChatItemId, count)
-
-_getDirectChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
-_getDirectChatStats_ db userId contactId =
-  toChatStats'
-    <$> DB.query
-      db
-      [sql|
-        SELECT COUNT(1), MIN(chat_item_id), Contacts.unread_chat
-        FROM chat_items
-        CROSS JOIN (
-          SELECT unread_chat FROM contacts WHERE contact_id = ?
-        ) Contacts
-        WHERE user_id = ? AND contact_id = ? AND item_status = ? AND item_deleted != 1
-        GROUP BY contact_id
-      |]
-      (contactId, userId, contactId, CISRcvNew)
-  where
-    toChatStats' :: [ChatStatsRow] -> ChatStats
-    toChatStats' [statsRow] = toChatStats statsRow
-    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -3427,7 +3404,6 @@ getGroupChat db user groupId pagination search_ = do
 getGroupChatLast_ :: DB.Connection -> User -> Int64 -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatLast_ db user@User {userId} groupId count search = do
   groupInfo <- getGroupInfo db user groupId
-  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- liftIO getGroupChatItemIdsLast_
   chatItems <- mapM (getGroupChatItem db user groupId) chatItemIds
@@ -3450,7 +3426,6 @@ getGroupChatLast_ db user@User {userId} groupId count search = do
 getGroupChatAfter_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
-  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
@@ -3475,7 +3450,6 @@ getGroupChatAfter_ db user@User {userId} groupId afterChatItemId count search = 
 getGroupChatBefore_ :: DB.Connection -> User -> Int64 -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTGroup)
 getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search = do
   groupInfo <- getGroupInfo db user groupId
-  -- stats <- liftIO $ getGroupChatStats_ db userId groupId
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
@@ -3496,26 +3470,6 @@ getGroupChatBefore_ db user@User {userId} groupId beforeChatItemId count search 
             LIMIT ?
           |]
           (userId, groupId, search, beforeChatItemTs, beforeChatItemTs, beforeChatItemId, count)
-
-_getGroupChatStats_ :: DB.Connection -> UserId -> Int64 -> IO ChatStats
-_getGroupChatStats_ db userId groupId =
-  toChatStats'
-    <$> DB.query
-      db
-      [sql|
-        SELECT COUNT(1), MIN(chat_item_id), Groups.unread_chat
-        FROM chat_items
-        CROSS JOIN (
-          SELECT unread_chat FROM groups WHERE group_id = ?
-        ) Groups
-        WHERE user_id = ? AND group_id = ? AND item_status = ? AND item_deleted != 1
-        GROUP BY group_id
-      |]
-      (groupId, userId, groupId, CISRcvNew)
-  where
-    toChatStats' :: [ChatStatsRow] -> ChatStats
-    toChatStats' [statsRow] = toChatStats statsRow
-    toChatStats' _ = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
 
 getGroupInfo :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO GroupInfo
 getGroupInfo db User {userId, userContactId} groupId =
