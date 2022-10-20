@@ -310,7 +310,8 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
   )
 }
 
-fun markChatRead(chat: Chat, chatModel: ChatModel) {
+fun markChatRead(c: Chat, chatModel: ChatModel) {
+  var chat = c
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
@@ -320,6 +321,7 @@ fun markChatRead(chat: Chat, chatModel: ChatModel) {
         chat.chatInfo.apiId,
         CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
       )
+      chat = chatModel.getChat(chat.id) ?: return@withApi
     }
     if (chat.chatStats.unreadChat) {
       val success = chatModel.controller.apiChatUnread(
