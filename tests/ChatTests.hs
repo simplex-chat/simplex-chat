@@ -2177,9 +2177,9 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
-    alice ##> "/auto_accept on incognito=on text hello!"
+    alice ##> "/auto_accept on incognito=off text hello!"
     alice <## "auto_accept on"
-    alice <## "incognito on"
+    alice <## "incognito off"
     alice <## "auto reply:"
     alice <## "hello!"
 
