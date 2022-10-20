@@ -58,6 +58,7 @@ chatTests = do
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
+    it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -834,6 +835,36 @@ testGroupReAddInvited =
             bob <## "#team_1 (team): alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
+
+testGroupDeleteInvitedContact :: IO ()
+testGroupDeleteInvitedContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      alice ##> "@bob hey"
+      alice <## "no contact bob"
+      bob #> "@alice hey"
+      (alice </)
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =
