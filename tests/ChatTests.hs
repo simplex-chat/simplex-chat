@@ -73,6 +73,7 @@ chatTests = do
   describe "sending and receiving files" $ do
     describe "send and receive file" $ fileTestMatrix2 runTestFileTransfer
     it "send and receive file inline (without accepting)" testInlineFileTransfer
+    it "receive file inline with inline=on option" testReceiveInline
     describe "send and receive a small file" $ fileTestMatrix2 runTestSmallFileTransfer
     describe "sender cancelled file transfer before transfer" $ fileTestMatrix2 runTestFileSndCancelBeforeTransfer
     it "sender cancelled file transfer during transfer" testFileSndCancelDuringTransfer
@@ -1416,6 +1417,26 @@ testInlineFileTransfer =
     dest `shouldBe` src
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
+
+testReceiveInline :: IO ()
+testReceiveInline =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    alice #> "/f @bob ./tests/fixtures/test.jpg"
+    alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 1 inline=on ./tests/tmp"
+    bob <## "saving file 1 from alice to ./tests/tmp/test.jpg"
+    alice <## "started sending file 1 (test.jpg) to bob"
+    alice <## "completed sending file 1 (test.jpg) to bob"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    bob <## "completed receiving file 1 (test.jpg) from alice"
+    src <- B.readFile "./tests/fixtures/test.jpg"
+    dest <- B.readFile "./tests/tmp/test.jpg"
+    dest `shouldBe` src
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 10, receiveChunks = 5}}
 
 runTestSmallFileTransfer :: TestCC -> TestCC -> IO ()
 runTestSmallFileTransfer alice bob = do
