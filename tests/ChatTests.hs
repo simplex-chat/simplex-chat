@@ -58,6 +58,8 @@ chatTests = do
     it "create group with the same displayName" testGroupSameName
     it "invitee delete group when in status invited" testGroupDeleteWhenInvited
     it "re-add member in status invited" testGroupReAddInvited
+    it "delete contact before they accept group invitation, contact joins group" testGroupDeleteInvitedContact
+    it "member profile is kept when deleting group if other groups have this member" testDeleteGroupMemberProfileKept
     it "remove contact from group and add again" testGroupRemoveAdd
     it "list groups containing group invitations" testGroupList
     it "group message quoted replies" testGroupMessageQuotedReply
@@ -466,12 +468,12 @@ testGroupShared alice bob cath checkMessages = do
   concurrently_
     (bob <# "#team alice> hello")
     (cath <# "#team alice> hello")
-  threadDelay 1000000 -- server assigns timestamps with one second precision
+  when checkMessages $ threadDelay 1000000 -- server assigns timestamps with one second precision
   bob #> "#team hi there"
   concurrently_
     (alice <# "#team bob> hi there")
     (cath <# "#team bob> hi there")
-  threadDelay 1000000
+  when checkMessages $ threadDelay 1000000
   cath #> "#team hey team"
   concurrently_
     (alice <# "#team cath> hey team")
@@ -512,6 +514,20 @@ testGroupShared alice bob cath checkMessages = do
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
   bob <##> cath
+  -- delete contact
+  alice ##> "/d bob"
+  alice <## "bob: contact is deleted"
+  alice ##> "@bob hey"
+  alice <## "no contact bob"
+  when checkMessages $ threadDelay 1000000
+  alice #> "#team checking connection"
+  bob <# "#team alice> checking connection"
+  when checkMessages $ threadDelay 1000000
+  bob #> "#team received"
+  alice <# "#team bob> received"
+  when checkMessages $ do
+    alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
+    bob @@@ [("@alice", "received invitation to join group team as admin"), ("@cath", "hey"), ("#team", "received")]
   -- test clearing chat
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
   alice #$> ("/_get chat #1 count=100", chat, [])
@@ -539,6 +555,8 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
+      alice #$> ("/_unread chat #1 on", id, "ok")
+      alice #$> ("/_unread chat #1 off", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
@@ -746,6 +764,9 @@ testGroupDelete =
       cath <## "you are no longer a member of the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
+      alice <##> bob
+      alice <##> cath
+      bob <##> cath
 
 testGroupSameName :: IO ()
 testGroupSameName =
@@ -819,6 +840,104 @@ testGroupReAddInvited =
             bob <## "#team_1 (team): alice invites you to join the group as admin"
             bob <## "use /j team_1 to accept"
         ]
+
+testGroupDeleteInvitedContact :: IO ()
+testGroupDeleteInvitedContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      alice ##> "@bob hey"
+      alice <## "no contact bob"
+      bob #> "@alice hey"
+      (alice </)
+
+testDeleteGroupMemberProfileKept :: IO ()
+testDeleteGroupMemberProfileKept =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      -- group 1
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "use /a team <name> to add members"
+      alice ##> "/a team bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #team sent to bob",
+          do
+            bob <## "#team: alice invites you to join the group as admin"
+            bob <## "use /j team to accept"
+        ]
+      bob ##> "/j team"
+      concurrently_
+        (alice <## "#team: bob joined the group")
+        (bob <## "#team: you joined the group")
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      -- group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "use /a club <name> to add members"
+      alice ##> "/a club bob"
+      concurrentlyN_
+        [ alice <## "invitation to join the group #club sent to bob",
+          do
+            bob <## "#club: alice invites you to join the group as admin"
+            bob <## "use /j club to accept"
+        ]
+      bob ##> "/j club"
+      concurrently_
+        (alice <## "#club: bob joined the group")
+        (bob <## "#club: you joined the group")
+      alice #> "#club hello"
+      bob <# "#club alice> hello"
+      bob #> "#club hi there"
+      alice <# "#club bob> hi there"
+      -- delete contact
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      alice ##> "@bob hey"
+      alice <## "no contact bob"
+      bob #> "@alice hey"
+      (alice </)
+      -- delete group 1
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          do
+            bob <## "#team: alice deleted the group"
+            bob <## "use /d #team to delete the local copy of the group"
+        ]
+      alice ##> "#team hi"
+      alice <## "no group #team"
+      bob ##> "/d #team"
+      bob <## "#team: you deleted the group"
+      -- group 2 still works
+      alice #> "#club checking connection"
+      bob <# "#club alice> checking connection"
+      bob #> "#club received"
+      alice <# "#club bob> received"
 
 testGroupRemoveAdd :: IO ()
 testGroupRemoveAdd =

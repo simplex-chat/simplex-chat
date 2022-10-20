@@ -464,7 +464,6 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}
-  | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite
