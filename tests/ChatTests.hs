@@ -3293,6 +3293,7 @@ testGroupLink =
             bob <## "#team: alice invites you to join the group as member"
             bob <## "use /j team to accept"
         ]
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
       alice <##> bob
       bob ##> "/j team"
       concurrently_

@@ -514,6 +514,7 @@ rcvGroupEventToText = \case
   RGEUserDeleted -> "removed you"
   RGEGroupDeleted -> "deleted group"
   RGEGroupUpdated _ -> "group profile updated"
+  RGEInvitedViaGroupLink -> "invited via your group link"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
@@ -557,6 +558,10 @@ data RcvGroupEvent
   | RGEUserDeleted -- CRDeletedMemberUser
   | RGEGroupDeleted -- CRGroupDeleted
   | RGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  -- RGEInvitedViaGroupLink chat items are not received - they're created when sending group invitations,
+  -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
+  -- and be created as unread without adding / working around new status for sent items
+  | RGEInvitedViaGroupLink
   deriving (Show, Generic)
 
 instance FromJSON RcvGroupEvent where

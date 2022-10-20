@@ -1169,16 +1169,15 @@ processChatCommand = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-
-sendGrpInvitation :: ChatMonad m => User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
-sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
-  let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-      groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-  (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
-  let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-  ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
-  toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
-  setActive $ ActiveG localDisplayName
+    sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
+    sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+      let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+          groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+      (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
+      toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+      setActive $ ActiveG localDisplayName
 
 setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
@@ -1726,7 +1725,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -1745,8 +1744,22 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   Nothing -> messageError "implementation error: invitee does not have contact"
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
-                    sendGrpInvitation user ct gInfo m cReq
+                    sendGrpInvitation ct m
+                    -- TODO CRSentGroupInvitationViaGroupLink ?
                     toView $ CRSentGroupInvitation gInfo ct m
+                where
+                  sendGrpInvitation :: Contact -> GroupMember -> m ()
+                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} = do
+                    let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                        groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+                    (_msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
+                    createdAt <- liftIO getCurrentTime
+                    let content = CIRcvGroupEvent RGEInvitedViaGroupLink
+                        cd = CDGroupRcv gInfo m
+                    -- TODO createNewRcvChatItem but with SndMessage
+                    ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
+                    ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
+                    toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
