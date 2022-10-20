@@ -471,6 +471,18 @@ processChatCommand = \case
     CTGroup -> withStore' (\db -> updateGroupChatItemsRead db chatId fromToIds) $> CRCmdOk
     CTContactRequest -> pure $ chatCmdError "not supported"
     CTContactConnection -> pure $ chatCmdError "not supported"
+  APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user@User {userId} -> case cType of
+    CTDirect -> do
+      _ <- withStore $ \db -> do
+        Contact {contactId} <- getContact db userId chatId
+        liftIO $ updateContactUnreadChat db user contactId unreadChat
+      pure CRCmdOk
+    CTGroup -> do
+      _ <- withStore $ \db -> do
+        Group GroupInfo {groupId} _ <- getGroup db user chatId
+        liftIO $ updateGroupUnreadChat db user groupId unreadChat
+      pure CRCmdOk
+    _ -> pure $ chatCmdError "not supported"
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db userId chatId
@@ -3054,6 +3066,7 @@ chatCommandP =
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
+      "/_unread chat " *> (APIChatUnread <$> chatRefP <* A.space <*> onOffP),
       "/_delete " *> (APIDeleteChat <$> chatRefP),
       "/_clear chat " *> (APIClearChat <$> chatRefP),
       "/_accept " *> (APIAcceptContact <$> A.decimal),

@@ -205,6 +205,10 @@ testAddContact = versionTestMatrix2 runTestAddContact
       chatsEmpty alice bob
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
+      alice ##> "/_unread chat @2 on"
+      alice <## "ok"
+      alice ##> "/_unread chat @2 off"
+      alice <## "ok"
       chatsOneMessage alice bob
       bob #> "@alice hello there"
       alice <# "bob> hello there"

@@ -213,7 +213,8 @@ instance ToJSON AChat where
 
 data ChatStats = ChatStats
   { unreadCount :: Int,
-    minUnreadItemId :: ChatItemId
+    minUnreadItemId :: ChatItemId,
+    unreadChat :: Bool
   }
   deriving (Show, Generic)
 
