@@ -3,8 +3,7 @@ package chat.simplex.app.views.chatlist
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -203,14 +202,21 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, stop
   Divider(Modifier.padding(top = AppBarHeight))
 }
 
+private var lazyListState = 0 to 0
+
 @Composable
 private fun ChatList(chatModel: ChatModel, search: String) {
   val filter: (Chat) -> Boolean = { chat: Chat ->
     chat.chatInfo.chatViewName.lowercase().contains(search.lowercase())
   }
+  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+  DisposableEffect(Unit) {
+    onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
+  }
   val chats by remember(search) { derivedStateOf { if (search.isEmpty()) chatModel.chats else chatModel.chats.filter(filter) } }
   LazyColumn(
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxWidth(),
+    listState
   ) {
     items(chats) { chat ->
       ChatListNavLinkView(chat, chatModel)

@@ -308,9 +308,10 @@ fun getFileSize(context: Context, uri: Uri): Long? {
 
 fun saveImage(context: Context, image: Bitmap): String? {
   return try {
-    val dataResized = resizeImageToDataSize(image, maxDataSize = MAX_IMAGE_SIZE)
+    val ext = if (image.hasAlpha()) "png" else "jpg"
+    val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.jpg")
+    val fileToSave = uniqueCombine(context, "IMG_${timestamp}.$ext")
     val file = File(getAppFilePath(context, fileToSave))
     val output = FileOutputStream(file)
     dataResized.writeTo(output)

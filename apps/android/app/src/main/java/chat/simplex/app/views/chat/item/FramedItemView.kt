@@ -1,6 +1,5 @@
 package chat.simplex.app.views.chat.item
 
-import CIImageView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,16 +9,17 @@ import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.*
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
+import androidx.compose.ui.util.fastMap
 import chat.simplex.app.R
 import chat.simplex.app.model.*
 import chat.simplex.app.ui.theme.*
@@ -69,7 +69,10 @@ fun FramedItemView(
       Modifier
         .background(if (sent) SentQuoteColorLight else ReceivedQuoteColorLight)
         .fillMaxWidth()
-        .clickable { scrollToItem(qi.itemId?: return@clickable) }
+        .combinedClickable(
+          onLongClick = { showMenu.value = true },
+          onClick = { scrollToItem(qi.itemId?: return@combinedClickable) }
+        )
     ) {
       when (qi.content) {
         is MsgContent.MCImage -> {
@@ -102,34 +105,37 @@ fun FramedItemView(
     }
   }
 
-  Surface(
-    shape = RoundedCornerShape(18.dp),
-    color = if (sent) SentColorLight else ReceivedColorLight
-  ) {
+  val transparentBackground = ci.content.msgContent is MsgContent.MCImage && ci.content.text.isEmpty() && ci.quotedItem == null
+  Box(Modifier
+    .clip(RoundedCornerShape(18.dp))
+    .background(
+      when {
+        transparentBackground -> Color.Transparent
+        sent -> SentColorLight
+        else -> ReceivedColorLight
+      }
+    )) {
     var metaColor = HighOrLowlight
     Box(contentAlignment = Alignment.BottomEnd) {
       Column(Modifier.width(IntrinsicSize.Max)) {
-        val qi = ci.quotedItem
-        if (qi != null) {
-          ciQuoteView(qi)
-        }
-        if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
-          Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
-            Column(
-              Modifier
-                .padding(bottom = 2.dp)
-                .fillMaxWidth(),
-              horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-              EmojiText(ci.content.text)
-              Text("")
+        PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
+          ci.quotedItem?.let { ciQuoteView(it) }
+          if (ci.file == null && ci.formattedText == null && isShortEmoji(ci.content.text)) {
+            Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
+              Column(
+                Modifier
+                  .padding(bottom = 2.dp)
+                  .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                EmojiText(ci.content.text)
+                Text("")
+              }
             }
-          }
-        } else {
-          Column(Modifier.fillMaxWidth()) {
+          } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@Box, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "") {
                   metaColor = Color.White
                 } else {
@@ -171,6 +177,37 @@ fun CIMarkdownText(
       metaText = ci.timestampText, edited = ci.meta.itemEdited,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )
+  }
+}
+
+const val CHAT_IMAGE_LAYOUT_ID = "chatImage"
+
+@Composable
+fun PriorityLayout(
+  modifier: Modifier = Modifier,
+  priorityLayoutId: String,
+  content: @Composable () -> Unit
+) {
+  Layout(
+    content = content,
+    modifier = modifier
+  ) { measureable, constraints ->
+    // Find important element which should tell what max width other elements can use
+    // Expecting only one such element. Can be less than one but not more
+    val imagePlaceable = measureable.firstOrNull { it.layoutId == priorityLayoutId }?.measure(constraints)
+    val placeables: List<Placeable> = measureable.fastMap {
+      if (it.layoutId == priorityLayoutId)
+        imagePlaceable!!
+      else
+        it.measure(constraints.copy(maxWidth = imagePlaceable?.width ?: constraints.maxWidth)) }
+    // Limit width for every other element to width of important element and height for a sum of all elements
+    layout(imagePlaceable?.measuredWidth ?: placeables.maxOf { it.width }, placeables.sumOf { it.height }) {
+      var y = 0
+      placeables.forEach {
+        it.place(0, y)
+        y += it.measuredHeight
+      }
+    }
   }
 }
 

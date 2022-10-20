@@ -538,7 +538,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
               ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, showMember = showMember, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           } else {
-            Box(Modifier.padding(start = 86.dp, end = 12.dp).then(swipeableModifier)) {
+            Box(Modifier.padding(start = 104.dp, end = 12.dp).then(swipeableModifier)) {
               ChatItemView(user, chat.chatInfo, cItem, composeState, cxt, uriHandler, provider, chatModelIncognito = chatModelIncognito, useLinkPreviews = useLinkPreviews, deleteMessage = deleteMessage, receiveFile = receiveFile, joinGroup = {}, acceptCall = acceptCall, scrollToItem = scrollToItem)
             }
           }
