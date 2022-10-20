@@ -801,7 +801,6 @@ public enum ChatErrorType: Decodable {
     case invalidConnReq
     case invalidChatMessage(message: String)
     case contactNotReady(contact: Contact)
-    case contactGroups(contact: Contact, groupNames: [GroupName])
     case groupUserRole
     case groupContactRole(contactName: ContactName)
     case groupDuplicateMember(contactName: ContactName)

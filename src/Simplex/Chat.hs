@@ -486,20 +486,17 @@ processChatCommand = \case
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db userId chatId
-      withStore' (\db -> getContactGroupNames db userId ct) >>= \case
-        [] -> do
-          filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-          conns <- withStore $ \db -> getContactConnections db userId ct
-          withChatLock . procCmd $ do
-            forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-            forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
-            -- functions below are called in separate transactions to prevent crashes on android
-            -- (possibly, race condition on integrity check?)
-            withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
-            withStore' $ \db -> deleteContact db userId ct
-            unsetActive $ ActiveC localDisplayName
-            pure $ CRContactDeleted ct
-        gs -> throwChatError $ CEContactGroups ct gs
+      filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      conns <- withStore $ \db -> getContactConnections db userId ct
+      withChatLock . procCmd $ do
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+        forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+        -- functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
+        withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
+        withStore' $ \db -> deleteContact db userId ct
+        unsetActive $ ActiveC localDisplayName
+        pure $ CRContactDeleted ct
     CTContactConnection -> withChatLock . procCmd $ do
       conn@PendingContactConnection {pccConnId, pccAgentConnId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync' user pccConnId pccAgentConnId
@@ -518,7 +515,7 @@ processChatCommand = \case
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -1009,10 +1006,10 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
-  ReceiveFile fileId filePath_ -> withUser $ \user ->
+  ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \user ->
     withChatLock . procCmd $ do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-      (CRRcvFileAccepted <$> acceptFileReceive user ft filePath_) `catchError` processError ft
+      (CRRcvFileAccepted <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError ft
     where
       processError ft = \case
         -- TODO AChatItem in Cancelled events
@@ -1256,8 +1253,8 @@ toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
-acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} filePath_ = do
+acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -1290,9 +1287,9 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     acceptFile = do
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
       filePath <- getRcvFilePath fileId filePath_ fName
-      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      inline <- receiveInline
       if
-          | fileInline == Just IFMOffer && fileSize <= fileChunkSize * receiveChunks inlineFiles -> do
+          | inline -> do
             -- accepting inline
             ci <- withStore $ \db -> acceptRcvInlineFT db user fileId filePath
             pure (XFileAcptInv sharedMsgId Nothing fName, ci)
@@ -1302,6 +1299,15 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
             (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
             ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
+    receiveInline :: m Bool
+    receiveInline = do
+      ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
+      pure $
+        rcvInline_ /= Just False
+          && fileInline == Just IFMOffer
+          && ( fileSize <= fileChunkSize * receiveChunks
+                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
+             )
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -1805,7 +1811,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m
-                messageError "implementation error: connected member does not have contact"
+                messageWarning "connected member does not have contact"
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m
@@ -3155,7 +3161,7 @@ chatCommandP =
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,
