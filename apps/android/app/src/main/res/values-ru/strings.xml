@@ -273,6 +273,7 @@
     <string name="delete_contact_menu_action">Удалить</string>
     <string name="delete_group_menu_action">Удалить</string>
     <string name="mark_read">Прочитано</string>
+    <string name="mark_unread">Не прочитано</string>
     <string name="set_contact_name">Имя контакта</string>
 
     <!-- Actions - ChatListNavLinkView.kt -->

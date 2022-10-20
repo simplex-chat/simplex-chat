@@ -29,19 +29,21 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
-  var showMarkRead by remember { mutableStateOf(false) }
+  val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
+    chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  }
+  val showMarkUnread = remember(chat.chatStats.unreadChat, showMarkRead) { !chat.chatStats.unreadChat && !showMarkRead }
   val stopped = chatModel.chatRunning.value == false
   LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
     showMenu.value = false
     delay(500L)
-    showMarkRead = chat.chatStats.unreadCount > 0
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { directChatAction(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
+        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead, showMarkUnread) },
         showMenu,
         stopped
       )
@@ -49,7 +51,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
+        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead, showMarkUnread) },
         showMenu,
         stopped
       )
@@ -120,9 +122,12 @@ suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean, showMarkUnread: Boolean) {
   if (showMarkRead) {
     MarkReadChatAction(chat, chatModel, showMenu)
+  }
+  if (showMarkUnread) {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
   }
   ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
   ClearChatAction(chat, chatModel, showMenu)
@@ -130,7 +135,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 }
 
 @Composable
-fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean, showMarkUnread: Boolean) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> {
       JoinGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -141,6 +146,9 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     else -> {
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)
+      }
+      if (showMarkUnread) {
+        MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
@@ -162,6 +170,18 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
     onClick = {
       markChatRead(chat, chatModel)
       chatModel.controller.ntfManager.cancelNotificationsForChat(chat.id)
+      showMenu.value = false
+    }
+  )
+}
+
+@Composable
+fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(R.string.mark_unread),
+    Icons.Outlined.Check,
+    onClick = {
+      markChatUnread(chat, chatModel)
       showMenu.value = false
     }
   )
@@ -302,6 +322,22 @@ fun markChatRead(chat: Chat, chatModel: ChatModel) {
       chat.chatInfo.apiId,
       CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
     )
+  }
+}
+
+fun markChatUnread(chat: Chat, chatModel: ChatModel) {
+  // Just to be sure
+  if (chat.chatStats.unreadChat) return
+
+  withApi {
+    val success = chatModel.controller.apiChatUnread(
+      chat.chatInfo.chatType,
+      chat.chatInfo.apiId,
+      true
+    )
+    if (success) {
+      chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+    }
   }
 }
 

@@ -136,13 +136,13 @@ fun ChatPreviewView(chat: Chat, chatModelIncognito: Boolean, currentUserProfileD
       )
       val n = chat.chatStats.unreadCount
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-      if (n > 0) {
+      if (n > 0 || chat.chatStats.unreadChat) {
         Box(
           Modifier.padding(top = 24.dp),
           contentAlignment = Alignment.Center
         ) {
           Text(
-            unreadCountStr(n),
+            if (n > 0) unreadCountStr(n) else "",
             color = MaterialTheme.colors.onPrimary,
             fontSize = 11.sp,
             modifier = Modifier

@@ -387,7 +387,7 @@ data class Chat (
   val id: String get() = chatInfo.id
 
   @Serializable
-  data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0)
+  data class ChatStats(val unreadCount: Int = 0, val minUnreadItemId: Long = 0, val unreadChat: Boolean = false)
 
   @Serializable
   data class ServerInfo(val networkStatus: NetworkStatus)
