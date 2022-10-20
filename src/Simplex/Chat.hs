@@ -1009,10 +1009,10 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
-  ReceiveFile fileId filePath_ -> withUser $ \user ->
+  ReceiveFile fileId rcvInline_ filePath_ -> withUser $ \user ->
     withChatLock . procCmd $ do
       ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-      (CRRcvFileAccepted <$> acceptFileReceive user ft filePath_) `catchError` processError ft
+      (CRRcvFileAccepted <$> acceptFileReceive user ft rcvInline_ filePath_) `catchError` processError ft
     where
       processError ft = \case
         -- TODO AChatItem in Cancelled events
@@ -1256,8 +1256,8 @@ toFSFilePath :: ChatMonad m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (<> "/" <> f) <$> (readTVarIO =<< asks filesFolder)
 
-acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe FilePath -> m AChatItem
-acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} filePath_ = do
+acceptFileReceive :: forall m. ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m AChatItem
+acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName = fName, fileConnReq, fileInline, fileSize}, fileStatus, grpMemberId} rcvInline_ filePath_ = do
   unless (fileStatus == RFSNew) $ case fileStatus of
     RFSCancelled _ -> throwChatError $ CEFileCancelled fName
     _ -> throwChatError $ CEFileAlreadyReceiving fName
@@ -1290,9 +1290,9 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
     acceptFile = do
       sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
       filePath <- getRcvFilePath fileId filePath_ fName
-      ChatConfig {fileChunkSize, inlineFiles} <- asks config
+      inline <- receiveInline
       if
-          | fileInline == Just IFMOffer && fileSize <= fileChunkSize * receiveChunks inlineFiles -> do
+          | inline -> do
             -- accepting inline
             ci <- withStore $ \db -> acceptRcvInlineFT db user fileId filePath
             pure (XFileAcptInv sharedMsgId Nothing fName, ci)
@@ -1302,6 +1302,15 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, fileInvitation = F
             (agentConnId, fileInvConnReq) <- withAgent $ \a -> createConnection a True SCMInvitation
             ci <- withStore $ \db -> acceptRcvFileTransfer db user fileId agentConnId ConnNew filePath
             pure (XFileAcptInv sharedMsgId (Just fileInvConnReq) fName, ci)
+    receiveInline :: m Bool
+    receiveInline = do
+      ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
+      pure $
+        rcvInline_ /= Just False
+          && fileInline == Just IFMOffer
+          && ( fileSize <= fileChunkSize * receiveChunks
+                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
+             )
 
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> m FilePath
 getRcvFilePath fileId fPath_ fn = case fPath_ of
@@ -3155,7 +3164,7 @@ chatCommandP =
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (A.space *> filePath)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" $> ConnectSimplex,

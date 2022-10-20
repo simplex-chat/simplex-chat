@@ -233,7 +233,7 @@ data ChatCommand
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
-  | ReceiveFile FileTransferId (Maybe FilePath)
+  | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
