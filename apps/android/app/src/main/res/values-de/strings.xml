@@ -61,8 +61,6 @@
   <string name="connection_error_auth_desc">Entweder hat Ihr Kontakt die Verbindung gelöscht, oder dieser Link wurde bereits verwendet, es könnte sich um einen Fehler handeln - Bitte melden Sie es uns.\nBitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um sich neu verbinden zu können und stellen Sie sicher, dass Sie eine stabile Netzwerk-Verbindung haben.</string>
   <string name="error_accepting_contact_request">Fehler beim Akzeptieren der Kontaktanfrage</string>
   <string name="sender_may_have_deleted_the_connection_request">Der Absender hat möglicherweise die Verbindungsanfrage gelöscht.</string>
-  <string name="cannot_delete_contact">Der Kontakt kann nicht gelöscht werden!</string>
-  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Der Kontakt mit <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> kann nicht gelöscht werden, da er Mitglied einer oder mehrerer dieser Gruppen ist <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
   <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
   <string name="error_deleting_contact_request">Fehler beim Löschen der Kontakt-Anfrage</string>

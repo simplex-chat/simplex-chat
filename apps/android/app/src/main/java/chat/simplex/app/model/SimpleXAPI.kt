@@ -552,15 +552,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       r is CR.ContactDeleted && type == ChatType.Direct -> return true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
       r is CR.GroupDeletedUser && type == ChatType.Group -> return true
-      r is CR.ChatCmdError -> {
-        val e = r.chatError
-        if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.cannot_delete_contact),
-            String.format(generalGetString(R.string.contact_cannot_be_deleted_as_they_are_in_groups), e.errorType.contact.displayName, e.errorType.groupNames.joinToString(", "))
-          )
-        }
-      }
       else -> {
         val titleId = when (type) {
           ChatType.Direct -> R.string.error_deleting_contact
@@ -2052,12 +2043,10 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
-    is ContactGroups -> "groupNames $groupNames"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 
