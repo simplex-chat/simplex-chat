@@ -1503,7 +1503,7 @@ sealed class CC {
     is ApiEndCall -> "/_call end @${contact.apiId}"
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
-    is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}}"
+    is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> "/freceive $fileId"
   }
 
