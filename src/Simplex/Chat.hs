@@ -515,7 +515,7 @@ processChatCommand = \case
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteGroupConnectionsAndFiles db user gInfo members
-        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo
+        withStore' $ \db -> deleteGroupItemsAndMembers db user gInfo members
         withStore' $ \db -> deleteGroup db user gInfo
         pure $ CRGroupDeletedUser gInfo
     CTContactRequest -> pure $ chatCmdError "not supported"
@@ -1802,7 +1802,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m
-                messageError "implementation error: connected member does not have contact"
+                messageWarning "connected member does not have contact"
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m

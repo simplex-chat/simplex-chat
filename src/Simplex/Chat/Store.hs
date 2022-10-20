@@ -551,7 +551,7 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
 deleteContact :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContact db userId Contact {contactId, localDisplayName} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  ctMembers :: [ContactId] <- map fromOnly <$> DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  ctMembers :: [ContactId] <- map fromOnly <$> DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
   if null ctMembers
     then do
       deleteContactProfile_ db userId contactId
@@ -1633,10 +1633,11 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
   DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroupItemsAndMembers db User {userId} GroupInfo {groupId} = do
+deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  forM_ members $ \m@GroupMember {memberContactId} -> unless (isJust memberContactId) $ deleteMemberProfileAndName_ db user m
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
@@ -1945,9 +1946,15 @@ createNewMember_
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile "", memberContactId, memberContactProfileId, activeConn}
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, memberContactId} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+  unless (isJust memberContactId) $ deleteMemberProfileAndName_ db user m
+
+deleteMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
+deleteMemberProfileAndName_ db User {userId} GroupMember {memberContactProfileId, localDisplayName} = do
+  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
