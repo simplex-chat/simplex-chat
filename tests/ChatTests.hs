@@ -552,6 +552,8 @@ testGroupShared alice bob cath checkMessages = do
       alice #$> ("/_read chat #1", id, "ok")
       bob #$> ("/_read chat #1", id, "ok")
       cath #$> ("/_read chat #1", id, "ok")
+      alice #$> ("/_unread chat #1 on", id, "ok")
+      alice #$> ("/_unread chat #1 off", id, "ok")
 
 testGroup2 :: IO ()
 testGroup2 =
