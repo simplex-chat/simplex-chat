@@ -474,20 +474,17 @@ processChatCommand = \case
   APIDeleteChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct@Contact {localDisplayName} <- withStore $ \db -> getContact db userId chatId
-      withStore' (\db -> getContactGroupNames db userId ct) >>= \case
-        [] -> do
-          filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
-          conns <- withStore $ \db -> getContactConnections db userId ct
-          withChatLock . procCmd $ do
-            forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
-            forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
-            -- functions below are called in separate transactions to prevent crashes on android
-            -- (possibly, race condition on integrity check?)
-            withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
-            withStore' $ \db -> deleteContact db userId ct
-            unsetActive $ ActiveC localDisplayName
-            pure $ CRContactDeleted ct
-        gs -> throwChatError $ CEContactGroups ct gs
+      filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      conns <- withStore $ \db -> getContactConnections db userId ct
+      withChatLock . procCmd $ do
+        forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
+        forM_ conns $ \conn -> deleteAgentConnectionAsync user conn `catchError` \_ -> pure ()
+        -- functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
+        withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
+        withStore' $ \db -> deleteContact db userId ct
+        unsetActive $ ActiveC localDisplayName
+        pure $ CRContactDeleted ct
     CTContactConnection -> withChatLock . procCmd $ do
       conn@PendingContactConnection {pccConnId, pccAgentConnId} <- withStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync' user pccConnId pccAgentConnId

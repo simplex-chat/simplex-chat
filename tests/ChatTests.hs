@@ -507,6 +507,20 @@ testGroupShared alice bob cath checkMessages = do
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
   bob <##> cath
+  -- delete contact
+  alice ##> "/d bob"
+  alice <## "bob: contact is deleted"
+  alice ##> "@bob hey"
+  alice <## "no contact bob"
+  when checkMessages $ threadDelay 1000000
+  alice #> "#team checking connection"
+  bob <# "#team alice> checking connection"
+  when checkMessages $ threadDelay 1000000
+  bob #> "#team receiving"
+  alice <# "#team bob> receiving"
+  when checkMessages $ do
+    alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "receiving")]
+    bob @@@ [("@alice", "received invitation to join group team as admin"), ("@cath", "hey"), ("#team", "receiving")]
   -- test clearing chat
   alice #$> ("/clear #team", id, "#team: all messages are removed locally ONLY")
   alice #$> ("/_get chat #1 count=100", chat, [])

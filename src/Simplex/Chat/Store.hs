@@ -31,7 +31,6 @@ module Simplex.Chat.Store
     getProfileById,
     getConnReqContactXContactId,
     createDirectContact,
-    getContactGroupNames,
     deleteContactConnectionsAndFiles,
     deleteContact,
     getContactByName,
@@ -530,19 +529,6 @@ createContact_ db userId connId Profile {displayName, fullName, image} localAlia
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure . Right $ (ldn, contactId, profileId)
 
-getContactGroupNames :: DB.Connection -> UserId -> Contact -> IO [GroupName]
-getContactGroupNames db userId Contact {contactId} =
-  map fromOnly
-    <$> DB.query
-      db
-      [sql|
-        SELECT DISTINCT g.local_display_name
-        FROM groups g
-        JOIN group_members m ON m.group_id = g.group_id
-        WHERE g.user_id = ? AND m.contact_id = ?
-      |]
-      (userId, contactId)
-
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
   DB.execute
@@ -561,9 +547,15 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
 deleteContact :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContact db userId Contact {contactId, localDisplayName} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  deleteContactProfile_ db userId contactId
+  ctMembers :: [ContactId] <- map fromOnly <$> DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  if null ctMembers
+    then do
+      deleteContactProfile_ db userId contactId
+      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    else do
+      currentTs <- getCurrentTime
+      DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
