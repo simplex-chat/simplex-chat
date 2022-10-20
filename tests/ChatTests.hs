@@ -762,6 +762,9 @@ testGroupDelete =
       cath <## "you are no longer a member of the group"
       cath ##> "/d #team"
       cath <## "#team: you deleted the group"
+      alice <##> bob
+      alice <##> cath
+      bob <##> cath
 
 testGroupSameName :: IO ()
 testGroupSameName =
