@@ -87,8 +87,8 @@ responseToView testView = \case
     HSSettings -> settingsInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink cReqUri autoAccept autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoReply
-  CRUserContactLinkUpdated _ autoAccept autoReply -> autoAcceptStatus_ autoAccept autoReply
+  CRUserContactLink cReqUri autoAccept incognito autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept incognito autoReply
+  CRUserContactLinkUpdated _ autoAccept incognito autoReply -> autoAcceptStatus_ autoAccept incognito autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
@@ -431,9 +431,10 @@ connReqContact_ intro cReq =
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
 
-autoAcceptStatus_ :: Bool -> Maybe MsgContent -> [StyledString]
-autoAcceptStatus_ autoAccept autoReply =
+autoAcceptStatus_ :: Bool -> Bool -> Maybe MsgContent -> [StyledString]
+autoAcceptStatus_ autoAccept incognito autoReply =
   ("auto_accept " <> if autoAccept then "on" else "off") :
+  ("incognito " <> if incognito then "on" else "off") :
   maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> [StyledString]

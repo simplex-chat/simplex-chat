@@ -1973,6 +1973,7 @@ testUserContactLinkAutoAccept =
 
       alice ##> "/auto_accept on"
       alice <## "auto_accept on"
+      alice <## "incognito off"
 
       cath ##> ("/c " <> cLink)
       cath <## "connection request sent!"
@@ -1985,6 +1986,7 @@ testUserContactLinkAutoAccept =
 
       alice ##> "/auto_accept off"
       alice <## "auto_accept off"
+      alice <## "incognito off"
 
       dan ##> ("/c " <> cLink)
       alice <#? dan
@@ -2138,6 +2140,7 @@ testRejectContactAndDeleteUserContact = testChat3 aliceProfile bobProfile cathPr
     alice ##> "/sa"
     cLink' <- getContactLink alice False
     alice <## "auto_accept off"
+    alice <## "incognito off"
     cLink' `shouldBe` cLink
 
     alice ##> "/da"
@@ -2174,8 +2177,9 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
-    alice ##> "/auto_accept on text hello!"
+    alice ##> "/auto_accept on incognito=on text hello!"
     alice <## "auto_accept on"
+    alice <## "incognito on"
     alice <## "auto reply:"
     alice <## "hello!"
 

@@ -267,6 +267,7 @@ CREATE TABLE user_contact_links(
   auto_accept INTEGER DEFAULT 0,
   auto_reply_msg_content TEXT DEFAULT NULL,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
+  incognito INTEGER DEFAULT 0 CHECK(incognito NOT NULL),
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(

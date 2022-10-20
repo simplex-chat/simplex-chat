@@ -284,6 +284,7 @@ import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Migrations.M20221012_inline_files
 import Simplex.Chat.Migrations.M20221019_unread_chat
+import Simplex.Chat.Migrations.M20221020_address_incognito
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -326,7 +327,8 @@ schemaMigrations =
     ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
     ("20221012_inline_files", m20221012_inline_files),
-    ("20221019_unread_chat", m20221019_unread_chat)
+    ("20221019_unread_chat", m20221019_unread_chat),
+    ("20221020_address_incognito", m20221020_address_incognito)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -789,36 +791,36 @@ deleteUserAddress db User {userId} = do
     [":user_id" := userId]
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
-getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
+getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Bool, Maybe MsgContent)
 getUserAddress db userId =
   ExceptT . firstRow id SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent, Maybe GroupId))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Bool, Maybe MsgContent, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
   maybeFirstRow id $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content, group_id
+        SELECT conn_req_contact, auto_accept, incognito, auto_reply_msg_content, group_id
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
 
-updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
-updateUserAddressAutoAccept db userId autoAccept msgContent = do
-  (cReqUri, _, _) <- getUserAddress db userId
+updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Bool, Maybe MsgContent)
+updateUserAddressAutoAccept db userId autoAccept incognito msgContent = do
+  (cReqUri, _, _, _) <- getUserAddress db userId
   liftIO updateUserAddressAutoAccept_
-  pure (cReqUri, autoAccept, msgContent)
+  pure (cReqUri, autoAccept, incognito, msgContent)
   where
     updateUserAddressAutoAccept_ :: IO ()
     updateUserAddressAutoAccept_ =
@@ -826,10 +828,10 @@ updateUserAddressAutoAccept db userId autoAccept msgContent = do
         db
         [sql|
           UPDATE user_contact_links
-          SET auto_accept = ?, auto_reply_msg_content = ?
+          SET auto_accept = ?, incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
-        (autoAccept, msgContent, userId)
+        (autoAccept, incognito, msgContent, userId)
 
 createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =
