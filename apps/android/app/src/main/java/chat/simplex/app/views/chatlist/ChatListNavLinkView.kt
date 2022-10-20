@@ -311,17 +311,26 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
 }
 
 fun markChatRead(chat: Chat, chatModel: ChatModel) {
-  // Just to be sure
-  if (chat.chatStats.unreadCount == 0) return
-
-  val minUnreadItemId = chat.chatStats.minUnreadItemId
-  chatModel.markChatItemsRead(chat.chatInfo)
   withApi {
-    chatModel.controller.apiChatRead(
-      chat.chatInfo.chatType,
-      chat.chatInfo.apiId,
-      CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
-    )
+    if (chat.chatStats.unreadCount > 0) {
+      val minUnreadItemId = chat.chatStats.minUnreadItemId
+      chatModel.markChatItemsRead(chat.chatInfo)
+      chatModel.controller.apiChatRead(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+      )
+    }
+    if (chat.chatStats.unreadChat) {
+      val success = chatModel.controller.apiChatUnread(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        false
+      )
+      if (success) {
+        chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+      }
+    }
   }
 }
 
