@@ -1637,7 +1637,9 @@ deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember
 deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
-  forM_ members $ \m@GroupMember {memberContactId} -> unless (isJust memberContactId) $ deleteMemberProfileAndName_ db user m
+  forM_ members $ \m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} -> unless (isJust memberContactId) $ do
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
@@ -1946,10 +1948,12 @@ createNewMember_
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile "", memberContactId, memberContactProfileId, activeConn}
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, memberContactId} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
-  unless (isJust memberContactId) $ deleteMemberProfileAndName_ db user m
+  unless (isJust memberContactId) $ do
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
 
 deleteMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 deleteMemberProfileAndName_ db User {userId} GroupMember {memberContactProfileId, localDisplayName} = do
