@@ -1745,8 +1745,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
                     sendGrpInvitation ct m
-                    -- TODO CRSentGroupInvitationViaGroupLink ?
-                    toView $ CRSentGroupInvitation gInfo ct m
+                    toView $ CRSentGroupInvitationViaLink gInfo ct m
                 where
                   sendGrpInvitation :: Contact -> GroupMember -> m ()
                   sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} = do
@@ -1756,7 +1755,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                     createdAt <- liftIO getCurrentTime
                     let content = CIRcvGroupEvent RGEInvitedViaGroupLink
                         cd = CDGroupRcv gInfo m
-                    -- TODO createNewRcvChatItem but with SndMessage
+                    -- we could link chat item with sent group invitation message (_msg)
                     ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
                     ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
                     toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci

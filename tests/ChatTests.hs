@@ -3287,7 +3287,7 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "bob (Bob): contact is connected"
-            alice <## "invitation to join the group #team sent to bob",
+            alice <## "bob invited to group #team via your group link",
           do
             bob <## "alice (Alice): contact is connected"
             bob <## "#team: alice invites you to join the group as member"
@@ -3319,7 +3319,7 @@ testGroupLink =
       concurrentlyN_
         [ do
             alice <## "cath_1 (Catherine): contact is connected"
-            alice <## "invitation to join the group #team sent to cath_1",
+            alice <## "cath_1 invited to group #team via your group link",
           do
             cath <## "alice_1 (Alice): contact is connected"
             cath <## "#team: alice_1 invites you to join the group as member"
@@ -3405,7 +3405,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## ("cath (Catherine): contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## "use /info cath to print out this incognito profile again"
-            bob <## "invitation to join the group #team sent to cath",
+            bob <## "cath invited to group #team via your group link",
           do
             cath <## (bobIncognito <> ": contact is connected")
             cath <## ("#team: " <> bobIncognito <> " invites you to join the group as member")
@@ -3437,7 +3437,7 @@ testGroupLinkIncognitoMembership =
         [ do
             bob <## (danIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
             bob <## ("use /info " <> danIncognito <> " to print out this incognito profile again")
-            bob <## ("invitation to join the group #team sent to " <> danIncognito),
+            bob <## (danIncognito <> " invited to group #team via your group link"),
           do
             dan <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> danIncognito)
             dan <## ("use /info " <> bobIncognito <> " to print out this incognito profile again")
