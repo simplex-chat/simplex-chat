@@ -113,6 +113,17 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    private func _updateChat(_ id: ChatId, _ update: @escaping (Chat) -> Void) {
+        if let i = getChatIndex(id) {
+            // we need to separately update the chat object, as it is ObservedObject,
+            // and chat in the list so the list view is updated...
+            // simply updating chats[i] replaces the object without updating the current object in the list
+            let chat = chats[i]
+            update(chat)
+            chats[i] = chat
+        }
+    }
+
     func updateNetworkStatus(_ id: ChatId, _ status: Chat.NetworkStatus) {
         if let i = getChatIndex(id) {
             chats[i].serverInfo.networkStatus = status
@@ -257,7 +268,7 @@ final class ChatModel: ObservableObject {
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
         // update preview
-        if let chat = getChat(cInfo.id) {
+        _updateChat(cInfo.id) { chat in
             NtfManager.shared.decNtfBadgeCount(by: chat.chatStats.unreadCount)
             chat.chatStats = ChatStats()
         }
@@ -282,11 +293,11 @@ final class ChatModel: ObservableObject {
         if let cItem = aboveItem {
             if chatId == cInfo.id, let i = reversedChatItems.firstIndex(where: { $0.id == cItem.id }) {
                 markCurrentChatRead(fromIndex: i)
-                if let chat = getChat(cInfo.id) {
+                _updateChat(cInfo.id) { chat in
                     var unreadBelow = 0
                     var j = i - 1
                     while j >= 0 {
-                        if case .rcvNew = reversedChatItems[j].meta.itemStatus {
+                        if case .rcvNew = self.reversedChatItems[j].meta.itemStatus {
                             unreadBelow += 1
                         }
                         j -= 1
@@ -303,9 +314,9 @@ final class ChatModel: ObservableObject {
             markChatItemsRead(cInfo)
         }
     }
-
+   
     func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
-        if let chat = getChat(cInfo.id) {
+        _updateChat(cInfo.id) { chat in
             chat.chatStats.unreadChat = unreadChat
         }
     }
