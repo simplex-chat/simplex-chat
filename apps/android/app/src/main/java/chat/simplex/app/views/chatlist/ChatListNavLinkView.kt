@@ -32,9 +32,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
-  val showMarkUnread = remember(chat.chatStats.unreadChat, showMarkRead) { !chat.chatStats.unreadChat && !showMarkRead }
   val stopped = chatModel.chatRunning.value == false
-  LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
+  LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
   }
@@ -43,7 +42,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { directChatAction(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead, showMarkUnread) },
+        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped
       )
@@ -51,7 +50,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, chatModel.incognito.value, chatModel.currentUser.value?.profile?.displayName, stopped) },
         click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead, showMarkUnread) },
+        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped
       )
@@ -122,11 +121,10 @@ suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean, showMarkUnread: Boolean) {
+fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
     MarkReadChatAction(chat, chatModel, showMenu)
-  }
-  if (showMarkUnread) {
+  } else {
     MarkUnreadChatAction(chat, chatModel, showMenu)
   }
   ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
@@ -135,7 +133,7 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 }
 
 @Composable
-fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean, showMarkUnread: Boolean) {
+fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> {
       JoinGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -146,8 +144,7 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     else -> {
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)
-      }
-      if (showMarkUnread) {
+      } else {
         MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
