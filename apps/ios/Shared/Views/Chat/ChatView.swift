@@ -62,6 +62,13 @@ struct ChatView: View {
         .navigationTitle(cInfo.chatViewName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if chat.chatStats.unreadChat {
+                Task {
+                    await markChatUnread(chat, unreadChat: false)
+                }
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {

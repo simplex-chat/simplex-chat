@@ -61,8 +61,6 @@
     <string name="connection_error_auth_desc">Возможно, ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите ваш контакт создать еще одну ссылку и проверьте ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
-    <string name="cannot_delete_contact">Невозможно удалить контакт!</string>
-    <string name="contact_cannot_be_deleted_as_they_are_in_groups">Контакт <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> не может быть удален, так как является членом групп(ы) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
     <string name="error_deleting_contact">Ошибка удаления контакта</string>
     <string name="error_deleting_group">Ошибка удаления группы</string>
     <string name="error_deleting_contact_request">Ошибка удаления запроса</string>
@@ -273,6 +271,7 @@
     <string name="delete_contact_menu_action">Удалить</string>
     <string name="delete_group_menu_action">Удалить</string>
     <string name="mark_read">Прочитано</string>
+    <string name="mark_unread">Не прочитано</string>
     <string name="set_contact_name">Имя контакта</string>
 
     <!-- Actions - ChatListNavLinkView.kt -->

@@ -51,7 +51,7 @@ import kotlin.math.sign
 
 @Composable
 fun ChatView(chatModel: ChatModel) {
-  var activeChat by remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
+  val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -68,20 +68,23 @@ fun ChatView(chatModel: ChatModel) {
     snapshotFlow { chatModel.chatId.value }
       .distinctUntilChanged()
       .collect {
-        activeChat = if (chatModel.chatId.value == null) {
-          null
-        } else {
-          // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
-          // Also for situation when chatId changes after clicking in notification, etc
-          chatModel.getChat(chatModel.chatId.value!!)
+        if (activeChat.value?.id != chatModel.chatId.value) {
+          activeChat.value = if (chatModel.chatId.value == null) {
+            null
+          } else {
+            // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
+            // Also for situation when chatId changes after clicking in notification, etc
+            chatModel.getChat(chatModel.chatId.value!!)
+          }
         }
+        markUnreadChatAsRead(activeChat, chatModel)
       }
   }
 
-  if (activeChat == null || user == null) {
+  if (activeChat.value == null || user == null) {
     chatModel.chatId.value = null
   } else {
-    val chat = activeChat!!
+    val chat = activeChat.value!!
     BackHandler { chatModel.chatId.value = null }
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
@@ -119,7 +122,7 @@ fun ChatView(chatModel: ChatModel) {
             val contactInfo = chatModel.controller.apiContactInfo(cInfo.apiId)
             ModalManager.shared.showModalCloseable(true) { close ->
               ChatInfoView(chatModel, cInfo.contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, close) {
-                activeChat = it
+                activeChat.value = it
               }
             }
           } else if (cInfo is ChatInfo.Group) {
@@ -786,6 +789,22 @@ private fun bottomEndFloatingButton(
   }
   else -> {
     {}
+  }
+}
+
+private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: ChatModel) {
+  val chat = activeChat.value
+  if (chat?.chatStats?.unreadChat != true) return
+  withApi {
+    val success = chatModel.controller.apiChatUnread(
+      chat.chatInfo.chatType,
+      chat.chatInfo.apiId,
+      false
+    )
+    if (success && chat.id == activeChat.value?.id) {
+      activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
+      chatModel.replaceChat(chat.id, activeChat.value!!)
+    }
   }
 }
 

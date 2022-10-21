@@ -33,7 +33,6 @@ module Simplex.Chat.Store
     getProfileById,
     getConnReqContactXContactId,
     createDirectContact,
-    getContactGroupNames,
     deleteContactConnectionsAndFiles,
     deleteContact,
     getContactByName,
@@ -243,7 +242,7 @@ import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty)
-import Data.Maybe (fromMaybe, isJust, listToMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -286,7 +285,7 @@ import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Migrations.M20221012_inline_files
 import Simplex.Chat.Migrations.M20221019_unread_chat
-import Simplex.Chat.Migrations.M20221020_address_incognito
+import Simplex.Chat.Migrations.M20221021_connections_via_group_link_plus_auto_accept_incognito
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -330,7 +329,7 @@ schemaMigrations =
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
     ("20221012_inline_files", m20221012_inline_files),
     ("20221019_unread_chat", m20221019_unread_chat),
-    ("20221020_address_incognito", m20221020_address_incognito)
+    ("20221021_connections_via_group_link_plus_auto_accept_incognito", m20221021_connections_via_group_link_plus_auto_accept_incognito)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -500,15 +499,17 @@ getProfileById db userId profileId =
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact viaUserContactLink customUserProfileId connLevel currentTs = do
+  viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
+    maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   DB.execute
     db
     [sql|
       INSERT INTO connections (
-        user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, custom_user_profile_id, conn_status, conn_type,
+        user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, connLevel, viaContact, viaUserContactLink, customUserProfileId, ConnNew, connType)
+    ( (userId, acId, connLevel, viaContact, viaUserContactLink, isJust viaLinkGroupId, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
@@ -538,19 +539,6 @@ createContact_ db userId connId Profile {displayName, fullName, image} localAlia
     DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure . Right $ (ldn, contactId, profileId)
 
-getContactGroupNames :: DB.Connection -> UserId -> Contact -> IO [GroupName]
-getContactGroupNames db userId Contact {contactId} =
-  map fromOnly
-    <$> DB.query
-      db
-      [sql|
-        SELECT DISTINCT g.local_display_name
-        FROM groups g
-        JOIN group_members m ON m.group_id = g.group_id
-        WHERE g.user_id = ? AND m.contact_id = ?
-      |]
-      (userId, contactId)
-
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
   DB.execute
@@ -569,9 +557,15 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
 deleteContact :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContact db userId Contact {contactId, localDisplayName} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  deleteContactProfile_ db userId contactId
+  ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
+  if isNothing ctMember
+    then do
+      deleteContactProfile_ db userId contactId
+      DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    else do
+      currentTs <- getCurrentTime
+      DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteContactProfile_ :: DB.Connection -> UserId -> ContactId -> IO ()
 deleteContactProfile_ db userId contactId =
@@ -1667,10 +1661,13 @@ deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
   DB.execute db "DELETE FROM files WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroupItemsAndMembers db User {userId} GroupInfo {groupId} = do
+deleteGroupItemsAndMembers :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
+deleteGroupItemsAndMembers db user@User {userId} GroupInfo {groupId} members = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  forM_ members $ \m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} -> unless (isJust memberContactId) $ do
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
 
 deleteGroup :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroup db User {userId} GroupInfo {groupId, localDisplayName} = do
@@ -1979,9 +1976,17 @@ createNewMember_
     pure GroupMember {groupMemberId, groupId, memberId, memberRole, memberCategory, memberStatus, invitedBy, localDisplayName, memberProfile = toLocalProfile memberContactProfileId memberProfile "", memberContactId, memberContactProfileId, activeConn}
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId} = do
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, memberContactId, memberContactProfileId} = do
   deleteGroupMemberConnection db user m
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+  unless (isJust memberContactId) $ do
+    sameProfileMember :: (Maybe GroupMemberId) <- maybeFirstRow fromOnly $ DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND contact_profile_id = ? AND group_member_id != ? LIMIT 1" (userId, memberContactProfileId, groupMemberId)
+    unless (isJust sameProfileMember) $ deleteMemberProfileAndName_ db user m
+
+deleteMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
+deleteMemberProfileAndName_ db User {userId} GroupMember {memberContactProfileId, localDisplayName} = do
+  DB.execute db "DELETE FROM contact_profiles WHERE user_id = ? AND contact_profile_id = ?" (userId, memberContactProfileId)
+  DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
 
 deleteGroupMemberConnection :: DB.Connection -> User -> GroupMember -> IO ()
 deleteGroupMemberConnection db User {userId} GroupMember {groupMemberId} =
@@ -3105,7 +3110,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
-          AND (c.conn_level = 0 OR i.chat_item_id IS NOT NULL)
+          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -3227,7 +3232,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
       [sql|
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
-        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_group_link = 0 AND via_contact IS NULL
       |]
       (userId, ConnContact)
   where

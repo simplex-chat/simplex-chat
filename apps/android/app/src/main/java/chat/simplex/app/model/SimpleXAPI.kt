@@ -552,15 +552,6 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
       r is CR.ContactDeleted && type == ChatType.Direct -> return true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
       r is CR.GroupDeletedUser && type == ChatType.Group -> return true
-      r is CR.ChatCmdError -> {
-        val e = r.chatError
-        if (e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.ContactGroups) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(R.string.cannot_delete_contact),
-            String.format(generalGetString(R.string.contact_cannot_be_deleted_as_they_are_in_groups), e.errorType.contact.displayName, e.errorType.groupNames.joinToString(", "))
-          )
-        }
-      }
       else -> {
         val titleId = when (type) {
           ChatType.Direct -> R.string.error_deleting_contact
@@ -720,6 +711,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     val r = sendCmd(CC.ApiChatRead(type, id, range))
     if (r is CR.CmdOk) return true
     Log.e(TAG, "apiChatRead bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
+  suspend fun apiChatUnread(type: ChatType, id: Long, unreadChat: Boolean): Boolean {
+    val r = sendCmd(CC.ApiChatUnread(type, id, unreadChat))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiChatUnread bad response: ${r.responseType} ${r.details}")
     return false
   }
 
@@ -1434,6 +1432,7 @@ sealed class CC {
   class ApiAcceptContact(val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
+  class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long): CC()
 
   val cmdString: String get() = when (this) {
@@ -1495,6 +1494,7 @@ sealed class CC {
     is ApiEndCall -> "/_call end @${contact.apiId}"
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
+    is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> "/freceive $fileId"
   }
 
@@ -1557,6 +1557,7 @@ sealed class CC {
     is ApiEndCall -> "apiEndCall"
     is ApiCallStatus -> "apiCallStatus"
     is ApiChatRead -> "apiChatRead"
+    is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
   }
 
@@ -2052,12 +2053,10 @@ sealed class ChatErrorType {
   val string: String get() = when (this) {
     is NoActiveUser -> "noActiveUser"
     is InvalidConnReq -> "invalidConnReq"
-    is ContactGroups -> "groupNames $groupNames"
     is СommandError -> "commandError $message"
   }
   @Serializable @SerialName("noActiveUser") class NoActiveUser: ChatErrorType()
   @Serializable @SerialName("invalidConnReq") class InvalidConnReq: ChatErrorType()
-  @Serializable @SerialName("contactGroups") class ContactGroups(val contact: Contact, val groupNames: List<String>): ChatErrorType()
   @Serializable @SerialName("commandError") class СommandError(val message: String): ChatErrorType()
 }
 

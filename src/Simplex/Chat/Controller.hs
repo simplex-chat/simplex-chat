@@ -84,7 +84,7 @@ data InlineFilesConfig = InlineFilesConfig
 defaultInlineFilesConfig :: InlineFilesConfig
 defaultInlineFilesConfig =
   InlineFilesConfig
-    { offerChunks = 15, -- max when chunks are offered - limited to 255 on the encoding level
+    { offerChunks = 15, -- max when chunks are offered / received with the option - limited to 255 on the encoding level
       sendChunks = 0, -- max per file when chunks will be sent inline without acceptance
       totalSendChunks = 30, -- max per conversation when chunks will be sent inline without acceptance
       receiveChunks = 5 -- max when chunks are accepted
@@ -233,7 +233,7 @@ data ChatCommand
   | SendImage ChatName FilePath
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
-  | ReceiveFile FileTransferId (Maybe FilePath)
+  | ReceiveFile {fileId :: FileTransferId, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile
@@ -279,6 +279,7 @@ data ChatResponse
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentGroupInvitationViaLink {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange
@@ -464,7 +465,6 @@ data ChatErrorType
   | CEInvalidConnReq
   | CEInvalidChatMessage {message :: String}
   | CEContactNotReady {contact :: Contact}
-  | CEContactGroups {contact :: Contact, groupNames :: [GroupName]}
   | CEGroupUserRole
   | CEContactIncognitoCantInvite
   | CEGroupIncognitoCantInvite

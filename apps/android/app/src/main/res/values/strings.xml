@@ -61,8 +61,6 @@
   <string name="connection_error_auth_desc">Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection.</string>
   <string name="error_accepting_contact_request">Error accepting contact request</string>
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
-  <string name="cannot_delete_contact">Can\'t delete contact!</string>
-  <string name="contact_cannot_be_deleted_as_they_are_in_groups">Contact <xliff:g id="contactName" example="Jane Doe">%1$s!</xliff:g> cannot be deleted, they are a member of the group(s) <xliff:g id="groups" example="[team, chess club]">%2$s</xliff:g>.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
@@ -273,6 +271,7 @@
   <string name="delete_contact_menu_action">Delete</string>
   <string name="delete_group_menu_action">Delete</string>
   <string name="mark_read">Mark read</string>
+  <string name="mark_unread">Mark unread</string>
   <string name="set_contact_name">Set contact name</string>
 
   <!-- Actions - ChatListNavLinkView.kt -->
