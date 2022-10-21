@@ -5,12 +5,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -174,14 +175,27 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
 
 @Composable
 fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  ItemAction(
-    stringResource(R.string.mark_unread),
-    Icons.Outlined.Check,
-    onClick = {
-      markChatUnread(chat, chatModel)
-      showMenu.value = false
+  DropdownMenuItem({
+    markChatUnread(chat, chatModel)
+    showMenu.value = false
+  }) {
+    Row {
+      Text(
+        stringResource(R.string.mark_unread),
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = MaterialTheme.colors.onBackground
+      )
+      Icon(
+        Icons.Outlined.Contrast,
+        stringResource(R.string.mark_unread),
+        Modifier.graphicsLayer { rotationZ = 180f },
+        tint = MaterialTheme.colors.onBackground
+      )
     }
-  )
+  }
 }
 
 @Composable
