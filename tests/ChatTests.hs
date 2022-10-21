@@ -2174,21 +2174,23 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
-    alice ##> "/auto_accept on incognito=off text hello!"
-    alice <## "auto_accept on"
+    alice ##> "/auto_accept on incognito=on text hello!"
+    alice <## "auto_accept on, incognito"
     alice <## "auto reply:"
     alice <## "hello!"
 
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    aliceIncognito <- getTermLine alice
     concurrentlyN_
       [ do
-          bob <## "alice (Alice): contact is connected"
-          bob <# "alice> hello!",
+          bob <## (aliceIncognito <> ": contact is connected")
+          bob <# (aliceIncognito <> "> hello!"),
         do
-          alice <## "bob (Bob): contact is connected"
-          alice <# "@bob hello!"
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+          alice <## "use /info bob to print out this incognito profile again",
+          alice ?<# "@bob hello!"
       ]
 
 testConnectIncognitoInvitationLink :: IO ()
