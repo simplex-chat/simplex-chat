@@ -529,6 +529,10 @@ func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async thr
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
+func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
+    try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
+}
+
 func receiveFile(fileId: Int64) async {
     if let chatItem = await apiReceiveFile(fileId: fileId) {
         DispatchQueue.main.async { chatItemSimpleUpdate(chatItem) }
@@ -634,13 +638,28 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
 
 func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
-        let minItemId = chat.chatStats.minUnreadItemId
-        let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
-        let cInfo = chat.chatInfo
-        try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
-        DispatchQueue.main.async { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+        if chat.chatStats.unreadCount > 0 {
+            let minItemId = chat.chatStats.minUnreadItemId
+            let itemRange = (minItemId, aboveItem?.id ?? chat.chatItems.last?.id ?? minItemId)
+            let cInfo = chat.chatInfo
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: itemRange)
+            await MainActor.run { ChatModel.shared.markChatItemsRead(cInfo, aboveItem: aboveItem) }
+        }
+        if chat.chatStats.unreadChat {
+            await markChatUnread(chat, unreadChat: false)
+        }
     } catch {
         logger.error("markChatRead apiChatRead error: \(responseError(error))")
+    }
+}
+
+func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
+    do {
+        let cInfo = chat.chatInfo
+        try await apiChatUnread(type: cInfo.chatType, id: cInfo.apiId, unreadChat: unreadChat)
+        await MainActor.run { ChatModel.shared.markChatUnread(cInfo, unreadChat: unreadChat) }
+    } catch {
+        logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
     }
 }
 

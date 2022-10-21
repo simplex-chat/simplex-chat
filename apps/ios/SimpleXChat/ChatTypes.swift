@@ -303,13 +303,15 @@ public struct ChatData: Decodable, Identifiable {
 }
 
 public struct ChatStats: Decodable {
-    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0) {
+    public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
         self.minUnreadItemId = minUnreadItemId
+        self.unreadChat = unreadChat
     }
 
     public var unreadCount: Int = 0
     public var minUnreadItemId: Int64 = 0
+    public var unreadChat: Bool = false
 }
 
 public struct Contact: Identifiable, Decodable, NamedChat {
