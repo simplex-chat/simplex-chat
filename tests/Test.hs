@@ -19,7 +19,7 @@ main = do
     -- Workaround for SQLite IO error in first test after mobile tests on Mac
     it "Delay after Mobile API Tests" $ threadDelay 100000
     describe "SimpleX chat client" chatTests
-    describe "Schema dump" schemaDumpTest
+    fdescribe "Schema dump" schemaDumpTest
 
 -- logCfg :: LogConfig
 -- logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}

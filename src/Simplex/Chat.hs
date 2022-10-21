@@ -55,7 +55,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8, uncurry4)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -776,9 +776,9 @@ processChatCommand = \case
       withStore' (`deleteUserAddress` user)
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
-    uncurry4 CRUserContactLink <$> withStore (`getUserAddress` userId)
+    CRUserContactLink <$> withStore (`getUserAddress` userId)
   AddressAutoAccept onOff incognitoOnOff msgContent -> withUser $ \User {userId} -> do
-    uncurry4 CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId onOff incognitoOnOff msgContent)
+    CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId onOff incognitoOnOff msgContent)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -1681,7 +1681,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (_, True, _, mc_, groupId_) -> do
+                  Just (UserContactLink {autoReply = mc_}, groupId_) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
@@ -1982,7 +1982,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (_, autoAccept, incognito, _, groupId_) ->
+                Just (UserContactLink {autoAccept, autoAcceptIncognito = incognito}, groupId_) ->
                   if autoAccept
                     then case groupId_ of
                       Nothing -> do
@@ -3160,7 +3160,7 @@ chatCommandP =
       ("/address" <|> "/ad") $> CreateMyAddress,
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       ("/show_address" <|> "/sa") $> ShowMyAddress,
-      "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> (" incognito=on" $> True <|> " incognito=off" $> False <|> pure False) <*> optional (A.space *> msgContentP)),
+      "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)),
       ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName),
       ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,

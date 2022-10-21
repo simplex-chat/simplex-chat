@@ -34,7 +34,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (StoreError (..))
+import Simplex.Chat.Store (StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
@@ -87,8 +87,8 @@ responseToView testView = \case
     HSSettings -> settingsInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink cReqUri autoAccept incognito autoReply -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept incognito autoReply
-  CRUserContactLinkUpdated _ autoAccept incognito autoReply -> autoAcceptStatus_ autoAccept incognito autoReply
+  CRUserContactLink UserContactLink{connReqContact = cReqUri, autoAccept, autoAcceptIncognito, autoReply} -> connReqContact_ "Your chat address:" cReqUri <> autoAcceptStatus_ autoAccept autoAcceptIncognito autoReply
+  CRUserContactLinkUpdated UserContactLink{autoAccept, autoAcceptIncognito, autoReply} -> autoAcceptStatus_ autoAccept autoAcceptIncognito autoReply
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
@@ -433,8 +433,11 @@ connReqContact_ intro cReq =
 
 autoAcceptStatus_ :: Bool -> Bool -> Maybe MsgContent -> [StyledString]
 autoAcceptStatus_ autoAccept incognito autoReply =
-  ("auto_accept " <> if autoAccept then "on" else "off") :
-  ("incognito " <> if incognito then "on" else "off") :
+  ("auto_accept "
+      <> if autoAccept
+        then "on" <> if incognito then ", incognito" else ""
+        else "off"
+  ) :
   maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> [StyledString]

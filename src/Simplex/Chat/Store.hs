@@ -20,6 +20,7 @@
 module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
+    UserContactLink (..),
     createChatStore,
     chatStoreFile,
     agentStoreFile,
@@ -791,36 +792,55 @@ deleteUserAddress db User {userId} = do
     [":user_id" := userId]
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
-getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Bool, Maybe MsgContent)
+data UserContactLink = UserContactLink
+  { -- userContactLinkId :: Int64,
+    connReqContact :: ConnReqContact,
+    autoAccept :: Bool,
+    autoAcceptIncognito :: Bool,
+    autoReply :: Maybe MsgContent
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
+
+getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO UserContactLink
 getUserAddress db userId =
   ExceptT . firstRow id SEUserContactLinkNotFound $
-    DB.query
+  map toUserContactLink
+    <$> DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, incognito, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
       (Only userId)
+    where
+      toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+      toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply) = UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Bool, Maybe MsgContent, Maybe GroupId))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
   maybeFirstRow id $
-    DB.query
+    map toUserContactLink
+    <$> DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, incognito, auto_reply_msg_content, group_id
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
+    where
+      toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent, Maybe GroupId) -> (UserContactLink, Maybe GroupId)
+      toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply, groupId) = (UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}, groupId)
 
-updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Bool, Maybe MsgContent)
+updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Bool -> Maybe MsgContent -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db userId autoAccept incognito msgContent = do
-  (cReqUri, _, _, _) <- getUserAddress db userId
+  UserContactLink {connReqContact} <- getUserAddress db userId
   liftIO updateUserAddressAutoAccept_
-  pure (cReqUri, autoAccept, incognito, msgContent)
+  pure $ UserContactLink { connReqContact, autoAccept, autoAcceptIncognito = incognito, autoReply = msgContent }
   where
     updateUserAddressAutoAccept_ :: IO ()
     updateUserAddressAutoAccept_ =
@@ -828,7 +848,7 @@ updateUserAddressAutoAccept db userId autoAccept incognito msgContent = do
         db
         [sql|
           UPDATE user_contact_links
-          SET auto_accept = ?, incognito = ?, auto_reply_msg_content = ?
+          SET auto_accept = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
         (autoAccept, incognito, msgContent, userId)
