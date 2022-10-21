@@ -497,8 +497,8 @@ getProfileById db userId profileId =
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact viaUserContactLink customUserProfileId connLevel currentTs = do
-  viaGroupLink :: (Maybe Int64) <- fmap (join . join) . forM viaUserContactLink $ \ucLinkId ->
-    maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ?" (userId, ucLinkId)
+  viaLinkGroupId :: (Maybe Int64) <- fmap join . forM viaUserContactLink $ \ucLinkId ->
+    maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   DB.execute
     db
     [sql|
@@ -507,7 +507,7 @@ createConnection_ db userId connType entityId acId viaContact viaUserContactLink
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, connLevel, viaContact, viaUserContactLink, isJust viaGroupLink, customUserProfileId, ConnNew, connType)
+    ( (userId, acId, connLevel, viaContact, viaUserContactLink, isJust viaLinkGroupId, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
@@ -3086,7 +3086,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
-          AND ((c.conn_level = 0 AND c.via_group_link != 1) OR i.chat_item_id IS NOT NULL)
+          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -3208,7 +3208,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
       [sql|
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
-        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_group_link != 1 AND via_contact IS NULL
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_group_link = 0 AND via_contact IS NULL
       |]
       (userId, ConnContact)
   where
