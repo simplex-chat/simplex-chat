@@ -561,7 +561,7 @@ data RcvGroupEvent
   -- RGEInvitedViaGroupLink chat items are not received - they're created when sending group invitations,
   -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
   -- and be created as unread without adding / working around new status for sent items
-  | RGEInvitedViaGroupLink
+  | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   deriving (Show, Generic)
 
 instance FromJSON RcvGroupEvent where

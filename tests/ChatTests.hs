@@ -3294,7 +3294,9 @@ testGroupLink =
             bob <## "use /j team to accept"
         ]
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link")])
+      alice @@@ [("#team", "invited via your group link")] -- contacts connected via group link are not in chat previews
       alice <##> bob
+      alice @@@ [("@bob", "hey"), ("#team", "invited via your group link")]
       bob ##> "/j team"
       concurrently_
         (alice <## "#team: bob joined the group")
