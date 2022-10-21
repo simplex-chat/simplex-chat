@@ -8,7 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
-module Simplex.Chat.Controller where 
+module Simplex.Chat.Controller where
 
 import Control.Concurrent.Async (Async)
 import Control.Exception
