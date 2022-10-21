@@ -93,7 +93,8 @@ responseToView testView = \case
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
   CRGroupsList gs -> viewGroupsList gs
-  CRSentGroupInvitation g c _ -> viewSentGroupInvitation g c
+  CRSentGroupInvitation g c _ -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+  CRSentGroupInvitationViaLink g c _ -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
   CRFileTransferStatus ftStatus -> viewFileTransferStatus ftStatus
   CRUserProfile p -> viewUserProfile p
   CRUserProfileNoChange -> ["user profile did not change"]
@@ -390,10 +391,6 @@ viewConnReqInvitation cReq =
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
-
-viewSentGroupInvitation :: GroupInfo -> Contact -> [StyledString]
-viewSentGroupInvitation g c =
-  ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
 
 viewChatCleared :: AChatInfo -> [StyledString]
 viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
