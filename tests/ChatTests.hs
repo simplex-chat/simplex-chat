@@ -97,6 +97,7 @@ chatTests = do
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
+    it "auto-reply message in incognito" testAutoReplyMessageInIncognito
   describe "incognito mode" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -2174,6 +2175,28 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     alice ##> "/ad"
     cLink <- getContactLink alice True
+    alice ##> "/auto_accept on incognito=off text hello!"
+    alice <## "auto_accept on"
+    alice <## "auto reply:"
+    alice <## "hello!"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+    alice <## "bob (Bob): accepting contact request..."
+    concurrentlyN_
+      [ do
+          bob <## "alice (Alice): contact is connected"
+          bob <# "alice> hello!",
+        do
+          alice <## "bob (Bob): contact is connected"
+          alice <# "@bob hello!"
+      ]
+
+testAutoReplyMessageInIncognito :: IO ()
+testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
     alice ##> "/auto_accept on incognito=on text hello!"
     alice <## "auto_accept on, incognito"
     alice <## "auto reply:"
@@ -2190,7 +2213,7 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
           alice <## "use /info bob to print out this incognito profile again",
-          alice ?<# "@bob hello!"
+          alice <# "i @bob hello!"
       ]
 
 testConnectIncognitoInvitationLink :: IO ()
