@@ -285,7 +285,7 @@ import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Migrations.M20221012_inline_files
 import Simplex.Chat.Migrations.M20221019_unread_chat
-import Simplex.Chat.Migrations.M20221021_auto_accept_incognito_connections_via_group_link
+import Simplex.Chat.Migrations.M20221021_auto_accept__group_links
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -329,7 +329,7 @@ schemaMigrations =
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
     ("20221012_inline_files", m20221012_inline_files),
     ("20221019_unread_chat", m20221019_unread_chat),
-    ("20221021_auto_accept_incognito_connections_via_group_link", m20221021_auto_accept_incognito_connections_via_group_link)
+    ("20221021_auto_accept__group_links", m20221021_auto_accept__group_links)
   ]
 
 -- | The list of migrations in ascending order by date
