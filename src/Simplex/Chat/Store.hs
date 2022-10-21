@@ -803,11 +803,13 @@ data UserContactLink = UserContactLink
 
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
+toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply) = UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
+
 getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO UserContactLink
 getUserAddress db userId =
-  ExceptT . firstRow id SEUserContactLinkNotFound $
-  map toUserContactLink
-    <$> DB.query
+  ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
+    DB.query
       db
       [sql|
         SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
@@ -815,15 +817,11 @@ getUserAddress db userId =
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
       (Only userId)
-    where
-      toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
-      toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply) = UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
 
 getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
-  maybeFirstRow id $
-    map toUserContactLink
-    <$> DB.query
+  maybeFirstRow (\(ucl :. Only groupId_) -> (toUserContactLink ucl, groupId_)) $
+    DB.query
       db
       [sql|
         SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id
@@ -832,15 +830,12 @@ getUserContactLinkById db userId userContactLinkId =
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
-    where
-      toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent, Maybe GroupId) -> (UserContactLink, Maybe GroupId)
-      toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply, groupId) = (UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}, groupId)
 
 updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Bool -> Maybe MsgContent -> ExceptT StoreError IO UserContactLink
-updateUserAddressAutoAccept db userId autoAccept incognito msgContent = do
+updateUserAddressAutoAccept db userId autoAccept autoAcceptIncognito autoReply = do
   UserContactLink {connReqContact} <- getUserAddress db userId
   liftIO updateUserAddressAutoAccept_
-  pure $ UserContactLink { connReqContact, autoAccept, autoAcceptIncognito = incognito, autoReply = msgContent }
+  pure $ UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
   where
     updateUserAddressAutoAccept_ :: IO ()
     updateUserAddressAutoAccept_ =
@@ -851,7 +846,7 @@ updateUserAddressAutoAccept db userId autoAccept incognito msgContent = do
           SET auto_accept = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
-        (autoAccept, incognito, msgContent, userId)
+        (autoAccept, autoAcceptIncognito, autoReply, userId)
 
 createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =
@@ -2266,7 +2261,7 @@ createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> IO Sn
 createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
-      fileInline' = Just $ fromMaybe (IFMOffer) fileInline
+      fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -2277,7 +2272,7 @@ createSndGroupInlineFT :: DB.Connection -> GroupMember -> Connection -> FileTran
 createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Connection {connId, agentConnId} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
-      fileInline' = Just $ fromMaybe (IFMOffer) fileInline
+      fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"

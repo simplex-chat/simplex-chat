@@ -1681,7 +1681,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (UserContactLink {autoReply = mc_}, groupId_) -> do
+                  Just (UserContactLink {autoAccept = True, autoReply = mc_}, groupId_) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
