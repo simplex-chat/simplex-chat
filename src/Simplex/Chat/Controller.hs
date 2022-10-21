@@ -36,7 +36,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (StoreError)
+import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
@@ -205,7 +205,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
-  | AddressAutoAccept Bool (Maybe MsgContent)
+  | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString
@@ -272,13 +272,14 @@ data ChatResponse
   | CRGroupCreated {groupInfo :: GroupInfo}
   | CRGroupMembers {group :: Group}
   | CRContactsList {contacts :: [Contact]}
-  | CRUserContactLink {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
-  | CRUserContactLinkUpdated {connReqContact :: ConnReqContact, autoAccept :: Bool, autoReply :: Maybe MsgContent}
+  | CRUserContactLink UserContactLink
+  | CRUserContactLinkUpdated UserContactLink
   | CRContactRequestRejected {contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {groupInfo :: GroupInfo}
   | CRUserDeletedMember {groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {groups :: [GroupInfo]}
   | CRSentGroupInvitation {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
+  | CRSentGroupInvitationViaLink {groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRUserProfile {profile :: Profile}
   | CRUserProfileNoChange

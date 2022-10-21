@@ -55,7 +55,7 @@ import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store
 import Simplex.Chat.Types
-import Simplex.Chat.Util (safeDecodeUtf8, uncurry3)
+import Simplex.Chat.Util (safeDecodeUtf8)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), AgentDatabase (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Protocol
@@ -773,9 +773,9 @@ processChatCommand = \case
       withStore' (`deleteUserAddress` user)
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
-    uncurry3 CRUserContactLink <$> withStore (`getUserAddress` userId)
-  AddressAutoAccept onOff msgContent -> withUser $ \User {userId} -> do
-    uncurry3 CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId onOff msgContent)
+    CRUserContactLink <$> withStore (`getUserAddress` userId)
+  AddressAutoAccept autoAccept_ -> withUser $ \User {userId} -> do
+    CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId autoAccept_)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -1169,16 +1169,15 @@ processChatCommand = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-
-sendGrpInvitation :: ChatMonad m => User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
-sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
-  let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-      groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
-  (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
-  let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
-  ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
-  toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
-  setActive $ ActiveG localDisplayName
+    sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> m ()
+    sendGrpInvitation user ct@Contact {localDisplayName} GroupInfo {groupId, groupProfile, membership} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
+      let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+          groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+      (msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
+      let content = CISndGroupInvitation (CIGroupInvitation {groupId, groupMemberId, localDisplayName, groupProfile, status = CIGISPending}) memRole
+      ci <- saveSndChatItem user (CDDirectSnd ct) msg content Nothing Nothing
+      toView . CRNewChatItem $ AChatItem SCTDirect SMDSnd (DirectChat ct) ci
+      setActive $ ActiveG localDisplayName
 
 setExpireCIs :: (MonadUnliftIO m, MonadReader ChatController m) => Bool -> m ()
 setExpireCIs b = do
@@ -1687,7 +1686,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (_, True, mc_, groupId_) -> do
+                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
@@ -1726,7 +1725,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg conn@Connection {connId} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -1745,8 +1744,21 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                   Nothing -> messageError "implementation error: invitee does not have contact"
                   Just ct -> do
                     withStore' $ \db -> setNewContactMemberConnRequest db user m cReq
-                    sendGrpInvitation user ct gInfo m cReq
-                    toView $ CRSentGroupInvitation gInfo ct m
+                    sendGrpInvitation ct m
+                    toView $ CRSentGroupInvitationViaLink gInfo ct m
+                where
+                  sendGrpInvitation :: Contact -> GroupMember -> m ()
+                  sendGrpInvitation ct GroupMember {memberId, memberRole = memRole} = do
+                    let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                        groupInv = GroupInvitation (MemberIdRole userMemberId userRole) (MemberIdRole memberId memRole) cReq groupProfile
+                    (_msg, _) <- sendDirectContactMessage ct $ XGrpInv groupInv
+                    createdAt <- liftIO getCurrentTime
+                    let content = CIRcvGroupEvent RGEInvitedViaGroupLink
+                        cd = CDGroupRcv gInfo m
+                    -- we could link chat item with sent group invitation message (_msg)
+                    ciId <- withStore' $ \db -> createNewChatItemNoMsg db user cd content createdAt createdAt
+                    ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing createdAt createdAt
+                    toView $ CRNewChatItem $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
@@ -1988,14 +2000,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (_, autoAccept, _, groupId_) ->
-                  if autoAccept
-                    then case groupId_ of
+                Just (UserContactLink {autoAccept}, groupId_) ->
+                  case autoAccept of
+                    Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
-                        -- TODO allow to configure incognito setting on auto accept instead of checking incognito mode
-                        incognito <- readTVarIO =<< asks incognitoMode
-                        incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile
                         toView $ CRAcceptingContactRequest ct
                       Just groupId -> do
@@ -2003,7 +2013,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                         let profileMode = if memberIncognito membership then Just $ ExistingIncognito memberProfile else Nothing
                         ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingGroupJoinRequest gInfo ct
-                    else do
+                    _ -> do
                       toView $ CRReceivedContactRequest cReq
                       showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
@@ -3168,7 +3178,7 @@ chatCommandP =
       ("/address" <|> "/ad") $> CreateMyAddress,
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       ("/show_address" <|> "/sa") $> ShowMyAddress,
-      "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> optional (A.space *> msgContentP)),
+      "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
       ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName),
       ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
@@ -3241,6 +3251,11 @@ chatCommandP =
       pure $ fullNetworkConfig socksProxy tcpTimeout
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
+    autoAcceptP =
+      ifM
+        onOffP
+        (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
+        (pure Nothing)
 
 adminContactReq :: ConnReqContact
 adminContactReq =

@@ -17,7 +17,6 @@ struct ChatPreviewView: View {
 
     var body: some View {
         let cItem = chat.chatItems.last
-        let unread = chat.chatStats.unreadCount
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
                 ChatInfoImage(chat: chat)
@@ -41,7 +40,7 @@ struct ChatPreviewView: View {
                 .padding(.horizontal, 8)
 
                 ZStack(alignment: .topTrailing) {
-                    chatPreviewText(cItem, unread)
+                    chatPreviewText(cItem)
                     if case .direct = chat.chatInfo {
                         chatStatusImage()
                             .padding(.top, 24)
@@ -100,7 +99,7 @@ struct ChatPreviewView: View {
         }
     }
 
-    @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?, _ unread: Int) -> some View {
+    @ViewBuilder private func chatPreviewText(_ cItem: ChatItem?) -> some View {
         if let cItem = cItem {
             ZStack(alignment: .topTrailing) {
                 (itemStatusMark(cItem) + messageText(cItem.text, cItem.formattedText, cItem.memberDisplayName, preview: true))
@@ -109,8 +108,9 @@ struct ChatPreviewView: View {
                     .frame(maxWidth: .infinity, alignment: .topLeading)
                     .padding(.leading, 8)
                     .padding(.trailing, 36)
-                if unread > 0 {
-                    unreadCountText(unread)
+                let s = chat.chatStats
+                if s.unreadCount > 0 || s.unreadChat {
+                    unreadCountText(s.unreadCount)
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, 4)
@@ -185,7 +185,7 @@ struct ChatPreviewView: View {
 }
 
 func unreadCountText(_ n: Int) -> Text {
-    Text(n > 999 ? "\(n / 1000)k" : "\(n)")
+    Text(n > 999 ? "\(n / 1000)k" : n > 0 ? "\(n)" : "")
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {

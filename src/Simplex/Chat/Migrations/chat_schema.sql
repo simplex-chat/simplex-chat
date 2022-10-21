@@ -252,6 +252,7 @@ CREATE TABLE connections(
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BLOB,
   local_alias DEFAULT '' CHECK(local_alias NOT NULL),
+  via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -267,6 +268,7 @@ CREATE TABLE user_contact_links(
   auto_accept INTEGER DEFAULT 0,
   auto_reply_msg_content TEXT DEFAULT NULL,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
+  auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(

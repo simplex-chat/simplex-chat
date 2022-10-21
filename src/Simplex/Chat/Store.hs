@@ -20,6 +20,8 @@
 module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
+    UserContactLink (..),
+    AutoAccept (..),
     createChatStore,
     chatStoreFile,
     agentStoreFile,
@@ -283,6 +285,7 @@ import Simplex.Chat.Migrations.M20221004_idx_msg_deliveries_message_id
 import Simplex.Chat.Migrations.M20221011_user_contact_links_group_id
 import Simplex.Chat.Migrations.M20221012_inline_files
 import Simplex.Chat.Migrations.M20221019_unread_chat
+import Simplex.Chat.Migrations.M20221021_auto_accept__group_links
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ACorrId, AgentMsgId, ConnId, InvitationId, MsgMeta (..))
@@ -325,7 +328,8 @@ schemaMigrations =
     ("20221004_idx_msg_deliveries_message_id", m20221004_idx_msg_deliveries_message_id),
     ("20221011_user_contact_links_group_id", m20221011_user_contact_links_group_id),
     ("20221012_inline_files", m20221012_inline_files),
-    ("20221019_unread_chat", m20221019_unread_chat)
+    ("20221019_unread_chat", m20221019_unread_chat),
+    ("20221021_auto_accept__group_links", m20221021_auto_accept__group_links)
   ]
 
 -- | The list of migrations in ascending order by date
@@ -495,15 +499,17 @@ getProfileById db userId profileId =
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> IO Connection
 createConnection_ db userId connType entityId acId viaContact viaUserContactLink customUserProfileId connLevel currentTs = do
+  viaLinkGroupId :: Maybe Int64 <- fmap join . forM viaUserContactLink $ \ucLinkId ->
+    maybeFirstRow fromOnly $ DB.query db "SELECT group_id FROM user_contact_links WHERE user_id = ? AND user_contact_link_id = ? AND group_id IS NOT NULL" (userId, ucLinkId)
   DB.execute
     db
     [sql|
       INSERT INTO connections (
-        user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, custom_user_profile_id, conn_status, conn_type,
+        user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
         contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ( (userId, acId, connLevel, viaContact, viaUserContactLink, customUserProfileId, ConnNew, connType)
+    ( (userId, acId, connLevel, viaContact, viaUserContactLink, isJust viaLinkGroupId, customUserProfileId, ConnNew, connType)
         :. (ent ConnContact, ent ConnMember, ent ConnSndFile, ent ConnRcvFile, ent ConnUserContact, currentTs, currentTs)
     )
   connId <- insertedRowId db
@@ -781,47 +787,69 @@ deleteUserAddress db User {userId} = do
     [":user_id" := userId]
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
-getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
+data UserContactLink = UserContactLink
+  { connReqContact :: ConnReqContact,
+    autoAccept :: Maybe AutoAccept
+  }
+  deriving (Show, Generic)
+
+instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
+
+data AutoAccept = AutoAccept
+  { acceptIncognito :: Bool,
+    autoReply :: Maybe MsgContent
+  }
+  deriving (Show, Generic)
+
+instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
+
+toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
+toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
+  UserContactLink connReq $
+    if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
+
+getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO UserContactLink
 getUserAddress db userId =
-  ExceptT . firstRow id SEUserContactLinkNotFound $
+  ExceptT . firstRow toUserContactLink SEUserContactLinkNotFound $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
         WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (ConnReqContact, Bool, Maybe MsgContent, Maybe GroupId))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId))
 getUserContactLinkById db userId userContactLinkId =
-  maybeFirstRow id $
+  maybeFirstRow (\(ucl :. Only groupId_) -> (toUserContactLink ucl, groupId_)) $
     DB.query
       db
       [sql|
-        SELECT conn_req_contact, auto_accept, auto_reply_msg_content, group_id
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id
         FROM user_contact_links
         WHERE user_id = ?
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
 
-updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Maybe MsgContent -> ExceptT StoreError IO (ConnReqContact, Bool, Maybe MsgContent)
-updateUserAddressAutoAccept db userId autoAccept msgContent = do
-  (cReqUri, _, _) <- getUserAddress db userId
-  liftIO updateUserAddressAutoAccept_
-  pure (cReqUri, autoAccept, msgContent)
+updateUserAddressAutoAccept :: DB.Connection -> UserId -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
+updateUserAddressAutoAccept db userId autoAccept = do
+  link <- getUserAddress db userId
+  liftIO updateUserAddressAutoAccept_ $> link {autoAccept}
   where
-    updateUserAddressAutoAccept_ :: IO ()
     updateUserAddressAutoAccept_ =
       DB.execute
         db
         [sql|
           UPDATE user_contact_links
-          SET auto_accept = ?, auto_reply_msg_content = ?
+          SET auto_accept = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
-        (autoAccept, msgContent, userId)
+        (ucl :. Only userId)
+    ucl = case autoAccept of
+      Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
+      _ -> (False, False, Nothing)
 
 createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =
@@ -2247,7 +2275,7 @@ createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> IO Sn
 createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
-      fileInline' = Just $ fromMaybe (IFMOffer) fileInline
+      fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
@@ -2258,7 +2286,7 @@ createSndGroupInlineFT :: DB.Connection -> GroupMember -> Connection -> FileTran
 createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Connection {connId, agentConnId} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
-      fileInline' = Just $ fromMaybe (IFMOffer) fileInline
+      fileInline' = Just $ fromMaybe IFMOffer fileInline
   DB.execute
     db
     "INSERT INTO snd_files (file_id, file_status, file_inline, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
@@ -3082,7 +3110,7 @@ getDirectChatPreviews_ db User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON i.quoted_shared_msg_id = ri.shared_msg_id
         WHERE ct.user_id = ?
-          AND (c.conn_level = 0 OR i.chat_item_id IS NOT NULL)
+          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR i.chat_item_id IS NOT NULL)
           AND c.connection_id = (
             SELECT cc_connection_id FROM (
               SELECT
@@ -3204,7 +3232,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
       [sql|
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
-        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_contact IS NULL
+        WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL AND conn_level = 0 AND via_group_link = 0 AND via_contact IS NULL
       |]
       (userId, ConnContact)
   where

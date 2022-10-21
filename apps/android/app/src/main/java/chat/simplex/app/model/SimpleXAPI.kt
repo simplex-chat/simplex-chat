@@ -714,6 +714,13 @@ open class ChatController(var ctrl: ChatCtrl?, val ntfManager: NtfManager, val a
     return false
   }
 
+  suspend fun apiChatUnread(type: ChatType, id: Long, unreadChat: Boolean): Boolean {
+    val r = sendCmd(CC.ApiChatUnread(type, id, unreadChat))
+    if (r is CR.CmdOk) return true
+    Log.e(TAG, "apiChatUnread bad response: ${r.responseType} ${r.details}")
+    return false
+  }
+
   suspend fun apiReceiveFile(fileId: Long): AChatItem? {
     val r = sendCmd(CC.ReceiveFile(fileId))
     return when (r) {
@@ -1425,6 +1432,7 @@ sealed class CC {
   class ApiAcceptContact(val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
+  class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long): CC()
 
   val cmdString: String get() = when (this) {
@@ -1486,6 +1494,7 @@ sealed class CC {
     is ApiEndCall -> "/_call end @${contact.apiId}"
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
+    is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
     is ReceiveFile -> "/freceive $fileId"
   }
 
@@ -1548,6 +1557,7 @@ sealed class CC {
     is ApiEndCall -> "apiEndCall"
     is ApiCallStatus -> "apiCallStatus"
     is ApiChatRead -> "apiChatRead"
+    is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
   }
 
