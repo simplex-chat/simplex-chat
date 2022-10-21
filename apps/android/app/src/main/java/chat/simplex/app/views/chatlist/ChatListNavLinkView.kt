@@ -5,12 +5,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.TheaterComedy
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,12 +30,13 @@ import kotlinx.datetime.Clock
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   val showMenu = remember { mutableStateOf(false) }
-  var showMarkRead by remember { mutableStateOf(false) }
+  val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
+    chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
+  }
   val stopped = chatModel.chatRunning.value == false
-  LaunchedEffect(chat.id, chat.chatStats.unreadCount > 0) {
+  LaunchedEffect(chat.id) {
     showMenu.value = false
     delay(500L)
-    showMarkRead = chat.chatStats.unreadCount > 0
   }
   when (chat.chatInfo) {
     is ChatInfo.Direct ->
@@ -123,6 +125,8 @@ suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
 fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
   if (showMarkRead) {
     MarkReadChatAction(chat, chatModel, showMenu)
+  } else {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
   }
   ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
   ClearChatAction(chat, chatModel, showMenu)
@@ -141,6 +145,8 @@ fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showM
     else -> {
       if (showMarkRead) {
         MarkReadChatAction(chat, chatModel, showMenu)
+      } else {
+        MarkUnreadChatAction(chat, chatModel, showMenu)
       }
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
@@ -165,6 +171,30 @@ fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<
       showMenu.value = false
     }
   )
+}
+
+@Composable
+fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+  DropdownMenuItem({
+    markChatUnread(chat, chatModel)
+    showMenu.value = false
+  }) {
+    Row {
+      Text(
+        stringResource(R.string.mark_unread),
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1F)
+          .padding(end = 15.dp),
+        color = MaterialTheme.colors.onBackground
+      )
+      Icon(
+        Icons.Outlined.MarkChatUnread,
+        stringResource(R.string.mark_unread),
+        tint = MaterialTheme.colors.onBackground
+      )
+    }
+  }
 }
 
 @Composable
@@ -290,18 +320,45 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
   )
 }
 
-fun markChatRead(chat: Chat, chatModel: ChatModel) {
-  // Just to be sure
-  if (chat.chatStats.unreadCount == 0) return
-
-  val minUnreadItemId = chat.chatStats.minUnreadItemId
-  chatModel.markChatItemsRead(chat.chatInfo)
+fun markChatRead(c: Chat, chatModel: ChatModel) {
+  var chat = c
   withApi {
-    chatModel.controller.apiChatRead(
+    if (chat.chatStats.unreadCount > 0) {
+      val minUnreadItemId = chat.chatStats.minUnreadItemId
+      chatModel.markChatItemsRead(chat.chatInfo)
+      chatModel.controller.apiChatRead(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+      )
+      chat = chatModel.getChat(chat.id) ?: return@withApi
+    }
+    if (chat.chatStats.unreadChat) {
+      val success = chatModel.controller.apiChatUnread(
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        false
+      )
+      if (success) {
+        chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+      }
+    }
+  }
+}
+
+fun markChatUnread(chat: Chat, chatModel: ChatModel) {
+  // Just to be sure
+  if (chat.chatStats.unreadChat) return
+
+  withApi {
+    val success = chatModel.controller.apiChatUnread(
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
-      CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
+      true
     )
+    if (success) {
+      chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+    }
   }
 }
 
