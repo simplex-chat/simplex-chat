@@ -78,6 +78,7 @@ public enum ChatCommand {
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
+    case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64)
     case string(String)
 
@@ -151,6 +152,7 @@ public enum ChatCommand {
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId): return "/freceive \(fileId)"
             case let .string(str): return str
             }
@@ -224,6 +226,7 @@ public enum ChatCommand {
             case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
             case .apiChatRead: return "apiChatRead"
+            case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
             case .string: return "console command"
             }
