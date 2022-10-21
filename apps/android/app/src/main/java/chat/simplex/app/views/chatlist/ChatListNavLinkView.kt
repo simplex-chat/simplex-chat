@@ -189,9 +189,8 @@ fun MarkUnreadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableStat
         color = MaterialTheme.colors.onBackground
       )
       Icon(
-        Icons.Outlined.Contrast,
+        Icons.Outlined.MarkChatUnread,
         stringResource(R.string.mark_unread),
-        Modifier.graphicsLayer { rotationZ = 180f },
         tint = MaterialTheme.colors.onBackground
       )
     }
