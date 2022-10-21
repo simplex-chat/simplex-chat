@@ -304,6 +304,12 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func markChatUnread(_ cInfo: ChatInfo, unreadChat: Bool = true) {
+        if let chat = getChat(cInfo.id) {
+            chat.chatStats.unreadChat = unreadChat
+        }
+    }
+
     func clearChat(_ cInfo: ChatInfo) {
         // clear preview
         if let chat = getChat(cInfo.id) {

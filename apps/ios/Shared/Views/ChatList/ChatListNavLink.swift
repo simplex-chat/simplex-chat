@@ -53,9 +53,7 @@ struct ChatListNavLink: View {
             disabled: !contact.ready
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            if chat.chatStats.unreadCount > 0 {
-                markReadButton()
-            }
+            markReadButton()
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if !chat.chatItems.isEmpty {
@@ -116,9 +114,7 @@ struct ChatListNavLink: View {
             )
             .frame(height: rowHeights[dynamicTypeSize])
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                if chat.chatStats.unreadCount > 0 {
-                    markReadButton()
-                }
+                markReadButton()
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if !chat.chatItems.isEmpty {
@@ -150,13 +146,23 @@ struct ChatListNavLink: View {
         .tint(chat.chatInfo.incognito ? .indigo : .accentColor)
     }
 
-    private func markReadButton() -> some View {
-        Button {
-            Task { await markChatRead(chat) }
-        } label: {
-            Label("Read", systemImage: "checkmark")
+    @ViewBuilder private func markReadButton() -> some View {
+        if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
+            Button {
+                Task { await markChatRead(chat) }
+            } label: {
+                Label("Read", systemImage: "checkmark")
+            }
+            .tint(Color.accentColor)
+        } else {
+            Button {
+                Task { await markChatUnread(chat) }
+            } label: {
+                Label("Unread", systemImage: "circlebadge.fill")
+            }
+            .tint(Color.accentColor)
         }
-        .tint(Color.accentColor)
+
     }
 
     private func clearChatButton() -> some View {
