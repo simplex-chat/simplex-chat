@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20221021_connections_via_group_link_plus_auto_accept_incognito where
+module Simplex.Chat.Migrations.M20221021_auto_accept_incognito_connections_via_group_link where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20221021_connections_via_group_link_plus_auto_accept_incognito :: Query
-m20221021_connections_via_group_link_plus_auto_accept_incognito =
+m20221021_auto_accept_incognito_connections_via_group_link :: Query
+m20221021_auto_accept_incognito_connections_via_group_link =
   [sql|
 PRAGMA ignore_check_constraints=ON;
 
