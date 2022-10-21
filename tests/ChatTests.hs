@@ -2212,8 +2212,10 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
           bob <# (aliceIncognito <> "> hello!"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice <## "use /info bob to print out this incognito profile again",
-          alice <# "i @bob hello!"
+          alice
+            <### [ "use /info bob to print out this incognito profile again",
+                   WithTime "i @bob hello!"
+                 ]
       ]
 
 testConnectIncognitoInvitationLink :: IO ()
