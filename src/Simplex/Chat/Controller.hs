@@ -36,7 +36,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (StoreError, UserContactLink)
+import Simplex.Chat.Store (AutoAccept, StoreError, UserContactLink)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent (AgentClient)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, InitialAgentServers, NetworkConfig)
@@ -205,7 +205,7 @@ data ChatCommand
   | CreateMyAddress
   | DeleteMyAddress
   | ShowMyAddress
-  | AddressAutoAccept {autoAccept :: Bool, autoAcceptIncognito :: Bool, autoReply :: Maybe MsgContent}
+  | AddressAutoAccept (Maybe AutoAccept)
   | AcceptContact ContactName
   | RejectContact ContactName
   | SendMessage ChatName ByteString

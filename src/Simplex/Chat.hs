@@ -777,8 +777,8 @@ processChatCommand = \case
       pure CRUserContactLinkDeleted
   ShowMyAddress -> withUser $ \User {userId} ->
     CRUserContactLink <$> withStore (`getUserAddress` userId)
-  AddressAutoAccept onOff incognitoOnOff msgContent -> withUser $ \User {userId} -> do
-    CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId onOff incognitoOnOff msgContent)
+  AddressAutoAccept autoAccept_ -> withUser $ \User {userId} -> do
+    CRUserContactLinkUpdated <$> withStore (\db -> updateUserAddressAutoAccept db userId autoAccept_)
   AcceptContact cName -> withUser $ \User {userId} -> do
     connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact connReqId
@@ -1681,7 +1681,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
               showToast (c <> "> ") "connected"
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (UserContactLink {autoAccept = True, autoReply = mc_}, groupId_) -> do
+                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_) -> do
                     forM_ mc_ $ \mc -> do
                       (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (ExtMsgContent mc Nothing))
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc) Nothing Nothing
@@ -1982,12 +1982,12 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted contact
             CORRequest cReq@UserContactRequest {localDisplayName} -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept, autoAcceptIncognito = incognito}, groupId_) ->
-                  if autoAccept
-                    then case groupId_ of
+                Just (UserContactLink {autoAccept}, groupId_) ->
+                  case autoAccept of
+                    Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
                         -- [incognito] generate profile to send, create connection with incognito profile
-                        incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
                         ct <- acceptContactRequestAsync user cReq incognitoProfile
                         toView $ CRAcceptingContactRequest ct
                       Just groupId -> do
@@ -1995,7 +1995,7 @@ processAgentMessage (Just user@User {userId, profile}) corrId agentConnId agentM
                         let profileMode = if memberIncognito membership then Just $ ExistingIncognito memberProfile else Nothing
                         ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingGroupJoinRequest gInfo ct
-                    else do
+                    _ -> do
                       toView $ CRReceivedContactRequest cReq
                       showToast (localDisplayName <> "> ") "wants to connect to you"
                 _ -> pure ()
@@ -3160,7 +3160,7 @@ chatCommandP =
       ("/address" <|> "/ad") $> CreateMyAddress,
       ("/delete_address" <|> "/da") $> DeleteMyAddress,
       ("/show_address" <|> "/sa") $> ShowMyAddress,
-      "/auto_accept " *> (AddressAutoAccept <$> onOffP <*> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)),
+      "/auto_accept " *> (AddressAutoAccept <$> autoAcceptP),
       ("/accept @" <|> "/accept " <|> "/ac @" <|> "/ac ") *> (AcceptContact <$> displayName),
       ("/reject @" <|> "/reject " <|> "/rc @" <|> "/rc ") *> (RejectContact <$> displayName),
       ("/markdown" <|> "/m") $> ChatHelp HSMarkdown,
@@ -3233,6 +3233,11 @@ chatCommandP =
       pure $ fullNetworkConfig socksProxy tcpTimeout
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if null s then Left "empty key" else Right k
+    autoAcceptP =
+      ifM
+        onOffP
+        (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
+        (pure Nothing)
 
 adminContactReq :: ConnReqContact
 adminContactReq =

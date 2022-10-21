@@ -21,6 +21,7 @@ module Simplex.Chat.Store
   ( SQLiteStore,
     StoreError (..),
     UserContactLink (..),
+    AutoAccept (..),
     createChatStore,
     chatStoreFile,
     agentStoreFile,
@@ -793,18 +794,25 @@ deleteUserAddress db User {userId} = do
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL" (Only userId)
 
 data UserContactLink = UserContactLink
-  { -- userContactLinkId :: Int64,
-    connReqContact :: ConnReqContact,
-    autoAccept :: Bool,
-    autoAcceptIncognito :: Bool,
-    autoReply :: Maybe MsgContent
+  { connReqContact :: ConnReqContact,
+    autoAccept :: Maybe AutoAccept
   }
   deriving (Show, Generic)
 
 instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
 
+data AutoAccept = AutoAccept
+  { acceptIncognito :: Bool,
+    autoReply :: Maybe MsgContent
+  }
+  deriving (Show, Generic)
+
+instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
+
 toUserContactLink :: (ConnReqContact, Bool, Bool, Maybe MsgContent) -> UserContactLink
-toUserContactLink (connReqContact, autoAccept, autoAcceptIncognito, autoReply) = UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
+toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =
+  UserContactLink connReq $
+    if autoAccept then Just AutoAccept {acceptIncognito, autoReply} else Nothing
 
 getUserAddress :: DB.Connection -> UserId -> ExceptT StoreError IO UserContactLink
 getUserAddress db userId =
@@ -831,13 +839,11 @@ getUserContactLinkById db userId userContactLinkId =
       |]
       (userId, userContactLinkId)
 
-updateUserAddressAutoAccept :: DB.Connection -> UserId -> Bool -> Bool -> Maybe MsgContent -> ExceptT StoreError IO UserContactLink
-updateUserAddressAutoAccept db userId autoAccept autoAcceptIncognito autoReply = do
-  UserContactLink {connReqContact} <- getUserAddress db userId
-  liftIO updateUserAddressAutoAccept_
-  pure $ UserContactLink {connReqContact, autoAccept, autoAcceptIncognito, autoReply}
+updateUserAddressAutoAccept :: DB.Connection -> UserId -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
+updateUserAddressAutoAccept db userId autoAccept = do
+  link <- getUserAddress db userId
+  liftIO updateUserAddressAutoAccept_ $> link {autoAccept}
   where
-    updateUserAddressAutoAccept_ :: IO ()
     updateUserAddressAutoAccept_ =
       DB.execute
         db
@@ -846,7 +852,10 @@ updateUserAddressAutoAccept db userId autoAccept autoAcceptIncognito autoReply =
           SET auto_accept = ?, auto_accept_incognito = ?, auto_reply_msg_content = ?
           WHERE user_id = ? AND local_display_name = '' AND group_id IS NULL
         |]
-        (autoAccept, autoAcceptIncognito, autoReply, userId)
+        (ucl :. Only userId)
+    ucl = case autoAccept of
+      Just AutoAccept {acceptIncognito, autoReply} -> (True, acceptIncognito, autoReply)
+      _ -> (False, False, Nothing)
 
 createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> ConnReqContact -> ExceptT StoreError IO ()
 createGroupLink db User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId cReq =

@@ -34,7 +34,7 @@ import Simplex.Chat.Help
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store (StoreError (..), UserContactLink (..))
+import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
@@ -87,8 +87,8 @@ responseToView testView = \case
     HSSettings -> settingsInfo
   CRWelcome user -> chatWelcome user
   CRContactsList cs -> viewContactsList cs
-  CRUserContactLink link@UserContactLink {connReqContact} -> connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ link
-  CRUserContactLinkUpdated link -> autoAcceptStatus_ link
+  CRUserContactLink UserContactLink {connReqContact, autoAccept} -> connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
+  CRUserContactLinkUpdated UserContactLink {autoAccept} -> autoAcceptStatus_ autoAccept
   CRContactRequestRejected UserContactRequest {localDisplayName = c} -> [ttyContact c <> ": contact request rejected"]
   CRGroupCreated g -> viewGroupCreated g
   CRGroupMembers g -> viewGroupMembers g
@@ -431,14 +431,12 @@ connReqContact_ intro cReq =
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
 
-autoAcceptStatus_ :: UserContactLink -> [StyledString]
-autoAcceptStatus_ UserContactLink {autoAccept, autoAcceptIncognito, autoReply} =
-  ("auto_accept "
-      <> if autoAccept
-        then "on" <> if autoAcceptIncognito then ", incognito" else ""
-        else "off"
-  ) :
-  maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
+autoAcceptStatus_ = \case
+  Just AutoAccept {acceptIncognito, autoReply} ->
+    ("auto_accept on" <> if acceptIncognito then ", incognito" else "") :
+    maybe [] ((["auto reply:"] <>) . ttyMsgContent) autoReply
+  _ -> ["auto_accept off"]
 
 groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> [StyledString]
 groupLink_ intro g cReq =
